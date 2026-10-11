@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-from typing import Any, Optional, Union
+from typing import Any
 
 import ifcopenshell
 import ifcopenshell.util.element
@@ -31,9 +31,9 @@ _NO_UNIT = object()
 def edit_pset(
     file: ifcopenshell.file,
     pset: ifcopenshell.entity_instance,
-    name: Optional[str] = None,
-    properties: Optional[dict[str, Any]] = None,
-    pset_template: Optional[ifcopenshell.entity_instance] = None,
+    name: str | None = None,
+    properties: dict[str, Any] | None = None,
+    pset_template: ifcopenshell.entity_instance | None = None,
     should_purge: bool = True,
 ) -> None:
     """Edits a property set and its properties
@@ -157,54 +157,57 @@ def edit_pset(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "pset": pset,
-        "name": name,
-        "properties": properties or {},
-        "pset_template": pset_template,
-        "should_purge": should_purge,
-    }
-    return usecase.execute()
+    return usecase.execute(pset, name, properties or {}, pset_template, should_purge)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self) -> None:
-        self.update_pset_name()
-        self.load_pset_template()
-        existing_props = self.update_existing_properties()
-        new_props = self.add_new_properties()
-        self.assign_new_properties(existing_props + new_props)
+    def execute(
+        self,
+        pset: ifcopenshell.entity_instance,
+        name: str | None,
+        properties: dict[str, Any],
+        pset_template: ifcopenshell.entity_instance | None,
+        should_purge: bool,
+    ) -> None:
+        # Handled properties are removed from the dict, don't mutate the caller's dict.
+        properties = properties.copy()
 
-    def update_pset_name(self) -> None:
-        if self.settings["name"]:
-            self.settings["pset"].Name = self.settings["name"]
+        self.update_pset_name(pset, name)
+        pset_template = self.load_pset_template(pset, pset_template)
+        existing_props = self.update_existing_properties(pset, properties, pset_template, should_purge)
+        new_props = self.add_new_properties(properties, pset_template, should_purge)
+        self.assign_new_properties(pset, existing_props + new_props)
 
-    def load_pset_template(self) -> None:
-        if self.settings["pset_template"]:
-            self.pset_template = self.settings["pset_template"]
-        else:
-            self.psetqto = ifcopenshell.util.pset.get_template(self.file.schema_identifier)
-            self.pset_template = self.psetqto.get_by_name(self.settings["pset"].Name)
+    def update_pset_name(self, pset: ifcopenshell.entity_instance, name: str | None) -> None:
+        if name:
+            pset.Name = name
 
-    def _should_update_prop(self, prop: ifcopenshell.entity_instance) -> bool:
+    def load_pset_template(
+        self, pset: ifcopenshell.entity_instance, pset_template: ifcopenshell.entity_instance | None
+    ) -> ifcopenshell.entity_instance | None:
+        if pset_template:
+            return pset_template
+        psetqto = ifcopenshell.util.pset.get_template(self.file.schema_identifier)
+        return psetqto.get_by_name(pset.Name)
+
+    def _should_update_prop(self, prop: ifcopenshell.entity_instance, properties: dict[str, Any]) -> bool:
         """
         Checks if the given property should be changed
         """
-        return prop.Name in self.settings["properties"]
+        return prop.Name in properties
 
-    def _try_purge(self, prop: ifcopenshell.entity_instance) -> bool:
+    def _try_purge(self, prop: ifcopenshell.entity_instance, properties: dict[str, Any], should_purge: bool) -> bool:
         """
         Tries to remove the property
         if successful, returns True, otherwise False
         NOTE: Assumes the prop exists
         """
-        if not self.settings["should_purge"]:
+        if not should_purge:
             return False
 
-        del self.settings["properties"][prop.Name]
+        del properties[prop.Name]
         self.file.remove(prop)
         return True
 
@@ -212,10 +215,16 @@ class Usecase:
     #   For example - IfcPropertyEnumeratedValue to
     # IfcPropertySingleValue.  Or maybe the user should
     # just delete the property first? - vulevukusej
-    def update_existing_properties(self) -> list[ifcopenshell.entity_instance]:
+    def update_existing_properties(
+        self,
+        pset: ifcopenshell.entity_instance,
+        properties: dict[str, Any],
+        pset_template: ifcopenshell.entity_instance | None,
+        should_purge: bool,
+    ) -> list[ifcopenshell.entity_instance]:
         existing_props = []
-        for prop in self.get_properties():
-            if not self._should_update_prop(prop):
+        for prop in self.get_properties(pset):
+            if not self._should_update_prop(prop, properties):
                 existing_props.append(prop)
                 continue
 
@@ -223,11 +232,11 @@ class Usecase:
                 continue  # Treat as a new property to avoid affecting other psets.
 
             if prop.is_a("IfcPropertyEnumeratedValue"):
-                prop = self.update_existing_prop_enum(prop)
+                prop = self.update_existing_prop_enum(prop, properties, pset_template, should_purge)
                 if prop:
                     existing_props.append(prop)
             elif prop.is_a("IfcPropertySingleValue"):
-                prop = self.update_existing_prop_single_value(prop)
+                prop = self.update_existing_prop_single_value(prop, properties, pset_template, should_purge)
                 if prop:
                     existing_props.append(prop)
             else:
@@ -235,18 +244,22 @@ class Usecase:
         return existing_props
 
     def update_existing_prop_enum(
-        self, prop: ifcopenshell.entity_instance
-    ) -> Union[ifcopenshell.entity_instance, None]:
+        self,
+        prop: ifcopenshell.entity_instance,
+        properties: dict[str, Any],
+        pset_template: ifcopenshell.entity_instance | None,
+        should_purge: bool,
+    ) -> ifcopenshell.entity_instance | None:
         """
         NOTE: Assumes the prop exists
         """
-        value = self.settings["properties"][prop.Name]
+        value = properties[prop.Name]
         unit, value = self.unpack_unit_value(value)
 
         if isinstance(value, (tuple, list)):
             sel_vals = []
             if not value:
-                if self._try_purge(prop):
+                if self._try_purge(prop, properties, should_purge):
                     return
             # Only need the first enum type since all enums are of the same type.
             if reference := prop.EnumerationReference:
@@ -254,7 +267,7 @@ class Usecase:
             elif enum_values := prop.EnumerationValues:
                 primary_measure_type = enum_values[0].is_a()
             else:
-                primary_measure_type = self.get_primary_measure_type(prop.Name, new_value=value[0])
+                primary_measure_type = self.get_primary_measure_type(prop.Name, pset_template, new_value=value[0])
                 assert primary_measure_type, f"Couldn't find primary measure type for the prop value: '{value[0]}'."
             for val in value:
                 ifc_val = self.file.create_entity(primary_measure_type, val)
@@ -264,7 +277,7 @@ class Usecase:
         elif isinstance(value, ifcopenshell.entity_instance) and value.is_a("IfcPropertyEnumeratedValue"):
             # Copy enum value.
             if (value_enum_values := value.EnumerationValues) is None:
-                if self._try_purge(prop):
+                if self._try_purge(prop, properties, should_purge):
                     return
             prop.EnumerationValues = value_enum_values
 
@@ -285,57 +298,61 @@ class Usecase:
                     prop_reference.Unit = value_reference.Unit
 
         else:
-            raise ValueError(
-                f'Value "{self.settings["properties"][prop.Name]}" is not a valid value for enum property {prop.Name}.'
-            )
+            raise ValueError(f'Value "{properties[prop.Name]}" is not a valid value for enum property {prop.Name}.')
 
         if unit is not _NO_UNIT:
             prop.Unit = unit
-        del self.settings["properties"][prop.Name]
+        del properties[prop.Name]
         return prop
 
     def update_existing_prop_single_value(
-        self, prop: ifcopenshell.entity_instance
-    ) -> Union[ifcopenshell.entity_instance, None]:
+        self,
+        prop: ifcopenshell.entity_instance,
+        properties: dict[str, Any],
+        pset_template: ifcopenshell.entity_instance | None,
+        should_purge: bool,
+    ) -> ifcopenshell.entity_instance | None:
         """
         NOTE: Assumes the prop exists
         """
-        value = self.settings["properties"][prop.Name]
+        value = properties[prop.Name]
         unit, value = self.unpack_unit_value(value)
         if value is None:
-            if self._try_purge(prop):
+            if self._try_purge(prop, properties, should_purge):
                 return
             prop.NominalValue = None
         elif isinstance(value, ifcopenshell.entity_instance):
             prop.NominalValue = value
         else:
             primary_measure_type = self.get_primary_measure_type(
-                prop.Name, old_value=prop.NominalValue, new_value=value
+                prop.Name, pset_template, old_value=prop.NominalValue, new_value=value
             )
             value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
             prop.NominalValue = self.file.create_entity(primary_measure_type, value)
         if unit is not _NO_UNIT:
             prop.Unit = unit
-        del self.settings["properties"][prop.Name]
+        del properties[prop.Name]
         return prop
 
-    def add_new_properties(self) -> list[ifcopenshell.entity_instance]:
-        properties: list[ifcopenshell.entity_instance] = []
-        for name, value in self.settings["properties"].items():
-            if value is None and self.settings["should_purge"]:
+    def add_new_properties(
+        self, properties: dict[str, Any], pset_template: ifcopenshell.entity_instance | None, should_purge: bool
+    ) -> list[ifcopenshell.entity_instance]:
+        new_properties: list[ifcopenshell.entity_instance] = []
+        for name, value in properties.items():
+            if value is None and should_purge:
                 continue
             unit, value = self.unpack_unit_value(value)
 
             if isinstance(value, ifcopenshell.entity_instance):
                 if value.is_a("IfcProperty"):
-                    properties.append(value)
+                    new_properties.append(value)
 
                 # If it's not an entity, then it's a primitive data type
                 elif not value.is_entity():
                     kwargs = {"Name": name, "NominalValue": value}
                     if unit is not None and unit is not _NO_UNIT:
                         kwargs["Unit"] = unit
-                    properties.append(self.file.create_entity("IfcPropertySingleValue", **kwargs))
+                    new_properties.append(self.file.create_entity("IfcPropertySingleValue", **kwargs))
 
                 else:
                     raise ValueError(f"{value.is_a()} cannot be assigned to the property set '{name}'")
@@ -343,16 +360,16 @@ class Usecase:
             elif isinstance(value, (tuple, list)):
                 if not value:
                     continue
-                for pset_template in self.pset_template.HasPropertyTemplates:
-                    if pset_template.Name != name:
+                for prop_template in pset_template.HasPropertyTemplates:
+                    if prop_template.Name != name:
                         continue
 
-                    if pset_template.TemplateType == "P_LISTVALUE":
-                        ifc_class = getattr(pset_template, "PrimaryMeasureType", None)
+                    if prop_template.TemplateType == "P_LISTVALUE":
+                        ifc_class = getattr(prop_template, "PrimaryMeasureType", None)
                         if ifc_class is None:
-                            raise ValueError(f"pset template '{pset_template.Name}' is missing PrimaryMeasureType")
+                            raise ValueError(f"pset template '{prop_template.Name}' is missing PrimaryMeasureType")
 
-                        properties.append(
+                        new_properties.append(
                             self.file.create_entity(
                                 "IfcPropertyListValue",
                                 Name=name,
@@ -362,31 +379,31 @@ class Usecase:
                         )
                         break
 
-                    elif pset_template.TemplateType == "P_ENUMERATEDVALUE":
+                    elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
                         prop_enum = self.file.create_entity(
                             "IFCPROPERTYENUMERATION",
                             Name=name,
-                            EnumerationValues=pset_template.Enumerators.EnumerationValues,
+                            EnumerationValues=prop_template.Enumerators.EnumerationValues,
                             **({"Unit": unit} if (unit is not None and unit is not _NO_UNIT) else {}),
                         )
                         prop_enum_value = self.file.create_entity(
                             "IFCPROPERTYENUMERATEDVALUE",
                             Name=name,
                             EnumerationValues=tuple(
-                                self.file.create_entity(pset_template.PrimaryMeasureType, v) for v in value
+                                self.file.create_entity(prop_template.PrimaryMeasureType, v) for v in value
                             ),
                             EnumerationReference=prop_enum,
                         )
-                        properties.append(prop_enum_value)
+                        new_properties.append(prop_enum_value)
                         break
 
-                    raise NotImplementedError(f"Template type '{pset_template.TemplateType}' is not supported yet")
+                    raise NotImplementedError(f"Template type '{prop_template.TemplateType}' is not supported yet")
 
                 else:
                     raise NotImplementedError(f"No template found for property '{name}'")
 
             else:
-                primary_measure_type = self.get_primary_measure_type(name, new_value=value)
+                primary_measure_type = self.get_primary_measure_type(name, pset_template, new_value=value)
                 if value is None:
                     nominal_value = value
                 else:
@@ -396,48 +413,51 @@ class Usecase:
                 if unit is not None and unit is not _NO_UNIT:
                     args["Unit"] = unit
 
-                properties.append(self.file.create_entity("IfcPropertySingleValue", **args))
-        return properties
+                new_properties.append(self.file.create_entity("IfcPropertySingleValue", **args))
+        return new_properties
 
-    def assign_new_properties(self, props: list[ifcopenshell.entity_instance]) -> None:
-        if hasattr(self.settings["pset"], "HasProperties"):
-            self.settings["pset"].HasProperties = props
+    def assign_new_properties(
+        self, pset: ifcopenshell.entity_instance, props: list[ifcopenshell.entity_instance]
+    ) -> None:
+        if hasattr(pset, "HasProperties"):
+            pset.HasProperties = props
 
         # Material / Profile properties
-        elif hasattr(self.settings["pset"], "Properties"):
-            self.settings["pset"].Properties = props
+        elif hasattr(pset, "Properties"):
+            pset.Properties = props
 
         # IFC2X3 IfcMaterialProperties
-        elif self.settings["pset"].is_a("IfcMaterialProperties"):
-            self.settings["pset"].ExtendedProperties = props
+        elif pset.is_a("IfcMaterialProperties"):
+            pset.ExtendedProperties = props
 
-    def get_properties(self) -> list[ifcopenshell.entity_instance]:
+    def get_properties(self, pset: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         """
         Returns list of existing properties
         """
-        if (props := getattr(self.settings["pset"], "HasProperties", ...)) is not ...:
+        if (props := getattr(pset, "HasProperties", ...)) is not ...:
             return props or []
 
         # Material / Profile properties
-        elif (props := getattr(self.settings["pset"], "Properties", ...)) is not ...:
+        elif (props := getattr(pset, "Properties", ...)) is not ...:
             return props or []
 
         # IFC2X3 IfcMaterialProperties
-        elif (props := getattr(self.settings["pset"], "ExtendedProperties", ...)) is not ...:
+        elif (props := getattr(pset, "ExtendedProperties", ...)) is not ...:
             return props or []
 
-        raise TypeError(f"'{self.settings['pset']}' is not a valid pset")
+        raise TypeError(f"'{pset}' is not a valid pset")
 
     def get_primary_measure_type(
         self,
         name: str,
-        old_value: Optional[ifcopenshell.entity_instance] = None,
-        new_value: Optional[Union[ifcopenshell.entity_instance, str, float, bool, int]] = None,
-    ) -> Union[str, None]:
+        pset_template: ifcopenshell.entity_instance | None,
+        old_value: ifcopenshell.entity_instance | None = None,
+        new_value: ifcopenshell.entity_instance | str | float | bool | int | None = None,
+    ) -> str | None:
         if old_value:
             return old_value.is_a()
-        if self.pset_template:
-            for prop_template in self.pset_template.HasPropertyTemplates:
+        if pset_template:
+            for prop_template in pset_template.HasPropertyTemplates:
                 if prop_template.Name != name:
                     continue
                 return prop_template.PrimaryMeasureType or "IfcLabel"
@@ -458,7 +478,7 @@ class Usecase:
             elif isinstance(new_value, datetime.date):
                 return "IfcDate"
 
-    def cast_value_to_primary_measure_type(self, value, primary_measure_type):
+    def cast_value_to_primary_measure_type(self, value: Any, primary_measure_type: str) -> Any:
         type_str = self.file.create_entity(primary_measure_type).attribute_type(0)
         type_fn = {
             "AGGREGATE OF DOUBLE": list,
@@ -480,7 +500,7 @@ class Usecase:
         return type_fn(value)
 
     @staticmethod
-    def unpack_unit_value(value_candidate):
+    def unpack_unit_value(value_candidate: Any) -> tuple[Any, Any]:
         """
         Returns tuple of the format: (Unit, NominalValue)
 

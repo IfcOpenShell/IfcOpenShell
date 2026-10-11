@@ -5,6 +5,9 @@
 # ]
 # [tool.ty.environment]
 # root = ["."]
+# # `common` and the `nix` package live outside this script's directory but are
+# # put on `sys.path` at runtime below.
+# extra-paths = ["../win", ".."]
 # ///
 ###############################################################################
 #                                                                             #
@@ -44,24 +47,12 @@ Used environment variables:
     - ``CXXFLAGS``, ``CPPFLAGS``, ``CFLAGS``, ``LDFLAGS``
     - ``BUILD_DIR`` - build directory. By default will use "build" folder in IfcOpenShell repository.
     - ``DEPS_DIR`` - dependencies directory. By default will create automatic folder in build directory.
-    - ``BUILD_CFG`` - build configuration, 'RelWithDebInfo' by default.
-    - ``USE_CURRENT_PYTHON_VERSION`` - use current python config instead of compile from source
-    `off` by default.
-    - ``IFCOS_NUM_BUILD_PROCS`` - number of concurrent processes defaults to available cores + 1
     - ``NO_CLEAN`` - do not clean `ifcopenshell` build directories but continue working on current build
     (installed dependencies are never cleared).
     By default option is disabled, to enable pass any value from `1`, `on`, `true`.
-    - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to common schemas (`2x3;4;4x3_add2`), to be supplied in the same format
-    - ``WASM_PYTHON_PATH`` - path to WASM Python installation,
-    used to deduce `PYVERSION` (e.g. '3.13.2'), `PYTHONINCLUDE`,
-    `SIDE_MODULE_CFLAGS`, `SIDE_MODULE_LDFLAGS`.
-    Allows to build wasm without pyodide build environment, which can be useful for debugging build issues.
-    Example value: 'pyodide/cpython/installs/python-3.13.2'
-    - ``ADD_COMMIT_SHA`` - `off` by default. If enabled
-    `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` will be set to `ON` while configuring IfcOpenShell
+    - ``WASM_NATIVE_TOOLCHAIN`` - path to an already installed emsdk, used by ``--native-wasm``
+    instead of bootstrapping the pinned one. Example value: '/opt/emsdk'
     - ``IFCOS_BUILD_PYTHON_WRAPPER`` - enable building the Python wrapper, `on` by default.
-    - ``PYTHON_USER_SITE`` - install the Python wrapper into the user's site-packages directory
-    instead of the interpreter's prefix, `off` by default.
     - ``QT_DIR`` - optional path to a pre-installed Qt6 (e.g. `brew --prefix qt` on Mac`).
     Skips fetching Qt6 via aqtinstall if the install is found there.
     - ``QT6_VERSION`` - Qt6 version to fetch via aqtinstall when building the viewer,
@@ -121,6 +112,7 @@ import multiprocessing
 import os
 import platform
 import shutil
+import site
 import subprocess as sp
 import sys
 import sysconfig
@@ -136,6 +128,10 @@ from urllib.request import urlretrieve
 
 from typing_extensions import assert_never
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "win"))
+# The `nix` package lives next to the repository root, not next to this script.
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 from common import (
     ADD_COMMIT_SHA_DEFAULT,
     BUILD_CFG_DEFAULT,
@@ -149,13 +145,13 @@ from common import (
     resolve_cli_or_env,
 )
 
+from nix import core
+
 # `common` configures the root logger on import, so reuse it here.
 logger = logging.getLogger()
 
 
-USE_CURRENT_PYTHON_VERSION = is_on_off(os.getenv("USE_CURRENT_PYTHON_VERSION"), default=False)
 IFCOS_BUILD_PYTHON_WRAPPER = is_on_off(os.getenv("IFCOS_BUILD_PYTHON_WRAPPER"), default=True)
-PYTHON_USER_SITE = is_on_off(os.getenv("PYTHON_USER_SITE"), default=False)
 
 PYTHON_VERSIONS = ["3.11.8", "3.12.1", "3.13.6", "3.14.0", "3.15.0"]
 JSON_VERSION = "3.11.3"
@@ -185,12 +181,9 @@ bunzip2 = "bunzip2"
 tar = "tar"
 cc = "cc"
 cplusplus = "c++"
-autoconf = "autoconf"
-automake = "automake"
 make = "make"
 strip = "strip"
 xz = "xz"  # Used implicitly for `tar -xf *.tar.xz`.
-brew = "brew"
 
 
 class ArgFormatter(argparse.RawDescriptionHelpFormatter, argparse.ArgumentDefaultsHelpFormatter):
@@ -207,15 +200,19 @@ class Args(NamedTuple):
     lto: bool
     verbose: bool
     shared: bool
+    split_instance_builds: bool
     ifcopenshell_shared: bool
     occt_shared: bool
     mac_cross_compile_intel: bool
     wasm: bool
+    native_wasm: bool
     num_build_procs: int
     schemas: str | None
     build_cfg: BuildCfg
     add_commit_sha: bool
     use_ninja: bool
+    use_current_python_version: bool
+    python_user_site: bool
 
 
 class DynamicArgs(NamedTuple):
@@ -305,6 +302,11 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         "Redundant if -shared is also passed.",
     )
     arg_parser.add_argument(
+        "--split-instance-builds",
+        action="store_true",
+        help="Build native tools with raw instance handles and Python with safe handles in separate trees.",
+    )
+    arg_parser.add_argument(
         "--occt-shared",
         action=argparse.BooleanOptionalAction,
         # None (rather than True) so the -wasm fallback below can tell "unset" apart from
@@ -325,6 +327,13 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         help="Cross compile for Intel Mac on Apple Silicon host.",
     )
     arg_parser.add_argument("-wasm", "--wasm", action="store_true", default=False, help="Compile for wasm.")
+    arg_parser.add_argument(
+        "--native-wasm",
+        action="store_true",
+        default=False,
+        help="Build the standalone WASM targets with the generated C API, using the pinned emsdk "
+        "instead of a pyodide build environment. Implies -wasm.",
+    )
     arg_parser.add_argument(
         "--num-build-procs",
         dest="num_build_procs",
@@ -362,6 +371,23 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         default=False,
         help="Use Ninja instead of Make to configure and build CMake-based targets.",
     )
+    arg_parser.add_argument(
+        "--use-current-python-version",
+        dest="use_current_python_version",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+        help="Build the Python wrapper for the current Python instead of installing Pythons with uv. "
+        "Also can be specified by using USE_CURRENT_PYTHON_VERSION env variable. (default: False)",
+    )
+    arg_parser.add_argument(
+        "--python-user-site",
+        dest="python_user_site",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+        help="Install the Python wrapper into the user's site-packages directory "
+        "instead of the interpreter's prefix. Requires --use-current-python-version. "
+        "Also can be specified by using PYTHON_USER_SITE env variable. (default: False)",
+    )
     namespace, unknown_flags = arg_parser.parse_known_args()
     num_build_procs = resolve_cli_or_env(
         getattr(namespace, "num_build_procs", None),
@@ -376,6 +402,17 @@ def parse_args() -> tuple[Args, DynamicArgs]:
     add_commit_sha = resolve_cli_or_env(
         getattr(namespace, "add_commit_sha", None), "ADD_COMMIT_SHA", ADD_COMMIT_SHA_DEFAULT, arg_type="bool"
     )
+    use_current_python_version = resolve_cli_or_env(
+        getattr(namespace, "use_current_python_version", None), "USE_CURRENT_PYTHON_VERSION", False, arg_type="bool"
+    )
+    python_user_site = resolve_cli_or_env(
+        getattr(namespace, "python_user_site", None), "PYTHON_USER_SITE", False, arg_type="bool"
+    )
+    if python_user_site and not use_current_python_version:
+        arg_parser.error(
+            "--python-user-site (PYTHON_USER_SITE) is only supported with "
+            "--use-current-python-version (USE_CURRENT_PYTHON_VERSION)."
+        )
     args = Args(
         explicit_targets=namespace.explicit_targets,
         build_examples=namespace.build_examples,
@@ -383,17 +420,25 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         lto=namespace.lto,
         verbose=namespace.verbose,
         shared=namespace.shared,
+        split_instance_builds=namespace.split_instance_builds,
         ifcopenshell_shared=namespace.ifcopenshell_shared or namespace.shared,
         # -shared implies a shared OCCT too, even overriding an explicit --no-occt-shared.
         occt_shared=namespace.shared
-        or (namespace.occt_shared if namespace.occt_shared is not None else not namespace.wasm),
+        or (
+            namespace.occt_shared
+            if namespace.occt_shared is not None
+            else not (namespace.wasm or namespace.native_wasm)
+        ),
         mac_cross_compile_intel=namespace.mac_cross_compile_intel,
-        wasm=namespace.wasm,
+        wasm=namespace.wasm or namespace.native_wasm,
+        native_wasm=namespace.native_wasm,
         num_build_procs=num_build_procs,
         schemas=schemas,
         build_cfg=build_cfg,
         add_commit_sha=add_commit_sha,
         use_ninja=namespace.use_ninja,
+        use_current_python_version=use_current_python_version,
+        python_user_site=python_user_site,
     )
 
     dynamic_args = DynamicArgs.from_unknown_flags(unknown_flags, arg_parser)
@@ -404,6 +449,8 @@ ARGS, DYNAMIC_ARGS = parse_args()
 
 explicit_targets: set[str] = set(ARGS.explicit_targets)
 """Targets provided by CLI."""
+USE_CURRENT_PYTHON_VERSION = ARGS.use_current_python_version
+PYTHON_USER_SITE = ARGS.python_user_site
 
 # Helper function for coloured printing
 
@@ -428,9 +475,11 @@ MAC_CROSS_COMPILE_INTEL = ARGS.mac_cross_compile_intel
 assert APPLE or not MAC_CROSS_COMPILE_INTEL
 
 WASM = ARGS.wasm
-"""Build WASM outside pyodide build environment."""
+"""Compile for wasm."""
+NATIVE_WASM = ARGS.native_wasm
+"""Build the standalone WASM targets with the generated C API instead of the pyodide-hosted Python wrapper."""
 WASM_CMAKE_IS_USING_INIT_VARS = False
-if WASM:
+if WASM and not NATIVE_WASM:
 
     def get_pyodide_config_var(var_name: str) -> str:
         output = sp.check_output(["pyodide", "config", "get", var_name], encoding="utf-8").strip()
@@ -500,6 +549,18 @@ if TOOLSET:
 DEFAULT_DEPS_DIR = os.path.realpath(DEFAULT_DEPS_DIR)
 
 DEPS_DIR = os.getenv("DEPS_DIR", DEFAULT_DEPS_DIR)
+
+if NATIVE_WASM:
+    # The pinned emsdk replaces the pyodide build environment. It has to be activated
+    # before the dependency builds so that `emconfigure`/`emcmake` resolve to it.
+    EMSDK_DIR = Path(os.environ.get("WASM_NATIVE_TOOLCHAIN", Path(DEPS_DIR) / "emsdk"))
+    core.bootstrap_emsdk(core.load_lockfile(), EMSDK_DIR)
+    os.environ.update(core.emsdk_env(EMSDK_DIR))
+    for flag in ("CFLAGS", "CXXFLAGS", "LDFLAGS"):
+        os.environ[flag] = f"{os.environ.get(flag, '')} -fwasm-exceptions -sSUPPORT_LONGJMP=wasm"
+    # Unlike pyodide, emsdk does not inject flags through `SIDE_MODULE_*`. The emscripten
+    # toolchain reads them from the environment, so they must not become cache variables.
+    WASM_CMAKE_IS_USING_INIT_VARS = True
 
 if not os.path.exists(DEPS_DIR):
     os.makedirs(DEPS_DIR)
@@ -638,6 +699,11 @@ if WASM:
         # Skipping `proj`, otherwise we would also need to build/install sqlite3 for wasm.
         "proj",
     }
+    if NATIVE_WASM:
+        # The standalone WASM targets ship the geometry stack and the generated C API.
+        # SWIG, Python and the Python wrapper are only needed by the pyodide-hosted flow.
+        SKIP_TARGETS_FOR_WASM.discard("IfcGeom")
+        SKIP_TARGETS_FOR_WASM.update(("swig", "python", "IfcOpenShell-Python"))
     SKIP_TARGETS_FOR_WASM = {t.lower() for t in SKIP_TARGETS_FOR_WASM}
     skip_targets = {t for t in targets if t.lower() in SKIP_TARGETS_FOR_WASM}
     if skip_targets:
@@ -651,9 +717,16 @@ yacc = "yacc"  # Used during swig building process, installed with `bison` on De
 bison = "bison"
 
 missing_commands: list[str] = []
-required_commands = [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake", yacc, xz, bison]
+# autoconf and automake also might be required in case one of autoconf builds
+# will actually get to ./autogen.sh.
+# But currently we always use tar-balls with `./configure` prebuilt.
+# And it's annoying to install autotools and automake on Mac Intel CI,
+# because there are no more prebuilt binaries and downloading/building takes too long.
+required_commands = [git, bunzip2, tar, cc, cplusplus, make, "patch", "cmake", yacc, xz, bison]
 if WASM:
-    required_commands.append("pyodide")
+    required_commands.append("emcmake" if NATIVE_WASM else "pyodide")
+else:
+    required_commands.append("uv")
 if platform.system() == "Linux" and "BonsaiViewer" in targets:
     required_commands.append("patchelf")
 if "proj" in targets:
@@ -668,11 +741,6 @@ for cmd in required_commands:
 if missing_commands:
     raise ValueError(f"Required tools not installed or not added to PATH: {', '.join(missing_commands)}")
 
-MAC_INTEL_BIN_PATH = "/usr/local/bin"
-if MAC_CROSS_COMPILE_INTEL:
-    brew = f"{MAC_INTEL_BIN_PATH}/brew"
-    assert os.path.exists(brew), f"For intel cross compilation the brew path is expected to be '{brew}'."
-
 # identifiers for the download tool (could be less memory consuming as ints, but are more verbose as strings)
 download_tool_default = download_tool_py = "py"
 download_tool_git = "git"
@@ -683,6 +751,10 @@ log_dir = Path(DEPS_DIR) / "logs"
 log_dir.mkdir(parents=True, exist_ok=True)
 LOG_FILE = log_dir / f"{date.today().strftime('%Y%m%d')}.log"
 LOG_FILE.touch(exist_ok=True)
+# Stable name to follow with `tail -F`.
+latest_log = log_dir / "latest.log"
+latest_log.unlink(missing_ok=True)
+latest_log.symlink_to(LOG_FILE.name)
 logger.info(f"using command log file '{LOG_FILE}'")
 
 # Causing havoc in python 3.11 build
@@ -1087,6 +1159,7 @@ def install_qt6() -> str:
 
     # Prefer uv when available: uvx runs aqtinstall in an ephemeral env, avoiding polluting
     # any Python installation (isolated or global) with aqtinstall and its dependencies.
+    # TODO: uv is now required for non-WASM builds, consider dropping the aqtinstall fallback.
     if uv_path := shutil.which("uv"):
         logger.info(f"Using uv ('{uv_path}') to run aqtinstall in an ephemeral env.")
         AQT_CMD = ["uvx", "--from", "aqtinstall", "aqt"]
@@ -1333,6 +1406,9 @@ if "occ" in targets:
 
     if WASM:
         patches.append("./patches/occt/no_em_js.patch")
+    if NATIVE_WASM:
+        # Override cached CMake flags as well as flags for a fresh dependency build.
+        occt_args.extend([f"-DCMAKE_CXX_FLAGS={CXXFLAGS}", f"-DCMAKE_C_FLAGS={CFLAGS}"])
 
     if ARGS.occt_shared:
         # Using static flags for shared builds break it
@@ -1484,73 +1560,28 @@ def python_consider_rc(python_version: str) -> str:
     # TODO: remove after Python 3.15 release.
     # Python 3.15.0 final was postponed to ~2026-10-09, before that only rc builds are available.
     if python_version == "3.15.0" and date.today() < date(2026, 11, 1):
-        python_version += "rc2"
+        python_version += "rc3"
     return python_version
 
 
+PYTHON_INSTALL_DIRS: dict[str, Path] = {}
+"""Python version -> install dir."""
+
 if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
-    # Python should not be built with -fvisibility=hidden, from experience that introduces segfaults
-    OLD_CPP_FLAGS = os.environ["CPPFLAGS"]
-    OLD_CXX_FLAGS = os.environ["CXXFLAGS"]
-    OLD_C_FLAGS = os.environ["CFLAGS"]
-    os.environ["CXXFLAGS"] = CXXFLAGS_MINIMAL
-    os.environ["CPPFLAGS"] = CXXFLAGS_MINIMAL
-    os.environ["CFLAGS"] = CFLAGS_MINIMAL
-
-    # On OSX a dynamic python library is built or it would not be compatible
-    # with the system python because of some threading initialization
-    PYTHON_CONFIGURE_ARGS: list[str] = []
-    original_path = ""
-    if APPLE:
-        PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
-        open_ssl_prefix = run([brew, "--prefix", "openssl@3"]).strip()
-        # I'm not sure why, but if I do `"{open_ssl_prefix}"` (keep the quotes),
-        # autconf fails to find ssl.
-        PYTHON_CONFIGURE_ARGS.append(f"--with-openssl={open_ssl_prefix}")
-
-    if MAC_CROSS_COMPILE_INTEL:
-        original_path = os.environ["PATH"]
-        # Need to ensure python will pick up intel's `pkg-config`,
-        # otherwise it might attempt to use ARM libraries (e.g. `zstd`) and fail.
-        os.environ["PATH"] = f"{MAC_INTEL_BIN_PATH}{os.pathsep}{original_path}"
-        PYTHON_CONFIGURE_ARGS.extend(["--with-universal-archs=intel-64", "--enable-universalsdk"])
+    # Use build dir to avoid pushing Python installations to `build-outputs`.
+    UV_PYTHON_INSTALL_DIR = Path(BUILD_DIR) / "uv-python"
+    # Provide `UV_PYTHON_INSTALL_DIR` to avoid polluting global uv installation.
+    uv_env = os.environ | {"UV_PYTHON_INSTALL_DIR": str(UV_PYTHON_INSTALL_DIR)}
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
-        python_version_url = PYTHON_VERSION
         PYTHON_VERSION = python_consider_rc(PYTHON_VERSION)
+        python_request = f"cpython-{PYTHON_VERSION}-macos-x86_64" if MAC_CROSS_COMPILE_INTEL else PYTHON_VERSION
 
-        python_name = Dependencies.register(
-            "python", PYTHON_VERSION, use_shared_suffix=False, bundle_as_runtime_dependency=False
-        )
-        # Don't fail silently on missing Python dependencies (e.g. openssl or zlib),
-        # because later ifcopenshell-python build will fail too but in a more confusing way.
-        build_dependency(
-            python_name,
-            "autoconf",
-            PYTHON_CONFIGURE_ARGS,
-            f"http://www.python.org/ftp/python/{python_version_url}/",
-            f"Python-{PYTHON_VERSION}.tgz",
-        )
-        python_install = Dependencies.get_install_dir("python")
-        python_bin = python_install / "bin" / "python3"
-        # `_ssl` module is present -> we will be able to install `numpy` later
-        # to verify IfcOpenShell installation
-        try:
-            run([str(python_bin), "-c", "import _ssl"])
-        except RuntimeError:
-            logger.error(
-                "Python was built without SSL support (_ssl module is missing). "
-                f"To fix this: remove the installed Python at {python_install}; "
-                "install OpenSSL development libraries and re-run."
-            )
-            raise
-
-    if MAC_CROSS_COMPILE_INTEL:
-        assert original_path
-        os.environ["PATH"] = original_path
-    os.environ["CPPFLAGS"] = OLD_CPP_FLAGS
-    os.environ["CXXFLAGS"] = OLD_CXX_FLAGS
-    os.environ["CFLAGS"] = OLD_C_FLAGS
+        logger.info(f"\rInstalling Python {PYTHON_VERSION} with uv...")
+        # `--no-bin` - skip installing Python to `~/.local/bin`.
+        run(["uv", "python", "install", "--no-bin", python_request], env=uv_env)
+        python_executable = Path(run(["uv", "python", "find", "--managed-python", python_request], env=uv_env))
+        PYTHON_INSTALL_DIRS[PYTHON_VERSION] = python_executable.parent.parent
 
 if "boost" in targets:
     BOOST_LOCATION = f"https://github.com/boostorg/boost/releases/download/boost-{BOOST_VERSION}/"
@@ -1813,6 +1844,10 @@ if WASM:
     # inside of the sysroot set by the emscriptem toolchain
     cmake_args.append("-DWASM_BUILD=On")
 
+extra_cmake_args = os.environ.get("IFCOS_CMAKE_ARGS")
+if extra_cmake_args:
+    cmake_args.extend(extra_cmake_args.split())
+
 if ARGS.schemas:
     cmake_args.append(f"-DSCHEMA_VERSIONS={ARGS.schemas}")
 else:
@@ -1915,6 +1950,7 @@ if not WASM and (
     exec_args = [
         *ifcos_build_args,
         f"-DBUILD_IFCPYTHON=OFF",
+        "-DIFOPSH_SAFE_INSTANCE=" + OFF_ON[not ARGS.split_instance_builds],
     ]
 
     run_cmake(
@@ -1973,9 +2009,12 @@ if "IfcOpenShell-Python" in targets:
         python_include: str | None = None,
         python_executable: str | None = None,
         python_path: Path | None = None,
-    ) -> str | None:
+        *,
+        package_install_dir: Path,
+    ) -> Path:
         """
-        :return: Path to module dir if ``python_executable`` was provided, otherwise ``None``.
+        :param package_install_dir: Directory to install `ifcopenshell` package to (site-packages equivalent).
+        :return: Path to module dir.
         """
         assert bool(python_path) ^ bool(python_include)
 
@@ -1994,6 +2033,16 @@ if "IfcOpenShell-Python" in targets:
             )
 
         assert python_include
+        wrapper_build_dir = ifcos_build_dir + "-python" if ARGS.split_instance_builds and not WASM else ifcos_build_dir
+        os.makedirs(wrapper_build_dir, exist_ok=True)
+        wrapper_args = ["-DBUILD_IFCPYTHON=ON", "-DIFOPSH_SAFE_INSTANCE=ON"]
+        if ARGS.split_instance_builds and not WASM:
+            wrapper_args += [
+                "-DBUILD_CONVERT=OFF",
+                "-DBUILD_GEOMSERVER=OFF",
+                "-DBUILD_BONSAIVIEWER=OFF",
+                "-DBUILD_EXAMPLES=OFF",
+            ]
         old_ldflags = os.environ["LDFLAGS"]
         if wrapper_ldflags:
             os.environ["LDFLAGS"] = f"{old_ldflags} {wrapper_ldflags}"
@@ -2002,64 +2051,73 @@ if "IfcOpenShell-Python" in targets:
             run_cmake(
                 "ifcopenshell",
                 ifcos_build_args
-                + [
-                    "-DBUILD_IFCPYTHON=ON",
-                ]
                 + cmake_args
+                + wrapper_args
                 + get_cmake_args_prefix_path()
                 + [
                     *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
-                    # Needed because pyodide is expecting setup.py to be in the root.
-                    *([f"-DPYTHON_MODULE_INSTALL_DIR={REPO_PATH}"] * WASM),
+                    f"-DPYTHON_MODULE_INSTALL_DIR={package_install_dir}",
                     f"-DPYTHON_INCLUDE_DIR={python_include}",
                     f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell/tmp",
-                    "-DUSERSPACE_PYTHON_PREFIX=" + OFF_ON[PYTHON_USER_SITE],
                 ],
                 cmake_dir=CMAKE_DIR,
-                cwd=ifcos_build_dir,
+                cwd=wrapper_build_dir,
             )
         finally:
             os.environ["LDFLAGS"] = old_ldflags
 
         logger.info(f"\rBuilding python {python_version} wrapper...   ")
 
-        cmake_build(ifcos_build_dir, ["ifcopenshell_wrapper"])
+        cmake_build(wrapper_build_dir, ["ifcopenshell_wrapper"])
         if ARGS.use_ninja:
-            cmake_build(ifcos_build_dir, ["ifcwrap/install"])
+            cmake_build(wrapper_build_dir, ["ifcwrap/install"])
         else:
-            run([make, "install"], cwd=os.path.join(ifcos_build_dir, "ifcwrap"))
+            run([make, "install"], cwd=os.path.join(wrapper_build_dir, "ifcwrap"))
 
-        if python_executable:
-            run([python_executable, "-m", "ensurepip"])
-            run([python_executable, "-m", "pip", "install", "--user", "numpy", "typing_extensions"])
-            env = os.environ.copy()
-            env[LIBRARY_PATH_ENV_VAR] = os.pathsep.join(ld_library_paths)
-            module_dir = run(
-                [python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"],
-                env=env,
-            )
-            # Use just the last line is used,
-            # because output might contain warning like `No stream support: No module named 'lark'`.
-            module_dir = module_dir.strip().splitlines()[-1]
-            module_dir = os.path.dirname(module_dir)
+        module_dir = package_install_dir / "ifcopenshell"
+        if not WASM:
+            assert python_executable
 
             if not APPLE:
                 if BUILD_CFG == "Release":
                     for so in glob.glob(os.path.join(module_dir, "*.so")):
                         if WASM:
+                            # TODO: dead code, still can be useful?
                             run(["wasm-strip", so, "-k", "dylink.0"])
                         elif os.path.basename(so).startswith("_ifcopenshell_wrapper"):
                             # TODO: This symbol name depends on the Python version?
-                            run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", so], cwd=module_dir)
+                            run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", so], cwd=str(module_dir))
                         else:
-                            run([strip, "--strip-unneeded", so], cwd=module_dir)
+                            run([strip, "--strip-unneeded", so], cwd=str(module_dir))
 
-            return module_dir
+            # Verify the installed wrapper can be imported,
+            # without installing dependencies in the target Python.
+            env = os.environ | {
+                LIBRARY_PATH_ENV_VAR: os.pathsep.join(
+                    ld_library_paths[2:] if ARGS.split_instance_builds else ld_library_paths
+                ),
+                "PYTHONPATH": str(package_install_dir),
+            }
+            # fmt: off
+            run(
+                [
+                    "uv", "run", "--no-project", "--python", python_executable,
+                    "--with", "numpy",
+                    "--with", "typing_extensions",
+                    "python", "-c", "import ifcopenshell",
+                ],
+                env=env,
+            )
+            # fmt: on
+
+        return module_dir
 
     if WASM:
         compile_python_wrapper(
             run(["pyodide", "config", "get", "python_version"]),
             run(["pyodide", "config", "get", "python_include_dir"]),
+            # Needed because pyodide is expecting setup.py to be in the root.
+            package_install_dir=REPO_PATH,
         )
         # Copy setup.py where pyodide build system expects it.
         shutil.copy(REPO_PATH / "pyodide" / "setup.py", REPO_PATH)
@@ -2069,13 +2127,28 @@ if "IfcOpenShell-Python" in targets:
 
     elif USE_CURRENT_PYTHON_VERSION:
         python_info = sysconfig.get_paths()
-        compile_python_wrapper(platform.python_version(), python_info["include"], sys.executable)
+        if PYTHON_USER_SITE:
+            assert site.USER_SITE
+            package_install_dir = Path(site.USER_SITE)
+        else:
+            package_install_dir = Path(python_info["platlib"])
+        compile_python_wrapper(
+            platform.python_version(),
+            python_info["include"],
+            sys.executable,
+            package_install_dir=package_install_dir,
+        )
     else:
         for python_version in PYTHON_VERSIONS:
             python_version = python_consider_rc(python_version)
-            python_path = INSTALL_DIR / f"python-{python_version}"
-            module_dir = compile_python_wrapper(python_version, python_path=python_path)
-            assert module_dir
+            python_path = PYTHON_INSTALL_DIRS[python_version]
+            # Install to a staging dir, so the wrapper won't end up in the Python installation.
+            package_install_dir = Path(DEPS_DIR) / "install" / "ifcopenshell" / "tmp" / f"python-{python_version}"
+            if package_install_dir.exists():
+                shutil.rmtree(package_install_dir)
+            module_dir = compile_python_wrapper(
+                python_version, python_path=python_path, package_install_dir=package_install_dir
+            )
             # Not sure why, but added after reading this in the logs
             # cp: /Users/runner/work/IfcOpenShell/IfcOpenShell/build/Darwin/x86_64/10.15/install/ifcopenshell/python-3.9.11: No such file or directory
             # D'oh this was just due to a missing f-string f but doesn't hurt to keep it in.
@@ -2083,7 +2156,33 @@ if "IfcOpenShell-Python" in targets:
             dest.parent.mkdir(parents=True, exist_ok=True)
             if dest.exists():
                 shutil.rmtree(dest)
-            shutil.copytree(module_dir, dest)
+            shutil.move(module_dir, dest)
+
+if NATIVE_WASM:
+    logger.info("\rConfiguring standalone WASM targets...")
+    run_cmake(
+        "ifcopenshell",
+        ifcos_build_args
+        + [
+            # The standalone targets are driven by the generated C API, not SWIG.
+            "-DBUILD_IFCAPI=ON",
+            "-DBUILD_IFCPYTHON=OFF",
+            # WASM builds always regenerate the C API, which needs the `clang`
+            # bindings, so the discovery has to run in this interpreter.
+            f"-DPYTHON_EXECUTABLE={sys.executable}",
+            # `WASM_BUILD` defaults these to off because the pyodide flow ships no geometry.
+            "-DWITH_OPENCASCADE=ON",
+            "-DWITH_CGAL=ON",
+            "-DWITH_MANIFOLD=ON",
+        ]
+        + cmake_args
+        + get_cmake_args_prefix_path(),
+        cmake_dir=CMAKE_DIR,
+        cwd=ifcos_build_dir,
+    )
+
+    logger.info("\rBuilding wasm modules...   ")
+    cmake_build(ifcos_build_dir, ["ifcopenshell_wasm", "ifcopenshell_wasm_node"])
 
 Dependencies.write_install_dirs_json()
 
