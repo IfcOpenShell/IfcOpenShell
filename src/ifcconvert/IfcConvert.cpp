@@ -844,6 +844,7 @@ int main(int argc, char** argv) {
 		std::vector<double> offset(3);
 
 		ifcopenshell::geom::iterator tmp_context_iterator(ifcopenshell::geom::kernels::construct(ifc_file, geometry_kernel, settings, logger), settings, ifc_file, filter_funcs, num_threads, logger);
+		tmp_context_iterator.suppress_progress(no_progress);
 
 		time_t bounds_start, bounds_end;
 		time(&bounds_start);
@@ -889,6 +890,7 @@ int main(int argc, char** argv) {
 
 	std::unique_ptr<ifcopenshell::geom::iterator> context_iterator;
 	context_iterator.reset(new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(ifc_file, geometry_kernel, settings, logger), settings, ifc_file, filter_funcs, num_threads, logger));
+	context_iterator->suppress_progress(no_progress);
 
 	logger.message(ifcopenshell::logger::LOG_PERF, "file geometry conversion");
 
