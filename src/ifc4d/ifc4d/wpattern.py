@@ -141,7 +141,8 @@ class AstaCalendarWorkPattern:
 
             self.dict_wp.append(WorkSlot(DayOfWeek=day_name, WorkTimes=workhours, ifc=None))
 
-        # Add empty work times for missing week days.
-        missing_week_days = set(self.Days[self.lang]) - set(self.day_names)
+        # self.day_names is already translated to English, so the
+        # comparison set must be English too, not the source language.
+        missing_week_days = set(self.Days["en"]) - set(self.day_names)
         for day_name in missing_week_days:
             self.dict_wp.append(WorkSlot(DayOfWeek=day_name, WorkTimes=[], ifc=None))
