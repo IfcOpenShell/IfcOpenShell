@@ -29,7 +29,7 @@
 #include <cstring>
 #include <vector>
 
-void buildLods(SidecarData& sd,
+void buildLods(IfcViewData& sd,
                int min_triangles,
                float target_ratio,
                float target_error) {
@@ -177,7 +177,7 @@ void buildLods(SidecarData& sd,
 #endif
 }
 
-LodStats summariseLods(const SidecarData& sd) {
+LodStats summariseLods(const IfcViewData& sd) {
     LodStats s;
     s.meshes_total = static_cast<uint32_t>(sd.meshes.size());
     for (const auto& m : sd.meshes) {

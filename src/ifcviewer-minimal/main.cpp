@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
         "IfcOpenShell minimal wgpu IFC viewer");
     parser.addHelpOption();
     parser.addPositionalArgument("files",
-        "Sidecar (.ifcview) files to load. Stem-based: foo.ifc resolves to foo.ifcview.",
+        ".ifcview files to load. Stem-based: foo.ifc resolves to foo.ifcview.",
         "[files...]");
     parser.addOption({{"s", "screenshot"},
         "Render one frame, save to PATH as PNG, exit.", "path"});
@@ -72,10 +72,10 @@ int main(int argc, char* argv[]) {
     main_window.resize(1280, 800);
     main_window.show();
 
-    // Queue sidecars; they're loaded after wgpu init completes in
+    // Queue .ifcview files; they're loaded after wgpu init completes in
     // exposeEvent. Ordering matches the command line.
     for (const QString& path : parser.positionalArguments()) {
-        viewport->queueLoadSidecar(path.toStdString());
+        viewport->queueLoadIfcView(path.toStdString());
     }
 
     if (parser.isSet("camera")) {

@@ -173,6 +173,10 @@ class PsetQto:
                     if occurrence_class:
                         types = [occurrence_class.name()]
                 for ifc_type in types:
+                    # The generic classes may type any product or object, which
+                    # would make every type template applicable to every type.
+                    if ifc_type in ("IfcTypeProduct", "IfcTypeObject"):
+                        continue
                     if ifcopenshell.util.schema.is_a(entity, ifc_type):
                         return True
         return False
