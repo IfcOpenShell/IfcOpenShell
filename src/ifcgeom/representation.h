@@ -170,6 +170,10 @@ namespace ifcopenshell::geom {
 			int addVertex(int item_index, int material_index, double X, double Y, double Z);
 
 			void addNormal(double X, double Y, double Z) {
+				// Vertices of loose edges have no normal: pad so that normals stay aligned with verts.
+				if (normals_.size() + 3 < verts_.size()) {
+					normals_.resize(verts_.size() - 3, 0.);
+				}
 				normals_.push_back(X);
 				normals_.push_back(Y);
 				normals_.push_back(Z);
