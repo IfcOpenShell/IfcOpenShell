@@ -414,6 +414,33 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         assert not self.file.by_type("IfcRelDefinesByType")
         assert self.file.by_type("IfcWall")
 
+    def test_removing_many_elements_keeps_relationships_of_the_remaining_elements(self):
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        material = ifcopenshell.api.material.add_material(self.file, name="Foo")
+        walls = [ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall") for _ in range(4)]
+        ifcopenshell.api.spatial.assign_container(self.file, products=walls, relating_structure=storey)
+        ifcopenshell.api.type.assign_type(self.file, related_objects=walls, relating_type=element_type)
+        ifcopenshell.api.material.assign_material(self.file, products=walls, material=material)
+        ifcopenshell.api.root.remove_products(self.file, products=walls[:3])
+        assert self.file.by_type("IfcWall") == (walls[3],)
+        assert self.file.by_type("IfcRelContainedInSpatialStructure")[0].RelatedElements == (walls[3],)
+        assert self.file.by_type("IfcRelDefinesByType")[0].RelatedObjects == (walls[3],)
+        assert self.file.by_type("IfcRelAssociatesMaterial")[0].RelatedObjects == (walls[3],)
+
+    def test_removing_many_elements_and_their_type(self):
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        walls = [ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall") for _ in range(3)]
+        ifcopenshell.api.spatial.assign_container(self.file, products=walls, relating_structure=storey)
+        ifcopenshell.api.type.assign_type(self.file, related_objects=walls, relating_type=element_type)
+        ifcopenshell.api.root.remove_products(self.file, products=walls + [element_type])
+        assert not self.file.by_type("IfcWall")
+        assert not self.file.by_type("IfcWallType")
+        assert not self.file.by_type("IfcRelContainedInSpatialStructure")
+        assert not self.file.by_type("IfcRelDefinesByType")
+        assert self.file.by_type("IfcBuildingStorey")
+
     def test_removing_all_space_boundaries_of_an_element(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         boundary = self.file.createIfcRelSpaceBoundary(GlobalId=ifcopenshell.guid.new(), RelatedBuildingElement=element)
