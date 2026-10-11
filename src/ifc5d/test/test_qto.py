@@ -191,6 +191,25 @@ class TestEditQtos:
         assert quantity.LengthValue == pytest.approx(5000.0)
 
 
+class TestSegmentLength:
+    def test_length_of_a_boolean_clipped_extrusion(self):
+        f = ifcopenshell.file(schema="IFC4")
+        ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject", name="Test")
+        model = ifcopenshell.api.context.add_context(f, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        origin = f.createIfcAxis2Placement3D(f.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+        profile = f.createIfcCircleProfileDef("AREA", None, None, 0.05)
+        solid = f.createIfcExtrudedAreaSolid(profile, origin, f.createIfcDirection((0.0, 0.0, 1.0)), 5.05)
+        half_space = f.createIfcHalfSpaceSolid(f.createIfcPlane(origin), False)
+        clipped = f.createIfcBooleanClippingResult("DIFFERENCE", solid, half_space)
+        pipe = ifcopenshell.api.root.create_entity(f, ifc_class="IfcPipeSegment")
+        rep = f.createIfcShapeRepresentation(body, "Body", "Clipping", [clipped])
+        pipe.Representation = f.createIfcProductDefinitionShape(None, None, [rep])
+        assert ifc5d.qto.IfcOpenShell.get_segment_length(pipe) == pytest.approx(5.05)
+
+
 class TestEditQtosIntegration:
     """A real quantify() + edit_qtos() round trip, guarding against edit_qto's own
     class-inference disagreeing with get_quantity_measures()'s notion of measure.
