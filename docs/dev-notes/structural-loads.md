@@ -217,6 +217,19 @@ Statics problems state which magnitudes and directions are known and which are t
   and Edit Load's preview shows them moving.
 - Diagram labels of unlocked values carry 🔓.
 
+## 8. Tilted point axes
+
+Statics problems often resolve a force along axes tilted to an incline: parallel and square
+to a ceiling or a rafter. A point connection's own axes (`ConditionCoordinateSystem`) can
+already express this, but Bonsai's only editor for them turns an empty in 3D by Euler angles.
+
+- **Tilt Axes** on the Structural Connection panel sets them from one angle, x' turning up
+  from +X towards +Z, with z' square to it; the panel shows the tilt, or that the axes are
+  turned in 3D. `tool.Structural.get_axes_tilt` reads it back.
+- Loads draw a point's own axes, x' and z' dashed in the colours of their components, with an
+  arc for the tilt from +X. The existing local reference frame then shows components along
+  them.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
