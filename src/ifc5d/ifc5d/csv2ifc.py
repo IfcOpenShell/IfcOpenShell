@@ -21,7 +21,7 @@ from __future__ import annotations
 import csv
 import locale
 from pathlib import Path
-from typing import Optional, TypedDict, Union
+from typing import NotRequired, Optional, TypedDict, Union
 
 import ifcopenshell
 import ifcopenshell.api.control
@@ -31,7 +31,6 @@ import ifcopenshell.util.cost
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
 import ifcopenshell.util.unit
-from typing_extensions import NotRequired
 
 
 class CsvHeader(TypedDict):

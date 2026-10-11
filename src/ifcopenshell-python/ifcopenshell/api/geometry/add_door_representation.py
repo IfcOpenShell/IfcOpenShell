@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import dataclasses
 from math import cos, radians
-from typing import Any, Literal, Optional, Union, get_args, overload
+from typing import Any, Literal, get_args, overload
 
 import numpy as np
 
@@ -45,7 +45,7 @@ SUPPORTED_DOOR_TYPES = get_args(DOOR_TYPE)
 
 
 def create_ifc_door_lining(
-    builder: ShapeBuilder, size: np.ndarray, thickness: Union[list[float], float], position: Optional[np.ndarray] = None
+    builder: ShapeBuilder, size: np.ndarray, thickness: list[float] | float, position: np.ndarray | None = None
 ) -> ifcopenshell.entity_instance:
     """`thickness` of the profile is defined as list in the following order: `(SIDE, TOP)`
 
@@ -82,7 +82,7 @@ def create_ifc_door_lining(
 
 
 def create_ifc_box(
-    builder: ShapeBuilder, size: np.ndarray, position: Optional[np.ndarray] = None
+    builder: ShapeBuilder, size: np.ndarray, position: np.ndarray | None = None
 ) -> ifcopenshell.entity_instance:
     np_Z, np_XY = 2, slice(2)
     rect = builder.rectangle(size[np_XY])
@@ -96,25 +96,25 @@ def create_ifc_box(
 # it's okay to use slots since we don't need dynamic attributes
 @dataclasses.dataclass(slots=True)
 class DoorLiningProperties:
-    LiningDepth: Optional[float] = None
+    LiningDepth: float | None = None
     """Optional, defaults to 50mm."""
 
-    LiningThickness: Optional[float] = None
+    LiningThickness: float | None = None
     """Optional, defaults to 50mm."""
 
-    LiningOffset: Optional[float] = None
+    LiningOffset: float | None = None
     """Offset from the outer side of the wall (by Y-axis). Optional, defaults to 0.0."""
 
-    LiningToPanelOffsetX: Optional[float] = None
+    LiningToPanelOffsetX: float | None = None
     """Offset from the wall. Optional, defaults to 25mm."""
 
-    LiningToPanelOffsetY: Optional[float] = None
+    LiningToPanelOffsetY: float | None = None
     """Offset from the X-axis (unlike windows). Optional, defaults to 25mm."""
 
-    TransomThickness: Optional[float] = None
+    TransomThickness: float | None = None
     """Vertical distance between door and window panels. Optional, defaults to 0.0."""
 
-    TransomOffset: Optional[float] = None
+    TransomOffset: float | None = None
     """Distance from the bottom door opening
     to the beginning of the transom
     unlike windows TransomOffset which goes to the center of the transom.
@@ -123,23 +123,23 @@ class DoorLiningProperties:
     ShapeAspectStyle: None = None
     """Optional. Deprecated argument."""
 
-    CasingDepth: Optional[float] = None
+    CasingDepth: float | None = None
     """Casing cover wall faces around the opening
     on the left, right and upper sides
     Casing should be either on both sides of the wall or no casing
     If `LiningOffset` is present then therefore casing is not possible on outer wall
     therefore there will be no casing on inner wall either. Optional, defaults to 5mm."""
 
-    CasingThickness: Optional[float] = None
+    CasingThickness: float | None = None
     """Casing thickness by Z-axis. Optional, defaults to 75mm."""
 
-    ThresholdDepth: Optional[float] = None
+    ThresholdDepth: float | None = None
     """Threshold covers the bottom side of the opening. Optional, defaults to 100mm."""
 
-    ThresholdThickness: Optional[float] = None
+    ThresholdThickness: float | None = None
     """Theshold thickness by Z-axis. Optional, defaults to 25mm."""
 
-    ThresholdOffset: Optional[float] = None
+    ThresholdOffset: float | None = None
     """Threshold offset by Y-axis. Optional, defaults to 0.0."""
 
     def initialize_properties(self, unit_scale: float) -> None:
@@ -170,16 +170,16 @@ class DoorLiningProperties:
 
 @dataclasses.dataclass(slots=True)
 class DoorPanelProperties:
-    PanelDepth: Optional[float] = None
+    PanelDepth: float | None = None
     """Frame thickness by Y axis. Optional, defaults to 35 mm."""
 
     PanelWidth: float = 1.0
     """Ratio to the clear door opening. Optional, defaults to 1.0."""
 
-    FrameDepth: Optional[float] = None
+    FrameDepth: float | None = None
     """Frame thickness by Y axis. Optional, defaults to 35 mm."""
 
-    FrameThickness: Optional[float] = None
+    FrameThickness: float | None = None
     """Frame thickness by X axis. Optional, defaults to 35 mm."""
 
     PanelPosition: None = None
@@ -213,16 +213,16 @@ def add_door_representation(
     file: ifcopenshell.file,
     *,  # keywords only as this API implementation is probably not final
     context: ifcopenshell.entity_instance,
-    overall_height: Optional[float] = None,
-    overall_width: Optional[float] = None,
+    overall_height: float | None = None,
+    overall_width: float | None = None,
     # door type
     # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorTypeOperationEnum.htm
     operation_type: DOOR_TYPE = "SINGLE_SWING_LEFT",
-    lining_properties: Optional[Union[DoorLiningProperties, dict[str, Any]]] = None,
-    panel_properties: Optional[Union[DoorPanelProperties, dict[str, Any]]] = None,
-    part_of_product: Optional[ifcopenshell.entity_instance] = None,
-    unit_scale: Optional[float] = None,
-) -> Union[ifcopenshell.entity_instance, None]:
+    lining_properties: DoorLiningProperties | dict[str, Any] | None = None,
+    panel_properties: DoorPanelProperties | dict[str, Any] | None = None,
+    part_of_product: ifcopenshell.entity_instance | None = None,
+    unit_scale: float | None = None,
+) -> ifcopenshell.entity_instance | None:
     """Add a geometric representation for a door.
 
     units in usecase_settings expected to be in ifc project units
@@ -247,7 +247,6 @@ def add_door_representation(
     # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorPanelProperties.htm
     # define unit_scale first as it's going to be used setting default arguments
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file) if unit_scale is None else unit_scale
-    settings: dict[str, Any] = {"unit_scale": unit_scale}
 
     if lining_properties is None:
         lining_properties = DoorLiningProperties()
@@ -263,61 +262,67 @@ def add_door_representation(
     panel_properties.initialize_properties(unit_scale)
     panel_properties = dataclasses.asdict(panel_properties)
 
-    settings.update(
-        {
-            "context": context,
-            "overall_height": overall_height if overall_height is not None else usecase.convert_si_to_unit(2.0),
-            "overall_width": overall_width if overall_width is not None else usecase.convert_si_to_unit(0.9),
-            "operation_type": operation_type,
-            "lining_properties": lining_properties,
-            "panel_properties": panel_properties,
-            "part_of_product": part_of_product,
-        }
+    return usecase.execute(
+        context,
+        unit_scale,
+        overall_height,
+        overall_width,
+        operation_type,
+        lining_properties,
+        panel_properties,
+        part_of_product,
     )
-    usecase.settings = settings
-    return usecase.execute()
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
+    def execute(
+        self,
+        context: ifcopenshell.entity_instance,
+        unit_scale: float,
+        overall_height: float | None,
+        overall_width: float | None,
+        operation_type: DOOR_TYPE,
+        lining_properties: dict[str, Any],
+        panel_properties: dict[str, Any],
+        part_of_product: ifcopenshell.entity_instance | None,
+    ) -> ifcopenshell.entity_instance | None:
+        self.unit_scale = unit_scale
+        if overall_height is None:
+            overall_height = self.convert_si_to_unit(2.0)
+        if overall_width is None:
+            overall_width = self.convert_si_to_unit(0.9)
+
         builder = ShapeBuilder(self.file)
 
         np_X, np_Y, np_Z = 0, 1, 2
         np_XY = slice(2)
         np_YX = [1, 0]
 
-        overall_height: float = self.settings["overall_height"]
-        overall_width: float = self.settings["overall_width"]
-        door_type: DOOR_TYPE = self.settings["operation_type"]
-        double_swing_door = "DOUBLE_SWING" in door_type
-        double_door = "DOUBLE_DOOR" in door_type
-        sliding_door = "SLIDING" in door_type
+        double_swing_door = "DOUBLE_SWING" in operation_type
+        double_door = "DOUBLE_DOOR" in operation_type
+        sliding_door = "SLIDING" in operation_type
 
-        if self.settings["context"].TargetView == "ELEVATION_VIEW":
+        if context.TargetView == "ELEVATION_VIEW":
             rect = builder.rectangle((overall_width, 0, overall_height))
-            representation_evelevation = builder.get_representation(self.settings["context"], rect)
+            representation_evelevation = builder.get_representation(context, rect)
             return representation_evelevation
 
-        panel_props = self.settings["panel_properties"]
-        lining_props = self.settings["lining_properties"]
-
         # lining params
-        lining_depth: float = lining_props["LiningDepth"]
-        lining_thickness_default: float = lining_props["LiningThickness"]
-        lining_offset: float = lining_props["LiningOffset"]
+        lining_depth: float = lining_properties["LiningDepth"]
+        lining_thickness_default: float = lining_properties["LiningThickness"]
+        lining_offset: float = lining_properties["LiningOffset"]
         lining_to_panel_offset_x: float = (
-            lining_props["LiningToPanelOffsetX"] if not sliding_door else lining_thickness_default
+            lining_properties["LiningToPanelOffsetX"] if not sliding_door else lining_thickness_default
         )
-        panel_depth: float = panel_props["PanelDepth"]
+        panel_depth: float = panel_properties["PanelDepth"]
         lining_to_panel_offset_y_full: float = (
-            lining_props["LiningToPanelOffsetY"] if not sliding_door else -panel_depth
+            lining_properties["LiningToPanelOffsetY"] if not sliding_door else -panel_depth
         )
 
-        transom_thickness: float = lining_props["TransomThickness"] / 2
-        transfom_offset: float = lining_props["TransomOffset"]
+        transom_thickness: float = lining_properties["TransomThickness"] / 2
+        transfom_offset: float = lining_properties["TransomOffset"]
         if transom_thickness == 0:
             transfom_offset = 0
         window_lining_height = overall_height - transfom_offset - transom_thickness
@@ -332,18 +337,18 @@ class Usecase:
             side_lining_thickness = side_lining_thickness - panel_lining_overlap_x
             top_lining_thickness = top_lining_thickness - panel_top_lining_overlap_x
 
-        threshold_thickness: float = lining_props["ThresholdThickness"]
-        threshold_depth: float = lining_props["ThresholdDepth"]
-        threshold_offset: float = lining_props["ThresholdOffset"]
+        threshold_thickness: float = lining_properties["ThresholdThickness"]
+        threshold_depth: float = lining_properties["ThresholdDepth"]
+        threshold_offset: float = lining_properties["ThresholdOffset"]
         threshold_width = overall_width - side_lining_thickness * 2
 
-        casing_thickness: float = lining_props["CasingThickness"]
-        casing_depth: float = lining_props["CasingDepth"]
+        casing_thickness: float = lining_properties["CasingThickness"]
+        casing_depth: float = lining_properties["CasingDepth"]
 
         # panel params
-        panel_width: float = door_opening_width * panel_props["PanelWidth"]
-        frame_depth: float = panel_props["FrameDepth"]
-        frame_thickness: float = panel_props["FrameThickness"]
+        panel_width: float = door_opening_width * panel_properties["PanelWidth"]
+        frame_depth: float = panel_properties["FrameDepth"]
+        frame_thickness: float = panel_properties["FrameThickness"]
         frame_height = window_lining_height - lining_to_panel_offset_x * 2
         glass_thickness = self.convert_si_to_unit(0.01)
 
@@ -370,7 +375,7 @@ class Usecase:
             )
 
         # create 2d representation
-        if self.settings["context"].TargetView == "PLAN_VIEW":
+        if context.TargetView == "PLAN_VIEW":
             items_2d: list[ifcopenshell.entity_instance] = []
             panel_size = V(panel_width, panel_depth)
             if not sliding_door:
@@ -378,7 +383,7 @@ class Usecase:
             else:
                 panel_position = V(lining_to_panel_offset_x, -panel_size[np_Y])
 
-            if self.settings["context"].ContextIdentifier == "Annotation":
+            if context.ContextIdentifier == "Annotation":
                 # only sliding door has annotation representation
                 if not sliding_door:
                     return None
@@ -406,7 +411,7 @@ class Usecase:
 
                 items_2d.extend(arrow_symbol)
 
-                representation_2d = builder.get_representation(self.settings["context"], items_2d, "Curve2D")
+                representation_2d = builder.get_representation(context, items_2d, "Curve2D")
                 return representation_2d
 
             door_items: list[ifcopenshell.entity_instance] = []
@@ -493,12 +498,12 @@ class Usecase:
                     builder.mirror(door_items, mirror_axes=(1, 0), mirror_point=mirror_point, create_copy=True)
                 )
             else:
-                door_swing_type = "LEFT" if door_type.endswith("LEFT") else "RIGHT"
+                door_swing_type = "LEFT" if operation_type.endswith("LEFT") else "RIGHT"
                 door_items.extend(create_ifc_door_panel_2d(panel_size, panel_position, door_swing_type, sliding_door))
             items_2d.extend(door_items)
 
             builder.translate(items_2d, (0, lining_offset))
-            representation_2d = builder.get_representation(self.settings["context"], items_2d)
+            representation_2d = builder.get_representation(context, items_2d)
             return representation_2d
 
         lining_items: list[ifcopenshell.entity_instance] = []
@@ -602,7 +607,7 @@ class Usecase:
                 builder.mirror(door_items, mirror_axes=(1, 0), mirror_point=mirror_point[np_XY], create_copy=True)
             )
         else:
-            door_swing_type = "LEFT" if door_type.endswith("LEFT") else "RIGHT"
+            door_swing_type = "LEFT" if operation_type.endswith("LEFT") else "RIGHT"
             door_items.extend(create_ifc_door_panel(panel_size, panel_position, door_swing_type))
 
         # add on top window
@@ -640,21 +645,21 @@ class Usecase:
 
         output_items = lining_offset_items + threshold_items + casing_items
 
-        representation = builder.get_representation(self.settings["context"], output_items)
-        if self.settings["part_of_product"]:
+        representation = builder.get_representation(context, output_items)
+        if part_of_product:
             ifcopenshell.api.geometry.add_shape_aspect(
                 self.file,
                 "Lining",
                 items=lining_items + window_lining_items + threshold_items + casing_items,
                 representation=representation,
-                part_of_product=self.settings["part_of_product"],
+                part_of_product=part_of_product,
             )
             ifcopenshell.api.geometry.add_shape_aspect(
                 self.file,
                 "Framing",
                 items=door_items + frame_items,
                 representation=representation,
-                part_of_product=self.settings["part_of_product"],
+                part_of_product=part_of_product,
             )
             if glass_items:
                 ifcopenshell.api.geometry.add_shape_aspect(
@@ -662,7 +667,7 @@ class Usecase:
                     "Glazing",
                     items=glass_items,
                     representation=representation,
-                    part_of_product=self.settings["part_of_product"],
+                    part_of_product=part_of_product,
                 )
         return representation
 
@@ -670,6 +675,6 @@ class Usecase:
     def convert_si_to_unit(self, value: float) -> float: ...
     @overload
     def convert_si_to_unit(self, value: np.ndarray) -> np.ndarray: ...
-    def convert_si_to_unit(self, value: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-        si_conversion = 1 / self.settings["unit_scale"]
+    def convert_si_to_unit(self, value: float | np.ndarray) -> float | np.ndarray:
+        si_conversion = 1 / self.unit_scale
         return value * si_conversion

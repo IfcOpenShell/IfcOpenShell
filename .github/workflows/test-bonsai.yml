@@ -56,6 +56,13 @@ jobs:
         with:
           python-version: '3.13'
 
+      # Speeds up the build: common.mk builds bundled packages with `uv build` if available.
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
+      # Speeds up the build: ifctester unpacks Pyodide with multithreaded lbzip2 if available.
+      - name: Install lbzip2
+        run: sudo apt-get install -y lbzip2
+
       - name: Build the Bonsai extension from this checkout
         run: |
           cd src/bonsai && make dist PLATFORM=linux PYVERSION=${{ env.PYVERSION }}

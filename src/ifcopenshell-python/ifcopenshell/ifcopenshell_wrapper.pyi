@@ -17,9 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from collections.abc import Sequence
-from typing import Any, Literal, Union
-
-from typing_extensions import Self, Unpack
+from typing import Any, Literal, Self, Union
 
 import ifcopenshell.util.schema
 from ifcopenshell.entity_instance import entity_instance_mixin
@@ -122,7 +120,7 @@ class native(representation):
 class native_element(element):
     def __init__(
         self,
-        *args: Unpack[tuple[int, int, str, str, str, str, matrix4, native, entity_instance]],
+        *args: *tuple[int, int, str, str, str, str, matrix4, native, entity_instance],
     ): ...
     def calculate_projected_surface_area(self, along_x, along_y, along_z): ...
     @property
@@ -414,7 +412,7 @@ class serialization(representation):
     def surface_styles(self): ...
 
 class serialized_element(element):
-    def __init__(self, *args: Unpack[tuple[native_element]]): ...
+    def __init__(self, *args: *tuple[native_element]): ...
     @property
     def geometry(self) -> serialization: ...
 

@@ -90,13 +90,20 @@ class Material(bonsai.core.tool.Material):
     def import_material_definitions(cls, material_type: str) -> None:
         props = tool.Material.get_material_props()
 
-        # Store active category name to reselect it later.
-        # Occurs when we expand/contract all categories.
+        # Store active item to reselect it later.
+        # Occurs when we expand/contract all categories or reload due to a filter change.
         active_item = props.active_material
         previously_selected_category = None
-        if active_item and active_item.is_category:
-            previously_selected_category = active_item.name
+        previously_selected_material_id = None
+        if active_item:
+            if active_item.is_category:
+                previously_selected_category = active_item.name
+            elif active_item.ifc_definition_id and material_type == "IfcMaterial":
+                previously_selected_material_id = active_item.ifc_definition_id
+                if material := tool.Ifc.get_entity_by_id(previously_selected_material_id):
+                    previously_selected_category = cls.get_material_category(material)
 
+        should_load_all_materials = bool(props.material_filter.strip())
         expanded_categories = {m.name for m in props.materials if m.is_category and m.is_expanded}
         props.materials.clear()
         get_name = lambda x: x.Name or "Unnamed"
@@ -124,7 +131,7 @@ class Material(bonsai.core.tool.Material):
                 if previously_selected_category == category:
                     category_index_to_reselect = len(props.materials) - 1
 
-                for material in mats if cat.is_expanded else []:
+                for material in mats if cat.is_expanded or should_load_all_materials else []:
                     new = props.materials.add()
                     new["name"] = get_name(material)
                     new.ifc_definition_id = material.id()
@@ -133,7 +140,14 @@ class Material(bonsai.core.tool.Material):
                     )
                     new.has_style = bool(material.HasRepresentation)
 
-            if category_index_to_reselect is not None:
+            selected_material_index = None
+            for index, material in enumerate(props.materials):
+                if material.ifc_definition_id == previously_selected_material_id:
+                    selected_material_index = index
+                    break
+            if selected_material_index is not None:
+                props.active_material_index = selected_material_index
+            elif category_index_to_reselect is not None:
                 props.active_material_index = category_index_to_reselect
         else:
             for material in materials:

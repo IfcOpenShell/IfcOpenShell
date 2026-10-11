@@ -151,7 +151,7 @@ echo     to your Python installation path.
 call cecho.cmd 0 13 "* IFCOS_INSTALL_QT6`t= %IFCOS_INSTALL_QT6%"
 echo   - Download and install Qt6 using aqtinstall.
 echo     Set to something other than TRUE if you wish to use an already installed version of Qt6.
-echo     But then you'll need to set QT_DIR env variable to your Qt6 installation before running run-cmake.bat.
+echo     But then you'll need to set QT6_INSTALL_DIR env variable to your Qt6 installation before running run-cmake.bat.
 call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo   - How many MSBuild.exe processes may be run in parallel.
 echo     Defaults to NUMBER_OF_PROCESSORS. Used also by other IfcOpenShell build scripts.
@@ -731,23 +731,19 @@ IF /I "%VS_TOOLSET%"=="v143" set QT6_MSVC_YEAR=2022
 IF /I "%VS_TOOLSET%"=="v145" set QT6_MSVC_YEAR=2022
 IF "%VS_VER%"=="2026" set QT6_MSVC_YEAR=2022
 
+set QT6_HOST=
 set QT6_ARCH=
 set QT6_INSTALL_SUFFIX=
-set QT6_HOST_ARCH=
-set QT6_HOST_INSTALL_SUFFIX=
 IF /I "%VS_PLATFORM%"=="x64" (
+    set QT6_HOST=windows
     set QT6_ARCH=win64_msvc%QT6_MSVC_YEAR%_64
     set QT6_INSTALL_SUFFIX=msvc%QT6_MSVC_YEAR%_64
 )
 IF /I "%VS_PLATFORM%"=="arm64" (
-    set QT6_ARCH=win64_msvc%QT6_MSVC_YEAR%_arm64_cross_compiled
+    REM Native Windows on Arm Qt (with arm64 host tools), requires an arm64 build machine.
+    set QT6_HOST=windows_arm64
+    set QT6_ARCH=win64_msvc%QT6_MSVC_YEAR%_arm64
     set QT6_INSTALL_SUFFIX=msvc%QT6_MSVC_YEAR%_arm64
-    REM Qt publishes Windows ARM64 packages as cross-compiled Qt. Even on the
-    REM windows-11-arm runner, Qt CMake requires host tools such as moc/rcc.
-    REM Use the x64 host tools; Windows 11 on Arm runs them through x64
-    REM emulation while cl.exe still builds ARM64 binaries against target Qt.
-    set QT6_HOST_ARCH=win64_msvc%QT6_MSVC_YEAR%_64
-    set QT6_HOST_INSTALL_SUFFIX=msvc%QT6_MSVC_YEAR%_64
 )
 
 IF "%QT6_ARCH%"=="" (
@@ -758,15 +754,6 @@ IF "%QT6_ARCH%"=="" (
 set DEPENDENCY_INSTALL_NAME=qt6-%QT6_VERSION%-%QT6_INSTALL_SUFFIX%
 set QT6_AQT_OUTPUT_DIR=%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%
 set QT6_INSTALL_DIR=%QT6_AQT_OUTPUT_DIR%\%QT6_VERSION%\%QT6_INSTALL_SUFFIX%
-set QT_DIR=%QT6_INSTALL_DIR%
-set QT6_HOST_AQT_OUTPUT_DIR=
-set QT6_HOST_INSTALL_DIR=
-set QT_HOST_PATH=
-IF NOT "%QT6_HOST_INSTALL_SUFFIX%"=="" (
-    set QT6_HOST_AQT_OUTPUT_DIR=%INSTALL_DIR%\qt6-%QT6_VERSION%-%QT6_HOST_INSTALL_SUFFIX%
-    set QT6_HOST_INSTALL_DIR=%INSTALL_DIR%\qt6-%QT6_VERSION%-%QT6_HOST_INSTALL_SUFFIX%\%QT6_VERSION%\%QT6_HOST_INSTALL_SUFFIX%
-    set QT_HOST_PATH=%INSTALL_DIR%\qt6-%QT6_VERSION%-%QT6_HOST_INSTALL_SUFFIX%\%QT6_VERSION%\%QT6_HOST_INSTALL_SUFFIX%
-)
 set QT6_CONFIG_DLL=Qt6Core.dll
 IF /I "%BUILD_CFG%"=="Debug" (
     set QT6_CONFIG_DLL=Qt6Cored.dll
@@ -779,23 +766,16 @@ IF NOT "%IFCOS_INSTALL_QT6%"=="TRUE" (
 )
 
 echo QT6_INSTALL_DIR=%QT6_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-echo QT_DIR=%QT_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-IF DEFINED QT6_HOST_INSTALL_DIR (
-    echo QT6_HOST_INSTALL_DIR=%QT6_HOST_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-    echo QT_HOST_PATH=%QT_HOST_PATH%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+
+:: TODO: drop this TRANSITION check once ARM64 dependency caches no longer contain the
+:: cross-compiled Qt, which was installed at the same path as the native one.
+IF EXIST "%QT6_INSTALL_DIR%\bin\target_qt.conf" (
+    echo Removing cross-compiled Qt at "%QT6_AQT_OUTPUT_DIR%" to replace it with native Qt.
+    rmdir /s /q "%QT6_AQT_OUTPUT_DIR%"
 )
 
-set QT6_TARGET_INSTALLED=FALSE
-IF EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" IF EXIST "%QT6_INSTALL_DIR%\bin\%QT6_CONFIG_DLL%" IF EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6Svg\Qt6SvgConfig.cmake" set QT6_TARGET_INSTALLED=TRUE
-set QT6_HOST_INSTALLED=TRUE
-IF DEFINED QT6_HOST_INSTALL_DIR (
-    set QT6_HOST_INSTALLED=FALSE
-    IF EXIST "%QT6_HOST_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" IF EXIST "%QT6_HOST_INSTALL_DIR%\bin\moc.exe" IF EXIST "%QT6_HOST_INSTALL_DIR%\bin\rcc.exe" IF EXIST "%QT6_HOST_INSTALL_DIR%\lib\cmake\Qt6Svg\Qt6SvgConfig.cmake" set QT6_HOST_INSTALLED=TRUE
-)
-
-IF "%QT6_TARGET_INSTALLED%"=="TRUE" IF "%QT6_HOST_INSTALLED%"=="TRUE" (
+IF EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" IF EXIST "%QT6_INSTALL_DIR%\bin\%QT6_CONFIG_DLL%" IF EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6Svg\Qt6SvgConfig.cmake" (
     echo Found existing "%QT6_INSTALL_DIR%" for %BUILD_CFG%, skipping
-    IF DEFINED QT6_HOST_INSTALL_DIR echo Found existing Qt host tools at "%QT6_HOST_INSTALL_DIR%", skipping
     goto %NEXT_DEPENDENCY_LABEL%
 )
 
@@ -805,25 +785,14 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" set AQT_PYTHON="%PYTHONHOME%\python.exe"
 %AQT_PYTHON% -m pip install --upgrade aqtinstall
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
-IF NOT "%QT6_TARGET_INSTALLED%"=="TRUE" (
-    REM Keep the install lean by filtering archives: qtbase provides
-    REM Core/Gui/Widgets (and the Qt6::CorePrivate target), qtsvg provides
-    REM Qt6::Svg. Both are base-Qt archives, not add-on modules.
-    REM Qt's official archives always bundle both RelWithDebInfo and Debug builds together.
-    REM aqtinstall has no option to download only one of them, or other configs
-    REM (Release/MinSizeRel) instead.
-    %AQT_PYTHON% -m aqt install-qt windows desktop %QT6_VERSION% %QT6_ARCH% -O "%QT6_AQT_OUTPUT_DIR%" --archives qtbase qtsvg
-    IF ERRORLEVEL 1 GOTO :Error
-)
-
-IF DEFINED QT6_HOST_INSTALL_DIR (
-    IF NOT "%QT6_HOST_INSTALLED%"=="TRUE" (
-        REM windeployqt runs from the host Qt when cross-compiling ARM64, so the
-        REM host Qt needs qtsvg too to deploy the Bonsai Viewer's Qt6Svg dependency.
-        %AQT_PYTHON% -m aqt install-qt windows desktop %QT6_VERSION% %QT6_HOST_ARCH% -O "%QT6_HOST_AQT_OUTPUT_DIR%" --archives qtbase qtsvg
-        IF ERRORLEVEL 1 GOTO :Error
-    )
-)
+:: Keep the install lean by filtering archives: qtbase provides
+:: Core/Gui/Widgets (and the Qt6::CorePrivate target), qtsvg provides
+:: Qt6::Svg. Both are base-Qt archives, not add-on modules.
+:: Qt's official archives always bundle both RelWithDebInfo and Debug builds together.
+:: aqtinstall has no option to download only one of them, or other configs
+:: (Release/MinSizeRel) instead.
+%AQT_PYTHON% -m aqt install-qt %QT6_HOST% desktop %QT6_VERSION% %QT6_ARCH% -O "%QT6_AQT_OUTPUT_DIR%" --archives qtbase qtsvg
+IF ERRORLEVEL 1 GOTO :Error
 
 IF NOT EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" (
     call cecho.cmd 0 12 "Qt6 installation did not produce Qt6Config.cmake at %QT6_INSTALL_DIR%."
@@ -838,21 +807,6 @@ IF NOT EXIST "%QT6_INSTALL_DIR%\bin\%QT6_CONFIG_DLL%" (
 IF NOT EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6Svg\Qt6SvgConfig.cmake" (
     call cecho.cmd 0 12 "Qt6 installation did not produce the Qt6 Svg module at %QT6_INSTALL_DIR%."
     GOTO :Error
-)
-
-IF DEFINED QT6_HOST_INSTALL_DIR (
-    IF NOT EXIST "%QT6_HOST_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" (
-        call cecho.cmd 0 12 "Qt6 host installation did not produce Qt6Config.cmake at %QT6_HOST_INSTALL_DIR%."
-        GOTO :Error
-    )
-    IF NOT EXIST "%QT6_HOST_INSTALL_DIR%\bin\moc.exe" (
-        call cecho.cmd 0 12 "Qt6 host installation did not produce moc.exe at %QT6_HOST_INSTALL_DIR%\bin."
-        GOTO :Error
-    )
-    IF NOT EXIST "%QT6_HOST_INSTALL_DIR%\bin\rcc.exe" (
-        call cecho.cmd 0 12 "Qt6 host installation did not produce rcc.exe at %QT6_HOST_INSTALL_DIR%\bin."
-        GOTO :Error
-    )
 )
 
 goto %NEXT_DEPENDENCY_LABEL%
