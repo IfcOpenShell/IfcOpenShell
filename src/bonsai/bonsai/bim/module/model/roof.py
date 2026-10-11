@@ -89,7 +89,11 @@ class GenerateHippedRoof(bpy.types.Operator, tool.Ifc.Operator):
             self.report(op_status, error_message)
             return {"CANCELLED"}
 
-        generate_hipped_roof_bmesh(bm, self.mode, self.height, self.angle)
+        try:
+            generate_hipped_roof_bmesh(bm, self.mode, self.height, self.angle)
+        except ValueError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
         tool.Blender.apply_bmesh(obj.data, bm)
         return {"FINISHED"}
 
@@ -146,7 +150,11 @@ def generate_hipped_roof_bmesh(
             boundary_lines.append(shapely.LineString([v.co for v in edge.verts]))
 
         unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+        if not hasattr(unioned_boundaries, "geoms"):
+            raise ValueError("Roof footprint doesn't form a closed polygon.")
         closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
+        if not closed_polygons.geoms:
+            raise ValueError("Roof footprint doesn't form a closed polygon.")
 
         # find the polygon with the biggest area
         roof_polygon = max(closed_polygons.geoms, key=lambda polygon: polygon.area)
