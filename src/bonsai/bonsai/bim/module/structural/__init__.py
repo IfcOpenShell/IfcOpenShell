@@ -47,6 +47,7 @@ classes = (
     operator.EnableEditingStructuralConnectionCS,
     operator.DisableEditingStructuralConnectionCS,
     operator.EditStructuralConnectionCS,
+    operator.TiltStructuralConnectionAxes,
     operator.AssignStructuralLoadCase,
     operator.AddStructuralLoadCase,
     operator.UnassignStructuralLoadCase,

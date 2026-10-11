@@ -648,6 +648,37 @@ class ShaderInfo:
             if props.show_force_slopes:
                 self.add_force_slope(location, tip, size, (1, 1, 1, 1), avoid=side)
         self.add_reference_axes(reference_axes, size)
+        if not np.allclose(rotation, np.eye(3)):
+            self.add_point_axes(location, rotation, size)
+
+    def add_point_axes(self, location: np.ndarray, rotation: np.ndarray, size: float) -> None:
+        """Mark a point's own axes, x' and z' coloured as their components, and their tilt from +X if in X-Z"""
+        for k, name, color in ((0, "x′", (1, 0.35, 0.35, 1)), (2, "z′", (0.4, 0.55, 1, 1))):
+            axis = rotation[:, k]
+            self.add_dashed_line(location - axis * size * 0.3, location + axis * size * 0.85, size, color)
+            self.text_info.append(
+                {"position": location + axis * size * 0.85, "text": name, "color": color, "away": axis}
+            )
+        x_axis = rotation[:, 0]
+        if abs(x_axis[1]) > 1e-6:
+            return  # Turned out of the X-Z plane, so one tilt does not describe it.
+        tilt = np.degrees(np.arctan2(x_axis[2], x_axis[0]))
+        if abs(tilt) < 0.01:
+            return
+        # The tilt from +X, as an arc like the force angles, with +X marked where it starts.
+        radius, color = size * 0.12, (1, 0.35, 0.35, 1)
+        self.add_dashed_line(location, location + np.array((size * 0.2, 0, 0)), size, color)
+        steps = max(4, int(abs(tilt) / 5))
+        points = [
+            location + radius * np.array((np.cos(a), 0, np.sin(a))) for a in np.radians(np.linspace(0, tilt, steps + 1))
+        ]
+        for a, b in zip(points, points[1:]):
+            self.add_dashed_line(a, b, size, color, dashed=False)
+        middle = np.radians(tilt / 2)
+        outward = np.array((np.cos(middle), 0, np.sin(middle)))
+        self.text_info.append(
+            {"position": location + radius * outward, "text": f"{abs(tilt):.1f}°", "color": color, "away": outward}
+        )
 
     def get_unknown_marks(self, activity: Union[int, None]) -> tuple[str, str]:
         """Marks for an applied load's magnitude and direction labels, if they are unknown: to be found"""

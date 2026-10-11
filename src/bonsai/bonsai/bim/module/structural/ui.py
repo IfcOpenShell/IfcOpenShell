@@ -412,6 +412,11 @@ class BIM_PT_structural_connection(Panel):
                 row = self.layout.row(align=True)
                 row.prop(self.props, "ccs_z_angle", text="Z Angle")
             else:
+                # Tilted in the X-Z plane, as statics problems tilt axes along an incline, or turned in 3D.
+                tilt = tool.Structural.get_axes_tilt(tool.Ifc.get_entity(obj))
+                row = self.layout.row(align=True)
+                row.label(text=f"Axes Tilt: {tilt:.1f}°" if tilt is not None else "Axes Turned in 3D")
+                row.operator("bim.tilt_structural_connection_axes", text="", icon="GREASEPENCIL")
                 row = self.layout.row()
                 row.operator(
                     "bim.enable_editing_structural_connection_cs", text="Edit Connection CS", icon="GREASEPENCIL"
