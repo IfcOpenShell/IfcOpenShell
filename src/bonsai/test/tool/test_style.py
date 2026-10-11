@@ -122,6 +122,27 @@ class TestGetElementsByStyle(NewFile):
         assert subject.get_elements_by_style(style) == {element}
 
 
+class TestActivateExternalStyle(NewFile):
+    @pytest.mark.parametrize(
+        "location, identification, message",
+        [
+            (None, "Material/Shiny", "Location is not set"),
+            ("style.blend", None, "Identification must be"),
+            ("style.blend", "Shiny", "Identification must be"),
+        ],
+    )
+    def test_bad_external_style_data_is_reported(self, location, identification, message):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        external = ifc.createIfcExternallyDefinedSurfaceStyle(
+            Location=location, Identification=identification, Name="Shiny"
+        )
+        style = ifc.createIfcSurfaceStyle(Name="Shiny", Side="BOTH", Styles=[external])
+        tool.Ifc.link(style, bpy.data.materials.new("Shiny"))
+        with pytest.raises(RuntimeError, match=message):
+            bpy.ops.bim.activate_external_style(material_name="Shiny")
+
+
 class TestGetName(NewFile):
     def test_run(self):
         assert subject.get_name(bpy.data.materials.new("Material")) == "Material"
