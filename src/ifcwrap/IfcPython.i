@@ -207,6 +207,7 @@
 %ignore MaxOffset;
 %ignore MaxOffsetDeviation;
 %ignore ApplyOffset;
+%ignore ApproximateSweptSolids;
 %ignore SvgRidgeAngleMinDegrees;
 %ignore SvgValleyAngleMinDegrees;
 %ignore SvgEmitFlushEdges;

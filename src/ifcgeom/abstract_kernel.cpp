@@ -40,10 +40,52 @@ bool ifcopenshell::geom::kernels::abstract_kernel::convert(const taxonomy::ptr i
 	auto without_exception_handling = [](auto fn) {
 		return fn();
 	};
+	// Tessellated-shell approximation of a swept solid, so kernels without a native sweep (cgal) can consume it.
+	auto try_sweep_approximation = [&]() -> std::optional<bool> {
+		auto swp = taxonomy::dcast<taxonomy::sweep_along_curve>(item);
+		if (!swp) {
+			return std::nullopt;
+		}
+		auto shell = swp->as_shell(
+			settings_.get<settings::CircleSegments>().get(),
+			settings_.get<settings::MesherLinearDeflection>().get());
+		if (!shell) {
+			return std::nullopt;
+		}
+		return dispatch_conversion<0>::dispatch(this, shell->kind(), shell, results);
+	};
+
+	// Tessellated-shell approximation of a loft, so kernels without a native loft (cgal) can consume it.
+	auto try_loft_approximation = [&]() -> std::optional<bool> {
+		auto lft = taxonomy::dcast<taxonomy::loft>(item);
+		if (!lft) {
+			return std::nullopt;
+		}
+		auto shell = lft->as_shell();
+		if (!shell) {
+			return std::nullopt;
+		}
+		shell->matrix = lft->matrix;
+		return dispatch_conversion<0>::dispatch(this, shell->kind(), shell, results);
+	};
+
 	auto process_with_upgrade = [&]() {
+		// Forced approximation mode: applies to every kernel (including opencascade).
+		if (settings_.get<settings::ApproximateSweptSolids>().get()) {
+			if (auto res = try_sweep_approximation()) {
+				return *res;
+			}
+		}
 		try {
 			return dispatch_conversion<0>::dispatch(this, item->kind(), item, results);
 		} catch (const not_implemented_error&) {
+			// No native conversion: approximate a swept solid or loft as a tessellated shell before giving up.
+			if (auto res = try_sweep_approximation()) {
+				return *res;
+			}
+			if (auto res = try_loft_approximation()) {
+				return *res;
+			}
 			return dispatch_with_upgrade<0>::dispatch(this, item, results);
 		}
 	};
