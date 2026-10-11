@@ -698,6 +698,14 @@ class TestUsingArrays(NewFile):
         assert ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array") is None
 
 
+class TestEnableEditingExtrusionProfile(NewFile):
+    def test_slab_without_an_extrusion_is_ignored(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.primitive_cube_add()
+        bpy.ops.bim.assign_class(ifc_class="IfcSlab", predefined_type="FLOOR")
+        assert bpy.ops.bim.enable_editing_extrusion_profile() == {"FINISHED"}
+
+
 class TestApplyIfcMaterialChanges(NewFile):
     def get_used_styles(self, obj: bpy.types.Object) -> set[ifcopenshell.entity_instance]:
         ifc_file = tool.Ifc.get()
