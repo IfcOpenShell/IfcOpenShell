@@ -2,6 +2,8 @@
 # /// script
 # [tool.ty.environment]
 # root = ["."]
+# # `common` lives in `win/`, which is put on `sys.path` at runtime below.
+# extra-paths = ["../win"]
 # ///
 
 import argparse
@@ -11,8 +13,11 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Literal, NamedTuple
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "win"))
 
 from common import (
     REPO_ROOT,
