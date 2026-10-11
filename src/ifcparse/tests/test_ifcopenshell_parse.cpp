@@ -11,6 +11,7 @@
 #include <plugin/plugin.h>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 TEST_CASE("SPF strings can be encoded and decoded", "[ifcparse]") {
@@ -621,6 +622,50 @@ TEST_CASE("Lazy loading yields the same instances, attributes, inverses and Glob
     }
     check_lazy_matches_strict(path.string());
     std::filesystem::remove(path);
+}
+
+TEST_CASE("Lazy loading materialises instances from several threads at once", "[ifcparse]") {
+    const std::string path = std::string(IFCOPENSHELL_TEST_FIXTURES) + "/ColumnPSetsOfSets.ifc";
+    ifcopenshell::file strict(path);
+    REQUIRE(strict.good());
+    std::vector<std::pair<int, std::string>> expected;
+    for (auto it = strict.begin(); it != strict.end(); ++it) {
+        std::ostringstream s;
+        it->second.to_string(s);
+        expected.emplace_back((int)it->second.id(), s.str());
+    }
+
+    ifcopenshell::file lazy(ifcopenshell::uninitialized_tag{});
+    lazy.lazy_loading(true);
+    REQUIRE(lazy.initialize(path));
+    REQUIRE(lazy.lazy_loading());
+
+    // Every thread reads every instance, in a different order, so most
+    // instances are reached by several threads at once (the geometry
+    // iterator's threads do this to the placements and representations).
+    constexpr size_t thread_count = 8;
+    std::vector<std::vector<std::string>> seen(thread_count, std::vector<std::string>(expected.size()));
+    std::vector<std::thread> threads;
+    for (size_t t = 0; t < thread_count; ++t) {
+        threads.emplace_back([&, t]() {
+            for (size_t k = 0; k < expected.size(); ++k) {
+                // Each thread walks the instances from its own start, the odd ones backwards.
+                const size_t rotated = (k + t * expected.size() / thread_count) % expected.size();
+                const size_t i = t % 2 == 0 ? rotated : expected.size() - 1 - rotated;
+                std::ostringstream s;
+                lazy.instance_by_id(expected[i].first).to_string(s);
+                seen[t][i] = s.str();
+            }
+        });
+    }
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    for (size_t t = 0; t < thread_count; ++t) {
+        for (size_t i = 0; i < expected.size(); ++i) {
+            REQUIRE(seen[t][i] == expected[i].second);
+        }
+    }
 }
 
 TEST_CASE("Lazy loading passes over a stray keyword like the full parser and falls back on what the index pass rejects", "[ifcparse]") {

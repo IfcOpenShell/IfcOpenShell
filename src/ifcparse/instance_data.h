@@ -42,7 +42,9 @@
 #include <cstring>
 
 #include <boost/optional.hpp>
+#include <atomic>
 #include <memory>
+#include <new>
 #include <optional>
 #include <boost/logic/tribool.hpp>
 #include <boost/dynamic_bitset.hpp>
@@ -250,6 +252,61 @@ struct pack_to_variant_array<parameter_pack<Args...>> {
 };
 
 using in_memory_attribute_storage = pack_to_variant_array<type_variant_parameter_pack>::type;
+
+// An instance's attribute storage, or nothing yet: a lazily indexed
+// instance has none until it is first read (instance_data::ensure_loaded).
+// The same 16 bytes as the std::optional it replaces, with the engaged
+// flag atomic: the thread that materialises the attributes stores them
+// and then publishes with a release store, so a thread that sees the
+// storage through the acquire load in has_value() sees the attributes
+// complete. The interface is the part of std::optional the instance used.
+class optional_attribute_storage {
+  public:
+    optional_attribute_storage() = default;
+    optional_attribute_storage(in_memory_attribute_storage&& value) {
+        emplace(std::move(value));
+    }
+    optional_attribute_storage(const optional_attribute_storage&) = delete;
+    optional_attribute_storage& operator=(const optional_attribute_storage&) = delete;
+    ~optional_attribute_storage() {
+        reset();
+    }
+    bool has_value() const {
+        return engaged_.load(std::memory_order_acquire);
+    }
+    explicit operator bool() const {
+        return has_value();
+    }
+    in_memory_attribute_storage& operator*() {
+        return *std::launder(reinterpret_cast<in_memory_attribute_storage*>(bytes_));
+    }
+    const in_memory_attribute_storage& operator*() const {
+        return *std::launder(reinterpret_cast<const in_memory_attribute_storage*>(bytes_));
+    }
+    in_memory_attribute_storage* operator->() {
+        return &**this;
+    }
+    const in_memory_attribute_storage* operator->() const {
+        return &**this;
+    }
+    // Takes `value` as the storage and publishes it.
+    in_memory_attribute_storage& emplace(in_memory_attribute_storage&& value) {
+        reset();
+        new (bytes_) in_memory_attribute_storage(std::move(value));
+        engaged_.store(true, std::memory_order_release);
+        return **this;
+    }
+    void reset() {
+        if (engaged_.load(std::memory_order_acquire)) {
+            engaged_.store(false, std::memory_order_relaxed);
+            (**this).~in_memory_attribute_storage();
+        }
+    }
+
+  private:
+    alignas(in_memory_attribute_storage) unsigned char bytes_[sizeof(in_memory_attribute_storage)];
+    std::atomic<bool> engaged_{false};
+};
 
 // argument_type enumerates the members of type_variant_parameter_pack in
 // order, so a member maps back to the type stored for it.
@@ -553,7 +610,7 @@ class IFC_PARSE_API instance_data {
 
   public:
       // Since rocks_db_attribute_storage has no members this is not a variant<in_memory, rocks> but an optional in_memory storage, where an empty optional means a rocks_db_attribute_storage is constructed on the fly given the context from instance data.
-      mutable std::optional<in_memory_attribute_storage> storage_;
+      mutable optional_attribute_storage storage_;
 
       // Lazy loading: parses the attributes from the file's retained source
       // if this instance was indexed lazily and has not been accessed yet.
@@ -563,7 +620,7 @@ class IFC_PARSE_API instance_data {
       // markers, are filled in by the file storage on first access.
       struct lazy_tag {};
       instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, lazy_tag)
-          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::nullopt)
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_()
       {
       }
       friend struct ifcopenshell::impl::in_memory_file_storage;
@@ -591,7 +648,7 @@ class IFC_PARSE_API instance_data {
       }
 
       instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, rocks_db_attribute_storage&& storage)
-          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::nullopt)
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_()
       {
           static_cast<void>(storage);
           populate_derived_();

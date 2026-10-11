@@ -45,6 +45,10 @@
 #include <unordered_map>
 #include <functional>
 #include <thread>
+#include <mutex>
+#include <array>
+#include <memory>
+#include <iterator>
 #include <exception>
 #include <cstdlib>
 
@@ -555,9 +559,11 @@ class list_consumer {
     static constexpr bool decode_values = true;
     static constexpr bool keep_keywords = true;
 
-    list_consumer(ifcopenshell::impl::in_memory_file_storage& storage, ifcopenshell::logger& logger)
+    list_consumer(ifcopenshell::impl::in_memory_file_storage& storage, ifcopenshell::logger& logger, bool register_inverses = true, std::vector<shared_pointer_type>* typed_values = nullptr)
         : storage_(storage)
-        , logger_(logger) {}
+        , logger_(logger)
+        , register_inverses_(register_inverses)
+        , typed_values_(typed_values != nullptr ? *typed_values : storage.read_simple_type_instances) {}
 
     // Opens the list of `declaration`. `instance_name` and `entity` are the
     // owning entity instance's, for the inverse records; `attribute_index`
@@ -614,7 +620,7 @@ class list_consumer {
             return true;
         }
         frame& f = frames_.back();
-        if (f.what != kind::skip && entity_ && instance_name_) {
+        if (register_inverses_ && f.what != kind::skip && entity_ && instance_name_) {
             storage_.register_inverse((unsigned)*instance_name_, entity_, (int)name, reference_attribute(f));
         }
         if (frame* t = target()) {
@@ -897,7 +903,7 @@ class list_consumer {
             }
             // A typed value: its own instance, as load() made it.
             auto data = ifcopenshell::make_pointer_type<instance_data>(storage_.file, declaration, (declaration && declaration->as_entity()) ? (uint32_t)instance_name_.value_or(0) : 0, std::move(values));
-            storage_.read_simple_type_instances.push_back(data);
+            typed_values_.push_back(data);
             frame& parent = frames_.back();
             if (parent.what == kind::list) {
                 parent.values->set(parent.attribute, express::base(data));
@@ -912,6 +918,8 @@ class list_consumer {
 
     ifcopenshell::impl::in_memory_file_storage& storage_;
     ifcopenshell::logger& logger_;
+    bool register_inverses_;
+    std::vector<shared_pointer_type>& typed_values_;
     std::vector<frame> frames_;
     std::optional<size_t> instance_name_;
     const ifcopenshell::entity* entity_ = nullptr;
@@ -950,18 +958,17 @@ Storage ifcopenshell::impl::in_memory_file_storage::load_attributes(
     std::optional<size_t> entity_instance_name,
     const ifcopenshell::declaration* declaration,
     const ifcopenshell::entity* entity,
-    int attribute_index
+    int attribute_index,
+    bool register_inverses,
+    std::vector<shared_pointer_type>* typed_values
 ) {
-    list_consumer<Reader> consumer(*this, logger_.get());
+    list_consumer<Reader> consumer(*this, logger_.get(), register_inverses, typed_values);
     consumer.start(entity_instance_name, declaration, entity, attribute_index);
     tokens->scan(consumer);
     return consumer.finish();
 }
 
 void ifcopenshell::impl::in_memory_file_storage::register_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, int inst_id, int attribute_index) {
-    if (!register_inverses_) {
-        return;
-    }
     // Assume a check on token type has already been performed
     byref_excl_.add((uint32_t)inst_id, (uint32_t)id_from, (uint16_t)from_entity->index_in_schema(), attribute_index);
 }
@@ -2577,8 +2584,11 @@ void ifcopenshell::impl::in_memory_file_storage::resolve_instance_references(con
     if (!data->storage_) {
         return;
     }
-    auto& slots = *data->storage_;
-    const uint32_t owner = data->id();
+    resolve_instance_references(*data->storage_, data->id(), bypassed);
+}
+
+template <typename Storage>
+void ifcopenshell::impl::in_memory_file_storage::resolve_instance_references(Storage& slots, uint32_t owner, const std::vector<unsigned>& bypassed) {
     // Looks the name up; false, with the error logged, if it is missing.
     // A bypassed name is dropped silently, as the reference table does.
     const auto resolve = [&](const instance_reference& reference, size_t attribute_index, express::base& result) {
@@ -2835,11 +2845,68 @@ struct attribute_consumer {
 
 }
 
+// The retained file of a lazily indexed storage. A worker is a paged
+// reader over it with its own page cache and the lexer on that reader;
+// the index runs on one, and every thread that materialises an instance
+// leases one for the duration, so no page cache is ever shared between
+// threads. Workers go back to the pool when their lease ends, so a file
+// read from n threads holds n of them.
 struct ifcopenshell::impl::in_memory_file_storage::lazy_source {
-    file_reader<paged_file_impl> reader;
-    spf_lexer<file_reader<paged_file_impl>> lexer;
+    struct worker {
+        file_reader<paged_file_impl> reader;
+        spf_lexer<file_reader<paged_file_impl>> lexer;
+        worker(const std::string& path, ifcopenshell::logger& logger)
+            : reader(path, 64 << 10, 64), lexer(&reader, logger) {}
+    };
+
+    class lease {
+        lazy_source* source_;
+        std::unique_ptr<worker> worker_;
+
+      public:
+        lease(lazy_source* source, std::unique_ptr<worker>&& w)
+            : source_(source), worker_(std::move(w)) {}
+        lease(lease&&) = default;
+        lease(const lease&) = delete;
+        lease& operator=(const lease&) = delete;
+        ~lease() {
+            if (worker_) {
+                std::lock_guard<std::mutex> lock(source_->pool_mutex);
+                source_->idle.push_back(std::move(worker_));
+            }
+        }
+        worker* operator->() const {
+            return worker_.get();
+        }
+    };
+
+    // Two threads materialising the same instance take turns on the
+    // stripe its name selects; the second finds the work done. Instances
+    // on different stripes are materialised in parallel.
+    static constexpr size_t stripe_count = 64;
+
+    std::string path;
+    std::reference_wrapper<ifcopenshell::logger> logger;
+    std::mutex pool_mutex;
+    std::vector<std::unique_ptr<worker>> idle;
+    std::array<std::mutex, stripe_count> stripes;
+    // Guards read_simple_type_instances while instances are materialised.
+    std::mutex typed_values_mutex;
+
     lazy_source(const std::string& path, ifcopenshell::logger& logger)
-        : reader(path, 64 << 10, 64), lexer(&reader, logger) {}
+        : path(path), logger(logger) {}
+
+    lease acquire() {
+        {
+            std::lock_guard<std::mutex> lock(pool_mutex);
+            if (!idle.empty()) {
+                std::unique_ptr<worker> w = std::move(idle.back());
+                idle.pop_back();
+                return lease(this, std::move(w));
+            }
+        }
+        return lease(this, std::make_unique<worker>(path, logger.get()));
+    }
 };
 
 namespace {
@@ -2860,33 +2927,51 @@ void instance_data::ensure_loaded() const {
 }
 
 void ifcopenshell::impl::in_memory_file_storage::materialize(instance_data* data) {
+    auto& source = *lazy_source_;
+    std::lock_guard<std::mutex> stripe(source.stripes[data->id() % lazy_source::stripe_count]);
+    if (data->storage_) {
+        // Materialised by the thread that held the stripe before this one.
+        return;
+    }
     const auto offset = std::lower_bound(lazy_offsets_.begin(), lazy_offsets_.end(), std::make_pair(data->id(), (uint64_t)0), [](const auto& a, const auto& b) { return a.first < b.first; });
     if (offset == lazy_offsets_.end() || offset->first != data->id()) {
         return;
     }
-    auto& lexer = lazy_source_->lexer;
-    lexer.stream->seek((size_t)offset->second);
     const auto* declaration = data->declaration();
-    register_inverses_ = false;
-    const size_t simple_type_instances_before = read_simple_type_instances.size();
-    auto storage = load_attributes<file_reader<paged_file_impl>, in_memory_attribute_storage>(&lexer, (size_t)data->id(), declaration, declaration->as_entity(), -1);
-    lexer.reset_pool();
-    register_inverses_ = true;
+    auto worker = source.acquire();
+    worker->lexer.stream->seek((size_t)offset->second);
+    // The index registered the inverses. The typed values read for the
+    // instance are this thread's until the storage is published: they are
+    // resolved here and only then handed to read_simple_type_instances,
+    // which owns them (the attribute slots hold weak references).
+    std::vector<shared_pointer_type> typed_values;
+    auto storage = load_attributes<file_reader<paged_file_impl>, in_memory_attribute_storage>(&worker->lexer, (size_t)data->id(), declaration, declaration->as_entity(), -1, false, &typed_values);
+    worker->lexer.reset_pool();
+    // The derived markers and the resolved references go in before the
+    // storage is published, so no thread sees the instance half made.
+    if (const auto* entity = declaration->as_entity()) {
+        for (auto it = entity->derived().begin(); it != entity->derived().end(); ++it) {
+            if (*it) {
+                storage.set(std::distance(entity->derived().begin(), it), ifcopenshell::derived{});
+            }
+        }
+    }
+    resolve_instance_references(storage, data->id(), lazy_bypassed_);
+    for (const auto& typed : typed_values) {
+        resolve_instance_references(typed, lazy_bypassed_);
+    }
+    if (!typed_values.empty()) {
+        std::lock_guard<std::mutex> lock(source.typed_values_mutex);
+        read_simple_type_instances.insert(read_simple_type_instances.end(), std::make_move_iterator(typed_values.begin()), std::make_move_iterator(typed_values.end()));
+    }
     data->storage_.emplace(std::move(storage));
-    data->populate_derived_();
-    auto self = byid_.find(data->id());
-    if (self != byid_.end()) {
-        resolve_instance_references(self->second, lazy_bypassed_);
-    }
-    for (size_t i = simple_type_instances_before; i < read_simple_type_instances.size(); ++i) {
-        resolve_instance_references(read_simple_type_instances[i], lazy_bypassed_);
-    }
 }
 
 bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string& path, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& types_to_bypass) {
     lazy_source_ = decltype(lazy_source_)(new lazy_source(path, logger_.get()), &delete_lazy_source);
-    auto& reader = lazy_source_->reader;
-    auto& lexer = lazy_source_->lexer;
+    auto worker = lazy_source_->acquire();
+    auto& reader = worker->reader;
+    auto& lexer = worker->lexer;
     if (!reader.size()) {
         return false;
     }

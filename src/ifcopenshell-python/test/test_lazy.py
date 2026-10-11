@@ -23,6 +23,7 @@ import os
 import pytest
 
 import ifcopenshell
+import ifcopenshell.geom
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.util.element
@@ -48,6 +49,26 @@ def test_lazy_open_matches_full_parse(name):
         assert lazy.by_guid(e.GlobalId).id() == e.id()
     assert len(lazy.by_type("IfcWall")) == len(strict.by_type("IfcWall"))
     assert ifcopenshell.get_log() == ""
+
+
+def test_lazy_file_feeds_a_multithreaded_geometry_iterator():
+    # The iterator's threads read placements and representations at the
+    # same time, so the same instances are materialised concurrently.
+    settings = ifcopenshell.geom.settings()
+    results = {}
+    for lazy in (False, True):
+        f = ifcopenshell.open(os.path.join(FIXTURES, FILES[0]), lazy=lazy)
+        iterator = ifcopenshell.geom.iterator(settings, f, 4)
+        shapes = {}
+        assert iterator.initialize()
+        while True:
+            shape = iterator.get()
+            shapes[shape.id] = (len(shape.geometry.verts), len(shape.geometry.faces))
+            if not iterator.next():
+                break
+        results[lazy] = shapes
+    assert results[True] == results[False]
+    assert len(results[True]) > 0
 
 
 def test_lazy_file_can_be_edited_and_written(tmp_path):

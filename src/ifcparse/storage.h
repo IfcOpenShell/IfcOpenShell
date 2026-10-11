@@ -644,12 +644,13 @@ namespace ifcopenshell {
             // the first time they are accessed (instance_data::ensure_loaded).
             // The offset of each instance's attribute list lives here, not in
             // the instance, so a full parse pays nothing for it. Inverses were
-            // registered by the index, so materialisation must not register
-            // them again. Materialising from several threads at once is not
-            // safe.
+            // registered by the index, so materialisation does not register
+            // them again. Threads materialise concurrently: each on a reader
+            // leased from the source, with its own page cache, and an
+            // instance reached by two threads at once is materialised by one
+            // of them while the other waits on its stripe (materialize()).
             struct lazy_source;
             bool lazy_ = false;
-            bool register_inverses_ = true;
             std::unique_ptr<lazy_source, void (*)(lazy_source*)> lazy_source_{nullptr, nullptr};
             std::vector<unsigned> lazy_bypassed_;
             std::vector<std::pair<uint32_t, uint64_t>> lazy_offsets_;
@@ -747,14 +748,21 @@ namespace ifcopenshell {
             // opening parenthesis into a fresh attribute array. Storage is
             // always in_memory_attribute_storage; it is a template parameter
             // only because that type is defined in a header that includes
-            // this one.
+            // this one. The references read register inverses unless
+            // `register_inverses` is false; the typed values read on the
+            // instance's behalf go to `typed_values` when given, else to
+            // read_simple_type_instances.
             template <typename Reader, typename Storage>
-            Storage load_attributes(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::declaration* declaration, const ifcopenshell::entity* entity, int attribute_index = -1);
+            Storage load_attributes(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::declaration* declaration, const ifcopenshell::entity* entity, int attribute_index = -1, bool register_inverses = true, std::vector<shared_pointer_type>* typed_values = nullptr);
             // Replaces the names left in `data`'s attribute slots by in-place
             // reference storage with the instances they name; a name that is
             // missing or bypassed becomes null in a scalar and is dropped
             // from an aggregate.
             void resolve_instance_references(const shared_pointer_type& data, const std::vector<unsigned>& bypassed);
+            // The same on attribute slots that are not an instance's yet,
+            // `owner` naming the instance they are read for in the log.
+            template <typename Storage>
+            void resolve_instance_references(Storage& slots, uint32_t owner, const std::vector<unsigned>& bypassed);
 
             void register_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, int instance_id, int attribute_index);
             void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::base& entity, int attribute_index);
