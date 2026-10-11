@@ -208,23 +208,28 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
 
             current_aggregate = ifcopenshell.util.element.get_aggregate(element)
             current_container = ifcopenshell.util.element.get_container(element)
-            if current_aggregate:
-                core.assign_object(
-                    tool.Ifc,
-                    tool.Aggregate,
-                    tool.Collector,
-                    relating_obj=tool.Ifc.get_object(current_aggregate),
-                    related_obj=aggregate,
-                )
-            elif current_container:
-                bonsai.core.spatial.assign_container(
-                    tool.Ifc,
-                    tool.Collector,
-                    tool.Spatial,
-                    container=current_container,
-                    objs=[aggregate],
-                )
-            core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
+            try:
+                if current_aggregate:
+                    core.assign_object(
+                        tool.Ifc,
+                        tool.Aggregate,
+                        tool.Collector,
+                        relating_obj=tool.Ifc.get_object(current_aggregate),
+                        related_obj=aggregate,
+                    )
+                elif current_container:
+                    bonsai.core.spatial.assign_container(
+                        tool.Ifc,
+                        tool.Collector,
+                        tool.Spatial,
+                        container=current_container,
+                        objs=[aggregate],
+                    )
+                core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
+            except core.IncompatibleAggregateError:
+                self.report({"ERROR"}, f"Cannot aggregate {obj.name} to {aggregate.name}")
+            except core.AggregateRepresentationError:
+                self.report({"ERROR"}, f"Cannot aggregate to {aggregate.name} with a body representation")
 
     def create_aggregate(self, context: bpy.types.Context, ifc_class: str, aggregate_name: str) -> bpy.types.Object:
         aggregate = bpy.data.objects.new(aggregate_name, None)
