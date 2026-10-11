@@ -439,6 +439,12 @@ namespace ifcopenshell {
 				static constexpr const char* const description = "Applies an arbitrary quaternion rotation of form x,y,z,w to all placements.";
 			};
 
+			struct VertexRebaseDistance : public SettingBase<VertexRebaseDistance, double> {
+				static constexpr const char* const name = "vertex-rebase-distance";
+				static constexpr const char* const description = "Distance in meters from the origin beyond which a representation's vertices are shifted onto its first vertex, with the shift folded into the element placement so world positions are unchanged. 0 disables.";
+				static constexpr double defaultvalue = 0.0;
+			};
+
 			enum TriangulationMethod {
 				TRIANGLE_MESH,
 				POLYHEDRON_WITHOUT_HOLES,
@@ -957,6 +963,7 @@ using geometry_setting_types = std::tuple<
 			settings_detail::PermissiveShapeReuse,
 			settings_detail::ModelOffset,
 			settings_detail::ModelRotation,
+			settings_detail::VertexRebaseDistance,
 			settings_detail::TriangulationType,
 			settings_detail::CgalEmitOriginalEdges,
 			settings_detail::OcctNoCleanTriangulation,
@@ -1061,6 +1068,7 @@ using geometry_setting_types = std::tuple<
 			using PermissiveShapeReuse = settings_detail::PermissiveShapeReuse;
 			using ModelOffset = settings_detail::ModelOffset;
 			using ModelRotation = settings_detail::ModelRotation;
+			using VertexRebaseDistance = settings_detail::VertexRebaseDistance;
 			using TriangulationType = settings_detail::TriangulationType;
 			using CgalEmitOriginalEdges = settings_detail::CgalEmitOriginalEdges;
 			using OcctNoCleanTriangulation = settings_detail::OcctNoCleanTriangulation;

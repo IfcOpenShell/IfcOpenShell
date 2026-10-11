@@ -19,6 +19,8 @@
 
 #include "representation.h"
 
+#include <cmath>
+
 ifcopenshell::geom::serialization::serialization(const native& native_geometry)
 	: representation(native_geometry.settings(), native_geometry.entity(), native_geometry.id())
 {
@@ -148,6 +150,30 @@ ifcopenshell::geom::triangulation::triangulation(const native& shape_model)
 		}
 
 		iit->shape()->triangulate(settings(), *iit->placement(), this, iit->ItemId(), surface_style_id);
+	}
+	rebase_vertices_();
+}
+
+void ifcopenshell::geom::triangulation::rebase_vertices_() {
+	const double distance = settings().get<ifcopenshell::geom::settings::VertexRebaseDistance>().get();
+	if (distance <= 0.0 || verts_.size() < 3) {
+		return;
+	}
+	// The threshold is in meters; verts are in file units when ConvertBackUnits is set.
+	const double to_meters = settings().get<ifcopenshell::geom::settings::ConvertBackUnits>().get()
+		? settings().get<ifcopenshell::geom::settings::LengthUnit>().get()
+		: 1.0;
+	const bool far_away = std::abs(verts_[0]) * to_meters > distance
+		|| std::abs(verts_[1]) * to_meters > distance
+		|| std::abs(verts_[2]) * to_meters > distance;
+	if (!far_away) {
+		return;
+	}
+	rebase_offset_ = { verts_[0], verts_[1], verts_[2] };
+	for (size_t i = 0; i < verts_.size(); i += 3) {
+		verts_[i] -= rebase_offset_[0];
+		verts_[i + 1] -= rebase_offset_[1];
+		verts_[i + 2] -= rebase_offset_[2];
 	}
 }
 
