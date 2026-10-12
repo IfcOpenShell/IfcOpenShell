@@ -39,8 +39,8 @@ jobs:
             short_name: macosm1,
           }
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.x'
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
@@ -59,7 +59,7 @@ jobs:
           echo "filepath=$filepath" >> $GITHUB_OUTPUT
           echo "filename=$(basename $filepath)" >> $GITHUB_OUTPUT
       - name: Upload zip file to release
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # 2.11.5
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ steps.find_zip.outputs.filepath }}

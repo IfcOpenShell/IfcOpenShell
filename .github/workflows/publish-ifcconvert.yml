@@ -45,7 +45,7 @@ jobs:
             short_name: macosm164
           }
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Get current version
         id: version
         run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
@@ -54,7 +54,7 @@ jobs:
           cd src/ifcopenshell-python &&
           make zip-ifcconvert PLATFORM=${{ matrix.config.short_name }}
       - name: Upload zip file to release
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # 2.11.5
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: src/ifcopenshell-python/dist/ifcconvert-${{ steps.version.outputs.version }}-${{ matrix.config.short_name }}.zip
