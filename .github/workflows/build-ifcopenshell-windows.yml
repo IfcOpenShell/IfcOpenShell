@@ -67,7 +67,7 @@ jobs:
           max-size: 5000MB
 
       - name: Run Build Script And Pack .zip Archives
-        shell: cmd
+        shell: cmd # zizmor: ignore[misfeature] needed for vcvars environment
         run: |
           call ${{ matrix.vcvars }}
           cd win
