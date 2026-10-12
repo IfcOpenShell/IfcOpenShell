@@ -1,0 +1,134 @@
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  color: #18181b;
+  background: #fafafa;
+}
+
+a { color: #2563eb; }
+
+.chapter-nav {
+  background: #fff;
+  border-bottom: 1px solid #e4e4e7;
+  padding: 0.75rem 1.5rem;
+  font-size: 13px;
+}
+
+.chapter-nav a { margin-right: 1rem; text-decoration: none; }
+.chapter-nav a:hover { text-decoration: underline; }
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.page-wide { max-width: 1200px; }
+
+#status { color: #52525b; margin: 0.5rem 0 1rem; }
+
+pre {
+  background: #f4f4f5;
+  padding: 1rem;
+  overflow: auto;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.mesh-card {
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  background: #fff;
+}
+
+.mesh-card h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+
+.mesh-dl {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0.75rem 0;
+  font-size: 13px;
+}
+
+.mesh-dl dt { font-weight: 600; color: #52525b; }
+.mesh-dl dd { margin: 0; }
+
+.viewport-wrap {
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1a1d24;
+  min-height: 420px;
+}
+
+.viewport-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 480px;
+}
+
+.hint {
+  font-size: 12px;
+  color: #71717a;
+  margin-top: 0.5rem;
+}
+
+.check-list { list-style: none; padding: 0; }
+.check-list li { padding: 0.35rem 0; }
+.check-list .ok { color: #15803d; }
+.check-list .fail { color: #b91c1c; }
+
+.example-code-panel {
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  margin: 0 0 1rem;
+}
+
+.example-code-panel h2 {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #71717a;
+  border-bottom: 1px solid #e4e4e7;
+  background: #fafafa;
+}
+
+.example-code-body {
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  max-height: min(420px, 50vh);
+  background: #fff;
+  border-radius: 0;
+}
+
+.example-code-body code {
+  display: block;
+  padding: 0.75rem;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.authoring-code-body {
+  margin: 0;
+  padding: 0;
+  background: #fff;
+}
+
+.authoring-code-body code {
+  display: block;
+  padding: 0.65rem 0.75rem;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

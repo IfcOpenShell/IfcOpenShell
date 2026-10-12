@@ -1,0 +1,105 @@
+<!-- This file was generated with the assistance of an AI coding tool. -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chapter 5 — Three.js viewer</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "ifcopenshell": "/ifcopenshell-js/dist/index.js",
+          "ifcopenshell/geom": "/ifcopenshell-js/dist/geom/index.js",
+          "ifcopenshell/util": "/ifcopenshell-js/dist/util/index.js",
+          "@ifcopenshell/wasm": "https://cdn.jsdelivr.net/npm/@ifcopenshell/wasm@latest/browser.js",
+          "@ifcopenshell/wasm/api": "https://cdn.jsdelivr.net/npm/@ifcopenshell/wasm@latest/wasm/ifcopenshell_api.mjs",
+          "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <nav class="chapter-nav">
+      <a href="../index.html">All chapters</a>
+      <a href="../full/index.html">← Ch 4 — Full stack</a>
+      <a href="../viewer-babylon/index.html">Ch 6 — Babylon.js →</a>
+    </nav>
+    <main class="page page-wide page-split">
+      <h1>Chapter 5 — Load IFC geometry with Three.js</h1>
+      <p>
+        Tessellate with <code>geom.Iterator</code>, copy the buffers into
+        <code>THREE.BufferGeometry</code>, and frame the model with Z up.
+      </p>
+      <p id="status">Starting…</p>
+      <div class="example-row">
+        <section class="example-code-panel">
+          <h2>IFC code</h2>
+          <pre id="example-code" class="example-code-body"><code class="language-javascript"></code></pre>
+        </section>
+        <div class="example-viewer">
+          <div class="viewport-wrap"><canvas id="viewport"></canvas></div>
+          <p class="hint">Drag to orbit · scroll to zoom · geometry from <code>sample.ifc</code></p>
+        </div>
+      </div>
+    </main>
+
+    <script type="text/plain" id="ifc-source">import * as ifcopenshell from 'ifcopenshell';
+import * as geom from 'ifcopenshell/geom';
+
+const runtime = await ifcopenshell.init();
+await runtime.loadPlugin('schema', 'ifc4');
+await runtime.loadPlugin('mapping', 'ifc4');
+await runtime.loadPlugin('kernel', 'manifold');
+const model = ifcopenshell.open(bytes, 'sample.ifc');
+
+const settings = new geom.Settings();
+settings.set('weld-vertices', false);
+const iterator = new geom.Iterator(settings, model, {
+  geometryLibrary: 'manifold',
+});
+if (iterator.initialize()) do {
+  const shape = iterator.get();
+  const tri = shape.asTriangulationElement();
+  const nativeGeometry = tri.geometry();
+  let data;
+  try {
+    data = {
+      vertices: nativeGeometry.vertsBuffer(Float32Array),
+      faces: nativeGeometry.facesBuffer(Uint32Array),
+      transform: shape.transformationBuffer(Float64Array),
+    };
+  } finally {
+    nativeGeometry.destroy();
+    tri.destroy();
+    shape.destroy();
+  }
+  if (!data.faces.length) continue;
+  // upload data.vertices, data.faces, and data.transform to THREE.BufferGeometry
+} while (iterator.next());
+
+iterator.dispose();
+model.dispose();</script>
+
+    <script>
+      (function () {
+        function highlightIfcSource() {
+          const source = document.getElementById('ifc-source');
+          const code = document.querySelector('#example-code code');
+          if (!source || !code || !window.hljs) return;
+          code.textContent = source.textContent.trim();
+          hljs.highlightElement(code);
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', highlightIfcSource);
+        } else {
+          highlightIfcSource();
+        }
+      })();
+    </script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,74 @@
+<!-- This file was generated with the assistance of an AI coding tool. -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chapter 4 — Full stack</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "ifcopenshell": "/ifcopenshell-js/dist/index.js",
+          "ifcopenshell/geom": "/ifcopenshell-js/dist/geom/index.js",
+          "@ifcopenshell/wasm": "https://cdn.jsdelivr.net/npm/@ifcopenshell/wasm@latest/browser.js",
+          "@ifcopenshell/wasm/api": "https://cdn.jsdelivr.net/npm/@ifcopenshell/wasm@latest/wasm/ifcopenshell_api.mjs"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <nav class="chapter-nav">
+      <a href="../index.html">All chapters</a>
+      <a href="../create/index.html">← Ch 3 — Create</a>
+      <a href="../viewer-threejs/index.html">Ch 5 — Three.js →</a>
+    </nav>
+    <main class="page">
+      <h1>Chapter 4 — Full stack</h1>
+      <p>Open a file, edit a wall name, then tessellate a few meshes.</p>
+      <p id="status" class="status">Starting…</p>
+
+      <div class="lesson-steps">
+        <section class="lesson-step" data-step="1">
+          <h2>1. Open the file</h2>
+          <pre class="lesson-code"><code>await runtime.loadPlugin('schema', 'ifc4');
+const model = ifcopenshell.open(bytes, 'sample.ifc');</code></pre>
+          <pre class="lesson-result" id="step-1">Waiting…</pre>
+        </section>
+        <section class="lesson-step" data-step="2">
+          <h2>2. Get and edit an element</h2>
+          <pre class="lesson-code"><code>const walls = model.byType('IfcWall');
+walls[0].Name = 'Edited in full example';</code></pre>
+          <pre class="lesson-result" id="step-2">Waiting…</pre>
+        </section>
+        <section class="lesson-step" data-step="3">
+          <h2>3. Tessellate</h2>
+          <pre class="lesson-code"><code>await runtime.loadPlugin('mapping', 'ifc4');
+await runtime.loadPlugin('kernel', 'manifold');
+const settings = new geom.Settings();
+settings.set('weld-vertices', false);
+const iterator = new geom.Iterator(settings, model, {
+  geometryLibrary: 'manifold',
+});
+if (iterator.initialize()) do {
+  const shape = iterator.get();
+  const tri = shape.asTriangulationElement();
+  const nativeGeometry = tri.geometry();
+  const faces = nativeGeometry.facesBuffer(Uint32Array);
+  nativeGeometry.destroy();
+  tri.destroy();
+  shape.destroy();
+  if (!faces.length) continue;
+} while (iterator.next());</code></pre>
+          <pre class="lesson-result" id="step-3">Waiting…</pre>
+        </section>
+        <section class="lesson-step" data-step="4">
+          <h2>4. Log the result</h2>
+          <pre class="lesson-code"><code>console.log(walls[0].Name, meshes.length);</code></pre>
+          <pre class="lesson-result" id="step-4">Waiting…</pre>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
