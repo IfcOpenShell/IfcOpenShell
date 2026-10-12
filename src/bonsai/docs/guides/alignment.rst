@@ -307,10 +307,61 @@ the list at the top, or select it in the viewport.
 - **Cant** rows show each segment's type, length, and the cant of the left and right rails at its
   start and end, multiplied by 1000 (millimetres in a project in metres).
 
-Click a segment's number to highlight the segment. A horizontal segment is highlighted in the 3D
-viewport, with its start and end points, length, radius, PI, and center shown, together with its
-tangent and radial lines. Vertical and cant segments are highlighted in the profile view. The text
-icon on each layout's row turns the segment labels on or off.
+Click a segment's number to highlight the segment. Vertical and cant segments are highlighted in the
+profile view. A horizontal segment is highlighted in the 3D viewport, with gray tangent lines from
+its start and end to its PI, and either radial lines to the center (circular curves) or short
+normal ticks (spirals). Its key points are labeled:
+
+- the start and end, with their key point names (for example P.C. and P.T., or T.S. and S.C.),
+  stations, and Easting and Northing;
+- the P.I., with its Easting and Northing and its station: the start station plus the tangent
+  distance (T for a circular curve, T1 for a spiral);
+- the center of a circular curve, or the point where a spiral's start and end normals meet, with its
+  Easting and Northing.
+
+A curved segment also gets a **curve data** box listing its properties. Lengths are in the project's
+length unit, and the deflection angle is in degrees, minutes, and seconds, followed by Lt or Rt for
+the direction of the turn.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 10 50 40
+
+   * - Value
+     - Meaning
+     - Shown for
+   * - R
+     - Radius
+     - Circular curves
+   * - T
+     - Tangent length, from the P.C. or P.T. to the P.I.: R tan(Δ/2)
+     - Circular curves
+   * - T1, T2
+     - Distances from the start to the P.I. and from the P.I. to the end. For a spiral leaving a
+       tangent, T1 is its long tangent and T2 its short tangent.
+     - Spirals
+   * - Δ
+     - Deflection angle, the change in direction over the segment
+     - Circular curves and spirals
+   * - L
+     - Length along the curve
+     - Circular curves and spirals
+   * - LC
+     - Long chord, the straight-line distance from the start to the end. For a circular curve this is
+       2R sin(Δ/2).
+     - Circular curves and spirals
+   * - E
+     - External distance, from the P.I. to the middle of the curve: R (sec(Δ/2) − 1)
+     - Circular curves
+   * - M
+     - Middle ordinate, from the middle of the long chord to the middle of the curve: R (1 − cos(Δ/2))
+     - Circular curves
+
+The box is placed inside the curve, beyond its midpoint, when there is room. Otherwise it moves to
+the nearest place where it doesn't cover any of the point labels, so it can shift as you zoom and
+pan. T and E aren't given for a curve that turns through 180° or more, which has no P.I.
+
+The text icon on each layout's row turns the segment labels and curve data on or off.
 
 Deleting
 --------
@@ -356,4 +407,6 @@ Scripting
 
 Everything above is also available from Python through ``ifcopenshell.api.alignment``, for
 example ``create_by_pi_method``, ``create_as_polyline``, ``create_as_offset_curve``, and
-``add_stationing_referent``. See the IfcOpenShell API documentation for details and examples.
+``add_stationing_referent``. The values in the curve data box come from
+``get_horizontal_curve_parameters``. See the IfcOpenShell API documentation for details and
+examples.
