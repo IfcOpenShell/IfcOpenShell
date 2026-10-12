@@ -1,8 +1,6 @@
 name: Publish Pyodide Demo App
 
-permissions:
-  id-token: write
-  pages: write
+permissions: {}
 
 on:
   push:
