@@ -681,6 +681,8 @@ typedef item const* ptr;
 			};
 
 			struct IFC_GEOM_API curve : public geom_item {
+				// Unbounded conics default to a full turn; lines require a finite range.
+				std::vector<point3> to_polygon(const settings&, double start = -std::numeric_limits<double>::infinity(), double end = std::numeric_limits<double>::infinity()) const;
 				void print_impl(std::ostream& o, const std::string& classname, int indent = 0) const {
 					o << std::string(indent, ' ') << classname << std::endl;
 					this->matrix->print(o, indent + 4);
@@ -813,6 +815,7 @@ typedef item const* ptr;
 
 			struct IFC_GEOM_API trimmed_curve : public geom_item {
 				DECLARE_PTR(trimmed_curve)
+				std::vector<point3> to_polygon(const settings&) const;
 
 				// @todo The copy constructor of point3 within the variant fails on the avx instruction
 				// on the default gcc in Ubuntu 18.04 and a recent AMD Ryzen. Probably due to allignment.
@@ -933,6 +936,7 @@ typedef item const* ptr;
 
 			struct IFC_GEOM_API loop : public collection_base<edge> {
 				DECLARE_PTR(loop)
+				std::vector<point3> to_polygon(const settings&) const;
 
 				std::optional<bool> external, closed;
 				std::optional<taxonomy::function_item::ptr> fi;
@@ -1068,6 +1072,8 @@ typedef item const* ptr;
 
 			struct IFC_GEOM_API loft : public collection_base<geom_item> {
 				DECLARE_PTR(loft)
+				bool is_polygonal() const;
+				shell::ptr to_polyhedron() const;
 
 				item::ptr axis;
 
@@ -1233,6 +1239,8 @@ typedef item const* ptr;
 
 			struct IFC_GEOM_API sweep_along_curve : public sweep {
 				DECLARE_PTR(sweep_along_curve)
+				// Circular, concentric profiles with no reference surface or direction.
+				shell::ptr to_polyhedron(const settings&) const;
 
 				item::ptr surface;
 				item::ptr curve;

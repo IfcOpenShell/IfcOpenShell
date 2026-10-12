@@ -1,9 +1,647 @@
-#include "../ifcparse/logger.h"
 #include "taxonomy.h"
-#include "profile_helper.h"
+
+#include "../ifcparse/logger.h"
 #include "function_item_evaluator.h"
+#include "profile_helper.h"
 
 using namespace ifcopenshell::geom::taxonomy;
+namespace taxonomy = ifcopenshell::geom::taxonomy;
+
+namespace {
+constexpr double polygon_pi = boost::math::constants::pi<double>();
+
+Eigen::Vector3d transform_point(const matrix4::ptr& m, const Eigen::Vector3d& p) {
+    return m ? (m->ccomponents() * p.homogeneous()).head<3>().eval() : p;
+}
+
+double curve_parameter(const item::ptr& basis, const std::variant<boost::blank, point3::ptr, double>& trim) {
+    if (auto u = std::get_if<double>(&trim)) {
+        return *u;
+    }
+    if (auto p = std::get_if<point3::ptr>(&trim)) {
+        auto c = std::dynamic_pointer_cast<curve>(basis);
+        if (!c) {
+            throw std::runtime_error("Point projection not implemented on this geometry type");
+        }
+        Eigen::Vector3d xyz = (*p)->ccomponents();
+        if (c->matrix) {
+            xyz = (c->matrix->ccomponents().inverse() * xyz.homogeneous()).head<3>().eval();
+        }
+        if (c->kind() == LINE) {
+            return xyz.z();
+        }
+        if (c->kind() == CIRCLE) {
+            return std::atan2(xyz.y(), xyz.x());
+        }
+        if (auto e = std::dynamic_pointer_cast<ellipse>(c)) {
+            return std::atan2(xyz.y() / e->radius2, xyz.x() / e->radius);
+        }
+    }
+    throw std::runtime_error("Unbounded or unsupported curve trim");
+}
+
+void append_polygon(std::vector<point3>& a, const std::vector<point3>& b, double tolerance) {
+    if (!b.empty()) {
+        size_t offset = !a.empty() && (a.back().ccomponents() - b.front().ccomponents()).norm() < tolerance ? 1 : 0;
+        a.insert(a.end(), b.begin() + offset, b.end());
+    }
+}
+
+Eigen::Vector3d endpoint_tangent(const item::ptr& i, bool at_end) {
+    Eigen::Vector3d tangent;
+    auto geometry = std::dynamic_pointer_cast<geom_item>(i);
+    if (auto l = std::dynamic_pointer_cast<loop>(i)) {
+        const bool reversed = !l->orientation.value_or(true);
+        const bool end = at_end != reversed;
+        tangent = endpoint_tangent(end ? l->children.back() : l->children.front(), end);
+        if (reversed) {
+            tangent = -tangent;
+        }
+    } else if (auto e = std::dynamic_pointer_cast<trimmed_curve>(i)) {
+        if ((!e->basis || e->basis->kind() == LINE) && e->start.index() == 1 && e->end.index() == 1) {
+            tangent = std::get<point3::ptr>(e->end)->ccomponents() - std::get<point3::ptr>(e->start)->ccomponents();
+        } else {
+            auto underlying = e->basis;
+            while (auto nested = std::dynamic_pointer_cast<trimmed_curve>(underlying)) {
+                underlying = nested->basis;
+            }
+            auto c = std::dynamic_pointer_cast<taxonomy::curve>(underlying);
+            const bool end = at_end == e->orientation.value_or(true);
+            const double u = curve_parameter(underlying, end ? e->end : e->start);
+            if (auto circle = std::dynamic_pointer_cast<taxonomy::circle>(c)) {
+                tangent = Eigen::Vector3d(-circle->radius * std::sin(u), circle->radius * std::cos(u), 0.);
+            } else if (auto ellipse = std::dynamic_pointer_cast<taxonomy::ellipse>(c)) {
+                tangent = Eigen::Vector3d(-ellipse->radius * std::sin(u), ellipse->radius2 * std::cos(u), 0.);
+            } else if (c && c->kind() == LINE) {
+                tangent = Eigen::Vector3d::UnitZ();
+            } else {
+                throw std::runtime_error("Unsupported swept disk tangent");
+            }
+            if (c->matrix) {
+                tangent = c->matrix->ccomponents().topLeftCorner<3, 3>() * tangent;
+            }
+            if (!e->curve_sense.value_or(true)) {
+                tangent = -tangent;
+            }
+        }
+        if (!e->orientation.value_or(true)) {
+            tangent = -tangent;
+        }
+    } else {
+        throw std::runtime_error("Unsupported swept disk tangent");
+    }
+    if (geometry && geometry->matrix) {
+        tangent = geometry->matrix->ccomponents().topLeftCorner<3, 3>() * tangent;
+    }
+    return tangent.normalized();
+}
+} // namespace
+
+std::vector<point3> curve::to_polygon(const ifcopenshell::geom::settings& settings, double a, double b) const {
+    if (kind() != LINE && a == -std::numeric_limits<double>::infinity() && b == std::numeric_limits<double>::infinity()) {
+        a = 0.;
+        b = 2. * polygon_pi;
+    }
+    if (!std::isfinite(a) || !std::isfinite(b)) {
+        throw std::runtime_error("Cannot represent infinite curve segment");
+    }
+    if (kind() == LINE) {
+        return {point3(transform_point(matrix, {0., 0., a})), point3(transform_point(matrix, {0., 0., b}))};
+    }
+    double rx, ry;
+    if (auto c = dynamic_cast<const circle*>(this)) {
+        rx = ry = c->radius;
+    } else if (auto e = dynamic_cast<const ellipse*>(this)) {
+        rx = e->radius;
+        ry = e->radius2;
+    } else {
+        throw std::runtime_error("Polygonal approximation not implemented on this curve type");
+    }
+    a = std::fmod(a, 2. * polygon_pi);
+    b = std::fmod(b, 2. * polygon_pi);
+    if (b <= a) {
+        b += 2. * polygon_pi;
+    }
+    const double span = b - a;
+    const int circle_segments = settings.get<ifcopenshell::geom::settings::CircleSegments>().get();
+    int count;
+    if (circle_segments > 0) {
+        count = static_cast<int>(std::ceil(span / (2. * polygon_pi) * std::max(3, circle_segments)));
+    } else {
+        const double radius = std::max(rx, ry);
+        const double deflection = settings.get<ifcopenshell::geom::settings::MesherLinearDeflection>().get();
+        const double angular = settings.get<ifcopenshell::geom::settings::MesherAngularDeflection>().get();
+        double angle = polygon_pi / 2.;
+        if (deflection > 0. && radius > deflection) {
+            const double bound = 2. * std::acos(1. - deflection / radius);
+            if (bound > 0.) {
+                angle = std::min(angle, bound);
+            }
+        }
+        if (angular > 0.) {
+            angle = std::min(angle, angular);
+        }
+        count = static_cast<int>(std::ceil(span / angle));
+    }
+    count = std::max(1, count);
+    std::vector<point3> points;
+    points.reserve(count + 1);
+    for (int i = 0; i <= count; ++i) {
+        const double u = a + span * i / count;
+        points.emplace_back(transform_point(matrix, {rx * std::cos(u), ry * std::sin(u), 0.}));
+    }
+    return points;
+}
+
+std::vector<point3> trimmed_curve::to_polygon(const ifcopenshell::geom::settings& settings) const {
+    std::vector<point3> points;
+    if ((!basis || basis->kind() == LINE) && start.index() == 1 && end.index() == 1) {
+        points = {*std::get<point3::ptr>(start), *std::get<point3::ptr>(end)};
+    } else {
+        auto underlying = basis;
+        while (auto nested = std::dynamic_pointer_cast<trimmed_curve>(underlying)) {
+            underlying = nested->basis;
+        }
+        auto c = std::dynamic_pointer_cast<curve>(underlying);
+        if (!c) {
+            throw std::runtime_error("Unsupported curve basis");
+        }
+        double a = curve_parameter(underlying, start), b = curve_parameter(underlying, end);
+        if (!curve_sense.value_or(true)) {
+            std::swap(a, b);
+        }
+        points = c->to_polygon(settings, a, b);
+        if (!curve_sense.value_or(true)) {
+            std::reverse(points.begin(), points.end());
+        }
+    }
+    if (!orientation.value_or(true)) {
+        std::reverse(points.begin(), points.end());
+    }
+    for (auto& p : points) {
+        p.components() = transform_point(matrix, p.ccomponents());
+    }
+    return points;
+}
+
+std::vector<point3> loop::to_polygon(const ifcopenshell::geom::settings& settings) const {
+    std::vector<point3> points;
+    const double tolerance = settings.get<ifcopenshell::geom::settings::Precision>().get();
+    for (const auto& e : children) {
+        append_polygon(points, e->to_polygon(settings), tolerance);
+    }
+    if (closed.value_or(false) && points.size() > 1 &&
+        (points.front().ccomponents() - points.back().ccomponents()).norm() > tolerance) {
+        points.push_back(points.front());
+    }
+    if (!orientation.value_or(true)) {
+        std::reverse(points.begin(), points.end());
+    }
+    for (auto& p : points) {
+        p.components() = transform_point(matrix, p.ccomponents());
+    }
+    return points;
+}
+
+namespace {
+bool polygonal(const item::ptr& i) {
+    if (!i) {
+        return true; // An interpolated loft has no remaining analytic directrix.
+    }
+    if (i->kind() == LINE) {
+        return true;
+    }
+    if (auto e = std::dynamic_pointer_cast<edge>(i)) {
+        return (!e->basis || e->basis->kind() == LINE) &&
+               (e->basis || (e->start.index() == 1 && e->end.index() == 1));
+    }
+    if (auto l = std::dynamic_pointer_cast<loop>(i)) {
+        return !l->children.empty() && std::all_of(l->children.begin(), l->children.end(), [](const edge::ptr& e) { return polygonal(e); });
+    }
+    if (auto f = std::dynamic_pointer_cast<face>(i)) {
+        return (!f->basis || f->basis->kind() == PLANE) && !f->children.empty() &&
+               std::all_of(f->children.begin(), f->children.end(), [](const loop::ptr& l) { return polygonal(l); });
+    }
+    return false;
+}
+
+loop::ptr polygon_loop(std::vector<point3::ptr> points, bool closed, bool external = true) {
+    if (closed && points.front() != points.back()) {
+        points.push_back(points.front());
+    }
+    auto l = ifcopenshell::geom::polygon_from_points(points, external);
+    l->closed = closed;
+    return l;
+}
+
+void triangle(const shell::ptr& s, const point3::ptr& a, const point3::ptr& b, const point3::ptr& c) {
+    if ((b->ccomponents() - a->ccomponents()).cross(c->ccomponents() - a->ccomponents()).squaredNorm() == 0.) {
+        return;
+    }
+    auto f = make<face>();
+    f->children = {polygon_loop({a, b, c}, true)};
+    s->children.push_back(f);
+}
+
+bool intersect_tags(const std::set<std::string>& a, const std::set<std::string>& b) {
+    for (const auto& tag : a) {
+        if (b.count(tag)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+struct polygon_section {
+    std::vector<point3::ptr> points;
+    std::vector<std::set<std::string>> tags;
+    bool closed, external;
+};
+
+polygon_section section_polygon(const loop::ptr& l, const matrix4::ptr& parent) {
+    ifcopenshell::geom::settings settings;
+    auto points = l->to_polygon(settings);
+    auto tags = l->tags;
+    if (tags && !l->orientation.value_or(true)) {
+        std::reverse(tags->begin(), tags->end());
+    }
+    polygon_section section;
+    section.closed = l->closed.value_or(points.size() > 1 &&
+                                        (points.front().ccomponents() - points.back().ccomponents()).norm() < 1.e-9);
+    section.external = l->external.value_or(true);
+    // Tags name vertices, including coincident vertices carrying different names.
+    if (tags && tags->size() != points.size()) {
+        // to_polygon removes coincident vertices; retain them until their tags are merged.
+        points.clear();
+        if (!l->children.empty()) {
+            points.push_back(*std::get<point3::ptr>(l->children.front()->start));
+            for (const auto& e : l->children) {
+                points.push_back(*std::get<point3::ptr>(e->end));
+            }
+            for (auto& p : points) {
+                p.components() = transform_point(l->matrix, p.ccomponents());
+            }
+            if (!l->orientation.value_or(true)) {
+                std::reverse(points.begin(), points.end());
+            }
+        }
+    }
+    if (tags && tags->size() != points.size()) {
+        throw std::runtime_error("Profile vertex and tag counts differ");
+    }
+    for (size_t i = 0; i < points.size(); ++i) {
+        auto p = make<point3>(transform_point(parent, points[i].ccomponents()));
+        if (!section.points.empty() && p->ccomponents() == section.points.back()->ccomponents()) {
+            if (tags) {
+                section.tags.back().insert((*tags)[i]);
+            }
+        } else {
+            section.points.push_back(p);
+            if (tags) {
+                section.tags.push_back({(*tags)[i]});
+            }
+        }
+    }
+    if (section.closed && section.points.size() > 1 &&
+        (section.points.front()->ccomponents() - section.points.back()->ccomponents()).norm() < 1.e-9) {
+        if (!section.tags.empty()) {
+            section.tags.front().insert(section.tags.back().begin(), section.tags.back().end());
+            section.tags.pop_back();
+        }
+        section.points.pop_back();
+    }
+    if (section.points.size() < (section.closed ? 3u : 2u)) {
+        throw std::runtime_error("Not enough profile vertices");
+    }
+    return section;
+}
+
+void connect_sections(const shell::ptr& s, const polygon_section& a, const polygon_section& b) {
+    if (a.closed != b.closed || a.external != b.external) {
+        throw std::runtime_error("Incompatible loft profile boundaries");
+    }
+    if (!a.tags.empty() || !b.tags.empty()) {
+        if (a.closed || a.tags.empty() || b.tags.empty() || !intersect_tags(a.tags.front(), b.tags.front())) {
+            throw std::runtime_error("Starting vertices do not have corresponding tags");
+        }
+        size_t i = 0, j = 0;
+        while (i + 1 < a.points.size() || j + 1 < b.points.size()) {
+            if (i + 1 < a.points.size() && intersect_tags(a.tags[i + 1], b.tags[j])) {
+                triangle(s, a.points[i], a.points[i + 1], b.points[j]);
+                ++i;
+            } else if (j + 1 < b.points.size() && intersect_tags(a.tags[i], b.tags[j + 1])) {
+                triangle(s, a.points[i], b.points[j + 1], b.points[j]);
+                ++j;
+            } else if (i + 1 < a.points.size() && j + 1 < b.points.size() && intersect_tags(a.tags[i + 1], b.tags[j + 1])) {
+                triangle(s, a.points[i], a.points[i + 1], b.points[j]);
+                triangle(s, a.points[i + 1], b.points[j + 1], b.points[j]);
+                ++i;
+                ++j;
+            } else {
+                throw std::runtime_error("Unable to construct surface from profile tags");
+            }
+        }
+        return;
+    }
+    if (a.points.size() != b.points.size()) {
+        throw std::runtime_error("Loft profile vertex counts differ without corresponding tags");
+    }
+    const size_t count = a.points.size() - (a.closed ? 0 : 1);
+    for (size_t i = 0; i < count; ++i) {
+        const size_t j = (i + 1) % a.points.size();
+        if (a.external) {
+            triangle(s, a.points[i], a.points[j], b.points[j]);
+            triangle(s, b.points[j], b.points[i], a.points[i]);
+        } else {
+            triangle(s, a.points[i], b.points[j], a.points[j]);
+            triangle(s, b.points[j], a.points[i], b.points[i]);
+        }
+    }
+}
+} // namespace
+
+bool loft::is_polygonal() const {
+    return polygonal(axis) && !children.empty() &&
+           std::all_of(children.begin(), children.end(), [](const geom_item::ptr& i) { return polygonal(i); });
+}
+
+shell::ptr loft::to_polyhedron() const {
+    if (!is_polygonal() || children.size() < 2) {
+        throw std::runtime_error("Loft requires at least two polygonal sections and a polygonal directrix");
+    }
+    auto s = make<shell>();
+    s->instance = instance;
+    s->matrix = matrix;
+    s->surface_style = surface_style;
+    const bool capped = children.front()->kind() == FACE;
+    s->closed = capped;
+    std::vector<std::vector<polygon_section>> sections;
+    for (const auto& child : children) {
+        if ((child->kind() == FACE) != capped) {
+            throw std::runtime_error("Mixed surface and solid loft sections");
+        }
+        std::vector<polygon_section> section;
+        if (auto f = std::dynamic_pointer_cast<face>(child)) {
+            // Match exterior boundaries first, retaining inner-boundary order.
+            for (bool exterior : {true, false}) {
+                for (const auto& l : f->children) {
+                    if (l->external.value_or(f->children.size() == 1) == exterior) {
+                        section.push_back(section_polygon(l, f->matrix));
+                    }
+                }
+            }
+        } else {
+            section.push_back(section_polygon(std::static_pointer_cast<loop>(child), nullptr));
+        }
+        if (capped && !section.empty()) {
+            auto normal = [](const polygon_section& boundary) {
+                Eigen::Vector3d n = Eigen::Vector3d::Zero();
+                const auto& p = boundary.points;
+                for (size_t i = 1; i + 1 < p.size(); ++i) {
+                    n += (p[i]->ccomponents() - p.front()->ccomponents()).cross(p[i + 1]->ccomponents() - p.front()->ccomponents());
+                }
+                return n;
+            };
+            const Eigen::Vector3d outer_normal = normal(section.front());
+            for (size_t i = 1; i < section.size(); ++i) {
+                if (outer_normal.dot(normal(section[i])) < 0.) {
+                    std::reverse(section[i].points.begin(), section[i].points.end());
+                    std::reverse(section[i].tags.begin(), section[i].tags.end());
+                }
+            }
+        }
+        if (!sections.empty() && sections.back().size() != section.size()) {
+            throw std::runtime_error("Loft profile boundary counts differ");
+        }
+        sections.push_back(std::move(section));
+    }
+    if (capped) {
+        auto centroid = [](const polygon_section& section) {
+            Eigen::Vector3d result = Eigen::Vector3d::Zero();
+            for (const auto& p : section.points) {
+                result += p->ccomponents();
+            }
+            return (result / section.points.size()).eval();
+        };
+        const auto& first = sections.front().front().points;
+        Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+        for (size_t i = 1; i + 1 < first.size(); ++i) {
+            normal += (first[i]->ccomponents() - first.front()->ccomponents()).cross(first[i + 1]->ccomponents() - first.front()->ccomponents());
+        }
+        const Eigen::Vector3d origin = centroid(sections.front().front());
+        for (size_t i = 1; i < sections.size(); ++i) {
+            const double sense = normal.dot(centroid(sections[i].front()) - origin);
+            if (sense != 0.) {
+                if (sense < 0.) {
+                    for (auto& section : sections) {
+                        for (auto& boundary : section) {
+                            std::reverse(boundary.points.begin(), boundary.points.end());
+                            std::reverse(boundary.tags.begin(), boundary.tags.end());
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+    if (capped) {
+        for (size_t index : {size_t(0), sections.size() - 1}) {
+            auto cap = make<face>();
+            for (const auto& boundary : sections[index]) {
+                if (!boundary.closed) {
+                    throw std::runtime_error("Solid loft profile must be closed");
+                }
+                auto points = boundary.points;
+                if (index == 0) {
+                    std::reverse(points.begin(), points.end());
+                }
+                cap->children.push_back(polygon_loop(points, true, boundary.external));
+            }
+            s->children.push_back(cap);
+        }
+    }
+    for (size_t i = 1; i < sections.size(); ++i) {
+        for (size_t j = 0; j < sections[i].size(); ++j) {
+            connect_sections(s, sections[i - 1][j], sections[i][j]);
+        }
+    }
+    return s;
+}
+
+shell::ptr sweep_along_curve::to_polyhedron(const ifcopenshell::geom::settings& settings) const {
+    const auto profile = std::dynamic_pointer_cast<face>(basis);
+    if (!profile || profile->children.empty() || surface || direction) {
+        throw std::runtime_error("Polygonal sweep requires a circular disk profile");
+    }
+    std::vector<double> radii;
+    for (const auto& l : profile->children) {
+        if (l->children.size() != 1) {
+            throw std::runtime_error("Polygonal sweep requires concentric full circles");
+        }
+        const auto& e = l->children.front();
+        auto c = std::dynamic_pointer_cast<circle>(e->basis);
+        auto identity = [](const matrix4::ptr& m) { return !m || m->is_identity(); };
+        if (!c || c->radius <= 0. || !identity(c->matrix) || !identity(l->matrix) ||
+            !identity(profile->matrix) || !identity(e->matrix) ||
+            e->start.index() != 2 || e->end.index() != 2 ||
+            std::abs(std::abs(std::get<double>(e->end) - std::get<double>(e->start)) - 2. * polygon_pi) > 1.e-9) {
+            throw std::runtime_error("Polygonal sweep requires concentric full circles");
+        }
+        radii.push_back(c->radius);
+    }
+    if (radii.size() > 2 || (radii.size() == 2 && radii[1] >= radii[0])) {
+        throw std::runtime_error("Invalid swept disk radii");
+    }
+    std::vector<point3> polygon;
+    if (auto l = std::dynamic_pointer_cast<loop>(curve)) {
+        polygon = l->to_polygon(settings);
+    } else if (auto e = std::dynamic_pointer_cast<trimmed_curve>(curve)) {
+        polygon = e->to_polygon(settings);
+    } else if (auto c = std::dynamic_pointer_cast<taxonomy::curve>(curve)) {
+        if (c->kind() == LINE) {
+            throw std::runtime_error("Swept disk directrix must be bounded");
+        }
+        polygon = c->to_polygon(settings);
+    } else {
+        throw std::runtime_error("Unsupported swept disk directrix");
+    }
+    const double tolerance = settings.get<ifcopenshell::geom::settings::Precision>().get();
+    std::vector<Eigen::Vector3d> path;
+    for (const auto& p : polygon) {
+        if (path.empty() || (p.ccomponents() - path.back()).norm() > tolerance) {
+            path.push_back(p.ccomponents());
+        }
+    }
+    const bool closed = path.size() > 2 && (path.front() - path.back()).norm() < tolerance;
+    if (closed) {
+        path.pop_back();
+    }
+    if (path.size() < (closed ? 3u : 2u)) {
+        throw std::runtime_error("Not enough swept disk directrix vertices");
+    }
+    auto c = make<circle>();
+    c->radius = radii.front();
+    const size_t count = c->to_polygon(settings).size() - 1;
+    const size_t segment_count = path.size() - (closed ? 0 : 1);
+    std::vector<Eigen::Vector3d> tangents, axes;
+    std::vector<double> lengths;
+    double total_length = 0.;
+    for (size_t i = 0; i < segment_count; ++i) {
+        Eigen::Vector3d delta = path[(i + 1) % path.size()] - path[i];
+        lengths.push_back(delta.norm());
+        total_length += lengths.back();
+        tangents.push_back(delta.normalized());
+    }
+    axes.push_back(tangents.front().unitOrthogonal());
+    for (size_t i = 1; i < tangents.size(); ++i) {
+        if (tangents[i - 1].dot(tangents[i]) < -1. + 1.e-9) {
+            throw std::runtime_error("Swept disk directrix reverses at a vertex");
+        }
+        axes.push_back(Eigen::Quaterniond::FromTwoVectors(tangents[i - 1], tangents[i]) * axes.back());
+    }
+    // Parallel transport gives the minimum rotation between consecutive segments.
+    // Circular polygons are invariant under a cyclic shift of their vertices.
+    // Distribute only the residual holonomy, at most half a polygon segment.
+    if (closed) {
+        if (tangents.back().dot(tangents.front()) < -1. + 1.e-9) {
+            throw std::runtime_error("Swept disk directrix reverses at the seam");
+        }
+        Eigen::Vector3d last = Eigen::Quaterniond::FromTwoVectors(tangents.back(), tangents.front()) * axes.back();
+        const double correction = std::remainder(
+            std::atan2(tangents.front().dot(last.cross(axes.front())), last.dot(axes.front())), 2. * polygon_pi / count);
+        double distance = 0.;
+        for (size_t i = 1; i < axes.size(); ++i) {
+            distance += lengths[i - 1];
+            axes[i] = Eigen::AngleAxisd(correction * distance / total_length, tangents[i]) * axes[i];
+        }
+    }
+    std::vector<std::vector<polygon_section>> sections;
+    for (size_t i = 0; i < path.size(); ++i) {
+        const size_t incoming = i == 0 ? (closed ? segment_count - 1 : 0) : i - 1;
+        const size_t outgoing = i < segment_count ? i : segment_count - 1;
+        const Eigen::Vector3d tangent = tangents[incoming];
+        Eigen::Vector3d normal = (tangent + tangents[outgoing]).normalized();
+        if (!closed && (i == 0 || i + 1 == path.size())) {
+            normal = endpoint_tangent(curve, i != 0);
+        }
+        Eigen::Vector3d x = axes[incoming];
+        if (closed && i == 0) {
+            x = Eigen::Quaterniond::FromTwoVectors(tangents.front(), tangent) * axes.front();
+        }
+        const Eigen::Vector3d y = tangent.cross(x).normalized();
+        std::vector<polygon_section> section;
+        for (size_t r = 0; r < radii.size(); ++r) {
+            polygon_section boundary;
+            boundary.closed = true;
+            boundary.external = r == 0;
+            for (size_t j = 0; j < count; ++j) {
+                const double angle = 2. * polygon_pi * j / count;
+                Eigen::Vector3d offset = radii[r] * (std::cos(angle) * x + std::sin(angle) * y);
+                // Intersect the incoming cylinder generators with the miter plane.
+                offset -= tangent * (normal.dot(offset) / normal.dot(tangent));
+                boundary.points.push_back(make<point3>((path[i] + offset).eval()));
+            }
+            section.push_back(std::move(boundary));
+        }
+        sections.push_back(std::move(section));
+    }
+    auto s = make<shell>();
+    s->closed = true;
+    s->instance = instance;
+    s->matrix = matrix;
+    s->surface_style = surface_style;
+    for (size_t i = 0; i < segment_count; ++i) {
+        const size_t next = (i + 1) % sections.size();
+        size_t shift = 0;
+        if (closed && next == 0) {
+            const auto& tangent = tangents[i];
+            auto perpendicular = [&](const Eigen::Vector3d& p) -> Eigen::Vector3d { return p - tangent * tangent.dot(p); };
+            const Eigen::Vector3d a = perpendicular(sections[i][0].points.front()->ccomponents() - path[i]);
+            double best = std::numeric_limits<double>::infinity();
+            for (size_t j = 0; j < count; ++j) {
+                const double distance = (a - perpendicular(sections[next][0].points[j]->ccomponents() - path[next])).squaredNorm();
+                if (distance < best) {
+                    best = distance;
+                    shift = j;
+                }
+            }
+        }
+        for (size_t r = 0; r < radii.size(); ++r) {
+            auto end = sections[next][r];
+            std::rotate(end.points.begin(), end.points.begin() + shift, end.points.end());
+            connect_sections(s, sections[i][r], end);
+        }
+    }
+    if (!closed) {
+        for (size_t index : {size_t(0), sections.size() - 1}) {
+            if (radii.size() == 1) {
+                auto center = make<point3>(path[index]);
+                const auto& points = sections[index][0].points;
+                for (size_t j = 0; j < count; ++j) {
+                    if (index == 0) {
+                        triangle(s, center, points[(j + 1) % count], points[j]);
+                    } else {
+                        triangle(s, center, points[j], points[(j + 1) % count]);
+                    }
+                }
+            } else {
+                const auto& outer = sections[index][0].points;
+                const auto& inner = sections[index][1].points;
+                for (size_t j = 0; j < count; ++j) {
+                    const size_t k = (j + 1) % count;
+                    if (index == 0) {
+                        triangle(s, outer[j], inner[k], outer[k]);
+                        triangle(s, outer[j], inner[j], inner[k]);
+                    } else {
+                        triangle(s, outer[j], outer[k], inner[k]);
+                        triangle(s, outer[j], inner[k], inner[j]);
+                    }
+                }
+            }
+        }
+    }
+    return s;
+}
 
 namespace {
 	bool compare(const trimmed_curve& a, const trimmed_curve& b);
