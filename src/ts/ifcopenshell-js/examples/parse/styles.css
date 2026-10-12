@@ -1,0 +1,88 @@
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  color: #18181b;
+  background: #fafafa;
+}
+
+a { color: #2563eb; }
+
+.chapter-nav {
+  background: #fff;
+  border-bottom: 1px solid #e4e4e7;
+  padding: 0.75rem 1.5rem;
+  font-size: 13px;
+}
+
+.chapter-nav a { margin-right: 1rem; text-decoration: none; }
+.chapter-nav a:hover { text-decoration: underline; }
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.status { color: #52525b; margin: 0.5rem 0 1.25rem; }
+
+.lesson-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lesson-step {
+  border: 1px solid #e4e4e7;
+  border-radius: 10px;
+  background: #fff;
+  padding: 1rem 1.1rem;
+  opacity: 0.72;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.lesson-step.done {
+  opacity: 1;
+  border-color: #86efac;
+}
+
+.lesson-step h2 {
+  margin: 0 0 0.65rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.lesson-code {
+  margin: 0 0 0.65rem;
+  padding: 0.75rem 0.85rem;
+  background: #18181b;
+  color: #f4f4f5;
+  border-radius: 8px;
+  overflow: auto;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.lesson-code code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.lesson-result {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  background: #f4f4f5;
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #3f3f46;
+  min-height: 1.5rem;
+}
+
+.lesson-result.done {
+  background: #ecfdf5;
+  color: #14532d;
+}
