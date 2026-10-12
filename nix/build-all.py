@@ -1556,14 +1556,6 @@ if "OpenCOLLADA" in targets:
     )
 
 
-def python_consider_rc(python_version: str) -> str:
-    # TODO: remove after Python 3.15 release.
-    # Python 3.15.0 final was postponed to ~2026-10-09, before that only rc builds are available.
-    if python_version == "3.15.0" and date.today() < date(2026, 11, 1):
-        python_version += "rc3"
-    return python_version
-
-
 PYTHON_INSTALL_DIRS: dict[str, Path] = {}
 """Python version -> install dir."""
 
@@ -1575,7 +1567,6 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
     uv_env = os.environ | {"UV_PYTHON_INSTALL_DIR": str(UV_PYTHON_INSTALL_DIR)}
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
-        PYTHON_VERSION = python_consider_rc(PYTHON_VERSION)
         python_request = f"cpython-{PYTHON_VERSION}-macos-x86_64" if MAC_CROSS_COMPILE_INTEL else PYTHON_VERSION
 
         logger.info(f"\rInstalling Python {PYTHON_VERSION} with uv...")
@@ -2141,7 +2132,6 @@ if "IfcOpenShell-Python" in targets:
         )
     else:
         for python_version in PYTHON_VERSIONS:
-            python_version = python_consider_rc(python_version)
             python_path = PYTHON_INSTALL_DIRS[python_version]
             # Install to a staging dir, so the wrapper won't end up in the Python installation.
             package_install_dir = Path(DEPS_DIR) / "install" / "ifcopenshell" / "tmp" / f"python-{python_version}"
