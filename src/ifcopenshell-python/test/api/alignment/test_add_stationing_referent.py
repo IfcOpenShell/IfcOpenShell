@@ -189,5 +189,5 @@ def test_polyline_alignment_referent_is_placed_on_the_polyline():
         placement = referent.ObjectPlacement
         assert placement.is_a("IfcLinearPlacement")
         assert placement.RelativePlacement.Location.BasisCurve == ifcopenshell.api.alignment.get_curve(alignment)
-        location = ifcopenshell.util.placement.get_local_placement(placement)[:3, 3]
+        location = ifcopenshell.util.placement.get_placement(placement)[:3, 3]
         assert [round(float(v), 3) for v in location] == list(expected)
