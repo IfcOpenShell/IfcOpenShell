@@ -21,7 +21,7 @@ jobs:
       date: ${{ steps.date.outputs.date }}
       verdate: ${{ steps.verdate.outputs.verdate }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set env
         run: echo ok go
 
@@ -76,7 +76,7 @@ jobs:
             echo "ARTIFACTS_DIR=/home/runner/work/artifacts" >> $GITHUB_ENV
           fi
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
 
@@ -85,7 +85,7 @@ jobs:
         run: |
           curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz | tar -xvJf - -C /Users/runner/work/
 
-      - uses: mamba-org/setup-micromamba@v3
+      - uses: mamba-org/setup-micromamba@f457c30a868e4760d3a6fcea5f25dc655b8edf39 # v3.2.1
         with:
           environment-name: test-env
           create-args: >-
@@ -94,7 +94,7 @@ jobs:
             rattler-build
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.24
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           key: conda-${{ matrix.platform.pkg_dir }}
           # By default it's installed from apt on Linux, ubuntu-latest is 24.04 with ccache 4.9,
@@ -126,7 +126,7 @@ jobs:
       ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
       NUM_SUPPORTED_VERSIONS: 5
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up uv
         uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0

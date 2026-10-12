@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
 
@@ -59,7 +59,7 @@ jobs:
             tk-dev
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.24
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           key: ci-ifcwrap-standalone-ubuntu-22.04-${{ runner.arch }}
           # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
