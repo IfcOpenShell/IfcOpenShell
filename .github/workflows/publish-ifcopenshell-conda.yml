@@ -37,7 +37,10 @@ jobs:
 
       - name: Version + date str
         id: verdate
-        run: echo "verdate=${{ steps.version.outputs.version }}alpha${{ steps.date.outputs.date }}" >> $GITHUB_OUTPUT
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          DATE: ${{ steps.date.outputs.date }}
+        run: echo "verdate=${VERSION}alpha${DATE}" >> $GITHUB_OUTPUT
 
 
   publish:
@@ -100,7 +103,7 @@ jobs:
 
       - name: create conda package dist dir
         run: |
-          mkdir -p ${{ env.ARTIFACTS_DIR }}
+          mkdir -p ${ARTIFACTS_DIR}
 
       - name: build & test ifcopenshell
         run: |
@@ -108,13 +111,13 @@ jobs:
           rattler-build build \
             --no-build-id \
             -r conda/recipe.yaml \
-            --output-dir '${{ env.ARTIFACTS_DIR }}'
+            --output-dir "${ARTIFACTS_DIR}"
         env:
           VERSION_OVERRIDE: ${{ needs.resolve-version.outputs.verdate }}
 
       - name: upload to anaconda
         run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell ${{ env.ARTIFACTS_DIR }}/${{ matrix.platform.pkg_dir }}/*.conda
+          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell ${ARTIFACTS_DIR}/${{ matrix.platform.pkg_dir }}/*.conda
 
   clean:
     needs: publish
