@@ -138,6 +138,11 @@ class Project(bonsai.core.tool.Project):
         if template_file.schema != ifc_file.schema or not template_file.by_type("IfcSite"):
             return False
 
+        # The project file was created with the default MVD; take the template's instead
+        description = template_file.header.file_description.description
+        if any("ViewDefinition" in d for d in description):
+            ifc_file.header.file_description.description = description
+
         before = set(ifc_file)
         ifcpatch.execute({"file": ifc_file, "recipe": "MergeProjects", "arguments": [[template_file]]})
         for element in set(ifc_file) - before:
