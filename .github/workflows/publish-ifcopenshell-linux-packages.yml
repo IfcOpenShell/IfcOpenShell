@@ -80,8 +80,8 @@ jobs:
         id: package
         run: |
           cmake --build . --target package
-          echo ::set-output name=tgz::$( ls assets/*.tar.gz | head -n 1 | xargs basename )
-          echo ::set-output name=deb::$( ls assets/*.deb | head -n 1 | xargs basename )
+          echo "tgz=$( ls assets/*.tar.gz | head -n 1 | xargs basename )" >> "$GITHUB_OUTPUT"
+          echo "deb=$( ls assets/*.deb | head -n 1 | xargs basename )" >> "$GITHUB_OUTPUT"
         working-directory: build
         env:
           CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
