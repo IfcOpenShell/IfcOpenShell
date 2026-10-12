@@ -58,9 +58,6 @@ jobs:
           sudo cmake --build . --target install -j $(nproc)
 
       - name: Build
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir build && cd build
           cmake ../cmake \
@@ -83,8 +80,6 @@ jobs:
           echo "tgz=$( ls assets/*.tar.gz | head -n 1 | xargs basename )" >> "$GITHUB_OUTPUT"
           echo "deb=$( ls assets/*.deb | head -n 1 | xargs basename )" >> "$GITHUB_OUTPUT"
         working-directory: build
-        env:
-          CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create release and upload TGZ
         uses: svenstaro/upload-release-action@v2
