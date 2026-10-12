@@ -14,8 +14,8 @@ const runtime = await ifcopenshell.init();
 await runtime.loadPlugin('schema', 'ifc4');
 using model = new ifcopenshell.File('IFC4');
 const wall = model.create('IfcWall', { Name: 'Example' });
-console.log(wall.id(), wall.get('Name'));
-wall.set('Name', 'Updated');
+console.log(wall.id(), wall.Name);
+wall.Name = 'Updated';
 ```
 
 ## Geometry
