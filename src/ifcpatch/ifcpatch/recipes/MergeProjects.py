@@ -148,7 +148,11 @@ class Patcher(ifcpatch.BasePatcher):
 
         for inverse in self.file.get_inverse(merged_project):
             ifcopenshell.util.element.replace_attribute(inverse, merged_project, original_project)
+        merged_units = merged_project.UnitsInContext
         self.file.remove(merged_project)
+        # The original project's units apply now, so the merged project's would be left unreferenced
+        if merged_units:
+            ifcopenshell.util.element.remove_deep2(self.file, merged_units)
 
         self.reuse_existing_contexts()
 
