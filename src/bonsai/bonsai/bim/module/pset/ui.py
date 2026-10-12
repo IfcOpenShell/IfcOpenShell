@@ -105,6 +105,8 @@ def draw_bounded_property(prop: IfcProperty, layout: bpy.types.UILayout, copy_op
         (prop.bounded_value.upper_bound_value, "Upper"),
         (prop.bounded_value.set_point_value, "Set Point"),
     ):
+        if label == "Set Point" and tool.Ifc.get().schema == "IFC2X3":
+            continue
         if not (value_name := attr.get_value_name(display_only=True)):
             continue
         row = grid.row(align=True)
