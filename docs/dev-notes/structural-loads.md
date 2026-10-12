@@ -29,8 +29,21 @@ The pull requests, in stack order:
 - **Solver: PyNite (`PyNiteFEA`, MIT)**, for the next stage. A 3D frame and plate solver that
   also handles 2D problems, actively maintained, and mapping directly onto the IFC structural
   schema: point connection → node, curve member → frame member, surface member → plate,
-  boundary conditions → supports, actions → loads, results → `IfcStructuralResultGroup`.
-  Chosen over anaStruct, which is 2D only.
+  boundary conditions → supports, actions → loads. Chosen over anaStruct, which is 2D only.
+- **Results go to `results.json`, not into the IFC** (after Bruno Postle on #9866). Results are
+  generated, orders of magnitude larger than the loads, and replaced on every run, so in a
+  Native IFC workflow they do not belong in the design model, and `IfcStructuralResultGroup` is
+  not used. Bonsai reads the file, keyed to GlobalIds, as an overlay without modifying the IFC;
+  calculation reports take reactions and member forces from it.
+- **Analysis through [ifc_structural_mechanics](https://github.com/brunopostle/ifc_structural_mechanics)**
+  (GPL-3.0), which already reads the IFC analysis model, runs CalculiX (meshed by Gmsh) and
+  writes that `results.json`. PyNite becomes a second backend there rather than a Bonsai-only
+  bridge: its layers (`ifc/` → `domain/` → Gmsh → CalculiX → `domain/result` →
+  `export/results_exporter`) suggest a PyNite backend takes the `domain` model straight to
+  nodes and members, skipping meshing, and hands results back to the same exporter. CalculiX
+  stays the default for buildings (plates, buckling); PyNite suits 2D trusses and frames,
+  needs nothing beyond Python, and the two cross-check on frames. Test structures come from
+  [IfcOpenShell/analysis-models](https://github.com/IfcOpenShell/analysis-models).
 - **PyNite runs in a separate process**, started with Blender's own interpreter and a private
   library folder on `PYTHONPATH`, as Bonsai already does for its web UI server
   (`tool/web.py`). PyNite releases since 2.1 declare `numpy>=2.4`, but Blender 5.1 and 5.2
@@ -274,12 +287,85 @@ already express this, but Bonsai's only editor for them turns an empty in 3D by 
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
-`IfcRelAssignsToGroupByFactor`), then analysis. Results go to a `results.json` keyed to
-GlobalIds, read by Bonsai as an overlay rather than written into the IFC, through
-[ifc_structural_mechanics](https://github.com/brunopostle/ifc_structural_mechanics), with
-PyNite added as a second backend beside CalculiX (see #9866). When combinations come, fix
+`IfcRelAssignsToGroupByFactor`), then analysis, as in Decisions. Show Loads already reads
+the factors, so combinations need a panel to create them, add cases with factors and assign
+them to the current model; PyNite takes them as `add_load_combo`. When combinations come, fix
 `recursive_subgroups` in `load_decoration_data.py`, which multiplies factors cumulatively
 across a group's relationships, so that 1.2 D + 1.6 L would draw the live load at 1.92.
+
+Revisit with combinations:
+
+- **Applying one load to several load cases at once.** Today a load is applied once per case
+  (independent definitions), or shared through the load case panel's + row. A direct way
+  would make Apply Load's load case a checklist, one applied load per ticked case sharing one
+  definition, with an "Also apply in…" choice in Edit Load. Deferred because most such needs
+  are load combinations in disguise.
+- **Editing one applied load whose definition is shared** changes every applied load sharing
+  it; Edit Load warns "Used by N". Set aside until needed: give the applied load its own copy
+  of the definition first, with a "Change all N" option, in Edit Load and Edit Resultant.
+
+### What Bonsai supported before this stack (audit)
+
+| Concept | Status |
+|---|---|
+| Analysis model (add / edit / assign) | yes |
+| Topology: vertex, straight edge, planar face | yes (no curved edges, no faces with holes) |
+| Member connections, connection condition and coordinate system, member axis | yes |
+| Boundary conditions: node, edge, face | yes (warping: no) |
+| Actions: point, linear, planar | yes |
+| Loads: single force and displacement, linear and planar force, temperature | yes |
+| Load configuration (varying along a member) | display only |
+| Load groups and load cases | yes; assigning them to a model (`LoadedBy`) added in section 1 |
+| Results and reactions | display only (nothing creates them) |
+| Physical ↔ analytical link (`IfcRelAssignsToProduct`) | API only, no UI |
+| Varying members, failure and slippage conditions | no |
+
+### Beyond what PyNite solves
+
+PyNite (3.2.0) does linear, tension/compression-only, P-Delta, modal and pushover analysis,
+and reports member forces, moments, deflections, reactions and plate stresses. It has no
+buckling analysis, response spectrum or time history, member stresses, or design checks. It
+gives the forces; most gaps are what those forces mean for a member, which are short,
+well-known formulas:
+
+| Topic | Gap | Approach |
+|---|---|---|
+| Stress, strain, thermal | Member stresses; temperature loads | σ = P/A on PyNite's axial forces. PyNite has no temperature load but IFC does (`IfcStructuralLoadTemperature`): convert to equivalent forces (αΔT·E·A at a restrained member) before solving. |
+| Section properties | A, I, c, S, r | Closed-form formulas for IFC's parametric profiles (rectangle, circle, I, channel, tube, angle); the `sectionproperties` library only for arbitrary profiles. |
+| Shear and moment | — | PyNite covers it; the work is drawing diagrams in the viewport. |
+| Bending and shear stress, deflection | σ = Mc/I, τ = VQ/Ib; capacity checks | Formulas on PyNite's moments and shears with the section properties; deflection from PyNite; LRFD combinations in PyNite, capacity checks ours. |
+| Columns | Buckling load | Euler P_cr = π²EI/(KL)² with K from the member's IFC end conditions; AISC column curve and NDS column factor. P-Delta covers second-order frame effects. |
+| Connections | Bolts, welds | Hand calculation; perhaps a small calculator much later. |
+
+- **Hand methods** (joints, sections, moment distribution, slope-deflection, virtual work) are
+  done by hand and checked against PyNite's member forces. For the method of joints, the
+  member forces at a joint drawn tip to tail close the force polygon: the method drawn.
+- **Where code lives:** pure calculations in a small Blender-free module (perhaps
+  `ifcopenshell.util`), fast to test, with UI in Bonsai. Ask in #9866 whether maintainers want
+  design formulas in ifcopenshell before writing them.
+- **Design codes stay narrow:** clauses taught in introductory texts, labelled as simplified;
+  `structuralcodes` is the option to evaluate if full code checking is ever wanted.
+- **Checking:** calculations are checked against worked examples with published answers;
+  committed tests use made-up structures only, as worked problems are copyrighted.
+
+### Reports, later
+
+- Reactions and member forces come from `results.json` once analysis runs; shear and moment
+  diagrams and stresses after. `handcalcs` (Apache-2.0) is the reference for layout.
+- Once the content settles, a *Calculations* document type in Drawings and Documents, as
+  Schedules are: an `IfcDocumentInformation` associated with its analysis model, listed,
+  rebuilt and placeable on sheets. The Structural tab's button stays as a shortcut.
+- Each calculation gets a stable identity (model, load case and item GlobalIds), so that
+  review markup can anchor to it and survive a rebuild.
+- **LaTeX in diagram labels.** Diagrams are SVGs shown as images, which can run no script and
+  load no outside file, so KaTeX cannot render inside them; KaTeX HTML in a `<foreignObject>`
+  would need Node at export and embedded fonts, and Inkscape does not draw it. Labels are plain
+  text with `<tspan>` subscripts, enough for symbols, values and units. If labels need
+  fractions or roots, render them as SVG paths with matplotlib's mathtext, which comes with
+  PyNite's library folder.
+
+A gotcha met along the way: an operator property's `update` callback receives the operator's
+*properties*, not the operator, so it cannot call the operator's methods.
 
 Known gaps:
 
