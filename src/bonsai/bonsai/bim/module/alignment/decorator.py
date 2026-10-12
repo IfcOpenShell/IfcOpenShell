@@ -76,6 +76,7 @@ class AlignmentSegmentDecorator:
     COLOR_LABEL_PC = (1.0, 0.78, 0.40, 1.0)         # Warm orange - PC label
     COLOR_LABEL_PT = (0.60, 0.88, 1.0, 1.0)         # Light blue - PT label
     COLOR_LABEL_PI = (1.0, 0.90, 0.30, 1.0)         # Yellow - PI label
+    COLOR_CURVE_DATA_BG = (0.0, 0.0, 0.0, 0.6)      # Translucent black - curve data block
     LINE_WIDTH = 4.0
     LINE_TANGENT = 1.5
 
@@ -291,7 +292,6 @@ class AlignmentSegmentDecorator:
         if segment not in segments:
             return
         seg_idx = segments.index(segment)
-        seg_type = getattr(dp, "PredefinedType", "") or ""
 
         # Key-point labels (P.C., T.S., S.C., P.O.B., ...) — shares
         # _get_segment_start_point_label with update_key_point_referents so the
@@ -305,34 +305,16 @@ class AlignmentSegmentDecorator:
         start_label = _get_segment_start_point_label(prev_segment, segment)
         end_label = _get_segment_start_point_label(segment, next_segment)
 
-        # IFC local start coordinate and start tangent direction
-        sx, sy = dp.StartPoint.Coordinates[0], dp.StartPoint.Coordinates[1]
+        # Key points (IFC local) and curve properties, from the segment's design parameters
+        try:
+            curve = ifcopenshell.api.alignment.get_horizontal_curve_parameters(segment)
+        except Exception:
+            return
+        sx, sy = curve.start_point
+        ex, ey = curve.end_point
         d1x, d1y = math.cos(dp.StartDirection), math.sin(dp.StartDirection)
+        d2x, d2y = math.cos(dp.StartDirection + curve.delta), math.sin(dp.StartDirection + curve.delta)
         seg_len = getattr(dp, "SegmentLength", 0.0) or 0.0
-
-        # Next segment data — provides the IFC end-point and end tangent
-        has_next = seg_idx + 1 < len(segments)
-        next_dp = segments[seg_idx + 1].DesignParameters if has_next else None
-        arc_radius = getattr(dp, "StartRadiusOfCurvature", None) or 0.0
-        if next_dp and getattr(next_dp, "StartPoint", None):
-            ex = next_dp.StartPoint.Coordinates[0]
-            ey = next_dp.StartPoint.Coordinates[1]
-            d2x, d2y = math.cos(next_dp.StartDirection), math.sin(next_dp.StartDirection)
-        elif seg_type == "CIRCULARARC" and abs(arc_radius) > 1e-6:
-            # No next segment to read the true end tangent from (last/only
-            # segment) — the straight-line fallback below would make it
-            # parallel to the start tangent, degenerating the PI below to "none".
-            turn = seg_len / arc_radius
-            cos_t, sin_t = math.cos(turn), math.sin(turn)
-            d2x, d2y = d1x * cos_t - d1y * sin_t, d1x * sin_t + d1y * cos_t
-            cix, ciy = sx + arc_radius * -d1y, sy + arc_radius * d1x
-            rvx, rvy = sx - cix, sy - ciy
-            ex, ey = cix + rvx * cos_t - rvy * sin_t, ciy + rvx * sin_t + rvy * cos_t
-        else:
-            # Last segment or next has no StartPoint — approximate end along start tangent
-            ex = sx + seg_len * d1x
-            ey = sy + seg_len * d1y
-            d2x, d2y = d1x, d1y  # same direction → parallel, no PI
 
         # Derive IFC → Blender world affine transform
         # (sx,sy) ↔ segment_verts[0]  and  (ex,ey) ↔ segment_verts[-1]
@@ -350,19 +332,6 @@ class AlignmentSegmentDecorator:
         def ifc_to_world_xy(x, y):
             rx, ry = x - sx, y - sy
             return s_w[0] + a_c * rx - b_c * ry, s_w[1] + b_c * rx + a_c * ry
-
-        def world_to_ifc_xy(wx, wy):
-            rx_w, ry_w = wx - s_w[0], wy - s_w[1]
-            det = a_c * a_c + b_c * b_c
-            if det < 1e-12:
-                return sx, sy
-            rx = (a_c * rx_w + b_c * ry_w) / det
-            ry = (-b_c * rx_w + a_c * ry_w) / det
-            return sx + rx, sy + ry
-
-        # For the last segment, refine the IFC end position from the world end vertex
-        if not (next_dp and getattr(next_dp, "StartPoint", None)):
-            ex, ey = world_to_ifc_xy(e_w[0], e_w[1])
 
         # E/N for start and end
         try:
@@ -407,18 +376,15 @@ class AlignmentSegmentDecorator:
             "station_separator": station_separator,
             "start_label": start_label,
             "end_label": end_label,
+            "curve_props": _fmt_curve_properties(curve, unit_symbol),
             "has_pi": False,
         }
 
         # PI and perpendicular-tick data — only for non-linear segments with a finite PI
-        denom_ifc = d1x * d2y - d1y * d2x
-        if seg_type == "LINE" or abs(denom_ifc) < 1e-10:
+        if curve.pi is None:
             return  # Linear or parallel tangents — labels only, no PI geometry
 
-        dx_ifc, dy_ifc = ex - sx, ey - sy
-        t1_ifc = (dx_ifc * d2y - dy_ifc * d2x) / denom_ifc
-        pi_ifc_x = sx + t1_ifc * d1x
-        pi_ifc_y = sy + t1_ifc * d1y
+        pi_ifc_x, pi_ifc_y = curve.pi
         pi_wx, pi_wy = ifc_to_world_xy(pi_ifc_x, pi_ifc_y)
         pi_wz = (s_w[2] + e_w[2]) * 0.5
 
@@ -427,8 +393,17 @@ class AlignmentSegmentDecorator:
         except Exception:
             return
 
-        # Turn direction: positive denom → left (CCW), negative → right (CW)
-        sign_turn = 1 if denom_ifc > 0 else -1
+        # P.I. station: start station (P.C., S.C., ...) plus the tangent distance to the P.I.
+        # (T for a circular curve, T1 for a spiral)
+        if alignment is not None:
+            pi_station = ifcopenshell.api.alignment.station_from_distance_along(
+                ifc_file, alignment, pc_distance_along + curve.start_tangent
+            )
+        else:
+            pi_station = pc_distance_along + curve.start_tangent
+
+        # Turn direction: positive delta → left (CCW), negative → right (CW)
+        sign_turn = 1 if curve.delta > 0 else -1
 
         # World-space normalized perpendicular directions at PC and PT
         # pointing toward the inside of the curve (toward the center of curvature)
@@ -444,47 +419,25 @@ class AlignmentSegmentDecorator:
         pc_perp = _world_perp(d1x, d1y)
         pt_perp = _world_perp(d2x, d2y)
 
-        # Center of curvature (circular arcs only — constant radius gives a single center)
+        # Center of curvature for a circular arc; for spirals, which have no single
+        # center, the intersection of the PC/PT normals
         center_world = None
         center_en = None
-        if seg_type == "CIRCULARARC":
-            R = getattr(dp, "StartRadiusOfCurvature", None) or 0.0
-            if abs(R) > 1e-6:
-                # center = PC + R * (-d1y, d1x) in IFC local (R is signed: + left, − right)
-                cix = sx + R * (-d1y)
-                ciy = sy + R * d1x
-                cwx, cwy = ifc_to_world_xy(cix, ciy)
-                center_world = (cwx, cwy, s_w[2])
-                try:
-                    c_enh = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, cix, ciy, 0.0)
-                    center_en = (c_enh[0], c_enh[1])
-                except Exception:
-                    pass
-
-        if center_world is None:
-            # Non-circular curves (spirals, etc.) have no single center, but the
-            # PC/PT normals still meet at a useful reference point — same
-            # line-intersection as the PI above, using the perpendicular
-            # directions instead of the tangents.
-            pc_perp_ifc = (-d1y * sign_turn, d1x * sign_turn)
-            pt_perp_ifc = (-d2y * sign_turn, d2x * sign_turn)
-            perp_denom = pc_perp_ifc[0] * pt_perp_ifc[1] - pc_perp_ifc[1] * pt_perp_ifc[0]
-            if abs(perp_denom) > 1e-10:
-                t2 = (dx_ifc * pt_perp_ifc[1] - dy_ifc * pt_perp_ifc[0]) / perp_denom
-                cix = sx + t2 * pc_perp_ifc[0]
-                ciy = sy + t2 * pc_perp_ifc[1]
-                cwx, cwy = ifc_to_world_xy(cix, ciy)
-                center_world = (cwx, cwy, pi_wz)
-                try:
-                    c_enh = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, cix, ciy, 0.0)
-                    center_en = (c_enh[0], c_enh[1])
-                except Exception:
-                    pass
+        if curve.center is not None:
+            cix, ciy = curve.center
+            cwx, cwy = ifc_to_world_xy(cix, ciy)
+            center_world = (cwx, cwy, s_w[2] if curve.radius is not None else pi_wz)
+            try:
+                c_enh = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, cix, ciy, 0.0)
+                center_en = (c_enh[0], c_enh[1])
+            except Exception:
+                pass
 
         cls.tangent_data.update({
             "has_pi": True,
             "pi_world": (pi_wx, pi_wy, pi_wz),
             "pi_en": (pi_enh[0], pi_enh[1]),
+            "pi_station": pi_station,
             "pc_perp": pc_perp,          # (x, y) normalized world perp at PC
             "pt_perp": pt_perp,          # (x, y) normalized world perp at PT
             "center_world": center_world, # 3-tuple or None
@@ -616,6 +569,55 @@ class AlignmentSegmentDecorator:
         batch.draw(shader)
         gpu.state.blend_set("NONE")
 
+    def _draw_curve_data(self, td, occupied, region, rv3d, font_id, font_size, line_h) -> None:
+        """Draw the curve data (R, T, Δ, L, E, M) as its own framed block.
+
+        The block sits inside the curve, past its midpoint on the side away from
+        the P.I., unless that would overlap a point label -- then it moves to the
+        nearest clear spot around the midpoint.
+        """
+        lines = td.get("curve_props")
+        anchor_world = self.__class__.label_world_pos
+        if not lines or not anchor_world:
+            return
+        anchor = location_3d_to_region_2d(region, rv3d, anchor_world)
+        if anchor is None:
+            return
+        ax, ay = anchor.x, anchor.y
+
+        # Inward: from the P.I. through the curve midpoint, or from the midpoint toward the center
+        inward = None
+        pi = location_3d_to_region_2d(region, rv3d, td["pi_world"]) if td.get("pi_world") else None
+        center = location_3d_to_region_2d(region, rv3d, td["center_world"]) if td.get("center_world") else None
+        if pi is not None:
+            inward = (ax - pi.x, ay - pi.y)
+        elif center is not None:
+            inward = (center.x - ax, center.y - ay)
+
+        pad = 6
+        blf.size(font_id, font_size)
+        width = max(blf.dimensions(font_id, line)[0] for line in lines) + 2 * pad
+        height = len(lines) * line_h + 2 * pad
+        x0, y0, x1, y1 = _place_label_block(
+            (ax, ay), inward, width, height, occupied, region.width, region.height
+        )
+
+        gpu.state.blend_set("ALPHA")
+        shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        shader.bind()
+        shader.uniform_float("color", self.COLOR_CURVE_DATA_BG)
+        box = [(x0, y0, 0), (x1, y0, 0), (x1, y1, 0), (x0, y1, 0)]
+        batch_for_shader(shader, "TRIS", {"pos": box}, indices=[(0, 1, 2), (0, 2, 3)]).draw(shader)
+        shader.uniform_float("color", self.COLOR_TANGENT)
+        edges = [(0, 1), (1, 2), (2, 3), (3, 0)]
+        batch_for_shader(shader, "LINES", {"pos": box}, indices=edges).draw(shader)
+        gpu.state.blend_set("NONE")
+
+        blf.color(font_id, *self.COLOR_LABEL)
+        for i, line in enumerate(lines):
+            blf.position(font_id, x0 + pad, y1 - pad - (i + 1) * line_h + 4, 0)
+            blf.draw(font_id, line)
+
     def draw_label(self, context):
         """Draw point labels with station and E/N coordinates in screen space.
 
@@ -667,6 +669,10 @@ class AlignmentSegmentDecorator:
             def fmt_en(e: float, n: float) -> str:
                 return f"E {e:.2f}  N {n:.2f}"
 
+            # Screen rects (x0, y0, x1, y1) taken by the point markers and labels,
+            # so the curve data block can be placed clear of them
+            occupied = []
+
             def draw_point_label(world_pos, name, station, coords, color):
                 screen = location_3d_to_region_2d(region, rv3d, world_pos)
                 if not screen:
@@ -680,6 +686,8 @@ class AlignmentSegmentDecorator:
                 if station:
                     lines.append(f"Sta {station}")
                 lines.append(coords)
+                width = max(blf.dimensions(font_id, line)[0] for line in lines)
+                occupied.append((sx - 10, sy - 10, sx + 10, sy + 10))
                 # Stack upward from the point by default; flip downward near the
                 # top edge so a multi-line label can't run off-screen -- a point
                 # can end up arbitrarily close to any edge once you zoom in far
@@ -689,10 +697,12 @@ class AlignmentSegmentDecorator:
                     for i, line in enumerate(lines):
                         blf.position(font_id, sx + 12, sy - 4 - (i + 1) * line_h, 0)
                         blf.draw(font_id, line)
+                    occupied.append((sx + 12, sy - 4 - total_h, sx + 12 + width, sy))
                 else:
                     for i, line in enumerate(reversed(lines)):
                         blf.position(font_id, sx + 12, sy + 4 + i * line_h, 0)
                         blf.draw(font_id, line)
+                    occupied.append((sx + 12, sy, sx + 12 + width, sy + 4 + total_h))
 
             if has_pi:
                 # Curve segment: start tag / PI / end tag
@@ -701,7 +711,7 @@ class AlignmentSegmentDecorator:
                     fmt_en(*td["start_en"]), self.COLOR_LABEL_PC,
                 )
                 draw_point_label(
-                    td["pi_world"], "P.I.", None,
+                    td["pi_world"], "P.I.", fmt_sta(td["pi_station"]),
                     fmt_en(*td["pi_en"]), self.COLOR_LABEL_PI,
                 )
                 draw_point_label(
@@ -724,6 +734,8 @@ class AlignmentSegmentDecorator:
                     td["end_world"], td["end_label"], fmt_sta(td["pt_station"]),
                     fmt_en(*td["end_en"]), self.COLOR_LABEL_PT,
                 )
+            # Drawn last, so it can be placed clear of every point label
+            self._draw_curve_data(td, occupied, region, rv3d, font_id, font_size, line_h)
         else:
             # Fallback: type label at midpoint when tangent data is unavailable
             label_pos = self.__class__.label_world_pos
@@ -1043,6 +1055,99 @@ def _fmt_elev(elev: float, interval: float) -> str:
         return f"{elev:.2f}"
     else:
         return f"{elev:.3f}"
+
+
+def _fmt_dms(degrees: float) -> str:
+    """Format a non-negative angle in degrees as D°MM'SS.SS\", carrying rounded-up seconds."""
+    d = int(degrees)
+    m_full = (degrees - d) * 60.0
+    m = int(m_full)
+    s = (m_full - m) * 60.0
+    if round(s, 2) >= 60.0:
+        s = 0.0
+        m += 1
+    if m >= 60:
+        m = 0
+        d += 1
+    return f"{d}°{m:02d}'{s:05.2f}\""
+
+
+def _place_label_block(
+    anchor: tuple[float, float],
+    inward: Optional[tuple[float, float]],
+    width: float,
+    height: float,
+    occupied: list[tuple[float, float, float, float]],
+    region_width: float,
+    region_height: float,
+) -> tuple[float, float, float, float]:
+    """Screen rect (x0, y0, x1, y1) for a width x height block near anchor.
+
+    Tries the inward direction first, then directions turning progressively
+    away from it, each at increasing distance from the anchor, and takes the
+    first spot inside the region that overlaps none of the occupied rects.
+    Falls back to the first (inward) spot, kept inside the region.
+    """
+    ax, ay = anchor
+    length = math.hypot(*inward) if inward else 0.0
+    ux, uy = (inward[0] / length, inward[1] / length) if length > 1e-6 else (0.0, -1.0)
+    directions = []
+    for turn in (0, 45, -45, 90, -90, 135, -135, 180):
+        c, s = math.cos(math.radians(turn)), math.sin(math.radians(turn))
+        directions.append((ux * c - uy * s, ux * s + uy * c))
+
+    margin = 4.0
+
+    def rect_at(dx, dy, distance):
+        # Offset the block's center so its near edge is `distance` from the anchor
+        reach = distance + 0.5 * (abs(dx) * width + abs(dy) * height)
+        cx, cy = ax + dx * reach, ay + dy * reach
+        return (cx - 0.5 * width, cy - 0.5 * height, cx + 0.5 * width, cy + 0.5 * height)
+
+    def is_clear(rect):
+        x0, y0, x1, y1 = rect
+        if x0 < margin or y0 < margin or x1 > region_width - margin or y1 > region_height - margin:
+            return False
+        return all(
+            x1 + margin <= ox0 or ox1 <= x0 - margin or y1 + margin <= oy0 or oy1 <= y0 - margin
+            for ox0, oy0, ox1, oy1 in occupied
+        )
+
+    for distance in (16.0, 60.0, 140.0):
+        for dx, dy in directions:
+            rect = rect_at(dx, dy, distance)
+            if is_clear(rect):
+                return rect
+
+    x0, y0, x1, y1 = rect_at(ux, uy, 16.0)
+    shift_x = max(margin - x0, 0.0) - max(x1 - (region_width - margin), 0.0)
+    shift_y = max(margin - y0, 0.0) - max(y1 - (region_height - margin), 0.0)
+    return (x0 + shift_x, y0 + shift_y, x1 + shift_x, y1 + shift_y)
+
+
+def _fmt_curve_properties(curve, unit_symbol: str) -> list[str]:
+    """Curve data lines for a HorizontalCurveParameters: R, T, Δ, L, LC, E, M for a circular curve and
+    T1, T2, Δ, L, LC for a spiral, skipping those that don't apply."""
+    if curve.delta == 0.0:
+        return []
+    turn = "Lt" if curve.delta > 0 else "Rt"
+    lines = []
+    if curve.radius is not None:
+        lines.append(f"R = {curve.radius:.2f} {unit_symbol}")
+    if curve.tangent is not None:
+        lines.append(f"T = {curve.tangent:.2f} {unit_symbol}")
+    elif curve.start_tangent is not None:
+        lines.append(f"T1 = {curve.start_tangent:.2f} {unit_symbol}")
+        lines.append(f"T2 = {curve.end_tangent:.2f} {unit_symbol}")
+    lines.append(f"Δ = {_fmt_dms(math.degrees(abs(curve.delta)))} {turn}")
+    lines.append(f"L = {curve.length:.2f} {unit_symbol}")
+    if curve.long_chord is not None:
+        lines.append(f"LC = {curve.long_chord:.2f} {unit_symbol}")
+    if curve.external is not None:
+        lines.append(f"E = {curve.external:.2f} {unit_symbol}")
+    if curve.mid_ordinate is not None:
+        lines.append(f"M = {curve.mid_ordinate:.2f} {unit_symbol}")
+    return lines
 
 
 class VerticalProfileDecorator:

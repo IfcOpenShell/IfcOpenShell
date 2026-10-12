@@ -22,6 +22,7 @@ The regression set last run (all passing on 2026-09-28):
 - bl_multi_vertical_cant, bl_extend, bl_key_points, bl_drag_vertical, bl_move_marker
 - bl_straight_repro, bl_offset, bl_offset_flow2, bl_join_distance, bl_polyline_flow
 - bl_vertical_typed, bl_offset_stationing, bl_offset_profile
+- bl_curve_data (curve data lines and block placement for the selected-curve labels)
 
 `bl_panel_render_rec.py` is a helper imported by the panel tests.
 
@@ -36,6 +37,8 @@ those.
 
       ALIGN_UI_TEST=move_pi_marker blender --window-geometry 0 0 1400 900 --python ui_invoke.py
 
+- `ui_curve_data.py` selects a circular curve and saves screenshots of its labels and curve data block
+  at three zoom levels to `CURVE_DATA_SHOTS` (default: Blender's temp dir), for visual checks.
 - `ui_pick.py` simulates clicks near a PI marker placed over a mesh, and needs
   `--enable-event-simulate`. Set `PICK_CONTROL=1` to disable the PI pick keymap for comparison. The
   result is written to `%TEMP%\align_ui_pick_result.txt`.
