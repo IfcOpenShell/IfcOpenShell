@@ -284,6 +284,24 @@ already express this, but Bonsai's only editor for them turns an empty in 3D by 
   its magnitude, as a capacity often is; the magnitude follows from it and the direction, and
   the report finds it from that component. Kept as `BBIM_Structural.KnownComponent`.
 
+## 13. A resultant's angle from any axis
+
+Texts give a resultant's angle from whichever axis suits the problem, often the horizontal
+where Bonsai's eighths would measure from the vertical.
+
+- **Edit Resultant** treats an eighth clicked as the axis to measure from, not a new
+  direction: the resultant stays where it is, and its angle is re-measured from that eighth's
+  axis, turning that eighth's way, up to a full turn (`tool.Structural.get_angle_from_eighth`).
+  Typing an angle sets the direction. Apply Load and Edit Load keep their behaviour, where an
+  eighth clicked keeps the angle and moves the force; whether they should follow is open.
+- **Kept per item and load case** as `BBIM_Structural.ResultantEighths`, apart from
+  `Resultants`, which holds only locked resultants. Choosing the resultant's own eighth forgets
+  it. The resultant's angle arc and reports measure from it; past 90 degrees the report's angle
+  step adds whole quarter turns, then takes the rest from the axis reached.
+- **Slope triangles** sit out towards each force's tip, beyond the angle arcs at its tail, and
+  on the side away from the axis its angle is measured from while angles are shown, so that
+  the angle's label never overlaps them.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
