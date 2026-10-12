@@ -13,7 +13,7 @@ import * as ifcopenshell_geom from 'ifcopenshell/geom';
 const runtime = await ifcopenshell.init();
 await runtime.loadPlugin('schema', 'ifc4');
 using model = new ifcopenshell.File('IFC4');
-const wall = model.create('IfcWall', { Name: 'Example' });
+const wall = model.createEntity('IfcWall', { Name: 'Example' });
 console.log(wall.id(), wall.Name);
 wall.Name = 'Updated';
 ```

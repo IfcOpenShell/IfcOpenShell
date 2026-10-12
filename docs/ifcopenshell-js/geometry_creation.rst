@@ -6,7 +6,7 @@ Geometry creation
 Authoring IFC representation items
 ----------------------------------
 
-Create IFC geometry using ``create()`` and ``set()``. The example below
+Create IFC geometry using ``createEntity()`` and ``set()``. The example below
 builds an IFC4 wall with a rectangular profile extruded one metre. It assumes
 ``ifcopenshell`` and ``runtime`` from :doc:`hello_world`, with the IFC4 schema
 plugin loaded.
@@ -16,7 +16,7 @@ plugin loaded.
    const model = new ifcopenshell.File('IFC4');
    const handles = [];
    function create(type, attributes) {
-     const entity = model.create(type);
+     const entity = model.createEntity(type);
      handles.push(entity);
      for (const [name, value] of Object.entries(attributes)) entity.set(name, value);
      return entity;
@@ -68,8 +68,8 @@ IFC4 ``model``:
 
 .. code-block:: javascript
 
-   const points = model.create('IfcCartesianPointList3D');
-   const mesh = model.create('IfcTriangulatedFaceSet');
+   const points = model.createEntity('IfcCartesianPointList3D');
+   const mesh = model.createEntity('IfcTriangulatedFaceSet');
    {
      points.set('CoordList', [[0, 0, 0], [1, 0, 0], [0, 1, 0]]);
      mesh.set('Coordinates', points);

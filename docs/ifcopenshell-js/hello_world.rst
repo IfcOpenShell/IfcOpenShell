@@ -96,7 +96,7 @@ An empty IFC file can also be constructed after loading its schema plugin:
 
    const model = new ifcopenshell.File('IFC4');
    try {
-     const wall = model.create('IfcWall', { Name: 'Example wall' });
+     const wall = model.createEntity('IfcWall', { Name: 'Example wall' });
      {
        wall.set('GlobalId', '0YvctVUKr0kugbFTf53O9L');
        console.log(wall.id(), wall.get('Name'));
@@ -124,7 +124,7 @@ TypeScript projects can use ``using`` declarations for automatic disposal:
 .. code-block:: typescript
 
    using model = new ifcopenshell.File('IFC4');
-   const wall = model.create('IfcWall', { Name: 'Example wall' });
+   const wall = model.createEntity('IfcWall', { Name: 'Example wall' });
    console.log(wall.get('Name'));
 
 The compiler transforms these declarations into cleanup calls. When writing

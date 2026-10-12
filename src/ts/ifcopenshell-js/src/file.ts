@@ -66,7 +66,7 @@ export class File extends IfcOpenshellFile {
   declare traverseBreadthFirst: (entity: EntityInstance, maxDepth: number) => EntityInstance[];
 
   /** Create an entity with any of its IFC attributes, using their schema names. */
-  create(ifcClass: string, attributes: Record<string, AttributeValueType> = {}): EntityInstance {
+  createEntity(ifcClass: string, attributes: Record<string, AttributeValueType> = {}): EntityInstance {
     const entity = this.createEntityByName(ifcClass) as EntityInstance | null;
     if (!entity) throw new IfcOpenShellError(`Failed to create ${ifcClass}`);
     try {
