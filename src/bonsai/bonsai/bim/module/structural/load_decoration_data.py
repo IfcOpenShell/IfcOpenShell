@@ -85,6 +85,8 @@ class ShaderInfo:
     preview: dict[int, dict[str, Union[float, None]]] = {}
     # A point's axes being edited, and the slope they are set by if any, by its id, shown in place of its own likewise.
     preview_axes: dict[int, tuple[np.ndarray, Union[tuple[float, float], None]]] = {}
+    # The eighth Edit Resultant measures a resultant's angle in, by its item's id, shown in place of the chosen one.
+    preview_resultant_eighths: dict[int, Union[str, None]] = {}
 
     def __init__(self, load_group: Union[ifcopenshell.entity_instance, None] = None) -> None:
         """
@@ -687,8 +689,17 @@ class ShaderInfo:
                 label_at_tail=arriving,
             )
             if props.show_force_angles:
+                # In global terms, so only while the frame shown is global.
+                local = props.reference_frame == "LOCAL_COORDS" and not np.allclose(rotation, np.eye(3))
                 self.add_force_angle(
-                    location, resultant, size, (1, 1, 1, 1), arcs_at_tail, reference_axes, single or None
+                    location,
+                    resultant,
+                    size,
+                    (1, 1, 1, 1),
+                    arcs_at_tail,
+                    reference_axes,
+                    single or None,
+                    measured_from=None if local else self.get_resultant_eighth(activities),
                 )
             if props.show_force_slopes:
                 arrow = (flip(tip), location) if arriving else (location, tip)
@@ -832,12 +843,16 @@ class ShaderInfo:
         arcs_at_tail: dict[tuple, int],
         reference_axes: dict[tuple, tuple],
         activity: Union[int, None] = None,
+        measured_from: Union[str, None] = None,
     ) -> None:
-        """Mark a force's angle from a reference axis, as an arc in the X-Z plane"""
+        """Mark a force's angle from a reference axis, as an arc in the X-Z plane.
+
+        :param measured_from: An eighth chosen to measure it from, as a resultant's can be.
+        """
         if abs(vector[1]) > 1e-9 * np.linalg.norm(vector):
             return  # Not in the X-Z plane, so one angle does not describe it.
         props = tool.Structural.get_structural_props()
-        start, end, eighth = self.get_angle_reference(vector, props.angle_reference, activity)
+        start, end, eighth = self.get_angle_reference(vector, props.angle_reference, activity, measured_from)
         if abs(end - start) < 0.01:
             return
         key = tuple(np.round(tail, 6))
@@ -869,15 +884,38 @@ class ShaderInfo:
             }
         )
 
+    def get_resultant_eighth(self, activities: list[int]) -> Union[str, None]:
+        """The eighth chosen for the angle of the resultant of applied loads, as Edit Resultant previews or keeps it"""
+        if not activities or not activities[0]:
+            return None
+        activity = tool.Ifc.get().by_id(activities[0])
+        connects = activity.AssignedToStructuralItem
+        if not connects or not (load_case := tool.Structural.get_activity_load_case(activity)):
+            return None
+        item = connects[0].RelatingElement
+        if item.id() in self.preview_resultant_eighths:
+            return self.preview_resultant_eighths[item.id()]
+        return tool.Structural.get_resultant_eighth(item, load_case)
+
     def get_angle_reference(
-        self, vector: np.ndarray, reference: str, activity: Union[int, None] = None
+        self,
+        vector: np.ndarray,
+        reference: str,
+        activity: Union[int, None] = None,
+        measured_from: Union[str, None] = None,
     ) -> tuple[float, float, Union[str, None]]:
         """Get the angles in degrees of the axis a force in the X-Z plane is measured from and of the force,
         counter-clockwise from +X, and the eighth it is measured in, if by eighths"""
         end = np.degrees(np.arctan2(vector[2], vector[0]))
         start = 0.0
         eighth = None
-        if reference == "EIGHTH":
+        chosen = tool.Structural.get_angle_from_eighth(vector[0], vector[2], measured_from) if measured_from else None
+        if chosen is not None and reference != "POSITIVE_X":
+            # The eighth chosen for it: from that eighth's axis, turning its way, however far.
+            eighth = measured_from
+            start = 90.0 * (int(eighth[1]) // 2)
+            end = start + (chosen if int(eighth[1]) % 2 else -chosen)
+        elif reference == "EIGHTH":
             # From the axis of the eighth Edit Load enters it in, which its generated name records.
             load = tool.Ifc.get().by_id(activity).AppliedLoad if activity else None
             named = re.search(r" (Q[1-8])$", (load.Name or "") if load else "")

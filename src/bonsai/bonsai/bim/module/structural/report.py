@@ -112,7 +112,10 @@ def get_report_data(
             axis_colors = get_axis_colors(len(activities), tilt)
             slope = tool.Structural.get_axes_slope(item)
             svg_colors = {activity: get_svg_color(color) for activity, color in colors.items()}
-            point.update(get_resultant_calculation(activities, unit, svg_colors, detailed, tilt, axis_colors, slope))
+            eighth = tool.Structural.get_resultant_eighth(item, case)
+            point.update(
+                get_resultant_calculation(activities, unit, svg_colors, detailed, tilt, axis_colors, slope, eighth)
+            )
             # Resolved along the point's tilted axes too, whatever the viewport shows.
             resolved = name.replace(".svg", "_axes.svg")
             if point["has_tilted"] and write_resolved_diagram(
@@ -230,11 +233,13 @@ def get_resultant_calculation(
     tilt: Union[float, None] = 0.0,
     axis_colors: Union[dict[str, str], None] = None,
     slope: Union[tuple[float, float], None] = None,
+    resultant_eighth: Union[str, None] = None,
 ) -> dict[str, Any]:
     """The steps for concurrent point forces and their resultant.
 
     :param tilt: Degrees the point's own axes are tilted by in the X-Z plane: if any, forces are also resolved
         along them, as along an incline.
+    :param resultant_eighth: The eighth chosen to measure the resultant's angle in, as Edit Resultant keeps it.
 
     If some force values were unknown (unlocked) and found by Edit Resultant, the steps find them first, as
     the problem was posed, then add the forces up as a check. Edit Resultant solves two unknowns, so the
@@ -259,7 +264,9 @@ def get_resultant_calculation(
         if not all(force["locks"]) or force.get("given")
     }
     resultant_found = get_resultant_found([force["locks"] for force in forces])
-    components, steps, summary = get_sum_steps(forces, text_unit, unit, found if solving else None, resultant_found)
+    components, steps, summary = get_sum_steps(
+        forces, text_unit, unit, found if solving else None, resultant_found, resultant_eighth
+    )
     # The resultant too. What of it was found follows from how many force values were: two unknowns in all.
     total = [sum(force["vector"][k] for force in forces) for k in range(3)]
     # Rounding noise across an axis would put a resultant along it into the neighbouring eighth.
@@ -269,7 +276,7 @@ def get_resultant_calculation(
     if magnitude <= 1e-9:
         direction = "none: the forces are in equilibrium"
     elif not total[1]:
-        eighth, angle, _, _ = tool.Structural.get_eighth(total[0], total[2])
+        eighth, angle = get_resultant_direction(total[0], total[2], resultant_eighth)
         direction = f"{angle:.1f}° {eighth}, {EIGHTH_AXES[eighth]}"
     found = resultant_found
     rows.append(get_table_row("R", "Resultant", magnitude, direction, found, NEUTRAL))
@@ -530,18 +537,29 @@ def get_component_terms(x: float, z: float, eighth: str, angle: float) -> dict[s
     }
 
 
+def get_resultant_direction(x: float, z: float, chosen: Union[str, None] = None) -> tuple[str, float]:
+    """The eighth a resultant's angle is measured in, and the angle: the one chosen for it, as 60 degrees from -X
+    rather than 30 from +Z, else the eighth it falls in"""
+    if chosen and (angle := tool.Structural.get_angle_from_eighth(x, z, chosen)) is not None:
+        return chosen, angle
+    eighth, angle, _, _ = tool.Structural.get_eighth(x, z)
+    return eighth, angle
+
+
 def get_sum_steps(
     forces: list[dict[str, Any]],
     text_unit: str,
     unit: str,
     found: Union[dict[int, str], None] = None,
     resultant_found: tuple[str, ...] = (),
+    resultant_eighth: Union[str, None] = None,
 ) -> tuple[list[str], list[str], str]:
     """Each force's components, then their sums, and the resultant's magnitude and angle.
 
     :param found: Forces whose values are found by solving, by index: MAGNITUDE if only that, else WHOLE.
         Their components come with the resultant, once found; before solving, an unknown magnitude's are
         written with its symbol, and an unknown force's not at all.
+    :param resultant_eighth: The eighth chosen to measure the resultant's angle in, if any.
     :return: The component steps, the resultant steps, and the result in words.
     """
     number = lambda value: f"{value:.2f}" if value >= 0 else f"({value:.2f})"
@@ -598,20 +616,30 @@ def get_sum_steps(
     )
     summary = f"R = {resultant:.2f} {unit}"
     if len(axes) == 2 and resultant > 1e-9:
-        eighth, angle, _, _ = tool.Structural.get_eighth(totals["x"], totals["z"])
+        eighth, angle = get_resultant_direction(totals["x"], totals["z"], resultant_eighth)
         angle_text, eighth_text = f"{angle:.1f}^\\circ", f"\\ \\text{{{eighth}}}"
-        along, across = ("x", "z") if eighth in ("Q1", "Q4", "Q5", "Q8") else ("z", "x")
+        # Past a quarter turn, whole quarter turns from the eighth's axis, then the rest from the axis reached.
+        turns = int((angle + 1e-9) // 90)
+        reached = (90 * (int(eighth[1]) // 2) + (90 if int(eighth[1]) % 2 else -90) * turns) % 360
+        along, across = ("x", "z") if reached in (0, 180) else ("z", "x")
         ratio = abs(totals[across]) / abs(totals[along])
-        steps.append(Detail(f"\\text{{Measured {EIGHTH_AXES[eighth].split(',')[0]}}}"))  # As "from −Z".
+        if turns:
+            steps.append(Detail(f"\\text{{Measured {EIGHTH_AXES[eighth]}}}"))  # As "from −Z, turning left".
+            axis = {0: "+X", 90: "+Z", 180: "−X", 270: "−Z"}[reached]
+            steps.append(Detail(f"{90 * turns}^\\circ \\text{{ turns it to }} {axis}"))
+        else:
+            steps.append(Detail(f"\\text{{Measured {EIGHTH_AXES[eighth].split(',')[0]}}}"))  # As "from −Z".
+        theta = "\\theta" if turns else "\\theta_R"  # Past a quarter turn, the rest of the angle.
         steps.append(
             Detail(
-                f"\\tan\\theta_R = \\frac{{|R_{across}|}}{{|R_{along}|}} = "
+                f"\\tan{theta} = \\frac{{|R_{across}|}}{{|R_{along}|}} = "
                 f"\\frac{{{abs(totals[across]):.2f}}}{{{abs(totals[along]):.2f}}} = {ratio:.4f}"
             )
         )
+        prefix = f"{90 * turns}^\\circ + " if turns else ""
         steps.append(
-            f"\\theta_R = \\tan^{{-1}}\\left(\\frac{{|R_{across}|}}{{|R_{along}|}}\\right) = "
-            f"\\tan^{{-1}}\\left(\\frac{{{abs(totals[across]):.2f}}}{{{abs(totals[along]):.2f}}}\\right) = "
+            f"\\theta_R = {prefix}\\tan^{{-1}}\\left(\\frac{{|R_{across}|}}{{|R_{along}|}}\\right) = "
+            f"{prefix}\\tan^{{-1}}\\left(\\frac{{{abs(totals[across]):.2f}}}{{{abs(totals[along]):.2f}}}\\right) = "
             f"{bold(angle_text, 'direction' in resultant_found, eighth_text)}"
         )
         summary += f" at {angle:.1f}° {eighth}, {EIGHTH_AXES[eighth]}"

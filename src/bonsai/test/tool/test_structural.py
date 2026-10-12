@@ -292,3 +292,40 @@ class TestPushAndKnownComponent(NewFile):
         assert subject.get_known_component(activity) == "Z"
         subject.set_known_component(activity, None)
         assert subject.get_known_component(activity) is None
+
+
+class TestGetAngleFromEighth(NewFile):
+    def test_either_axis_of_a_quadrant(self):
+        # Up and to the left, 30 degrees off the vertical.
+        x, z = -math.sin(math.radians(30)), math.cos(math.radians(30))
+        assert math.isclose(subject.get_angle_from_eighth(x, z, "Q3"), 30)
+        assert math.isclose(subject.get_angle_from_eighth(x, z, "Q4"), 60)
+
+    def test_any_eighth_turning_its_way(self):
+        # Up and to the left at 45 degrees: from -Z turning left, past -X; from -Z turning right, past +X and +Z.
+        assert math.isclose(subject.get_angle_from_eighth(-1, 1, "Q6"), 135)
+        assert math.isclose(subject.get_angle_from_eighth(-1, 1, "Q7"), 225)
+        assert math.isclose(subject.get_angle_from_eighth(-1, 1, "Q1"), 135)
+
+    def test_along_an_axis(self):
+        assert subject.get_angle_from_eighth(0, 1, "Q2") == 0.0
+        assert subject.get_angle_from_eighth(0, 1, "Q1") == 90.0
+
+    def test_no_direction(self):
+        assert subject.get_angle_from_eighth(0, 0, "Q1") is None
+
+
+class TestResultantEighth(NewFile):
+    def test_choosing_and_forgetting_per_load_case(self):
+        point = new_point()
+        ifc_file = tool.Ifc.get()
+        first = ifcopenshell.api.structural.add_structural_load_case(ifc_file, name="First")
+        second = ifcopenshell.api.structural.add_structural_load_case(ifc_file, name="Second")
+        assert subject.get_resultant_eighth(point, first) is None
+        subject.set_resultant_eighth(point, first, "Q4")
+        subject.set_resultant_eighth(point, second, "Q6")
+        assert subject.get_resultant_eighth(point, first) == "Q4"
+        assert subject.get_resultant_eighth(point, second) == "Q6"
+        subject.set_resultant_eighth(point, first, None)
+        assert subject.get_resultant_eighth(point, first) is None
+        assert subject.get_resultant_eighth(point, second) == "Q6"

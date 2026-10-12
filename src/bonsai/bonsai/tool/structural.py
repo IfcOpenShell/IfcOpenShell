@@ -343,6 +343,39 @@ class Structural(bonsai.core.tool.Structural):
         cls.edit_bbim_structural(item, {"Resultants": json.dumps(resultants) if resultants else None})
 
     @classmethod
+    def get_resultant_eighth(
+        cls, item: ifcopenshell.entity_instance, load_case: ifcopenshell.entity_instance
+    ) -> Union[str, None]:
+        """The eighth a resultant's angle is chosen to be measured in at an item for a load case, if any"""
+        value = ifcopenshell.util.element.get_pset(item, "BBIM_Structural", "ResultantEighths")
+        try:
+            eighth = (json.loads(value) if value else {}).get(load_case.GlobalId)
+        except ValueError:
+            return None
+        return eighth if eighth in [f"Q{i}" for i in range(1, 9)] else None
+
+    @classmethod
+    def set_resultant_eighth(
+        cls, item: ifcopenshell.entity_instance, load_case: ifcopenshell.entity_instance, eighth: Union[str, None]
+    ) -> None:
+        """Choose the eighth a resultant's angle is measured in, as from -X rather than +Z, or forget it.
+
+        Kept on the item by load case GlobalId, apart from Resultants, which holds only locked ones.
+        """
+        if eighth == cls.get_resultant_eighth(item, load_case):
+            return
+        value = ifcopenshell.util.element.get_pset(item, "BBIM_Structural", "ResultantEighths")
+        try:
+            eighths = json.loads(value) if value else {}
+        except ValueError:
+            eighths = {}
+        if eighth:
+            eighths[load_case.GlobalId] = eighth
+        else:
+            eighths.pop(load_case.GlobalId, None)
+        cls.edit_bbim_structural(item, {"ResultantEighths": json.dumps(eighths) if eighths else None})
+
+    @classmethod
     def solve_unknowns(
         cls,
         forces: list[tuple[float, float, float]],
@@ -430,6 +463,17 @@ class Structural(bonsai.core.tool.Structural):
         angle = min(max(get_angle(eighth), 0.0), 45.0) + 0.0  # Not -0.0
         length = math.hypot(x, z)
         return f"Q{eighth}", angle, length * math.cos(math.radians(angle)), length * math.sin(math.radians(angle))
+
+    @classmethod
+    def get_angle_from_eighth(cls, x: float, z: float, eighth: str) -> Union[float, None]:
+        """The angle in degrees of in-plane components from the axis of an eighth, turning the way it turns, as Q4
+        measures from -X turning up and Q6 from -Z turning left: 0 to under 360, or None for no direction"""
+        if not (x or z):
+            return None
+        e = int(eighth[1])
+        turned = math.degrees(math.atan2(z, x)) - 90 * (e // 2)
+        angle = (turned if e % 2 else -turned) % 360
+        return 0.0 if angle > 360 - 1e-6 else angle + 0.0
 
     @classmethod
     def solve_two_force_magnitudes(
