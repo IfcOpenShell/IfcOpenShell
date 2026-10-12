@@ -1841,13 +1841,12 @@ class Alignment:
 
         Resolving an IfcLinearPlacement (its Location is an IfcPointByDistanceExpression,
         not a plain IfcCartesianPoint) requires evaluating the referenced curve, which
-        ifcopenshell.util.placement.get_axis2placement already does via the geometry
-        kernel — the same ifcopenshell.util.placement.get_local_placement() call the
-        standard IFC-import pipeline uses for any placement-only product (see
-        ImportIfc.get_element_matrix). No-op if there's no Blender object for this
-        referent, or if its placement still can't be resolved (e.g. still no real
-        geometry -- get_axis2placement's geometry-kernel fallback then legitimately has
-        nothing to evaluate).
+        ifcopenshell.util.placement.get_placement() already does via the geometry
+        kernel — the same call the standard IFC-import pipeline uses for any
+        placement-only product (see ImportIfc.get_element_matrix). No-op if there's
+        no Blender object for this referent, or if its placement still can't be
+        resolved (e.g. still no real geometry -- the geometry kernel then
+        legitimately has nothing to evaluate).
         """
         referent_obj = tool.Ifc.get_object(referent)
         if not referent_obj or not referent.ObjectPlacement:
@@ -1855,7 +1854,7 @@ class Alignment:
 
         ifc = tool.Ifc.get()
         try:
-            matrix = ifcopenshell.util.placement.get_local_placement(referent.ObjectPlacement)
+            matrix = ifcopenshell.util.placement.get_placement(referent.ObjectPlacement)
         except Exception:
             return
 
