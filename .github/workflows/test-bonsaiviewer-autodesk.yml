@@ -44,7 +44,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y "${pkgs[@]}"
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # v1
+        with:
+          toolchain: stable
 
       # cargo-target reuse across runs. Massive cold-build speedup,
       # cheap on the GitHub Actions cache budget.
