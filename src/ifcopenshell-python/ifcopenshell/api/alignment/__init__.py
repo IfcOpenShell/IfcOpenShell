@@ -83,6 +83,7 @@ from .get_child_alignments import get_child_alignments
 from .get_curve import get_curve
 from .get_curve_segment import get_curve_segment
 from .get_curve_segment_transition_code import get_curve_segment_transition_code
+from .get_horizontal_curve_parameters import HorizontalCurveParameters, get_horizontal_curve_parameters
 from .get_horizontal_layout import get_horizontal_layout
 from .get_layout import get_layout
 from .get_layout_curve import get_layout_curve
@@ -120,6 +121,7 @@ from .util import *
 
 __all__ = [
     "SPIRAL_FAMILIES",
+    "HorizontalCurveParameters",
     "HorizontalSegmentDefinition",
     "compute_clothoid_end",
     "compute_horizontal_segment_end",
@@ -155,6 +157,7 @@ __all__ = [
     "get_curve",
     "get_curve_segment",
     "get_curve_segment_transition_code",
+    "get_horizontal_curve_parameters",
     "get_horizontal_layout",
     "get_layout",
     "get_layout_curve",
