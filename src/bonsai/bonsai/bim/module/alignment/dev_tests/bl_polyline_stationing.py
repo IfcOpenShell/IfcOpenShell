@@ -26,7 +26,7 @@ def select(obj):
 
 
 def where(referent):
-    return tuple(round(float(v), 3) for v in ifcopenshell.util.placement.get_local_placement(referent.ObjectPlacement)[:3, 3])
+    return tuple(round(float(v), 3) for v in ifcopenshell.util.placement.get_placement(referent.ObjectPlacement)[:3, 3])
 
 
 def fallback(referent):
