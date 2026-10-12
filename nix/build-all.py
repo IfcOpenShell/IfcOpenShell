@@ -1569,7 +1569,8 @@ PYTHON_INSTALL_DIRS: dict[str, Path] = {}
 
 if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
     # Use build dir to avoid pushing Python installations to `build-outputs`.
-    UV_PYTHON_INSTALL_DIR = Path(BUILD_DIR) / "uv-python"
+    # Not using `DEPS_DIR / 'build'`, because it gets cleaned up during `--diskcleanup`.
+    UV_PYTHON_INSTALL_DIR = Path(DEPS_DIR) / "uv-python"
     # Provide `UV_PYTHON_INSTALL_DIR` to avoid polluting global uv installation.
     uv_env = os.environ | {"UV_PYTHON_INSTALL_DIR": str(UV_PYTHON_INSTALL_DIR)}
 
