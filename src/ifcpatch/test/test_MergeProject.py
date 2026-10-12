@@ -202,3 +202,11 @@ class TestMergeProjects(test.bootstrap.IFC4):
 
 class TestMergeProjectsIFC2X3(test.bootstrap.IFC2X3, TestMergeProjects):
     pass
+
+    def test_removing_the_units_of_the_merged_project(self):
+        self.file = self.setup_project(self.file)
+        second_file = self.setup_project()
+        original_units = self.file.by_type("IfcProject")[0].UnitsInContext
+        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProjects", "arguments": [second_file]})
+        assert list(output.by_type("IfcUnitAssignment")) == [original_units]
+        assert len(output.by_type("IfcSIUnit")) == 1
