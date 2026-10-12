@@ -126,6 +126,14 @@ jobs:
         run: npm run lint
         continue-on-error: true
 
+      - name: zizmor
+        id: zizmor
+        run: |
+          # Once for the GitHub annotations, once for the readable output in the log.
+          poe zizmor --format=github || true
+          poe zizmor
+        continue-on-error: true
+
       - name: Final check
         run: |
           ERROR=0
@@ -149,5 +157,8 @@ jobs:
           fi
           if [ "${{ steps.ts-eslint.outcome }}" != "success" ]; then
             echo "::error::ESLint (TypeScript) failed, see 'ESLint (TypeScript)' step for the details." && ERROR=1
+          fi
+          if [ "${{ steps.zizmor.outcome }}" != "success" ]; then
+            echo "::error::zizmor (GitHub workflows security check) failed, see 'zizmor' step for the details." && ERROR=1
           fi
           exit $ERROR
