@@ -7,7 +7,31 @@ resolving them.
 
 ## Status and work plan (resume here)
 
-*Last updated 2026-09-28.* Pushed as of 2026-09-28: `1ae038098` stationing on offset curve
+*Last updated 2026-10-12.* **2026-10-12 round:** `rab_infrastructure` was rebased onto `v0.9.0`
+(352 upstream commits; force-pushed), then four commits were added on top (the user pushes them):
+
+- `370eff8bf` the IFC4x3 Road/Bridge templates declare `ViewDefinition [Alignment-basedView]` (the
+  exact spelling the user asked for), and a project created from a template now takes the
+  template's MVD (`tool.Project.append_structure_from_template`; `create_file` otherwise hard-codes
+  DesignTransferView). UsageType is NOTDEFINED on the IfcRoadPart. The Bridge template follows
+  the usBridge spatial breakdown IDS: a GIRDER bridge, and CompositionType/UsageType on the site,
+  bridge and parts. Only the IDS's property-set requirements still fail, which is project data.
+- `fa9901f89` curve data for the selected horizontal curve (§3).
+- `3422de04f` `get_local_placement` → `get_placement` (v0.9.0 removed the former; the stationing
+  referent sync swallowed the error and left referents at the origin).
+- `27b0ab7f2` ifcpatch `MergeProjects` removes the merged project's units, which were left
+  unreferenced (validation IFC106) in every project created from a template.
+
+After the rebase, Blender needs a matching IfcOpenShell build: the `.pyd` and the generated
+`ifcopenshell_wrapper.py` must come from the same Release build (a Debug build last run leaves the
+shared SWIG output naming `_ifcopenshell_wrapper_d`). The S3 build pinned by v0.9.0 (`7b8f129`) is
+broken on Windows py313, so use a local build.
+
+**Deferred, outside alignment scope (per the user, 2026-10-12):** `MergeProjects` converts only the
+length unit, so a merged project's angle, area, volume and other units are reinterpreted silently.
+To be filed as an upstream issue and handled as its own work item.
+
+Pushed as of 2026-09-28: `1ae038098` stationing on offset curve
 alignments (§5.2) + the extend fix (§9), and `ddf24724f` the profile view for 3D offset curves (§5.2). The
 source tree is on D: on one computer and F: on the other; the
 `IFCOPENSHELL_DIR` environment variable points to it on each.
@@ -677,6 +701,28 @@ see `AlignmentSegmentDecorator`, which already covers the three items below):
 - Display segment information in the 3D viewport: Start Point, End Point, Length, Radius, PI,
   Center of Circle, Spiral Type (as applicable to the segment type).
 - Draw tangent and radial lines for the segment.
+
+**Implemented (2026-10-12): curve data for the selected horizontal curve.** New library function
+`ifcopenshell.api.alignment.get_horizontal_curve_parameters(segment)` returns a horizontal segment's
+key points (start, P.I., end, center or spiral normals intersection) and properties from its design
+parameters alone: R, T, T1/T2, Δ (signed, + left), L, LC, E, M. Fields that don't apply are None.
+`AlignmentSegmentDecorator` takes all its key points from it, replacing its own PI/center code; old
+and new key points matched within 0.001. Decisions, per the user:
+
+- The curve data is drawn **in its own framed box, not in the P.I. label**, and must not overlap
+  other text. The point labels report their screen rects. `_place_label_block` tries inside the
+  curve beyond the midpoint (away from the P.I.), then directions turning away from it at growing
+  distances, and takes the first spot clear of the labels and inside the region.
+- **No leader line** to the curve midpoint, since only one curve is selected at a time.
+- Circular curve: R, T, Δ, L, LC, E, M. Spiral: **T1, T2** (no single T), Δ, L, LC. Δ is shown in
+  D°MM'SS.SS" with Lt/Rt.
+- The **P.I. label shows a station**: the start station (P.C., S.C., ...) plus T, or T1 for a spiral,
+  converted through `station_from_distance_along`.
+- Documented in the user guide ("Reviewing an alignment").
+
+Tests: `test_get_horizontal_curve_parameters.py` (spiral T1/T2/LC checked against
+LT = X − Y/tan θ, ST = Y/sin θ); `dev_tests/bl_curve_data.py` (lines, P.I. stations, placement);
+`dev_tests/ui_curve_data.py` (screenshots at three zoom levels, for visual checks).
 
 **Fixed (2026-09-24): "current value 'n' matches no enum ... active_alignment_id_str" after
 deleting an alignment.** The alignment dropdown (`CivilAlignmentProperties.active_alignment_id_str`)
