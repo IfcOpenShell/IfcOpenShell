@@ -339,16 +339,17 @@ class Usecase:
         if value is None:
             if self._try_purge(prop, properties, should_purge):
                 return
-            for ifc_attribute in BOUNDED_VALUE_KEYS:
+            for ifc_attribute in self.get_bounded_value_keys():
                 setattr(prop, ifc_attribute, None)
         elif isinstance(value, dict) and any(k in value for k in BOUNDED_VALUE_KEYS):
+            keys = self.get_bounded_value_keys(value)
             primary_measure_type = None
-            for ifc_attribute in BOUNDED_VALUE_KEYS:
+            for ifc_attribute in keys:
                 if existing_value := getattr(prop, ifc_attribute):
                     primary_measure_type = existing_value.is_a()
                     break
 
-            for ifc_attribute in BOUNDED_VALUE_KEYS:
+            for ifc_attribute in keys:
                 if ifc_attribute not in value:
                     continue
                 new_value = value[ifc_attribute]
@@ -363,11 +364,11 @@ class Usecase:
                     )
                 setattr(prop, ifc_attribute, new_value)
 
-            if all(getattr(prop, k) is None for k in BOUNDED_VALUE_KEYS):
+            if all(getattr(prop, k) is None for k in keys):
                 if self._try_purge(prop, properties, should_purge):
                     return
 
-            if unit := value.get("Unit"):
+            if (unit := value.get("Unit", _NO_UNIT)) is not _NO_UNIT:
                 prop.Unit = unit
         else:
             raise ValueError(
@@ -415,7 +416,10 @@ class Usecase:
             if value is None and should_purge:
                 continue
             if isinstance(value, dict) and any(k in value for k in BOUNDED_VALUE_KEYS):
-                new_properties.append(self.create_bounded_value_prop(name, value, pset_template))
+                keys = self.get_bounded_value_keys(value)
+                if should_purge and all(value.get(k) is None for k in keys):
+                    continue
+                new_properties.append(self.create_bounded_value_prop(name, value, pset_template, keys))
                 continue
             unit, value = self.unpack_unit_value(value)
 
@@ -492,21 +496,34 @@ class Usecase:
                 new_properties.append(self.file.create_entity("IfcPropertySingleValue", **args))
         return new_properties
 
+    def get_bounded_value_keys(self, value: dict[str, Any] | None = None) -> tuple[str, ...]:
+        # Keys the file schema has; raises if value uses one it lacks.
+        schema = ifcopenshell.schema_by_name(self.file.schema_identifier)
+        attributes = schema.declaration_by_name("IfcPropertyBoundedValue").all_attributes()
+        names = {attribute.name() for attribute in attributes}
+        if unsupported := [k for k in BOUNDED_VALUE_KEYS if k in (value or {}) and k not in names]:
+            raise ValueError(f"{unsupported} not supported by IfcPropertyBoundedValue in {self.file.schema}.")
+        return tuple(k for k in BOUNDED_VALUE_KEYS if k in names)
+
     def create_bounded_value_prop(
-        self, name: str, value: dict[str, Any], pset_template: ifcopenshell.entity_instance | None
+        self,
+        name: str,
+        value: dict[str, Any],
+        pset_template: ifcopenshell.entity_instance | None,
+        keys: tuple[str, ...],
     ) -> ifcopenshell.entity_instance:
         """Creates a new IfcPropertyBoundedValue from a dict of LowerBoundValue /
         UpperBoundValue / SetPointValue (and optionally Unit).
         """
         primary_measure_type = None
-        for ifc_attribute in BOUNDED_VALUE_KEYS:
+        for ifc_attribute in keys:
             existing_value = value.get(ifc_attribute)
             if isinstance(existing_value, ifcopenshell.entity_instance):
                 primary_measure_type = existing_value.is_a()
                 break
 
         kwargs: dict[str, Any] = {"Name": name}
-        for ifc_attribute in BOUNDED_VALUE_KEYS:
+        for ifc_attribute in keys:
             if (bound_value := value.get(ifc_attribute)) is None:
                 continue
             if not isinstance(bound_value, ifcopenshell.entity_instance):
