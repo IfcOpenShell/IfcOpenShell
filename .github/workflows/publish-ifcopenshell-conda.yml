@@ -59,12 +59,6 @@ jobs:
           { name: macOS-arm, distver: macos-latest, pkg_dir: 'osx-arm64' }
         ]
     steps:
-      - name: Set Swap Space
-        if: runner.os == 'Linux'
-        uses: pierotofy/set-swap-space@master
-        with:
-          swap-size-gb: 10
-
       - name: set ARTIFACTS ENV vars
         shell: bash
         run: |
