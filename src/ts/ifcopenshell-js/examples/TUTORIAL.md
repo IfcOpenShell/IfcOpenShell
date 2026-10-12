@@ -5,7 +5,7 @@ and open the hub at `/ifcopenshell-js/examples/`.
 
 | Chapter | Folder | What you learn |
 |---------|--------|----------------|
-| **0** | [`00-installation/`](./00-installation/) | Confirm local `dist/` and CDN WASM, then `init()` |
+| **0** | [`00-installation/`](./00-installation/) | Confirm the CDN packages, then `init()` |
 | **1** | [`parse/`](./parse/) | Schema plugin, `open`, `byType` |
 | **1b** | [`stream/`](./stream/) | Read `FILE_SCHEMA` before loading a schema plugin |
 | **2** | [`geom/`](./geom/) | `geom.Settings` and `geom.Iterator` |
@@ -18,8 +18,8 @@ and open the hub at `/ifcopenshell-js/examples/`.
 
 ## Prerequisites
 
-Build this package so `dist/` exists. WASM is loaded from
-`https://cdn.jsdelivr.net/npm/@ifcopenshell/wasm@latest`. From `src/ts`:
+`ifcopenshell` and WASM are loaded from jsDelivr (`ifcopenshell@latest` and
+`@ifcopenshell/wasm@latest`). From `src/ts`:
 
 ```bash
 python -m http.server 4173
@@ -29,8 +29,8 @@ Open http://127.0.0.1:4173/ifcopenshell-js/examples/
 
 ## API contract
 
-`init()` takes no asset URL when the page import map points `@ifcopenshell/wasm`
-at the CDN package. The `ifcopenshell` specifiers stay on the local `dist/`.
+`init()` takes no asset URL when the page import map points `ifcopenshell` and
+`@ifcopenshell/wasm` at the CDN packages.
 Plugins are loaded by id before they are used. `open` and
 `new File` are synchronous and require the matching schema plugin. Geometry
 requires the mapping plugin and a kernel plugin.

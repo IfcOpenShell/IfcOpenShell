@@ -36,7 +36,7 @@ if (iterator.initialize()) do {
 
 ## Examples
 
-Browser chapters in [`examples/`](./examples/) import this package's `dist/` and load `@ifcopenshell/wasm` from the jsDelivr CDN. Serve `src/ts` and open `http://127.0.0.1:4173/ifcopenshell-js/examples/`. `examples/threejs.html` loads the published JavaScript and WASM from a CDN.
+Browser chapters in [`examples/`](./examples/) load `ifcopenshell` and `@ifcopenshell/wasm` from the jsDelivr CDN. Serve `src/ts` and open `http://127.0.0.1:4173/ifcopenshell-js/examples/`.
 
 ## Documentation
 

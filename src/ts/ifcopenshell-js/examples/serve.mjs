@@ -1,6 +1,7 @@
 // This file was generated with the assistance of an AI coding tool.
 /**
- * Serve src/ts so these examples can import the local build.
+ * Serve src/ts so the chapter pages and sample.ifc can load.
+ * ifcopenshell and WASM come from the jsDelivr CDN.
  *
  * Usage (from this directory):
  *   node serve.mjs
