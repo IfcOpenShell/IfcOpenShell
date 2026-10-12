@@ -960,13 +960,22 @@ class ShaderInfo:
             rise_text, run_text = f"{across / along:.3g}", "1"
         direction = vector / length
         axis = np.array((np.cos(np.radians(start)), 0, np.sin(np.radians(start))))
-        # The hypotenuse lies along the force, a little past its middle, and the legs meet off to one side.
+        # The hypotenuse lies along the force, out towards its tip, beyond the angle arcs at its tail and short of
+        # its head, and the legs meet off to one side. A force too short for that keeps it nearer its middle.
         hypotenuse = min(size * 0.3, length * 0.4)
-        a = tail + direction * (length * 0.6 - hypotenuse / 2)
+        near = max(length * 0.75 - hypotenuse / 2, size * 0.3)
+        if (room := length - size * 0.06 - near) >= hypotenuse * 0.5:
+            hypotenuse = min(hypotenuse, room)
+        else:
+            near = length * 0.6 - hypotenuse / 2
+        a = tail + direction * near
         b = a + direction * hypotenuse
-        corner = a + axis * hypotenuse * np.cos(turned)
+        towards_axis = a + axis * hypotenuse * np.cos(turned)
+        away_from_axis = b - axis * hypotenuse * np.cos(turned)  # The same triangle turned to the other side.
+        # The angle's arc and label lie between the force and its axis, so the triangle goes on the other side.
+        corner = away_from_axis if props.show_force_angles else towards_axis
         if avoid is not None and np.dot(corner - a, avoid) > 0:
-            corner = b - axis * hypotenuse * np.cos(turned)  # The same triangle turned to the other side.
+            corner = towards_axis if corner is away_from_axis else away_from_axis
         side = corner - a - np.dot(corner - a, direction) * direction
         offset = side / np.linalg.norm(side) * size * 0.05
         a, b, corner = a + offset, b + offset, corner + offset
