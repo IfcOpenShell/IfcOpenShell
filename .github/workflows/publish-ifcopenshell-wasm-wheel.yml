@@ -32,9 +32,11 @@ jobs:
           token: ${{ secrets.BUILD_REPO_TOKEN }}
 
       - name: Commit and push wheel to wasm-wheels
+        env:
+          WHEEL_NAME: ${{ steps.wheel.outputs.name }}
+          WHEEL_PATH: ${{ steps.wheel.outputs.path }}
         run: |
-          WHEEL_NAME="${{ steps.wheel.outputs.name }}"
-          cp "${{ steps.wheel.outputs.path }}" "wasm-wheels/$WHEEL_NAME"
+          cp "$WHEEL_PATH" "wasm-wheels/$WHEEL_NAME"
           cd wasm-wheels
           git config user.name "IfcOpenBot"
           git config user.email "ifcopenbot@ifcopenshell.org"
