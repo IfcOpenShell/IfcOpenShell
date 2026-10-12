@@ -1,12 +1,13 @@
 # Examples — `ifcopenshell`
 
 Browser chapters for the TypeScript bindings in this package. Each folder is a static
-`index.html` plus `app.js` page. Import maps load this package's `dist/` and
-`@ifcopenshell/wasm` from the jsDelivr CDN, so serve `src/ts` over HTTP.
+`index.html` plus `app.js` page. Import maps load `ifcopenshell` and
+`@ifcopenshell/wasm` from the jsDelivr CDN. Serve `src/ts` over HTTP so the
+pages and `sample.ifc` can load.
 
 ## Quick start
 
-From the repository, with this package built:
+From the repository:
 
 ```bash
 cd src/ts
@@ -21,8 +22,7 @@ node serve.mjs
 
 Open http://127.0.0.1:4173/ifcopenshell-js/examples/
 
-`threejs.html` in this folder loads the published JavaScript and WASM from a CDN.
-The numbered chapters keep the local `dist/` and load only WASM from that CDN.
+`threejs.html` and the numbered chapters load the published JavaScript and WASM from the CDN.
 
 ## Layout
 

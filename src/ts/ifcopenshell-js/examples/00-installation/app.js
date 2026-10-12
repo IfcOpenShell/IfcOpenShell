@@ -3,10 +3,11 @@ const status = document.getElementById('status');
 const checksEl = document.getElementById('checks');
 const commandsEl = document.getElementById('commands');
 
-const DIST_FILES = [
-  '/ifcopenshell-js/dist/index.js',
-  '/ifcopenshell-js/dist/geom/index.js',
-  '/ifcopenshell-js/dist/util/index.js',
+const JS_CDN = 'https://cdn.jsdelivr.net/npm/ifcopenshell@latest/dist';
+const JS_FILES = [
+  `${JS_CDN}/index.js`,
+  `${JS_CDN}/geom/index.js`,
+  `${JS_CDN}/util/index.js`,
 ];
 
 const WASM_CDN = 'https://cdn.jsdelivr.net/npm/@ifcopenshell/wasm@latest';
@@ -40,8 +41,8 @@ function renderCheck(result) {
 
 async function main() {
   let allOk = true;
-  for (const path of DIST_FILES) {
-    allOk = renderCheck(await checkUrl(`JS dist: ${fileLabel(path)}`, path)) && allOk;
+  for (const path of JS_FILES) {
+    allOk = renderCheck(await checkUrl(`JS CDN: ${fileLabel(path)}`, path)) && allOk;
   }
   for (const path of WASM_FILES) {
     allOk = renderCheck(await checkUrl(`WASM CDN: ${fileLabel(path)}`, path)) && allOk;
@@ -64,17 +65,12 @@ async function main() {
       status.textContent = 'Runtime init failed — see checks below.';
     }
   } else {
-    status.textContent = 'Some checks failed — run the commands below, then reload.';
+    status.textContent = 'Some checks failed — the CDN packages could not be reached. Reload to try again.';
   }
 
   commandsEl.textContent = [
-    '# From the IfcOpenShell repository root',
-    '# Build this package. WASM is loaded from the jsDelivr CDN.',
-    'cd src/ts/ifcopenshell-js',
-    'npm run build',
-    '',
-    '# Serve src/ts',
-    'cd ..',
+    '# Serve the chapter pages. ifcopenshell and WASM load from jsDelivr.',
+    'cd src/ts',
     'python -m http.server 4173',
     '# open http://127.0.0.1:4173/ifcopenshell-js/examples/00-installation/',
   ].join('\n');

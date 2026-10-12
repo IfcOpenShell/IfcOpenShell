@@ -30,7 +30,7 @@
   <script type="importmap">
   {
     "imports": {
-      "ifcopenshell": "/ifcopenshell-js/dist/index.js",
+      "ifcopenshell": "https://cdn.jsdelivr.net/npm/ifcopenshell@latest/dist/index.js",
       "@ifcopenshell/wasm": "https://cdn.jsdelivr.net/npm/@ifcopenshell/wasm@latest/browser.js",
       "@ifcopenshell/wasm/api": "https://cdn.jsdelivr.net/npm/@ifcopenshell/wasm@latest/wasm/ifcopenshell_api.mjs"
     }
@@ -41,7 +41,7 @@
   <p><a href="../index.html">← All chapters</a></p>
   <h1>ifcopenshell — smoke</h1>
   <p>
-    Loads the local <code>dist/</code> and WASM from the CDN. Create a tiny IFC4 model in memory,
+    Loads <code>ifcopenshell</code> and WASM from the CDN. Create a tiny IFC4 model in memory,
     or open a local <code>.ifc</code> file. The schema plugin is chosen from <code>FILE_SCHEMA</code>.
   </p>
   <button id="create" type="button" disabled>Create demo IFC4 wall</button>
