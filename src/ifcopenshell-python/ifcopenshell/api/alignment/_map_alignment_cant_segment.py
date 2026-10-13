@@ -33,6 +33,14 @@ def _get_axis(file: ifcopenshell.file, Ds: float, rail_head_distance: float) -> 
     return file.createIfcDirection((0.0, Dy / Dh, Dz / Dh))
 
 
+def _has_constant_superelevation(design_parameters: entity_instance) -> bool:
+    """Whether the superelevation, the mean of the cant at each rail, is the same at the start and end"""
+    p = design_parameters
+    end_left = p.EndCantLeft if p.EndCantLeft is not None else p.StartCantLeft
+    end_right = p.EndCantRight if p.EndCantRight is not None else p.StartCantRight
+    return p.StartCantLeft + p.StartCantRight == end_left + end_right
+
+
 def _get_start_axis(
     file: ifcopenshell.file, design_parameters: entity_instance, rail_head_distance: float
 ) -> entity_instance:
@@ -479,7 +487,9 @@ def _map_alignment_cant_segment(
         raise TypeError(f"Expected to see type '{expected_type}', instead received '{segment.is_a()}'.")
 
     predefined_type = segment.DesignParameters.PredefinedType
-    if predefined_type == "CONSTANTCANT":
+    if predefined_type == "CONSTANTCANT" or _has_constant_superelevation(segment.DesignParameters):
+        # a transition whose superelevation doesn't change is a constant cant, and its parent curve
+        # can't be written because its terms divide by the change in superelevation
         result = _map_constant_cant(file, segment.DesignParameters, rail_head_distance)
     elif predefined_type == "LINEARTRANSITION":
         result = _map_linear_transition(file, segment.DesignParameters, rail_head_distance)
