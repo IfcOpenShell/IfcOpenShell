@@ -911,7 +911,7 @@ def write_diagram(
     points = [flat(p) for shape in shapes for k in ("tail", "tip", "start", "end") if (p := shape.get(k)) is not None]
     points += [flat(text["position"]) for text in texts]
     low, high = np.min(points, axis=0), np.max(points, axis=0)
-    scale = 420 / max(*(high - low), 1e-9)
+    scale = 600 / max(*(high - low), 1e-9)  # Large enough that labels, at a fixed size, keep apart.
     # Room for the longest label beside its anchor, as labels run out from their anchors.
     longest = max((len(get_shown_text(t["text"])) for t in texts), default=0)
     margin = max(90, 20 + 8.2 * longest)
