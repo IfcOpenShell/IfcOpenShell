@@ -477,6 +477,15 @@ namespace ifcopenshell {
                 static constexpr bool defaultvalue = false;
             };
 
+			struct ApproximateSweptSolids : public SettingBase<ApproximateSweptSolids, bool> {
+				static constexpr const char* const name = "approximate-swept-solids";
+				static constexpr const char* const description = "Approximate swept-disk and swept-area solids (IfcSweptDiskSolid, "
+					"IfcFixedReferenceSweptAreaSolid) as a tessellated shell in the taxonomy layer instead of using the kernel's "
+					"native sweep. Kernels without a native sweep (cgal) fall back to this approximation automatically; this option "
+					"forces it on for every kernel, allowing the opencascade result to be verified against the approximation.";
+				static constexpr bool defaultvalue = false;
+			};
+
 			struct DeferProcessingFirstElement : public SettingBase<DeferProcessingFirstElement, bool, true> {
 				static constexpr const char* const name = "defer-processing-first-element";
 				static constexpr const char* const description = "Don't process first element in Iterator::initialize call()";
@@ -966,6 +975,7 @@ using geometry_setting_types = std::tuple<
 			settings_detail::MaxOffsetDeviation,
 			settings_detail::ApplyOffset,
 			settings_detail::MakeVolume,
+			settings_detail::ApproximateSweptSolids,
 			settings_detail::UseElementNames,
 			settings_detail::UseElementGuids,
 			settings_detail::UseElementStepIds,
@@ -1070,6 +1080,7 @@ using geometry_setting_types = std::tuple<
 			using MaxOffsetDeviation = settings_detail::MaxOffsetDeviation;
 			using ApplyOffset = settings_detail::ApplyOffset;
 			using MakeVolume = settings_detail::MakeVolume;
+			using ApproximateSweptSolids = settings_detail::ApproximateSweptSolids;
 
 			using UseElementNames = settings_detail::UseElementNames;
 			using UseElementGuids = settings_detail::UseElementGuids;

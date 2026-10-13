@@ -164,6 +164,13 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
 		}
 	}
 
+	// Consume the kernel-agnostic taxonomy shell; fall back to the native code below if it declines.
+	if (auto approx = loft->as_shell()) {
+		if (convert(approx, result)) {
+			return true;
+		}
+	}
+
 	NCollection_List<TopoDS_Shape> faces;
 	TopoDS_Compound comp;
 	BRep_Builder BB;

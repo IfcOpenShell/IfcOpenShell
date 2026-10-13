@@ -65,6 +65,7 @@ SETTING = Literal[
     "angle-unit",
     "apply-default-materials",
     "apply-offset",
+    "approximate-swept-solids",
     "auto-elevation",
     "auto-section",
     "base-uri",
