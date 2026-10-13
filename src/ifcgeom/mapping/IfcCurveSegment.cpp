@@ -148,14 +148,14 @@ static Eigen::Matrix4d cant_frame(double theta, double phi, double x, double y) 
 }
 
 // this is the piecewise curve segment function for horizontal and vertical
-struct curve_segment_function {
+struct curve_segment_function : public taxonomy::span_function {
     curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& parent_curve_normalization, std::shared_ptr<parent_curve_function> parent_curve_fn) :
        curve_segment_placement_(curve_segment_placement),
        parent_curve_normalization_(parent_curve_normalization),
        parent_curve_fn_(parent_curve_fn) {
     }
 
-    Eigen::Matrix4d operator()(double u) const {
+    Eigen::Matrix4d operator()(double u) const override {
         Eigen::Matrix4d parent_curve_point = (*parent_curve_fn_)(u);
         Eigen::Matrix4d curve_segment_point = curve_segment_placement_ * parent_curve_normalization_ * parent_curve_point;
         return curve_segment_point + parent_curve_fn_->curvature(u);
@@ -168,14 +168,14 @@ struct curve_segment_function {
 };
 
 // this is the piecewise curve segment function for cant
-struct cant_curve_segment_function {
+struct cant_curve_segment_function : public taxonomy::span_function {
     cant_curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& parent_curve_start_point, std::shared_ptr<parent_curve_function> parent_curve_fn) :
        curve_segment_placement_(curve_segment_placement),
        parent_curve_start_point_(parent_curve_start_point),
        parent_curve_fn_(parent_curve_fn) {
     }
 
-    Eigen::Matrix4d operator()(double u) const {
+    Eigen::Matrix4d operator()(double u) const override {
         // The parent curve function returns the cant frame (see cant_frame) and superelevation for the parent curve.
         // The frame is absolute: its slope comes from the parent curve and its cross slope from this segment's
         // placement and the next one's, so it is used as it is.
@@ -245,6 +245,8 @@ class curve_segment_evaluator {
 
     std::optional<Eigen::Matrix4d> curve_segment_placement_; // placement of this segment
     std::optional<Eigen::Matrix4d> next_segment_placement_; // placement of the next segment
+
+    taxonomy::span_curve span_curve_ = taxonomy::span_curve::UNSPECIFIED; // kind of parent curve, set by its operator()
 
   public:
     curve_segment_evaluator(mapping* mapping, const IfcSchema::IfcCurveSegment& inst, double length_unit)
@@ -360,9 +362,15 @@ class curve_segment_evaluator {
 
         auto length = fabs(this->length());
 
+        taxonomy::span_info info;
+        info.layout = segment_type_ == ST_HORIZONTAL ? taxonomy::span_layout::HORIZONTAL
+                    : segment_type_ == ST_VERTICAL   ? taxonomy::span_layout::VERTICAL
+                                                     : taxonomy::span_layout::CANT;
+        info.curve = span_curve_;
+
         if (segment_type_ == ST_CANT) {
-            auto fn = cant_curve_segment_function(*curve_segment_placement_, *parent_curve_start_point_, parent_curve_fn_);
-            return taxonomy::make<taxonomy::functor_item>(length, fn);
+            auto fn = std::make_shared<cant_curve_segment_function>(*curve_segment_placement_, *parent_curve_start_point_, parent_curve_fn_);
+            return taxonomy::make<taxonomy::functor_item>(length, fn, info, inst_);
         } else {
             // The parent curve function returns the 4x4 matrix for the parent curve.
             // Normalize the parent curve so that the trim start point and tangent direction at the start point
@@ -384,8 +392,8 @@ class curve_segment_evaluator {
            parent_curve_normalization(0, 3) = xn;
            parent_curve_normalization(1, 3) = yn;
 
-            auto fn = curve_segment_function(*curve_segment_placement_, parent_curve_normalization, parent_curve_fn_);
-            return taxonomy::make<taxonomy::functor_item>(length, fn);
+            auto fn = std::make_shared<curve_segment_function>(*curve_segment_placement_, parent_curve_normalization, parent_curve_fn_);
+            return taxonomy::make<taxonomy::functor_item>(length, fn, info, inst_);
         }
     }
 
@@ -566,6 +574,7 @@ class curve_segment_evaluator {
 
 #ifdef SCHEMA_HAS_IfcClothoid
     void operator()(const IfcSchema::IfcClothoid& c) {
+        span_curve_ = taxonomy::span_curve::CLOTHOID;
         auto A = c.ClothoidConstant() * length_unit_;
         auto L = length(); // already includes length_unit_
 
@@ -596,6 +605,7 @@ class curve_segment_evaluator {
 
 #if defined SCHEMA_HAS_IfcCosineSpiral
     void operator()(const IfcSchema::IfcCosineSpiral& c) {
+        span_curve_ = taxonomy::span_curve::COSINE_SPIRAL;
         auto constant_term = c.ConstantTerm();
         if (constant_term.has_value()) {
             constant_term.value() *= length_unit_;
@@ -659,6 +669,7 @@ class curve_segment_evaluator {
 
 #if defined SCHEMA_HAS_IfcSineSpiral
     void operator()(const IfcSchema::IfcSineSpiral& c) {
+        span_curve_ = taxonomy::span_curve::SINE_SPIRAL;
         auto constant_term = c.ConstantTerm();
         if (constant_term.has_value()) {
             constant_term.value() *= length_unit_;
@@ -801,6 +812,7 @@ class curve_segment_evaluator {
 
 #ifdef SCHEMA_HAS_IfcSecondOrderPolynomialSpiral
     void operator()(const IfcSchema::IfcSecondOrderPolynomialSpiral& c) {
+        span_curve_ = taxonomy::span_curve::SECOND_ORDER_POLYNOMIAL_SPIRAL;
         auto A0 = c.ConstantTerm();
         auto A1 = c.LinearTerm();
         auto A2 = c.QuadraticTerm();
@@ -816,6 +828,7 @@ class curve_segment_evaluator {
 
 #ifdef SCHEMA_HAS_IfcThirdOrderPolynomialSpiral
     void operator()(const IfcSchema::IfcThirdOrderPolynomialSpiral& c) {
+        span_curve_ = taxonomy::span_curve::THIRD_ORDER_POLYNOMIAL_SPIRAL;
         auto A0 = c.ConstantTerm();
         auto A1 = c.LinearTerm();
         auto A2 = c.QuadraticTerm();
@@ -836,6 +849,7 @@ class curve_segment_evaluator {
 
 #ifdef SCHEMA_HAS_IfcSeventhOrderPolynomialSpiral
     void operator()(const IfcSchema::IfcSeventhOrderPolynomialSpiral& c) {
+        span_curve_ = taxonomy::span_curve::SEVENTH_ORDER_POLYNOMIAL_SPIRAL;
         auto A0 = c.ConstantTerm();
         auto A1 = c.LinearTerm();
         auto A2 = c.QuadraticTerm();
@@ -854,6 +868,7 @@ class curve_segment_evaluator {
 #endif
 
     void operator()(const IfcSchema::IfcCircle& c) {
+        span_curve_ = taxonomy::span_curve::CIRCLE;
         if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
             auto R = c.Radius() * length_unit_;
             auto parent_curve_position = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c.Position()))->ccomponents();
@@ -985,6 +1000,7 @@ class curve_segment_evaluator {
     }
 
     void operator()(const IfcSchema::IfcLine& l) {
+        span_curve_ = taxonomy::span_curve::LINE;
        projected_length_ = length_;
 
        auto c = l.Pnt().Coordinates();
@@ -1074,6 +1090,7 @@ class curve_segment_evaluator {
 
 #ifdef SCHEMA_HAS_IfcPolynomialCurve
     void operator()(const IfcSchema::IfcPolynomialCurve& pc) {
+        span_curve_ = taxonomy::span_curve::POLYNOMIAL_CURVE;
         // see https://forums.buildingsmart.org/t/ifcpolynomialcurve-clarification/4716 for discussion on IfcPolynomialCurve
         auto coeffX = pc.CoefficientsX().value_or(std::vector<double>());
         auto coeffY = pc.CoefficientsY().value_or(std::vector<double>());

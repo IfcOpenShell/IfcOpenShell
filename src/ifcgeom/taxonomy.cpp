@@ -1678,6 +1678,43 @@ namespace {
 		Eigen::Vector2d xy = (c->matrix->ccomponents().inverse() * p.ccomponents().homogeneous()).head<2>();
 		return std::atan2(xy(1), xy(0));
 	}
+
+	// A circular arc edge of a loop, starting at parameter s on the circle
+	struct circle_edge_function : public span_function {
+		circle_edge_function(circle::ptr circ, double s) : circ_(std::move(circ)), s_(s) {}
+
+		Eigen::Matrix4d operator()(double u) const override {
+			point3 P;
+			direction3 d;
+			evaluate_curve(circ_, u / circ_->radius + s_, P);
+			evaluate_curve_d1(circ_, u / circ_->radius + s_, d);
+			return matrix4(P.ccomponents(), circ_->matrix->ccomponents().col(2).head<3>(), d.ccomponents()).components();
+		}
+
+		circle::ptr circ_;
+		double s_;
+	};
+
+	// A straight edge of a loop, from start in unit direction v
+	struct line_edge_function : public span_function {
+		line_edge_function(const Eigen::Vector3d& start, const Eigen::Vector3d& v) : start_(start), v_(v) {}
+
+		Eigen::Matrix4d operator()(double u) const override {
+			Eigen::Vector3d o(start_ + u * v_), axis(0, 0, 1), refDirection(v_);
+			auto Y = axis.cross(refDirection).normalized();
+			axis = refDirection.cross(Y).normalized();
+			return make<matrix4>(o, axis, refDirection)->components();
+		}
+
+		Eigen::Vector3d start_, v_;
+	};
+
+	span_info loop_edge_info(span_curve curve) {
+		span_info info;
+		info.layout = span_layout::POLYLINE;
+		info.curve = curve;
+		return info;
+	}
 }
 
 
@@ -1711,14 +1748,8 @@ std::optional<function_item::ptr> ifcopenshell::geom::taxonomy::loop_to_function
 					double e = e_pnt ? project_onto_curve(circ, **e_pnt) : *e_param;
 
 					auto l = std::fabs(s - e) * circ->radius;
-					std::function<Eigen::Matrix4d(double)> fn = [circ, s](double u) {
-						point3 P;
-						direction3 d;
-						evaluate_curve(circ, u / circ->radius + s, P);
-						evaluate_curve_d1(circ, u / circ->radius + s, d);
-						return matrix4(P.ccomponents(), circ->matrix->ccomponents().col(2).head<3>(), d.ccomponents()).components();
-					};
-					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
+					auto fn = std::make_shared<circle_edge_function>(circ, s);
+					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn, loop_edge_info(span_curve::CIRCLE), loop_->instance));
 				} else if (edge_->start.index() == 1 && edge_->end.index() == 1) {
 					if (edge_->basis && edge_->basis->kind() != LINE) {
 						ifcopenshell::logger::root().message(ifcopenshell::logger::severity::LOG_WARNING, "UNS", 20, "Basis curve not supported - edge is treated as a straight line edge");
@@ -1728,13 +1759,8 @@ std::optional<function_item::ptr> ifcopenshell::geom::taxonomy::loop_to_function
 					Eigen::Vector3d v = e - s;
 					auto l = v.norm(); // the norm of a vector is a measure of its length
 					v.normalize();     // normalize the vector so that it is a unit direction vector
-					std::function<Eigen::Matrix4d(double)> fn = [s, v](double u) {
-						Eigen::Vector3d o(s + u * v), axis(0, 0, 1), refDirection(v);
-						auto Y = axis.cross(refDirection).normalized();
-						axis = refDirection.cross(Y).normalized();
-						return make<matrix4>(o, axis, refDirection)->components();
-					};
-					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
+					auto fn = std::make_shared<line_edge_function>(s, v);
+					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn, loop_edge_info(span_curve::LINE), loop_->instance));
 				} else {
 					ifcopenshell::logger::root().message(ifcopenshell::logger::severity::LOG_ERROR, "UNS", 21, "Basis curve not supported");
 					return std::nullopt;
