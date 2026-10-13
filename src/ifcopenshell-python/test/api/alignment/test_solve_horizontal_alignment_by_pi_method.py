@@ -240,18 +240,9 @@ def test_author_transition_curve_alignment(family):
     assert [s.DesignParameters.PredefinedType for s in segment_nest.RelatedObjects] == expected_types
 
     # verify continuity of position and direction between consecutive segments of the
-    # geometric representation
-    #
-    # HELMERTCURVE gets a looser tolerance for a reason unrelated to the PI method: each
-    # HELMERTCURVE business segment renders as *two* IfcCurveSegments (_map_helmert_curve splits
-    # it at its midpoint), and ifcopenshell_wrapper.helmert_curve_point's own angle computation
-    # (used to place the second half relative to the first) carries a small inherent approximation
-    # -- present for any HELMERTCURVE, table-authored or PI-method, and independent of anything
-    # this solver computes. The boundaries *between* business segments (LINE-to-spiral,
-    # spiral-to-CIRCULARARC) that the PI method actually controls remain exact; only the internal
-    # split within one HELMERTCURVE segment carries this pre-existing residual.
-    direction_tolerance = 5.0e-5 if family == "HELMERTCURVE" else 1.0e-9
-    position_tolerance = 5.0e-3 if family == "HELMERTCURVE" else 1.0e-5
+    # geometric representation, including the two halves of a HELMERTCURVE
+    direction_tolerance = 1.0e-9
+    position_tolerance = 1.0e-5
     curve = ifcopenshell.api.alignment.get_layout_curve(horizontal_layout)
     settings = ifcopenshell.geom.settings()
     for segment, next_segment in zip(curve.Segments[:-1], curve.Segments[1:]):
