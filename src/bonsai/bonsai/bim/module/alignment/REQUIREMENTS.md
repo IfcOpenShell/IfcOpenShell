@@ -7,7 +7,51 @@ resolving them.
 
 ## Status and work plan (resume here)
 
-*Last updated 2026-10-12.* **2026-10-12 round:** `rab_infrastructure` was rebased onto `v0.9.0`
+*Last updated 2026-10-13.* **2026-10-13 round:** `rab_infrastructure` now sits on
+`rab_evaluation_points` ([IfcOpenShell#5360](https://github.com/IfcOpenShell/IfcOpenShell/issues/5360),
+deflection sampling; PR open), which sits on `rab_plugin_debug_postfix` (`1f9f0613c`, Windows
+Debug/Release plug-in loading; PR open). Eight commits on top, all pushed:
+
+- `155bd0cbd` tests for the end point of each layout segment type (`test_segment_end_point.py`).
+- `e3293f28b` each segment's end point is computed once instead of twice (`_add_segment_to_curve`
+  takes it from its caller): a 164 segment alignment built by the PI method takes about 23% less
+  time (402 to 310 ms).
+- `e9604b3e3` the horizontal terminator's StartDirection uses atan2. It was off by pi when the
+  alignment ended heading into the left half plane, and divided by zero heading due north or south.
+- `0b61b96f9` tests that lock the PI solver's spiral ends (`compute_horizontal_segment_end`) to the
+  kernel's (`test_compute_spiral_end.py`).
+- `c0fdd9f78` `helmert_curve_point` returns the heading at arc length s instead of at x, which put a
+  kink at the midpoint of every Helmert curve (2.2 cm off at the end of a 100 m R300 to R1000
+  transition). C++, so it needs a wrapper rebuild. PR from `rab_helmert_heading` (`ea633a67b`).
+- `c931d4bc8` Helmert curves held to the same tolerances as the other spirals.
+- `8cc56b3dc` a transition that doesn't change (equal start and end radius, gradient or cant) is
+  mapped as a line, circular arc, constant gradient or constant cant. These failed in the Python
+  mapping, not the kernel, and CUBIC drew the wrong curve silently. PR from
+  `rab_degenerate_segments` (`d9cf9d717`).
+- `ea60b7cf0` cant transitions rotate by the difference between their rails. In a curve to the
+  right the exit transition used to start rotated as if the curve were to the left. PR from
+  `rab_cant_cross_slope` (`2d0a2490a`).
+
+The three PR commits are cherry-picked here, so they drop out when `rab_infrastructure` is rebased
+onto `v0.9.0` after the PRs merge.
+
+Findings: the Python PI solver takes 0.8 ms for a 161 segment layout, so moving it to C++ isn't
+worth it. Its spiral maths was exact (the 2 cm Helmert difference was the C++ kink) and is now
+tested against the kernel, which integrates spirals to about 1e-6 m.
+
+**Cross slope convention (per the user, 2026-10-13):** looking along the alignment, +Y is to the
+left and +Z is up. The cross slope angle is the angle of the cant segment's `Placement.Axis` from +Y:
+90 degrees when the railheads are level, below 90 in a curve to the left (right rail raised) and above
+90 in a curve to the right (left rail raised). The deviating elevation (`Placement.Location` y, the
+mean of the rails) is positive either way; the Axis carries the direction of rotation. Report cant
+angles this way.
+
+**Outside this repo:** the IFC Alignment Geometry Implementation Guide test set and the
+bSI-RailwayRoom unit-test reference were generated with the Helmert kink. The guide's Helmert data has
+been regenerated on its `fix_helmert_kink` branch; its right-hand cant IFC files need regenerating
+again once the cross slope PR merges (their CSVs hold positions only, which don't change).
+
+**2026-10-12 round:** `rab_infrastructure` was rebased onto `v0.9.0`
 (352 upstream commits; force-pushed), then four commits were added on top (the user pushes them):
 
 - `370eff8bf` the IFC4x3 Road/Bridge templates declare `ViewDefinition [Alignment-basedView]` (the
@@ -80,14 +124,22 @@ edits + Insert/Delete PI + PI click-pick (§11), `6ea213041` cant follows horizo
      ambiguous-`str` ones. `ifcopenshell.validate` has the same broken-example error; not ours.
      Building the docs: a venv with `sphinx furo sphinx-autoapi sphinx-copybutton`, then
      `sphinx-build -b html . <out>` from each docs directory.
-2. **Bottom of the list -- the C++ pass (see the note at the end of §1):** moving the Python-side
-   alignment geometry (PI solver, spiral integrands, join-radius root finding) to C++; the
-   degenerate spiral crash (equal start/end radius spiral, equal-gradient vertical arc); the
-   LINEARTRANSITION divide-by-zero in `_map_linear_transition` (constant cant across a transition,
-   hit when a spiral-less curve sits next to a spiralled one); and
-   [IfcOpenShell#5360](https://github.com/IfcOpenShell/IfcOpenShell/issues/5360) (sample straight
-   regions by their end points only).
+2. **The C++ pass (see the note at the end of §1) -- mostly resolved 2026-10-13:**
+   - ~~[IfcOpenShell#5360](https://github.com/IfcOpenShell/IfcOpenShell/issues/5360)~~ -- done:
+     curves, sweeps and lofts are sampled by deflection (PR from `rab_evaluation_points`).
+   - ~~The degenerate spiral crash and the LINEARTRANSITION divide-by-zero~~ -- fixed. Both were in
+     `ifcopenshell.api.alignment`'s mapping, not the kernel (PR from `rab_degenerate_segments`).
+   - ~~Moving the PI solver, spiral integrands and join-radius root finding to C++~~ -- not worth
+     it: the solver takes 0.8 ms. Its spiral maths stays in Python, tested against the kernel.
+   - **Next: profile Bonsai's interactive operations** (PI edit, drag, insert/delete) in UI-mode
+     Blender. This is the remaining performance item.
+   - **Not yet tried in Blender:** a spiral row with equal radii should now draw as an arc, and a
+     right-hand curve with cant should roll continuously into its exit transition.
+   - Optional: the kernel integrates spirals with trapezoidal quadrature, to about 1e-6 m;
+     Gauss-Legendre would be more accurate and probably faster.
 3. **Before the PR for the final work is posted: delete `dev_tests/`** (see Testing below).
+4. **After the open PRs merge** (plug-in postfix, evaluation points, Helmert heading, degenerate
+   segments, cant cross slope): rebase `rab_infrastructure` onto `v0.9.0`.
 
 ~~§10 Manual referent definitions~~ -- removed from the plan (per the user, 2026-09-28).
 
@@ -100,6 +152,10 @@ edits + Insert/Delete PI + PI click-pick (§11), `6ea213041` cant follows horizo
   two collinear tangents, which Edit PIs then can't reconstruct.
 - `_cant_lookup_for_pi_markers` (VIENNESEBEND cant per PI) is positional, so it defaults after a PI
   insert/delete until the cant layout is regenerated.
+- A cant transition that rotates the track about its centreline (left -c to +c, right +c to -c)
+  keeps a constant deviating elevation while its cross slope changes. The kernel interpolates the
+  cross slope by the deviating elevation, so IFC can't represent it; such a segment is mapped as
+  constant cant with its start cross slope.
 - Upstream candidates, if wanted: `fecdc1919` (`update_layout_segments`) and `53bb23aae` (polyline
   stationing referents) as their own PRs.
 
@@ -148,7 +204,10 @@ mis-editing it.
 a partial/in-place regenerate — every segment in that layout gets a fresh GUID each time.**
 Fixed (2026-09-25) — see §11: every row loaded from an existing segment keeps it (and its GlobalId).
 
-**Known, deliberate non-validation (per the user, 2026-09-14):** a spiral-family row with equal
+**~~Known, deliberate non-validation (per the user, 2026-09-14)~~ -- resolved 2026-10-13:** the
+failure was in `ifcopenshell.api.alignment`'s mapping, not the kernel, and a transition that doesn't
+change is now mapped as its constant counterpart (PR from `rab_degenerate_segments`), so no UI guard
+is needed. The original note: a spiral-family row with equal
 start/end radius, or a vertical CIRCULARARC row with equal start/end gradient, is degenerate input
 that reliably crashes the geometry kernel (divides by a curvature-change factor that's exactly
 zero) rather than erroring gracefully. This is intentionally left unguarded in
@@ -157,7 +216,8 @@ meant to stay visible as a reminder that the kernel itself needs the fix, not pa
 UI-side check. Offer to user that this needs to be handled - offer to explore graceful handling
 in the ifcopenshell geometry kernel, if not practical/possible there, then error guard in the UI.
 
-**Deferred to the bottom of the list (per the user, 2026-09-24):** "We have added a lot of
+**Deferred to the bottom of the list (per the user, 2026-09-24; see work plan item 2 for where it
+stands):** "We have added a lot of
 calculations on the python side. It may be better (and faster) to have them on the C++ side." Revisit
 this crash together with moving the Python-side alignment geometry (the PI-method solver,
 `_spiral_curvature`'s integrands, the join-radius root-finding) into C++, rather than as a
@@ -175,8 +235,8 @@ this needs to be addressed too"):
   there, and keep the dense sampling for curved regions, always including segment boundaries. On
   the issue's bridge example this cut 24,676 evaluations to 15,159 (~39%) and improved accuracy.
   This is directly relevant here: every Apply regenerates the alignment's evaluated geometry.
-- The LINEARTRANSITION divide-by-zero in `_map_linear_transition` (constant cant across a
-  transition), found while implementing §11.
+- ~~The LINEARTRANSITION divide-by-zero in `_map_linear_transition` (constant cant across a
+  transition), found while implementing §11.~~ Fixed 2026-10-13 with the degenerate transitions.
 
 ## 2. Interactive creation of a horizontal alignment
 
@@ -302,12 +362,14 @@ improvements:
      accumulated deflection rather than the clothoid-specific `length / (2 * radius)` closed form,
      which happens to also hold exactly for Bloss/Cosine/Sine/Helmert (all normalized to the same
      total deflection as clothoid) but not for CUBIC's Cartesian small-angle approximation -- this
-     fix is what makes every family close geometrically exactly, not just clothoid. HELMERTCURVE
+     fix is what makes every family close geometrically exactly, not just clothoid. ~~HELMERTCURVE
      carries one pre-existing, unrelated approximation: its own two-piece representation
      (`_map_helmert_curve`, via `ifcopenshell_wrapper.helmert_curve_point`) has an inherent ~1e-6
      rad residual at the internal split between its two `IfcCurveSegment`s, present for any
      HELMERTCURVE regardless of whether it's authored via the PI method or the raw segment table --
-     see the widened tolerance in `test_author_transition_curve_alignment`.
+     see the widened tolerance in `test_author_transition_curve_alignment`.~~ Not an approximation
+     but a bug, fixed 2026-10-13: `helmert_curve_point` returned the heading at x instead of at s,
+     a kink of up to 4.35e-4 rad. The widened tolerance is gone.
 
      **VIENNESEBEND (per the user, 2026-09-17): "I would like to see Viennese Bend in the selection
      list, but be disabled if there is not a cant layout. It will only work if there is an existing
@@ -1835,9 +1897,9 @@ previous segment."
   whose dot is within 12 px of the click, like the vertical profile's PIs; any other click passes
   through to Blender's own select. Verified in UI-mode Blender with simulated clicks over a mesh.
 
-**Known, not addressed:** a spiral-less curve next to a spiralled one gives a LINEARTRANSITION cant
-segment with equal start/end cant, which `_map_linear_transition` divides by zero on (pre-existing,
-same path with or without this change) -- belongs with the degenerate-spiral/C++ item.
+**~~Known, not addressed~~ -- fixed 2026-10-13:** a spiral-less curve next to a spiralled one gives a
+LINEARTRANSITION cant segment with equal start/end cant, which `_map_linear_transition` divided by
+zero on. It is now mapped as constant cant (PR from `rab_degenerate_segments`).
 
 **Implemented (2026-09-25): cant follows horizontal edits.** ~~Cant is not regenerated automatically
 when the horizontal's segment structure changes.~~ Every horizontal rebuild (the PI method via
