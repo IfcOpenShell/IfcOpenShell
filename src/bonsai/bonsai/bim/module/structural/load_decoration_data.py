@@ -80,6 +80,35 @@ ProcessedLoad = TypedDict(
 )
 
 
+def box_crosses_segments(
+    left: float, low: float, width: float, height: float, segments: Iterable[tuple[Iterable, Iterable]]
+) -> bool:
+    """Whether a label's box, from (left, low) and of a width and height in 2D, touches any of the lines given as
+    pairs of end points, so that labels can keep off arrows and arcs as well as each other"""
+    right, high = left + width, low + height
+    for (x1, y1), (x2, y2) in segments:
+        if max(x1, x2) < left or min(x1, x2) > right or max(y1, y2) < low or min(y1, y2) > high:
+            continue  # Nowhere near, which most lines are; quick to rule out, as this runs on every redraw.
+        # Clip the line to the box (Liang-Barsky): any part left means it crosses the box.
+        t0, t1 = 0.0, 1.0
+        dx, dy = x2 - x1, y2 - y1
+        for p, q in ((-dx, x1 - left), (dx, right - x1), (-dy, y1 - low), (dy, high - y1)):
+            if p == 0:
+                if q < 0:
+                    break  # Parallel to this edge and outside it.
+                continue
+            t = q / p
+            if p < 0:
+                t0 = max(t0, t)
+            else:
+                t1 = min(t1, t)
+            if t0 > t1:
+                break
+        else:
+            return True
+    return False
+
+
 class ShaderInfo:
     # Values of a load being edited, by load id, shown in place of its own until the edit is confirmed or cancelled.
     preview: dict[int, dict[str, Union[float, None]]] = {}
@@ -993,6 +1022,8 @@ class ShaderInfo:
             hypotenuse = min(hypotenuse, room)
         else:
             near = length * 0.6 - hypotenuse / 2
+        if hypotenuse * min(along, across) < size * 0.03:
+            return  # A sliver too flat to read, as for a force nearly along the axis; its angle says it.
         a = tail + direction * near
         b = a + direction * hypotenuse
         towards_axis = a + axis * hypotenuse * np.cos(turned)
