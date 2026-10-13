@@ -1,5 +1,7 @@
 name: Test Bonsai
 
+permissions: {}
+
 on:
   pull_request:
   workflow_dispatch:

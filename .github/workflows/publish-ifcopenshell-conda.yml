@@ -1,5 +1,7 @@
 name: Publish IfcOpenShell Conda
 
+permissions: {}
+
 on:
   workflow_dispatch:
   schedule:

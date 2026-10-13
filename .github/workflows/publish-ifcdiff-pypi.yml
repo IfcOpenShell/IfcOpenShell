@@ -1,5 +1,7 @@
 name: Publish IfcDiff PyPI
 
+permissions: {}
+
 on:
   workflow_dispatch:
 

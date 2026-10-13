@@ -1,5 +1,7 @@
 name: Publish IfcMCP PyPI
 
+permissions: {}
+
 on:
   workflow_dispatch:
 

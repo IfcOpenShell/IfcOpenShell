@@ -1,6 +1,8 @@
 # This file was generated with the assistance of an AI coding tool.
 name: Test IfcWrap Standalone
 
+permissions: {}
+
 on:
   workflow_dispatch:
   pull_request:

@@ -1,5 +1,7 @@
 name: Publish IfcEdit PyPI
 
+permissions: {}
+
 on:
   workflow_dispatch:
 

@@ -1,5 +1,7 @@
 name: Publish bSDD PyPI
 
+permissions: {}
+
 on:
   workflow_dispatch:
 
