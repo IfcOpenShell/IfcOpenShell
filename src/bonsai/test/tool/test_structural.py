@@ -448,3 +448,17 @@ class TestMagnitudeGroups(NewFile):
         assert [f / factors[0] for f in factors] == [1.0, 0.5, 0.125]
         groups, factors = subject.get_magnitude_links([first, second, third], {third.GlobalId: (first.GlobalId, 2.0)})
         assert [f / factors[0] for f in factors] == [1.0, 0.5, 2.0]
+
+
+class TestGetResultantFound(NewFile):
+    def test_by_how_many_force_values_are_unknown(self):
+        known, magnitude_unknown, both_unknown = (True, True), (False, True), (False, False)
+        assert subject.get_resultant_found([known, known]) == ["magnitude", "direction"]
+        assert subject.get_resultant_found([known, magnitude_unknown]) == ["magnitude"]
+        assert subject.get_resultant_found([known, both_unknown]) == []
+
+    def test_linked_magnitudes_count_once(self):
+        locks = [(True, True), (False, True), (False, True)]
+        assert subject.get_resultant_found(locks) == []
+        assert subject.get_resultant_found(locks, [None, "T", "T"]) == ["magnitude"]
+        assert subject.get_resultant_found([(True, True), (False, True)], ["T", "T"]) == ["magnitude", "direction"]
