@@ -292,12 +292,7 @@ def test_cant_end_without_geometry(kind, c0, c1):
     "direction",
     [
         0.3,
-        pytest.param(
-            2.5,
-            marks=pytest.mark.xfail(
-                strict=True, reason="the terminator's StartDirection uses atan instead of atan2, off by pi here"
-            ),
-        ),
+        2.5,
     ],
 )
 def test_horizontal_terminator_at_end(direction):
