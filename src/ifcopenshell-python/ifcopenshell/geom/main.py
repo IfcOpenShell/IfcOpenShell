@@ -158,6 +158,7 @@ SETTING = Literal[
     "use-python-opencascade",
     "use-world-coords",
     "validate",
+    "vertex-rebase-distance",
     "weld-vertices",
     "y-up",
     "wkt-use-section",

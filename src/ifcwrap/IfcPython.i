@@ -198,6 +198,7 @@
 %ignore FunctionStepParam;
 %ignore ModelOffset;
 %ignore ModelRotation;
+%ignore VertexRebaseDistance;
 %ignore TriangulationType;
 %ignore CgalEmitOriginalEdges;
 %ignore OcctNoCleanTriangulation;

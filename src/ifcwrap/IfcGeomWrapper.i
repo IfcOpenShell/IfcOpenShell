@@ -863,6 +863,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
         item_ids = property(item_ids)
         uvs = property(uvs)
         edges_item_ids = property(edges_item_ids)
+        rebase_offset = property(rebase_offset)
 
         faces_buffer = property(faces_buffer)
         edges_buffer = property(edges_buffer)
