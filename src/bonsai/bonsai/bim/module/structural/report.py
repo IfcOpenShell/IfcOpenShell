@@ -103,10 +103,8 @@ def get_report_data(
                 drawing = ShaderInfo(case)
                 drawing.update()
             name = f"{get_slug(case.Name)}_{get_slug(item.Name)}_{item.id()}.svg"
-            # Forces are numbered as they are drawn, tip to tail; the diagram names them so too.
-            numbers = {a.id(): i for i, a in enumerate(activities, 1)}
             resultant_found = bool(get_resultant_found([tool.Structural.get_locks(a) for a in activities]))
-            has_diagram = write_diagram(drawing, item, directory / "diagrams" / name, numbers, resultant_found)
+            has_diagram = write_diagram(drawing, item, directory / "diagrams" / name, resultant_found)
             point = {"name": item.Name or "Unnamed", "diagram": f"diagrams/{name}" if has_diagram else None}
             colors = get_force_colors(drawing, item)
             tilt = tool.Structural.get_axes_tilt(item)
@@ -120,7 +118,7 @@ def get_report_data(
             # Resolved along the point's tilted axes too, whatever the viewport shows.
             resolved = name.replace(".svg", "_axes.svg")
             if point["has_tilted"] and write_resolved_diagram(
-                item, activities, colors, directory / "diagrams" / resolved, numbers
+                item, activities, colors, directory / "diagrams" / resolved
             ):
                 point["tilted_diagram"] = f"diagrams/{resolved}"
             points.append(point)
@@ -155,7 +153,6 @@ def write_resolved_diagram(
     activities: list[ifcopenshell.entity_instance],
     colors: dict[int, tuple],
     path: Path,
-    numbers: dict[int, int],
 ) -> bool:
     """Write a diagram of each force at a point resolved along its tilted axes, as the steps resolve them"""
     if not (obj := tool.Ifc.get_object(item)):
@@ -171,7 +168,7 @@ def write_resolved_diagram(
         [activity.id() for activity in activities],
         tool.Structural.get_axes_slope(item),
     )
-    return write_diagram(drawing, item, path, numbers)
+    return write_diagram(drawing, item, path)
 
 
 def get_point_items(case: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -877,7 +874,6 @@ def write_diagram(
     drawing: ShaderInfo,
     item: ifcopenshell.entity_instance,
     path: Path,
-    numbers: Union[dict[int, int], None] = None,
     resultant_found: bool = False,
 ) -> bool:
     """Write a structural item's load diagram as an SVG, as the X-Z plane is seen from -Y, or nothing if none.
@@ -890,22 +886,8 @@ def write_diagram(
         e["primitive"] | {"color": e["color"]} for e in drawing.info if e.get("object") == obj.name and "primitive" in e
     ]
     texts = [t for t in drawing.text_info if t.get("object") == obj.name]
-    # Name each force and component by its symbol in the calculations: a single force's components as its
-    # own, F_x1, and several forces' as their resultant's, R_x.
-    numbers = numbers or {}
-
-    def get_symbol(text: dict) -> Union[str, None]:
-        if text.get("force_of") in numbers:
-            return f"F_{{{numbers[text['force_of']]}}}"
-        if (axis := text.get("component")) and text.get("component_of") in numbers:
-            return f"F_{{{axis}{numbers[text['component_of']]}}}"  # A component of one force, resolved.
-        if axis:
-            if len(numbers) == 1:
-                return f"F_{{{axis}{next(iter(numbers.values()))}}}"
-            return f"R_{{{axis}}}"
-        return None
-
-    texts = [t | {"text": f"{symbol} = {t['text']}"} if (symbol := get_symbol(t)) else t for t in texts]
+    # Each force and component named by its symbol in the calculations, as the drawing names them.
+    texts = [t | {"text": f"{t['symbol']} = {t['text']}"} if t.get("symbol") else t for t in texts]
     if not shapes:
         return False
     flat = lambda point: np.array((point[0], -point[2]))  # SVG's Y runs down.

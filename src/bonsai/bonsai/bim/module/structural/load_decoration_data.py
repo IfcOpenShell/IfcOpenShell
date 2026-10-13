@@ -109,6 +109,13 @@ def box_crosses_segments(
     return False
 
 
+def get_plain_symbol(symbol: str) -> str:
+    """A symbol written F_{x1}, as reports set it, in plain text with Unicode subscripts where there are some, as
+    F₁ or Fₓ₁; Unicode has no subscript z, so it stays as it is"""
+    lower = str.maketrans("0123456789x", "₀₁₂₃₄₅₆₇₈₉ₓ")
+    return re.sub(r"_\{([^}]*)\}", lambda m: m[1].translate(lower), symbol)
+
+
 def segments_cross(p1: Iterable, p2: Iterable, q1: Iterable, q2: Iterable) -> bool:
     """Whether two lines in a plane, given by their end points as (x, y), cross or touch"""
 
@@ -592,6 +599,9 @@ class ShaderInfo:
         location = np.array(location)
         first = len(self.info)  # This point's drawing starts here, which its axes reach across.
         self.point_first = first  # And which its slope triangles keep clear of.
+        first_text = len(self.text_info)
+        # Forces are numbered as they are drawn, tip to tail, as calculations number them.
+        numbers = {activity: i for i, activity in enumerate(activities or [], 1) if activity}
         if props.reference_frame == "LOCAL_COORDS":
             forces = [rotation @ force for force in forces]
         kept = [
@@ -754,6 +764,7 @@ class ShaderInfo:
         if not np.allclose(rotation, np.eye(3)):
             drawn = [vector * scale for vector, *_ in vectors] + ([resultant * scale] if show_resultant else [])
             self.add_point_axes(location, rotation, size, slope, drawn)
+        self.add_symbols(self.text_info[first_text:], numbers)
 
     def draw_resolved_point_forces(
         self,
@@ -803,8 +814,23 @@ class ShaderInfo:
             drawn.append(tip - location)
         self.add_global_axes(location, size, start[0])
         self.add_point_axes(location, rotation, size, slope, drawn)
+        self.add_symbols(self.text_info[start[1] :], {a: i for i, a in enumerate(activities, 1) if a})
         for entry in self.info[start[0] :] + self.text_info[start[1] :]:
             entry["object"] = object_name
+
+    def add_symbols(self, texts: list[dict], numbers: dict[int, int]) -> None:
+        """Name each force's and component's label by its symbol in the calculations, as F_{1}: a force by its
+        number, a single force's components as its own, F_{x1}, several forces' as their resultant's, R_{x}, and
+        a force's components resolved apart as its own"""
+        for text in texts:
+            if text.get("force_of") in numbers:
+                text["symbol"] = f"F_{{{numbers[text['force_of']]}}}"
+            elif (axis := text.get("component")) and text.get("component_of") in numbers:
+                text["symbol"] = f"F_{{{axis}{numbers[text['component_of']]}}}"
+            elif axis and len(numbers) == 1:
+                text["symbol"] = f"F_{{{axis}{next(iter(numbers.values()))}}}"
+            elif axis and numbers:
+                text["symbol"] = f"R_{{{axis}}}"
 
     def add_global_axes(self, location: np.ndarray, size: float, first: int = 0) -> None:
         """Mark the global X and Z axes through a point, faint and dashed, named at their positive ends, so that a

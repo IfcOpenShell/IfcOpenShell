@@ -30,7 +30,7 @@ from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
 
 import bonsai.tool as tool
-from bonsai.bim.module.structural.load_decoration_data import ShaderInfo, box_crosses_segments
+from bonsai.bim.module.structural.load_decoration_data import ShaderInfo, box_crosses_segments, get_plain_symbol
 
 
 def update_loads_after_moves(scene: bpy.types.Scene, depsgraph: bpy.types.Depsgraph) -> None:
@@ -242,14 +242,18 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
             if text_position is not None:
                 font_id = 0
                 blf.size(font_id, self.get_label_size(info, sizes.get(info.get("object", "")), context))
+                # Named by its symbol, as in calculations and reports.
+                text = (
+                    f"{get_plain_symbol(symbol)} = {info['text']}" if (symbol := info.get("symbol")) else info["text"]
+                )
                 x, y = text_position[0], text_position[1]
                 if (away := info.get("away")) is not None:
-                    x, y = self.place_beside(info["position"], away, x, y, info["text"], context, placed, segments)
+                    x, y = self.place_beside(info["position"], away, x, y, text, context, placed, segments)
                 blf.position(font_id, x, y, text_position[2])
                 # Labels take the colour of what they describe, lightened to stay legible on a dark viewport.
                 r, g, b = (min(c, 1.0) + (1 - min(c, 1.0)) * 0.35 for c in info.get("color", (0.85, 0.85, 0.85))[:3])
                 blf.color(font_id, r, g, b, 1.0)
-                blf.draw(font_id, info["text"])
+                blf.draw(font_id, text)
 
     def get_label_size(self, info: dict, size: Union[float, None], context: bpy.types.Context) -> float:
         """A label's font size: a share of its diagram's longest arrow on screen, as a report's diagram has, so
