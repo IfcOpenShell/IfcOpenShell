@@ -254,7 +254,7 @@ def get_resultant_calculation(
             found.insert(0, "magnitude")  # Found from its known component.
         rows.append(get_table_row(force["symbol"], force["name"], force["magnitude"], force["direction"], found, color))
         rows[-1]["magnitude"] += f" {unit}"
-    solving, find = get_solving_steps(forces, text_unit)
+    solving, find = get_solving_steps(forces, text_unit, resultant_eighth)
     # Components first, then the unknowns found from them, then the resultant with what was found.
     found = {
         i: "MAGNITUDE" if force["locks"][1] else "WHOLE"
@@ -656,7 +656,9 @@ def get_sum_steps(
     return components, steps, summary
 
 
-def get_solving_steps(forces: list[dict[str, Any]], text_unit: str) -> tuple[list[str], str]:
+def get_solving_steps(
+    forces: list[dict[str, Any]], text_unit: str, resultant_eighth: Union[str, None] = None
+) -> tuple[list[str], str]:
     """The steps finding what was unknown, and what they find: magnitudes from known components, then unlocked values"""
     steps, finds = [], []
     for n, force in enumerate(forces, 1):
@@ -674,11 +676,13 @@ def get_solving_steps(forces: list[dict[str, Any]], text_unit: str) -> tuple[lis
         magnitude = f"{force['magnitude']:.2f}"
         steps.append(f"F_{{{n}}} = \\frac{{{abs(value):.2f}}}{{{ratio}}} = {bold(magnitude, True, text_unit)}")
         finds.append(f"The magnitude of ${force['symbol']}$, its {axis} component and direction being known.")
-    unknown_steps, unknown_find = get_unknown_steps(forces, text_unit)
+    unknown_steps, unknown_find = get_unknown_steps(forces, text_unit, resultant_eighth)
     return steps + unknown_steps, " ".join(finds + ([unknown_find] if unknown_find else []))
 
 
-def get_unknown_steps(forces: list[dict[str, Any]], text_unit: str) -> tuple[list[str], str]:
+def get_unknown_steps(
+    forces: list[dict[str, Any]], text_unit: str, resultant_eighth: Union[str, None] = None
+) -> tuple[list[str], str]:
     """The steps finding the unknown (unlocked) values, and what they find, or none if all were known.
 
     Unknown magnitudes are found from the sums along X and Z, as the book does.
@@ -731,9 +735,11 @@ def get_unknown_steps(forces: list[dict[str, Any]], text_unit: str) -> tuple[lis
         along = resultant / np.linalg.norm(resultant)
         terms = get_component_terms(along[0], along[1], eighth, angle)
         lines.append({"symbol": "R", "unit": along, "terms": terms, "is_resultant": True})
+        # Said as the resultant is measured elsewhere in the report, from the eighth chosen for it if any.
+        shown, shown_angle = get_resultant_direction(resultant[0], resultant[1], resultant_eighth)
         find = (
             f"The magnitudes of ${forces[found[0]]['symbol']}$ and $R$, "
-            f"$R$ acting at ${angle:.1f}^\\circ$ {eighth}, {EIGHTH_AXES[eighth]}."
+            f"$R$ acting at ${shown_angle:.1f}^\\circ$ {shown}, {EIGHTH_AXES[shown]}."
         )
     else:
         find = f"The magnitudes of ${lines[0]['symbol']}$ and ${lines[1]['symbol']}$, $R$ being known."
