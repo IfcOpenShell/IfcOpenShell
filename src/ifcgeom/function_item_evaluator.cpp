@@ -42,6 +42,9 @@ struct piecewise_fn_evaluator : public fn_evaluator {
                                                                                                                           fn_(fn) {
     }
 
+    // A copy starts without a current span, so copies never share a span evaluator
+    piecewise_fn_evaluator(const piecewise_fn_evaluator& other) : fn_evaluator(other), fn_(other.fn_) {}
+
     fn_evaluator* clone() const override { return new piecewise_fn_evaluator(*this); }
     double start() const override { return fn_->start(); }
     double end() const override { return fn_->end(); }
@@ -52,11 +55,11 @@ struct piecewise_fn_evaluator : public fn_evaluator {
             // there isn't a current span or u is outside the range of the current span
             // get a new "current span"
             std::tie(current_span_start_, current_span_end_, current_span_fn_) = get_span(u);
+            current_span_evaluator_ = std::make_shared<function_item_evaluator>(settings_, current_span_fn_);
         }
 
         u -= current_span_start_; // make u relative to start of span
-        function_item_evaluator evaluator(settings_, current_span_fn_);
-        return evaluator.evaluate(u);
+        return current_span_evaluator_->evaluate(u);
     }
 
     std::tuple<double, double, taxonomy::function_item::const_ptr> get_span(double u) const {
@@ -84,6 +87,7 @@ struct piecewise_fn_evaluator : public fn_evaluator {
     mutable double current_span_start_ = 0;
     mutable double current_span_end_ = 0;
     mutable taxonomy::function_item::const_ptr current_span_fn_ = nullptr;
+    mutable std::shared_ptr<function_item_evaluator> current_span_evaluator_; // evaluates current_span_fn_
 };
 
 struct gradient_fn_evaluator : public fn_evaluator {
