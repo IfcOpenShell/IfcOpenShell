@@ -159,8 +159,30 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
 
 			return true;
 		} else {
-			ifcopenshell::logger::root().error("Lofting more than two sections is not supported");
-			return false;
+			TopoDS_Shell comp;
+			BRep_Builder BB;
+			BB.MakeShell(comp);
+			for (size_t i = 0; i < first_wire_count; ++i) {
+				// Ruled: consecutive sections are joined by straight lines
+				BRepOffsetAPI_ThruSections builder(false, true);
+				for (auto& ws : sections) {
+					builder.AddWire(ws[i]);
+				}
+				builder.Build();
+				if (!builder.IsDone()) {
+					return false;
+				}
+				for (TopExp_Explorer exp(builder.Shape(), TopAbs_FACE); exp.More(); exp.Next()) {
+					BB.Add(comp, exp.Current());
+				}
+			}
+
+			BB.Add(comp, f0.Reversed());
+			BB.Add(comp, f1);
+
+			result = BRepBuilderAPI_MakeSolid(comp).Solid();
+
+			return true;
 		}
 	}
 
