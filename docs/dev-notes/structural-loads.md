@@ -352,6 +352,15 @@ where Bonsai's eighths would measure from the vertical.
   locks keep a resultant through an operator method, which update callbacks cannot reach, so
   unknowns only moved on the dialog's first draw. It now works from the properties.
 
+## 16. The +Y axis
+
+- **+Y at loaded points**, beside +X and +Z, as far as the longer of them reaches, and clickable
+  to add a load as they are. It is drawn along the view in the drawing data (`along_view`), so
+  reports, which look along Y, leave it out.
+- **A found resultant in its chosen eighth.** The report's Find line measures a resultant found
+  by solving from the eighth chosen for it in Edit Resultant, as the rest of the report does,
+  rather than the eighth it falls in.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
