@@ -230,13 +230,18 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
 
         placed: list[tuple[float, float, float, float]] = []
         segments = self.get_screen_segments(context)
+        # Each item's diagram size, its longest arrow, so that labels keep to it as in a report's diagram.
+        sizes: dict[str, float] = {}
+        for entry in self.shader_info:
+            if (primitive := entry.get("primitive")) and (name := entry.get("object")):
+                sizes[name] = max(sizes.get(name, 0.0), primitive["size"])
         for info in self.text_info:
             if not self.is_visible(info):
                 continue
             text_position = self.location_3d_to_region_2d(info["position"], context)
             if text_position is not None:
                 font_id = 0
-                blf.size(font_id, 20.0)
+                blf.size(font_id, self.get_label_size(info, sizes.get(info.get("object", "")), context))
                 x, y = text_position[0], text_position[1]
                 if (away := info.get("away")) is not None:
                     x, y = self.place_beside(info["position"], away, x, y, info["text"], context, placed, segments)
@@ -245,6 +250,19 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
                 r, g, b = (min(c, 1.0) + (1 - min(c, 1.0)) * 0.35 for c in info.get("color", (0.85, 0.85, 0.85))[:3])
                 blf.color(font_id, r, g, b, 1.0)
                 blf.draw(font_id, info["text"])
+
+    def get_label_size(self, info: dict, size: Union[float, None], context: bpy.types.Context) -> float:
+        """A label's font size: a share of its diagram's longest arrow on screen, as a report's diagram has, so
+        that zooming scales labels with the arrows, kept within sizes that read"""
+        if not size:
+            return 20.0
+        region, rv3d = context.region, context.region_data
+        right = rv3d.view_rotation @ Vector((1, 0, 0))
+        start = location_3d_to_region_2d(region, rv3d, Vector(info["position"]))
+        end = location_3d_to_region_2d(region, rv3d, Vector(info["position"]) + right * size)
+        if start is None or end is None:
+            return 20.0
+        return min(max((end - start).length * 0.032, 8.0), 24.0)
 
     def place_beside(
         self,
