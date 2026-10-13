@@ -100,6 +100,7 @@ SETTING = Literal[
     "iterator-output",
     "keep-bounding-boxes",
     "layerset-first",
+    "loft-use-ruled-surfaces",
     "length-unit",
     "make-volume",
     "max-offset-deviation",

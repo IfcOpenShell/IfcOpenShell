@@ -17,6 +17,55 @@ namespace {
 }
 
 namespace {
+taxonomy::loop::ptr interpolate_edges(const taxonomy::loop::ptr& a, const taxonomy::loop::ptr& b,
+    const Eigen::Matrix3d& basis_a, const Eigen::Matrix3d& basis_b, const Eigen::Vector3d& offset,
+    double fraction, const settings& settings) {
+    if (a->children.size() != b->children.size()) {
+        throw std::runtime_error("Loft interpolation requires corresponding edge counts");
+    }
+    Eigen::Matrix4d frame_a = Eigen::Matrix4d::Identity(), frame_b = frame_a;
+    frame_a.block<3, 3>(0, 0) = basis_a;
+    frame_b.block<3, 3>(0, 0) = basis_b;
+    if (a->matrix) frame_a = (frame_a * a->matrix->ccomponents()).eval();
+    if (b->matrix) frame_b = (frame_b * b->matrix->ccomponents()).eval();
+    auto frame = lerp(frame_a, frame_b, fraction).eval();
+    frame.col(3).head<3>() += offset;
+    auto result = taxonomy::make<taxonomy::loop>(*a);
+    result->instance = a->instance;
+    result->surface_style = a->surface_style;
+    result->orientation = a->orientation;
+    result->matrix = nullptr;
+    result->children.clear();
+    for (size_t i = 0; i < a->children.size(); ++i) {
+        const auto& ea = a->children[i];
+        const auto& eb = b->children[i];
+        if (taxonomy::equal_functor{}(ea, eb)) {
+            // Copy the whole trimmed edge, retaining its basis, trims and senses.
+            auto copy = taxonomy::make<taxonomy::edge>(*ea);
+            copy->matrix = taxonomy::make<taxonomy::matrix4>(ea->matrix ?
+                (frame * ea->matrix->ccomponents()).eval() : frame);
+            result->children.push_back(copy);
+        } else {
+            const auto pa = ea->to_polygon(settings), pb = eb->to_polygon(settings);
+            if (pa.size() != pb.size()) {
+                throw std::runtime_error("Loft edge sampling counts differ at edge " + std::to_string(i + 1));
+            }
+            std::vector<taxonomy::point3::ptr> points;
+            for (size_t j = 0; j < pa.size(); ++j) {
+                const Eigen::Vector3d p = (frame_a * pa[j].ccomponents().homogeneous()).head<3>();
+                const Eigen::Vector3d q = (frame_b * pb[j].ccomponents().homogeneous()).head<3>();
+                points.push_back(taxonomy::make<taxonomy::point3>(lerp(p, q, fraction) + offset));
+            }
+            for (size_t j = 1; j < points.size(); ++j) {
+                auto edge = taxonomy::make<taxonomy::edge>(points[j - 1], points[j]);
+                edge->polygon_segments = 1;
+                result->children.push_back(edge);
+            }
+        }
+    }
+    return result;
+}
+
 template <typename T, typename Cmp = std::less<T>>
 bool has_intersection(const std::set<T, Cmp>& A,
                       const std::set<T, Cmp>& B) {
@@ -37,9 +86,15 @@ bool has_intersection(const std::set<T, Cmp>& A,
 
 }
 
-taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::settings& settings, const express::base inst, const taxonomy::function_item::ptr& fn, std::vector<cross_section>& cross_sections, logger& logger)
+taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::settings& settings, const express::base inst, const taxonomy::function_item::ptr& fn, std::vector<cross_section>& input_sections, logger& logger)
 {
+	auto cross_sections = input_sections;
 	std::sort(cross_sections.begin(), cross_sections.end());
+	if (cross_sections.size() < 2) throw std::runtime_error("Loft requires at least two cross sections");
+	auto authored = taxonomy::make<taxonomy::loft>();
+	for (const auto& section : cross_sections) authored->children.push_back(section.section_geometry);
+	auto compatible = authored->make_compatible_sections(settings);
+	for (size_t i = 0; i < cross_sections.size(); ++i) cross_sections[i].section_geometry = compatible->children[i];
 
 	auto loft = taxonomy::make<taxonomy::loft>();
 	// @todo intialize as default
@@ -175,13 +230,7 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 					ref_direction_b = ref_direction_a;
 				}
 
-				// Only interpolate if the profiles are different or either of the offsets is non-zero
-				bool should_interpolate2 =
-					(profile_a->instance != profile_b->instance) ||
-					(offset_a.cwiseAbs().maxCoeff() > 0. || offset_b.cwiseAbs().maxCoeff() > 0. || rotation_a || rotation_b);
-
-				if (should_interpolate2) {
-
+				{
 					std::vector<taxonomy::loop::ptr> loops_a, loops_b;
 
 					if (profile_a->kind() == taxonomy::FACE) {
@@ -251,12 +300,9 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 					}
 
 					taxonomy::loop::ptr w1, w2;
-					taxonomy::edge::ptr e1, e2;
-                    taxonomy::point3::ptr p1, p2;
 
 					for (auto tmp_ : boost::combine(loops_a, loops_b)) {
 						boost::tie(w1, w2) = tmp_;
-
 						if (w1->closed != w2->closed) {
 							logger.warning("GEO", 43, "Mismatching closed property on loops", inst);
 							return nullptr;
@@ -291,6 +337,19 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
                             }
                         }
 
+						if (!w1->tags) {
+							auto loop = interpolate_edges(w1, w2, section_basis_a, section_basis_b,
+								interpolated_offset, relative_dist_along, settings);
+							if (auto face = std::dynamic_pointer_cast<taxonomy::face>(interpolated)) {
+								face->children.push_back(loop);
+							} else {
+								loop->matrix = interpolated->matrix;
+								interpolated = loop;
+							}
+							continue;
+						}
+
+						// Tagged linear profiles keep their existing vertex/tag correspondence.
 						std::map<std::string, taxonomy::point3::ptr> tag_to_point_on_w1, tag_to_point_on_w2;
 
 						auto loop_to_points = [](const taxonomy::loop::ptr& loop, const std::optional<std::vector<std::string>>& input_tags) -> std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>> {
@@ -396,14 +455,6 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
                                     return nullptr;
 								}
                             }
-						} else {
-                            if (w1->children.size() != w2->children.size()) {
-                                logger.warning("GEO", 49, "Mismatching number of edges: " +
-                                                    std::to_string(w1->children.size()) + " vs " +
-                                                    std::to_string(w2->children.size()),
-                                                inst);
-                                return nullptr;
-                            }
 						}
 
 						std::vector<taxonomy::point3::ptr> points;
@@ -437,14 +488,6 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 									points.push_back(taxonomy::make<taxonomy::point3>(p3));
                                     common_tags_vec.push_back(x);
                                 }
-                            }
-                        } else {
-                            for (auto tmp__ : boost::combine(w1_points, w2_points)) {
-                                boost::tie(p1, p2) = tmp__;
-                                const Eigen::Vector3d rebased_1 = section_basis_a * p1->ccomponents();
-                                const Eigen::Vector3d rebased_2 = section_basis_b * p2->ccomponents();
-                                auto p3 = (lerp(rebased_1, rebased_2, relative_dist_along) + interpolated_offset).eval();
-                                points.push_back(taxonomy::make<taxonomy::point3>(p3));
                             }
                         }
 
@@ -495,6 +538,9 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 			m4b.col(3).head<3>() = m4.col(3).head<3>();
 
 			if (interpolated) {
+				interpolated->instance = profile_a->instance;
+				interpolated->surface_style = profile_a->surface_style;
+				interpolated->orientation = profile_a->orientation;
 				loft->children.push_back(interpolated);
 			} else {
 				if (profile_a->kind() == taxonomy::FACE) {
@@ -505,6 +551,9 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 				if (profile_a->matrix) {
 					loft->children.back()->matrix = taxonomy::matrix4::ptr(profile_a->matrix->clone_());
 				}
+				loft->children.back()->instance = profile_a->instance;
+				loft->children.back()->surface_style = profile_a->surface_style;
+				loft->children.back()->orientation = profile_a->orientation;
 			}
 			if (!loft->children.back()->matrix) {
 				// @todo should this not be initialized by default? matrix4 already has a 'lazy identity' mechanism.

@@ -121,6 +121,12 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = false;
 			};
 
+			struct LoftUseRuledSurfaces : public SettingBase<LoftUseRuledSurfaces, bool> {
+				static constexpr const char* const name = "loft-use-ruled-surfaces";
+				static constexpr const char* const description = "Use OpenCascade ruled surfaces between curved sections of interpolated lofts. By default profiles are tessellated using the taxonomy curve sampling settings.";
+				static constexpr bool defaultvalue = false;
+			};
+
 			struct LengthUnit : public SettingBase<LengthUnit, double, true> {
 				static constexpr const char* const name = "length-unit";
 				static constexpr const char* const description = "";
@@ -907,6 +913,7 @@ using geometry_setting_types = std::tuple<
 			settings_detail::MesherLinearDeflection,
 			settings_detail::MesherAngularDeflection,
 			settings_detail::ReorientShells,
+			settings_detail::LoftUseRuledSurfaces,
 			settings_detail::LengthUnit,
 			settings_detail::PlaneUnit,
 			settings_detail::Precision,
@@ -1011,6 +1018,7 @@ using geometry_setting_types = std::tuple<
 			using MesherLinearDeflection = settings_detail::MesherLinearDeflection;
 			using MesherAngularDeflection = settings_detail::MesherAngularDeflection;
 			using ReorientShells = settings_detail::ReorientShells;
+			using LoftUseRuledSurfaces = settings_detail::LoftUseRuledSurfaces;
 			using LengthUnit = settings_detail::LengthUnit;
 			using PlaneUnit = settings_detail::PlaneUnit;
 			using Precision = settings_detail::Precision;

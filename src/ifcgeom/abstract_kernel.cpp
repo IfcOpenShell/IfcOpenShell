@@ -69,7 +69,7 @@ const ifcopenshell::geom::settings& ifcopenshell::geom::kernels::abstract_kernel
 
 bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::loft::ptr loft, std::vector<conversion_result>& results) {
     if (!loft->is_polygonal()) {
-        throw not_implemented_error();
+        return convert(loft->make_polygonal_sections(settings_)->to_polyhedron(), results);
     }
     return convert(loft->to_polyhedron(), results);
 }

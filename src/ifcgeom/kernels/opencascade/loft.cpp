@@ -22,6 +22,8 @@
 
 #include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRepOffsetAPI_ThruSections.hxx>
+#include <BRepFill.hxx>
+#include <BRepTools_WireExplorer.hxx>
 #include <TopExp.hxx>
 
 using namespace ifcopenshell::geom;
@@ -30,6 +32,7 @@ using namespace ifcopenshell::geom::util;
 
 bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& result) {
     if (loft->children.size() < 2) {
+        logger_.error("OpenCascade kernel: loft requires at least two sections; got " + std::to_string(loft->children.size()), loft->instance);
         return false;
     }
 
@@ -37,25 +40,29 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
         return convert(loft->to_polyhedron(), result);
     }
 
-    if (!loft->is_polygonal()) {
-        if (loft->children.size() < 2) {
-            ifcopenshell::logger::root().error("GEO", 177, "Not enough sections to loft");
-            return false;
-        }
+    if (!loft->axis && !settings_.get<settings::LoftUseRuledSurfaces>().get()) {
+        return convert(loft->make_polygonal_sections(settings_)->to_polyhedron(), result);
+    }
 
+    if (!loft->is_polygonal()) {
         TopoDS_Shape f0, f1;
         std::vector<std::vector<TopoDS_Wire>> sections;
 
         // Convert all children to vectors of wires
         for (const auto& child : loft->children) {
+            const auto section_index = sections.size() + 1;
+            const auto section_context = "OpenCascade kernel: loft section " + std::to_string(section_index) + "/" + std::to_string(loft->children.size());
             if (child->kind() != taxonomy::FACE) {
+                logger_.error(section_context + " is not a face (" + taxonomy::kind_to_string(child->kind()) + ")", loft->instance);
                 return false;
             }
             TopoDS_Shape shape;
             if (!convert(std::static_pointer_cast<taxonomy::face>(child), shape)) {
+                logger_.error(section_context + " failed to convert to a face", loft->instance);
                 return false;
             }
-            if (shape.ShapeType() != TopAbs_FACE) {
+            if (shape.IsNull() || shape.ShapeType() != TopAbs_FACE) {
+                logger_.error(section_context + " did not produce a single face", loft->instance);
                 return false;
             }
             // At least make sure to have outer wire consistent, but in reality
@@ -81,16 +88,17 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
         auto first_wire_count = sections.front().size();
         for (auto& section : sections) {
             if (section.size() != first_wire_count) {
-                ifcopenshell::logger::root().error("GEO", 178, "Inconsistent number of wires in sections");
+                logger_.error("GEO", 178, "OpenCascade kernel: inconsistent number of wires in loft sections; expected " + std::to_string(first_wire_count) + ", got " + std::to_string(section.size()), loft->instance);
                 return false;
             }
         }
 
         if (f0.ShapeType() != TopAbs_FACE || f1.ShapeType() != TopAbs_FACE) {
+            logger_.error("OpenCascade kernel: loft end sections are not faces", loft->instance);
             return false;
         }
 
-        if (sections.size() == 2) {
+        if (sections.size() == 2 && loft->axis) {
             TopoDS_Shell comp;
             BRep_Builder BB;
             BB.MakeShell(comp);
@@ -104,6 +112,7 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
                 builder.AddWire(w2);
                 builder.Build();
                 if (!builder.IsDone()) {
+                    logger_.error("OpenCascade kernel: loft wire construction failed; BRepOffsetAPI_ThruSections status=" + std::to_string(static_cast<int>(builder.GetStatus())), loft->instance);
                     return false;
                 }
                 for (TopExp_Explorer exp(builder.Shape(), TopAbs_FACE); exp.More(); exp.Next()) {
@@ -117,8 +126,37 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
             result = BRepBuilderAPI_MakeSolid(comp).Solid();
 
             return true;
+        } else if (!loft->axis) {
+            NCollection_List<TopoDS_Shape> faces;
+            faces.Append(f0.Reversed());
+            faces.Append(f1);
+            for (size_t i = 1; i < sections.size(); ++i) {
+                for (size_t j = 0; j < first_wire_count; ++j) {
+                    BRepTools_WireExplorer a(sections[i - 1][j]), b(sections[i][j]);
+                    for (; a.More() && b.More(); a.Next(), b.Next()) {
+                        try {
+                            faces.Append(BRepFill::Face(a.Current(), b.Current()));
+                        } catch (const Standard_Failure& e) {
+                            logger_.error("OpenCascade kernel: ruled loft surface failed between sections " +
+                                std::to_string(i) + " and " + std::to_string(i + 1) + ", boundary " + std::to_string(j + 1) +
+                                ": " + (e.GetMessageString() ? e.GetMessageString() : "unknown OpenCascade exception"), loft->instance);
+                            return false;
+                        }
+                    }
+                    if (a.More() || b.More()) {
+                        logger_.error("OpenCascade kernel: ruled loft sections have inconsistent edge counts at sections " +
+                            std::to_string(i) + " and " + std::to_string(i + 1), loft->instance);
+                        return false;
+                    }
+                }
+            }
+            if (!create_solid_from_faces(faces, result, settings_.get<settings::Precision>().get(), true)) {
+                logger_.error("OpenCascade kernel: failed to sew ruled loft surfaces into a solid", loft->instance);
+                return false;
+            }
+            return true;
         } else {
-            ifcopenshell::logger::root().error("Lofting more than two sections is not supported");
+            logger_.error("OpenCascade kernel: lofting more than two non-polygonal sections is not supported; got " + std::to_string(sections.size()) + " sections", loft->instance);
             return false;
         }
     }
@@ -128,7 +166,7 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
 
 bool open_cascade_kernel::convert_impl(const taxonomy::loft::ptr loft, std::vector<ifcopenshell::geom::conversion_result>& results) {
     TopoDS_Shape shape;
-    if (!convert(loft, shape)) {
+    if (!handle_occt_exception([&]() { return convert(loft, shape); })) {
         return false;
     }
     results.emplace_back(conversion_result(

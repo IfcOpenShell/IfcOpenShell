@@ -25,7 +25,7 @@ namespace {
 	// 3.2.1 corrupts memory when its disjoint-composition path receives mixed
 	// property counts, so normalise them before evaluating the operation.
 	template <typename Vec>
-	bool unify_parameter_count(const Vec& operands, Vec& unified) {
+	bool unify_parameter_count(const Vec& operands, Vec& unified, ifcopenshell::logger& logger) {
 		if (operands.size() < 2) {
 			return false;
 		}
@@ -39,7 +39,7 @@ namespace {
 		if (min_num_prop == max_num_prop) {
 			return false;
 		}
-		ifcopenshell::logger::root().notice(
+		logger.notice(
 			"Manifold kernel: boolean operands have mixed property counts; normalizing to " +
 			std::to_string(min_num_prop));
 		unified = operands;
@@ -568,7 +568,7 @@ namespace {
 
 	std::string format_number(double value) {
 		std::ostringstream ss;
-		ss << std::setprecision(6) << value;
+		ss << std::setprecision(std::numeric_limits<double>::max_digits10) << value;
 		return ss.str();
 	}
 
@@ -799,20 +799,20 @@ namespace {
 		return "shell looks clean before and after mesh inspection, issue may be in manifold validation details";
 	}
 
-	void log_solid_shell_transform_failure(const taxonomy::shell::ptr& shell, const part& before_part, const mesh_type& after_mesh, const taxonomy::matrix4::ptr& place, double precision, manifold::Manifold::Error before_status, manifold::Manifold::Error after_status) {
+	void log_solid_shell_transform_failure(ifcopenshell::logger& logger, const taxonomy::shell::ptr& shell, const part& before_part, const mesh_type& after_mesh, const taxonomy::matrix4::ptr& place, double precision, manifold::Manifold::Error before_status, manifold::Manifold::Error after_status) {
 		const auto shell_info = diagnose_shell(shell);
 		const auto before = diagnose_mesh(before_part.mesh, precision);
 		const auto after = diagnose_mesh(after_mesh, precision);
-		ifcopenshell::logger::root().warning(
+		logger.warning(
 			"Manifold kernel: solid shell manifold validation failed; before_transform=" +
 			std::string(before_part.solid ? "solid" : "mesh-only") +
 			" (" + manifold_error_string(before_status) + "), after_transform=(" + manifold_error_string(after_status) + ")",
 			shell->instance);
-		ifcopenshell::logger::root().warning("Manifold kernel: solid shell diagnosis: " + solid_shell_failure_diagnosis(before_part, before, after, before_status, after_status), shell->instance);
-		ifcopenshell::logger::root().warning("Manifold kernel: solid shell input: " + shell_diagnostics_string(shell_info), shell->instance);
-		ifcopenshell::logger::root().warning("Manifold kernel: solid shell mesh before transform: " + mesh_diagnostics_string(before), shell->instance);
-		ifcopenshell::logger::root().warning("Manifold kernel: solid shell transform: " + matrix_diagnostics_string(place), shell->instance);
-		ifcopenshell::logger::root().warning("Manifold kernel: solid shell mesh after transform: " + mesh_diagnostics_string(after), shell->instance);
+		logger.warning("Manifold kernel: solid shell diagnosis: " + solid_shell_failure_diagnosis(before_part, before, after, before_status, after_status), shell->instance);
+		logger.warning("Manifold kernel: solid shell input: " + shell_diagnostics_string(shell_info), shell->instance);
+		logger.warning("Manifold kernel: solid shell mesh before transform: " + mesh_diagnostics_string(before), shell->instance);
+		logger.warning("Manifold kernel: solid shell transform: " + matrix_diagnostics_string(place), shell->instance);
+		logger.warning("Manifold kernel: solid shell mesh after transform: " + mesh_diagnostics_string(after), shell->instance);
 	}
 
 	double signed_area(const manifold::SimplePolygon& polygon) {
@@ -1024,14 +1024,42 @@ namespace {
 		polygons.push_back(std::move(polygon));
 	}
 
-	bool append_face(const taxonomy::face::ptr& face, mesh_builder& builder, uint64_t face_id) {
-		if (!face_supported(face)) {
+	bool append_face(const taxonomy::face::ptr& face, mesh_builder& builder, uint64_t face_id, std::string& failure, bool& degenerate) {
+		degenerate = false;
+		if (!face || (face->basis && face->basis->kind() != taxonomy::PLANE)) {
+			failure = "unsupported face: requires planar bounds with line edges and explicit vertices";
+			return false;
+		}
+		for (const auto& loop : face->children) {
+			if (!loop || !loop->is_polyhedron() ||
+				!std::all_of(loop->children.begin(), loop->children.end(), edge_supported)) {
+				failure = "unsupported face boundary: requires line edges and explicit vertices";
+				return false;
+			}
+		}
+		if (face->children.empty() || std::any_of(face->children.begin(), face->children.end(),
+			[](const taxonomy::loop::ptr& loop) { return loop->children.size() < 3; })) {
+			failure = "face has no boundary or a boundary with fewer than three vertices";
+			degenerate = true;
 			return false;
 		}
 		Eigen::Vector3d origin;
 		Eigen::Vector3d x;
 		Eigen::Vector3d y;
 		if (!face_basis(face, origin, x, y)) {
+			degenerate = true;
+			failure = "cannot construct face plane: no boundary with three distinct vertices and a nonzero normal";
+			for (size_t i = 0; i < face->children.size(); ++i) {
+				const auto& edges = face->children[i]->children;
+				failure += "; boundary " + std::to_string(i + 1) + " vertices=" + std::to_string(edges.size()) + " coordinates=";
+				for (size_t j = 0; j < std::min<size_t>(edges.size(), 8); ++j) {
+					auto point = explicit_point(edges[j]);
+					failure += (j ? ", " : "") + (point ? format_vector(*point) : "implicit");
+				}
+				if (edges.size() > 8) {
+					failure += ", ...";
+				}
+			}
 			return false;
 		}
 		std::vector<loop_polygon> loops;
@@ -1043,6 +1071,9 @@ namespace {
 		for (const auto& loop : face->children) {
 			loop_polygon loop_polygon;
 			if (!append_simple_loop(loop, origin, x, y, builder.precision, loop_polygon)) {
+				degenerate = true;
+				failure = "boundary " + std::to_string(loops.size() + 1) +
+					" has fewer than three vertices after merging consecutive vertices within precision=" + format_number(builder.precision);
 				return false;
 			}
 			const auto area = signed_area(loop_polygon);
@@ -1053,6 +1084,8 @@ namespace {
 			loops.push_back(std::move(loop_polygon));
 		}
 		if (loops.empty() || std::abs(outer_area) < 1.e-12) {
+			degenerate = true;
+			failure = "face has no usable boundary: largest projected boundary area=" + format_number(outer_area) + " (minimum absolute area=1e-12)";
 			return false;
 		}
 		for (size_t i = 0; i < loops.size(); ++i) {
@@ -1061,25 +1094,48 @@ namespace {
 			}
 			append_loop(loops[i], builder, polygons);
 		}
-		auto triangles = manifold::TriangulateIdx(polygons, builder.precision, true);
+		decltype(manifold::TriangulateIdx(polygons, builder.precision, true)) triangles;
+		try {
+			triangles = manifold::TriangulateIdx(polygons, builder.precision, true);
+		} catch (const std::exception& e) {
+			failure = std::string("face triangulation threw: ") + e.what();
+			return false;
+		}
 		for (const auto& tri : triangles) {
 			builder.add_triangle((uint32_t)tri[0], (uint32_t)tri[1], (uint32_t)tri[2], face_id);
 		}
-		return !triangles.empty();
+		if (triangles.empty()) {
+			failure = "face triangulation produced no triangles";
+			return false;
+		}
+		return true;
 	}
 
-	bool shell_to_mesh(const taxonomy::shell::ptr& shell, double precision, mesh_type& mesh, double dilation) {
+	bool shell_to_mesh(const taxonomy::shell::ptr& shell, double precision, mesh_type& mesh, double dilation, ifcopenshell::logger& logger) {
 		mesh_builder builder(precision);
         builder.dilation = dilation;
 		uint64_t face_id = 0;
 		bool any = false;
 		for (const auto& face : shell->children) {
-			if (!append_face(face, builder, face_id++)) {
+			std::string failure;
+			bool degenerate;
+			if (!append_face(face, builder, face_id++, failure, degenerate)) {
+				if (degenerate) {
+					logger.warning("Manifold kernel: skipping degenerate shell face " + std::to_string(face_id) + "/" +
+						std::to_string(shell->children.size()) + ": " + failure, shell->instance);
+					continue;
+				}
+				logger.error("Manifold kernel: shell face " + std::to_string(face_id) + "/" +
+					std::to_string(shell->children.size()) + " failed: " + failure, shell->instance);
+				if (face && face->instance) {
+					logger.error("Manifold kernel: failing face", face->instance);
+				}
 				return false;
 			}
 			any = true;
 		}
 		if (!any) {
+			logger.error("Manifold kernel: shell has no non-degenerate faces", shell->instance);
 			return false;
 		}
 		mesh = builder.build();
@@ -1105,9 +1161,9 @@ namespace {
 		return mesh;
 	}
 
-	std::optional<part> part_from_shell(const taxonomy::shell::ptr& shell, double precision, double dilation, manifold::Manifold::Error* status_ptr = nullptr) {
+	std::optional<part> part_from_shell(const taxonomy::shell::ptr& shell, double precision, double dilation, ifcopenshell::logger& logger, manifold::Manifold::Error* status_ptr = nullptr) {
 		mesh_type mesh;
-		if (!shell_to_mesh(shell, precision, mesh, dilation)) {
+		if (!shell_to_mesh(shell, precision, mesh, dilation, logger)) {
 			return std::nullopt;
 		}
 		return part_from_mesh(mesh, false, status_ptr);
@@ -1461,7 +1517,7 @@ namespace {
 		return shape->as_manifold();
 	}
 
-	std::optional<manifold::Manifold> results_to_operand(const std::vector<ifcopenshell::geom::conversion_result>& results) {
+	std::optional<manifold::Manifold> results_to_operand(const std::vector<ifcopenshell::geom::conversion_result>& results, ifcopenshell::logger& logger) {
 		std::vector<manifold::Manifold> operands;
 		for (const auto& result : results) {
 			auto operand = result_to_manifold(result);
@@ -1476,7 +1532,7 @@ namespace {
 			return operands.front();
 		}
 		std::vector<manifold::Manifold> unified;
-		auto is_unified = unify_parameter_count(operands, unified);
+		auto is_unified = unify_parameter_count(operands, unified, logger);
 		return manifold::Manifold::BatchBoolean(is_unified ? unified : operands, manifold::OpType::Add);
 	}
 
@@ -1506,7 +1562,7 @@ namespace {
 		return bbox;
 	}
 
-	std::optional<manifold::Manifold> boolean_result_from_operands(const std::vector<manifold::Manifold>& operands, taxonomy::boolean_result::operation_type operation) {
+	std::optional<manifold::Manifold> boolean_result_from_operands(const std::vector<manifold::Manifold>& operands, taxonomy::boolean_result::operation_type operation, ifcopenshell::logger& logger) {
 		if (operands.empty()) {
 			return std::nullopt;
 		}
@@ -1514,7 +1570,7 @@ namespace {
 			return operands.front();
 		}
 		std::vector<manifold::Manifold> unified;
-		auto is_unified = unify_parameter_count(operands, unified);
+		auto is_unified = unify_parameter_count(operands, unified, logger);
 		switch (operation) {
 		case taxonomy::boolean_result::UNION:
 			return manifold::Manifold::BatchBoolean(is_unified ? unified : operands, manifold::OpType::Add);
@@ -1530,7 +1586,7 @@ namespace {
 bool manifold_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, std::vector<ifcopenshell::geom::conversion_result>& results) {
 	auto part = part_from_extrusion(extrusion, settings_.get<settings::Precision>().get(), dilation_hack, settings_.get<settings::CircleSegments>().get());
 	if (!part) {
-		ifcopenshell::logger::root().warning("Manifold kernel: failed to convert extrusion, requires planar bounds with line, circle or ellipse edges", extrusion->instance);
+		logger_.warning("Manifold kernel: failed to convert extrusion, requires planar bounds with line, circle or ellipse edges", extrusion->instance);
 		return false;
 	}
 	results.emplace_back(ifcopenshell::geom::conversion_result(
@@ -1543,13 +1599,13 @@ bool manifold_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, std
 
 bool manifold_kernel::convert_impl(const taxonomy::shell::ptr shell, std::vector<ifcopenshell::geom::conversion_result>& results) {
 	manifold::Manifold::Error status = manifold::Manifold::Error::NoError;
-	auto part = part_from_shell(shell, settings_.get<settings::Precision>().get(), dilation_hack, &status);
+	auto part = part_from_shell(shell, settings_.get<settings::Precision>().get(), dilation_hack, logger_, &status);
 	if (!part) {
-		ifcopenshell::logger::root().warning("Manifold kernel: failed to convert shell, requires planar polygonal faces with explicit vertices", shell->instance);
+		logger_.warning("Manifold kernel: failed to convert shell, requires planar polygonal faces with explicit vertices", shell->instance);
 		return false;
 	}
 	if (!part->solid) {
-		ifcopenshell::logger::root().notice("Manifold kernel: shell converted as mesh only (" + manifold_error_string(status) + ")", shell->instance);
+		logger_.notice("Manifold kernel: shell converted as mesh only (" + manifold_error_string(status) + ")", shell->instance);
 	}
 	results.emplace_back(ifcopenshell::geom::conversion_result(
 		shell->instance.id(),
@@ -1564,9 +1620,9 @@ bool manifold_kernel::convert_impl(const taxonomy::solid::ptr solid, std::vector
 	for (const auto& shell : solid->children) {
 		const auto precision = settings_.get<settings::Precision>().get();
 		manifold::Manifold::Error before_status = manifold::Manifold::Error::NoError;
-		auto part = part_from_shell(shell, precision, dilation_hack, &before_status);
+		auto part = part_from_shell(shell, precision, dilation_hack, logger_, &before_status);
 		if (!part) {
-			ifcopenshell::logger::root().warning("Manifold kernel: failed to convert solid shell, requires planar polygonal faces with explicit vertices", shell->instance);
+			logger_.warning("Manifold kernel: failed to convert solid shell, requires planar polygonal faces with explicit vertices", shell->instance);
 			return false;
 		}
 		auto place = shell->matrix ? shell->matrix : taxonomy::make<taxonomy::matrix4>();
@@ -1574,7 +1630,7 @@ bool manifold_kernel::convert_impl(const taxonomy::solid::ptr solid, std::vector
 		manifold::Manifold::Error after_status = manifold::Manifold::Error::NoError;
 		auto transformed = part_from_mesh(transformed_mesh, true, &after_status);
 		if (!transformed || !transformed->solid) {
-			log_solid_shell_transform_failure(shell, *part, transformed_mesh, place, precision, before_status, after_status);
+			log_solid_shell_transform_failure(logger_, shell, *part, transformed_mesh, place, precision, before_status, after_status);
 			return false;
 		}
 		shells.push_back(*transformed->solid);
@@ -1608,21 +1664,21 @@ bool manifold_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::
         dilation_hack = first ? 0. : precision * 10.;
 		if (!first && br->operation == taxonomy::boolean_result::SUBTRACTION && face) {
 			if (!first_bbox) {
-				ifcopenshell::logger::root().warning("Manifold kernel: cannot fit halfspace operand without a valid first operand bounds", child->instance);
+				logger_.warning("Manifold kernel: cannot fit halfspace operand without a valid first operand bounds", child->instance);
 				return false;
 			}
 			halfspace_build_state state;
             auto part = part_from_halfspace_solid(state, solid, face, *first_bbox, precision, dilation_hack);
 			if (!part) {
 				if (state.unchanged && br->operation == taxonomy::boolean_result::SUBTRACTION) {
-					ifcopenshell::logger::root().warning("Manifold kernel: halfspace subtraction yields unchanged volume", child->instance);
+					logger_.warning("Manifold kernel: halfspace subtraction yields unchanged volume", child->instance);
 					continue;
 				}
-				ifcopenshell::logger::root().warning("Manifold kernel: failed to fit halfspace boolean operand to first operand bounds", child->instance);
+				logger_.warning("Manifold kernel: failed to fit halfspace boolean operand to first operand bounds", child->instance);
 				return false;
 			}
 			if (!part->solid) {
-				ifcopenshell::logger::root().warning("Manifold kernel: fitted halfspace operand is not a valid manifold solid", child->instance);
+				logger_.warning("Manifold kernel: fitted halfspace operand is not a valid manifold solid", child->instance);
 				return false;
 			}
 			operand = *part->solid;
@@ -1632,12 +1688,12 @@ bool manifold_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::
 		} else {
 			std::vector<ifcopenshell::geom::conversion_result> converted;
 			if (!abstract_kernel::convert(child, converted)) {
-				ifcopenshell::logger::root().warning("Manifold kernel: failed to convert boolean operand", child->instance);
+				logger_.warning("Manifold kernel: failed to convert boolean operand", child->instance);
 				return false;
 			}
-			operand = results_to_operand(converted);
+			operand = results_to_operand(converted, logger_);
 			if (!operand) {
-				ifcopenshell::logger::root().warning("Manifold kernel: boolean operand is not a valid manifold solid", child->instance);
+				logger_.warning("Manifold kernel: boolean operand is not a valid manifold solid", child->instance);
 				return false;
 			}
 			if (!style) {
@@ -1650,7 +1706,7 @@ bool manifold_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::
 		if (first) {
 			auto bbox = operand->BoundingBox();
 			if (!bbox.IsFinite()) {
-				ifcopenshell::logger::root().warning("Manifold kernel: first boolean operand has no valid bounds", child->instance);
+				logger_.warning("Manifold kernel: first boolean operand has no valid bounds", child->instance);
 				return false;
 			}
 			first_bbox = bbox;
@@ -1659,9 +1715,9 @@ bool manifold_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::
 		first = false;
 	}
     dilation_hack = 0.;
-	auto result = boolean_result_from_operands(operands, br->operation);
+	auto result = boolean_result_from_operands(operands, br->operation, logger_);
 	if (!result || result->IsEmpty()) {
-		ifcopenshell::logger::root().warning("Manifold kernel: boolean operation produced no result", br->instance);
+		logger_.warning("Manifold kernel: boolean operation produced no result", br->instance);
 		return false;
 	}
 	results.emplace_back(ifcopenshell::geom::conversion_result(
@@ -1676,7 +1732,7 @@ bool manifold_kernel::convert_openings(const express::base&, const std::vector<s
 	std::vector<manifold::Manifold> opening_operands;
 	auto entity_bbox = results_bbox(entity_shapes);
 	if (!entity_bbox) {
-		ifcopenshell::logger::root().warning("Manifold kernel: host shape has no valid bounds for halfspace fitting");
+		logger_.warning("Manifold kernel: host shape has no valid bounds for halfspace fitting");
 		return false;
 	}
     dilation_hack = settings_.get<settings::Precision>().get() * 10.;
@@ -1684,19 +1740,19 @@ bool manifold_kernel::convert_openings(const express::base&, const std::vector<s
 		const auto relative = taxonomy::make<taxonomy::matrix4>(entity_trsf.ccomponents().inverse() * opening.second.ccomponents());
 		std::vector<ifcopenshell::geom::conversion_result> converted;
 		if (!abstract_kernel::convert(opening.first, converted)) {
-			ifcopenshell::logger::root().warning("Manifold kernel: failed to convert opening operand", opening.first->instance);
+			logger_.warning("Manifold kernel: failed to convert opening operand", opening.first->instance);
 			return false;
 		}
 		for (const auto& result : converted) {
 			auto moved = std::unique_ptr<ifcopenshell::geom::conversion_result_shape>(result.shape()->moved(taxonomy::make<taxonomy::matrix4>(relative->ccomponents() * result.placement()->ccomponents())));
 			auto* shape = dynamic_cast<ifcopenshell::geom::manifold_shape*>(moved.get());
 			if (!shape) {
-				ifcopenshell::logger::root().warning("Manifold kernel: opening result is not a manifold shape");
+				logger_.warning("Manifold kernel: opening result is not a manifold shape");
 				return false;
 			}
 			auto operand = shape->as_manifold();
 			if (!operand) {
-				ifcopenshell::logger::root().warning("Manifold kernel: opening result is not a valid manifold solid", opening.first->instance);
+				logger_.warning("Manifold kernel: opening result is not a valid manifold solid", opening.first->instance);
 				return false;
 			}
 			opening_operands.push_back(*operand);
@@ -1707,17 +1763,17 @@ bool manifold_kernel::convert_openings(const express::base&, const std::vector<s
 		return false;
 	}
 	std::vector<manifold::Manifold> unified_opening_operands;
-	auto is_unified = unify_parameter_count(opening_operands, unified_opening_operands);
+	auto is_unified = unify_parameter_count(opening_operands, unified_opening_operands, logger_);
 	auto opening_union = manifold::Manifold::BatchBoolean(is_unified ? unified_opening_operands : opening_operands, manifold::OpType::Add);
 	for (const auto& entity_shape : entity_shapes) {
 		auto operand = result_to_manifold(entity_shape);
 		if (!operand) {
-			ifcopenshell::logger::root().warning("Manifold kernel: host shape is not a valid manifold solid");
+			logger_.warning("Manifold kernel: host shape is not a valid manifold solid");
 			return false;
 		}
 		std::array<manifold::Manifold, 2> unified_subtraction_operands;
 		std::array<manifold::Manifold, 2> subtraction_operands = { *operand, opening_union };
-		auto subtraction_operands_unified = unify_parameter_count(subtraction_operands, unified_subtraction_operands);
+		auto subtraction_operands_unified = unify_parameter_count(subtraction_operands, unified_subtraction_operands, logger_);
 		auto result = subtraction_operands_unified ? unified_subtraction_operands.front() - unified_subtraction_operands.back() : subtraction_operands.front() - subtraction_operands.back();
 		cut_shapes.emplace_back(ifcopenshell::geom::conversion_result(
 			entity_shape.ItemId(),

@@ -682,7 +682,7 @@ typedef item const* ptr;
 
 			struct IFC_GEOM_API curve : public geom_item {
 				// Unbounded conics default to a full turn; lines require a finite range.
-				std::vector<point3> to_polygon(const settings&, double start = -std::numeric_limits<double>::infinity(), double end = std::numeric_limits<double>::infinity()) const;
+				std::vector<point3> to_polygon(const settings&, double start = -std::numeric_limits<double>::infinity(), double end = std::numeric_limits<double>::infinity(), int segments = 0) const;
 				void print_impl(std::ostream& o, const std::string& classname, int indent = 0) const {
 					o << std::string(indent, ' ') << classname << std::endl;
 					this->matrix->print(o, indent + 4);
@@ -826,6 +826,10 @@ typedef item const* ptr;
 
 				// @todo does this make sense? this is to accommodate for the fact that orientation is defined on both TrimmedCurve as well CompCurveSegment
 				std::optional<bool> curve_sense;
+
+				// A loft fixes subdivisions per corresponding edge from its first section.
+				// Zero leaves ordinary curve sampling controlled by settings.
+				int polygon_segments = 0;
 
 				trimmed_curve() : basis(nullptr) {}
 				trimmed_curve(const point3::ptr& a, const point3::ptr& b) : start(a), end(b), basis(nullptr) {}
@@ -1073,6 +1077,8 @@ typedef item const* ptr;
 			struct IFC_GEOM_API loft : public collection_base<geom_item> {
 				DECLARE_PTR(loft)
 				bool is_polygonal() const;
+				loft::ptr make_compatible_sections(const settings&) const;
+				loft::ptr make_polygonal_sections(const settings&) const;
 				shell::ptr to_polyhedron() const;
 
 				item::ptr axis;

@@ -97,7 +97,7 @@ Eigen::Vector3d endpoint_tangent(const item::ptr& i, bool at_end) {
 }
 } // namespace
 
-std::vector<point3> curve::to_polygon(const ifcopenshell::geom::settings& settings, double a, double b) const {
+std::vector<point3> curve::to_polygon(const ifcopenshell::geom::settings& settings, double a, double b, int segments) const {
     if (kind() != LINE && a == -std::numeric_limits<double>::infinity() && b == std::numeric_limits<double>::infinity()) {
         a = 0.;
         b = 2. * polygon_pi;
@@ -106,7 +106,12 @@ std::vector<point3> curve::to_polygon(const ifcopenshell::geom::settings& settin
         throw std::runtime_error("Cannot represent infinite curve segment");
     }
     if (kind() == LINE) {
-        return {point3(transform_point(matrix, {0., 0., a})), point3(transform_point(matrix, {0., 0., b}))};
+        std::vector<point3> points;
+        const int count = std::max(1, segments);
+        for (int i = 0; i <= count; ++i) {
+            points.emplace_back(transform_point(matrix, {0., 0., a + (b - a) * i / count}));
+        }
+        return points;
     }
     double rx, ry;
     if (auto c = dynamic_cast<const circle*>(this)) {
@@ -125,7 +130,9 @@ std::vector<point3> curve::to_polygon(const ifcopenshell::geom::settings& settin
     const double span = b - a;
     const int circle_segments = settings.get<ifcopenshell::geom::settings::CircleSegments>().get();
     int count;
-    if (circle_segments > 0) {
+    if (segments > 0) {
+        count = segments;
+    } else if (circle_segments > 0) {
         count = static_cast<int>(std::ceil(span / (2. * polygon_pi) * std::max(3, circle_segments)));
     } else {
         const double radius = std::max(rx, ry);
@@ -156,7 +163,12 @@ std::vector<point3> curve::to_polygon(const ifcopenshell::geom::settings& settin
 std::vector<point3> trimmed_curve::to_polygon(const ifcopenshell::geom::settings& settings) const {
     std::vector<point3> points;
     if ((!basis || basis->kind() == LINE) && start.index() == 1 && end.index() == 1) {
-        points = {*std::get<point3::ptr>(start), *std::get<point3::ptr>(end)};
+        const Eigen::Vector3d a = std::get<point3::ptr>(start)->ccomponents();
+        const Eigen::Vector3d b = std::get<point3::ptr>(end)->ccomponents();
+        const int count = std::max(1, polygon_segments);
+        for (int i = 0; i <= count; ++i) {
+            points.emplace_back(a + (b - a) * i / count);
+        }
     } else {
         auto underlying = basis;
         while (auto nested = std::dynamic_pointer_cast<trimmed_curve>(underlying)) {
@@ -170,7 +182,7 @@ std::vector<point3> trimmed_curve::to_polygon(const ifcopenshell::geom::settings
         if (!curve_sense.value_or(true)) {
             std::swap(a, b);
         }
-        points = c->to_polygon(settings, a, b);
+        points = c->to_polygon(settings, a, b, polygon_segments);
         if (!curve_sense.value_or(true)) {
             std::reverse(points.begin(), points.end());
         }
@@ -289,9 +301,10 @@ polygon_section section_polygon(const loop::ptr& l, const matrix4::ptr& parent) 
     if (tags && tags->size() != points.size()) {
         throw std::runtime_error("Profile vertex and tag counts differ");
     }
+    const bool fixed_sampling = std::any_of(l->children.begin(), l->children.end(), [](const edge::ptr& e) { return e->polygon_segments > 0; });
     for (size_t i = 0; i < points.size(); ++i) {
         auto p = make<point3>(transform_point(parent, points[i].ccomponents()));
-        if (!section.points.empty() && p->ccomponents() == section.points.back()->ccomponents()) {
+        if (!fixed_sampling && !section.points.empty() && p->ccomponents() == section.points.back()->ccomponents()) {
             if (tags) {
                 section.tags.back().insert((*tags)[i]);
             }
@@ -363,6 +376,194 @@ void connect_sections(const shell::ptr& s, const polygon_section& a, const polyg
 bool loft::is_polygonal() const {
     return polygonal(axis) && !children.empty() &&
            std::all_of(children.begin(), children.end(), [](const geom_item::ptr& i) { return polygonal(i); });
+}
+
+loft::ptr loft::make_compatible_sections(const ifcopenshell::geom::settings& settings) const {
+    if (children.empty()) throw std::runtime_error("Loft has no sections");
+    std::vector<std::vector<loop::ptr>> boundaries;
+    const bool solid = children.front()->kind() == FACE;
+    for (const auto& child : children) {
+        std::vector<loop::ptr> loops;
+        if (auto f = std::dynamic_pointer_cast<face>(child); solid && f) {
+            if (f->basis && f->basis->kind() != PLANE) throw std::runtime_error("Loft sections must be planar");
+            for (bool outer : {true, false}) {
+                for (const auto& l : f->children) {
+                    if (l->external.value_or(f->children.size() == 1) == outer) loops.push_back(l);
+                }
+            }
+        } else if (auto l = std::dynamic_pointer_cast<loop>(child); !solid && l) {
+            loops = {l};
+        } else {
+            throw std::runtime_error("Incompatible loft section types: expected corresponding faces or loops");
+        }
+        if (loops.empty() || (!boundaries.empty() && loops.size() != boundaries.front().size())) {
+            throw std::runtime_error("Loft profile boundary counts differ");
+        }
+        boundaries.push_back(std::move(loops));
+    }
+    std::vector<std::vector<int>> counts(boundaries.front().size());
+    std::vector<std::vector<bool>> sample(boundaries.front().size());
+    for (size_t i = 0; i < boundaries.front().size(); ++i) {
+        const auto& first = boundaries.front()[i];
+        const bool tagged = first->tags.has_value();
+        for (const auto& section : boundaries) {
+            const auto& l = section[i];
+            if (l->tags.has_value() != tagged || l->closed != first->closed ||
+                l->external.value_or(solid) != first->external.value_or(solid) ||
+                l->orientation.value_or(true) != first->orientation.value_or(true)) {
+                throw std::runtime_error("Incompatible loft boundary " + std::to_string(i + 1) + ": tags, closure, exterior or orientation differ");
+            }
+            if (tagged) {
+                if (!polygonal(l)) throw std::runtime_error("Curved loft boundaries with vertex tags are not supported");
+            } else if (l->children.size() != first->children.size()) {
+                throw std::runtime_error("Loft boundary " + std::to_string(i + 1) + " edge counts differ without corresponding tags");
+            }
+        }
+        if (tagged) continue; // Keep the existing correspondence of tagged linear profiles.
+        for (size_t j = 0; j < first->children.size(); ++j) {
+            const auto& edge = first->children[j];
+            bool curved = !polygonal(edge), equal = true;
+            for (const auto& section : boundaries) {
+                const auto& other = section[i]->children[j];
+                if (edge->orientation.value_or(true) != other->orientation.value_or(true)) {
+                    throw std::runtime_error("Loft boundary " + std::to_string(i + 1) + " edge " + std::to_string(j + 1) + " orientations differ");
+                }
+                auto full_turn = [](const taxonomy::edge::ptr& e) {
+                    return e->basis && (e->basis->kind() == CIRCLE || e->basis->kind() == ELLIPSE) &&
+                        e->start.index() == 2 && e->end.index() == 2 &&
+                        std::abs(std::abs(std::get<double>(e->end) - std::get<double>(e->start)) - 2. * polygon_pi) < 1.e-9;
+                };
+                if (full_turn(edge) && full_turn(other)) {
+                    if (edge->curve_sense.value_or(true) != other->curve_sense.value_or(true) ||
+                        std::abs(std::remainder(std::get<double>(edge->start) - std::get<double>(other->start), 2. * polygon_pi)) > 1.e-9) {
+                        throw std::runtime_error("Loft closed-edge seams or sweep directions do not correspond");
+                    }
+                }
+                curved = curved || !polygonal(other);
+                equal = equal && equal_functor{}(edge, other);
+            }
+            // Changing edges use the same representation at every station,
+            // including authored stations and intervals where that edge is equal.
+            // This also keeps the raw edge layout compatible with ruled surfaces.
+            sample[i].push_back(curved && !equal);
+            int count = static_cast<int>(edge->to_polygon(settings).size()) - 1;
+            if (curved && polygonal(edge)) count = std::max(3, count);
+            if (count < 1) throw std::runtime_error("Loft edge has no usable sampling interval");
+            counts[i].push_back(count);
+        }
+    }
+    auto copy_metadata = [](const geom_item& source, geom_item& target) {
+        target.instance = source.instance;
+        target.matrix = source.matrix;
+        target.surface_style = source.surface_style;
+        target.orientation = source.orientation;
+    };
+    auto result = make<loft>(*this);
+    copy_metadata(*this, *result);
+    result->children.clear();
+    for (size_t k = 0; k < children.size(); ++k) {
+        std::vector<loop::ptr> loops;
+        for (size_t i = 0; i < boundaries[k].size(); ++i) {
+            const auto& source = boundaries[k][i];
+            auto l = make<loop>(*source);
+            copy_metadata(*source, *l);
+            l->children.clear();
+            for (size_t j = 0; j < source->children.size(); ++j) {
+                auto e = make<edge>(*source->children[j]);
+                if (source->tags) {
+                    l->children.push_back(e);
+                    continue;
+                }
+                e->polygon_segments = counts[i][j];
+                if (!sample[i][j]) {
+                    l->children.push_back(e);
+                } else {
+                    const auto points = e->to_polygon(settings);
+                    for (size_t p = 1; p < points.size(); ++p) {
+                        auto segment = make<edge>(make<point3>(points[p - 1]), make<point3>(points[p]));
+                        segment->polygon_segments = 1;
+                        l->children.push_back(segment);
+                    }
+                }
+            }
+            loops.push_back(l);
+        }
+        if (solid) {
+            auto f = make<face>(*std::static_pointer_cast<face>(children[k]));
+            copy_metadata(*children[k], *f);
+            f->children = std::move(loops);
+            result->children.push_back(f);
+        } else {
+            result->children.push_back(loops.front());
+        }
+    }
+    return result;
+}
+
+loft::ptr loft::make_polygonal_sections(const ifcopenshell::geom::settings& settings) const {
+    if (!polygonal(axis)) {
+        throw std::runtime_error("Polygonal loft sections require a polygonal or interpolated directrix");
+    }
+    auto compatible = make_compatible_sections(settings);
+    auto copy_metadata = [](const geom_item& source, geom_item& target) {
+        target.instance = source.instance;
+        target.matrix = source.matrix;
+        target.surface_style = source.surface_style;
+        target.orientation = source.orientation;
+    };
+    auto polygonal_loop = [&](const loop::ptr& source) {
+        if (polygonal(source) && (!source->matrix || source->matrix->is_identity()) && source->orientation.value_or(true)) {
+            return source;
+        }
+        if (source->tags) {
+            if (polygonal(source)) return source;
+            throw std::runtime_error("Tessellating curved profile boundaries with vertex tags is not supported");
+        }
+        auto sampled = source->to_polygon(settings);
+        if (sampled.size() < 2) {
+            throw std::runtime_error("Not enough tessellated profile vertices");
+        }
+        std::vector<point3::ptr> points;
+        for (const auto& p : sampled) {
+            points.push_back(make<point3>(p));
+        }
+        const auto tolerance = settings.get<ifcopenshell::geom::settings::Precision>().get();
+        const bool closed = source->closed.value_or((points.front()->ccomponents() - points.back()->ccomponents()).norm() <= tolerance);
+        if (closed && (points.front()->ccomponents() - points.back()->ccomponents()).norm() <= tolerance) {
+            points.back() = points.front();
+        }
+        auto result = make<loop>(*source);
+        copy_metadata(*source, *result);
+        result->children = polygon_loop(std::move(points), closed, source->external.value_or(true))->children;
+        for (auto& e : result->children) e->polygon_segments = 1;
+        result->closed = closed;
+        // to_polygon has already applied these to the vertices.
+        result->matrix = nullptr;
+        result->orientation = true;
+        return result;
+    };
+    auto result = make<loft>(*this);
+    copy_metadata(*this, *result);
+    result->children.clear();
+    for (const auto& child : compatible->children) {
+        if (auto f = std::dynamic_pointer_cast<face>(child)) {
+            if (f->basis && f->basis->kind() != PLANE) {
+                throw std::runtime_error("Tessellating loft sections requires planar faces");
+            }
+            auto copy = make<face>(*f);
+            copy_metadata(*f, *copy);
+            copy->children.clear();
+            for (const auto& l : f->children) {
+                copy->children.push_back(polygonal_loop(l));
+            }
+            result->children.push_back(copy);
+        } else if (auto l = std::dynamic_pointer_cast<loop>(child)) {
+            result->children.push_back(polygonal_loop(l));
+        } else {
+            throw std::runtime_error("Loft sections must be faces or loops");
+        }
+    }
+    return result;
 }
 
 shell::ptr loft::to_polyhedron() const {
@@ -681,32 +882,50 @@ namespace {
 		return std::lexicographical_compare(t_begin, t_end, u_begin, u_end);
 	}
 
+	bool compare_matrix(const matrix4::ptr& a, const matrix4::ptr& b) {
+		const Eigen::Matrix4d am = a ? a->ccomponents() : Eigen::Matrix4d::Identity();
+		const Eigen::Matrix4d bm = b ? b->ccomponents() : Eigen::Matrix4d::Identity();
+		return std::lexicographical_compare(am.data(), am.data() + am.size(), bm.data(), bm.data() + bm.size());
+	}
+
 	bool compare(const line& a, const line& b) {
-		return compare(*a.matrix, *b.matrix);
+		return compare_matrix(a.matrix, b.matrix);
 	}
 
 	bool compare(const plane& a, const plane& b) {
-		return compare(*a.matrix, *b.matrix);
+		return compare_matrix(a.matrix, b.matrix);
 	}
 
 	bool compare(const circle& a, const circle& b) {
 		if (a.radius == b.radius) {
-			return compare(*a.matrix, *b.matrix);
+			return compare_matrix(a.matrix, b.matrix);
 		}
 		return a.radius < b.radius;
 	}
 
 	bool compare(const ellipse& a, const ellipse& b) {
 		if (a.radius == b.radius && a.radius2 == b.radius2) {
-			return compare(*a.matrix, *b.matrix);
+			return compare_matrix(a.matrix, b.matrix);
 		}
 		return
 			std::tie(a.radius, a.radius2) <
 			std::tie(b.radius, b.radius2);
 	}
 
-	bool compare(const bspline_curve&, const bspline_curve&) {
-		throw std::runtime_error("not implemented");
+	bool compare(const bspline_curve& a, const bspline_curve& b) {
+		const auto ad = std::tie(a.degree, a.multiplicities, a.knots, a.weights);
+		const auto bd = std::tie(b.degree, b.multiplicities, b.knots, b.weights);
+		if (ad != bd) {
+			return ad < bd;
+		}
+		if (a.control_points.size() != b.control_points.size()) {
+			return a.control_points.size() < b.control_points.size();
+		}
+		for (size_t i = 0; i < a.control_points.size(); ++i) {
+			if (less(a.control_points[i], b.control_points[i])) return true;
+			if (less(b.control_points[i], a.control_points[i])) return false;
+		}
+		return compare_matrix(a.matrix, b.matrix);
 	}
 
 	template <typename T>
@@ -742,6 +961,9 @@ namespace {
 	}
 
 	int compare(const std::variant<boost::blank, point3::ptr, double>& a, const std::variant<boost::blank, point3::ptr, double>& b) {
+		if (a.index() != b.index()) {
+			return a.index() < b.index() ? -1 : 1;
+		}
 		bool a_lt_b, b_lt_a;
 		if (a.index() == 0) {
 			return 0;
@@ -854,6 +1076,9 @@ bool ifcopenshell::geom::taxonomy::less(item::const_ptr a, item::const_ptr b) {
 	if (a == b) {
 		return false;
 	}
+	if (!a || !b) {
+		return !a;
+	}
 
 	int a_kind = a->kind();
 	int b_kind = b->kind();
@@ -870,12 +1095,16 @@ bool ifcopenshell::geom::taxonomy::less(item::const_ptr a, item::const_ptr b) {
 
 namespace {
 	bool compare(const trimmed_curve& a, const trimmed_curve& b) {
+		const auto a_sense = std::make_pair(a.orientation.value_or(true), a.curve_sense.value_or(true));
+		const auto b_sense = std::make_pair(b.orientation.value_or(true), b.curve_sense.value_or(true));
+		if (a_sense != b_sense) return a_sense < b_sense;
+		if (compare_matrix(a.matrix, b.matrix)) return true;
+		if (compare_matrix(b.matrix, a.matrix)) return false;
 		std::size_t a_which_start = a.start.index();
 		std::size_t a_which_end = a.end.index();
 		std::size_t b_which_start = b.start.index();
 		std::size_t b_which_end = b.end.index();
-		if (std::tie(a.orientation, a_which_start, a_which_end) ==
-			std::tie(b.orientation, b_which_start, b_which_end)) {
+		if (std::tie(a_which_start, a_which_end) == std::tie(b_which_start, b_which_end)) {
 
 			int start_state = compare(a.start, b.start);
 
@@ -886,7 +1115,7 @@ namespace {
 				if (end_state == 0) {
 
 					int a_has_basis = !!a.basis;
-					int b_has_basis = !!a.basis;
+					int b_has_basis = !!b.basis;
 
 					if (a_has_basis == b_has_basis) {
 
@@ -916,8 +1145,7 @@ namespace {
 		}
 		else {
 			return
-				std::tie(a.orientation, a_which_start, a_which_end) <
-				std::tie(b.orientation, b_which_start, b_which_end);
+				std::tie(a_which_start, a_which_end) < std::tie(b_which_start, b_which_end);
 		}
 	}
 
@@ -936,7 +1164,7 @@ namespace {
 				return a_lt_b;
 			}
 			// Vectors equal, compare matrix (in case of mapped items).
-			return compare(*a.matrix, *b.matrix);
+			return compare_matrix(a.matrix, b.matrix);
 		}
 		else {
 			return a.children.size() < b.children.size();
@@ -1309,12 +1537,19 @@ std::optional<face::ptr> ifcopenshell::geom::taxonomy::loop_to_face_upgrade_impl
 	std::optional<face::ptr> face_;
 	auto loop_ = dcast<loop>(item);
 		if (loop_) {
-			loop_->external = true;
-
+			// Move the loop placement to the face exactly once. Keep the source
+			// boundary immutable, as it can be shared by mapped/derived profiles.
+			auto boundary = make<loop>(*loop_);
+			boundary->instance = loop_->instance;
+			boundary->surface_style = loop_->surface_style;
+			boundary->orientation = loop_->orientation;
+			boundary->matrix = nullptr;
+			boundary->external = true;
 			face_ = make<face>();
 			(*face_)->instance = loop_->instance;
 			(*face_)->matrix = loop_->matrix;
-			(*face_)->children = { clone(loop_) };
+			(*face_)->surface_style = loop_->surface_style;
+			(*face_)->children = { boundary };
 		}
 	return face_;
 }
