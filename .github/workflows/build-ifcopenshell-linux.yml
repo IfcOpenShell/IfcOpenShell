@@ -95,7 +95,7 @@ jobs:
           ref: ${{ matrix.arch_suffix == 'linuxarm64' && 'rockylinux9-arm64' || 'rockylinux9-x64' }}
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Unpack Dependencies
         run: |

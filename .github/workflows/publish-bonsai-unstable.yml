@@ -108,7 +108,7 @@ jobs:
           repository: IfcOpenShell/bonsai_unstable_repo
           token: ${{ secrets.IFCOPENBOT_TOKEN }}
           path: bonsai_unstable_repo
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Download Blender
         # The index script runs `blender --command extension server-generate`, so blender must be on PATH.

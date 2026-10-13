@@ -48,7 +48,7 @@ jobs:
           ref: wasm-native
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Read pinned emsdk version
         id: emsdk

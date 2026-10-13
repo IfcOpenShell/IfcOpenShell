@@ -30,7 +30,7 @@ jobs:
           ref: wasm
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Unpack Dependencies
         run: |

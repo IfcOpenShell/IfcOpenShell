@@ -21,7 +21,7 @@ jobs:
           repository: IfcOpenShell/ifctester_org_static_html
           token: ${{ secrets.IFCOPENBOT_TOKEN }}
           path: ifctester_org_static_html
-          persist-credentials: false
+          persist-credentials: true
       - name: Build webapp
         working-directory: ./src/ifctester
         run: |
