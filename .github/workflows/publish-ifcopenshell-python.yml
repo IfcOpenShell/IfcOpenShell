@@ -1,5 +1,7 @@
 name: Publish IfcOpenShell Python
 
+permissions: {}
+
 on:
   workflow_dispatch:
 
@@ -16,6 +18,9 @@ jobs:
     needs: upstream-only
     name: ${{ matrix.config.name }}-${{ matrix.pyver }}
     runs-on: ubuntu-latest
+    permissions:
+      # upload-release-action creates the release and uploads assets
+      contents: write
     strategy:
       fail-fast: false
       matrix:

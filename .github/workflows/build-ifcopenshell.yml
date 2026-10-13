@@ -1,11 +1,16 @@
 name: Build IfcOpenShell
 
+permissions: {}
+
 on:
   workflow_dispatch:
 
 jobs:
   dispatch:
     runs-on: ubuntu-latest
+    permissions:
+      # Needed for dispatching workflows by `gh workflow run`.
+      actions: write
     steps:
       - name: Trigger binary build workflows
         env:
