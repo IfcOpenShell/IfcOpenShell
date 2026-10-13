@@ -94,8 +94,6 @@ SETTING = Literal[
     "element-hierarchy",
     "enable-layerset-slicing",
     "force-space-transparency",
-    "function-step-param",
-    "function-step-type",
     "generate-uvs",
     "iterator-output",
     "keep-bounding-boxes",
@@ -275,7 +273,6 @@ class settings_mixin:
             "std::set<std::string>": lambda s: s.split(";"),
             "std::vector<double>": lambda s: list(map(float, s.split(";"))),
             "IteratorOutputOptions": int,
-            "FunctionStepMethod": int,
             "OutputDimensionalityTypes": int,
             "TriangulationMethod": int,
         }
