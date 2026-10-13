@@ -1,5 +1,7 @@
 name: Publish IfcOpenShell Linux Packages
 
+permissions: {}
+
 on:
   push:
     tags:
@@ -15,6 +17,9 @@ jobs:
   release:
     needs: upstream-only
     runs-on: ubuntu-22.04
+    permissions:
+      # upload-release-action creates the release and uploads assets
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

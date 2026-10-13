@@ -1,5 +1,7 @@
 name: Publish Bonsai
 
+permissions: {}
+
 # Differences from publish-bonsai-unstable.yml:
 # - make has IS_STABLE=TRUE
 # - action is never triggered and executed only manually
@@ -21,6 +23,9 @@ jobs:
     needs: upstream-only
     name: ${{ matrix.config.name }}-${{ matrix.pyver }}
     runs-on: ubuntu-latest
+    permissions:
+      # upload-release-action creates the release and uploads assets
+      contents: write
     strategy:
       fail-fast: false
       matrix:

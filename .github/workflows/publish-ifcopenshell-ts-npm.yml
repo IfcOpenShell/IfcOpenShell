@@ -19,10 +19,7 @@ on:
         required: false
         default: ''
 
-permissions:
-  contents: read
-  # Required for npm trusted publishing and provenance attestations.
-  id-token: write
+permissions: {}
 
 concurrency:
   group: publish-ts-npm
@@ -40,6 +37,10 @@ jobs:
   publish:
     needs: upstream-only
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for npm trusted publishing and provenance attestations.
+      id-token: write
     env:
       WASM_PACKAGE_DIR: src/ts/ifcopenshell-wasm
       TS_PACKAGE_DIR: src/ts/ifcopenshell-js
