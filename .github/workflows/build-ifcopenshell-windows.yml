@@ -43,7 +43,7 @@ jobs:
           ref: ${{ matrix.build_branch }}
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Install Dependencies
         run: |
