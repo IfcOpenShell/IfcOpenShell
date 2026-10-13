@@ -302,6 +302,23 @@ where Bonsai's eighths would measure from the vertical.
   on the side away from the axis its angle is measured from while angles are shown, so that
   the angle's label never overlaps them.
 
+## 14. Legible diagrams
+
+- **Global axes.** Each loaded point draws the global X and Z axes, faint and dashed, named +X
+  and +Z at their positive ends, so that a diagram reads on its own (Y runs into the view). They
+  are part of the drawing data, so the viewport and both report diagrams share them; each way, an
+  axis reaches just past what is drawn at the point.
+- **Labels keep off lines.** Labels keep off arrows, angle arcs and slope triangles as well as
+  each other (`box_crosses_segments`); dashed guides may run under them. A label tries its own
+  direction first at each distance, then turns further from it, up to the opposite side, so it
+  moves round an arrow beside it rather than across it. The viewport runs this on every redraw,
+  so it tests only lines within reach and, after a number of tries, settles for a place clear of
+  the other labels only; reports search fully.
+- **Larger report diagrams.** Drawn to 600 px rather than 420, with the HTML page widened to
+  960 px so that they are not scaled back down; labels keep their size, so they have more room.
+- Slope triangles too flat to read, as for a force nearly along its axis, are left out; the
+  angle gives the direction.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
