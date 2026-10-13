@@ -16,6 +16,48 @@ import ifcopenshell.guid
 import ifcopenshell.util.shape
 
 
+def extruded_polyline_volume(points):
+    model = ifcopenshell.file(schema="IFC4")
+    placement = model.createIfcAxis2Placement3D(model.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+    context = model.createIfcGeometricRepresentationContext(None, "Model", 3, 1e-5, placement, None)
+    units = model.createIfcUnitAssignment([model.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")])
+    model.createIfcProject(ifcopenshell.guid.new(), None, "Test", None, None, None, None, [context], units)
+    curve = model.createIfcPolyline([model.createIfcCartesianPoint(p) for p in points])
+    profile = model.createIfcArbitraryClosedProfileDef("AREA", None, curve)
+    solid = model.createIfcExtrudedAreaSolid(profile, placement, model.createIfcDirection((0.0, 0.0, 1.0)), 1.0)
+    representation = model.createIfcShapeRepresentation(context, "Body", "SweptSolid", [solid])
+    product = model.createIfcBuildingElementProxy(
+        ifcopenshell.guid.new(),
+        None,
+        "Profile",
+        None,
+        None,
+        model.createIfcLocalPlacement(None, placement),
+        model.createIfcProductDefinitionShape(None, None, [representation]),
+    )
+    shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), product, geometry_library="opencascade")
+    return ifcopenshell.util.shape.get_volume(shape.geometry)
+
+
+@pytest.mark.parametrize("reverse", [False, True], ids=["forward", "reverse"])
+def test_profile_with_collinear_self_intersection_volume_6287(reverse):
+    points = [(0.0, 6.0), (0.0, 9.0), (2.0, 9.0), (2.0, 6.0), (0.0, 6.0), (0.0, 1.0), (2.0, 1.0), (2.0, 0.0)]
+    points += [(0.0, 0.0), (0.0, 3.0), (2.0, 3.0), (2.0, 2.0), (0.0, 2.0), (0.0, 5.0), (2.0, 5.0), (2.0, 4.0)]
+    points += [(0.0, 4.0), (0.0, 6.0)]
+    four_rectangles = 2.0 * (3.0 + 1.0 + 1.0 + 1.0)
+    volume = extruded_polyline_volume(points[::-1] if reverse else points)
+    assert volume == pytest.approx(four_rectangles, rel=1e-6)
+
+
+@pytest.mark.parametrize("reverse", [False, True], ids=["forward", "reverse"])
+def test_profile_touching_itself_around_void_adds_no_volume_1015(reverse):
+    points = [(1.0, 1.0), (1.0, 0.0), (5.0, 0.0), (5.0, -1.0), (-1.0, -1.0), (-1.0, 0.0), (0.0, 0.0)]
+    points += [(0.0, 2.0), (4.0, 2.0), (4.0, 0.0), (3.0, 0.0), (3.0, 1.0), (1.0, 1.0)]
+    outline, void = 6.0 * 1.0 + 4.0 * 2.0, 2.0 * 1.0
+    volume = extruded_polyline_volume(points[::-1] if reverse else points)
+    assert outline - void - 1e-6 <= volume <= outline + 1e-6
+
+
 @pytest.mark.parametrize("axis", [0, 2], ids=["x", "z"])
 @pytest.mark.parametrize("reverse", [False, True], ids=["forward", "reverse"])
 @pytest.mark.parametrize("offset", [0.0, 10.0], ids=["origin", "translated"])
