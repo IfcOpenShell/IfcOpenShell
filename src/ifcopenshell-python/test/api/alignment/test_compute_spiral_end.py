@@ -51,23 +51,10 @@ DIRECTION_TOLERANCE = 1e-8
 JOIN_POSITION_TOLERANCE = 1e-6  # metres
 JOIN_DIRECTION_TOLERANCE = 1e-9
 
-HELMERT_KINK = pytest.mark.xfail(
-    strict=True,
-    reason="helmert_curve_point returns the heading at x instead of at s, so the second half of a "
-    "helmert curve is placed with a kink",
-)
-
-
-def spiral_cases():
-    for family in SPIRALS:
-        for r0, r1 in SPIRAL_RADII:
-            marks = [HELMERT_KINK] if family == "HELMERTCURVE" else []
-            yield pytest.param(family, r0, r1, marks=marks, id=f"{family}-{r0:g}-{r1:g}")
-
-
-def helmert_cases():
-    for r0, r1 in SPIRAL_RADII:
-        yield pytest.param(r0, r1, marks=[HELMERT_KINK], id=f"{r0:g}-{r1:g}")
+SPIRAL_CASES = [
+    pytest.param(family, r0, r1, id=f"{family}-{r0:g}-{r1:g}") for family in SPIRALS for r0, r1 in SPIRAL_RADII
+]
+HELMERT_CASES = [pytest.param(r0, r1, id=f"{r0:g}-{r1:g}") for r0, r1 in SPIRAL_RADII]
 
 
 def heading(frame):
@@ -79,7 +66,7 @@ def angle_between(a, b):
 
 
 @test.bootstrap.requires_ifc4x3
-@pytest.mark.parametrize("family,r0,r1", list(spiral_cases()))
+@pytest.mark.parametrize("family,r0,r1", SPIRAL_CASES)
 def test_solver_end_matches_kernel(family, r0, r1):
     f, alignment, _ = build_horizontal("metre", family, r0, r1)
     p = next(
@@ -95,7 +82,7 @@ def test_solver_end_matches_kernel(family, r0, r1):
 
 
 @test.bootstrap.requires_ifc4x3
-@pytest.mark.parametrize("r0,r1", list(helmert_cases()))
+@pytest.mark.parametrize("r0,r1", HELMERT_CASES)
 def test_helmert_halves_join_smoothly(r0, r1):
     f, alignment, _ = build_horizontal("metre", "HELMERTCURVE", r0, r1)
     first, second = [s for s in f.by_type("IfcCurveSegment") if s.SegmentLength.wrappedValue > 0]
@@ -107,7 +94,7 @@ def test_helmert_halves_join_smoothly(r0, r1):
     assert abs(angle_between(heading(end), math.atan2(d[1], d[0]))) < JOIN_DIRECTION_TOLERANCE
 
 
-@pytest.mark.parametrize("r0,r1", list(helmert_cases()))
+@pytest.mark.parametrize("r0,r1", HELMERT_CASES)
 def test_helmert_curve_point_heading(r0, r1):
     # the heading at arc length s is theta(s), which every polynomial spiral has in closed form
     (a0, a1, a2), _ = _spiral_curvature.helmert_coefficients(LENGTH, r0, r1)
