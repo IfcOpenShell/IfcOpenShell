@@ -892,10 +892,13 @@ def write_diagram(
     """
     if not (obj := tool.Ifc.get_object(item)):
         return False
+    # Looking along Y, as the drawing's Y axis runs, which is left out.
     shapes = [
-        e["primitive"] | {"color": e["color"]} for e in drawing.info if e.get("object") == obj.name and "primitive" in e
+        e["primitive"] | {"color": e["color"]}
+        for e in drawing.info
+        if e.get("object") == obj.name and "primitive" in e and not e.get("along_view")
     ]
-    texts = [t for t in drawing.text_info if t.get("object") == obj.name]
+    texts = [t for t in drawing.text_info if t.get("object") == obj.name and not t.get("along_view")]
     # Each force and component named by its symbol in the calculations, as the drawing names them.
     texts = [t | {"text": f"{t['symbol']} = {t['text']}"} if t.get("symbol") else t for t in texts]
     if not shapes:
