@@ -316,8 +316,19 @@ where Bonsai's eighths would measure from the vertical.
   the other labels only; reports search fully.
 - **Larger report diagrams.** Drawn to 600 px rather than 420, with the HTML page widened to
   960 px so that they are not scaled back down; labels keep their size, so they have more room.
-- Slope triangles too flat to read, as for a force nearly along its axis, are left out; the
-  angle gives the direction.
+- **Slope triangles to one scale.** Every triangle has the same run, the level leg, with its rise
+  drawn to scale and capped at 2.5 runs, labelled rise over run as a roof pitch is. A triangle
+  keeps off arrows and lines drawn at its point, moving back along its force and then to the
+  force's other side to find a clear place. Triangles too flat to read are left out; the angle
+  gives the direction.
+- **Values at the tips.** In a tip-to-tail chain, values sit at each arrow's tip, leaning outside
+  the force polygon, rather than at its middle.
+- **Named as in calculations.** The drawing names each label by its symbol (`add_symbols`): a
+  force by its number in the tip-to-tail order, a single force's components as its own, several
+  forces' as their resultant's. Reports set them with subscripts; the viewport with Unicode ones
+  (`get_plain_symbol`), z having none.
+- **Viewport labels sized to their diagram**, a share of its longest arrow on screen as in a
+  report's diagram, between 8 and 24 px, so that zooming scales them with the arrows.
 
 ## Next
 
