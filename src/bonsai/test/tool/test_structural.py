@@ -27,6 +27,7 @@ import numpy as np
 
 import bonsai.core.tool
 import bonsai.tool as tool
+from bonsai.bim.module.structural.load_decoration_data import box_crosses_segments
 from bonsai.tool.structural import Structural as subject
 from test.bim.bootstrap import NewFile
 
@@ -329,3 +330,19 @@ class TestResultantEighth(NewFile):
         subject.set_resultant_eighth(point, first, None)
         assert subject.get_resultant_eighth(point, first) is None
         assert subject.get_resultant_eighth(point, second) == "Q6"
+
+
+class TestBoxCrossesSegments(NewFile):
+    # A label's box from (0, 0), 10 wide and 5 high.
+    def test_lines_crossing_or_inside(self):
+        assert box_crosses_segments(0, 0, 10, 5, [((-5, 2), (15, 2))])
+        assert box_crosses_segments(0, 0, 10, 5, [((2, 1), (3, 2))])
+        assert box_crosses_segments(0, 0, 10, 5, [((-1, 4), (1, 6))])  # Across a corner.
+
+    def test_lines_clear_of_it(self):
+        assert not box_crosses_segments(0, 0, 10, 5, [((-5, 8), (15, 8))])
+        assert not box_crosses_segments(0, 0, 10, 5, [((12, 0), (20, 10))])
+        assert not box_crosses_segments(0, 0, 10, 5, [])
+
+    def test_any_of_several(self):
+        assert box_crosses_segments(0, 0, 10, 5, [((-5, 8), (15, 8)), ((5, -5), (5, 10))])
