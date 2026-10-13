@@ -376,6 +376,15 @@ where Bonsai's eighths would measure from the vertical.
   each linked force from the one found, or from the known one before the sums use it. The forces
   table marks a linked magnitude "magnitude = 0.25 × F₂", so that it does not read as free.
 
+## 18. Padlocks on found values
+
+- **Slopes.** An unknown direction is marked on its slope triangle's rise as well as its angle, so
+  that it shows with angles hidden.
+- **Resultants.** A resultant of several forces is marked for what Edit Resultant finds of it,
+  as the report's table marks it: by how many force values are unknown, two in all, linked
+  magnitudes counting once (`tool.Structural.get_resultant_found`, shared by both). A locked
+  resultant has none; one summed from known forces is found, so is marked.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
