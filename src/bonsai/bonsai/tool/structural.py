@@ -228,6 +228,79 @@ class Structural(bonsai.core.tool.Structural):
             cls.edit_bbim_structural(activity, {"Push": push})
 
     @classmethod
+    def get_magnitude_link(cls, activity: ifcopenshell.entity_instance) -> Union[str, None]:
+        """The GlobalId of the applied load an applied load's magnitude is linked to, if any"""
+        return ifcopenshell.util.element.get_pset(activity, "BBIM_Structural", "SameMagnitudeAs") or None
+
+    @classmethod
+    def get_magnitude_ratio(cls, activity: ifcopenshell.entity_instance) -> float:
+        """How many times the magnitude of the applied load it is linked to an applied load's magnitude is, 1 if
+        equal or unset"""
+        return ifcopenshell.util.element.get_pset(activity, "BBIM_Structural", "MagnitudeRatio") or 1.0
+
+    @classmethod
+    def set_magnitude_link(
+        cls,
+        activity: ifcopenshell.entity_instance,
+        other: Union[ifcopenshell.entity_instance, None],
+        ratio: float = 1.0,
+    ) -> None:
+        """Link an applied load's magnitude to another's, as equal or a number of times it, as two equal tensions
+        are or a quarter of a load, or unlink it"""
+        guid = other.GlobalId if other else None
+        ratio = None if not guid or math.isclose(ratio, 1.0) else ratio
+        if guid != cls.get_magnitude_link(activity) or (ratio or 1.0) != cls.get_magnitude_ratio(activity):
+            cls.edit_bbim_structural(activity, {"SameMagnitudeAs": guid, "MagnitudeRatio": ratio})
+
+    @classmethod
+    def get_magnitude_groups(
+        cls, activities: list[ifcopenshell.entity_instance], overrides: Union[dict[str, Any], None] = None
+    ) -> list[Union[str, None]]:
+        """A key per applied load, the same for those whose magnitudes are linked, directly or through others
+        among them, or None for one linked to none of them.
+
+        :param overrides: Links to take instead of applied loads' own, by GlobalId, as while editing one: the
+            other's GlobalId or None, or that and a ratio.
+        """
+        return cls.get_magnitude_links(activities, overrides)[0]
+
+    @classmethod
+    def get_magnitude_links(
+        cls, activities: list[ifcopenshell.entity_instance], overrides: Union[dict[str, Any], None] = None
+    ) -> tuple[list[Union[str, None]], list[float]]:
+        """get_magnitude_groups, with each applied load's magnitude as a factor of a magnitude its group shares,
+        from the ratios of their links, 1 for one linked to none"""
+        overrides = overrides or {}
+        guids = {a.GlobalId for a in activities}
+        edges: dict[str, list[tuple[str, float]]] = {guid: [] for guid in guids}
+        for activity in activities:
+            if activity.GlobalId in overrides:
+                link = overrides[activity.GlobalId]
+                other, ratio = link if isinstance(link, tuple) else (link, 1.0)
+            else:
+                other, ratio = cls.get_magnitude_link(activity), cls.get_magnitude_ratio(activity)
+            if other in guids and other != activity.GlobalId and ratio:
+                # This one's magnitude is ratio times the other's, and the other's this one's over ratio.
+                edges[activity.GlobalId].append((other, 1 / ratio))
+                edges[other].append((activity.GlobalId, ratio))
+        keys: dict[str, str] = {}
+        factors: dict[str, float] = {}
+        for activity in activities:
+            if activity.GlobalId in keys:
+                continue
+            root, queue = activity.GlobalId, [activity.GlobalId]
+            keys[root], factors[root] = root, 1.0
+            while queue:
+                guid = queue.pop()
+                for other, ratio in edges[guid]:
+                    if other not in keys:
+                        keys[other], factors[other] = root, factors[guid] * ratio
+                        queue.append(other)
+        counts = {key: list(keys.values()).count(key) for key in set(keys.values())}
+        groups = [keys[a.GlobalId] if counts[keys[a.GlobalId]] > 1 else None for a in activities]
+        return groups, [factors[a.GlobalId] if group else 1.0 for a, group in zip(activities, groups)]
+
+    @classmethod
     def get_axes_rotation(cls, item: ifcopenshell.entity_instance) -> np.ndarray:
         """A structural item's own axes, as the columns x', y' and z' of a rotation, global ones if it has none"""
         if ccs := getattr(item, "ConditionCoordinateSystem", None):
@@ -394,6 +467,8 @@ class Structural(bonsai.core.tool.Structural):
         locks: list[tuple[bool, bool]],
         resultant: tuple[float, float, float],
         resultant_locks: tuple[bool, bool],
+        links: Union[list[Union[str, None]], None] = None,
+        factors: Union[list[float], None] = None,
     ) -> tuple[Union[list[tuple[float, float, float]], None], Union[tuple[float, float, float], None], str]:
         """Find the two unknowns of concurrent forces and their resultant: magnitudes or directions not locked.
 
@@ -401,8 +476,16 @@ class Structural(bonsai.core.tool.Structural):
         :param locks: Whether each force's magnitude and direction are known.
         :param resultant: The resultant. Only its direction counts if its magnitude is unknown.
         :param resultant_locks: Whether the resultant's magnitude and direction are known.
+        :param links: A key per force, the same for forces of equal magnitude, as two equal cable tensions: their
+            magnitudes count as one unknown, or follow one that is known.
+        :param factors: Each force's magnitude as a factor of the one its links share, as a quarter of another's;
+            all 1, equal, if not given.
         :return: The forces and resultant with the unknowns found, or why they cannot be.
         """
+        if links and len({key for key in links if key is not None}) < sum(key is not None for key in links):
+            return cls.solve_linked_unknowns(
+                forces, locks, resultant, resultant_locks, links, factors or [1.0] * len(forces)
+            )
         unknowns = [
             (i, kind)
             for i, lock in enumerate(locks)
@@ -486,6 +569,57 @@ class Structural(bonsai.core.tool.Structural):
         turned = math.degrees(math.atan2(z, x)) - 90 * (e // 2)
         angle = (turned if e % 2 else -turned) % 360
         return 0.0 if angle > 360 - 1e-6 else angle + 0.0
+
+    @classmethod
+    def solve_linked_unknowns(
+        cls,
+        forces: list[tuple[float, float, float]],
+        locks: list[tuple[bool, bool]],
+        resultant: tuple[float, float, float],
+        resultant_locks: tuple[bool, bool],
+        links: list[Union[str, None]],
+        factors: list[float],
+    ) -> tuple[Union[list[tuple[float, float, float]], None], Union[tuple[float, float, float], None], str]:
+        """solve_unknowns for forces whose magnitudes are linked, as equal or in a ratio.
+
+        A linked force follows a known magnitude among its links. Otherwise the linked forces stand in as one
+        force along the sum of their directions, each weighted by its factor, whose one magnitude is found and
+        given to each by its factor.
+        """
+        forces, locks = list(forces), list(locks)
+        unit = lambda v: tuple(c / math.hypot(*v) for c in v) if math.hypot(*v) else None
+        groups: dict[str, list[int]] = {}
+        for i, key in enumerate(links):
+            if key is not None:
+                groups.setdefault(key, []).append(i)
+        stand_ins: list[tuple[list[int], tuple[float, float, float]]] = []
+        for members in (m for m in groups.values() if len(m) > 1):
+            if any(not unit(forces[i]) or not locks[i][1] for i in members):
+                return None, None, "Forces of equal magnitude need known directions"
+            if known := [i for i in members if locks[i][0]]:
+                shared = math.hypot(*forces[known[0]]) / factors[known[0]]
+                for i in members:
+                    forces[i], locks[i] = tuple(shared * factors[i] * c for c in unit(forces[i])), (True, True)
+            else:
+                along = tuple(sum(factors[i] * unit(forces[i])[k] for i in members) for k in range(3))
+                if not math.hypot(*along):
+                    return None, None, "Forces of equal magnitude cancel out, so their magnitude cannot be found"
+                stand_ins.append((members, along))
+        merged = {i for members, _ in stand_ins for i in members}
+        kept = [i for i in range(len(forces)) if i not in merged]
+        reduced_forces = [forces[i] for i in kept] + [along for _, along in stand_ins]
+        reduced_locks = [locks[i] for i in kept] + [(False, True)] * len(stand_ins)
+        solved, solved_resultant, error = cls.solve_unknowns(reduced_forces, reduced_locks, resultant, resultant_locks)
+        if error:
+            return None, None, error
+        for n, i in enumerate(kept):
+            forces[i] = solved[n]
+        for n, (members, along) in enumerate(stand_ins):
+            # The stand-in is the shared magnitude times the sum of the directions.
+            shared = sum(s * a for s, a in zip(solved[len(kept) + n], along)) / sum(a * a for a in along)
+            for i in members:
+                forces[i] = tuple(shared * factors[i] * c for c in unit(forces[i]))
+        return forces, solved_resultant, ""
 
     @classmethod
     def solve_two_force_magnitudes(

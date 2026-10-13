@@ -357,5 +357,94 @@ class TestPointAxesComponents(NewFile):
         assert math.isclose(x, 0.5) and math.isclose(z, math.cos(math.radians(30)))
 
     def test_back_to_global(self):
-        x, z = subject.from_axes(*subject.to_axes(-146.19, -53.21, -30), -30)
-        assert math.isclose(x, -146.19) and math.isclose(z, -53.21)
+        x, z = subject.from_axes(*subject.to_axes(3.0, -4.0, -25), -25)
+        assert math.isclose(x, 3.0) and math.isclose(z, -4.0)
+
+
+def direction(degrees: float, magnitude: float = 1.0) -> tuple[float, float, float]:
+    return (magnitude * math.cos(math.radians(degrees)), 0.0, magnitude * math.sin(math.radians(degrees)))
+
+
+class TestSolveLinkedUnknowns(NewFile):
+    def test_equal_magnitudes_count_as_one_unknown(self):
+        # A known pull, and two pulls of unknown but equal magnitude, whose resultant is vertical.
+        forces = [direction(-40, 6), direction(200), direction(230)]
+        locks = [(True, True), (False, True), (False, True)]
+        solved, resultant, error = subject.solve_unknowns(forces, locks, (0, 0, -1), (False, True), [None, "T", "T"])
+        expected = 6 * math.cos(math.radians(40)) / (math.cos(math.radians(20)) + math.cos(math.radians(50)))
+        assert not error
+        assert math.isclose(math.hypot(*solved[1]), expected) and math.isclose(math.hypot(*solved[2]), expected)
+        assert math.isclose(sum(f[0] for f in solved), 0, abs_tol=1e-9) and resultant[0] == 0
+
+    def test_without_the_link_there_are_too_many_unknowns(self):
+        forces = [direction(-40, 6), direction(200), direction(230)]
+        locks = [(True, True), (False, True), (False, True)]
+        assert "Two can be found" in subject.solve_unknowns(forces, locks, (0, 0, -1), (False, True))[2]
+
+    def test_a_linked_magnitude_follows_a_known_one(self):
+        forces = [direction(-40, 6), direction(200, 3), direction(230), direction(90)]
+        locks = [(True, True), (True, True), (False, True), (False, True)]
+        solved, _, error = subject.solve_unknowns(forces, locks, (0, 0, 0), (True, True), [None, "T", "T", None])
+        assert error.startswith("Unlocked: F")  # Only the fourth is unknown once the third follows the second.
+        solved, _, error = subject.solve_unknowns(
+            forces, [*locks[:3], (False, False)], (0, 0, 0), (True, True), [None, "T", "T", None]
+        )
+        assert not error and math.isclose(math.hypot(*solved[2]), 3)
+
+    def test_a_magnitude_a_multiple_of_another(self):
+        forces = [direction(-40, 6), direction(200), direction(230)]
+        locks = [(True, True), (False, True), (False, True)]
+        solved, _, error = subject.solve_unknowns(
+            forces, locks, (0, 0, -1), (False, True), [None, "T", "T"], [1.0, 1.0, 0.25]
+        )
+        expected = 6 * math.cos(math.radians(40)) / (math.cos(math.radians(20)) + 0.25 * math.cos(math.radians(50)))
+        assert not error
+        assert math.isclose(math.hypot(*solved[1]), expected) and math.isclose(math.hypot(*solved[2]), expected / 4)
+
+    def test_a_multiple_of_a_known_magnitude(self):
+        forces = [direction(-40, 6), direction(200, 3), direction(230), direction(90)]
+        locks = [(True, True), (True, True), (False, True), (False, False)]
+        solved, _, error = subject.solve_unknowns(
+            forces, locks, (0, 0, 0), (True, True), [None, "T", "T", None], [1.0, 1.0, 0.5, 1.0]
+        )
+        assert not error and math.isclose(math.hypot(*solved[2]), 1.5)
+
+
+class TestMagnitudeGroups(NewFile):
+    def test_linked_directly_and_through_another(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        activities = [
+            ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralPointAction") for _ in range(4)
+        ]
+        subject.set_magnitude_link(activities[1], activities[0])
+        subject.set_magnitude_link(activities[2], activities[1])
+        groups = subject.get_magnitude_groups(activities)
+        assert groups[0] == groups[1] == groups[2] and groups[0] is not None and groups[3] is None
+        assert subject.get_magnitude_link(activities[1]) == activities[0].GlobalId
+
+    def test_unlinking_and_overriding(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        first, second = (
+            ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralPointAction") for _ in range(2)
+        )
+        subject.set_magnitude_link(second, first)
+        assert subject.get_magnitude_groups([first, second], {second.GlobalId: None}) == [None, None]
+        subject.set_magnitude_link(second, None)
+        assert subject.get_magnitude_link(second) is None
+
+    def test_ratios_through_a_chain(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        first, second, third = (
+            ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralPointAction") for _ in range(3)
+        )
+        subject.set_magnitude_link(second, first, 0.5)
+        subject.set_magnitude_link(third, second, 0.25)
+        assert subject.get_magnitude_ratio(second) == 0.5
+        groups, factors = subject.get_magnitude_links([first, second, third])
+        assert groups[0] == groups[1] == groups[2] is not None
+        assert [f / factors[0] for f in factors] == [1.0, 0.5, 0.125]
+        groups, factors = subject.get_magnitude_links([first, second, third], {third.GlobalId: (first.GlobalId, 2.0)})
+        assert [f / factors[0] for f in factors] == [1.0, 0.5, 2.0]

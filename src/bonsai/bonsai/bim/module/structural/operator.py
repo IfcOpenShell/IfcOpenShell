@@ -22,7 +22,7 @@ import webbrowser
 from collections.abc import Callable
 from math import degrees
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 import bpy
 import ifcopenshell.api.group
@@ -1216,7 +1216,10 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
         if (activity := get_lock_activity(self)) and self.load_category == "IfcStructuralPointConnection":
             force = get_force_components(self)
             forces, _ = get_resolved_forces(
-                activity, {activity.id(): force}, {activity.id(): (self.magnitude_locked, self.direction_locked)}
+                activity,
+                {activity.id(): force},
+                {activity.id(): (self.magnitude_locked, self.direction_locked)},
+                {activity.GlobalId: (get_same_magnitude_guid(self), getattr(self, "magnitude_ratio", 1.0))},
             )
             for load, solved in (forces or {}).items():
                 ShaderInfo.preview[load.id()] = get_force_attributes(load, solved)
@@ -1235,11 +1238,13 @@ def get_resolved_forces(
     activity: ifcopenshell.entity_instance,
     forces: Union[dict[int, tuple], None] = None,
     locks: Union[dict[int, tuple[bool, bool]], None] = None,
+    links: Union[dict[str, Any], None] = None,
 ) -> tuple[Union[dict[ifcopenshell.entity_instance, tuple], None], str]:
     """Solve again the unknowns at an applied load's item, for its load case, keeping the resultant as locked.
 
     :param forces: Forces to take instead of applied loads' own, by activity id, as while editing one.
     :param locks: Locks likewise.
+    :param links: Magnitude links likewise, by GlobalId: the other's GlobalId or None, and a ratio.
     :return: The loads to change, and their forces, or none if no resultant is locked there, or why not.
     """
     connects = activity.AssignedToStructuralItem
@@ -1254,11 +1259,14 @@ def get_resolved_forces(
     ]
     values = [(forces or {}).get(a.id(), get_force(a.AppliedLoad)) for a in activities]
     lock_values = [(locks or {}).get(a.id(), tool.Structural.get_locks(a)) for a in activities]
+    groups, factors = tool.Structural.get_magnitude_links(activities, links)
     solved, _, error = tool.Structural.solve_unknowns(
         values,
         lock_values,
         tuple(resultant["Force"]),
         (resultant["MagnitudeLocked"], resultant["DirectionLocked"]),
+        groups,
+        factors,
     )
     if error:
         return None, error
@@ -1311,7 +1319,8 @@ def solve_resultant(
     props: "EditStructuralResultant",
 ) -> tuple[Union[dict[ifcopenshell.entity_instance, tuple], None], Union[tuple, None], str]:
     """Get the loads to change, their new forces, and the resultant, by finding what is unlocked, or why not"""
-    loads = [activity.AppliedLoad for activity in get_resultant_activities(props)][:32]
+    activities = get_resultant_activities(props)[:32]
+    loads = [activity.AppliedLoad for activity in activities]
     locks = [(props.magnitude_locks[i], props.direction_locks[i]) for i in range(len(loads))]
     if props.magnitude_locked or props.input_mode == "COMPONENTS":
         resultant = get_force_components(props)
@@ -1326,8 +1335,14 @@ def solve_resultant(
             direction=props.direction,
         )
         resultant = (x, 0.0, z)
+    groups, factors = tool.Structural.get_magnitude_links(activities)
     forces, resultant, error = tool.Structural.solve_unknowns(
-        [get_force(load) for load in loads], locks, resultant, (props.magnitude_locked, props.direction_locked)
+        [get_force(load) for load in loads],
+        locks,
+        resultant,
+        (props.magnitude_locked, props.direction_locked),
+        groups,
+        factors,
     )
     if error:
         return None, None, error
@@ -1650,6 +1665,41 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
         tool.Structural.get_structural_props().show_loads = True
 
 
+# Blender needs enum item strings to stay referenced while the dialog is open.
+same_magnitude_items: list[tuple[str, str, str]] = []
+
+
+def get_same_magnitude_items(self, context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    """The other point forces in the edited applied load's load case at its item, numbered as calculations are"""
+    global same_magnitude_items
+    same_magnitude_items = [("NONE", "None", "Its magnitude is its own")]
+    if (activity := get_lock_activity(self)) and (connects := activity.AssignedToStructuralItem):
+        chain = tool.Structural.get_chain_activities(
+            connects[0].RelatingElement, tool.Structural.get_activity_load_case(activity)
+        )
+        forces = [a for a in chain if a.AppliedLoad and a.AppliedLoad.is_a("IfcStructuralLoadSingleForce")]
+        subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+        for n, other in enumerate(forces, 1):
+            if other != activity:
+                name = f"F{str(n).translate(subscripts)}: {other.AppliedLoad.Name or 'Unnamed'}"
+                same_magnitude_items.append((str(other.id()), name, "Of equal magnitude to this force"))
+    return same_magnitude_items
+
+
+def get_by_guid(guid: Union[str, None]) -> Union[ifcopenshell.entity_instance, None]:
+    """An entity by its GlobalId, or None if there is none, as when a linked one was removed"""
+    try:
+        return tool.Ifc.get().by_guid(guid) if guid else None
+    except RuntimeError:
+        return None
+
+
+def get_same_magnitude_guid(props: "EditStructuralLoadValues") -> Union[str, None]:
+    """The GlobalId of the applied load chosen as of equal magnitude, if any"""
+    choice = getattr(props, "same_magnitude_as", "NONE")
+    return tool.Ifc.get().by_id(int(choice)).GlobalId if choice not in ("", "NONE") else None
+
+
 edit_load_group_items: list[tuple[str, str, str]] = []
 
 
@@ -1691,6 +1741,25 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
     new_load_case_name: bpy.props.StringProperty(name="New Load Case", default="Load Case")
     # A load just added to be edited, as Add Load at a point does, is removed again if the edit is cancelled.
     remove_on_cancel: bpy.props.BoolProperty(options={"HIDDEN", "SKIP_SAVE"})
+    same_magnitude_as: bpy.props.EnumProperty(
+        name="Magnitude As",
+        description=(
+            "Another force at the point whose magnitude this one's follows, times the ratio: equal, as two equal "
+            "cable tensions are, or a share of it. Solving finds one magnitude for both, or this one follows the "
+            "other's if known"
+        ),
+        items=get_same_magnitude_items,
+        options={"SKIP_SAVE"},
+        update=update_force_inputs,
+    )
+    magnitude_ratio: bpy.props.FloatProperty(
+        name="Ratio",
+        description="How many times the other force's magnitude this one's is, as 0.25 for a quarter of it",
+        default=1.0,
+        min=1e-6,
+        options={"SKIP_SAVE"},
+        update=update_force_inputs,
+    )
 
     def get_load(self) -> ifcopenshell.entity_instance:
         ifc_file = tool.Ifc.get()
@@ -1745,6 +1814,10 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
             if self.input_mode != "COMPONENTS" and (component := tool.Structural.get_known_component(lock_activity)):
                 self.given_value = abs(x if component == "X" else z)
                 self.given = component
+            if other := get_by_guid(tool.Structural.get_magnitude_link(lock_activity)):
+                if str(other.id()) in [item[0] for item in get_same_magnitude_items(self, context)]:
+                    self.same_magnitude_as = str(other.id())
+                    self.magnitude_ratio = tool.Structural.get_magnitude_ratio(lock_activity)
         if (activities := self.get_movable_activities()) and (groups := get_activity_load_groups(activities[0])):
             self.load_group = str(groups[0].id())
         # Set last, so that filling in the values above does not start a preview.
@@ -1790,6 +1863,10 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
             layout.label(text="Open it from an applied load to lock its values", icon="INFO")
         self.draw_force_inputs(layout, category, show_locks=bool(lock_activity), show_given=bool(lock_activity))
         if lock_activity and category == "IfcStructuralPointConnection":
+            row = layout.row(align=True)
+            row.prop(self, "same_magnitude_as")
+            if self.same_magnitude_as not in ("", "NONE"):
+                row.prop(self, "magnitude_ratio", text="×")
             layout.row().prop(self, "acts_as", expand=True)
         if self.input_mode != "COMPONENTS" and (self.y or self.moment_x or self.moment_y or self.moment_z):
             layout.label(text="Y and moments will be set to zero", icon="ERROR")
@@ -1817,6 +1894,9 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
                 None if self.input_mode == "COMPONENTS" or self.given == "MAGNITUDE" or is_on_axes(self) else self.given
             )
             tool.Structural.set_known_component(lock_activity, known)
+            if self.load_category == "IfcStructuralPointConnection":
+                other = get_by_guid(get_same_magnitude_guid(self))
+                tool.Structural.set_magnitude_link(lock_activity, other, self.magnitude_ratio)
         activities = self.get_movable_activities()
         if activities and (target := self.get_target_load_group(ifc_file)):
             for activity in activities:
