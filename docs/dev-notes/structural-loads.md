@@ -361,6 +361,14 @@ them to the current model; PyNite takes them as `add_load_combo`. When combinati
 `recursive_subgroups` in `load_decoration_data.py`, which multiplies factors cumulatively
 across a group's relationships, so that 1.2 D + 1.6 L would draw the live load at 1.92.
 
+Later, for load authoring: **directions in the XY and YZ planes.** Angles and slopes are entered
+in the X-Z plane only; other planes need components. A Plane choice (XZ, XY, YZ) in the force
+dialogs would read the pinwheel, angle and slope against that plane's axes (XY seen from +Z, X
+right and Y up; YZ from +X, Y right and Z up), record the plane in generated names as primed
+eighths record Point Axes, draw a force's arc and triangle in its plane, and set out its report
+steps in it. Forces in different planes at one point make a 3D problem, whose resultant would be
+given as components; Edit Resultant would stay with forces sharing a plane.
+
 Revisit with combinations:
 
 - **Applying one load to several load cases at once.** Today a load is applied once per case
