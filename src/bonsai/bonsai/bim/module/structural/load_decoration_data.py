@@ -546,6 +546,7 @@ class ShaderInfo:
         """
         props = tool.Structural.get_structural_props()
         location = np.array(location)
+        first = len(self.info)  # This point's drawing starts here, which its axes reach across.
         if props.reference_frame == "LOCAL_COORDS":
             forces = [rotation @ force for force in forces]
         kept = [
@@ -705,6 +706,7 @@ class ShaderInfo:
                 arrow = (flip(tip), location) if arriving else (location, tip)
                 self.add_force_slope(*arrow, size, (1, 1, 1, 1), avoid=side)
         self.add_reference_axes(reference_axes, size)
+        self.add_global_axes(location, size, first)
         if not np.allclose(rotation, np.eye(3)):
             drawn = [vector * scale for vector, *_ in vectors] + ([resultant * scale] if show_resultant else [])
             self.add_point_axes(location, rotation, size, slope, drawn)
@@ -755,9 +757,32 @@ class ShaderInfo:
             label += self.get_unknown_marks(activity)[0] + (" (push)" if activity in pushes else "")
             self.add_force_arrow(location, tip, color, label, size, spacing=0.3, force_of=activity)
             drawn.append(tip - location)
+        self.add_global_axes(location, size, start[0])
         self.add_point_axes(location, rotation, size, slope, drawn)
         for entry in self.info[start[0] :] + self.text_info[start[1] :]:
             entry["object"] = object_name
+
+    def add_global_axes(self, location: np.ndarray, size: float, first: int = 0) -> None:
+        """Mark the global X and Z axes through a point, faint and dashed, named at their positive ends, so that a
+        diagram reads on its own, as a report's does. Y runs into the view.
+
+        :param first: Where the point's drawing starts in the drawing data: each way, an axis reaches just past
+            what is drawn there, or a short way if nothing is.
+        """
+        ends = [
+            np.array(p) - location
+            for entry in self.info[first:]
+            if (primitive := entry.get("primitive"))
+            for k in ("tail", "tip", "start", "end")
+            if (p := primitive.get(k)) is not None
+        ]
+        color, past = (0.55, 0.55, 0.55, 1), size * 0.1
+        for k, name in ((0, "+X"), (2, "+Z")):
+            axis = np.eye(3)[k]
+            low = min([0.0] + [p[k] for p in ends]) - past
+            high = max([0.0] + [p[k] for p in ends]) + past
+            self.add_dashed_line(location + axis * low, location + axis * high, size, color)
+            self.text_info.append({"position": location + axis * high, "text": name, "color": color, "away": axis})
 
     def add_point_axes(
         self,
