@@ -22,6 +22,8 @@ jobs:
       verdate: ${{ steps.verdate.outputs.verdate }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Set env
         run: echo ok go
 
@@ -79,6 +81,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Download and extract MacOSX SDK
         if: ${{ matrix.platform.name == 'macOS-x86' }}
@@ -127,6 +130,8 @@ jobs:
       NUM_SUPPORTED_VERSIONS: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up uv
         uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
