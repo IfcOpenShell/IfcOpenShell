@@ -122,13 +122,6 @@ jobs:
         run: npm run lint
         continue-on-error: true
 
-      # `check-whitespace` already covers tracked `*.ts` files, this narrows the
-      # line ending check to the sources that are published to npm.
-      - name: Check TypeScript whitespace
-        id: ts-whitespace
-        run: uv run .github/scripts/check-whitespace.py src/ts/ifcopenshell-js/src --check
-        continue-on-error: true
-
       - name: Final check
         run: |
           ERROR=0
@@ -152,8 +145,5 @@ jobs:
           fi
           if [ "${{ steps.ts-eslint.outcome }}" != "success" ]; then
             echo "::error::ESLint (TypeScript) failed, see 'ESLint (TypeScript)' step for the details." && ERROR=1
-          fi
-          if [ "${{ steps.ts-whitespace.outcome }}" != "success" ]; then
-            echo "::error::TypeScript whitespace check failed, see 'Check TypeScript whitespace' step for the details." && ERROR=1
           fi
           exit $ERROR
