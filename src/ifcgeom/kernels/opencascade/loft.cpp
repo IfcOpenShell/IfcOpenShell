@@ -112,7 +112,11 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
                 builder.AddWire(w2);
                 builder.Build();
                 if (!builder.IsDone()) {
+#if OCC_VERSION_HEX >= 0x70800
                     logger_.error("OpenCascade kernel: loft wire construction failed; BRepOffsetAPI_ThruSections status=" + std::to_string(static_cast<int>(builder.GetStatus())), loft->instance);
+#else
+                    logger_.error("OpenCascade kernel: loft wire construction failed", loft->instance);
+#endif
                     return false;
                 }
                 for (TopExp_Explorer exp(builder.Shape(), TopAbs_FACE); exp.More(); exp.Next()) {
