@@ -491,6 +491,16 @@ def get_force_terms(activity: ifcopenshell.entity_instance, i: int) -> dict[str,
             force["slope"] = slope
             force["direction"] = f"{rise:g}:{run:g} slope, {force['direction']}"
             force["terms"] = get_slope_terms(x, z, rise, run)
+        # Entered against the point's own axes, as a primed eighth in its name records, it is described so; its
+        # components are still added along X and Z.
+        primed = re.search(r"(?: at (-?[\d.]+):(-?[\d.]+))? (Q[1-8])′$", load.Name or "")
+        connects = activity.AssignedToStructuralItem
+        if primed and connects and (tilt := tool.Structural.get_axes_tilt(connects[0].RelatingElement)):
+            local, local_angle, _, _ = tool.Structural.get_eighth(*tool.Structural.to_axes(x, z, tilt), primed[3])
+            words = EIGHTH_AXES[local].replace("X", "x′").replace("Z", "z′")
+            force["direction"] = f"{local_angle:.1f}° {local}′, {words}"
+            if primed[1]:
+                force["direction"] = f"{float(primed[1]):g}:{float(primed[2]):g} slope, {force['direction']}"
     force["given"] = tool.Structural.get_known_component(activity) if force["in_plane"] else None
     if tool.Structural.get_push(activity):
         force["push"] = True

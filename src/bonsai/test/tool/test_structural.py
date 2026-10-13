@@ -346,3 +346,16 @@ class TestBoxCrossesSegments(NewFile):
 
     def test_any_of_several(self):
         assert box_crosses_segments(0, 0, 10, 5, [((-5, 8), (15, 8)), ((5, -5), (5, 10))])
+
+
+class TestPointAxesComponents(NewFile):
+    def test_global_components_along_tilted_axes(self):
+        # Axes tilted 30 degrees: x' up a 30 degree incline, z' square to it.
+        x, z = subject.to_axes(math.cos(math.radians(30)), math.sin(math.radians(30)), 30)
+        assert math.isclose(x, 1) and math.isclose(z, 0, abs_tol=1e-12)
+        x, z = subject.to_axes(0, 1, 30)
+        assert math.isclose(x, 0.5) and math.isclose(z, math.cos(math.radians(30)))
+
+    def test_back_to_global(self):
+        x, z = subject.from_axes(*subject.to_axes(-146.19, -53.21, -30), -30)
+        assert math.isclose(x, -146.19) and math.isclose(z, -53.21)

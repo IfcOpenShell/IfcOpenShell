@@ -287,6 +287,18 @@ class Structural(bonsai.core.tool.Structural):
         return ("SLOPE" if slope else "ANGLE"), eighth, angle, slope
 
     @classmethod
+    def to_axes(cls, x: float, z: float, tilt: float) -> tuple[float, float]:
+        """Global X and Z components as components along axes tilted by degrees in the X-Z plane, x' and z'"""
+        c, s = math.cos(math.radians(tilt)), math.sin(math.radians(tilt))
+        return x * c + z * s, -x * s + z * c
+
+    @classmethod
+    def from_axes(cls, x: float, z: float, tilt: float) -> tuple[float, float]:
+        """Components along axes tilted by degrees in the X-Z plane, x' and z', as global X and Z components"""
+        c, s = math.cos(math.radians(tilt)), math.sin(math.radians(tilt))
+        return x * c - z * s, x * s + z * c
+
+    @classmethod
     def get_activity_load_case(
         cls, activity: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
