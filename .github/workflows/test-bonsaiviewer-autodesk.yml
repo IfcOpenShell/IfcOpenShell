@@ -4,6 +4,8 @@
 # bundles dist/autodesk/ into the Bonsai Viewer archive.
 name: Test Bonsai Viewer Autodesk
 
+permissions: {}
+
 on:
   workflow_dispatch:
   push:

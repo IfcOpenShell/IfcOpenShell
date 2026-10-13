@@ -1,5 +1,7 @@
 name: Publish IfcCityJSON PyPI
 
+permissions: {}
+
 on:
   workflow_dispatch:
 

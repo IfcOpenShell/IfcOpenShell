@@ -1,5 +1,7 @@
 name: Test Lint
 
+permissions: {}
+
 on:
   push:
     branches: [v0.9.0]

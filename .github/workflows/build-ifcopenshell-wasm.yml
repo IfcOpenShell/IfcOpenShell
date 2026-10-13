@@ -1,5 +1,7 @@
 name: Build IfcOpenShell WASM
 
+permissions: {}
+
 on:
   workflow_dispatch:
 

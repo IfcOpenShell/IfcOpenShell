@@ -1,5 +1,7 @@
 name: Build IfcOpenShell Linux
 
+permissions: {}
+
 on:
   workflow_dispatch:
 

@@ -1,5 +1,7 @@
 name: Publish BCF PyPI
 
+permissions: {}
+
 on:
   workflow_dispatch:
 

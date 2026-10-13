@@ -1,5 +1,7 @@
 name: Publish IfcCSV PyPI
 
+permissions: {}
+
 on:
   workflow_dispatch:
 

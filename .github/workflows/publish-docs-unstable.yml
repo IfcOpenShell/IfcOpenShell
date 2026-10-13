@@ -1,5 +1,7 @@
 name: Publish Docs Unstable
 
+permissions: {}
+
 # Publishes into subdirectories of docs.bonsaibim.org. The stable docs and the
 # landing page in the same repository are published by the bonsai-docs
 # workflow of https://github.com/IfcOpenShell/website on release.

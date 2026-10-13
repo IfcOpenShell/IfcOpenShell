@@ -1,5 +1,7 @@
 name: Publish Ifc5d PyPI
 
+permissions: {}
+
 on:
   workflow_dispatch:
 
