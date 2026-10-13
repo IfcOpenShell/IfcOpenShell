@@ -74,6 +74,6 @@ def _add_segment_to_layout(
     # _add_segment_to_curve maps the layout segment to the appropriate IfcCurveSegment type and adds it to the curve.
     curve = ifcopenshell.api.alignment.get_layout_curve(layout)
     if curve:
-        _add_segment_to_curve(file, layout_segment, curve)
+        _add_segment_to_curve(file, layout_segment, curve, end_point)
 
     return end_point

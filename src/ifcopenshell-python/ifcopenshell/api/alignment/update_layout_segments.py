@@ -197,7 +197,7 @@ def update_layout_segments(
     for segment in ordered:
         end_point = _get_segment_endpoint(file, segment)
         if curve is not None:
-            _add_segment_to_curve(file, segment, curve)
+            _add_segment_to_curve(file, segment, curve, end_point)
     if terminator is not None and end_point is not None:
         _update_zero_length_segment_placement(file, terminator, end_point)
 

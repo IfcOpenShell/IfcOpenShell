@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -45,7 +45,8 @@ def _add_curve_segment_to_composite_curve(
     layout_segment: entity_instance,
     curve_segment: entity_instance,
     composite_curve: entity_instance,
-) -> Union[np.array, None]:
+    end_point: Optional[np.ndarray] = None,
+) -> Union[np.ndarray, None]:
     """
     Adds a curve segment to a composite curve and returns the end point of the added segment.
 
@@ -53,7 +54,9 @@ def _add_curve_segment_to_composite_curve(
     :param layout_segment: The layout segment
     :param curve_segment: The curve segment to be added
     :param composite_curve: The composite curve to which the segment will be added
-    :return: The end point of the added segment or None if an error occurs
+    :param end_point: The end point of the layout segment, if the caller already has it. It is only needed
+        when the curve ends with a zero length segment, and is computed then if not given.
+    :return: The end point of the layout segment, or None if it was neither given nor needed
     """
     if 0 < len(curve_segment.UsingCurves):
         raise TypeError("IfcCurveSegment cannot belong to other curves")
@@ -109,8 +112,9 @@ def _add_curve_segment_to_composite_curve(
     if prev_segment:
         _update_curve_segment_transition_code(prev_segment, curve_segment)
 
-    end_point = _get_segment_endpoint(file, layout_segment)
     if zero_length_segment:
+        if end_point is None:
+            end_point = _get_segment_endpoint(file, layout_segment)
         _update_zero_length_segment_placement(file, zero_length_segment, end_point)
         _update_curve_segment_transition_code(curve_segment, zero_length_segment)
 
@@ -118,8 +122,11 @@ def _add_curve_segment_to_composite_curve(
 
 
 def _add_segment_to_curve(
-    file: ifcopenshell.file, layout_segment: entity_instance, curve: entity_instance
-) -> Union[np.array, None]:
+    file: ifcopenshell.file,
+    layout_segment: entity_instance,
+    curve: entity_instance,
+    end_point: Optional[np.ndarray] = None,
+) -> Union[np.ndarray, None]:
     """
     Creates an IfcCurveSegment from the IfcAlignmentSegment and adds it to the representation curve. The IfcCurveSegment is added
     at the end of the curve, but before the manditory zero length segment. The IfcCurveSegment.Transition for the segment
@@ -127,7 +134,8 @@ def _add_segment_to_curve(
 
     :param segment: The segment to be added to the curve
     :param curve: The representation curve receiving the segment
-    :return: None
+    :param end_point: The end point of the layout segment, if the caller already has it, so it isn't computed again
+    :return: The end point of the layout segment, or None if it was neither given nor needed
     """
     expected_types = ["IfcAlignmentSegment"]
     if not layout_segment.is_a() in expected_types:
@@ -159,12 +167,11 @@ def _add_segment_to_curve(
     else:
         assert False
 
-    end_point = ...
+    # a helmert curve maps to two curve segments that share the layout segment's end point, so it's computed at most once
     for mapped_segment in mapped_segments:
         if mapped_segment:
-            end_point = _add_curve_segment_to_composite_curve(file, layout_segment, mapped_segment, curve)
+            end_point = _add_curve_segment_to_composite_curve(file, layout_segment, mapped_segment, curve, end_point)
 
-    assert end_point is not ...
     return end_point
 
 
