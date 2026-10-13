@@ -1,7 +1,8 @@
 #include "function_item_evaluator.h"
 #include "profile_helper.h"
 
-#include <boost/math/quadrature/trapezoidal.hpp>
+#include <boost/math/quadrature/gauss_kronrod.hpp>
+#include <complex>
 
 using namespace ifcopenshell::geom;
 
@@ -13,10 +14,13 @@ std::vector<double> ifcopenshell::geom::helmert_curve_point(double A0, double A1
        return a0 + a1 + a2;
     };
 
-    auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
-    auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
-    auto x = boost::math::quadrature::trapezoidal(fn_x, 0.0, s);
-    auto y = boost::math::quadrature::trapezoidal(fn_y, 0.0, s);
+    // The components are integrated as one complex value so the tolerance is relative to the chord, not to y, which
+    // can be zero. The integral is taken over 0 to 1, scaled by s, because Boost compares each interval's error
+    // estimate, which isn't scaled by its width, with a tolerance that is.
+    auto tangent = [theta, s](double t) { return std::polar(1.0, theta(s * t)); };
+    auto z = s * boost::math::quadrature::gauss_kronrod<double, 15>::integrate(tangent, 0.0, 1.0, 15, 1.0e-12);
+    auto x = z.real();
+    auto y = z.imag();
     auto angle = theta(s);
     return {x, y, angle};
 }
