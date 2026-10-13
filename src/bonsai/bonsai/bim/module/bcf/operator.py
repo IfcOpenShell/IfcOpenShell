@@ -1178,6 +1178,9 @@ class AddBcfComment(bpy.types.Operator):
 class ActivateBcfViewpoint(bpy.types.Operator):
     bl_idname = "bim.activate_bcf_viewpoint"
     bl_label = "Activate BCF Viewpoint"
+    bl_description = (
+        "Activate the BCF viewpoint.\n\nViewpoint colours are only visible in Solid shading with Object colour"
+    )
     bl_options = {"REGISTER", "UNDO"}
     viewpoint_guid: bpy.props.StringProperty(
         name="Viewpoint GUID",
