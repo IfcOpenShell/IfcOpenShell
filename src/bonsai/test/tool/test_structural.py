@@ -357,5 +357,5 @@ class TestPointAxesComponents(NewFile):
         assert math.isclose(x, 0.5) and math.isclose(z, math.cos(math.radians(30)))
 
     def test_back_to_global(self):
-        x, z = subject.from_axes(*subject.to_axes(-146.19, -53.21, -30), -30)
-        assert math.isclose(x, -146.19) and math.isclose(z, -53.21)
+        x, z = subject.from_axes(*subject.to_axes(3.0, -4.0, -25), -25)
+        assert math.isclose(x, 3.0) and math.isclose(z, -4.0)
