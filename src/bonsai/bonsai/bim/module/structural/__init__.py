@@ -58,6 +58,7 @@ classes = (
     operator.ReverseStructuralActivities,
     operator.ApplyStructuralLoad,
     operator.EditStructuralLoadValues,
+    operator.AddStructuralLoadAtPoint,
     operator.EditStructuralResultant,
     operator.ShowStructuralLoadCase,
     operator.ExportStructuralCalculations,
