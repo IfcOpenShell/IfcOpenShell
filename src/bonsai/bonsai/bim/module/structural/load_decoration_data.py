@@ -646,8 +646,8 @@ class ShaderInfo:
         running = np.zeros(3)
         arcs_at_tail: dict[tuple, int] = {}
         reference_axes: dict[tuple, tuple] = {}
-        # In a tip-to-tail chain every tip is the next tail, so labels go at the middle of each arrow, outside
-        # the polygon the chain and its resultant make; elsewhere tails are shared, so labels go at the tips.
+        # Labels go at the tips. In a tip-to-tail chain, where every tip is the next tail, they lean outside the
+        # polygon the chain and its resultant make, and keep off the next arrow as labels keep off lines.
         chain = np.cumsum([np.zeros(3)] + [vector for vector, *_ in vectors], axis=0) * scale + location
         centre = chain.mean(axis=0) if mode == "TIP_TO_TAIL" else None
         # A push arrives at its point. Drawn alone, its picture is mirrored through the point, arrows
@@ -685,14 +685,14 @@ class ShaderInfo:
                 self.add_force_arrow(tail, tip, color, label, size, activity=activity, force_of=force_of)
             else:
                 side = self.get_label_side(vector, (tail + tip) / 2 - centre)
+                onward = vector / np.linalg.norm(vector) + side  # Past the tip, leaning outside the polygon.
                 self.add_force_arrow(
                     tail,
                     tip,
                     color,
                     label,
                     size,
-                    label_away=side,
-                    label_at_middle=True,
+                    label_away=onward / np.linalg.norm(onward),
                     activity=activity,
                     force_of=force_of,
                 )
@@ -728,7 +728,6 @@ class ShaderInfo:
                 size,
                 spacing=0.3,
                 label_away=None if arriving else side,
-                label_at_middle=centre is not None,
                 activity=single,
                 resultant_of=activities if len(activities) > 1 else None,
                 force_of=single,
@@ -1145,7 +1144,6 @@ class ShaderInfo:
         size: float,
         spacing: float = 0.2,
         label_away: Union[np.ndarray, None] = None,
-        label_at_middle: bool = False,
         activity: int = 0,
         resultant_of: Union[list[int], None] = None,
         force_of: int = 0,
@@ -1191,7 +1189,7 @@ class ShaderInfo:
             self.pickables.append(pickable)
         # Labelled beside the tip, as arrows often share their tail.
         away = (-direction if label_at_tail else direction) if label_away is None else label_away
-        position = (tail + tip) / 2 if label_at_middle else tail if label_at_tail else tip
+        position = tail if label_at_tail else tip
         text = {"position": position, "text": label, "color": color, "away": away}
         if force_of:
             text["force_of"] = force_of
