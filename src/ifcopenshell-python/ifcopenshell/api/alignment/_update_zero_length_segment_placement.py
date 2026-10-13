@@ -65,7 +65,7 @@ def _update_zero_length_segment_placement(
             zero_length_segment.Placement.Axis.DirectionRatios = (0.0, cos_phi, sin_phi)
     elif zero_length_segment.DesignParameters.is_a("IfcAlignmentHorizontalSegment"):
         zero_length_segment.DesignParameters.StartPoint.Coordinates = (x, y)
-        zero_length_segment.DesignParameters.StartDirection = math.atan(Rdy / Rdx)
+        zero_length_segment.DesignParameters.StartDirection = math.atan2(Rdy, Rdx)
     elif zero_length_segment.DesignParameters.is_a("IfcAlignmentVerticalSegment"):
         zero_length_segment.DesignParameters.StartDistAlong = x
         zero_length_segment.DesignParameters.StartHeight = y
