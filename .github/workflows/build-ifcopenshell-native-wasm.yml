@@ -81,7 +81,7 @@ jobs:
         run: uv run --with clang==21.1.7 ./IfcOpenShell/nix/build-all.py -v --native-wasm --build-cfg Release
 
       - name: Verify artifacts
-        run: python3 IfcOpenShell/.github/scripts/verify-wasm-artifacts.py
+        run: uv run IfcOpenShell/.github/scripts/verify-wasm-artifacts.py
 
       - name: Run the basic I/O tests
         # `tests/io.test.ts` is the port of `test/tests.py`; it runs against the
