@@ -359,6 +359,13 @@ class TestImportItem(NewFile):
         expected = rotation[:3, :3] @ (self.FAR + (0.5, 0.0, 0.0))
         assert np.allclose(obj.matrix_world.translation, expected, atol=1e-3)
 
+    def test_a_far_item_gets_its_own_offset(self):
+        builder = ShapeBuilder(self.create_file())
+        obj = self.import_item(builder.mesh(self.CUBE + self.FAR, self.CUBE_FACES), np.eye(4))
+        assert subject.get_cartesian_point_offset(obj) is not None
+        assert np.abs([v.co[:] for v in obj.data.vertices]).max() < tool.Loader.settings.distance_limit
+        assert self.world_vertices(obj) == sorted(np.round(self.CUBE + self.FAR, 3).tolist())
+
 
 class TestIsBodyRepresentation(NewFile):
     def test_run(self):
