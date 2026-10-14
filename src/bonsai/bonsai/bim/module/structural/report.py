@@ -1250,7 +1250,7 @@ def get_svg_label(
     direction = direction / np.linalg.norm(direction) if np.linalg.norm(direction) else np.array((1.0, 0.0))
     content = str(text["text"])
     # Found values a little larger than the 13 px of the rest, rather than bold, which reads badly in SVG.
-    font_size = 15 if found else 13
+    font_size = (15 if found else 13) * tool.Structural.get_structural_props().label_size
     width, height = 7.5 * font_size / 13 * len(get_shown_text(content)), 14.0 * font_size / 13
 
     def get_layout(towards: np.ndarray, distance: float) -> tuple[np.ndarray, str, float, float]:
@@ -1286,7 +1286,7 @@ def get_svg_label(
     escaped = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     # Symbols' subscripts, written F_{x1} as in the steps, set lower and smaller; Unicode has no subscript z.
     escaped = SUBSCRIPT.sub(r'<tspan baseline-shift="sub" font-size="75%">\1</tspan>', escaped)
-    size = f' font-size="{font_size}"' if found else ""
+    size = f' font-size="{font_size:.1f}"'
     # On a white box, so that lines running under it do not cross the text.
     return (
         f'<rect x="{left - 2:.1f}" y="{top - 1:.1f}" width="{width + 4:.1f}" height="{height + 2:.1f}" fill="white"/>'
