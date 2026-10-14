@@ -53,7 +53,6 @@ import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
@@ -908,6 +907,14 @@ class Geometry(bonsai.core.tool.Geometry):
         if (offset := cls.get_cartesian_point_offset(obj)) is not None:
             matrix[:3, 3] -= matrix[:3, :3] @ offset
         return matrix
+
+    @classmethod
+    def record_item_offset(cls, obj: bpy.types.Object, offset: npt.NDArray[np.float64]) -> None:
+        """Record on an item object and its mesh that the mesh is stored relative to ``offset``."""
+        tool.Loader.record_cartesian_point_offset(obj.data, offset)
+        oprops = tool.Blender.get_object_bim_props(obj)
+        oprops.blender_offset_type = "CARTESIAN_POINT" if offset.any() else "NONE"
+        oprops.cartesian_point_offset = obj.data.get("cartesian_point_offset", "")
 
     @classmethod
     def get_element_type(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -2335,7 +2342,6 @@ class Geometry(bonsai.core.tool.Geometry):
         obj.data.clear_geometry()
 
         rep_matrix = cls.get_true_matrix_world(rep_obj)
-        cartesian_point_offset = cls.get_cartesian_point_offset(rep_obj)
         if item.is_a("IfcHalfSpaceSolid"):
             bm = bmesh.new()
             bmesh.ops.create_grid(bm, size=0.5)
@@ -2347,23 +2353,24 @@ class Geometry(bonsai.core.tool.Geometry):
 
             position = ifcopenshell.util.placement.get_placement(item.BaseSurface.Position, should_return_si=True)
             obj.matrix_world = Matrix((rep_matrix @ position).tolist())
-        elif item.is_a("IfcVertex"):
-            co = np.array(item.VertexGeometry.Coordinates) * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            if cartesian_point_offset is not None:
-                co = co - cartesian_point_offset
-            obj.data.from_pydata([co], [], [])
         else:
-            geometry = tool.Loader.create_generic_shape(item)
-            verts = ifcopenshell.util.shape.get_vertices(geometry)
-            if cartesian_point_offset is not None:
-                verts = verts - cartesian_point_offset
-            tool.Loader.convert_geometry_to_mesh(geometry, obj.data, verts=verts)
+            if item.is_a("IfcVertex"):
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                verts = np.array([item.VertexGeometry.Coordinates], dtype=np.float64) * unit_scale
+                verts, cartesian_point_offset = tool.Loader.shift_far_vertices(verts)
+                obj.data.from_pydata(verts.tolist(), [], [])
+            else:
+                geometry = tool.Loader.create_generic_shape(item)
+                verts, cartesian_point_offset = tool.Loader.get_rebased_vertices(geometry)
+                tool.Loader.convert_geometry_to_mesh(geometry, obj.data, verts=verts)
 
-            if ios_materials := list(obj.data["ios_materials"]):
-                material = tool.Ifc.get_object(tool.Ifc.get().by_id(ios_materials[0]))
-                obj.data.materials.append(material)
+                if ios_materials := list(obj.data["ios_materials"]):
+                    material = tool.Ifc.get_object(tool.Ifc.get().by_id(ios_materials[0]))
+                    obj.data.materials.append(material)
 
-            obj.matrix_world = rep_obj.matrix_world.copy()
+            # An item with far away coordinates gets its own offset, like a representation does.
+            cls.record_item_offset(obj, cartesian_point_offset)
+            obj.matrix_world = Matrix(tool.Loader.apply_cartesian_point_offset(obj.data, rep_matrix).tolist())
 
         if is_swept_area := item.is_a("IfcSweptAreaSolid"):
             position = item.Position
@@ -2377,6 +2384,8 @@ class Geometry(bonsai.core.tool.Geometry):
 
                 obj.matrix_world = item_matrix
                 obj.data.transform(transformation_i)
+                # The vertices are now in the item's own frame.
+                cls.record_item_offset(obj, np.zeros(3))
             cls.record_object_position(obj)
 
         # ADD THIS AT THE END - Store initial vertex order for annotations
@@ -2439,7 +2448,7 @@ class Geometry(bonsai.core.tool.Geometry):
         assert isinstance(obj.data, bpy.types.Mesh)
         verts = tool.Blender.get_verts_coordinates(obj.data.vertices)
         verts = verts.astype("d")
-        if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj)) is not None:
+        if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(obj)) is not None:
             verts += coordinate_offset
         verts /= unit_scale
 
