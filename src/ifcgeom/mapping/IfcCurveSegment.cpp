@@ -580,7 +580,8 @@ class curve_segment_evaluator {
             }
 
             if (!slope.has_value()) {
-                slope = [A, L](double /*t*/) -> double { return A ? L * A / fabs(pow(A, 3)) : 0.0; };
+                // the derivative of cant
+                slope = [A, L](double /*t*/) -> double { return A ? L * L * A / fabs(pow(A, 3)) : 0.0; };
             }
 
            set_cant_spiral_function(*super,*slope, cant);
@@ -633,8 +634,9 @@ class curve_segment_evaluator {
             }
 
             if (!slope.has_value()) {
+                // the derivative of cant
                 slope = [cosine_term, L](double t) -> double {
-                    auto a1 = -(PI / cosine_term) * sin(PI * t / L);
+                    auto a1 = -(PI * L / cosine_term) * sin(PI * t / L);
                     return a1;
                 };
             }
@@ -701,9 +703,10 @@ class curve_segment_evaluator {
             }
 
             if (!slope.has_value()) {
+                // the derivative of cant
                 slope = [linear_term, sine_term, L](double t) -> double {
-                    auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / linear_term.value(), 2.0) * (1.0 / L) : 0.0;
-                    auto a2 = (2 * PI / sine_term) * cos(2 * PI * t / L);
+                    auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / linear_term.value(), 2.0) : 0.0;
+                    auto a2 = (2 * PI * L / sine_term) * cos(2 * PI * t / L);
                     return a1 + a2;
                 };
             }
