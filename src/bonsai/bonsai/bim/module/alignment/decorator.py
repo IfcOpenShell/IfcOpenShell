@@ -23,24 +23,26 @@ alignment-related operations, such as segment highlighting and the
 vertical profile view.
 """
 
-import bpy
-import blf
-import gpu
 import math
-import mathutils
-import numpy as np
+from typing import Optional
+
+import blf
+import bpy
+import gpu
 import ifcopenshell.api.alignment
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-from typing import Optional, Tuple
+import mathutils
+import numpy as np
 from bpy.types import SpaceView3D
 from bpy_extras.view3d_utils import location_3d_to_region_2d, region_2d_to_location_3d
 from gpu_extras.batch import batch_for_shader
 from ifcopenshell.api.alignment._get_segment_start_point_label import (
     _get_segment_start_point_label,
 )
+
+import bonsai.tool as tool
 
 
 class AlignmentSegmentDecorator:
@@ -69,14 +71,14 @@ class AlignmentSegmentDecorator:
     _baseline_active_ptr: int = 0
     _baseline_selected_ptrs: frozenset = frozenset()
 
-    COLOR_HIGHLIGHT = (1.0, 0.55, 0.0, 1.0)        # Orange - segment polyline
-    COLOR_TANGENT = (0.75, 0.75, 0.75, 0.85)        # Light gray - tangent extension lines
-    COLOR_PI = (1.0, 0.85, 0.25, 1.0)               # Yellow - PI crosshair
-    COLOR_LABEL = (1.0, 1.0, 1.0, 1.0)              # White - fallback label
-    COLOR_LABEL_PC = (1.0, 0.78, 0.40, 1.0)         # Warm orange - PC label
-    COLOR_LABEL_PT = (0.60, 0.88, 1.0, 1.0)         # Light blue - PT label
-    COLOR_LABEL_PI = (1.0, 0.90, 0.30, 1.0)         # Yellow - PI label
-    COLOR_CURVE_DATA_BG = (0.0, 0.0, 0.0, 0.6)      # Translucent black - curve data block
+    COLOR_HIGHLIGHT = (1.0, 0.55, 0.0, 1.0)  # Orange - segment polyline
+    COLOR_TANGENT = (0.75, 0.75, 0.75, 0.85)  # Light gray - tangent extension lines
+    COLOR_PI = (1.0, 0.85, 0.25, 1.0)  # Yellow - PI crosshair
+    COLOR_LABEL = (1.0, 1.0, 1.0, 1.0)  # White - fallback label
+    COLOR_LABEL_PC = (1.0, 0.78, 0.40, 1.0)  # Warm orange - PC label
+    COLOR_LABEL_PT = (0.60, 0.88, 1.0, 1.0)  # Light blue - PT label
+    COLOR_LABEL_PI = (1.0, 0.90, 0.30, 1.0)  # Yellow - PI label
+    COLOR_CURVE_DATA_BG = (0.0, 0.0, 0.0, 0.6)  # Translucent black - curve data block
     LINE_WIDTH = 4.0
     LINE_TANGENT = 1.5
 
@@ -91,12 +93,8 @@ class AlignmentSegmentDecorator:
             return
 
         handler = cls()
-        cls.handlers.append(
-            SpaceView3D.draw_handler_add(handler.draw_segment, (context,), "WINDOW", "POST_VIEW")
-        )
-        cls.handlers.append(
-            SpaceView3D.draw_handler_add(handler.draw_label, (context,), "WINDOW", "POST_PIXEL")
-        )
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_segment, (context,), "WINDOW", "POST_VIEW"))
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_label, (context,), "WINDOW", "POST_PIXEL"))
         cls.is_installed = True
         cls._capture_selection_baseline(context)
 
@@ -193,6 +191,7 @@ class AlignmentSegmentDecorator:
     def _compute_segment_geometry(cls, segment_id: int) -> None:
         """Extract world-space polyline vertices for the given IfcAlignmentSegment."""
         import logging
+
         import bonsai.bim.import_ifc
 
         ifc_file = tool.Ifc.get()
@@ -219,9 +218,7 @@ class AlignmentSegmentDecorator:
         if not layout_curve:
             return
 
-        mapped_segments = tool.Alignment._map_alignment_segment_to_curve_segments(
-            segment, layout, layout_curve
-        )
+        mapped_segments = tool.Alignment._map_alignment_segment_to_curve_segments(segment, layout, layout_curve)
 
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
@@ -284,8 +281,8 @@ class AlignmentSegmentDecorator:
 
         # Collect all horizontal segments in order
         segments = []
-        for seg_rel in (getattr(layout, "IsNestedBy", []) or []):
-            for seg in (seg_rel.RelatedObjects or []):
+        for seg_rel in getattr(layout, "IsNestedBy", []) or []:
+            for seg in seg_rel.RelatedObjects or []:
                 if seg.is_a("IfcAlignmentSegment") and seg.DesignParameters:
                     segments.append(seg)
 
@@ -321,7 +318,7 @@ class AlignmentSegmentDecorator:
         s_w = cls.segment_verts[0]
         e_w = cls.segment_verts[-1]
         ifc_dx, ifc_dy = ex - sx, ey - sy
-        ifc_len_sq = ifc_dx ** 2 + ifc_dy ** 2
+        ifc_len_sq = ifc_dx**2 + ifc_dy**2
         if ifc_len_sq < 1e-12:
             return
 
@@ -346,18 +343,13 @@ class AlignmentSegmentDecorator:
         # start_station + distance_along (what this used to do) is only
         # correct when the alignment has no equations.
         pc_distance_along = sum(
-            getattr(segments[i].DesignParameters, "SegmentLength", 0.0) or 0.0
-            for i in range(seg_idx)
+            getattr(segments[i].DesignParameters, "SegmentLength", 0.0) or 0.0 for i in range(seg_idx)
         )
         pt_distance_along = pc_distance_along + seg_len
         alignment = cls._get_alignment(layout)
         if alignment is not None:
-            pc_station = ifcopenshell.api.alignment.station_from_distance_along(
-                ifc_file, alignment, pc_distance_along
-            )
-            pt_station = ifcopenshell.api.alignment.station_from_distance_along(
-                ifc_file, alignment, pt_distance_along
-            )
+            pc_station = ifcopenshell.api.alignment.station_from_distance_along(ifc_file, alignment, pc_distance_along)
+            pt_station = ifcopenshell.api.alignment.station_from_distance_along(ifc_file, alignment, pt_distance_along)
         else:
             pc_station = pc_distance_along
             pt_station = pt_distance_along
@@ -433,16 +425,18 @@ class AlignmentSegmentDecorator:
             except Exception:
                 pass
 
-        cls.tangent_data.update({
-            "has_pi": True,
-            "pi_world": (pi_wx, pi_wy, pi_wz),
-            "pi_en": (pi_enh[0], pi_enh[1]),
-            "pi_station": pi_station,
-            "pc_perp": pc_perp,          # (x, y) normalized world perp at PC
-            "pt_perp": pt_perp,          # (x, y) normalized world perp at PT
-            "center_world": center_world, # 3-tuple or None
-            "center_en": center_en,       # (e, n) or None
-        })
+        cls.tangent_data.update(
+            {
+                "has_pi": True,
+                "pi_world": (pi_wx, pi_wy, pi_wz),
+                "pi_en": (pi_enh[0], pi_enh[1]),
+                "pi_station": pi_station,
+                "pc_perp": pc_perp,  # (x, y) normalized world perp at PC
+                "pt_perp": pt_perp,  # (x, y) normalized world perp at PT
+                "center_world": center_world,  # 3-tuple or None
+                "center_en": center_en,  # (e, n) or None
+            }
+        )
 
     @classmethod
     def _get_alignment(cls, horizontal_layout):
@@ -511,9 +505,7 @@ class AlignmentSegmentDecorator:
             if center:
                 # Circular arc: draw full radius lines from PC and PT to center
                 for endpoint in [sw, ew]:
-                    batch = batch_for_shader(
-                        shader, "LINES", {"pos": [endpoint, center]}, indices=[[0, 1]]
-                    )
+                    batch = batch_for_shader(shader, "LINES", {"pos": [endpoint, center]}, indices=[[0, 1]])
                     batch.draw(shader)
 
                 # Center point marker (yellow crosshair scaled to view)
@@ -523,8 +515,10 @@ class AlignmentSegmentDecorator:
                 shader.uniform_float("lineWidth", 2.0)
                 shader.uniform_float("color", self.COLOR_PI)
                 mk_verts = [
-                    (cx - mk, cy, cz), (cx + mk, cy, cz),
-                    (cx, cy - mk, cz), (cx, cy + mk, cz),
+                    (cx - mk, cy, cz),
+                    (cx + mk, cy, cz),
+                    (cx, cy - mk, cz),
+                    (cx, cy + mk, cz),
                 ]
                 batch = batch_for_shader(shader, "LINES", {"pos": mk_verts}, indices=[[0, 1], [2, 3]])
                 batch.draw(shader)
@@ -539,9 +533,7 @@ class AlignmentSegmentDecorator:
                         (ex_w - px * tick, ey_w - py * tick, ez_w),
                         (ex_w + px * tick, ey_w + py * tick, ez_w),
                     ]
-                    batch = batch_for_shader(
-                        shader, "LINES", {"pos": tick_verts}, indices=[[0, 1]]
-                    )
+                    batch = batch_for_shader(shader, "LINES", {"pos": tick_verts}, indices=[[0, 1]])
                     batch.draw(shader)
 
         # Orange highlight polyline on top
@@ -598,9 +590,7 @@ class AlignmentSegmentDecorator:
         blf.size(font_id, font_size)
         width = max(blf.dimensions(font_id, line)[0] for line in lines) + 2 * pad
         height = len(lines) * line_h + 2 * pad
-        x0, y0, x1, y1 = _place_label_block(
-            (ax, ay), inward, width, height, occupied, region.width, region.height
-        )
+        x0, y0, x1, y1 = _place_label_block((ax, ay), inward, width, height, occupied, region.width, region.height)
 
         gpu.state.blend_set("ALPHA")
         shader = gpu.shader.from_builtin("UNIFORM_COLOR")
@@ -707,32 +697,50 @@ class AlignmentSegmentDecorator:
             if has_pi:
                 # Curve segment: start tag / PI / end tag
                 draw_point_label(
-                    td["start_world"], td["start_label"], fmt_sta(td["pc_station"]),
-                    fmt_en(*td["start_en"]), self.COLOR_LABEL_PC,
+                    td["start_world"],
+                    td["start_label"],
+                    fmt_sta(td["pc_station"]),
+                    fmt_en(*td["start_en"]),
+                    self.COLOR_LABEL_PC,
                 )
                 draw_point_label(
-                    td["pi_world"], "P.I.", fmt_sta(td["pi_station"]),
-                    fmt_en(*td["pi_en"]), self.COLOR_LABEL_PI,
+                    td["pi_world"],
+                    "P.I.",
+                    fmt_sta(td["pi_station"]),
+                    fmt_en(*td["pi_en"]),
+                    self.COLOR_LABEL_PI,
                 )
                 draw_point_label(
-                    td["end_world"], td["end_label"], fmt_sta(td["pt_station"]),
-                    fmt_en(*td["end_en"]), self.COLOR_LABEL_PT,
+                    td["end_world"],
+                    td["end_label"],
+                    fmt_sta(td["pt_station"]),
+                    fmt_en(*td["end_en"]),
+                    self.COLOR_LABEL_PT,
                 )
                 # Center of curvature / normals-intersection label
                 if td.get("center_world") and td.get("center_en"):
                     draw_point_label(
-                        td["center_world"], "Center",
-                        None, fmt_en(*td["center_en"]), self.COLOR_PI,
+                        td["center_world"],
+                        "Center",
+                        None,
+                        fmt_en(*td["center_en"]),
+                        self.COLOR_PI,
                     )
             else:
                 # Linear segment: start and end tags (e.g. P.O.B., T.S.)
                 draw_point_label(
-                    td["start_world"], td["start_label"], fmt_sta(td["pc_station"]),
-                    fmt_en(*td["start_en"]), self.COLOR_LABEL_PC,
+                    td["start_world"],
+                    td["start_label"],
+                    fmt_sta(td["pc_station"]),
+                    fmt_en(*td["start_en"]),
+                    self.COLOR_LABEL_PC,
                 )
                 draw_point_label(
-                    td["end_world"], td["end_label"], fmt_sta(td["pt_station"]),
-                    fmt_en(*td["end_en"]), self.COLOR_LABEL_PT,
+                    td["end_world"],
+                    td["end_label"],
+                    fmt_sta(td["pt_station"]),
+                    fmt_en(*td["end_en"]),
+                    self.COLOR_LABEL_PT,
                 )
             # Drawn last, so it can be placed clear of every point label
             self._draw_curve_data(td, occupied, region, rv3d, font_id, font_size, line_h)
@@ -1007,7 +1015,7 @@ def _fmt_station(dist: float, interval: float, separator: int = 1000) -> str:
     """
     major = int(dist) // separator
     minor = dist % separator
-    n = len(str(separator - 1))          # digit count for minor part (3 for 1000, 2 for 100)
+    n = len(str(separator - 1))  # digit count for minor part (3 for 1000, 2 for 100)
     if interval >= separator / 10:
         return f"{major}+{int(round(minor)):0{n}d}"
     elif interval >= 1.0:
@@ -1173,20 +1181,20 @@ class VerticalProfileDecorator:
 
     is_installed: bool = False
     handlers: list = []
-    profile_area = None       # bpy.types.Area reference (may drift after redraws)
+    profile_area = None  # bpy.types.Area reference (may drift after redraws)
     profile_area_ptr: int = 0  # C-level area pointer — stable across Python wrapper churn
 
     # Profile data computed once on install
     segments_polylines: list = []  # list of [(dist, elev), ...] per segment
-    segments_info: list = []       # list of metadata dicts per segment
-    available_verticals: list = [] # list of (entity_id, label) for all verticals found
+    segments_info: list = []  # list of metadata dicts per segment
+    available_verticals: list = []  # list of (entity_id, label) for all verticals found
     alignment_name: str = ""
 
     # Colors for multiple vertical alignments shown simultaneously
     VERTICAL_COLORS = [
         (0.25, 0.85, 0.45, 1.0),  # Green
-        (0.45, 0.65, 1.0, 1.0),   # Blue
-        (1.0, 0.60, 0.25, 1.0),   # Orange
+        (0.45, 0.65, 1.0, 1.0),  # Blue
+        (1.0, 0.60, 0.25, 1.0),  # Orange
         (0.85, 0.45, 0.85, 1.0),  # Purple
         (0.95, 0.85, 0.20, 1.0),  # Yellow
     ]
@@ -1194,9 +1202,9 @@ class VerticalProfileDecorator:
     dist_max: float = 1.0
     elev_min: float = 0.0
     elev_max: float = 1.0
-    unit_symbol: str = "m"         # project length unit display string
+    unit_symbol: str = "m"  # project length unit display string
     station_separator: int = 1000  # value at which station '+' splits
-    _alignment = None              # IfcAlignment entity for station conversion at draw time
+    _alignment = None  # IfcAlignment entity for station conversion at draw time
 
     # Fixed vertical exaggeration: world-Z = (elevation - elev_ref) * ve. Both are
     # set once by _refit_zones (from CivilAlignmentProperties.vertical_exaggeration
@@ -1226,11 +1234,11 @@ class VerticalProfileDecorator:
 
     # Cant profile data (populated alongside elevation data)
     cant_polylines: list = []  # list of [(dist, cant_val), ...] per cant segment
-    cant_info: list = []       # list of metadata dicts per cant segment
-    available_cants: list = [] # list of (entity_id, label) for all cants found
+    cant_info: list = []  # list of metadata dicts per cant segment
+    available_cants: list = []  # list of (entity_id, label) for all cants found
     has_cant: bool = False
     cant_min: float = 0.0
-    cant_max: float = 0.005   # default small span to avoid zero-division
+    cant_max: float = 0.005  # default small span to avoid zero-division
 
     # Cant zone sizing as fractions of the elevation world-space span.
     # The cant panel sits below the elevation panel separated by a gap.
@@ -1250,25 +1258,25 @@ class VerticalProfileDecorator:
     # Left / right rail get their own curve and colour.  Cant is the deviating
     # elevation of each rail (sign preserved from the IFC), so the two are
     # plotted independently rather than collapsed to a single difference.
-    CANT_COLOR_LEFT = (0.45, 0.78, 0.95, 1.0)   # Sky blue  — left rail
+    CANT_COLOR_LEFT = (0.45, 0.78, 0.95, 1.0)  # Sky blue  — left rail
     CANT_COLOR_RIGHT = (0.98, 0.72, 0.38, 1.0)  # Amber     — right rail
     CANT_COLOR_CENTER = (0.62, 0.62, 0.66, 1.0)  # Grey     — centreline
     COLOR_CANT_GRID = (0.22, 0.22, 0.26, 1.0)
     COLOR_CANT_ZERO = (0.50, 0.50, 0.52, 1.0)
-    COLOR_CANT_SEP  = (0.48, 0.48, 0.48, 1.0)
-    COLOR_CANT_HDR  = (0.75, 0.75, 0.82, 1.0)
+    COLOR_CANT_SEP = (0.48, 0.48, 0.48, 1.0)
+    COLOR_CANT_HDR = (0.75, 0.75, 0.82, 1.0)
 
-    COLOR_GRID = (0.27, 0.27, 0.27, 1.0)       # Subtle dark-gray grid
-    COLOR_PROFILE = (0.25, 0.85, 0.45, 1.0)   # Green profile curve
+    COLOR_GRID = (0.27, 0.27, 0.27, 1.0)  # Subtle dark-gray grid
+    COLOR_PROFILE = (0.25, 0.85, 0.45, 1.0)  # Green profile curve
     COLOR_BOUNDARY = (0.90, 0.85, 0.25, 1.0)  # Yellow segment boundary dots
-    COLOR_LABEL = (0.80, 0.80, 0.80, 1.0)     # Light-gray axis labels
+    COLOR_LABEL = (0.80, 0.80, 0.80, 1.0)  # Light-gray axis labels
     COLOR_AXIS_TITLE = (0.65, 0.65, 0.65, 1.0)
     COLOR_HEADER = (0.95, 0.95, 0.95, 1.0)
     COLOR_TANGENT_VERT = (0.70, 0.70, 0.70, 0.75)  # Gray tangent extension lines
-    COLOR_BVC = (1.0, 0.78, 0.40, 1.0)             # Warm orange — BVC
-    COLOR_EVC = (0.60, 0.88, 1.0, 1.0)             # Light blue — EVC
-    COLOR_PVI_VERT = (1.0, 0.90, 0.30, 1.0)         # Yellow — PVI
-    COLOR_GRAD = (0.75, 0.95, 0.75, 1.0)            # Light green — gradient endpoints
+    COLOR_BVC = (1.0, 0.78, 0.40, 1.0)  # Warm orange — BVC
+    COLOR_EVC = (0.60, 0.88, 1.0, 1.0)  # Light blue — EVC
+    COLOR_PVI_VERT = (1.0, 0.90, 0.30, 1.0)  # Yellow — PVI
+    COLOR_GRAD = (0.75, 0.95, 0.75, 1.0)  # Light green — gradient endpoints
     LINE_GRID = 1.0
     LINE_PROFILE = 2.5
     LINE_TANGENT_VERT = 1.0
@@ -1285,12 +1293,8 @@ class VerticalProfileDecorator:
         cls.profile_area_ptr = profile_area.as_pointer()
 
         handler = cls()
-        cls.handlers.append(
-            SpaceView3D.draw_handler_add(handler.draw_3d, (context,), "WINDOW", "POST_VIEW")
-        )
-        cls.handlers.append(
-            SpaceView3D.draw_handler_add(handler.draw_labels, (context,), "WINDOW", "POST_PIXEL")
-        )
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_3d, (context,), "WINDOW", "POST_VIEW"))
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_labels, (context,), "WINDOW", "POST_PIXEL"))
         cls.is_installed = True
 
     @classmethod
@@ -1729,18 +1733,20 @@ class VerticalProfileDecorator:
                     for rail, s_val, e_val in rails:
                         pts = cls._sample_cant_segment(dist, h_len, s_val, e_val, seg_type)
                         cls.cant_polylines.append(pts)
-                        cls.cant_info.append({
-                            "dist": dist,
-                            "h_len": h_len,
-                            "rail": rail,
-                            "start_cant": s_val,
-                            "end_cant": e_val,
-                            "type": seg_type,
-                            "cant_id": c_id,
-                            "cant_label": c_label,
-                            "color_idx": color_idx,
-                            "segment_id": seg.id(),
-                        })
+                        cls.cant_info.append(
+                            {
+                                "dist": dist,
+                                "h_len": h_len,
+                                "rail": rail,
+                                "start_cant": s_val,
+                                "end_cant": e_val,
+                                "type": seg_type,
+                                "cant_id": c_id,
+                                "cant_label": c_label,
+                                "color_idx": color_idx,
+                                "segment_id": seg.id(),
+                            }
+                        )
                         all_vals.extend(v for _, v in pts)
 
         if not all_vals:
@@ -1798,8 +1804,7 @@ class VerticalProfileDecorator:
         if n is None:
             n = 2 if seg_type == "LINEARTRANSITION" else 24
         return [
-            (dist + (i / n) * h_len,
-             cant_start + d * cls._cant_transition_factor(i / n, seg_type))
+            (dist + (i / n) * h_len, cant_start + d * cls._cant_transition_factor(i / n, seg_type))
             for i in range(n + 1)
         ]
 
@@ -1836,6 +1841,7 @@ class VerticalProfileDecorator:
         """
         try:
             import ifcopenshell.api.alignment as _ali
+
             if cls._alignment is not None:
                 station = _ali.station_from_distance_along(tool.Ifc.get(), cls._alignment, dist_along)
                 return _fmt_station(station, interval, cls.station_separator)
@@ -1851,7 +1857,7 @@ class VerticalProfileDecorator:
     @classmethod
     def screen_to_data(
         cls, region: "bpy.types.Region", rv3d: "bpy.types.RegionView3D", mouse_x: float, mouse_y: float
-    ) -> Optional[Tuple[float, float]]:
+    ) -> Optional[tuple[float, float]]:
         """Convert a region-relative mouse position to (distance_along, elevation).
 
         ``region``/``rv3d`` must be looked up explicitly by the caller (e.g.
@@ -1952,9 +1958,7 @@ class VerticalProfileDecorator:
                 try:
                     rv3d.view_distance = max(rv3d.view_distance * ratio, 1.0)
                     mid_z = (cls.elev_zone_top + z_bot) * 0.5
-                    rv3d.view_location = mathutils.Vector(
-                        ((cls.dist_min + cls.dist_max) * 0.5, 0.0, mid_z)
-                    )
+                    rv3d.view_location = mathutils.Vector(((cls.dist_min + cls.dist_max) * 0.5, 0.0, mid_z))
                     bpy.context.area.tag_redraw()
                 except Exception:
                     pass
@@ -1989,9 +1993,7 @@ class VerticalProfileDecorator:
             (vis_d_max + bg_margin, 0.0, vis_z_max + bg_margin),
             (vis_d_min - bg_margin, 0.0, vis_z_max + bg_margin),
         ]
-        batch_for_shader(
-            bg_shader, "TRIS", {"pos": bg_verts}, indices=[(0, 1, 2), (0, 2, 3)]
-        ).draw(bg_shader)
+        batch_for_shader(bg_shader, "TRIS", {"pos": bg_verts}, indices=[(0, 1, 2), (0, 2, 3)]).draw(bg_shader)
 
         gpu.state.blend_set("ALPHA")
         gpu.state.depth_test_set("NONE")
@@ -2007,7 +2009,8 @@ class VerticalProfileDecorator:
         # Vertical station grid lines
         for d in _frange(vis_d_min, vis_d_max, d_interval):
             batch = batch_for_shader(
-                shader, "LINES",
+                shader,
+                "LINES",
                 {"pos": [(d, 0.0, vis_z_min - z_pad), (d, 0.0, vis_z_max + z_pad)]},
                 indices=[[0, 1]],
             )
@@ -2019,7 +2022,8 @@ class VerticalProfileDecorator:
             if z < z_elev_bot - 1e-6 or z > z_elev_top + 1e-6:
                 continue
             batch = batch_for_shader(
-                shader, "LINES",
+                shader,
+                "LINES",
                 {"pos": [(vis_d_min - d_pad, 0.0, z), (vis_d_max + d_pad, 0.0, z)]},
                 indices=[[0, 1]],
             )
@@ -2095,9 +2099,7 @@ class VerticalProfileDecorator:
             evc_w = (evc_d, 0.0, cls._ez(evc_e))
             pvi_w = (pvi_d, 0.0, cls._ez(pvi_e))
             for a_pt, b_pt in [(bvc_w, pvi_w), (evc_w, pvi_w)]:
-                batch = batch_for_shader(
-                    shader, "LINES", {"pos": [a_pt, b_pt]}, indices=[[0, 1]]
-                )
+                batch = batch_for_shader(shader, "LINES", {"pos": [a_pt, b_pt]}, indices=[[0, 1]])
                 batch.draw(shader)
 
         # --- Elevation subplot — full 4-sided border box ----------------------
@@ -2105,25 +2107,33 @@ class VerticalProfileDecorator:
         shader.uniform_float("lineWidth", 1.5)
         shader.uniform_float("color", AXIS_COLOR)
         # Left Y-axis
-        batch_for_shader(shader, "LINES",
-            {"pos": [(cls.dist_min, 0.0, z_elev_bot),
-                     (cls.dist_min, 0.0, z_elev_top)]},
-            indices=[[0, 1]]).draw(shader)
+        batch_for_shader(
+            shader,
+            "LINES",
+            {"pos": [(cls.dist_min, 0.0, z_elev_bot), (cls.dist_min, 0.0, z_elev_top)]},
+            indices=[[0, 1]],
+        ).draw(shader)
         # Right border
-        batch_for_shader(shader, "LINES",
-            {"pos": [(cls.dist_max, 0.0, z_elev_bot),
-                     (cls.dist_max, 0.0, z_elev_top)]},
-            indices=[[0, 1]]).draw(shader)
+        batch_for_shader(
+            shader,
+            "LINES",
+            {"pos": [(cls.dist_max, 0.0, z_elev_bot), (cls.dist_max, 0.0, z_elev_top)]},
+            indices=[[0, 1]],
+        ).draw(shader)
         # Bottom border
-        batch_for_shader(shader, "LINES",
-            {"pos": [(cls.dist_min, 0.0, z_elev_bot),
-                     (cls.dist_max, 0.0, z_elev_bot)]},
-            indices=[[0, 1]]).draw(shader)
+        batch_for_shader(
+            shader,
+            "LINES",
+            {"pos": [(cls.dist_min, 0.0, z_elev_bot), (cls.dist_max, 0.0, z_elev_bot)]},
+            indices=[[0, 1]],
+        ).draw(shader)
         # Top border
-        batch_for_shader(shader, "LINES",
-            {"pos": [(cls.dist_min, 0.0, z_elev_top),
-                     (cls.dist_max, 0.0, z_elev_top)]},
-            indices=[[0, 1]]).draw(shader)
+        batch_for_shader(
+            shader,
+            "LINES",
+            {"pos": [(cls.dist_min, 0.0, z_elev_top), (cls.dist_max, 0.0, z_elev_top)]},
+            indices=[[0, 1]],
+        ).draw(shader)
 
         # ================================================================
         # --- Cant zone (plotted below elevation, separate Y axis) -----
@@ -2154,8 +2164,7 @@ class VerticalProfileDecorator:
                 (vis_d_max + d_pad, 0.0, cant_z_top),
                 (vis_d_min - d_pad, 0.0, cant_z_top),
             ]
-            batch_for_shader(bg2, "TRIS", {"pos": bg2_verts},
-                             indices=[(0, 1, 2), (0, 2, 3)]).draw(bg2)
+            batch_for_shader(bg2, "TRIS", {"pos": bg2_verts}, indices=[(0, 1, 2), (0, 2, 3)]).draw(bg2)
 
             gpu.state.blend_set("ALPHA")
             gpu.state.depth_test_set("NONE")
@@ -2173,10 +2182,12 @@ class VerticalProfileDecorator:
             if cant_z_bot <= zero_z <= cant_z_top:
                 shader.uniform_float("lineWidth", 1.2)
                 shader.uniform_float("color", cls.COLOR_CANT_ZERO)
-                batch_for_shader(shader, "LINES",
-                    {"pos": [(vis_d_min - d_pad, 0.0, zero_z),
-                             (vis_d_max + d_pad, 0.0, zero_z)]},
-                    indices=[[0, 1]]).draw(shader)
+                batch_for_shader(
+                    shader,
+                    "LINES",
+                    {"pos": [(vis_d_min - d_pad, 0.0, zero_z), (vis_d_max + d_pad, 0.0, zero_z)]},
+                    indices=[[0, 1]],
+                ).draw(shader)
 
             # Cant grid lines (4–5 horizontal lines covering the cant range)
             c_disp_span = max(cls._c_display_max - cls._c_display_min, 1e-10)
@@ -2186,10 +2197,12 @@ class VerticalProfileDecorator:
             for cv in _frange(cls._c_display_min, cls._c_display_max, cant_interval):
                 gz = _cz(cv)
                 if cant_z_bot - 1e-6 <= gz <= cant_z_top + 1e-6:
-                    batch_for_shader(shader, "LINES",
-                        {"pos": [(vis_d_min - d_pad, 0.0, gz),
-                                 (vis_d_max + d_pad, 0.0, gz)]},
-                        indices=[[0, 1]]).draw(shader)
+                    batch_for_shader(
+                        shader,
+                        "LINES",
+                        {"pos": [(vis_d_min - d_pad, 0.0, gz), (vis_d_max + d_pad, 0.0, gz)]},
+                        indices=[[0, 1]],
+                    ).draw(shader)
 
             # Cant polylines — centreline + one per rail, coloured by role
             _rail_color = {
@@ -2235,42 +2248,49 @@ class VerticalProfileDecorator:
             cant_dot_centers = [
                 (info["dist"], _cz(info["start_cant"]))
                 for info in cls.cant_info
-                if info.get("rail") != "C"
-                and (visible_cant_ids is None or info.get("cant_id", -1) in visible_cant_ids)
+                if info.get("rail") != "C" and (visible_cant_ids is None or info.get("cant_id", -1) in visible_cant_ids)
             ]
             if cant_dot_centers:
                 cant_dot_verts, cant_dot_indices = _dot_tris(cant_dot_centers, dot_r_c)
                 cant_dot_shader = gpu.shader.from_builtin("UNIFORM_COLOR")
                 cant_dot_shader.bind()
                 cant_dot_shader.uniform_float("color", cls.COLOR_BOUNDARY)
-                batch_for_shader(
-                    cant_dot_shader, "TRIS", {"pos": cant_dot_verts}, indices=cant_dot_indices
-                ).draw(cant_dot_shader)
+                batch_for_shader(cant_dot_shader, "TRIS", {"pos": cant_dot_verts}, indices=cant_dot_indices).draw(
+                    cant_dot_shader
+                )
                 shader.bind()
 
             # Cant subplot — full 4-sided border box (right side = cant Y-axis)
             shader.uniform_float("lineWidth", 1.5)
             shader.uniform_float("color", (0.55, 0.55, 0.55, 1.0))
             # Left border
-            batch_for_shader(shader, "LINES",
-                {"pos": [(cls.dist_min, 0.0, cant_z_bot),
-                         (cls.dist_min, 0.0, cant_z_top)]},
-                indices=[[0, 1]]).draw(shader)
+            batch_for_shader(
+                shader,
+                "LINES",
+                {"pos": [(cls.dist_min, 0.0, cant_z_bot), (cls.dist_min, 0.0, cant_z_top)]},
+                indices=[[0, 1]],
+            ).draw(shader)
             # Right border (cant Y-axis)
-            batch_for_shader(shader, "LINES",
-                {"pos": [(cls.dist_max, 0.0, cant_z_bot),
-                         (cls.dist_max, 0.0, cant_z_top)]},
-                indices=[[0, 1]]).draw(shader)
+            batch_for_shader(
+                shader,
+                "LINES",
+                {"pos": [(cls.dist_max, 0.0, cant_z_bot), (cls.dist_max, 0.0, cant_z_top)]},
+                indices=[[0, 1]],
+            ).draw(shader)
             # Bottom border
-            batch_for_shader(shader, "LINES",
-                {"pos": [(cls.dist_min, 0.0, cant_z_bot),
-                         (cls.dist_max, 0.0, cant_z_bot)]},
-                indices=[[0, 1]]).draw(shader)
+            batch_for_shader(
+                shader,
+                "LINES",
+                {"pos": [(cls.dist_min, 0.0, cant_z_bot), (cls.dist_max, 0.0, cant_z_bot)]},
+                indices=[[0, 1]],
+            ).draw(shader)
             # Top border
-            batch_for_shader(shader, "LINES",
-                {"pos": [(cls.dist_min, 0.0, cant_z_top),
-                         (cls.dist_max, 0.0, cant_z_top)]},
-                indices=[[0, 1]]).draw(shader)
+            batch_for_shader(
+                shader,
+                "LINES",
+                {"pos": [(cls.dist_min, 0.0, cant_z_top), (cls.dist_max, 0.0, cant_z_top)]},
+                indices=[[0, 1]],
+            ).draw(shader)
 
         gpu.state.blend_set("NONE")
         gpu.state.depth_test_set("NONE")
@@ -2332,8 +2352,8 @@ class VerticalProfileDecorator:
         blf.draw(font_id, f"Vertical Profile — {cls.alignment_name}")
 
         # --- Station axis labels (horizontal, along the bottom) --------------
-        BOTTOM_MARGIN = 28   # px from bottom for label baseline
-        ELEV_MARGIN = 72     # px from left where elevation labels end; station zone starts here
+        BOTTOM_MARGIN = 28  # px from bottom for label baseline
+        ELEV_MARGIN = 72  # px from left where elevation labels end; station zone starts here
 
         blf.size(font_id, tool.Blender.scale_font_size(10))
         blf.color(font_id, *cls.COLOR_LABEL)
@@ -2465,10 +2485,13 @@ class VerticalProfileDecorator:
 
             is_curve = info.get("is_curve", False)
             bvc_d, bvc_e = info.get("bvc", (info["dist"], info["height"]))
-            evc_d, evc_e = info.get("evc", (
-                info["dist"] + info["h_len"],
-                info["height"] + info["g_start"] * info["h_len"],
-            ))
+            evc_d, evc_e = info.get(
+                "evc",
+                (
+                    info["dist"] + info["h_len"],
+                    info["height"] + info["g_start"] * info["h_len"],
+                ),
+            )
             pvi_data = info.get("pvi")
 
             bvc_w = (bvc_d, 0.0, cls._ez(bvc_e))
@@ -2516,16 +2539,18 @@ class VerticalProfileDecorator:
             else:
                 g_pct = info["g_start"] * 100.0
                 if bvc_key not in labeled:
-                    lines = [f"{start_label}{pfx}", f"Sta {sta_bvc}", f"Elev {_fmt_elev(bvc_e, e_interval)}", f"{g_pct:+.2f}%"]
+                    lines = [
+                        f"{start_label}{pfx}",
+                        f"Sta {sta_bvc}",
+                        f"Elev {_fmt_elev(bvc_e, e_interval)}",
+                        f"{g_pct:+.2f}%",
+                    ]
                     if show_vertical_prefix and v_label:
                         lines.append(f"[{v_label}]")
                     _draw_vp_label(bvc_w, lines, cls.COLOR_GRAD)
                     labeled.add(bvc_key)
                 # Always label the end of the last segment for each vertical
-                is_last_for_vertical = (
-                    i == n_segs - 1
-                    or cls.segments_info[i + 1].get("vertical_id", -1) != v_id
-                )
+                is_last_for_vertical = i == n_segs - 1 or cls.segments_info[i + 1].get("vertical_id", -1) != v_id
                 if is_last_for_vertical and evc_key not in labeled:
                     _draw_vp_label(
                         evc_w,
@@ -2690,7 +2715,7 @@ class VerticalPIMarkerDecorator:
     dragging: Optional[int] = None
     selected: Optional[int] = None  # clicked PI that typed values apply to
     input_lines: Optional[list] = None  # (text, state) readout beside the cursor, or None
-    cursor_px: Optional[Tuple[float, float]] = None  # mouse position in the profile region, pixels
+    cursor_px: Optional[tuple[float, float]] = None  # mouse position in the profile region, pixels
 
     COLOR_GRADE = (1.0, 0.9, 0.2, 0.8)
     COLOR_ACTIVE_RING = (1.0, 1.0, 1.0, 1.0)
@@ -2806,13 +2831,13 @@ class VerticalDrawDecorator:
 
     is_installed: bool = False
     handlers: list = []
-    points: list = []                    # shared reference to the operator's [(dist, elev), ...] list
-    mouse_data: Optional[Tuple[float, float]] = None  # (dist_along, elevation) under the cursor, or None
+    points: list = []  # shared reference to the operator's [(dist, elev), ...] list
+    mouse_data: Optional[tuple[float, float]] = None  # (dist_along, elevation) under the cursor, or None
     # (text, state) Elevation/Slope/Distance lines drawn beside the cursor -- state is "ACTIVE" (being
     # typed), "ERROR", or anything else for a plain value (see
     # ALIGN_OT_draw_vertical_alignment._refresh_input_display)
     input_lines: Optional[list] = None
-    cursor_px: Optional[Tuple[float, float]] = None  # mouse position in the profile region, pixels
+    cursor_px: Optional[tuple[float, float]] = None  # mouse position in the profile region, pixels
 
     COLOR_LINE = (1.0, 0.9, 0.2, 1.0)
     COLOR_RUBBER = (1.0, 0.9, 0.2, 0.5)
@@ -2850,7 +2875,7 @@ class VerticalDrawDecorator:
         VerticalProfileDecorator.tag_redraw()
 
     @classmethod
-    def update_mouse(cls, point: Optional[Tuple[float, float]]) -> None:
+    def update_mouse(cls, point: Optional[tuple[float, float]]) -> None:
         """Set the (dist_along, elevation) the preview/rubber-band should show.
 
         Takes an already-resolved point rather than raw mouse coordinates —

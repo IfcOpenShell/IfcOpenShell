@@ -23,8 +23,8 @@ import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
-from ifcopenshell.api.alignment._get_cant_segment import _get_cant_segment
 from ifcopenshell.api.alignment import _spiral_curvature
+from ifcopenshell.api.alignment._get_cant_segment import _get_cant_segment
 
 # Spirals whose curvature changes only between their start and end radius
 SPIRALS = ("CLOTHOID", "CUBIC", "HELMERTCURVE", "BLOSSCURVE", "COSINECURVE", "SINECURVE")

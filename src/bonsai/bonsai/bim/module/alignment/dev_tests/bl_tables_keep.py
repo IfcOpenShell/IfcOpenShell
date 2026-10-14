@@ -7,10 +7,10 @@ import sys
 import traceback
 
 import bpy
+import ifcopenshell.api.alignment
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 
 def check(cond, msg):
@@ -35,7 +35,10 @@ def terminator(layout):
 
 def no_orphans(ifc):
     used = sum(len(c.Segments or ()) for c in ifc.by_type("IfcCompositeCurve"))
-    check(len(ifc.by_type("IfcCurveSegment")) == used, f"orphan curve segments {len(ifc.by_type('IfcCurveSegment'))} vs {used}")
+    check(
+        len(ifc.by_type("IfcCurveSegment")) == used,
+        f"orphan curve segments {len(ifc.by_type('IfcCurveSegment'))} vs {used}",
+    )
 
 
 try:
@@ -48,10 +51,12 @@ try:
     props = bpy.context.scene.CivilAlignmentProperties
 
     alignment = ifcopenshell.api.alignment.create_by_pi_method(
-        ifc, "T",
+        ifc,
+        "T",
         [(0.0, 0.0), (800.0, 0.0), (1400.0, 600.0), (2200.0, 600.0)],
         [(300.0, 60.0, 60.0), (400.0, 80.0, 80.0)],
-        [(0.0, 100.0), (900.0, 110.0), (2000.0, 104.0)], [200.0],
+        [(0.0, 100.0), (900.0, 110.0), (2000.0, 104.0)],
+        [200.0],
     )
     tool.Alignment.create_object_for_alignment(alignment)
     tool.Alignment.refresh_alignment_representation_object(alignment)
@@ -66,13 +71,20 @@ try:
     props.h_segment_rows[arc].start_radius = 350.0
     check(bpy.ops.align.apply_h_segments() == {"FINISHED"}, "apply h")
     check(guids(h) == before, f"h guids changed: {before} -> {guids(h)}")
-    check(abs(tool.Alignment.get_real_layout_segments(h)[arc].DesignParameters.StartRadiusOfCurvature - 350.0) < 1e-9, "radius")
+    check(
+        abs(tool.Alignment.get_real_layout_segments(h)[arc].DesignParameters.StartRadiusOfCurvature - 350.0) < 1e-9,
+        "radius",
+    )
     # the terminator sits at the end of the last real segment
     last = tool.Alignment.get_real_layout_segments(h)[-1]
     from ifcopenshell.api.alignment._get_segment_endpoint import _get_segment_endpoint
+
     end = _get_segment_endpoint(ifc, last)
     tdp = terminator(h).DesignParameters
-    check(abs(tdp.StartPoint.Coordinates[0] - end[0, 3]) < 1e-6 and abs(tdp.StartPoint.Coordinates[1] - end[1, 3]) < 1e-6, "terminator position")
+    check(
+        abs(tdp.StartPoint.Coordinates[0] - end[0, 3]) < 1e-6 and abs(tdp.StartPoint.Coordinates[1] - end[1, 3]) < 1e-6,
+        "terminator position",
+    )
     no_orphans(ifc)
     print("h change ok", len(before))
 
@@ -88,7 +100,12 @@ try:
     expected_kept = [g for g in before if g != removed_guid]
     check(after[:-1] == expected_kept, f"kept order {after[:-1]} vs {expected_kept}")
     check(after[-1] not in before, "new row reused a guid")
-    check(not ifc.by_guid(removed_guid) if False else all(s.GlobalId != removed_guid for s in ifc.by_type("IfcAlignmentSegment")), "removed segment survives")
+    check(
+        not ifc.by_guid(removed_guid)
+        if False
+        else all(s.GlobalId != removed_guid for s in ifc.by_type("IfcAlignmentSegment")),
+        "removed segment survives",
+    )
     no_orphans(ifc)
     print("h delete/insert ok")
 

@@ -10,10 +10,10 @@ import traceback
 from types import SimpleNamespace
 
 import bpy
+import ifcopenshell.api.alignment
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 sys.path.insert(0, __import__("os").path.dirname(__file__))
 from bl_panel_render_rec import Rec
@@ -72,7 +72,12 @@ try:
         check(script.define_stationing is (not expected), f"{definition} overrode a script's define_stationing")
 
     main = ifcopenshell.api.alignment.create_by_pi_method(
-        ifc, "Main", [(0.0, 0.0), (100.0, 0.0), (200.0, 100.0)], [50.0], [(0.0, 10.0), (80.0, 12.0), (200.0, 10.0)], [0.0]
+        ifc,
+        "Main",
+        [(0.0, 0.0), (100.0, 0.0), (200.0, 100.0)],
+        [50.0],
+        [(0.0, 10.0), (80.0, 12.0), (200.0, 10.0)],
+        [0.0],
     )
     A.create_object_for_alignment(main)
     A.refresh_alignment_representation_object(main)
@@ -80,7 +85,10 @@ try:
 
     # ---- created without stationing; the panel says so and offers to add it
     r = bpy.ops.align.add_alignment(
-        alignment_name="Lane", definition="OFFSET", offset_from=str(horizontal.id()), offset_lateral=3.5,
+        alignment_name="Lane",
+        definition="OFFSET",
+        offset_from=str(horizontal.id()),
+        offset_lateral=3.5,
         define_stationing=False,
     )
     check(r == {"FINISHED"}, "add offset")
@@ -96,13 +104,19 @@ try:
     check(bpy.ops.align.set_start_station(station="1+000") == {"FINISHED"}, "add stationing")
     start = A.find_stationing_referent_at(lane, 0.0)
     check(start is not None, "no start referent added")
-    check(start.ObjectPlacement.RelativePlacement.Location.BasisCurve == A.get_offset_curve(lane), "not on the offset curve")
+    check(
+        start.ObjectPlacement.RelativePlacement.Location.BasisCurve == A.get_offset_curve(lane),
+        "not on the offset curve",
+    )
     print("start referent at", fallback(start))
     check(close(fallback(start), (0.0, 3.5, 0.0)), "start referent not on the offset curve")
     obj = tool.Ifc.get_object(start)
     check(obj is not None and obj.matrix_world.translation.length > 1e-6, "start referent object left at the origin")
     panel = stationing_panel()
-    check(any("Start: 1+000" in l for l in panel) and any("add_station_equation" in l for l in panel), "panel after adding")
+    check(
+        any("Start: 1+000" in l for l in panel) and any("add_station_equation" in l for l in panel),
+        "panel after adding",
+    )
 
     # a station equation on the offset curve too -- 50 along Main's straight, 3.5 left
     r = bpy.ops.align.add_station_equation(distance_along=50.0, station="2+000", incoming_station="1+050")
@@ -117,22 +131,35 @@ try:
     check(bpy.ops.align.apply_offset_table() == {"FINISHED"}, "apply offsets")
     bpy.ops.align.finish_offset_table()
     print("after lateral 5:", fallback(start), fallback(equation))
-    check(close(fallback(start), (0.0, 5.0, 0.0)) and close(fallback(equation), (50.0, 5.0, 0.0)), "referents didn't follow the offsets")
+    check(
+        close(fallback(start), (0.0, 5.0, 0.0)) and close(fallback(equation), (50.0, 5.0, 0.0)),
+        "referents didn't follow the offsets",
+    )
 
     # ---- editing the reference moves them too (the offset curve follows it)
     before = tool.Ifc.get_object(start).matrix_world.translation.copy()
-    ok, msg = op_mod._generate_alignment_segments(bpy.context, main, [(0.0, 20.0), (100.0, 20.0), (200.0, 120.0)], [50.0])
+    ok, msg = op_mod._generate_alignment_segments(
+        bpy.context, main, [(0.0, 20.0), (100.0, 20.0), (200.0, 120.0)], [50.0]
+    )
     check(ok, msg)
     print("after moving Main 20 north:", fallback(start), fallback(equation))
-    check(close(fallback(start), (0.0, 25.0, 0.0)) and close(fallback(equation), (50.0, 25.0, 0.0)), "referents didn't follow the reference")
+    check(
+        close(fallback(start), (0.0, 25.0, 0.0)) and close(fallback(equation), (50.0, 25.0, 0.0)),
+        "referents didn't follow the reference",
+    )
     after = tool.Ifc.get_object(start).matrix_world.translation
     check((after - before).length > 1e-6, "start referent object didn't move with the reference")
 
     # ---- asked for at creation, stationing lands on the curve straight away (3D: offset from the vertical)
     gradient = next(c for c, _, d in A.get_offset_basis_candidates(None) if d == 3)
     r = bpy.ops.align.add_alignment(
-        alignment_name="Barrier", definition="OFFSET", offset_from=str(gradient.id()), offset_lateral=-4.0,
-        offset_vertical=0.5, define_stationing=True, start_station="0+500",
+        alignment_name="Barrier",
+        definition="OFFSET",
+        offset_from=str(gradient.id()),
+        offset_lateral=-4.0,
+        offset_vertical=0.5,
+        define_stationing=True,
+        start_station="0+500",
     )
     check(r == {"FINISHED"}, "add offset with stationing")
     barrier = next(x for x in ifc.by_type("IfcAlignment") if x.Name == "Barrier")

@@ -34,15 +34,20 @@ def setup():
             for kmi in km.keymap_items:
                 if kmi.idname == "align.pick_pi_marker":
                     kmi.active = False
-    import bonsai.tool as tool
     import ifcopenshell.api.alignment
+
+    import bonsai.tool as tool
 
     tool.Project.get_project_props().export_schema = "IFC4X3_ADD2"
     bpy.ops.bim.create_project()
     ifc = tool.Ifc.get()
     a = ifcopenshell.api.alignment.create_by_pi_method(
-        ifc, "Main", [(0.0, 0.0), (400.0, 0.0), (800.0, 300.0)], [100.0],
-        [(0.0, 10.0), (300.0, 12.0), (800.0, 10.0)], [0.0],
+        ifc,
+        "Main",
+        [(0.0, 0.0), (400.0, 0.0), (800.0, 300.0)],
+        [100.0],
+        [(0.0, 10.0), (300.0, 12.0), (800.0, 10.0)],
+        [0.0],
     )
     tool.Alignment.create_object_for_alignment(a)
     tool.Alignment.refresh_alignment_representation_object(a)
@@ -82,7 +87,9 @@ def run():
             setup()
             return 1.0
         if step == 1:
-            log(f"markers: {[m.name for m in markers]}; tool={bpy.context.workspace.tools.from_space_view3d_mode('OBJECT').idname}")
+            log(
+                f"markers: {[m.name for m in markers]}; tool={bpy.context.workspace.tools.from_space_view3d_mode('OBJECT').idname}"
+            )
             pi = next(m for m in markers if m.name.startswith("PI"))
             px = location_3d_to_region_2d(region, rv3d, pi.matrix_world.translation)
             log(f"target {pi.name} at {tuple(px)}")

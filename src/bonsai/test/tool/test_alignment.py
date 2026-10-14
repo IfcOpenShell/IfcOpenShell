@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
 import bpy
 import ifcopenshell
 import ifcopenshell.api.alignment as align_api
+import pytest
+
 import bonsai.tool as tool
 from bonsai.tool.alignment import Alignment as subject
 from test.bim.bootstrap import NewFile, NewIfc4X3
@@ -136,8 +137,8 @@ class TestSafeLayoutHorizontalByPiMethod(NewFile):
 
     def test_succeeds_when_layout_has_parent_alignment(self):
         """A layout properly nested under an IfcAlignment should not raise."""
-        import ifcopenshell.api.root
         import ifcopenshell.api.alignment
+        import ifcopenshell.api.root
 
         ifc = ifcopenshell.file(schema="IFC4X3_ADD2")
         tool.Ifc.set(ifc)
@@ -146,9 +147,7 @@ class TestSafeLayoutHorizontalByPiMethod(NewFile):
         alignment = ifc.createIfcAlignment()
         layout = ifc.createIfcAlignmentHorizontal()
         ifc.createIfcRelNests(RelatingObject=alignment, RelatedObjects=[layout])
-        result = subject.safe_layout_horizontal_by_pi_method(
-            ifc, layout, hpoints=[(0.0, 0.0), (100.0, 0.0)], radii=[]
-        )
+        result = subject.safe_layout_horizontal_by_pi_method(ifc, layout, hpoints=[(0.0, 0.0), (100.0, 0.0)], radii=[])
         assert result is True
 
 
@@ -200,9 +199,7 @@ class TestGetHorizontalLayout(NewIfc4X3):
     def test_returns_none_for_alignment_without_horizontal(self):
         ifc_file = tool.Ifc.get()
         # Create a bare alignment without the helper (no nesting)
-        alignment = ifc_file.createIfcAlignment(
-            GlobalId=ifcopenshell.guid.new(), Name="Bare"
-        )
+        alignment = ifc_file.createIfcAlignment(GlobalId=ifcopenshell.guid.new(), Name="Bare")
         h_layout = subject.get_horizontal_layout(alignment)
         assert h_layout is None
 
@@ -333,9 +330,7 @@ class TestRemoveAlignmentHierarchy(NewIfc4X3):
         assert root_obj is not None
 
         # Count objects before removal (excluding default camera/light)
-        alignment_objects_before = [
-            o for o in bpy.data.objects if tool.Ifc.get_entity(o)
-        ]
+        alignment_objects_before = [o for o in bpy.data.objects if tool.Ifc.get_entity(o)]
         assert len(alignment_objects_before) > 0
 
         removed = subject.remove_alignment_hierarchy(alignment)
@@ -355,12 +350,10 @@ class TestIfcSaveReloadRoundtrip(NewIfc4X3):
     """Tests verifying alignment data survives IFC file save/reload."""
 
     def test_alignment_entities_survive_roundtrip(self):
-        import tempfile
         import os
+        import tempfile
 
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
+        alignment, _ = _create_alignment_with_pis(hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0])
 
         ifc_file = tool.Ifc.get()
         alignment_count_before = len(ifc_file.by_type("IfcAlignment"))
@@ -437,9 +430,7 @@ class TestClearLayoutSegments(NewFile):
             ifc, h, hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
         )
         subject.clear_layout_segments(h)
-        align_api.layout_horizontal_alignment_by_pi_method(
-            ifc, h, hpoints=[(0.0, 0.0), (1000.0, 0.0)], radii=[]
-        )
+        align_api.layout_horizontal_alignment_by_pi_method(ifc, h, hpoints=[(0.0, 0.0), (1000.0, 0.0)], radii=[])
         nested = align_api.get_layout_segments(h)
         real = [s for s in nested if not subject.is_zero_length_segment(s)]
         assert len(real) == 1  # exactly one LINE — no leftover from the first layout

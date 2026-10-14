@@ -23,25 +23,27 @@ All panels appear in the Properties sidebar under the Alignments tab,
 nested under BIM_PT_tab_alignments.
 """
 
-import bpy
 import math
+
 import ifcopenshell.api.alignment
 import ifcopenshell.util.geolocation
+from bpy.props import IntProperty
+from bpy.types import Operator, Panel, UIList
+
 import bonsai.tool as tool
-from bpy.types import Panel, Operator, UIList
-from bpy.props import IntProperty, BoolProperty
-from .prop import _alignment_enum_items, _clamp_alignment_enum
+
 from .operator import (
-    _find_pi_markers,
-    _resolve_alignment_id_for_markers,
-    _is_interior_pi_marker,
-    _is_endpoint_marker,
-    _is_vertex_marker,
-    _alignment_id_owning_layout,
     ALIGN_OT_drag_vertical_pis,
-    _grid_rotation_deg,
+    _alignment_id_owning_layout,
     _bearing_string,
+    _find_pi_markers,
+    _grid_rotation_deg,
+    _is_endpoint_marker,
+    _is_interior_pi_marker,
+    _is_vertex_marker,
+    _resolve_alignment_id_for_markers,
 )
+from .prop import _alignment_enum_items, _clamp_alignment_enum
 
 
 def _pi_markers_present(context) -> bool:
@@ -59,9 +61,9 @@ def is_ifc4x3():
 # Module-level dicts store expand/collapse state for sections.
 # Keys are IFC entity IDs; True = expanded (default).
 # Using plain dicts avoids any RNA property modification during draw callbacks.
-_H_EXPANDED: dict[int, bool] = {}   # alignment_id → bool
-_V_EXPANDED: dict[int, bool] = {}   # vertical layout entity_id → bool
-_C_EXPANDED: dict[int, bool] = {}   # cant layout entity_id → bool
+_H_EXPANDED: dict[int, bool] = {}  # alignment_id → bool
+_V_EXPANDED: dict[int, bool] = {}  # vertical layout entity_id → bool
+_C_EXPANDED: dict[int, bool] = {}  # cant layout entity_id → bool
 
 
 # =============================================================================
@@ -337,9 +339,7 @@ def _start_en(ifc_file, dp) -> tuple[float | None, float | None]:
         return None, None
     try:
         coords = pt.Coordinates
-        e, n, _ = ifcopenshell.util.geolocation.auto_xyz2enh(
-            ifc_file, coords[0], coords[1], 0.0
-        )
+        e, n, _ = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, coords[0], coords[1], 0.0)
         return e, n
     except Exception:
         return None, None
@@ -476,7 +476,6 @@ class ALIGN_PT_alignment_authoring(Panel):
             else:
                 box.label(text="Select a marker to edit it", icon="INFO")
                 box.operator("align.finish_pi_editing", icon="CHECKMARK")
-
 
         if table_present:
             box = layout.box()
@@ -744,12 +743,15 @@ class ALIGN_PT_alignment_segments(Panel):
 
         if all_verticals:
             from .decorator import VerticalProfileDecorator
+
             dec = VerticalProfileDecorator
             row = layout.row(align=True)
             row.label(text="Vertical Profile:", icon="FCURVE")
             row.operator(
-                "align.show_vertical_profile", text="",
-                icon="GRAPH", depress=dec.is_installed,
+                "align.show_vertical_profile",
+                text="",
+                icon="GRAPH",
+                depress=dec.is_installed,
             )
             row.prop(props, "vertical_exaggeration", text="VE")
 
@@ -915,8 +917,15 @@ class ALIGN_PT_alignment_segments(Panel):
                     yield seg
 
     def _draw_segment_editor(
-        self, box, props, uilist_idname, rows_propname, active_index_propname,
-        kind, apply_idname, cancel_idname,
+        self,
+        box,
+        props,
+        uilist_idname,
+        rows_propname,
+        active_index_propname,
+        kind,
+        apply_idname,
+        cancel_idname,
     ):
         """Shared "stage edits, then Apply" table UI for one layout's segments
         -- an editable UIList + Add/Remove/Move-Up/Move-Down row toolbar +
@@ -945,22 +954,20 @@ class ALIGN_PT_alignment_segments(Panel):
         expanded = _H_EXPANDED.get(alignment_id, True)
         box = layout.box()
 
-        is_editing_this = (
-            props.editing_segment_kind == "HORIZONTAL" and props.editing_layout_id == layout_entity.id()
-        )
+        is_editing_this = props.editing_segment_kind == "HORIZONTAL" and props.editing_layout_id == layout_entity.id()
 
         # Collapsible header with label toggle
         row = box.row(align=True)
         op = row.operator(
             "align.toggle_h_segments",
-            text="", icon="TRIA_DOWN" if expanded else "TRIA_RIGHT", emboss=False,
+            text="",
+            icon="TRIA_DOWN" if expanded else "TRIA_RIGHT",
+            emboss=False,
         )
         op.alignment_id = alignment_id
         row.label(text="Horizontal", icon="DRIVER_ROTATIONAL_DIFFERENCE")
         row.prop(props, "show_h_segment_labels", text="", icon="FONT_DATA")
-        edit_op = row.operator(
-            "align.enable_editing_h_segments", text="", icon="GREASEPENCIL", depress=is_editing_this
-        )
+        edit_op = row.operator("align.enable_editing_h_segments", text="", icon="GREASEPENCIL", depress=is_editing_this)
         edit_op.layout_id = layout_entity.id()
 
         # Delete Horizontal Layout's own poll() already checks
@@ -976,8 +983,14 @@ class ALIGN_PT_alignment_segments(Panel):
 
         if is_editing_this:
             self._draw_segment_editor(
-                box, props, "ALIGN_UL_h_segments", "h_segment_rows", "active_h_segment_row_index",
-                "HORIZONTAL", "align.apply_h_segments", "align.disable_editing_h_segments",
+                box,
+                props,
+                "ALIGN_UL_h_segments",
+                "h_segment_rows",
+                "active_h_segment_row_index",
+                "HORIZONTAL",
+                "align.apply_h_segments",
+                "align.disable_editing_h_segments",
             )
             return
 
@@ -1065,7 +1078,9 @@ class ALIGN_PT_alignment_segments(Panel):
         # Collapsible toggle via operator (safe to call from draw)
         op = row.operator(
             "align.toggle_v_segments",
-            text="", icon="TRIA_DOWN" if expanded else "TRIA_RIGHT", emboss=False,
+            text="",
+            icon="TRIA_DOWN" if expanded else "TRIA_RIGHT",
+            emboss=False,
         )
         op.entity_id = v_id
 
@@ -1105,7 +1120,10 @@ class ALIGN_PT_alignment_segments(Panel):
         pi_row = row.row(align=True)
         pi_row.enabled = not h_markers_open
         pi_op = pi_row.operator(
-            "align.load_vertical_pis", text="", icon="ANIM_DATA", depress=is_editing_pi,
+            "align.load_vertical_pis",
+            text="",
+            icon="ANIM_DATA",
+            depress=is_editing_pi,
         )
         pi_op.layout_id = v_id
 
@@ -1146,8 +1164,14 @@ class ALIGN_PT_alignment_segments(Panel):
 
         if is_editing_this:
             self._draw_segment_editor(
-                box, props, "ALIGN_UL_v_segments", "v_segment_rows", "active_v_segment_row_index",
-                "VERTICAL", "align.apply_v_segments", "align.disable_editing_v_segments",
+                box,
+                props,
+                "ALIGN_UL_v_segments",
+                "v_segment_rows",
+                "active_v_segment_row_index",
+                "VERTICAL",
+                "align.apply_v_segments",
+                "align.disable_editing_v_segments",
             )
             return
 
@@ -1226,7 +1250,9 @@ class ALIGN_PT_alignment_segments(Panel):
 
         op = row.operator(
             "align.toggle_cant_segments",
-            text="", icon="TRIA_DOWN" if expanded else "TRIA_RIGHT", emboss=False,
+            text="",
+            icon="TRIA_DOWN" if expanded else "TRIA_RIGHT",
+            emboss=False,
         )
         op.entity_id = c_id
         row.label(text=label, icon="MOD_CURVE")
@@ -1252,8 +1278,14 @@ class ALIGN_PT_alignment_segments(Panel):
 
         if is_editing_this:
             self._draw_segment_editor(
-                box, props, "ALIGN_UL_cant_segments", "cant_segment_rows", "active_cant_segment_row_index",
-                "CANT", "align.apply_cant_segments", "align.disable_editing_cant_segments",
+                box,
+                props,
+                "ALIGN_UL_cant_segments",
+                "cant_segment_rows",
+                "active_cant_segment_row_index",
+                "CANT",
+                "align.apply_cant_segments",
+                "align.disable_editing_cant_segments",
             )
             return
 
