@@ -387,9 +387,9 @@ def test_multiple_direction_switches():
     assert sfda(file, alignment, 1200.0) == pytest.approx(1000.0)
 
     # mid-region values
-    assert sfda(file, alignment, 150.0) == pytest.approx(1150.0)   # [0,300] rising
-    assert sfda(file, alignment, 450.0) == pytest.approx(1150.0)   # [300,600] falling
-    assert sfda(file, alignment, 750.0) == pytest.approx(1150.0)   # [600,900] rising
+    assert sfda(file, alignment, 150.0) == pytest.approx(1150.0)  # [0,300] rising
+    assert sfda(file, alignment, 450.0) == pytest.approx(1150.0)  # [300,600] falling
+    assert sfda(file, alignment, 750.0) == pytest.approx(1150.0)  # [600,900] rising
     assert sfda(file, alignment, 1050.0) == pytest.approx(1150.0)  # [900,1200] falling
 
     # same station (1100) appears in all four regions
@@ -412,9 +412,7 @@ def test_extrapolation_before_first_referent():
 
     # Single referent at D 100, S 1100, sigma +1.
     # dist_along 0 → station = 1100 + 1*(0-100) = 1000.
-    ifcopenshell.api.alignment.add_stationing_referent(
-        file, "R1", alignment, distance_along=100.0, station=1100.0
-    )
+    ifcopenshell.api.alignment.add_stationing_referent(file, "R1", alignment, distance_along=100.0, station=1100.0)
 
     assert sfda(file, alignment, 0.0) == pytest.approx(1000.0)
     assert sfda(file, alignment, 50.0) == pytest.approx(1050.0)

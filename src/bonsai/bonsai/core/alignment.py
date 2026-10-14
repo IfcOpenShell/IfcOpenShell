@@ -32,10 +32,12 @@ tool/alignment.py. This module only handles:
 """
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import ifcopenshell
+
     from .. import tool
 
 
@@ -45,12 +47,12 @@ if TYPE_CHECKING:
 
 
 def create_alignment(
-    ifc_tool: "type[tool.Ifc]",
-    alignment_tool: "type[tool.Alignment]",
+    ifc_tool: type[tool.Ifc],
+    alignment_tool: type[tool.Alignment],
     name: str,
     start_station: float = 0.0,
     define_stationing: bool = True,
-) -> "ifcopenshell.entity_instance":
+) -> ifcopenshell.entity_instance:
     """Create a new alignment with full IFC structure.
 
     Business rules:
@@ -81,8 +83,8 @@ def create_alignment(
 
 
 def import_alignment_csv(
-    ifc_tool: "type[tool.Ifc]",
-    alignment_tool: "type[tool.Alignment]",
+    ifc_tool: type[tool.Ifc],
+    alignment_tool: type[tool.Alignment],
     filepath: str,
 ):
     """Import alignment(s) from a CSV file and build their viewport objects.

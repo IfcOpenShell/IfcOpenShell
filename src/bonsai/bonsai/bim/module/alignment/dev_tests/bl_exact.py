@@ -8,10 +8,10 @@ import sys
 import traceback
 
 import bpy
+import ifcopenshell.api.alignment
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 
 def check(cond, msg):
@@ -31,18 +31,35 @@ def select(obj):
 
 
 def hvals(h):
-    return [(s.DesignParameters.SegmentLength, s.DesignParameters.StartRadiusOfCurvature,
-             tuple(s.DesignParameters.StartPoint.Coordinates), s.DesignParameters.StartDirection) for s in real(h)]
+    return [
+        (
+            s.DesignParameters.SegmentLength,
+            s.DesignParameters.StartRadiusOfCurvature,
+            tuple(s.DesignParameters.StartPoint.Coordinates),
+            s.DesignParameters.StartDirection,
+        )
+        for s in real(h)
+    ]
 
 
 def vvals(v):
-    return [(s.DesignParameters.HorizontalLength, s.DesignParameters.StartGradient, s.DesignParameters.StartHeight)
-            for s in real(v)]
+    return [
+        (s.DesignParameters.HorizontalLength, s.DesignParameters.StartGradient, s.DesignParameters.StartHeight)
+        for s in real(v)
+    ]
 
 
 def cvals(c):
-    return [(s.DesignParameters.HorizontalLength, s.DesignParameters.StartCantLeft, s.DesignParameters.StartCantRight,
-             s.DesignParameters.EndCantLeft, s.DesignParameters.EndCantRight) for s in real(c)]
+    return [
+        (
+            s.DesignParameters.HorizontalLength,
+            s.DesignParameters.StartCantLeft,
+            s.DesignParameters.StartCantRight,
+            s.DesignParameters.EndCantLeft,
+            s.DesignParameters.EndCantRight,
+        )
+        for s in real(c)
+    ]
 
 
 try:
@@ -57,7 +74,12 @@ try:
 
     # large local coordinates and radii with more digits than float32 holds
     E0, N0 = 512345.6789, 4712345.4321
-    H = [(E0, N0), (E0 + 812.3456789, N0 + 1.2345678), (E0 + 1400.1234567, N0 + 600.7654321), (E0 + 2200.9876543, N0 + 610.1111111)]
+    H = [
+        (E0, N0),
+        (E0 + 812.3456789, N0 + 1.2345678),
+        (E0 + 1400.1234567, N0 + 600.7654321),
+        (E0 + 2200.9876543, N0 + 610.1111111),
+    ]
     R = [(312.4567891, 61.2345678, 59.8765432), 401.2345679]
     V = [(0.0, 100.1234567), (1100.7654321, 110.9876543), (2000.0, 104.4444444)]
     alignment = ifcopenshell.api.alignment.create_by_pi_method(ifc, "T", H, R, V, [203.3333333])
@@ -98,7 +120,10 @@ try:
     arc = next(i for i, r in enumerate(props.h_segment_rows) if r.predefined_type == "CIRCULARARC")
     props.h_segment_rows[arc].start_radius = 250.2
     bpy.ops.align.apply_h_segments()
-    check(real(h)[arc].DesignParameters.StartRadiusOfCurvature == 250.2, f"typed {real(h)[arc].DesignParameters.StartRadiusOfCurvature}")
+    check(
+        real(h)[arc].DesignParameters.StartRadiusOfCurvature == 250.2,
+        f"typed {real(h)[arc].DesignParameters.StartRadiusOfCurvature}",
+    )
     print("1 ok")
 
     # 2. vertical segment table untouched
@@ -158,7 +183,11 @@ try:
     check(bpy.ops.align.load_polyline_table() == {"FINISHED"}, "load polyline")
     check(bpy.ops.align.apply_polyline_table() == {"FINISHED"}, "apply polyline")
     curve = tool.Alignment.get_polyline_curve(p)
-    got = [tuple(c) for c in curve.Points.CoordList] if hasattr(curve.Points, "CoordList") else [tuple(pt.Coordinates) for pt in curve.Points]
+    got = (
+        [tuple(c) for c in curve.Points.CoordList]
+        if hasattr(curve.Points, "CoordList")
+        else [tuple(pt.Coordinates) for pt in curve.Points]
+    )
     check(got == [tuple(x) for x in pts], f"polyline changed {got}")
     bpy.ops.align.finish_polyline_table()
     print("7 ok")

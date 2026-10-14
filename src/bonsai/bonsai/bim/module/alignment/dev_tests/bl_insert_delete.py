@@ -8,10 +8,10 @@ import sys
 import traceback
 
 import bpy
+import ifcopenshell.api.alignment
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 
 def check(cond, msg):
@@ -75,7 +75,9 @@ try:
     select(markers[1])
     check(bpy.ops.align.insert_pi_marker() == {"FINISHED"}, "insert marker")
     markers = op_mod._find_pi_markers(alignment.id())
-    check(len(markers) == 5 and [m.bonsai_pi_curve_marker.pi_index for m in markers] == [0, 1, 2, 3, 4], "insert renumber")
+    check(
+        len(markers) == 5 and [m.bonsai_pi_curve_marker.pi_index for m in markers] == [0, 1, 2, 3, 4], "insert renumber"
+    )
     new = bpy.context.view_layer.objects.active
     check(new == markers[2] and new.bonsai_pi_curve_marker.role == "PI", "new marker active")
     new.location.y += 150.0
@@ -100,7 +102,9 @@ try:
     # insert before the first row: halfway along the first leg
     props.active_horizontal_pi_row_index = 0
     check(bpy.ops.align.insert_pi_row(kind="HORIZONTAL", after=False) == {"FINISHED"}, "insert row")
-    check(props.active_horizontal_pi_row_index == 0 and abs(props.horizontal_pi_rows[0].x - 400.0) < 1e-6, "row midpoint")
+    check(
+        props.active_horizontal_pi_row_index == 0 and abs(props.horizontal_pi_rows[0].x - 400.0) < 1e-6, "row midpoint"
+    )
     props.horizontal_pi_rows[0].y = 100.0
     check(bpy.ops.align.apply_horizontal_pi_table() == {"FINISHED"}, "apply table insert")
     print("after table insert:", types(h))

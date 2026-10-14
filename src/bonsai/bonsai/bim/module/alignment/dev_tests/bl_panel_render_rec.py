@@ -1,6 +1,7 @@
 # This file was generated with the assistance of an AI coding tool.
 # Development test script for the alignment authoring work -- remove before the final PR (see README.md).
 
+
 class Rec:
     """Records what a panel's draw() puts on screen: labels, operators, props."""
 
@@ -31,5 +32,3 @@ class Rec:
     def __setattr__(self, name, value):
         if name in ("out", "depth"):
             object.__setattr__(self, name, value)
-
-

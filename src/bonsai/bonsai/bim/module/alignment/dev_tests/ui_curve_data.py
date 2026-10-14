@@ -31,8 +31,9 @@ def viewport():
 
 
 def setup():
-    import bonsai.tool as tool
     import ifcopenshell.api.alignment
+
+    import bonsai.tool as tool
 
     tool.Project.get_project_props().export_schema = "IFC4X3_ADD2"
     bpy.ops.bim.create_project()
