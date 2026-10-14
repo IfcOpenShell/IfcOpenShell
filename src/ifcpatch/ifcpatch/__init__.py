@@ -29,9 +29,10 @@ import sys
 import typing
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, NotRequired, Optional, TypedDict, Union
+from typing import Any, Optional, TypedDict, Union
 
 import ifcopenshell
+from typing_extensions import NotRequired
 
 __version__ = version = "0.0.0"
 

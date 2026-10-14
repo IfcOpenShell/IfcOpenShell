@@ -25,12 +25,13 @@ import json
 import multiprocessing
 import time
 from logging import Logger
-from typing import Literal, NotRequired, TypedDict, Union, assert_never
+from typing import Literal, TypedDict, Union
 
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.selector
 import numpy as np
+from typing_extensions import NotRequired, assert_never
 
 
 class ClashSource(TypedDict):

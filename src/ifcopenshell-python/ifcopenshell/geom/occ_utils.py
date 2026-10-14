@@ -24,9 +24,10 @@ import operator
 import random
 import warnings
 from collections.abc import Iterable
-from typing import NamedTuple, Union, assert_never
+from typing import NamedTuple, Union
 
 import OCC  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+from typing_extensions import assert_never
 
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 

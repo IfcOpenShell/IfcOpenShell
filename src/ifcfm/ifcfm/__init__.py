@@ -25,9 +25,10 @@ import re
 from collections import defaultdict
 from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Union, assert_never, cast
+from typing import TYPE_CHECKING, Any, Literal, Union, cast
 
 import ifcopenshell.util.selector
+from typing_extensions import assert_never
 
 try:
     from openpyxl import Workbook
