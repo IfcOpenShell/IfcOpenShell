@@ -103,22 +103,23 @@ def _typed_point_input(op):
     """What was typed for the point being committed, so _exact_drawn_points can rebuild it exactly, or
     None. The polyline tool keeps points as float32 and computes a typed point with mathutils, also
     single precision, so a typed length and angle land about 1e-7 off (0.04" over 1000 m)."""
-    field = op.input_type
+    # the fields typed for this point (recalculate_inputs remembers them as they're typed, since the
+    # polyline tool then recalculates them from float32 points), including the one being typed now
+    typed = dict(getattr(op, "typed_fields", None) or {})
+    if op.number_input and op.input_type:
+        typed[op.input_type] = op.number_output
 
     def number(name):
-        if name == field and op.number_input:
-            ok, text = tool.Polyline.validate_input(op.number_output, name)
+        if name in typed:
+            ok, text = tool.Polyline.validate_input(typed[name], name)
             return float(text) if ok else None
         return op.input_ui.get_number_value(name)
 
-    if field in ("X", "Y"):
-        x, y = number("X"), number("Y")
-        return None if x is None or y is None else {"mode": "XY", "x": x, "y": y}
-    if field in ("D", "A"):
+    if "D" in typed or "A" in typed:
         civil = None
-        if field == "A" and op.number_input:
+        if "A" in typed:
             try:
-                civil = _parse_civil_angle(op.number_output)
+                civil = _parse_civil_angle(typed["A"])
             except ValueError:
                 return None
         distance = number("D")
@@ -126,6 +127,9 @@ def _typed_point_input(op):
         if distance is None or (civil is None and angle is None):
             return None
         return {"mode": "DA", "distance": distance, "angle": angle, "civil": civil}
+    if "X" in typed or "Y" in typed:
+        x, y = number("X"), number("Y")
+        return None if x is None or y is None else {"mode": "XY", "x": x, "y": y}
     return None
 
 
@@ -203,6 +207,7 @@ def _insert_polyline_point_no_close(op, context, event):
             if typed is not None and len(points) == count + 1:
                 typed["stored"] = (points[-1].x, points[-1].y)
                 typed_points[count] = typed
+        op.typed_fields = {}
 
         op.tool_state.mode = "Mouse"
         op.tool_state.is_input_on = False
@@ -2724,7 +2729,31 @@ class _CivilAngleInput:
             return
         return super().handle_keyboard_input(context, event)
 
+    def _flatten_snap_point(self):
+        """Keep the snap point at the height of the points drawn so far. These tools work in plan, but
+        the polyline tool measures in 3D: a snap onto geometry at another height (the alignment's own
+        3D curve, say) tilts a typed leg and makes Distance creep each time the fields are recalculated."""
+        points = _drawn_points()
+        snap = tool.Model.get_polyline_props().snap_mouse_point
+        if points and snap:
+            snap[0].z = points[-1].z
+
+    def handle_mouse_move(self, context, event, should_round=False):
+        result = super().handle_mouse_move(context, event, should_round=should_round)
+        if not self.tool_state.is_input_on:
+            self.typed_fields = {}  # the mouse is placing the point again
+        if not self.tool_state.is_input_on and _drawn_points():
+            self._flatten_snap_point()
+            tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
+        return result
+
     def recalculate_inputs(self, context):
+        self._flatten_snap_point()
+        if self.number_input and self.input_type:
+            # what was typed in this field, before it's recalculated (see _typed_point_input)
+            if getattr(self, "typed_fields", None) is None:
+                self.typed_fields = {}
+            self.typed_fields[self.input_type] = self.number_output
         if self.number_input and self.input_type == "A":
             try:
                 parsed = _parse_civil_angle(self.number_output)
@@ -3022,10 +3051,14 @@ def _move_marker_anchors(markers, index):
     Distance/Angle read exactly as they did when the PI was first drawn: Distance from the previous
     point, Angle against the leg before it. The Start marker has no previous point, so it's
     measured backwards from the next one instead."""
-    locations = [m.location.copy() for m in markers]
+    return [m.location.copy() for m in _move_marker_anchor_objects(markers, index)]
+
+
+def _move_marker_anchor_objects(markers, index):
+    """The markers _move_marker_anchors measures from, in the same order."""
     if index == 0:
-        return list(reversed(locations[1:3]))
-    return locations[max(index - 2, 0) : index]
+        return list(reversed(markers[1:3]))
+    return markers[max(index - 2, 0) : index]
 
 
 class ALIGN_OT_move_pi_marker(bpy.types.Operator, _CivilAngleInput, PolylineOperator):
@@ -3069,6 +3102,8 @@ class ALIGN_OT_move_pi_marker(bpy.types.Operator, _CivilAngleInput, PolylineOper
         self._last_mouse_pos = (0, 0)
         self._marker_name = ""
         self._seeded = 0
+        self._anchor_markers = []
+        self.typed_points = {}  # see _insert_polyline_point_no_close
 
     # the draw tool's Bearing readout, shared as-is
     _draw_bearing_hud = _DrawHorizontalAlignment._draw_bearing_hud
@@ -3090,6 +3125,7 @@ class ALIGN_OT_move_pi_marker(bpy.types.Operator, _CivilAngleInput, PolylineOper
         self.tool_state.use_default_container = False
         self.tool_state.plane_method = "XY"
         self._marker_name = marker_obj.name
+        self._anchor_markers = _move_marker_anchor_objects(markers, index)
         self._seeded = self._seed_anchor_points(context, _move_marker_anchors(markers, index))
         self._bearing_handle = SpaceView3D.draw_handler_add(self._draw_bearing_hud, (context,), "WINDOW", "POST_PIXEL")
         return {"RUNNING_MODAL"}
@@ -3108,15 +3144,42 @@ class ALIGN_OT_move_pi_marker(bpy.types.Operator, _CivilAngleInput, PolylineOper
         data = tool.Model.get_polyline_props().insertion_polyline
         return data[0].polyline_points if data else []
 
+    def _typed_local_point(self, points):
+        """The local IFC point a typed move puts the marker at, rebuilt exactly (see
+        _exact_drawn_points) from the exact points of its anchor markers; None for a click."""
+        typed_points = getattr(self, "typed_points", None) or {}
+        if self._seeded not in typed_points or len(points) != self._seeded + 1:
+            return None
+        ifc = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+        anchors = [
+            _local_ifc_to_world_point(ifc, unit_scale, _marker_local_ifc(ifc, unit_scale, m))
+            for m in getattr(self, "_anchor_markers", [])
+        ]
+        stored = [(p.x, p.y, p.z) for p in points]
+        drawn = [(a[0], a[1], stored[i][2]) for i, a in enumerate(anchors)] + stored[self._seeded :]
+        new = _exact_drawn_points(drawn, typed_points)[self._seeded]
+        if new == stored[self._seeded]:
+            return None  # the record wasn't used
+        return _world_point_to_local_ifc(ifc, unit_scale, new)
+
     def _finish(self, context, moved: bool):
         self._uninstall_bearing_hud()
         points = self._polyline_points()
         marker_obj = bpy.data.objects.get(self._marker_name)
         new = points[-1] if moved and len(points) > self._seeded else None
         new = (new.x, new.y) if new is not None else None
+        exact_local = self._typed_local_point(points) if new is not None else None
         self.cleanup(context)  # clears the polyline and its status text -- before restoring our own cues
         if new is not None and marker_obj is not None:
             marker_obj.location = (new[0], new[1], marker_obj.location.z)
+            if exact_local is not None:
+                # typed: the exact point, measured from the exact points of the markers it's measured
+                # from; the marker's own location is float32
+                ifc = tool.Ifc.get()
+                world = _local_ifc_to_world_point(ifc, ifcopenshell.util.unit.calculate_unit_scale(ifc), exact_local)
+                marker_obj.location = (world[0], world[1], marker_obj.location.z)
+                tool.Alignment.remember_marker_point(marker_obj, exact_local)
             _refresh_pi_marker_visuals(context, marker_obj.bonsai_pi_curve_marker.alignment_id)
             self.report({"INFO"}, "Marker moved -- click Apply Curve to regenerate the alignment")
             return {"FINISHED"}
