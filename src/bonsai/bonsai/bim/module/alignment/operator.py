@@ -2787,7 +2787,44 @@ class _CivilAngleInput:
                     return False
                 self.number_output = f"{angle:.10f}"
                 self.number_input = list(self.number_output)
-        return super().recalculate_inputs(context)
+        # the polyline tool recalculates Distance and Angle in 3D, from a typed point at Z = 0 (or the Z
+        # field) to the last point at its own height: a marker 10 m up turned a typed 1000 into 1000.05,
+        # and the next recalculation built on that. These tools work in plan, so keep a typed Distance
+        # and Angle as they are, and measure them in plan from a typed X and Y.
+        before = {name: self.input_ui.get_text_value(name) for name in ("D", "A")}
+        result = super().recalculate_inputs(context)
+        if result and self.number_input and self.input_type in ("D", "A"):
+            before[self.input_type] = self.number_output
+            for name, value in before.items():
+                if value is not None:
+                    self.input_ui.set_value(name, value)
+        elif result and self.number_input and self.input_type in ("X", "Y"):
+            self._plan_distance_and_angle()
+        return result
+
+    def _plan_distance_and_angle(self):
+        """Distance and Angle in plan from the last point to the X and Y fields, with the polyline tool's
+        Angle convention (counter-clockwise from the back leg, or from +X for a first leg)."""
+        from mathutils import Vector
+
+        points = _drawn_points()
+        x, y = self.input_ui.get_number_value("X"), self.input_ui.get_number_value("Y")
+        if not points or x is None or y is None:
+            return
+        last = points[-1]
+        if len(points) > 1:
+            back = points[-2]
+        else:
+            back = tool.Polyline.use_transform_orientations(Vector((last.x + 1000000000, last.y, last.z)))
+        dx, dy = x - last.x, y - last.y
+        distance = math.hypot(dx, dy)
+        angle = 0.0
+        if distance > 0:
+            back_dir = math.degrees(math.atan2(back.y - last.y, back.x - last.x))
+            angle = (math.degrees(math.atan2(dy, dx)) - back_dir) % 360.0
+            angle = angle - 360.0 if angle > 180.0 else angle
+        self.input_ui.set_value("D", distance)
+        self.input_ui.set_value("A", angle)
 
     @staticmethod
     def _civil_angle_to_polyline_angle(kind, value):
