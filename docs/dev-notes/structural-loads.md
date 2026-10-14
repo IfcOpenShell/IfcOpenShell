@@ -414,6 +414,28 @@ where Bonsai's eighths would measure from the vertical.
 - **Moments applied as loads are left out** for now: IFC keeps them in the project's torque
   unit, which need not be force times length. Couples come next, with that conversion.
 
+## 20. Editing moments
+
+- **Edit Moment Centre** places A from a loaded point as Edit Load enters a force: Δx and Δz, or
+  a distance with a direction as an eighth and an angle or slope, on the same direction inputs
+  (`get_direction_input`, `set_in_plane_direction`). A Moment Arm section edits a force's arm d,
+  sliding A along it with its foot kept on the line of action, and φ or α, swinging A round the
+  force's point with r kept. A moves as values are typed, the moments redrawn; cancelling puts
+  it back. The inputs typed in are left as they are while the others follow A, so an angle does
+  not jump to the next eighth.
+- **Clicked from the drawing:** a force's moment lines and labels are one pickable, picked along
+  any of its segments and highlighted whole; each label opens the dialog with its value ready to
+  type, as a force's do. The curved arrow at A and its label are another.
+- **Applied Loads** lists, for a point that is a moment centre, each load case's ΣM about it
+  (`tool.Structural.get_moment_about`), with a pencil to the dialog.
+- **The drawing** also shows r's direction from the point, as a force's angle, and its slope
+  triangle, as Angles and Slopes are shown, and the triangle's angle α at A, 90 degrees less φ.
+  The arm's d sits above its moment. It hides with A, and each force's part with its point.
+- **Label Size** in Show Loads scales every label of load diagrams, in the viewport and in
+  reports.
+- **A Blender gotcha:** an update callback must take exactly two arguments, even with defaults
+  for more; otherwise Blender declines to register the property, reported only at startup.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
@@ -422,6 +444,11 @@ the factors, so combinations need a panel to create them, add cases with factors
 them to the current model; PyNite takes them as `add_load_combo`. When combinations come, fix
 `recursive_subgroups` in `load_decoration_data.py`, which multiplies factors cumulatively
 across a group's relationships, so that 1.2 D + 1.6 L would draw the live load at 1.92.
+
+Later, for rigid bodies: **ΣFx, ΣFz and ΣM_A solved together.** Edit Resultant solves the two
+force equations for two unknowns, and a resultant moment the moment equation for one. Together
+they are the three equations of a rigid body's equilibrium, for three unknowns, as reactions at
+supports are found in Chapter 3. Left until the book reaches them.
 
 Later, for load authoring: **directions in the XY and YZ planes.** Angles and slopes are entered
 in the X-Z plane only; other planes need components. A Plane choice (XZ, XY, YZ) in the force
