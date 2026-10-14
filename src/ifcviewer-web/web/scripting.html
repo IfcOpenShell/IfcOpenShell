@@ -263,8 +263,13 @@
   if (!navigator.gpu) $('scene-hint').textContent = 'navigator.gpu missing — needs a WebGPU browser';
   $('viewer-canvas').addEventListener('contextmenu', (ev) => ev.preventDefault());
 
+  // Sidecar format this page will load. Must match IFCVIEW_VERSION.
+  const SIDECAR_FORMAT_VERSION = 19;
+  $('browse-btn').textContent = `Add .ifcview v${SIDECAR_FORMAT_VERSION}…`;
+
   IfcViewer.create({
     canvas: $('viewer-canvas'),
+    sidecarFormatVersion: SIDECAR_FORMAT_VERSION,
     // The camera has no change event — it moves on every frame you drag — so
     // the readout is the one thing worth polling. Everything else is event-driven.
     onFrame: (v) => renderCamera(v.getCamera()),
@@ -337,7 +342,12 @@
     $('browse-btn').onclick = () => $('file-input').click();
     $('file-input').onchange = async (ev) => {
       for (const file of ev.target.files) {
-        await viewer.addFile(file);
+        try {
+          await viewer.addFile(file);
+        } catch (err) {
+          $('scene-hint').textContent = `${file.name}: ${err.message}`;
+          continue;
+        }
         models.push(file.name);
       }
       ev.target.value = '';

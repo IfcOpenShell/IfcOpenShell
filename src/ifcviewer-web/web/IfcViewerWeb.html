@@ -175,8 +175,14 @@
     if (el) el.classList.toggle('active', !!active);
   }
 
+  // Sidecar format this page will load. Must match IFCVIEW_VERSION.
+  var SIDECAR_FORMAT_VERSION = 19;
+  document.getElementById('open-btn').textContent =
+    'Open .ifcview v' + SIDECAR_FORMAT_VERSION + '…';
+
   IfcViewer.create({
     canvas: viewerCanvas,
+    sidecarFormatVersion: SIDECAR_FORMAT_VERSION,
     exposeAsModuleGlobal: true,          // window.Module — used by the smoke tests
     print: function (t) { console.log(t); },
     // The wasm logs (incl. [info]) come through stderr; only redden the status
@@ -219,7 +225,9 @@
       var existing = pendingMode === 'add' ? viewer.modelCount() : 0;
       if (pendingMode === 'replace') viewer.clearScene();
       beginLoadProgress(existing + files.length);
-      for (var i = 0; i < files.length; i++) viewer.addFile(files[i]);
+      for (var i = 0; i < files.length; i++) {
+        viewer.addFile(files[i]).catch(function (e) { routeStatus(e.message || String(e), true); });
+      }
       fileInput.value = '';
     });
 

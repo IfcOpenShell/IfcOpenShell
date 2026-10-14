@@ -187,3 +187,88 @@ foreach(static_src IN LISTS IFCVIEWERWEB_STATIC)
     list(APPEND IFCVIEWERWEB_STATIC_OUT "${static_dst}")
 endforeach()
 add_custom_target(IfcViewerWebStatic ALL DEPENDS ${IFCVIEWERWEB_STATIC_OUT})
+
+# Publish the linked module (and the JS helper) wherever the pages and the
+# bonsaiweb app actually load them. build-web/ stays the compile output;
+# these copies are what `web/` and the vendor tree serve.
+#
+#   src/ifcviewer-web/web/          example pages (IfcViewerWeb.js + .wasm)
+#   IfcOpenShell-bonsaiweb/.../vendor/@ifcopenshell/viewer
+#                                   IfcViewerWeb.js, IfcViewerWeb.wasm, ifcviewer.js
+#
+# The vendor path assumes the bonsaiweb checkout is a sibling of this repo
+# (.../AECGeeks/IfcOpenShell and .../AECGeeks/IfcOpenShell-bonsaiweb). Override
+# it, or set it empty to skip that copy. The directory is checked at build
+# time so a missing checkout does not fail the wasm link.
+set(IFCVIEWERWEB_BONSAIWEB_VENDOR_DIR
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../IfcOpenShell-bonsaiweb/src/bonsaiweb/vendor/@ifcopenshell/viewer"
+    CACHE PATH
+    "Copy IfcViewerWeb.js, IfcViewerWeb.wasm, and ifcviewer.js here after each build. Empty skips the copy.")
+
+set(IFCVIEWERWEB_PUBLISH_MODULE_JS "${CMAKE_CURRENT_BINARY_DIR}/IfcViewerWeb.js")
+set(IFCVIEWERWEB_PUBLISH_MODULE_WASM "${CMAKE_CURRENT_BINARY_DIR}/IfcViewerWeb.wasm")
+set(IFCVIEWERWEB_PUBLISH_HELPER "${CMAKE_CURRENT_SOURCE_DIR}/web/ifcviewer.js")
+
+set(IFCVIEWERWEB_PUBLISH_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/publish-ifcviewer.cmake")
+file(CONFIGURE OUTPUT "${IFCVIEWERWEB_PUBLISH_SCRIPT}" CONTENT [=[
+if(NOT DEFINED DEST OR DEST STREQUAL "")
+    message(FATAL_ERROR "publish-ifcviewer.cmake: DEST is required")
+endif()
+if(NOT EXISTS "${DEST}")
+    message(STATUS "Skipping IfcViewerWeb publish; directory does not exist: ${DEST}")
+    return()
+endif()
+
+# Empty src skips that file (the example-page folder already owns ifcviewer.js).
+function(publish_one src name)
+    if(src STREQUAL "")
+        return()
+    endif()
+    if(NOT EXISTS "${src}")
+        message(FATAL_ERROR "publish-ifcviewer.cmake: missing ${src}")
+    endif()
+    execute_process(
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${src}" "${DEST}/${name}"
+        COMMAND_ERROR_IS_FATAL ANY)
+endfunction()
+
+publish_one("${JS}" "IfcViewerWeb.js")
+publish_one("${WASM}" "IfcViewerWeb.wasm")
+publish_one("${HELPER}" "ifcviewer.js")
+]=] @ONLY)
+
+set(IFCVIEWERWEB_PUBLISH_OUT)
+foreach(publish_dest IN ITEMS
+        "${CMAKE_CURRENT_SOURCE_DIR}/web"
+        "${IFCVIEWERWEB_BONSAIWEB_VENDOR_DIR}")
+    if(publish_dest STREQUAL "")
+        continue()
+    endif()
+    cmake_path(ABSOLUTE_PATH publish_dest NORMALIZE)
+    # web/ already contains the helper; only the linked module is published there.
+    # The vendor tree needs the helper as well (bonsaiweb imports that copy).
+    if(publish_dest STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}/web")
+        set(publish_helper "")
+        set(publish_stamp "${CMAKE_CURRENT_BINARY_DIR}/publish-web.stamp")
+    else()
+        set(publish_helper "${IFCVIEWERWEB_PUBLISH_HELPER}")
+        set(publish_stamp "${CMAKE_CURRENT_BINARY_DIR}/publish-bonsaiweb.stamp")
+    endif()
+    add_custom_command(
+        OUTPUT "${publish_stamp}"
+        COMMAND ${CMAKE_COMMAND}
+            -DDEST=${publish_dest}
+            -DJS=${IFCVIEWERWEB_PUBLISH_MODULE_JS}
+            -DWASM=${IFCVIEWERWEB_PUBLISH_MODULE_WASM}
+            -DHELPER=${publish_helper}
+            -P "${IFCVIEWERWEB_PUBLISH_SCRIPT}"
+        COMMAND ${CMAKE_COMMAND} -E touch "${publish_stamp}"
+        DEPENDS
+            IfcViewerWeb
+            "${IFCVIEWERWEB_PUBLISH_HELPER}"
+            "${IFCVIEWERWEB_PUBLISH_SCRIPT}"
+        COMMENT "Publishing IfcViewerWeb to ${publish_dest}"
+        VERBATIM)
+    list(APPEND IFCVIEWERWEB_PUBLISH_OUT "${publish_stamp}")
+endforeach()
+add_custom_target(IfcViewerWebPublish ALL DEPENDS ${IFCVIEWERWEB_PUBLISH_OUT})
