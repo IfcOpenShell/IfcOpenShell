@@ -1304,4 +1304,5 @@ class Alignment:
     def create_alignment_from_csv(cls, filepath): pass
     def create_hierarchy_for_alignment(cls, alignment): pass
     def get_child_alignments(cls, alignment): pass
+    def create_child_vertical_hierarchy(cls, child_alignment, parent_obj): pass
     def create_objects_for_referents(cls, alignment): pass

@@ -36,6 +36,7 @@ class TestImportAlignmentCsv:
         ifc.get().should_be_called().will_return("ifc_file")
         alignment.create_alignment_from_csv("pis.csv").should_be_called().will_return("parent")
         alignment.create_hierarchy_for_alignment("parent").should_be_called()
+        ifc.get_object("parent").should_be_called().will_return("parent_obj")
         alignment.get_child_alignments("parent").should_be_called().will_return([])
         alignment.create_objects_for_referents("parent").should_be_called()
         result = subject.import_alignment_csv(ifc, alignment, filepath="pis.csv")
@@ -45,9 +46,11 @@ class TestImportAlignmentCsv:
         ifc.get().should_be_called().will_return("ifc_file")
         alignment.create_alignment_from_csv("pis.csv").should_be_called().will_return("parent")
         alignment.create_hierarchy_for_alignment("parent").should_be_called()
+        ifc.get_object("parent").should_be_called().will_return("parent_obj")
         alignment.get_child_alignments("parent").should_be_called().will_return(["child_a", "child_b"])
-        alignment.create_hierarchy_for_alignment("child_a").should_be_called()
-        alignment.create_hierarchy_for_alignment("child_b").should_be_called()
+        # a child alignment carries only a vertical layout, which goes under the parent's object
+        alignment.create_child_vertical_hierarchy("child_a", "parent_obj").should_be_called()
+        alignment.create_child_vertical_hierarchy("child_b", "parent_obj").should_be_called()
         alignment.create_objects_for_referents("parent").should_be_called()
         result = subject.import_alignment_csv(ifc, alignment, filepath="pis.csv")
         assert result == "parent"
