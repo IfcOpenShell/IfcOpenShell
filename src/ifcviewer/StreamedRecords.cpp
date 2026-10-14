@@ -63,16 +63,9 @@ static inline uint32_t packRGBA8(const MaterialInfo& material) {
 // Build a streamed mesh record (local coords, 28-byte interleaved vertices) from a
 // TriangulationElement. Per-vertex color is baked from material_ids so that
 // triangulations with per-face materials still render correctly.
-// Vertex rebasing: when `rebase_offset` is non-zero, every vertex position is
-// subtracted by it so the emitted mesh-local coordinates stay near the origin
-// (and float32 precision survives upload to the GPU).  Caller compensates by
-// post-multiplying each instance's PlacementTransformation by
-// T(+rebase_offset), which is mathematically the identity overall but moves
-// the magnitude off the float-precision-sensitive vertex column.
 StreamedMesh buildStreamedMesh(uint32_t session_model_id,
                                uint32_t mesh_id,
-                               const ifcopenshell::geom::triangulation_element* elem,
-                               const Eigen::Vector3d& rebase_offset) {
+                               const ifcopenshell::geom::triangulation_element* elem) {
     StreamedMesh mesh;
     mesh.session_model_id = session_model_id;
     mesh.mesh_id = mesh_id;
@@ -117,12 +110,10 @@ StreamedMesh buildStreamedMesh(uint32_t session_model_id,
             mesh.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS);
         remap.emplace(key, new_idx);
 
-        // Subtract in double, narrow to float — preserves precision when
-        // verts are far from origin and rebase_offset cancels the magnitude.
         const float p[3] = {
-            static_cast<float>(verts[orig_idx * 3 + 0] - rebase_offset.x()),
-            static_cast<float>(verts[orig_idx * 3 + 1] - rebase_offset.y()),
-            static_cast<float>(verts[orig_idx * 3 + 2] - rebase_offset.z()),
+            static_cast<float>(verts[orig_idx * 3 + 0]),
+            static_cast<float>(verts[orig_idx * 3 + 1]),
+            static_cast<float>(verts[orig_idx * 3 + 2]),
         };
         for (int a = 0; a < 3; ++a) {
             mesh.vertices.push_back(p[a]);
@@ -188,14 +179,12 @@ StreamedInstance makeStreamedInstance(uint32_t session_model_id,
                                       const ifcopenshell::geom::triangulation_element& elem,
                                       const UniqueMesh& unique_mesh,
                                       const MeshAabb& mesh_aabb) {
-    // Vertex rebasing cont.: post-multiply the per-instance
-    // PlacementTransformation by T(+rebase_offset) so world position is
-    // preserved, then by the dedup transform that carries the shared mesh's
-    // local coordinates onto this geometry's.  Keep the emitted placement in
-    // double so later CoordinateOperation / false-origin composition can
-    // cancel large translations before the final GPU float upload.
+    // Post-multiply the per-instance PlacementTransformation by the dedup
+    // transform that carries the shared mesh's local coordinates onto this
+    // geometry's.  Keep the emitted placement in double so later
+    // CoordinateOperation / false-origin composition can cancel large
+    // translations before the final GPU float upload.
     Eigen::Matrix4d mat_d = elem.transformation().data()->ccomponents();
-    mat_d.block<3, 1>(0, 3) += mat_d.block<3, 3>(0, 0) * unique_mesh.rebase_offset;
     mat_d = mat_d * unique_mesh.canonical_to_instance_matrix;
 
     StreamedInstance inst;
@@ -218,7 +207,6 @@ StreamedInstance makeStreamedInstance(uint32_t session_model_id,
 
 UniqueMesh MeshRegistry::resolve(uint32_t session_model_id,
                                  const ifcopenshell::geom::triangulation_element& elem,
-                                 const Eigen::Vector3d& rebase_offset,
                                  std::optional<StreamedMesh>& new_mesh) {
     new_mesh.reset();
     const std::string& geom_id = elem.geometry().id();
@@ -228,8 +216,7 @@ UniqueMesh MeshRegistry::resolve(uint32_t session_model_id,
     }
 
     UniqueMesh unique_mesh;
-    unique_mesh.rebase_offset = rebase_offset;
-    StreamedMesh mesh = buildStreamedMesh(session_model_id, meshCount(), &elem, rebase_offset);
+    StreamedMesh mesh = buildStreamedMesh(session_model_id, meshCount(), &elem);
     if (auto match = mesh_dedup_.findCongruentMesh(mesh)) {
         unique_mesh.mesh_id = match->mesh_id;
         unique_mesh.canonical_to_instance_matrix = match->canonical_to_instance_matrix;

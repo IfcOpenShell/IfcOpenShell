@@ -39,14 +39,11 @@ struct MeshAabb {
     float lmax[3];
 };
 
-// How a geometry is placed onto the mesh it is drawn with.  `rebase_offset`
-// is the vertex rebase applied when the geometry's mesh was built (zero when
-// its first vertex was near the origin and rebasing wasn't worth it), and
+// How a geometry is placed onto the mesh it is drawn with.
 // `canonical_to_instance_matrix` is non-identity when MeshDedup folded the
 // geometry onto an earlier, congruent mesh.
 struct UniqueMesh {
     uint32_t        mesh_id = 0;
-    Eigen::Vector3d rebase_offset = Eigen::Vector3d::Zero();
     Eigen::Matrix4d canonical_to_instance_matrix = Eigen::Matrix4d::Identity();
 };
 
@@ -55,17 +52,16 @@ struct UniqueMesh {
 // placement encoding.  Pure conversions: no Qt, no I/O.
 
 // One interleaved transfer mesh (7 floats/vertex) from a triangulation
-// element, in mesh-local coords.  When `rebase_offset` is non-zero every
-// vertex position is emitted relative to it; the caller compensates by post-
-// multiplying each instance's placement by T(+rebase_offset).
+// element, in mesh-local coords.  Far-from-origin vertices are expected to
+// have been rebased by the iterator (vertex-rebase-distance), which keeps the
+// float32 positions precise and folds the shift into the placement itself.
 StreamedMesh buildStreamedMesh(uint32_t session_model_id,
                                uint32_t mesh_id,
-                               const ifcopenshell::geom::triangulation_element* elem,
-                               const Eigen::Vector3d& rebase_offset);
+                               const ifcopenshell::geom::triangulation_element* elem);
 
 // One instance record for a triangulation element.  The placement is kept in
-// double, post-multiplied by T(+rebase_offset) and by the dedup transform so
-// world position is preserved.
+// double, post-multiplied by the dedup transform so world position is
+// preserved.
 StreamedInstance makeStreamedInstance(uint32_t session_model_id,
                                       uint32_t object_id,
                                       const ifcopenshell::geom::triangulation_element& elem,
@@ -78,11 +74,9 @@ StreamedInstance makeStreamedInstance(uint32_t session_model_id,
 class MeshRegistry {
 public:
     // The placement of `elem`'s geometry.  When the geometry needs a mesh of
-    // its own it is returned in `new_mesh` for the caller to emit, built with
-    // `rebase_offset` subtracted from its vertices.
+    // its own it is returned in `new_mesh` for the caller to emit.
     UniqueMesh resolve(uint32_t session_model_id,
                        const ifcopenshell::geom::triangulation_element& elem,
-                       const Eigen::Vector3d& rebase_offset,
                        std::optional<StreamedMesh>& new_mesh);
 
     const MeshAabb& aabb(uint32_t mesh_id) const { return mesh_aabbs_[mesh_id]; }

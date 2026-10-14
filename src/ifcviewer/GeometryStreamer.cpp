@@ -239,6 +239,10 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     settings.set("mesher-angular-deflection", AppSettings::instance().angularTolerance());
     // Wire intersection checks is prohibitively slow on advanced breps. See bug #5999.
     settings.set("no-wire-intersection-check", true);
+    // Meshes whose local vertices sit over 1 km from their own origin (matching
+    // bonsai's distance_limit default) are shifted onto one of their own vertices,
+    // with the shift folded into the placement, so float32 positions stay precise.
+    settings.set("vertex-rebase-distance", 1000.0);
 
     // Mirror bonsai's IfcImporter.process_element_filter: walk IfcElement
     // (plus IfcProxy on IFC2X3/IFC4), drop IfcFeatureElement except
@@ -392,34 +396,15 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                     pending_elements_.push_back(std::move(info));
                 }
 
-                // Vertex rebasing: pick a rebase offset when the mesh's
-                // first source vertex is far from origin (>1 km in metres,
-                // matching bonsai's distance_limit default).  Iterator
-                // outputs metres, so the threshold is in metres directly.
-                Eigen::Vector3d rebase_offset = Eigen::Vector3d::Zero();
-                constexpr double kFarAwayThresholdMeters = 1000.0;
-                const auto& src_verts = geom.verts();
-                if (src_verts.size() >= 3) {
-                    const double x = src_verts[0];
-                    const double y = src_verts[1];
-                    const double z = src_verts[2];
-                    if (std::abs(x) > kFarAwayThresholdMeters ||
-                        std::abs(y) > kFarAwayThresholdMeters ||
-                        std::abs(z) > kFarAwayThresholdMeters) {
-                        rebase_offset = Eigen::Vector3d(x, y, z);
-                    }
-                }
-
                 std::optional<StreamedMesh> new_mesh;
                 const UniqueMesh unique_mesh = mesh_registry.resolve(
-                    session_model_id_, *tri_elem, rebase_offset, new_mesh);
+                    session_model_id_, *tri_elem, new_mesh);
                 if (new_mesh) emit meshReady(std::move(*new_mesh));
 
-                // The rebase and the dedup transform are folded into the
-                // placement by the shared builder; the raw placement stays in
-                // double so later CoordinateOperation / false-origin
-                // composition can cancel large translations before the final
-                // GPU float upload.
+                // The dedup transform is folded into the placement by the
+                // shared builder; the raw placement stays in double so later
+                // CoordinateOperation / false-origin composition can cancel
+                // large translations before the final GPU float upload.
                 StreamedInstance inst = makeStreamedInstance(
                     session_model_id_, object_id, *tri_elem, unique_mesh,
                     mesh_registry.aabb(unique_mesh.mesh_id));

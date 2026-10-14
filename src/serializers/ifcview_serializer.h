@@ -35,12 +35,10 @@
 // runtime-loadable serializer plugin (geometry_ifcview_plugin.cpp)
 // and be driven by IfcConvert or any other registry consumer.
 //
-// Two deliberate differences from the live streamer bake:
-//  - no vertex rebasing: the bake emits mesh-local coords as the iterator made
-//    them and leaves the placement untouched (the rebase is the viewer's
-//    float-precision optimisation for far-from-origin meshes);
-//  - no georeferencing: the CoordinateOperation cache stays identity, so a
-//    plugin-baked .ifcview loads in project coordinates.
+// Vertex rebasing is the iterator's job (--vertex-rebase-distance; the viewer
+// passes 1000).  One deliberate difference from the live streamer bake remains:
+// no georeferencing, the CoordinateOperation cache stays identity, so a
+// plugin-baked .ifcview loads in project coordinates.
 class IfcViewSerializer : public ifcopenshell::geom::write_only_geometry_serializer {
 public:
     IfcViewSerializer(const std::string& output_path,
