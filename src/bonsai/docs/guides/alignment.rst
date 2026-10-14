@@ -333,6 +333,9 @@ the direction of the turn.
    * - R
      - Radius
      - Circular curves
+   * - R1, R2
+     - Radius at the start and at the end of the spiral, ∞ where it meets a straight
+     - Spirals
    * - T
      - Tangent length, from the P.C. or P.T. to the P.I.: R tan(Δ/2)
      - Circular curves
