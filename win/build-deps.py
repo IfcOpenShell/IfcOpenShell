@@ -66,6 +66,7 @@ from installers import (
     install_python,
     install_qt6,
     install_rocksdb,
+    install_smlib,
     install_swig,
     install_zstd,
 )
@@ -424,6 +425,7 @@ def main() -> None:
         ARGS.qt6_install_dir,
     )
     install_manifold(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg, ARGS.shared)
+    install_smlib(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
 
     print_success(START_TIME)
 

@@ -1257,6 +1257,66 @@ def install_rocksdb(
     mark_installation(dependency_install_dir, build_cfg)
 
 
+def install_smlib(
+    vs_cfg_vars: VsCfgResult,
+    build_type: BuildType,
+    build_deps_cache: BuildDepsCache,
+    num_build_procs: int,
+    generator_cfg: CMakeGenCfg,
+) -> None:
+    build_cfg = generator_cfg.build_cfg
+    deps_dir = vs_cfg_vars.deps_dir
+    install_dir = vs_cfg_vars.install_dir
+
+    # Revision of https://github.com/NVIDIA-Omniverse/usd-brep the SMLib kernel is built from.
+    SMLIB_VERSION = "c9c5979f04cea8c38213004d4f04df0dcfb40d05"
+    DEPENDENCY_NAME = "SMLib"
+    dependency_dir = deps_dir / "usd-brep"
+    dependency_install_dir = install_dir / get_dependency_name("smlib", SMLIB_VERSION[:7], False)
+
+    build_deps_cache.add_entry("SMLIB_INSTALL_PATH", str(dependency_install_dir))
+
+    if is_already_installed(dependency_install_dir, expected_build_cfg=build_cfg):
+        return
+
+    git_clone_and_checkout_revision(
+        DEPENDENCY_NAME,
+        "https://github.com/NVIDIA-Omniverse/usd-brep.git",
+        dependency_dir,
+        SMLIB_VERSION,
+    )
+
+    # The repository is built with premake upstream, so it carries no CMakeLists of its own.
+    smlib_cmake_lists = dependency_dir / "CMakeLists.txt"
+    if not smlib_cmake_lists.exists() or "SMLib" not in smlib_cmake_lists.read_text():
+        if smlib_cmake_lists.exists():
+            logger.info(f"Removing stale '{smlib_cmake_lists}' to re-apply the updated patch.")
+            smlib_cmake_lists.unlink()
+        run_streamed(
+            "git",
+            "apply",
+            "--ignore-whitespace",
+            str(REPO_ROOT / "nix" / "patches" / "smlib" / "add-cmake-build.patch"),
+            cwd=dependency_dir,
+        )
+        assert "SMLib" in smlib_cmake_lists.read_text()
+
+    run_cmake(
+        DEPENDENCY_NAME,
+        dependency_dir,
+        vs_cfg_vars,
+        build_type,
+        f"-DCMAKE_INSTALL_PREFIX={dependency_install_dir}",
+        generator_cfg=generator_cfg,
+    )
+
+    build_path = dependency_dir / vs_cfg_vars.build_dir
+    build_and_install_cmake_project(
+        DEPENDENCY_NAME, build_path, num_build_procs=num_build_procs, generator_cfg=generator_cfg
+    )
+    mark_installation(dependency_install_dir, build_cfg)
+
+
 def install_manifold(
     vs_cfg_vars: VsCfgResult,
     build_type: BuildType,
