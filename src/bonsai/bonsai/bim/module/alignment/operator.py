@@ -2727,6 +2727,17 @@ class _CivilAngleInput:
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
             return
+        # the Tab events that move between fields: a press while typing, or the release that starts typing
+        typing = self.tool_state.is_input_on
+        if event.type == "TAB" and ((typing and event.value == "PRESS") or (not typing and event.value == "RELEASE")):
+            # Tab replaces the field it moves to with that value's display text; remember the values
+            # themselves, to put back when a field is left without typing in it (see recalculate_inputs)
+            if self.tool_state.is_input_on and event.value == "PRESS":
+                self.recalculate_inputs(context)  # finish the field being left first
+                self.is_typing = False  # so the polyline tool doesn't recalculate it again
+            values = {name: self.input_ui.get_text_value(name) for name in self.input_options}
+            self.field_values = values
+            return super().handle_keyboard_input(context, event)
         return super().handle_keyboard_input(context, event)
 
     def _flatten_snap_point(self):
@@ -2749,6 +2760,14 @@ class _CivilAngleInput:
 
     def recalculate_inputs(self, context):
         self._flatten_snap_point()
+        if self.tool_state.is_input_on and not getattr(self, "is_typing", False):
+            # Tab moved through a field without typing in it: it holds its value's display text, rounded
+            # to the display precision (0.01 degree for an angle), and recalculating from that rounded
+            # text made Distance and Angle wander on every Tab. Put the value itself back instead.
+            value = (getattr(self, "field_values", None) or {}).get(self.input_type)
+            if self.input_type and value is not None:
+                self.input_ui.set_value(self.input_type, value)
+            return True
         if self.number_input and self.input_type:
             # what was typed in this field, before it's recalculated (see _typed_point_input)
             if getattr(self, "typed_fields", None) is None:
@@ -3047,26 +3066,22 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, _DrawHorizontalAlig
 
 
 def _move_marker_anchors(markers, index):
-    """World positions the moved marker is measured from, oldest first, so the polyline tool's
-    Distance/Angle read exactly as they did when the PI was first drawn: Distance from the previous
-    point, Angle against the leg before it. The Start marker has no previous point, so it's
-    measured backwards from the next one instead."""
+    """World positions the moved marker is measured from: its own, so a typed Distance and Angle move
+    it from where it is now -- Distance how far, Angle counter-clockwise from east (+X), as the
+    polyline tool measures a first leg. A typed bearing is the direction of the move."""
     return [m.location.copy() for m in _move_marker_anchor_objects(markers, index)]
 
 
 def _move_marker_anchor_objects(markers, index):
     """The markers _move_marker_anchors measures from, in the same order."""
-    if index == 0:
-        return list(reversed(markers[1:3]))
-    return markers[max(index - 2, 0) : index]
+    return [markers[index]]
 
 
 class ALIGN_OT_move_pi_marker(bpy.types.Operator, _CivilAngleInput, PolylineOperator):
     """Move the selected PI/Start/End marker with the horizontal draw tool's own input -- the
     same PolylineOperator D/A/X/Y fields, snapping, and Bearing readout as
-    ALIGN_OT_draw_horizontal_alignment, measured from the neighbouring PI so typed values mean
-    what they meant when the PI was drawn: Distance from the previous PI, Angle against the leg
-    before it (the Start marker is measured backwards from PI 1).
+    ALIGN_OT_draw_horizontal_alignment, measured from the marker's current position: Distance is
+    how far it moves, Angle the direction counter-clockwise from east (+X), or a typed bearing.
 
     Click or Enter places the marker; nothing touches IFC until Apply Curve, same as moving the
     marker any other way. Esc/RMB leaves it where it was. The Angle field also takes a bearing or a

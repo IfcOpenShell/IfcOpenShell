@@ -46,11 +46,11 @@ try:
     print("markers:", [(m.name, tuple(round(v, 3) for v in m.location[:2])) for m in markers])
     check(len(markers) == 3, "expected Start, PI 1, End")
 
-    # anchors: PI 1 from Start; End from Start->PI 1; Start backwards from End->PI 1
+    # every marker is moved from where it is: its anchor is itself
     anchors = lambda i: [tuple(v[:2]) for v in op_mod._move_marker_anchors(markers, i)]
-    check(anchors(1) == [(0.0, 0.0)], f"PI 1 anchors {anchors(1)}")
-    check(anchors(2) == [(0.0, 0.0), (1000.0, 0.0)], f"End anchors {anchors(2)}")
-    check(anchors(0) == [(1000.0, 1000.0), (1000.0, 0.0)], f"Start anchors {anchors(0)}")
+    check(anchors(1) == [(1000.0, 0.0)], f"PI 1 anchors {anchors(1)}")
+    check(anchors(2) == [(1000.0, 1000.0)], f"End anchors {anchors(2)}")
+    check(anchors(0) == [(0.0, 0.0)], f"Start anchors {anchors(0)}")
 
     Op = op_mod.ALIGN_OT_move_pi_marker
     attrs = {}
@@ -89,46 +89,25 @@ try:
 
     pi1, end, start = markers[1], markers[2], markers[0]
 
-    # PI 1: 800 at 45 degrees from Start (one anchor -> angle against the +X axis, like the first drawn leg)
-    r = move(pi1, 800.0, 45.0, (0.0, 500.0, 0.0))
-    print("PI 1 ->", tuple(pi1.location[:2]), r)
-    check(
-        r == {"FINISHED"}
-        and near(pi1.location[:2], (800 * math.cos(math.radians(45)), 800 * math.sin(math.radians(45)))),
-        "PI 1 not moved to D=800, A=45",
-    )
+    def check_moved(marker_obj, before, d, a):
+        """A move is d from where the marker was, at a counter-clockwise from east (+X)."""
+        want = (before[0] + d * math.cos(math.radians(a)), before[1] + d * math.sin(math.radians(a)))
+        got = tuple(marker_obj.location[:2])
+        print(f"  {marker_obj.name}: got {tuple(round(v, 4) for v in got)} want {tuple(round(v, 4) for v in want)}")
+        check(near(got, want), f"{marker_obj.name} not moved {d} at {a}")
+
+    # PI 1: 800 at 45 degrees from where it is
+    before = tuple(pi1.location[:2])
+    r = move(pi1, 800.0, 45.0, (before[0], before[1] + 500.0, 0.0))
+    check(r == {"FINISHED"}, "PI 1 move not finished")
+    check_moved(pi1, before, 800.0, 45.0)
     check(not tool.Model.get_polyline_props().insertion_polyline, "polyline not cleaned up")
 
-    def check_placed(moved, anchor_back, anchor, d, a, mouse):
-        """The draw tool's convention: moved is d from anchor, at angle a measured counter-clockwise
-        from the back leg (anchor -> anchor_back); a negative a turns the other way."""
-        bx, by = anchor_back[0] - anchor[0], anchor_back[1] - anchor[1]
-        n = math.hypot(bx, by)
-        t = math.radians(a)
-        ux, uy = (bx * math.cos(t) - by * math.sin(t)) / n, (bx * math.sin(t) + by * math.cos(t)) / n
-        want = (anchor[0] + d * ux, anchor[1] + d * uy)
-        print(f"  got {tuple(round(v, 4) for v in moved)} want {tuple(round(v, 4) for v in want)}")
-        check(near(moved, want), "placement wrong")
-
-    # End: interior angle 150 at PI 1 against the Start->PI 1 leg, mouse below the leg
-    p1 = tuple(pi1.location[:2])
-    s0 = tuple(start.location[:2])
-    move(end, 500.0, 150.0, (2000.0, 0.0, 0.0))
-    print("End ->", tuple(end.location[:2]))
-    check_placed(tuple(end.location[:2]), s0, p1, 500.0, 150.0, (2000.0, 0.0))
-
-    # Start: measured backwards -- interior angle 120 at PI 1 against the End->PI 1 leg
-    e0 = tuple(end.location[:2])
-    move(start, 300.0, 120.0, (0.0, 0.0, 0.0))
-    print("Start ->", tuple(start.location[:2]))
-    check_placed(tuple(start.location[:2]), e0, p1, 300.0, 120.0, (0.0, 0.0))
-    # exactly 180 = straight on from the End->PI 1 leg (used to go the wrong way for a non-+X leg)
-    move(start, 400.0, 180.0, (0.0, 0.0, 0.0))
-    print("Start (A=180) ->", tuple(start.location[:2]))
-    check_placed(tuple(start.location[:2]), e0, p1, 400.0, 180.0, (0.0, 0.0))
-    move(start, 250.0, -100.0, (0.0, 0.0, 0.0))
-    print("Start (A=-100) ->", tuple(start.location[:2]))
-    check_placed(tuple(start.location[:2]), e0, p1, 250.0, -100.0, (0.0, 0.0))
+    # End and Start, in other directions, including straight west (180) and clockwise (-100)
+    for marker_obj, d, a in ((end, 500.0, 150.0), (start, 300.0, 120.0), (start, 400.0, 180.0), (start, 250.0, -100.0)):
+        before = tuple(marker_obj.location[:2])
+        move(marker_obj, d, a, (before[0] + 100.0, before[1] + 100.0, 0.0))
+        check_moved(marker_obj, before, d, a)
 
     # nothing placed -> marker stays, operator cancels
     before = tuple(pi1.location[:2])
@@ -152,7 +131,7 @@ try:
     first = segs[0].DesignParameters
     print("first segment start/direction:", first.StartPoint.Coordinates, math.degrees(first.StartDirection))
     check(near(first.StartPoint.Coordinates, tuple(start.location[:2])), "Start not applied")
-    want = math.degrees(math.atan2(p1[1] - start.location.y, p1[0] - start.location.x))
+    want = math.degrees(math.atan2(pi1.location.y - start.location.y, pi1.location.x - start.location.x))
     check(abs(math.degrees(first.StartDirection) - want) < 1e-3, "first direction wrong")
 
     print("MOVE_MARKER_TEST_OK")
