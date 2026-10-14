@@ -134,6 +134,11 @@ jobs:
           poe zizmor
         continue-on-error: true
 
+      - name: Check VERSION
+        id: check-version
+        run: poe version
+        continue-on-error: true
+
       - name: Final check
         run: |
           ERROR=0
@@ -160,5 +165,8 @@ jobs:
           fi
           if [ "${{ steps.zizmor.outcome }}" != "success" ]; then
             echo "::error::zizmor (GitHub workflows security check) failed, see 'zizmor' step for the details." && ERROR=1
+          fi
+          if [ "${{ steps.check-version.outcome }}" != "success" ]; then
+            echo "::error::VERSION check failed, see 'Check VERSION' step for the details." && ERROR=1
           fi
           exit $ERROR

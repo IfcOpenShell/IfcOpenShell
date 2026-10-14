@@ -196,6 +196,8 @@ check-whitespace = "uv run .github/scripts/check-whitespace.py"
 # Not `zizmor ` to avoid flagging submodules.
 zizmor = "zizmor .github/"
 
+version = "uv run .github/scripts/version.py"
+
 ruff-format = "ruff format"
 
 ty.sequence = ["ty-bonsai", "ty-ios"]

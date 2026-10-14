@@ -88,8 +88,7 @@ Notes:
 - Corrective Release (if needed after a standard release):
 
   - Create a new branch from the release tag (e.g., from the ``ifcopenshell-0.8.5`` tag)
-  - Update ``VERSION`` with the ``-post1`` suffix (e.g., ``0.8.5-post1``, **not** ``.post1``)
-  - The hyphen is required for semantic versioning compliance; Blender will not process ``.post1`` suffixes correctly
+  - Update ``VERSION`` with ``poe version --bump 0.8.5post1``
   - Follow the standard release process for the corrective version
 
 - Multiple Blender Python Versions:
