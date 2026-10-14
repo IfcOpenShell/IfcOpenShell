@@ -120,7 +120,7 @@
         }
         const model = new ifcopenshell.File('IFC4');
         try {
-          model.createEntity('IfcWall', { GlobalId: newGuid(), Name: 'Demo Wall' });
+          model.create('IfcWall', { GlobalId: newGuid(), Name: 'Demo Wall' });
           log(summarize(model), 'ok');
         } finally {
           model.dispose();
