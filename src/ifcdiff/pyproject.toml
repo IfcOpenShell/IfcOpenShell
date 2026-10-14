@@ -10,7 +10,6 @@ authors = [
 ]
 description = "Compare IFC models for changes to geometry, properties, and structure"
 readme = "README.md"
-requires-python = ">=3.11"
 license = "LGPL-3.0-or-later"
 keywords = ["IFC", "Diff"]
 classifiers = [
