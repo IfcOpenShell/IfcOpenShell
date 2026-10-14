@@ -242,7 +242,7 @@ def test_author_transition_curve_alignment(family):
     # verify continuity of position and direction between consecutive segments of the
     # geometric representation, including the two halves of a HELMERTCURVE
     direction_tolerance = 1.0e-9
-    position_tolerance = 1.0e-5
+    position_tolerance = 1.0e-9
     curve = ifcopenshell.api.alignment.get_layout_curve(horizontal_layout)
     settings = ifcopenshell.geom.settings()
     for segment, next_segment in zip(curve.Segments[:-1], curve.Segments[1:]):
