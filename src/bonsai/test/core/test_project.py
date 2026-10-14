@@ -183,9 +183,7 @@ class TestCreateProject:
 
         subject.create_project(ifc, georeference, project, spatial, schema="IFC4", template="template")
 
-    def test_using_a_project_template_that_defines_its_own_spatial_structure(
-        self, ifc, georeference, project, spatial
-    ):
+    def test_using_a_project_template_that_defines_its_own_spatial_structure(self, ifc, georeference, project, spatial):
         ifc.get().should_be_called().will_return(None)
         ifc.run("project.create_file", version="IFC4X3").should_be_called().will_return("ifc")
         ifc.set("ifc").should_be_called()
