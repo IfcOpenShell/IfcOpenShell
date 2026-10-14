@@ -213,6 +213,7 @@
 %ignore SvgUseEdgeClassification;
 %ignore SvgRenderCreaseEdges;
 %ignore SvgRenderSharpEdges;
+%ignore LoftUseRuledSurfaces;
 
 %ignore filetype;
 %ignore guess_file_type;
