@@ -10,7 +10,7 @@ authors = [
 ]
 description = "Library to interact with the buildingSMART Data Dictionary"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = "LGPL-3.0-or-later"
 keywords = ["IFC", "bSDD", "BIM"]
 classifiers = [

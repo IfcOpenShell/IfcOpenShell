@@ -7,7 +7,7 @@ name = "bcf-client"
 # author = "IfcOpenShell"
 description = "BCF-XML file handler."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = "LGPL-3.0-or-later"
 keywords = ["IFC", "BCF", "BIM"]
 dependencies = [
