@@ -291,17 +291,23 @@ edits + Insert/Delete PI + PI click-pick (§11), `d6a54a829` cant follows horizo
   string-backed field would be needed (§12).
 - The cant layout's mirroring when a curve's turn direction flips is implemented but not directly
   tested (§11).
-- An inserted PI is placed on the straight leg (zero deflection); applying without moving it gives
-  two collinear tangents, which Edit PIs then can't reconstruct.
+- ~~An inserted PI is placed on the straight leg (zero deflection); applying without moving it gives
+  two collinear tangents, which Edit PIs then can't reconstruct.~~ Fixed 2026-10-14: applying it
+  divided by zero in the PI solver (the sign of the turn); a sharp PI where the alignment goes
+  straight on now splits the straight there, and Edit PIs keeps it as a split straight
+  (`dev_tests/bl_insert_straight.py`). A curve at such a PI is a clear error. `v0.9.0`'s
+  `layout_horizontal_alignment_by_pi_method` has the same division (upstream candidate).
 - `_cant_lookup_for_pi_markers` (VIENNESEBEND cant per PI) is positional, so it defaults after a PI
   insert/delete until the cant layout is regenerated.
 - A cant transition that rotates the track about its centreline (left -c to +c, right +c to -c)
   keeps a constant deviating elevation while its cross slope changes. The kernel interpolates the
   cross slope by the deviating elevation, so IFC can't represent it; such a segment is mapped as
   constant cant with its start cross slope.
-- Bonsai's `test/core/test_alignment.py` CSV import tests fail (1 failure, 2 errors: "Unpredicted
+- ~~Bonsai's `test/core/test_alignment.py` CSV import tests fail (1 failure, 2 errors: "Unpredicted
   call: get_object('parent')"), before and after the 2026-10-14 Ruff clean-up alike: their mock
-  expectations no longer match `core.alignment`. Run them with
+  expectations no longer match `core.alignment`.~~ Fixed 2026-10-14: the tests expect the parent
+  object lookup and `create_child_vertical_hierarchy`, which is now in the tool interface; all 397
+  core tests pass. Run them with
   `python -m pytest test/core/test_alignment.py -o addopts=""` from `src/bonsai` (the configured
   options load pytest-blender).
 - Upstream candidates, if wanted: `dae110168` (`update_layout_segments`) and `87d537e29` (polyline
