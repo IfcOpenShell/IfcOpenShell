@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import math
+from functools import cache
 from typing import TYPE_CHECKING, Any, Literal, Union
 
 import bpy
@@ -33,6 +34,12 @@ import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bonsai.bim.module.unit.prop import BIMUnitProperties
+
+
+@cache
+def _get_distance_parser(grammar: str) -> Lark:
+    """Return a cached Lark parser for ``grammar``, compiling it on first use."""
+    return Lark(grammar)
 
 
 class Unit(bonsai.core.tool.Unit):
@@ -271,11 +278,11 @@ class Unit(bonsai.core.tool.Unit):
 
             # Try to parse with the project's default grammar first
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                primary_parser = Lark(grammar_imperial)
-                fallback_parser = Lark(grammar_metric)
+                primary_parser = _get_distance_parser(grammar_imperial)
+                fallback_parser = _get_distance_parser(grammar_metric)
             else:
-                primary_parser = Lark(grammar_metric)
-                fallback_parser = Lark(grammar_imperial)
+                primary_parser = _get_distance_parser(grammar_metric)
+                fallback_parser = _get_distance_parser(grammar_imperial)
 
             # Try parsing with primary grammar
             parse_tree = None
