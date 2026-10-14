@@ -961,6 +961,7 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     tool.Alignment.remove_layout_and_child_layout_objects(alignment)
 
     cant_pairs = tool.Alignment.pair_cant_with_horizontal(alignment)
+    split_stations = _split_tangent_stations(tool.Alignment.get_real_layout_segments(h_layout))
     try:
         # keep the existing segments where they correspond (REQUIREMENTS.md §11), else rebuild
         if not _update_horizontal_pi_segments(ifc, h_layout, hpoints, radii):
@@ -997,7 +998,14 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     _tag_all_areas_redraw(context)
 
     n_curved = sum(1 for r in radii if (r[0] if isinstance(r, tuple) else r))
-    return True, f"Drew alignment '{alignment.Name}' with {len(hpoints)} PIs ({n_curved} curved)"
+    message = f"Drew alignment '{alignment.Name}' with {len(hpoints)} PIs ({n_curved} curved)"
+    # a straight's split point stays at its station, unless that station is no longer on a straight
+    kept = _split_tangent_stations(tool.Alignment.get_real_layout_segments(h_layout))
+    dropped = [s for s in split_stations if not any(abs(s - k) < 1e-6 for k in kept)]
+    if dropped:
+        where = ", ".join(f"{s:.3f}" for s in dropped)
+        message += f"; {len(dropped)} straight split point(s) at distance along {where} no longer fall on a straight and were removed"
+    return True, message
 
 
 def _create_pi_markers(context, alignment_id, raw_points):
@@ -1727,14 +1735,21 @@ def _update_horizontal_pi_segments(ifc, h_layout, hpoints, radii) -> bool:
     if skipped:
         return False
     definitions = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, radii)
+    # A split straight is one tangent to the PI method: pair it by its first piece, then cut the new
+    # tangent back into pieces at the same stations
+    pieces = {old_segments[first]: old_segments[first : last + 1] for first, last in _tangent_runs(old_segments)}
+    tangents = [s for s in old_segments if s.DesignParameters.PredefinedType != "LINE" or s in pieces]
     sources = tool.Alignment.map_segments_by_pi(
-        old_segments,
-        [s.DesignParameters.PredefinedType for s in old_segments],
+        tangents,
+        [s.DesignParameters.PredefinedType for s in tangents],
         [spec["pi_local"] for spec in specs],
         [d.predefined_type for d in definitions],
         list(hpoints[1:-1]),
         "LINE",
         ("CIRCULARARC",),
+    )
+    definitions, sources = _split_tangents_at_stations(
+        definitions, sources, _split_tangent_stations(old_segments), pieces
     )
     parameters = [_horizontal_design_parameters(ifc, d) for d in definitions]
     ifcopenshell.api.alignment.update_layout_segments(ifc, h_layout, list(zip(sources, parameters)))
@@ -1762,6 +1777,81 @@ def _update_vertical_pi_segments(ifc, v_layout, vpoints, lengths) -> bool:
     )
     ifcopenshell.api.alignment.update_layout_segments(ifc, v_layout, list(zip(sources, parameters)))
     return True
+
+
+# Consecutive LINEs whose directions differ by less than this are pieces of one straight, split for
+# example at a station break, rather than two tangents meeting at a PI
+_SPLIT_TANGENT_TOLERANCE = 1e-6  # radians
+
+
+def _is_split_tangent(segment_a, segment_b) -> bool:
+    """Whether two consecutive horizontal segments are pieces of one straight."""
+    a, b = segment_a.DesignParameters, segment_b.DesignParameters
+    if a.PredefinedType != "LINE" or b.PredefinedType != "LINE":
+        return False
+    turn = _get_start_direction(b) - _get_start_direction(a)
+    return abs(math.atan2(math.sin(turn), math.cos(turn))) < _SPLIT_TANGENT_TOLERANCE
+
+
+def _tangent_runs(segments) -> list[tuple[int, int]]:
+    """(first, last) indices of each tangent: a LINE, or the consecutive pieces of a split straight."""
+    runs = []
+    for i, segment in enumerate(segments):
+        if segment.DesignParameters.PredefinedType != "LINE":
+            continue
+        if runs and runs[-1][1] == i - 1 and _is_split_tangent(segments[i - 1], segment):
+            runs[-1] = (runs[-1][0], i)
+        else:
+            runs.append((i, i))
+    return runs
+
+
+def _split_tangent_stations(segments) -> list[float]:
+    """The distance along of every joint between the pieces of a split straight."""
+    stations, distance = [], 0.0
+    for segment_a, segment_b in zip(segments, segments[1:]):
+        distance += segment_a.DesignParameters.SegmentLength
+        if _is_split_tangent(segment_a, segment_b):
+            stations.append(distance)
+    return stations
+
+
+def _split_tangents_at_stations(definitions, sources, stations, pieces):
+    """Cut the PI method's tangents back into the pieces of the split straights they replace.
+
+    A straight split at stations (distances along) is laid out by the PI method as one LINE. Each
+    LINE definition is cut at every station that falls inside it, so a split stays at its station
+    when the PIs around it move. ``sources`` pairs each definition with the old segment it replaces
+    (see map_segments_by_pi), which for a split straight is its first piece; the cut pieces take the
+    old pieces in order (``pieces`` maps a first piece to all of them), keeping their GlobalIds.
+    Returns the new (definitions, sources).
+    """
+    new_definitions, new_sources = [], []
+    start = 0.0
+    for definition, source in zip(definitions, sources):
+        length = definition.segment_length
+        cuts = []
+        if definition.predefined_type == "LINE":
+            cuts = [station - start for station in stations if 1e-6 < station - start < length - 1e-6]
+        if not cuts:
+            new_definitions.append(definition)
+            new_sources.append(source)
+        else:
+            old_pieces = pieces.get(source, [source])
+            dx, dy = math.cos(definition.start_direction), math.sin(definition.start_direction)
+            x, y = definition.start_point
+            edges = [0.0] + cuts + [length]
+            for j, (a, b) in enumerate(zip(edges, edges[1:])):
+                new_definitions.append(
+                    definition._replace(
+                        start_point=(x + a * dx, y + a * dy),
+                        segment_length=b - a,
+                        start_dist_along=definition.start_dist_along + a,
+                    )
+                )
+                new_sources.append(old_pieces[j] if j < len(old_pieces) else None)
+        start += length
+    return new_definitions, new_sources
 
 
 def _tangent_bounded_groups(segments, a_idx, b_idx):
@@ -1821,14 +1911,15 @@ def _reconstruct_horizontal_pis(h_layout):
     marker list would silently drop whatever those segments were).
     """
     segments = tool.Alignment.get_real_layout_segments(h_layout)
-    line_indices = [i for i, s in enumerate(segments) if s.DesignParameters.PredefinedType == "LINE"]
+    # each tangent is a LINE, or the pieces of a straight split at station breaks, which have no PI between them
+    runs = _tangent_runs(segments)
 
     specs = []
     skipped = []
-    if len(segments) == 1 and line_indices == [0]:
+    if runs == [(0, len(segments) - 1)]:
         # a dead-straight alignment: no interior PIs at all, but its Start/End are still editable
         return specs, skipped
-    if len(line_indices) < 2:
+    if len(runs) < 2:
         return specs, [(s, "no bounding tangent") for s in segments]
 
     # Positionally match the arc segment (see below) to a real cant segment at the same station,
@@ -1842,15 +1933,13 @@ def _reconstruct_horizontal_pis(h_layout):
     cant_matches_positionally = bool(cant_layout) and len(cant_segments) == len(segments)
     rail_head_distance = cant_layout.RailHeadDistance if cant_layout else 1.0
 
-    for s in segments[: line_indices[0]]:
+    for s in segments[: runs[0][0]]:
         skipped.append((s, "before the first tangent"))
-    for s in segments[line_indices[-1] + 1 :]:
+    for s in segments[runs[-1][1] + 1 :]:
         skipped.append((s, "after the last tangent"))
 
     groups = [
-        group
-        for k in range(len(line_indices) - 1)
-        for group in _tangent_bounded_groups(segments, line_indices[k], line_indices[k + 1])
+        group for k in range(len(runs) - 1) for group in _tangent_bounded_groups(segments, runs[k][1], runs[k + 1][0])
     ]
     for line_a, a_idx, between, line_b in groups:
         types = [s.DesignParameters.PredefinedType for s in between]
