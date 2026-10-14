@@ -134,3 +134,63 @@ def test_rejects_other_segments():
     file = ifcopenshell.file(schema="IFC4X3_ADD2")
     with pytest.raises(TypeError):
         ifcopenshell.api.alignment.get_horizontal_curve_parameters(file.createIfcAlignmentVerticalSegment())
+
+
+@test.bootstrap.requires_ifc4x3
+def test_spiral_radii():
+    file, (line, spiral_in, arc, spiral_out, _) = _horizontal_segments([(500.0, 100.0, 100.0)])
+
+    # A spiral reports the radius at each end, infinite where it meets a straight
+    entry = ifcopenshell.api.alignment.get_horizontal_curve_parameters(spiral_in)
+    assert entry.start_radius == math.inf
+    assert entry.end_radius == pytest.approx(500.0)
+    exit = ifcopenshell.api.alignment.get_horizontal_curve_parameters(spiral_out)
+    assert exit.start_radius == pytest.approx(500.0)
+    assert exit.end_radius == math.inf
+
+    # Lines and circular curves don't have them; a circular curve has its radius instead
+    for segment in (line, arc):
+        curve = ifcopenshell.api.alignment.get_horizontal_curve_parameters(segment)
+        assert curve.start_radius is curve.end_radius is None
+
+
+def _single_spiral(kind, start_radius, end_radius):
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    ifcopenshell.api.unit.assign_unit(file, units=[ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")])
+    context = ifcopenshell.api.context.add_context(file, context_type="Model")
+    ifcopenshell.api.context.add_context(
+        file, context_type="Model", context_identifier="Axis", target_view="MODEL_VIEW", parent=context
+    )
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment")
+    ifcopenshell.api.alignment.create_layout_segment(
+        file,
+        ifcopenshell.api.alignment.get_horizontal_layout(alignment),
+        file.createIfcAlignmentHorizontalSegment(
+            StartPoint=file.createIfcCartesianPoint((0.0, 0.0)),
+            StartDirection=0.0,
+            StartRadiusOfCurvature=start_radius,
+            EndRadiusOfCurvature=end_radius,
+            SegmentLength=100.0,
+            PredefinedType=kind,
+        ),
+    )
+    horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+    segment = ifcopenshell.api.alignment.get_alignment_segment_nest(horizontal).RelatedObjects[0]
+    return ifcopenshell.api.alignment.get_horizontal_curve_parameters(segment)
+
+
+@test.bootstrap.requires_ifc4x3
+@pytest.mark.parametrize(
+    "kind,start_radius,end_radius",
+    [
+        ("CLOTHOID", -1000.0, -300.0),  # arc to arc, to the right: radii are positive like radius
+        ("COSINECURVE", 300.0, 1000.0),
+        ("CLOTHOID", -1000.0, -1000.0),  # a spiral whose radius doesn't change is still a spiral
+    ],
+)
+def test_arc_to_arc_spiral_radii(kind, start_radius, end_radius):
+    curve = _single_spiral(kind, start_radius, end_radius)
+    assert curve.start_radius == pytest.approx(abs(start_radius))
+    assert curve.end_radius == pytest.approx(abs(end_radius))
+    assert curve.radius is None
