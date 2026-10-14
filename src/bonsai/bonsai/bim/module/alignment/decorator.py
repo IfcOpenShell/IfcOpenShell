@@ -1135,13 +1135,20 @@ def _place_label_block(
 
 def _fmt_curve_properties(curve, unit_symbol: str) -> list[str]:
     """Curve data lines for a HorizontalCurveParameters: R, T, Δ, L, LC, E, M for a circular curve and
-    T1, T2, Δ, L, LC for a spiral, skipping those that don't apply."""
+    R1, R2, T1, T2, Δ, L, LC for a spiral, skipping those that don't apply."""
     if curve.delta == 0.0:
         return []
     turn = "Lt" if curve.delta > 0 else "Rt"
+
+    def fmt_radius(radius):
+        return "∞" if math.isinf(radius) else f"{radius:.2f} {unit_symbol}"
+
     lines = []
     if curve.radius is not None:
         lines.append(f"R = {curve.radius:.2f} {unit_symbol}")
+    if curve.start_radius is not None:
+        lines.append(f"R1 = {fmt_radius(curve.start_radius)}")
+        lines.append(f"R2 = {fmt_radius(curve.end_radius)}")
     if curve.tangent is not None:
         lines.append(f"T = {curve.tangent:.2f} {unit_symbol}")
     elif curve.start_tangent is not None:
