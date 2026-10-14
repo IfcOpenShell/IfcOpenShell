@@ -7,10 +7,10 @@ resolving them.
 
 ## Status and work plan (resume here)
 
-*Last updated 2026-10-13.* **2026-10-13 round:** `rab_infrastructure` now sits on
+*Last updated 2026-10-14.* **2026-10-13 round:** `rab_infrastructure` now sits on
 `rab_evaluation_points` ([IfcOpenShell#5360](https://github.com/IfcOpenShell/IfcOpenShell/issues/5360),
 deflection sampling; PR open), which sits on `rab_plugin_debug_postfix` (`1f9f0613c`, Windows
-Debug/Release plug-in loading; PR open). Eight commits on top, all pushed:
+Debug/Release plug-in loading; PR open). Eleven commits on top, all pushed:
 
 - `155bd0cbd` tests for the end point of each layout segment type (`test_segment_end_point.py`).
 - `e3293f28b` each segment's end point is computed once instead of twice (`_add_segment_to_curve`
@@ -31,13 +31,23 @@ Debug/Release plug-in loading; PR open). Eight commits on top, all pushed:
 - `ea60b7cf0` cant transitions rotate by the difference between their rails. In a curve to the
   right the exit transition used to start rotated as if the curve were to the left. PR from
   `rab_cant_cross_slope` (`2d0a2490a`).
+- `09ff3d816` this status update.
+- `848000a74` the kernel integrates spiral positions (and the arc lengths of vertical spirals and
+  cubic curves, and `helmert_curve_point`) by adaptive Gauss-Kronrod instead of the trapezoidal
+  rule: accurate to 1e-9 m instead of up to 2.2e-5 m, and 15 to 50 times faster per point
+  (sampling the 25.6 km BPaimio alignment went from 285 to 20 ms). Each integral is taken over 0
+  to 1 and scaled, because Boost compares an unscaled error estimate with a scaled tolerance and
+  otherwise subdivides short intervals to its maximum depth. C++, so it needs a wrapper rebuild.
+  PR from `rab_spiral_quadrature` (`5711ab0a5`), which is based on the Helmert PR and depends on it.
+- `9668cd87a` the alignment tests' tolerances that allowed for the trapezoidal rule are tightened
+  to 1e-9 m.
 
-The three PR commits are cherry-picked here, so they drop out when `rab_infrastructure` is rebased
+The four PR commits are cherry-picked here, so they drop out when `rab_infrastructure` is rebased
 onto `v0.9.0` after the PRs merge.
 
 Findings: the Python PI solver takes 0.8 ms for a 161 segment layout, so moving it to C++ isn't
-worth it. Its spiral maths was exact (the 2 cm Helmert difference was the C++ kink) and is now
-tested against the kernel, which integrates spirals to about 1e-6 m.
+worth it. Its spiral maths was exact (the 2 cm Helmert difference was the C++ kink) and now agrees
+with the kernel's to about 1e-13 m.
 
 **Cross slope convention (per the user, 2026-10-13):** looking along the alignment, +Y is to the
 left and +Z is up. The cross slope angle is the angle of the cant segment's `Placement.Axis` from +Y:
@@ -49,7 +59,11 @@ angles this way.
 **Outside this repo:** the IFC Alignment Geometry Implementation Guide test set and the
 bSI-RailwayRoom unit-test reference were generated with the Helmert kink. The guide's Helmert data has
 been regenerated on its `fix_helmert_kink` branch; its right-hand cant IFC files need regenerating
-again once the cross slope PR merges (their CSVs hold positions only, which don't change).
+again once the cross slope PR merges (their CSVs hold positions only, which don't change). Its
+reference CSVs, test set and real-world alignments alike, were generated with the trapezoidal kernel
+and carry its error: up to 2e-6 m in the test set and 1.4e-5 m in the BPaimio Helmert halves, where
+the new kernel agrees with an independent integration of its own tangent to 3.7e-9 m. They need
+regenerating once the quadrature PR merges.
 
 **2026-10-12 round:** `rab_infrastructure` was rebased onto `v0.9.0`
 (352 upstream commits; force-pushed), then four commits were added on top (the user pushes them):
@@ -135,11 +149,11 @@ edits + Insert/Delete PI + PI click-pick (§11), `6ea213041` cant follows horizo
      Blender. This is the remaining performance item.
    - **Not yet tried in Blender:** a spiral row with equal radii should now draw as an arc, and a
      right-hand curve with cant should roll continuously into its exit transition.
-   - Optional: the kernel integrates spirals with trapezoidal quadrature, to about 1e-6 m;
-     Gauss-Legendre would be more accurate and probably faster.
+   - ~~The kernel's trapezoidal spiral integration (about 1e-6 m)~~ -- done: adaptive
+     Gauss-Kronrod, accurate to 1e-9 m and 15 to 50 times faster (PR from `rab_spiral_quadrature`).
 3. **Before the PR for the final work is posted: delete `dev_tests/`** (see Testing below).
 4. **After the open PRs merge** (plug-in postfix, evaluation points, Helmert heading, degenerate
-   segments, cant cross slope): rebase `rab_infrastructure` onto `v0.9.0`.
+   segments, cant cross slope, spiral quadrature): rebase `rab_infrastructure` onto `v0.9.0`.
 
 ~~§10 Manual referent definitions~~ -- removed from the plan (per the user, 2026-09-28).
 
