@@ -611,9 +611,6 @@ assign_matrix_access(revolve);
 	void set_(const std::string& name, ifcopenshell::geom::settings::IteratorOutputOptions val) {
 		return $self->set(name, val);
 	}
-	void set_(const std::string& name, ifcopenshell::geom::settings::FunctionStepMethod val) {
-		return $self->set(name, val);
-	}
 	void set_(const std::string& name, ifcopenshell::geom::settings::OutputDimensionalityTypes val) {
 		return $self->set(name, val);
 	}

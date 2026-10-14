@@ -194,8 +194,6 @@
 %ignore KeepBoundingBoxes;
 %ignore SurfaceColour;
 %ignore ComputeCurvature;
-%ignore FunctionStepType;
-%ignore FunctionStepParam;
 %ignore ModelOffset;
 %ignore ModelRotation;
 %ignore VertexRebaseDistance;

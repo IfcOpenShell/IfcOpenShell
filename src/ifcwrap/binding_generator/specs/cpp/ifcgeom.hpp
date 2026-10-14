@@ -224,7 +224,7 @@ IFCAPI_DISCOVER_CONSTRUCTOR(settings, ifcopenshell::geom::settings, create_setti
 IFCAPI_DISCOVER_POLICY(tree_clash_list, list_accessor, tree, clashes, tree_clash, clash_count, clash_at, "Clash index out of range")
 IFCAPI_DISCOVER_POLICY(tree_ray_intersection_list, list_accessor, tree, intersections, tree_ray_intersection, ray_intersection_count, ray_intersection_at, "Ray intersection index out of range")
 IFCAPI_DISCOVER_POLICY(settings, variant, get, set, ifcopenshell::geom::settings::value_variant_t, bool, bool)
-IFCAPI_DISCOVER_POLICY(settings, variant, get, set, ifcopenshell::geom::settings::value_variant_t, int, int, int, ifcopenshell::geom::settings_detail::IteratorOutputOptions, ifcopenshell::geom::settings_detail::FunctionStepMethod, ifcopenshell::geom::settings_detail::OutputDimensionalityTypes, ifcopenshell::geom::settings_detail::TriangulationMethod)
+IFCAPI_DISCOVER_POLICY(settings, variant, get, set, ifcopenshell::geom::settings::value_variant_t, int, int, int, ifcopenshell::geom::settings_detail::IteratorOutputOptions, ifcopenshell::geom::settings_detail::OutputDimensionalityTypes, ifcopenshell::geom::settings_detail::TriangulationMethod)
 IFCAPI_DISCOVER_POLICY(settings, variant, get, set, ifcopenshell::geom::settings::value_variant_t, double, double)
 IFCAPI_DISCOVER_POLICY(settings, variant, get, set, ifcopenshell::geom::settings::value_variant_t, string, std::string)
 IFCAPI_DISCOVER_POLICY(settings, variant, get, set, ifcopenshell::geom::settings::value_variant_t, int_set, std::set<int>)

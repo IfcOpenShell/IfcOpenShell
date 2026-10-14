@@ -86,6 +86,38 @@ bool has_intersection(const std::set<T, Cmp>& A,
 
 }
 
+std::vector<std::vector<Eigen::Vector3d>> ifcopenshell::geom::section_points(const taxonomy::geom_item::ptr& section) {
+	// to_polygon follows curved edges and applies the edges' and the loop's own matrices
+	ifcopenshell::geom::settings settings;
+	std::vector<taxonomy::loop::ptr> loops;
+	Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+	if (section->kind() == taxonomy::FACE) {
+		loops = std::static_pointer_cast<taxonomy::face>(section)->children;
+		if (section->matrix) {
+			m = section->matrix->ccomponents();
+		}
+	} else if (section->kind() == taxonomy::LOOP) {
+		loops = {std::static_pointer_cast<taxonomy::loop>(section)};
+	}
+
+	std::vector<std::vector<Eigen::Vector3d>> result;
+	for (const auto& loop : loops) {
+		std::vector<Eigen::Vector3d> points;
+		for (const auto& p : loop->to_polygon(settings)) {
+			points.push_back((m * p.ccomponents().homogeneous()).head<3>());
+		}
+		if (points.empty()) {
+			continue;
+		}
+		// the loops of a face are closed unless they say otherwise
+		if (!loop->closed.has_value() && section->kind() == taxonomy::FACE && (points.front() - points.back()).norm() > 1.e-9) {
+			points.push_back(points.front());
+		}
+		result.push_back(std::move(points));
+	}
+	return result;
+}
+
 taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::settings& settings, const express::base inst, const taxonomy::function_item::ptr& fn, std::vector<cross_section>& input_sections, logger& logger)
 {
 	auto cross_sections = input_sections;
@@ -112,18 +144,6 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 			return nullptr;
 		}
 
-		auto curve_length = end - start;
-		auto param_type = settings.get<ifcopenshell::geom::settings::FunctionStepType>().get();
-		auto param = settings.get<ifcopenshell::geom::settings::FunctionStepParam>().get();
-		size_t num_steps = 0;
-		if (param_type == ifcopenshell::geom::settings::FunctionStepMethod::MAXSTEPSIZE) {
-			// parameter is max step size
-			num_steps = (size_t)std::ceil(curve_length / param);
-		} else {
-			// parameter is minimum number of steps
-			num_steps = (size_t)std::ceil(param);
-		}
-        auto delta_step = curve_length / num_steps;
 		std::vector<double> longitudes;
 		for (auto& x : cross_sections) {
 			longitudes.push_back(x.dist_along);
@@ -176,17 +196,16 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 			return B;
 		};
 
-		auto profile_index = longitudes.begin();
-		for (size_t i = 0; i <= num_steps; ++i) {
-            auto dist_along = start + delta_step * i;
-			while (dist_along > *(profile_index + 1)) {
-				profile_index++;
-				if (profile_index == longitudes.end()) {
-					// @todo handle this?
-				}
-			}
+		// The section at dist_along: interpolated between the authored sections around it and
+		// placed on the directrix. next_dist_along is where the next section will be placed, which
+		// decides how tags carry over at the last section before an authored one. Returns nullptr,
+		// after logging why, when the authored sections can't be interpolated.
+		const auto make_section = [&](double dist_along, double next_dist_along) -> taxonomy::geom_item::ptr {
+			// the authored section before dist_along, or at it when it is the first: the one whose
+			// successor is the first at or after dist_along (longitudes ends with infinity)
+			const auto profile_index = std::lower_bound(longitudes.begin() + 1, longitudes.end(), dist_along) - 1;
 
-			const bool is_last_placement_of_this_profile = profile_index + 1 >= longitudes.end() ? false : ((start + delta_step * (i+1)) > *(profile_index + 1));
+			const bool is_last_placement_of_this_profile = profile_index + 1 >= longitudes.end() ? false : (next_dist_along > *(profile_index + 1));
 
 			auto relative_dist_along = (dist_along - *profile_index) / (*(profile_index + 1) - *profile_index);
 			const auto& profile_a = cross_sections[std::distance(longitudes.begin(), profile_index)].section_geometry;
@@ -537,32 +556,72 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 			m4b.block<3, 3>(0, 0) = profile_basis(interpolated_rotation, interpolated_ref_direction, m4);
 			m4b.col(3).head<3>() = m4.col(3).head<3>();
 
-			if (interpolated) {
-				interpolated->instance = profile_a->instance;
-				interpolated->surface_style = profile_a->surface_style;
-				interpolated->orientation = profile_a->orientation;
-				loft->children.push_back(interpolated);
-			} else {
+			taxonomy::geom_item::ptr section = interpolated;
+			if (!section) {
 				if (profile_a->kind() == taxonomy::FACE) {
-					loft->children.push_back(std::static_pointer_cast<taxonomy::face>(taxonomy::item::ptr(profile_a->clone_())));
+					section = std::static_pointer_cast<taxonomy::face>(taxonomy::item::ptr(profile_a->clone_()));
 				} else {
-					loft->children.push_back(std::static_pointer_cast<taxonomy::loop>(taxonomy::item::ptr(profile_a->clone_())));
+					section = std::static_pointer_cast<taxonomy::loop>(taxonomy::item::ptr(profile_a->clone_()));
 				}
 				if (profile_a->matrix) {
-					loft->children.back()->matrix = taxonomy::matrix4::ptr(profile_a->matrix->clone_());
+					section->matrix = taxonomy::matrix4::ptr(profile_a->matrix->clone_());
 				}
-				loft->children.back()->instance = profile_a->instance;
-				loft->children.back()->surface_style = profile_a->surface_style;
-				loft->children.back()->orientation = profile_a->orientation;
 			}
-			if (!loft->children.back()->matrix) {
+			section->instance = profile_a->instance;
+			section->surface_style = profile_a->surface_style;
+			section->orientation = profile_a->orientation;
+			if (!section->matrix) {
 				// @todo should this not be initialized by default? matrix4 already has a 'lazy identity' mechanism.
-				loft->children.back()->matrix = taxonomy::make<taxonomy::matrix4>();
+				section->matrix = taxonomy::make<taxonomy::matrix4>();
 			}
-			auto m = (m4b * loft->children.back()->matrix->ccomponents()).eval();
-			loft->children.back()->matrix->components() = m;
+			auto m = (m4b * section->matrix->ccomponents()).eval();
+			section->matrix->components() = m;
+			return section;
+		};
+
+		// Sections go at every span boundary of the directrix and every authored section, and are
+		// added between them until the loft follows the interpolated sections within the deflection
+		// settings (see deflection_samples): a straight between sections that differ at most by
+		// their offset needs only its ends, a changing profile or a bend needs more.
+		std::vector<double> boundaries{start, end};
+		for (double u : evaluator.boundaries()) {
+			if (start < u && u < end) {
+				boundaries.push_back(u);
+			}
+		}
+		for (const auto& cs : cross_sections) {
+			if (start < cs.dist_along && cs.dist_along < end) {
+				boundaries.push_back(cs.dist_along);
+			}
+		}
+		bool failed = false;
+		const auto samples = deflection_samples(
+			boundaries,
+			[&](double u) {
+				sampled_section sampled{evaluator.evaluate(u).col(3).head<3>(), {}};
+				if (!failed) {
+					if (auto section = make_section(u, std::numeric_limits<double>::infinity())) {
+						sampled.loops = section_points(section);
+					} else {
+						failed = true;
+					}
+				}
+				return sampled;
+			},
+			settings.get<ifcopenshell::geom::settings::MesherLinearDeflection>().get(),
+			settings.get<ifcopenshell::geom::settings::MesherAngularDeflection>().get(),
+			settings.get<ifcopenshell::geom::settings::Precision>().get());
+		if (failed) {
+			return nullptr;
 		}
 
+		for (size_t i = 0; i < samples.size(); ++i) {
+			auto section = make_section(samples[i], i + 1 < samples.size() ? samples[i + 1] : std::numeric_limits<double>::infinity());
+			if (!section) {
+				return nullptr;
+			}
+			loft->children.push_back(section);
+		}
 	}
 
 	return loft;

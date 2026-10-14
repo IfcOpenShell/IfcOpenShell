@@ -417,24 +417,6 @@ namespace ifcopenshell {
                 static constexpr bool defaultvalue = false;
             };
 
-			enum FunctionStepMethod  {
-				MAXSTEPSIZE,
-				MINSTEPS };
-
-			IFC_GEOM_API std::istream& operator>>(std::istream& in, FunctionStepMethod& ioo);
-
-         struct FunctionStepType : public SettingBase<FunctionStepType, FunctionStepMethod> {
-               static constexpr const char* const name = "function-step-type";
-               static constexpr const char* const description = "Indicates the method used for defining step size when evaluating function-based curves. Provides interpretation of function-step-param";
-               static constexpr FunctionStepMethod defaultvalue = MAXSTEPSIZE;
-         };
-
-			struct FunctionStepParam : public SettingBase<FunctionStepParam, double> {
-               static constexpr const char* const name = "function-step-param";
-               static constexpr const char* const description = "Indicates the parameter value for defining step size when evaluating function-based curves.";
-               static constexpr double defaultvalue = 0.5; // ceiling of this value is used when FunctionStepMethod is MinSteps
-         };
-
 			struct ModelOffset : public SettingBase<ModelOffset, std::vector<double>> {
 				static constexpr const char* const name = "model-offset";
 				static constexpr const char* const description = "Applies an arbitrary offset of form x,y,z to all placements.";
@@ -563,11 +545,6 @@ namespace ifcopenshell {
 			};
 
 			template <>
-			struct readable_name<settings_detail::FunctionStepMethod> {
-				static constexpr const char* name = "FunctionStepMethod";
-			};
-
-			template <>
 			struct readable_name<settings_detail::OutputDimensionalityTypes> {
 				static constexpr const char* name = "OutputDimensionalityTypes";
 			};
@@ -582,7 +559,7 @@ namespace ifcopenshell {
 		class settings_container {
 		public:
 			typedef std::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>,
-				std::vector<double>, std::vector<std::string>, settings_detail::IteratorOutputOptions, settings_detail::FunctionStepMethod,
+				std::vector<double>, std::vector<std::string>, settings_detail::IteratorOutputOptions,
 				settings_detail::OutputDimensionalityTypes, settings_detail::TriangulationMethod> value_variant_t;
 		private:
 			settings_t settings;
@@ -964,8 +941,6 @@ using geometry_setting_types = std::tuple<
 			settings_detail::SvgRenderSharpEdges,
 			settings_detail::KeepBoundingBoxes,
 			settings_detail::ComputeCurvature,
-			settings_detail::FunctionStepType,
-			settings_detail::FunctionStepParam,
 			settings_detail::NoParallelMapping,
 			settings_detail::PermissiveShapeReuse,
 			settings_detail::ModelOffset,
@@ -1070,8 +1045,6 @@ using geometry_setting_types = std::tuple<
 			using SvgRenderSharpEdges = settings_detail::SvgRenderSharpEdges;
 			using KeepBoundingBoxes = settings_detail::KeepBoundingBoxes;
 			using ComputeCurvature = settings_detail::ComputeCurvature;
-			using FunctionStepType = settings_detail::FunctionStepType;
-			using FunctionStepParam = settings_detail::FunctionStepParam;
 			using NoParallelMapping = settings_detail::NoParallelMapping;
 			using PermissiveShapeReuse = settings_detail::PermissiveShapeReuse;
 			using ModelOffset = settings_detail::ModelOffset;
@@ -1129,7 +1102,6 @@ using geometry_setting_types = std::tuple<
 
 			using OutputDimensionalityTypes = settings_detail::OutputDimensionalityTypes;
 			using IteratorOutputOptions = settings_detail::IteratorOutputOptions;
-			using FunctionStepMethod = settings_detail::FunctionStepMethod;
 			using TriangulationMethod = settings_detail::TriangulationMethod;
 
 			static constexpr auto CURVES = settings_detail::CURVES;
@@ -1138,8 +1110,6 @@ using geometry_setting_types = std::tuple<
 			static constexpr auto TRIANGULATED = settings_detail::TRIANGULATED;
 			static constexpr auto NATIVE = settings_detail::NATIVE;
 			static constexpr auto SERIALIZED = settings_detail::SERIALIZED;
-			static constexpr auto MAXSTEPSIZE = settings_detail::MAXSTEPSIZE;
-			static constexpr auto MINSTEPS = settings_detail::MINSTEPS;
 			static constexpr auto TRIANGLE_MESH = settings_detail::TRIANGLE_MESH;
 			static constexpr auto POLYHEDRON_WITHOUT_HOLES = settings_detail::POLYHEDRON_WITHOUT_HOLES;
 			static constexpr auto POLYHEDRON_WITH_HOLES = settings_detail::POLYHEDRON_WITH_HOLES;

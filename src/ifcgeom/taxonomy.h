@@ -447,11 +447,57 @@ typedef item const* ptr;
                 };
             };
 
+#ifndef SWIG
+            /// @brief The layout a functor_item span belongs to
+            enum class span_layout { UNSPECIFIED, HORIZONTAL, VERTICAL, CANT, OFFSET, POLYLINE };
+
+            /// @brief The kind of curve a functor_item span evaluates
+            enum class span_curve {
+                UNSPECIFIED,
+                LINE,
+                CIRCLE,
+                CLOTHOID,
+                COSINE_SPIRAL,
+                SINE_SPIRAL,
+                SECOND_ORDER_POLYNOMIAL_SPIRAL,
+                THIRD_ORDER_POLYNOMIAL_SPIRAL,
+                SEVENTH_ORDER_POLYNOMIAL_SPIRAL,
+                POLYNOMIAL_CURVE,
+                CONSTANT, // constant offset
+                LINEAR    // linearly varying offset
+            };
+
+            /// @brief Describes what a functor_item span represents
+            struct span_info {
+                span_layout layout = span_layout::UNSPECIFIED;
+                span_curve curve = span_curve::UNSPECIFIED;
+            };
+
+            /// @brief A span's function of distance along, returning the 4x4 placement there
+            struct IFC_GEOM_API span_function {
+                virtual ~span_function() = default;
+                virtual Eigen::Matrix4d operator()(double u) const = 0;
+            };
+
+            /// @brief Adapts a std::function to span_function, for spans built from lambdas
+            struct lambda_span_function : public span_function {
+                explicit lambda_span_function(std::function<Eigen::Matrix4d(double u)> fn) : fn_(std::move(fn)) {}
+                Eigen::Matrix4d operator()(double u) const override { return fn_(u); }
+
+              private:
+                std::function<Eigen::Matrix4d(double u)> fn_;
+            };
+#endif
+
 			struct IFC_GEOM_API functor_item : public function_item {
             DECLARE_PTR(functor_item)
 
             functor_item(double length, std::function<Eigen::Matrix4d(double u)> fn, const express::base& instance = express::base()) : function_item(instance),
-						 length_(length), fn_(fn) {}
+						 length_(length), fn_(std::make_shared<lambda_span_function>(std::move(fn))) {}
+#ifndef SWIG
+            functor_item(double length, std::shared_ptr<const span_function> fn, const span_info& info, const express::base& instance = express::base()) : function_item(instance),
+                length_(length), fn_(std::move(fn)), info_(info) {}
+#endif
             functor_item(functor_item&&) = default;
             functor_item(const functor_item&) = default;
             virtual ~functor_item() = default;
@@ -459,7 +505,11 @@ typedef item const* ptr;
 				double start() const override { return 0.0; }
             double end() const override { return length_; }
 
-				Eigen::Matrix4d operator()(double u) const { return fn_(u); }
+				Eigen::Matrix4d operator()(double u) const { return (*fn_)(u); }
+
+#ifndef SWIG
+            const span_info& info() const { return info_; }
+#endif
 
      			functor_item* clone_() const override { return new functor_item(*this); }
             virtual kinds kind() const { return FUNCTOR_ITEM; }
@@ -470,7 +520,10 @@ typedef item const* ptr;
 
          private:
 				double length_;
-				std::function<Eigen::Matrix4d(double u)> fn_;
+#ifndef SWIG
+				std::shared_ptr<const span_function> fn_;
+				span_info info_;
+#endif
          };
 
 			struct IFC_GEOM_API piecewise_function : public function_item {
