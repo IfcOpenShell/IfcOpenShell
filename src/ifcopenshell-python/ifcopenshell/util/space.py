@@ -26,6 +26,7 @@ for IFC analysis.
 
 from __future__ import annotations
 
+import multiprocessing
 from typing import Literal, Optional, Union
 
 import numpy as np
@@ -33,6 +34,8 @@ import shapely
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.util.boundary
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -43,6 +46,47 @@ import ifcopenshell.util.unit
 
 BOUNDING_CLASSES = ("IfcWall", "IfcColumn", "IfcMember", "IfcVirtualElement", "IfcPlate")
 HEIGHT_DETECTION_CLASSES = ("IfcSlab", "IfcRoof")
+
+
+def get_bounding_and_height_elements(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
+    """Return every element that can bound a space or define its height."""
+    elements = []
+    for ifc_class in BOUNDING_CLASSES + HEIGHT_DETECTION_CLASSES:
+        elements.extend(ifc_file.by_type(ifc_class))
+    return elements
+
+
+def build_bounding_tree(
+    ifc_file: ifcopenshell.file,
+    elements: list[ifcopenshell.entity_instance],
+    num_threads: Optional[int] = None,
+) -> ifcopenshell.geom.tree:
+    """Build a geometry tree with only ``elements`` added, in world coordinates.
+
+    The ``opencascade.brep`` tree backend ingests native BREP elements, so the
+    iterator is configured with NATIVE output. This converts only the given
+    elements, in parallel, unlike ``tree.add_file()`` which converts every
+    product in the file single-threaded.
+
+    :param ifc_file: The IFC file.
+    :param elements: Elements to add to the tree.
+    :param num_threads: Number of conversion threads, defaults to the CPU count.
+    :return: A geometry tree for ray casting.
+    """
+    if num_threads is None:
+        num_threads = multiprocessing.cpu_count()
+    settings = ifcopenshell.geom.settings()
+    settings.set("disable-opening-subtractions", True)
+    settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
+    settings.set("use-world-coords", True)
+    settings.set("reorient-shells", True)
+    tree = ifcopenshell.geom.tree()
+    if not elements:
+        return tree
+    iterator = ifcopenshell.geom.iterator(settings, ifc_file, num_threads, include=list(elements))
+    if iterator.initialize():
+        tree.add_iterator(iterator)
+    return tree
 
 
 def get_boundary_lines(
