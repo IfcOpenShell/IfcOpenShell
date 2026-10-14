@@ -34,6 +34,7 @@ from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty, St
 from bpy.types import Operator, SpaceView3D
 from bpy_extras.io_utils import ImportHelper
 from bpy_extras.view3d_utils import region_2d_to_location_3d
+from ifcopenshell.api.alignment._start_direction import _get_start_direction
 from ifcopenshell.api.alignment.layout_horizontal_alignment_by_pi_method import _horizontal_design_parameters
 from ifcopenshell.api.alignment.layout_vertical_alignment_by_pi_method import _vertical_design_parameters
 
@@ -1704,8 +1705,8 @@ def _tangent_line_intersection(dp_a, dp_b):
     """
     sx, sy = dp_a.StartPoint.Coordinates[0], dp_a.StartPoint.Coordinates[1]
     ex, ey = dp_b.StartPoint.Coordinates[0], dp_b.StartPoint.Coordinates[1]
-    d1x, d1y = math.cos(dp_a.StartDirection), math.sin(dp_a.StartDirection)
-    d2x, d2y = math.cos(dp_b.StartDirection), math.sin(dp_b.StartDirection)
+    d1x, d1y = math.cos(_get_start_direction(dp_a)), math.sin(_get_start_direction(dp_a))
+    d2x, d2y = math.cos(_get_start_direction(dp_b)), math.sin(_get_start_direction(dp_b))
     denom = d1x * d2y - d1y * d2x
     if abs(denom) < 1e-10:
         return None

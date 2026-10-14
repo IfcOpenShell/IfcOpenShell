@@ -41,6 +41,7 @@ from gpu_extras.batch import batch_for_shader
 from ifcopenshell.api.alignment._get_segment_start_point_label import (
     _get_segment_start_point_label,
 )
+from ifcopenshell.api.alignment._start_direction import _get_start_direction
 
 import bonsai.tool as tool
 
@@ -309,8 +310,9 @@ class AlignmentSegmentDecorator:
             return
         sx, sy = curve.start_point
         ex, ey = curve.end_point
-        d1x, d1y = math.cos(dp.StartDirection), math.sin(dp.StartDirection)
-        d2x, d2y = math.cos(dp.StartDirection + curve.delta), math.sin(dp.StartDirection + curve.delta)
+        start_direction = _get_start_direction(dp)
+        d1x, d1y = math.cos(start_direction), math.sin(start_direction)
+        d2x, d2y = math.cos(start_direction + curve.delta), math.sin(start_direction + curve.delta)
         seg_len = getattr(dp, "SegmentLength", 0.0) or 0.0
 
         # Derive IFC → Blender world affine transform
