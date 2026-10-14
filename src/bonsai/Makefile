@@ -269,11 +269,6 @@ endif
 	$(SED) "s/os-arch/$(BLENDER_PLATFORM)/" build/bonsai/blender_manifest.toml
 
 	# Provides bonsai Add-on functionality
-ifeq ($(IS_STABLE), TRUE)
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/pyproject.toml
-else
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/pyproject.toml
-endif
 	cd build && if command -v uv >/dev/null 2>&1; then \
 		uv build --wheel; \
 	else \
