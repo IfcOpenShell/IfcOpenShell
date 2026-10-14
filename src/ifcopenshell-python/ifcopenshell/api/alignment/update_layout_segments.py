@@ -115,7 +115,8 @@ def update_layout_segments(
         parameters = [
             model.createIfcAlignmentHorizontalSegment(
                 StartPoint=model.createIfcCartesianPoint(d.start_point),
-                StartDirection=d.start_direction,  # radians; convert if the project angle unit is degrees
+                # radians, converted to the project's plane angle unit
+                StartDirection=d.start_direction / ifcopenshell.util.unit.calculate_unit_scale(model, "PLANEANGLEUNIT"),
                 StartRadiusOfCurvature=d.start_radius_of_curvature,
                 EndRadiusOfCurvature=d.end_radius_of_curvature,
                 SegmentLength=d.segment_length,
