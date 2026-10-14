@@ -93,6 +93,21 @@ def _auto_finish_unrelated_tables(scene, active, alignment) -> None:
 
 
 @bpy.app.handlers.persistent
+def _close_profile_view_on_load(*args):
+    """Close the docked vertical profile view when a file is loaded.
+
+    Loading a file frees the old screens, so the profile view's area no longer exists. The stored
+    pointer is cleared first so that uninstall() doesn't close whichever new area happens to be
+    allocated at the same address.
+    """
+    from .decorator import VerticalProfileDecorator
+
+    if VerticalProfileDecorator.is_installed:
+        VerticalProfileDecorator.profile_area_ptr = 0
+        VerticalProfileDecorator.uninstall()
+
+
+@bpy.app.handlers.persistent
 def _on_active_object_changed(scene, depsgraph):
     """Sync the alignment dropdown, vertical profile, and Properties panel on selection change.
 
@@ -289,6 +304,8 @@ def register():
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     if _on_active_object_changed not in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.append(_on_active_object_changed)
+    if _close_profile_view_on_load not in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.append(_close_profile_view_on_load)
     # Reset decorator state so a module hot-reload never leaves is_installed=True
     # with stale handlers that prevent the first button press from opening the profile.
     from .decorator import VerticalProfileDecorator
@@ -326,6 +343,8 @@ def register():
 def unregister():
     if _on_active_object_changed in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(_on_active_object_changed)
+    if _close_profile_view_on_load in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.remove(_close_profile_view_on_load)
     # Clean up any open profile window so re-registration starts from a clean state.
     from .decorator import VerticalProfileDecorator
 
