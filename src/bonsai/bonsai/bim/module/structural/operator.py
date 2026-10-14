@@ -184,6 +184,8 @@ class PickStructuralLoads(bpy.types.Operator):
                             obj.select_set(True)
                             context.view_layer.objects.active = obj
                         bpy.ops.bim.edit_structural_connection_axes("INVOKE_DEFAULT", focus=focus)
+                    elif hovered.get("moment_resultant"):
+                        bpy.ops.bim.edit_structural_resultant_moment("INVOKE_DEFAULT", load_case=hovered["moment_of"])
                     elif hovered.get("moment_of"):
                         bpy.ops.bim.edit_structural_moment_centre(
                             "INVOKE_DEFAULT",
@@ -1241,6 +1243,17 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
                 ShaderInfo.preview[load.id()] = get_force_attributes(load, solved)
                 if load.id() == self.preview_load:  # Its own unknowns are found too.
                     ShaderInfo.preview[load.id()].update({k: v for k, v in attributes.items() if "Moment" in k})
+            # Where a load case keeps a sum of moments, its unknown moves to keep it, so show that too.
+            for case in get_activity_load_groups(activity):
+                if (kept := tool.Structural.get_resultant_moment(case)) is None:
+                    continue
+                edited = {activity.id(): force}
+                locks = {activity.id(): (self.magnitude_locked, self.direction_locked)}
+                forces, error = solve_case_moment(case, kept, overrides=edited, lock_overrides=locks)
+                for load, solved in ({} if error else forces).items():
+                    ShaderInfo.preview[load.id()] = get_force_attributes(load, solved)
+                    if load.id() == self.preview_load:
+                        ShaderInfo.preview[load.id()].update({k: v for k, v in attributes.items() if "Moment" in k})
         redraw_loads(context)
     elif getattr(self, "is_previewing", False) and LoadsDecorator.is_installed:
         forces, resultant, _ = solve_resultant(self)
@@ -1301,7 +1314,9 @@ def write_forces(forces: dict[ifcopenshell.entity_instance, tuple]) -> None:
             if re.search(r" Q[1-8]′$", load.Name or ""):
                 users = [i for i in ifc_file.get_inverse(load) if i.is_a("IfcStructuralActivity")]
                 tilt = get_common_tilt([c[0].RelatingElement for u in users if (c := u.AssignedToStructuralItem)])
-            attributes["Name"] = get_force_name(force, unit, tilt)
+            # On the boundary of two eighths, as at 45 degrees, it keeps the one it was named in.
+            named = re.search(r" (Q[1-8])′?$", load.Name or "")
+            attributes["Name"] = get_force_name(force, unit, tilt, named[1] if named else None)
         ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
 
 
@@ -1386,10 +1401,13 @@ def get_chosen_eighth(props: "EditStructuralResultant", resultant: Union[tuple, 
     return None if props.direction == tool.Structural.get_eighth(x, z)[0] else props.direction
 
 
-def get_force_name(force: tuple[float, float, float], unit: str, tilt: Union[float, None] = None) -> str:
+def get_force_name(
+    force: tuple[float, float, float], unit: str, tilt: Union[float, None] = None, eighth: Union[str, None] = None
+) -> str:
     """A generated name for a force, by its angle from the nearest axis if it lies in the X-Z plane.
 
     :param tilt: The tilt of the point's own axes, to name it against them, its eighth primed, as entered so.
+    :param eighth: The eighth to name it in if it lies on that eighth's boundary, as it was named before.
     """
     x, y, z = force
     if y:
@@ -1397,7 +1415,7 @@ def get_force_name(force: tuple[float, float, float], unit: str, tilt: Union[flo
         return f"{', '.join(values) or '0'} {unit}"
     if tilt:
         x, z = tool.Structural.to_axes(x, z, tilt)
-    eighth, angle, _, _ = tool.Structural.get_eighth(x, z)
+    eighth, angle, _, _ = tool.Structural.get_eighth(x, z, eighth)
     return f"{math.hypot(x, z):g} {unit} at {angle:g} deg{get_direction_suffix(eighth, bool(tilt))}"
 
 
@@ -1522,7 +1540,7 @@ class StructuralForceInput(get_direction_input("the force", update_force_inputs,
                 for lock, text in (("magnitude_locked", "Magnitude"), ("direction_locked", "Direction")):
                     row.prop(self, lock, text=text, icon="LOCKED" if getattr(self, lock) else "UNLOCKED")
             for prop in ("x", "y", "z"):
-                layout.prop(self, prop)
+                draw_with_lock(layout, self, (prop,), focus=self.focus)
             if category in ("IfcStructuralPointConnection", "IfcStructuralCurveMember"):
                 for prop in ("moment_x", "moment_y", "moment_z"):
                     layout.prop(self, prop)
@@ -1818,6 +1836,8 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
             direction = get_named_direction(match[2])
             if self.fits(x, z, "ANGLE", angle=angle, direction=direction):
                 self.input_mode, self.direction, self.angle = "ANGLE", direction, angle
+        if self.focus in ("x", "y", "z"):
+            self.input_mode = "COMPONENTS"  # A component clicked opens with it ready to type.
         if self.on_axes and self.input_mode == "COMPONENTS":
             self.was_on_axes = self.on_axes = False  # The name no longer fits, so reopen in X and Z.
         # A generated name is generated again, so that it reads as the inputs now do, as from its eighth's axis.
@@ -1915,7 +1935,9 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         if activities and (target := self.get_target_load_group(ifc_file)):
             for activity in activities:
                 self.move_activity(ifc_file, activity, target)
-        resolve_resultants(self, [i for i in ifc_file.get_inverse(load) if i.is_a("IfcStructuralActivity")])
+        users = [i for i in ifc_file.get_inverse(load) if i.is_a("IfcStructuralActivity")]
+        resolve_resultants(self, users)
+        keep_resultant_moments(users)
         if tool.Structural.get_structural_props().is_editing_loads:
             bpy.ops.bim.load_structural_loads()
         return {"FINISHED"}
@@ -2255,6 +2277,11 @@ def place_moment_centre(props: "EditStructuralMomentCentre", context: bpy.types.
     at = get_vertex_location(centre_obj)
     centre_obj.matrix_world.translation += Vector((x, at.y, z)) - at
     context.view_layer.update()
+    # A kept moment stays as A moves: its unknown is solved again, previewed as A is.
+    case = tool.Ifc.get().by_id(props.load_case)
+    if (kept := tool.Structural.get_resultant_moment(case)) is not None:
+        forces, error = solve_case_moment(case, kept)
+        ShaderInfo.preview = {} if error else {load.id(): get_force_attributes(load, f) for load, f in forces.items()}
     redraw_loads(context)
 
 
@@ -2481,11 +2508,14 @@ class EditStructuralMomentCentre(
             draw_with_lock(box, self, ("alpha",), focus=self.focus)
         case = tool.Ifc.get().by_id(self.load_case)
         centre = tool.Structural.get_moment_centre(case)
-        moment = tool.Structural.get_moment_about(case, centre) if centre else None
+        kept = tool.Structural.get_resultant_moment(case)
+        moment = kept if kept is not None else tool.Structural.get_moment_about(case, centre) if centre else None
         if moment is not None:
             decimals = tool.Structural.get_structural_props().force_decimals
             unit = f"{get_project_unit_symbol('FORCEUNIT', 'N')}.{get_project_unit_symbol('LENGTHUNIT', 'm')}"
             text = f"ΣM_A = {abs(moment):.{decimals}f} {unit} {'CCW' if moment > 0 else 'CW'}"
+            if kept is not None:
+                text += "  🔒 kept: the unknown force follows"
             layout.label(text=text, icon="FORCE_VORTEX")
 
     def cancel(self, context):
@@ -2494,8 +2524,238 @@ class EditStructuralMomentCentre(
     def _execute(self, context):
         centre_obj, _ = get_moment_centre_objects(self)
         MOMENT_CENTRE_PREVIEW.clear()  # A is where the preview left it.
+        ShaderInfo.preview = {}  # The kept moment's forces are written below.
         if centre_obj:
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=centre_obj)
+        keep_resultant_moments(get_case_moment_forces(tool.Ifc.get().by_id(self.load_case))[0])
+        redraw_loads(context)
+        return {"FINISHED"}
+
+
+def get_case_moment_forces(
+    case: ifcopenshell.entity_instance,
+) -> tuple[list[ifcopenshell.entity_instance], list[np.ndarray], list[np.ndarray]]:
+    """A load case's point forces, as their applied loads, where each acts from the moment centre, in the project's
+    length unit, and the force, by point name and then tip-to-tail order, as moments number them"""
+    activities, arms, forces = [], [], []
+    centre = tool.Structural.get_moment_centre(case)
+    has_vertex = lambda obj: obj and obj.type == "MESH" and obj.data.vertices
+    if not centre or not has_vertex(centre_obj := tool.Ifc.get_object(centre)):
+        return activities, arms, forces
+    length_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    at = np.array(get_vertex_location(centre_obj))
+    for item in tool.Structural.get_point_items(case):
+        if not has_vertex(obj := tool.Ifc.get_object(item)):
+            continue
+        for activity in tool.Structural.get_chain_activities(item, case):
+            if (load := activity.AppliedLoad) and load.is_a("IfcStructuralLoadSingleForce"):
+                activities.append(activity)
+                arms.append((np.array(get_vertex_location(obj)) - at) / length_scale)
+                forces.append(np.array(get_force(load)))
+    return activities, arms, forces
+
+
+def solve_case_moment(
+    case: ifcopenshell.entity_instance,
+    moment: float,
+    locks: Union[list[tuple[bool, bool]], None] = None,
+    overrides: Union[dict[int, tuple], None] = None,
+    lock_overrides: Union[dict[int, tuple[bool, bool]], None] = None,
+) -> tuple[dict[ifcopenshell.entity_instance, tuple], str]:
+    """The loads whose forces change for a load case's moments to sum to a moment, with their new forces, and why
+    not if they cannot. Locks are the applied loads' own unless given.
+
+    :param overrides: Forces by applied load id to use in place of their own, as one being edited.
+    :param lock_overrides: Locks by applied load id to use in place of their own, as one being edited.
+    """
+    activities, arms, forces = get_case_moment_forces(case)
+    if not activities:
+        return {}, "The load case takes moments about no point, or has no point forces"
+    overrides, lock_overrides = overrides or {}, lock_overrides or {}
+    forces = [np.array(overrides.get(a.id(), f), dtype=float) for a, f in zip(activities, forces)]
+    locks = locks or [lock_overrides.get(a.id(), tool.Structural.get_locks(a)) for a in activities]
+    links, factors = tool.Structural.get_magnitude_links(activities)
+    solved, error = tool.Structural.solve_moment_unknown(arms, forces, locks, moment, links, factors)
+    changed = {
+        activity.AppliedLoad: tuple(float(c) for c in new)
+        for activity, old, new in zip(activities, forces, solved)
+        if not np.allclose(old, new)
+    }
+    return changed, error
+
+
+def keep_resultant_moments(activities: list[ifcopenshell.entity_instance]) -> None:
+    """Solve again the unknown of each load case these applied loads are in that keeps a sum of moments, as a
+    locked resultant is kept, after a force or the moment centre changes"""
+    cases = {group for activity in activities for group in get_activity_load_groups(activity)}
+    for case in cases:
+        if (moment := tool.Structural.get_resultant_moment(case)) is not None:
+            forces, error = solve_case_moment(case, moment)
+            if not error:
+                write_forces(forces)
+
+
+def get_resultant_moment_locks(props: "EditStructuralResultantMoment") -> list[tuple[bool, bool]]:
+    count = len(get_case_moment_forces(tool.Ifc.get().by_id(props.load_case))[0])
+    return list(zip(props.magnitude_locks[:count], props.direction_locks[:count]))
+
+
+def get_signed_moment(props: "EditStructuralResultantMoment") -> float:
+    return props.moment if props.turn == "CCW" else -props.moment
+
+
+def solve_resultant_moment(
+    props: "EditStructuralResultantMoment",
+) -> tuple[dict[ifcopenshell.entity_instance, tuple], str]:
+    """The forces Edit Resultant Moment changes, as solve_case_moment gives them, or none with the sum unlocked, as
+    it is then found from the forces, which must all be known"""
+    case = tool.Ifc.get().by_id(props.load_case)
+    locks = get_resultant_moment_locks(props)
+    if props.moment_locked:
+        return solve_case_moment(case, get_signed_moment(props), locks)
+    if not all(locked for lock in locks for locked in lock):
+        return {}, "ΣM_A is unlocked, so found from the forces: lock their values, or lock ΣM_A to find one"
+    return {}, ""
+
+
+def update_resultant_moment(props: "EditStructuralResultantMoment", context: bpy.types.Context) -> None:
+    """Preview the forces found for the moment entered, moments redrawn with them"""
+    if not props.is_previewing:
+        return
+    forces, error = solve_resultant_moment(props)
+    ShaderInfo.preview = {} if error else {load.id(): get_force_attributes(load, f) for load, f in forces.items()}
+    redraw_loads(context)
+
+
+class EditStructuralResultantMoment(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_structural_resultant_moment"
+    bl_label = "Edit Resultant Moment"
+    bl_description = (
+        "Set the sum of the moments about A, finding the one force magnitude or direction unlocked, and keep it as "
+        "forces change"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    load_case: bpy.props.IntProperty(options={"HIDDEN", "SKIP_SAVE"})
+    moment: bpy.props.FloatProperty(
+        name="ΣM_A", description="The sum of the moments about A", min=0.0, update=update_resultant_moment
+    )
+    moment_locked: bpy.props.BoolProperty(
+        name="ΣM_A Known",
+        description="Whether the sum of the moments is known, finding a force's value and kept as forces change, or "
+        "found from the forces",
+        default=True,
+        options={"SKIP_SAVE"},
+        update=update_resultant_moment,
+    )
+    turn: bpy.props.EnumProperty(
+        name="Turning",
+        items=[("CCW", "CCW", "Counter-clockwise, positive"), ("CW", "CW", "Clockwise, negative")],
+        update=update_resultant_moment,
+    )
+    magnitude_locks: bpy.props.BoolVectorProperty(
+        name="Magnitude Known",
+        description="Whether this force's magnitude is known. If not, it is found",
+        size=32,
+        default=[True] * 32,
+        options={"SKIP_SAVE"},
+        update=update_resultant_moment,
+    )
+    direction_locks: bpy.props.BoolVectorProperty(
+        name="Direction Known",
+        description="Whether this force's direction is known. If not, it is found",
+        size=32,
+        default=[True] * 32,
+        options={"SKIP_SAVE"},
+        update=update_resultant_moment,
+    )
+    is_previewing: bpy.props.BoolProperty(options={"HIDDEN", "SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        case = tool.Ifc.get().by_id(self.load_case)
+        activities = get_case_moment_forces(case)[0][:32]
+        if not activities:
+            self.report({"ERROR"}, "The load case takes moments about no point, or has no point forces")
+            return {"CANCELLED"}
+        kept = tool.Structural.get_resultant_moment(case)
+        moment = (
+            kept
+            if kept is not None
+            else tool.Structural.get_moment_about(case, tool.Structural.get_moment_centre(case))
+        )
+        self.moment, self.turn = abs(moment or 0.0), "CW" if (moment or 0.0) < 0 else "CCW"
+        locks = [tool.Structural.get_locks(activity) for activity in activities]
+        self.magnitude_locks = [lock[0] for lock in locks] + [True] * (32 - len(locks))
+        self.direction_locks = [lock[1] for lock in locks] + [True] * (32 - len(locks))
+        # Known if kept, or if a force's value is left to find; otherwise found from the forces.
+        self.moment_locked = kept is not None or not all(locked for lock in locks for locked in lock)
+        self.is_previewing = True  # Set last, so that filling in the values above does not start a preview.
+        update_resultant_moment(self.properties, context)
+        return context.window_manager.invoke_props_dialog(self, width=380)
+
+    def draw(self, context):
+        layout = self.layout
+        case = tool.Ifc.get().by_id(self.load_case)
+        centre = tool.Structural.get_moment_centre(case)
+        unit = f"{get_project_unit_symbol('FORCEUNIT', 'N')}.{get_project_unit_symbol('LENGTHUNIT', 'm')}"
+        layout.label(text=f"About A: {centre.Name or 'Unnamed'}" if centre else "About A", icon="FORCE_VORTEX")
+        row = layout.row(align=True)
+        if self.moment_locked:
+            values = row.row(align=True)
+            values.activate_init = True
+            values.prop(self, "moment", text=f"ΣM_A ({unit})")
+        else:
+            # Found from the forces as they are, so shown rather than entered.
+            found = tool.Structural.get_moment_about(case, centre) if centre else None
+            text = "ΣM_A: found from the forces"
+            if found is not None:
+                text = f"ΣM_A = {abs(found):.2f} {unit} {'CCW' if found > 0 else 'CW'}  (found)"
+            row.label(text=text)
+        row.prop(self, "moment_locked", text="", icon="LOCKED" if self.moment_locked else "UNLOCKED")
+        if self.moment_locked:
+            layout.row().prop(self, "turn", expand=True)
+        layout.label(text="Forces, and which of their values are known:")
+        activities = get_case_moment_forces(case)[0][:32]
+        for i, activity in enumerate(activities):
+            row = layout.row(align=True)
+            symbol = "F" + str(i + 1).translate(str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉"))
+            row.label(text=f"{symbol}: {activity.AppliedLoad.Name or 'Unnamed'}", icon="FORCE_FORCE")
+            for prop, text in (("magnitude_locks", "Magnitude"), ("direction_locks", "Direction")):
+                locked = getattr(self, prop)[i]
+                row.prop(self, prop, index=i, text=text, icon="LOCKED" if locked else "UNLOCKED")
+        forces, error = solve_resultant_moment(self)
+        if error:
+            layout.label(text=error, icon="ERROR")
+            return
+        box = layout.box()
+        force_unit = get_project_unit_symbol("FORCEUNIT", "N")
+        for load, force in forces.items():
+            old = get_force(load)
+            new = math.copysign(math.hypot(*force), sum(a * b for a, b in zip(force, old)))
+            box.label(text=f"{load.Name or 'Unnamed'}: {get_force_name(force, force_unit)}")
+            if new < 0:
+                box.label(text="  reverses its direction (a pull becomes a push)", icon="ERROR")
+        if not forces and self.moment_locked:
+            box.label(text="The forces already make this moment", icon="CHECKMARK")
+        elif not forces:
+            box.label(text="No force changes; ΣM_A is no longer kept", icon="INFO")
+
+    def cancel(self, context):
+        clear_previews(context)
+
+    def _execute(self, context):
+        ShaderInfo.preview = {}  # The edit below refreshes the shown loads.
+        case = tool.Ifc.get().by_id(self.load_case)
+        locks = get_resultant_moment_locks(self)
+        forces, error = solve_resultant_moment(self)
+        if error:
+            self.report({"ERROR"}, error)
+            return {"CANCELLED"}
+        for activity, (magnitude, direction) in zip(get_case_moment_forces(case)[0], locks):
+            tool.Structural.set_locks(activity, magnitude, direction)
+        write_forces(forces)
+        # Kept, so that changing a force or the moment centre later solves the unknown again to keep it; or, found
+        # from the forces, no longer kept.
+        tool.Structural.set_resultant_moment(case, get_signed_moment(self) if self.moment_locked else None)
         redraw_loads(context)
         return {"FINISHED"}
 
@@ -2511,6 +2771,7 @@ def restore_moment_centre(context: bpy.types.Context) -> None:
         if obj := bpy.data.objects.get(name):
             obj.matrix_world.translation = translation
     MOMENT_CENTRE_PREVIEW.clear()
+    ShaderInfo.preview = {}  # And the forces a kept moment solved for as it moved.
     context.view_layer.update()
     redraw_loads(context)
 

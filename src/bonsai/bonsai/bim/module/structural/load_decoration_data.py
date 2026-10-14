@@ -876,7 +876,10 @@ class ShaderInfo:
                 "away": np.array((0, 0, 1.0)),
             }
         )
+        if tool.Structural.get_resultant_moment(tool.Ifc.get().by_id(load_case)) is not None:
+            self.text_info[-1]["text"] += " 🔒"  # Kept: forces changing re-solve the unknown to keep it.
         self.add_moment_pickable(first, len(self.info), self.text_info[-1:], load_case)
+        self.pickables[-1]["moment_resultant"] = True  # Clicked, it edits the sum, as a resultant's value does.
 
     def add_moment_pickable(
         self,
@@ -1058,6 +1061,10 @@ class ShaderInfo:
                 k = int(np.argmax(np.abs(axes.T @ vector)))
                 tilted = props.reference_frame == "LOCAL_COORDS" and not np.allclose(rotation, np.eye(3))
                 self.text_info[-1]["component"] = "xyz"[k] + ("′" if tilted else "")
+                if not tilted and picked is not None:
+                    # Clicked, its arrow or its value, its own component is ready to type; Edit Load takes X, Y and
+                    # Z, not x' and z'.
+                    self.text_info[-1]["focus"] = self.pickables[picked]["focus"] = "xyz"[k]
             if props.show_force_angles and has_angle:
                 self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes, activity, pickable=picked)
             if props.show_force_slopes and has_angle:

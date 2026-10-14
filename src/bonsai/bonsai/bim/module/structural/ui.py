@@ -369,6 +369,9 @@ class BIM_PT_structural_item_loads(Panel):
                 row = box.row(align=True)
                 row.label(text=f"{moment['name']}: {moment['moment']}")
                 row.operator("bim.edit_structural_moment_centre", text="", icon="GREASEPENCIL").load_case = moment["id"]
+                row.operator("bim.edit_structural_resultant_moment", text="", icon="FORCE_VORTEX").load_case = moment[
+                    "id"
+                ]
                 row.operator(
                     "bim.show_structural_load_case", text="", icon=get_load_case_eye(moment["id"]), emboss=False
                 ).load_case = moment["id"]

@@ -495,3 +495,46 @@ class TestMomentCentre(NewFile):
         assert subject.get_moment_centre(case) == point
         subject.set_moment_centre(case, None)
         assert subject.get_moment_centre(case) is None
+
+
+class TestSolveMomentUnknown(NewFile):
+    def test_a_magnitude_for_the_moment(self):
+        # A known 10 down at 2 to the right, and an upward force at 4 found to balance it.
+        arms = [np.array((2.0, 0, 0)), np.array((4.0, 0, 0))]
+        forces = [np.array((0, 0, -10.0)), np.array((0, 0, 1.0))]
+        solved, error = subject.solve_moment_unknown(arms, forces, [(True, True), (False, True)], 0.0)
+        assert not error and np.allclose(solved[1], (0, 0, 5))
+
+    def test_a_magnitude_reversed_for_the_moment(self):
+        arms = [np.array((2.0, 0, 0))]
+        solved, error = subject.solve_moment_unknown(arms, [np.array((0, 0, 1.0))], [(False, True)], -20.0)
+        assert not error and np.allclose(solved[0], (0, 0, -10))
+
+    def test_linked_magnitudes_found_together(self):
+        arms = [np.array((1.0, 0, 0)), np.array((3.0, 0, 0))]
+        forces = [np.array((0, 0, 1.0)), np.array((0, 0, 1.0))]
+        locks = [(False, True), (False, True)]
+        solved, error = subject.solve_moment_unknown(arms, forces, locks, 30.0, ["T", "T"], [1.0, 2.0])
+        # m (1 + 2 * 3) = 30, the second twice the first.
+        assert not error and np.allclose(solved[0], (0, 0, 30 / 7)) and np.allclose(solved[1], (0, 0, 60 / 7))
+
+    def test_a_direction_nearest_its_own(self):
+        # 10 at 2 to the right makes at most 20; 10 needs the force 30 degrees off its arm.
+        arms = [np.array((2.0, 0, 0))]
+        start = np.array(direction(100, 10))  # Nearer 150 degrees than 30, of the two directions that make it.
+        solved, error = subject.solve_moment_unknown(arms, [start], [(True, False)], 10.0)
+        assert not error and math.isclose(math.hypot(solved[0][0], solved[0][2]), 10)
+        assert math.isclose(2 * solved[0][2], 10) and solved[0][0] < 0  # 150 degrees from +X, not 30.
+
+    def test_one_unknown_only(self):
+        arms = [np.array((2.0, 0, 0))]
+        assert "Unlock one" in subject.solve_moment_unknown(arms, [np.array((0, 0, 1.0))], [(True, True)], 5.0)[1]
+        error = subject.solve_moment_unknown(arms, [np.array((0, 0, 1.0))], [(False, False)], 5.0)[1]
+        assert error.startswith("Unlocked: F1 magnitude, F1 direction")
+
+    def test_no_moment_to_make(self):
+        arms = [np.array((2.0, 0, 0))]
+        error = subject.solve_moment_unknown(arms, [np.array((1.0, 0, 0))], [(False, True)], 5.0)[1]
+        assert "passes through the centre" in error
+        error = subject.solve_moment_unknown(arms, [np.array((0, 0, 1.0))], [(True, False)], 5.0)[1]
+        assert "at most 2" in error

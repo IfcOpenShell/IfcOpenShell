@@ -178,6 +178,8 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
                 distance = (tail + (tip - tail) * along - mouse).length
                 if distance < best_distance:
                     best, best_distance = pickable, distance
+        # An arrow standing for one value, as a component, opens its dialog with that value ready to type.
+        cls.hovered_focus = best.get("focus", "") if best else ""
         return best
 
     def __call__(self) -> None:
