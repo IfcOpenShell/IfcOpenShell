@@ -5,10 +5,10 @@ import sys
 import traceback
 
 import bpy
+import ifcopenshell.api.alignment
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 
 def check(cond, msg):
@@ -44,17 +44,22 @@ try:
 
     # horizontal with two spiralled curves + one vertical, through the PI method
     alignment = ifcopenshell.api.alignment.create_by_pi_method(
-        ifc, "MV",
+        ifc,
+        "MV",
         [(0.0, 0.0), (800.0, 0.0), (1400.0, 600.0), (2200.0, 600.0)],
         [(300.0, 60.0, 60.0), (400.0, 80.0, 80.0)],
-        [(0.0, 100.0), (900.0, 110.0), (2000.0, 104.0)], [200.0],
+        [(0.0, 100.0), (900.0, 110.0), (2000.0, 104.0)],
+        [200.0],
     )
     tool.Alignment.create_object_for_alignment(alignment)
     tool.Alignment.refresh_alignment_representation_object(alignment)
     select(tool.Ifc.get_object(alignment))
     print("1 vertical:", describe(alignment))
     lone = tool.Alignment.get_all_vertical_layouts(alignment)[0]
-    check(tool.Alignment.get_vertical_display_name(lone) == "MV", f"lone vertical: {tool.Alignment.get_vertical_display_name(lone)}")
+    check(
+        tool.Alignment.get_vertical_display_name(lone) == "MV",
+        f"lone vertical: {tool.Alignment.get_vertical_display_name(lone)}",
+    )
     check(bpy.ops.align.rename_vertical(layout_id=lone.id(), name="Profile Grade") == {"FINISHED"}, "rename lone")
     check(lone.Name == "Profile Grade" and alignment.Name == "MV", "lone rename touched the alignment")
     check(tool.Alignment.get_vertical_display_name(lone) == "Profile Grade", "lone display name")
@@ -91,7 +96,9 @@ try:
 
     def cant_value(c):
         segs = tool.Alignment.get_real_layout_segments(c)
-        return max(max(abs(s.DesignParameters.StartCantLeft or 0), abs(s.DesignParameters.StartCantRight or 0)) for s in segs)
+        return max(
+            max(abs(s.DesignParameters.StartCantLeft or 0), abs(s.DesignParameters.StartCantRight or 0)) for s in segs
+        )
 
     by_owner = {ifcopenshell.api.alignment.get_alignment(c).id(): cant_value(c) for c in cants}
     print("cant values by owner:", by_owner)
@@ -150,7 +157,9 @@ try:
     ifcopenshell.api.alignment.get_alignment(v2).Name = "Existing Ground"
     check(dialog(v2.id())[0] == "For vertical: Existing Ground", f"renamed child not used: {dialog(v2.id())}")
     check(tool.Alignment.get_vertical_display_name(v1) == "Vertical 1", "v1 label changed")
-    print("after rename:", tool.Alignment.get_vertical_display_name(v1), "/", tool.Alignment.get_vertical_display_name(v2))
+    print(
+        "after rename:", tool.Alignment.get_vertical_display_name(v1), "/", tool.Alignment.get_vertical_display_name(v2)
+    )
 
     # ---- no vertical chosen with several verticals: a clear refusal, nothing changed
     before = describe(alignment)

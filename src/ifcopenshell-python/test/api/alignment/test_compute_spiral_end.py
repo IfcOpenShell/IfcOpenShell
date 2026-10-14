@@ -69,9 +69,7 @@ def angle_between(a, b):
 @pytest.mark.parametrize("family,r0,r1", SPIRAL_CASES)
 def test_solver_end_matches_kernel(family, r0, r1):
     f, alignment, _ = build_horizontal("metre", family, r0, r1)
-    p = next(
-        s.DesignParameters for s in f.by_type("IfcAlignmentSegment") if s.DesignParameters.SegmentLength > 0
-    )
+    p = next(s.DesignParameters for s in f.by_type("IfcAlignmentSegment") if s.DesignParameters.SegmentLength > 0)
     segment = ifcopenshell.api.alignment.HorizontalSegmentDefinition(
         tuple(p.StartPoint.Coordinates), p.StartDirection, r0, r1, LENGTH, family
     )

@@ -17,7 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator, decorator
+
+from . import decorator, operator, prop, ui
 
 _last_active_ptr: int = 0
 _last_profile_alignment_id: int = 0  # tracks which alignment the profile was last built for
@@ -49,9 +50,7 @@ def _auto_finish_unrelated_pi_markers(active, alignment) -> None:
         return
 
     marker_alignment_ids = {
-        obj.bonsai_pi_curve_marker.alignment_id
-        for obj in bpy.data.objects
-        if obj.bonsai_pi_curve_marker.is_pi_marker
+        obj.bonsai_pi_curve_marker.alignment_id for obj in bpy.data.objects if obj.bonsai_pi_curve_marker.is_pi_marker
     }
     if not marker_alignment_ids:
         return
@@ -141,6 +140,7 @@ def _on_active_object_changed(scene, depsgraph):
             _last_profile_alignment_id = new_aid
             if alignment:
                 from bonsai.bim.module.alignment.decorator import VerticalProfileDecorator
+
                 dec = VerticalProfileDecorator
                 if dec.is_installed:
                     dec._compute_profile(alignment)
@@ -160,9 +160,7 @@ def _on_active_object_changed(scene, depsgraph):
                     for window in ctx.window_manager.windows:
                         for a in window.screen.areas:
                             if a.as_pointer() == dec.profile_area_ptr:
-                                space = next(
-                                    (s for s in a.spaces if s.type == "VIEW_3D"), None
-                                )
+                                space = next((s for s in a.spaces if s.type == "VIEW_3D"), None)
                                 if space:
                                     dec.fit_view(space, area_width=a.width, area_height=a.height)
                     dec.tag_redraw()
@@ -294,6 +292,7 @@ def register():
     # Reset decorator state so a module hot-reload never leaves is_installed=True
     # with stale handlers that prevent the first button press from opening the profile.
     from .decorator import VerticalProfileDecorator
+
     VerticalProfileDecorator.is_installed = False
     VerticalProfileDecorator.handlers = []
     VerticalProfileDecorator.profile_area = None
@@ -310,7 +309,9 @@ def register():
         kmi = km.keymap_items.new(operator.ALIGN_OT_pan_vertical_profile.bl_idname, "WHEELUPMOUSE", "PRESS", shift=True)
         kmi.properties.direction = -1
         addon_keymaps.append((km, kmi))
-        kmi = km.keymap_items.new(operator.ALIGN_OT_pan_vertical_profile.bl_idname, "WHEELDOWNMOUSE", "PRESS", shift=True)
+        kmi = km.keymap_items.new(
+            operator.ALIGN_OT_pan_vertical_profile.bl_idname, "WHEELDOWNMOUSE", "PRESS", shift=True
+        )
         kmi.properties.direction = 1
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new(operator.ALIGN_OT_reset_vertical_profile_view.bl_idname, "HOME", "PRESS")
@@ -327,6 +328,7 @@ def unregister():
         bpy.app.handlers.depsgraph_update_post.remove(_on_active_object_changed)
     # Clean up any open profile window so re-registration starts from a clean state.
     from .decorator import VerticalProfileDecorator
+
     if VerticalProfileDecorator.is_installed:
         try:
             VerticalProfileDecorator.uninstall()

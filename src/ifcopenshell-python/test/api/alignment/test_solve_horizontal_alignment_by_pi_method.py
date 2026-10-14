@@ -181,7 +181,9 @@ def test_solve_errors():
             [(0.0, 0.0), (1000.0, 0.0), (2000.0, 0.0)], [(500.0, 50.0, 50.0)]
         )
     with pytest.raises(ValueError):  # unsupported spiral family
-        ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, [(500.0, 50.0, 50.0, "NOT_A_FAMILY")])
+        ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(
+            hpoints, [(500.0, 50.0, 50.0, "NOT_A_FAMILY")]
+        )
 
 
 def test_solve_errors_when_tangent_run_goes_negative():

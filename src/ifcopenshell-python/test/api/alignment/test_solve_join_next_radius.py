@@ -141,7 +141,12 @@ def test_spiral_circular_to_circular_spiral_closes_end_to_end():
 
     segments = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, radii)
     assert [s.predefined_type for s in segments] == [
-        "LINE", "CLOTHOID", "CIRCULARARC", "CIRCULARARC", "CLOTHOID", "LINE",
+        "LINE",
+        "CLOTHOID",
+        "CIRCULARARC",
+        "CIRCULARARC",
+        "CLOTHOID",
+        "LINE",
     ]
     # Looser tolerance than the closed-form PCC/PRC tests: r2_solved is only as exact as
     # solve_join_next_radius's own bisection (see _assert_chain_continuous's docstring) -- still
@@ -190,7 +195,11 @@ def test_three_curve_chain_solves_pairwise():
 
     segments = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, radii)
     assert [s.predefined_type for s in segments] == [
-        "LINE", "CIRCULARARC", "CIRCULARARC", "CIRCULARARC", "LINE",
+        "LINE",
+        "CIRCULARARC",
+        "CIRCULARARC",
+        "CIRCULARARC",
+        "LINE",
     ]
     _assert_chain_continuous(segments)
 

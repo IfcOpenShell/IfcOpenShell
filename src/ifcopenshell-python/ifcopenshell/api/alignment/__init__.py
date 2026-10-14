@@ -60,9 +60,9 @@ from .add_positioning_referent import add_positioning_referent
 from .add_stationing_referent import add_stationing_referent
 from .add_vertical_layout import add_vertical_layout
 from .add_zero_length_segment import add_zero_length_segment
+from .clear_layout_segments import clear_layout_segments
 from .create import create
 from .create_as_offset_curve import create_as_offset_curve
-from .clear_layout_segments import clear_layout_segments
 from .create_as_polyline import create_as_polyline
 from .create_by_pi_method import create_by_pi_method
 from .create_from_csv import create_from_csv
@@ -70,7 +70,6 @@ from .create_layout_segment import create_layout_segment
 from .create_representation import create_representation
 from .create_segment_representations import create_segment_representations
 from .distance_along_from_station import distance_along_from_station
-from .station_from_distance_along import station_from_distance_along
 from .get_alignment import get_alignment
 from .get_alignment_layout_nest import get_alignment_layout_nest
 from .get_alignment_layouts import get_alignment_layouts
@@ -112,6 +111,7 @@ from .solve_horizontal_alignment_by_pi_method import (
     solve_join_next_radius,
     solve_joining_radius,
 )
+from .station_from_distance_along import station_from_distance_along
 from .update_alignment_parameter_segment_tags import update_alignment_parameter_segment_tags
 from .update_end_point import update_end_point
 from .update_fallback_position import update_fallback_position
@@ -123,18 +123,14 @@ __all__ = [
     "SPIRAL_FAMILIES",
     "HorizontalCurveParameters",
     "HorizontalSegmentDefinition",
-    "compute_clothoid_end",
-    "compute_horizontal_segment_end",
-    "compute_spiral_end",
-    "curve_tangent_out",
-    "solve_horizontal_alignment_by_pi_method",
-    "solve_join_next_radius",
-    "solve_joining_radius",
     "add_positioning_referent",
     "add_stationing_referent",
     "add_vertical_layout",
     "add_zero_length_segment",
     "clear_layout_segments",
+    "compute_clothoid_end",
+    "compute_horizontal_segment_end",
+    "compute_spiral_end",
     "create",
     "create_as_offset_curve",
     "create_as_polyline",
@@ -143,8 +139,8 @@ __all__ = [
     "create_layout_segment",
     "create_representation",
     "create_segment_representations",
+    "curve_tangent_out",
     "distance_along_from_station",
-    "station_from_distance_along",
     "get_alignment",
     "get_alignment_layout_nest",
     "get_alignment_layouts",
@@ -170,8 +166,12 @@ __all__ = [
     "layout_horizontal_alignment_by_pi_method",
     "layout_vertical_alignment_by_pi_method",
     "name_segments",
-    "segment_vertices",
     "register_referent_name_callback",
+    "segment_vertices",
+    "solve_horizontal_alignment_by_pi_method",
+    "solve_join_next_radius",
+    "solve_joining_radius",
+    "station_from_distance_along",
     "update_alignment_parameter_segment_tags",
     "update_end_point",
     "update_fallback_position",

@@ -11,10 +11,10 @@ import os
 import traceback
 
 import bpy
+import ifcopenshell.api.alignment
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 from bonsai.bim.module.alignment.decorator import AlignmentSegmentDecorator, _place_label_block
 
 
@@ -75,7 +75,14 @@ try:
     out = os.environ.get("CURVE_DATA_OUT")
     if out:
         with open(out, "w") as f:
-            json.dump({k: [{x: y for x, y in s.items() if x not in ("curve_props", "pi_station")} for s in v] for k, v in dump.items()}, f, indent=1)
+            json.dump(
+                {
+                    k: [{x: y for x, y in s.items() if x not in ("curve_props", "pi_station")} for s in v]
+                    for k, v in dump.items()
+                },
+                f,
+                indent=1,
+            )
 
     if dump["Simple"][1]["curve_props"] is not None:  # None on a decorator without curve data
         line, arc, _ = dump["Simple"]

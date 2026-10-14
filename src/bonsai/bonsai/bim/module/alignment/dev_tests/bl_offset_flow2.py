@@ -5,10 +5,10 @@ import sys
 import traceback
 
 import bpy
+import ifcopenshell.api.alignment
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 sys.path.insert(0, __import__("os").path.dirname(__file__))
 from bl_panel_render_rec import Rec
@@ -33,7 +33,11 @@ def authoring_buttons():
     out = []
     panel = type("P", (), {"layout": Rec(out)})()
     ui_mod.ALIGN_PT_alignment_authoring.draw(panel, bpy.context)
-    return [l.split()[1] for l in out if l.strip().startswith("op:") and "add_alignment" not in l and "remove_alignment" not in l]
+    return [
+        l.split()[1]
+        for l in out
+        if l.strip().startswith("op:") and "add_alignment" not in l and "remove_alignment" not in l
+    ]
 
 
 def definitions():
@@ -59,7 +63,12 @@ try:
 
     # a standard alignment (horizontal + vertical)
     main = ifcopenshell.api.alignment.create_by_pi_method(
-        ifc, "Main", [(0.0, 0.0), (100.0, 0.0), (200.0, 100.0)], [50.0], [(0.0, 10.0), (80.0, 12.0), (200.0, 10.0)], [0.0]
+        ifc,
+        "Main",
+        [(0.0, 0.0), (100.0, 0.0), (200.0, 100.0)],
+        [50.0],
+        [(0.0, 10.0), (80.0, 12.0), (200.0, 10.0)],
+        [0.0],
     )
     A.create_object_for_alignment(main)
     A.refresh_alignment_representation_object(main)
@@ -68,8 +77,9 @@ try:
 
     # ---- 1st issue: an offset alignment is created complete; only Edit Offsets applies
     grad = next(c for c, _, d in A.get_offset_basis_candidates(None) if d == 3)
-    r = bpy.ops.align.add_alignment(alignment_name="Lane", definition="OFFSET", offset_from=str(grad.id()),
-                                    offset_lateral=3.5, offset_vertical=0.2)
+    r = bpy.ops.align.add_alignment(
+        alignment_name="Lane", definition="OFFSET", offset_from=str(grad.id()), offset_lateral=3.5, offset_vertical=0.2
+    )
     check(r == {"FINISHED"}, "add offset")
     lane = next(x for x in ifc.by_type("IfcAlignment") if x.Name == "Lane")
     check(A.is_offset_alignment(lane), "offset alignment not created complete")
@@ -78,13 +88,21 @@ try:
     select(tool.Ifc.get_object(lane))
     print("buttons for an offset alignment:", authoring_buttons())
     check(authoring_buttons() == ["align.load_offset_table"], "more than Edit Offsets offered")
-    check(not bpy.ops.align.draw_horizontal_alignment.poll() and not bpy.ops.align.draw_polyline_alignment.poll(), "draw polls")
+    check(
+        not bpy.ops.align.draw_horizontal_alignment.poll() and not bpy.ops.align.draw_polyline_alignment.poll(),
+        "draw polls",
+    )
 
     # ---- 2nd issue: an offset of the offset, chosen at creation; editable even with Lane's table left open
     bpy.ops.align.load_offset_table()  # Lane's table, left open
     lane_curve = A.get_offset_curve(lane)
-    r = bpy.ops.align.add_alignment(alignment_name="Edge", definition="OFFSET", offset_from=str(lane_curve.id()),
-                                    offset_lateral=2.0, define_stationing=False)
+    r = bpy.ops.align.add_alignment(
+        alignment_name="Edge",
+        definition="OFFSET",
+        offset_from=str(lane_curve.id()),
+        offset_lateral=2.0,
+        define_stationing=False,
+    )
     check(r == {"FINISHED"}, "add offset of offset")
     edge = next(x for x in ifc.by_type("IfcAlignment") if x.Name == "Edge")
     check(A.get_offset_values(edge)[0] == lane_curve, "edge basis")
@@ -112,7 +130,11 @@ try:
     # ---- a standard alignment still offers the PI tools only
     select(tool.Ifc.get_object(main))
     print("buttons for a layout alignment:", authoring_buttons())
-    check("align.draw_horizontal_alignment" in authoring_buttons() and "align.load_offset_table" not in authoring_buttons(), "layout buttons")
+    check(
+        "align.draw_horizontal_alignment" in authoring_buttons()
+        and "align.load_offset_table" not in authoring_buttons(),
+        "layout buttons",
+    )
     print("OFFSET_FLOW2_OK")
 except Exception:
     traceback.print_exc()

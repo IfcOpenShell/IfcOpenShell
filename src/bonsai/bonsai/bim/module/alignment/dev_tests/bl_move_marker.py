@@ -6,10 +6,10 @@ import sys
 import traceback
 
 import bpy
+import ifcopenshell.api.alignment
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 
 def check(cond, msg):
@@ -92,8 +92,11 @@ try:
     # PI 1: 800 at 45 degrees from Start (one anchor -> angle against the +X axis, like the first drawn leg)
     r = move(pi1, 800.0, 45.0, (0.0, 500.0, 0.0))
     print("PI 1 ->", tuple(pi1.location[:2]), r)
-    check(r == {"FINISHED"} and near(pi1.location[:2], (800 * math.cos(math.radians(45)), 800 * math.sin(math.radians(45)))),
-          "PI 1 not moved to D=800, A=45")
+    check(
+        r == {"FINISHED"}
+        and near(pi1.location[:2], (800 * math.cos(math.radians(45)), 800 * math.sin(math.radians(45)))),
+        "PI 1 not moved to D=800, A=45",
+    )
     check(not tool.Model.get_polyline_props().insertion_polyline, "polyline not cleaned up")
 
     def check_placed(moved, anchor_back, anchor, d, a, mouse):
@@ -134,7 +137,9 @@ try:
     op._marker_name, op._seeded, op._bearing_handle = pi1.name, 1, None
     op.report = lambda *a: None
     tool.Polyline.clear_polyline()
-    check(op._finish(bpy.context, moved=False) == {"CANCELLED"} and tuple(pi1.location[:2]) == before, "cancel moved it")
+    check(
+        op._finish(bpy.context, moved=False) == {"CANCELLED"} and tuple(pi1.location[:2]) == before, "cancel moved it"
+    )
 
     # Apply Curve uses the moved markers
     for o in bpy.context.selected_objects:

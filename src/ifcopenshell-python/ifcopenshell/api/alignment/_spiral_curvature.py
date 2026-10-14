@@ -31,8 +31,8 @@ that guarantee cheap to keep true.
 """
 
 import math
-from collections.abc import Sequence
-from typing import Callable, Optional
+from collections.abc import Callable, Sequence
+from typing import Optional
 
 
 def curve_factor(length: float, start_radius: float, end_radius: float) -> float:

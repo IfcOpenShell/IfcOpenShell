@@ -25,11 +25,10 @@ Operators tested:
     CSV import: import_alignment_csv (EXEC_DEFAULT with explicit filepath)
 """
 
-import pytest
-
 import bpy
 import ifcopenshell
 import ifcopenshell.api.alignment as align_api
+import pytest
 
 import bonsai.tool as tool
 from test.bim.bootstrap import NewIfc4X3

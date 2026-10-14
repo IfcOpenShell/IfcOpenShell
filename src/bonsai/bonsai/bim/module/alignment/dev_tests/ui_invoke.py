@@ -6,7 +6,6 @@ way its button does, on a real 3D viewport, and report whether it started cleanl
 test is given by the ALIGN_UI_TEST environment variable. Quits Blender afterwards."""
 
 import os
-import sys
 import traceback
 
 import bpy
@@ -29,8 +28,9 @@ def select(obj):
 def run():
     which = os.environ.get("ALIGN_UI_TEST", "draw_horizontal_alignment")
     try:
-        import bonsai.tool as tool
         import ifcopenshell.api.alignment
+
+        import bonsai.tool as tool
 
         tool.Project.get_project_props().export_schema = "IFC4X3_ADD2"
         bpy.ops.bim.create_project()
@@ -41,8 +41,12 @@ def run():
         kwargs = {}
         if which == "add_alignment":
             a = ifcopenshell.api.alignment.create_by_pi_method(
-                ifc, "Main", [(0.0, 0.0), (100.0, 0.0), (200.0, 100.0)], [50.0],
-                [(0.0, 10.0), (80.0, 12.0), (200.0, 10.0)], [0.0],
+                ifc,
+                "Main",
+                [(0.0, 0.0), (100.0, 0.0), (200.0, 100.0)],
+                [50.0],
+                [(0.0, 10.0), (80.0, 12.0), (200.0, 10.0)],
+                [0.0],
             )
             A.create_object_for_alignment(a)
             A.refresh_alignment_representation_object(a)
@@ -57,8 +61,12 @@ def run():
             select(tool.Ifc.get_object(a))
         else:
             a = ifcopenshell.api.alignment.create_by_pi_method(
-                ifc, "Main", [(0.0, 0.0), (100.0, 0.0), (200.0, 100.0)], [50.0],
-                [(0.0, 10.0), (80.0, 12.0), (200.0, 10.0)], [0.0],
+                ifc,
+                "Main",
+                [(0.0, 0.0), (100.0, 0.0), (200.0, 100.0)],
+                [50.0],
+                [(0.0, 10.0), (80.0, 12.0), (200.0, 10.0)],
+                [0.0],
             )
             A.create_object_for_alignment(a)
             A.refresh_alignment_representation_object(a)

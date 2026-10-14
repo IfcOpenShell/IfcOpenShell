@@ -7,12 +7,12 @@ import tempfile
 import traceback
 
 import bpy
-
-import bonsai.bim.handler
-import bonsai.tool as tool
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.geometry
+
+import bonsai.bim.handler
+import bonsai.tool as tool
 
 try:
     bpy.ops.wm.read_homefile(app_template="")
@@ -33,7 +33,9 @@ try:
     curve = ifc.createIfcIndexedPolyCurve(Points=plist, Segments=None, SelfIntersect=False)
     rep = ifc.createIfcShapeRepresentation(
         ContextOfItems=ifcopenshell.api.alignment.get_axis_subcontext(ifc),
-        RepresentationIdentifier="Axis", RepresentationType="Curve3D", Items=(curve,),
+        RepresentationIdentifier="Axis",
+        RepresentationType="Curve3D",
+        Items=(curve,),
     )
     a4.ObjectPlacement = ifc.createIfcLocalPlacement(
         RelativePlacement=ifc.createIfcAxis2Placement3D(Location=ifc.createIfcCartesianPoint((0.0, 0.0, 0.0)))
@@ -57,20 +59,41 @@ try:
         ]
         info = None
         if obj is not None:
-            info = (obj.name, obj.type, len(obj.data.vertices) if obj.type == "MESH" else None,
-                    len(obj.data.edges) if obj.type == "MESH" else None)
-        print(a.Name, "| reps:", rep_items, "| obj:", info,
-              "| h layout:", ifcopenshell.api.alignment.get_horizontal_layout(a),
-              "| curve:", (ifcopenshell.api.alignment.get_curve(a).is_a() if ifcopenshell.api.alignment.get_curve(a) else None))
+            info = (
+                obj.name,
+                obj.type,
+                len(obj.data.vertices) if obj.type == "MESH" else None,
+                len(obj.data.edges) if obj.type == "MESH" else None,
+            )
+        print(
+            a.Name,
+            "| reps:",
+            rep_items,
+            "| obj:",
+            info,
+            "| h layout:",
+            ifcopenshell.api.alignment.get_horizontal_layout(a),
+            "| curve:",
+            (ifcopenshell.api.alignment.get_curve(a).is_a() if ifcopenshell.api.alignment.get_curve(a) else None),
+        )
         if obj is not None:
             for o in bpy.context.selected_objects:
                 o.select_set(False)
             obj.select_set(True)
             bpy.context.view_layer.objects.active = obj
             active = tool.Alignment.get_active_alignment()
-            print("   active alignment:", active.Name if active else None,
-                  "| stationing:", tool.Alignment.get_stationing_referents(a)[:1])
-            for opname in ("draw_horizontal_alignment", "edit_horizontal_pis", "generate_key_points", "draw_vertical_alignment"):
+            print(
+                "   active alignment:",
+                active.Name if active else None,
+                "| stationing:",
+                tool.Alignment.get_stationing_referents(a)[:1],
+            )
+            for opname in (
+                "draw_horizontal_alignment",
+                "edit_horizontal_pis",
+                "generate_key_points",
+                "draw_vertical_alignment",
+            ):
                 op = getattr(bpy.ops.align, opname)
                 print(f"   poll {opname}:", op.poll())
     print("PROBE_DONE")

@@ -19,29 +19,32 @@
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
 
-import bpy
-import blf
 import math
-import mathutils
 import time
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
-import bonsai.core.alignment as core
-import bonsai.tool as tool
+
+import blf
+import bpy
 import ifcopenshell.api.alignment
-from ifcopenshell.api.alignment.layout_horizontal_alignment_by_pi_method import _horizontal_design_parameters
-from ifcopenshell.api.alignment.layout_vertical_alignment_by_pi_method import _vertical_design_parameters
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
+import mathutils
+from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty, StringProperty
+from bpy.types import Operator, SpaceView3D
 from bpy_extras.io_utils import ImportHelper
 from bpy_extras.view3d_utils import region_2d_to_location_3d
-from bpy.types import Operator, SpaceView3D
-from bpy.props import StringProperty, FloatProperty, EnumProperty, IntProperty, BoolProperty
+from ifcopenshell.api.alignment.layout_horizontal_alignment_by_pi_method import _horizontal_design_parameters
+from ifcopenshell.api.alignment.layout_vertical_alignment_by_pi_method import _vertical_design_parameters
+
+import bonsai.core.alignment as core
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.polyline import PolylineOperator
+
 from . import decorator as alignment_decorator
 from . import prop
-from bonsai.bim.module.model.polyline import PolylineOperator
-from bonsai.bim.module.model.decorator import PolylineDecorator
-from bonsai.bim.ifc import IfcStore
 
 
 class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
@@ -108,11 +111,7 @@ def _insert_polyline_point_no_close(op, context, event):
         tool.Blender.update_viewport()
 
     # RET/ENTER with numeric input: validate and insert
-    if (
-        op.tool_state.is_input_on
-        and event.value == "RELEASE"
-        and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
-    ):
+    if op.tool_state.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
         is_valid = op.recalculate_inputs(context)
         if is_valid:
             result = tool.Polyline.insert_polyline_point(op.input_ui, op.tool_state)
@@ -991,7 +990,6 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     # stays stuck at the origin forever regardless of where the alignment ended up.
     tool.Alignment.sync_stationing_referent_placements(alignment)
 
-
     # Rebuild key-point referents at the new transitions, if this alignment has them.
     tool.Alignment.update_key_point_referents_if_present(alignment)
 
@@ -1399,7 +1397,11 @@ def _refresh_pi_marker_visuals(context, alignment_id) -> None:
     """
     alignment_decorator.PIMarkerDecorator.refresh(context, alignment_id)
 
-    pending = [m for m in _find_pi_markers(alignment_id) if _is_interior_pi_marker(m) and m.bonsai_pi_curve_marker.curve_type == "TANGENT"]
+    pending = [
+        m
+        for m in _find_pi_markers(alignment_id)
+        if _is_interior_pi_marker(m) and m.bonsai_pi_curve_marker.curve_type == "TANGENT"
+    ]
     if not pending:
         context.workspace.status_text_set(text=None)
         return
@@ -1577,7 +1579,10 @@ def _apply_join_next_radii(items, hpoints, cant_lookup):
                 vb_params=joined_vb_params,
             )
         except ValueError as e:
-            return False, f"Could not close the compound/reverse curve at PI {joining_pi_number}-{joined_pi_number}: {e}"
+            return (
+                False,
+                f"Could not close the compound/reverse curve at PI {joining_pi_number}-{joined_pi_number}: {e}",
+            )
 
         joined.curve_type = joined_curve_type
         joined.radius = radius
@@ -1855,9 +1860,7 @@ def _reconstruct_horizontal_pis(h_layout):
                     outgoing_dp = line_b.DesignParameters if k == n - 1 else arcs[k + 1].DesignParameters
                     pi_locals.append(_tangent_line_intersection(incoming_dp, outgoing_dp))
                 if any(p is None for p in pi_locals):
-                    skipped.extend(
-                        (s, "tangents are parallel at a compound/reverse curve junction") for s in between
-                    )
+                    skipped.extend((s, "tangents are parallel at a compound/reverse curve junction") for s in between)
                     continue
 
                 junction_specs = []
@@ -1889,7 +1892,9 @@ def _reconstruct_horizontal_pis(h_layout):
                             "curve_type": curve_type,
                             "radius": abs(arc.DesignParameters.StartRadiusOfCurvature or 0.0),
                             "spiral_in_length": (spiral_in.DesignParameters.SegmentLength or 0.0) if spiral_in else 0.0,
-                            "spiral_out_length": (spiral_out.DesignParameters.SegmentLength or 0.0) if spiral_out else 0.0,
+                            "spiral_out_length": (spiral_out.DesignParameters.SegmentLength or 0.0)
+                            if spiral_out
+                            else 0.0,
                             "spiral_family": family,
                             "gravity_centerline_height": gch,
                             "cant": cant,
@@ -2021,8 +2026,7 @@ class ALIGN_OT_edit_horizontal_pis(Operator, tool.Ifc.Operator):
             more = f", and {len(skipped) - 5} more" if len(skipped) > 5 else ""
             self.report(
                 {"ERROR"},
-                f"Can't create PI markers: {len(skipped)} segment(s) couldn't be classified: "
-                f"{details}{more}.",
+                f"Can't create PI markers: {len(skipped)} segment(s) couldn't be classified: {details}{more}.",
             )
             return {"CANCELLED"}
 
@@ -2144,11 +2148,7 @@ class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
                 self.report({"ERROR"}, str(e))
                 return {"CANCELLED"}
 
-        hpoints = (
-            [start]
-            + [_marker_local_ifc(ifc, unit_scale, m) for m in interior_markers]
-            + [end]
-        )
+        hpoints = [start] + [_marker_local_ifc(ifc, unit_scale, m) for m in interior_markers] + [end]
         cant_lookup = _cant_lookup_for_pi_markers(alignment, len(interior_markers))
 
         # Compute (and write back onto the markers) any join_next PI's next-PI radius/curve type
@@ -2300,8 +2300,7 @@ class ALIGN_OT_load_horizontal_pi_table(Operator, tool.Ifc.Operator):
             more = f", and {len(skipped) - 5} more" if len(skipped) > 5 else ""
             self.report(
                 {"ERROR"},
-                f"Can't load PI table: {len(skipped)} segment(s) couldn't be classified: "
-                f"{details}{more}.",
+                f"Can't load PI table: {len(skipped)} segment(s) couldn't be classified: {details}{more}.",
             )
             return {"CANCELLED"}
 
@@ -2588,8 +2587,7 @@ class _DrawHorizontalAlignment(_CivilAngleInput, PolylineOperator, tool.Ifc.Oper
     bl_idname = "align.draw_horizontal_alignment"
     bl_label = "Draw Horizontal Alignment"
     bl_description = (
-        "Draw the horizontal alignment in the viewport. Click to place PIs, "
-        "RMB/Enter to generate it. ESC cancels."
+        "Draw the horizontal alignment in the viewport. Click to place PIs, RMB/Enter to generate it. ESC cancels."
     )
     bl_options = {"REGISTER", "UNDO"}
 
@@ -3987,11 +3985,7 @@ class ALIGN_OT_pan_vertical_profile(Operator):
     @classmethod
     def poll(cls, context):
         dec = alignment_decorator.VerticalProfileDecorator
-        return (
-            dec.is_installed
-            and context.area is not None
-            and context.area.as_pointer() == dec.profile_area_ptr
-        )
+        return dec.is_installed and context.area is not None and context.area.as_pointer() == dec.profile_area_ptr
 
     def execute(self, context):
         dec = alignment_decorator.VerticalProfileDecorator
@@ -4029,11 +4023,7 @@ class ALIGN_OT_reset_vertical_profile_view(Operator):
     @classmethod
     def poll(cls, context):
         dec = alignment_decorator.VerticalProfileDecorator
-        return (
-            dec.is_installed
-            and context.area is not None
-            and context.area.as_pointer() == dec.profile_area_ptr
-        )
+        return dec.is_installed and context.area is not None and context.area.as_pointer() == dec.profile_area_ptr
 
     def execute(self, context):
         dec = alignment_decorator.VerticalProfileDecorator
@@ -4319,8 +4309,7 @@ class ALIGN_OT_load_vertical_pis(Operator, tool.Ifc.Operator):
             more = f", and {len(skipped) - 5} more" if len(skipped) > 5 else ""
             self.report(
                 {"ERROR"},
-                f"Can't load PI list: {len(skipped)} segment(s) couldn't be classified: "
-                f"{details}{more}.",
+                f"Can't load PI list: {len(skipped)} segment(s) couldn't be classified: {details}{more}.",
             )
             return {"CANCELLED"}
 
@@ -5680,8 +5669,7 @@ class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
             if not cant_layout or not tool.Alignment.get_real_layout_segments(cant_layout):
                 self.report(
                     {"ERROR"},
-                    "Viennese Bend needs a cant layout first -- use Generate Cant Layout, "
-                    "then retry Apply.",
+                    "Viennese Bend needs a cant layout first -- use Generate Cant Layout, then retry Apply.",
                 )
                 return {"CANCELLED"}
 

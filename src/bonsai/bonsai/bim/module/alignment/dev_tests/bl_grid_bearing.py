@@ -7,11 +7,11 @@ import traceback
 from types import SimpleNamespace
 
 import bpy
+import ifcopenshell.api.georeference
 from mathutils import Vector
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.georeference
 
 
 def check(cond, msg):
@@ -32,7 +32,10 @@ try:
     from bonsai.bim.module.model.polyline import PolylineOperator
 
     # no georeferencing: grid north is +Y
-    check(abs(op_mod._grid_rotation_deg(True)) < 1e-9 and abs(op_mod._grid_rotation_deg(False)) < 1e-9, "rotation w/o georef")
+    check(
+        abs(op_mod._grid_rotation_deg(True)) < 1e-9 and abs(op_mod._grid_rotation_deg(False)) < 1e-9,
+        "rotation w/o georef",
+    )
 
     # georeference with the project's +X pointing 30 degrees anticlockwise of grid east
     ifcopenshell.api.georeference.add_georeferencing(ifc)
@@ -41,8 +44,12 @@ try:
         ifc,
         projected_crs={"Name": "EPSG:26915"},
         coordinate_operation={
-            "Eastings": 500000.0, "Northings": 4000000.0, "OrthogonalHeight": 0.0,
-            "XAxisAbscissa": math.cos(t), "XAxisOrdinate": math.sin(t), "Scale": 1.0,
+            "Eastings": 500000.0,
+            "Northings": 4000000.0,
+            "OrthogonalHeight": 0.0,
+            "XAxisAbscissa": math.cos(t),
+            "XAxisOrdinate": math.sin(t),
+            "Scale": 1.0,
         },
     )
     rw, rl = op_mod._grid_rotation_deg(True), op_mod._grid_rotation_deg(False)

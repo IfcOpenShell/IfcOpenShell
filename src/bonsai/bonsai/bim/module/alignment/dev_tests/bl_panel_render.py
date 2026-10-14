@@ -48,7 +48,9 @@ try:
     bonsai.bim.handler.load_post(None)
     tool.Project.get_project_props().export_schema = "IFC4X3_ADD2"
     bpy.ops.bim.create_project()
-    bpy.ops.align.add_alignment(alignment_name="Survey", definition="POLYLINE", define_stationing=True, start_station="0")
+    bpy.ops.align.add_alignment(
+        alignment_name="Survey", definition="POLYLINE", define_stationing=True, start_station="0"
+    )
     a = next(x for x in tool.Ifc.get().by_type("IfcAlignment") if x.Name == "Survey")
     tool.Alignment.set_polyline_points(a, [(0.0, 0.0, 5.0), (100.0, 0.0, 5.0), (100.0, 50.0, 15.0)], 3)
     obj = tool.Ifc.get_object(a)
@@ -62,7 +64,14 @@ try:
     def render(panel_cls, title):
         out = []
         panel = type("P", (), {"layout": Rec(out)})()
-        for name in ("_draw_polyline", "_draw_horizontal", "_draw_vertical", "_draw_cant", "_segments", "_draw_segment_editor"):
+        for name in (
+            "_draw_polyline",
+            "_draw_horizontal",
+            "_draw_vertical",
+            "_draw_cant",
+            "_segments",
+            "_draw_segment_editor",
+        ):
             if hasattr(panel_cls, name):
                 setattr(type(panel), name, getattr(panel_cls, name))
         panel_cls.draw(panel, bpy.context)
@@ -88,7 +97,14 @@ try:
     for panel_cls in ():
         out = []
         panel = type("P", (), {"layout": Rec(out)})()
-        for name in ("_draw_polyline", "_draw_horizontal", "_draw_vertical", "_draw_cant", "_segments", "_draw_segment_editor"):
+        for name in (
+            "_draw_polyline",
+            "_draw_horizontal",
+            "_draw_vertical",
+            "_draw_cant",
+            "_segments",
+            "_draw_segment_editor",
+        ):
             if hasattr(panel_cls, name):
                 setattr(type(panel), name, getattr(panel_cls, name))
         try:

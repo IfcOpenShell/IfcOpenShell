@@ -20,8 +20,8 @@
 # repository's PI-method API surface.
 
 import math
-from collections.abc import Sequence
-from typing import Callable, NamedTuple, Optional, Union
+from collections.abc import Callable, Sequence
+from typing import NamedTuple, Optional, Union
 
 import numpy as np
 
@@ -976,9 +976,13 @@ def solve_horizontal_alignment_by_pi_method(
             # normalize the deflection angle onto (-pi, pi)
             delta = math.atan2(math.sin(delta), math.cos(delta))
             if delta == 0.0:
-                raise ValueError(f"PI {curve_index + 1}: deflection angle is zero; spiral transitions cannot be created")
+                raise ValueError(
+                    f"PI {curve_index + 1}: deflection angle is zero; spiral transitions cannot be created"
+                )
 
-            spiral_solution = _solve_spiral_curve(delta, radius, entry_length, exit_length, family, vb_params, pi_number)
+            spiral_solution = _solve_spiral_curve(
+                delta, radius, entry_length, exit_length, family, vb_params, pi_number
+            )
             R = spiral_solution.R
             s = spiral_solution.s
             signed_radius = spiral_solution.signed_radius

@@ -37,23 +37,31 @@ def view3d():
 
 def open_profile():
     try:
-        import bonsai.tool as tool
         import ifcopenshell.api.alignment
+
+        import bonsai.tool as tool
 
         tool.Project.get_project_props().export_schema = "IFC4X3_ADD2"
         bpy.ops.bim.create_project()
         ifc = tool.Ifc.get()
         A = tool.Alignment
         main = ifcopenshell.api.alignment.create_by_pi_method(
-            ifc, "Main", [(0.0, 0.0), (100.0, 0.0), (200.0, 100.0)], [50.0],
-            [(0.0, 10.0), (80.0, 12.0), (200.0, 10.0)], [40.0],
+            ifc,
+            "Main",
+            [(0.0, 0.0), (100.0, 0.0), (200.0, 100.0)],
+            [50.0],
+            [(0.0, 10.0), (80.0, 12.0), (200.0, 10.0)],
+            [40.0],
         )
         A.create_object_for_alignment(main)
         A.refresh_alignment_representation_object(main)
         gradient = next(c for c, _, d in A.get_offset_basis_candidates(None) if d == 3)
         bpy.ops.align.add_alignment(
-            alignment_name="Lane", definition="OFFSET", offset_from=str(gradient.id()),
-            offset_lateral=3.0, offset_vertical=0.5,
+            alignment_name="Lane",
+            definition="OFFSET",
+            offset_from=str(gradient.id()),
+            offset_lateral=3.0,
+            offset_vertical=0.5,
         )
         lane = next(x for x in ifc.by_type("IfcAlignment") if x.Name == "Lane")
         select(tool.Ifc.get_object(lane))

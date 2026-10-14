@@ -7,10 +7,10 @@ import tempfile
 import traceback
 
 import bpy
+import ifcopenshell.api.alignment
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 
 def check(cond, msg):
@@ -43,7 +43,12 @@ try:
 
     props = bpy.context.scene.CivilAlignmentProperties
     base = ifcopenshell.api.alignment.create_by_pi_method(
-        ifc, "Main", [(0.0, 0.0), (100.0, 0.0), (200.0, 100.0)], [50.0], [(0.0, 10.0), (80.0, 12.0), (200.0, 10.0)], [0.0]
+        ifc,
+        "Main",
+        [(0.0, 0.0), (100.0, 0.0), (200.0, 100.0)],
+        [50.0],
+        [(0.0, 10.0), (80.0, 12.0), (200.0, 10.0)],
+        [0.0],
     )
     A.create_object_for_alignment(base)
     A.refresh_alignment_representation_object(base)
@@ -53,18 +58,41 @@ try:
     print("candidates:", [(c.is_a(), label, dim) for c, label, dim in cands])
     check([dim for _, _, dim in cands] == [2, 3], "expected the horizontal (2D) and the vertical (3D)")
     grad = next(c for c, _, dim in cands if dim == 3)
-    r = bpy.ops.align.add_alignment(alignment_name="Lane", definition="OFFSET", define_stationing=True,
-                                    offset_from=str(grad.id()), offset_lateral=3.5, offset_vertical=0.2)
+    r = bpy.ops.align.add_alignment(
+        alignment_name="Lane",
+        definition="OFFSET",
+        define_stationing=True,
+        offset_from=str(grad.id()),
+        offset_lateral=3.5,
+        offset_vertical=0.2,
+    )
     check(r == {"FINISHED"}, "add")
     lane = next(x for x in ifc.by_type("IfcAlignment") if x.Name == "Lane")
     select(tool.Ifc.get_object(lane))
     bpy.ops.align.load_offset_table()
     basis, rows = A.get_offset_values(lane)
     rep = lane.Representation.Representations[0]
-    print("lane:", basis.is_a(), rows, rep.RepresentationIdentifier, rep.RepresentationType, lane.ObjectPlacement.RelativePlacement.is_a())
-    check(A.is_offset_alignment(lane) and basis == grad and len(rows) == 1 and rows[0][:2] == (0.0, 3.5)
-          and abs(rows[0][2] - 0.2) < 1e-6 and rows[0][3] is None, "lane offsets")
-    check(rep.RepresentationType == "Curve3D" and lane.ObjectPlacement.RelativePlacement.is_a("IfcAxis2Placement3D"), "3D rep")
+    print(
+        "lane:",
+        basis.is_a(),
+        rows,
+        rep.RepresentationIdentifier,
+        rep.RepresentationType,
+        lane.ObjectPlacement.RelativePlacement.is_a(),
+    )
+    check(
+        A.is_offset_alignment(lane)
+        and basis == grad
+        and len(rows) == 1
+        and rows[0][:2] == (0.0, 3.5)
+        and abs(rows[0][2] - 0.2) < 1e-6
+        and rows[0][3] is None,
+        "lane offsets",
+    )
+    check(
+        rep.RepresentationType == "Curve3D" and lane.ObjectPlacement.RelativePlacement.is_a("IfcAxis2Placement3D"),
+        "3D rep",
+    )
     check(not ifcopenshell.api.alignment.get_alignment_layouts(lane), "offset alignment must have no layouts")
     obj = tool.Ifc.get_object(lane)
     check(obj is not None and obj.type == "MESH" and len(obj.data.vertices) > 10, "no mesh")
@@ -75,8 +103,17 @@ try:
 
     # ---- an offset of the offset: 3D (its lowest basis is a gradient curve); no circular choices
     lane_curve = A.get_offset_curve(lane)
-    check(bpy.ops.align.add_alignment(alignment_name="Edge", definition="OFFSET", define_stationing=False,
-                                      offset_from=str(lane_curve.id()), offset_lateral=2.0) == {"FINISHED"}, "add edge")
+    check(
+        bpy.ops.align.add_alignment(
+            alignment_name="Edge",
+            definition="OFFSET",
+            define_stationing=False,
+            offset_from=str(lane_curve.id()),
+            offset_lateral=2.0,
+        )
+        == {"FINISHED"},
+        "add edge",
+    )
     edge = next(x for x in ifc.by_type("IfcAlignment") if x.Name == "Edge")
     select(tool.Ifc.get_object(edge))
     bpy.ops.align.load_offset_table()
@@ -85,7 +122,13 @@ try:
     props.offset_value_rows[1].distance_along, props.offset_value_rows[1].lateral = 100.0, 4.0
     check(bpy.ops.align.apply_offset_table() == {"FINISHED"}, "apply edge")
     basis, rows = A.get_offset_values(edge)
-    print("edge:", basis.is_a(), [tuple(round(v, 3) if v is not None else None for v in r) for r in rows], "dim", A.get_offset_dimension(basis))
+    print(
+        "edge:",
+        basis.is_a(),
+        [tuple(round(v, 3) if v is not None else None for v in r) for r in rows],
+        "dim",
+        A.get_offset_dimension(basis),
+    )
     check(basis == lane_curve and len(rows) == 2 and A.get_offset_dimension(basis) == 3, "edge")
     bpy.ops.align.finish_offset_table()
     edge_curve = A.get_offset_curve(edge)
@@ -115,10 +158,21 @@ try:
     # ---- rebuilding the reference moves the offset alignments' meshes (curve entities stay the same)
     comp_id = comp.id()
     before_lane, before_edge = first_vertex(lane), first_vertex(edge)
-    ok, msg = op_mod._generate_alignment_segments(bpy.context, base, [(0.0, 20.0), (100.0, 20.0), (200.0, 120.0)], [50.0])
+    ok, msg = op_mod._generate_alignment_segments(
+        bpy.context, base, [(0.0, 20.0), (100.0, 20.0), (200.0, 120.0)], [50.0]
+    )
     check(ok, msg)
     check(A.get_offset_curve(lane).BasisCurve.id() == comp_id, "reference curve entity replaced")
-    print("after moving the reference 20 north: lane", before_lane, "->", first_vertex(lane), "| edge", before_edge, "->", first_vertex(edge))
+    print(
+        "after moving the reference 20 north: lane",
+        before_lane,
+        "->",
+        first_vertex(lane),
+        "| edge",
+        before_edge,
+        "->",
+        first_vertex(edge),
+    )
     check(abs(first_vertex(lane)[1] - before_lane[1] - 20.0) < 1e-3, "lane mesh didn't follow")
     check(abs(first_vertex(edge)[1] - before_edge[1] - 20.0) < 1e-3, "edge (offset of offset) mesh didn't follow")
 
@@ -129,7 +183,9 @@ try:
     props.offset_value_rows[0].lateral = 6.0
     bpy.ops.align.apply_offset_table()
     bpy.ops.align.finish_offset_table()
-    check(A.get_offset_values(lane)[1][0] == (0.0, 6.0, None, 1.25), f"longitudinal lost: {A.get_offset_values(lane)[1]}")
+    check(
+        A.get_offset_values(lane)[1][0] == (0.0, 6.0, None, 1.25), f"longitudinal lost: {A.get_offset_values(lane)[1]}"
+    )
 
     # ---- save and reload
     path = os.path.join(tempfile.gettempdir(), "offset_alignments.ifc")

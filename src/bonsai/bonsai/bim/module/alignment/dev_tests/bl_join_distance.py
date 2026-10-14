@@ -6,10 +6,10 @@ import sys
 import traceback
 
 import bpy
+import ifcopenshell.api.alignment
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 
 def check(cond, msg):
@@ -44,15 +44,19 @@ try:
     pi2 = (pi1[0] + leg * math.cos(d1), pi1[1] + leg * math.sin(d1))
     poe = (pi2[0] + 800.0 * math.cos(d1 + d2), pi2[1] + 800.0 * math.sin(d1 + d2))
     alignment = ifcopenshell.api.alignment.create_by_pi_method(
-        ifc, "JoinDist", [(0.0, 0.0), pi1, pi2, poe], [200.0, 150.0],
-        [(0.0, 0.0), (1000.0, 5.0), (2000.0, 0.0)], [400.0],
+        ifc,
+        "JoinDist",
+        [(0.0, 0.0), pi1, pi2, poe],
+        [200.0, 150.0],
+        [(0.0, 0.0), (1000.0, 5.0), (2000.0, 0.0)],
+        [400.0],
     )
     tool.Alignment.create_object_for_alignment(alignment)
     tool.Alignment.refresh_alignment_representation_object(alignment)
     select_only(tool.Ifc.get_object(alignment))
 
-    from bonsai.bim.module.alignment.operator import _find_pi_markers, _is_interior_pi_marker
     from bonsai.bim.module.alignment.decorator import PIMarkerDecorator
+    from bonsai.bim.module.alignment.operator import _find_pi_markers, _is_interior_pi_marker
 
     # ---------- viewport markers, CIRCULAR, distance mode (PCC) ----------
     check(bpy.ops.align.edit_horizontal_pis() == {"FINISHED"}, "edit_horizontal_pis failed")
@@ -143,12 +147,21 @@ try:
 
     # ---------- distance mode on a joined-into PI is refused ----------
     from types import SimpleNamespace
+
     from bonsai.bim.module.alignment.operator import _apply_join_next_radii
 
     def pi(**kw):
-        base = dict(curve_type="CIRCULAR", radius=200.0, spiral_in_length=0.0, spiral_out_length=0.0,
-                    spiral_family="CLOTHOID", gravity_centerline_height=0.0, join_next=False,
-                    join_mode="RADIUS", join_distance=100.0)
+        base = dict(
+            curve_type="CIRCULAR",
+            radius=200.0,
+            spiral_in_length=0.0,
+            spiral_out_length=0.0,
+            spiral_family="CLOTHOID",
+            gravity_centerline_height=0.0,
+            join_next=False,
+            join_mode="RADIUS",
+            join_distance=100.0,
+        )
         base.update(kw)
         return SimpleNamespace(**base)
 

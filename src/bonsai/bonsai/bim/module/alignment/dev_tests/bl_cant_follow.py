@@ -8,10 +8,10 @@ import sys
 import traceback
 
 import bpy
+import ifcopenshell.api.alignment
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 
 def check(cond, msg):
@@ -54,8 +54,11 @@ def in_step(h, c):
 
 
 def arcs(c):
-    return [(s.GlobalId, s.DesignParameters.StartCantLeft, s.DesignParameters.StartCantRight) for s in real(c)
-            if s.DesignParameters.StartCantLeft or s.DesignParameters.StartCantRight]
+    return [
+        (s.GlobalId, s.DesignParameters.StartCantLeft, s.DesignParameters.StartCantRight)
+        for s in real(c)
+        if s.DesignParameters.StartCantLeft or s.DesignParameters.StartCantRight
+    ]
 
 
 try:
@@ -103,7 +106,9 @@ try:
     in_step(h, c)
     check([s.GlobalId for s in real(c)] == c0, "radius change cant guids")
     dp = real(c)[k].DesignParameters
-    check((dp.StartCantLeft, dp.StartCantRight) == tuned_values, f"tuned arc lost {(dp.StartCantLeft, dp.StartCantRight)}")
+    check(
+        (dp.StartCantLeft, dp.StartCantRight) == tuned_values, f"tuned arc lost {(dp.StartCantLeft, dp.StartCantRight)}"
+    )
     print("1 ok")
 
     # 2. delete PI 1: its 4 cant segments go, the rest are kept, the tuned arc too

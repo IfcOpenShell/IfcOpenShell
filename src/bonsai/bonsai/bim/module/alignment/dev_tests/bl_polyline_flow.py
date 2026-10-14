@@ -8,7 +8,6 @@ import bpy
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 
 def check(cond, msg):
@@ -40,8 +39,12 @@ try:
     check(bpy.ops.align.add_alignment(alignment_name="Survey", definition="POLYLINE") == {"FINISHED"}, "add")
     a = next(x for x in ifc.by_type("IfcAlignment") if x.Name == "Survey")
     check(A.is_bare_alignment(a) and tool.Alignment.get_active_alignment() == a, "not bare/active")
-    print("polls on bare: draw polyline", bpy.ops.align.draw_polyline_alignment.poll(),
-          "| draw PI", bpy.ops.align.draw_horizontal_alignment.poll())
+    print(
+        "polls on bare: draw polyline",
+        bpy.ops.align.draw_polyline_alignment.poll(),
+        "| draw PI",
+        bpy.ops.align.draw_horizontal_alignment.poll(),
+    )
     check(bpy.ops.align.draw_polyline_alignment.poll(), "draw polyline disabled on bare")
 
     # ---- the draw tool: 2D/3D modes and finish (modal can't run headless; drive its pieces)
@@ -57,11 +60,19 @@ try:
     reports = []
     op.report = lambda level, msg: reports.append(msg)
     op._set_mode(True)
-    check(op.input_ui.input_options == ["D", "A", "X", "Y", "Z"] and op.tool_state.plane_method is None
-          and op.input_ui.get_number_value("Z") == 0.0, "3D mode setup")
+    check(
+        op.input_ui.input_options == ["D", "A", "X", "Y", "Z"]
+        and op.tool_state.plane_method is None
+        and op.input_ui.get_number_value("Z") == 0.0,
+        "3D mode setup",
+    )
     op._set_mode(False)
-    check(op.input_ui.input_options == ["D", "A", "X", "Y"] and op.tool_state.plane_method == "XY"
-          and op.input_ui.get_number_value("Z") is None, "2D mode setup")
+    check(
+        op.input_ui.input_options == ["D", "A", "X", "Y"]
+        and op.tool_state.plane_method == "XY"
+        and op.input_ui.get_number_value("Z") is None,
+        "2D mode setup",
+    )
 
     def draw(points_world, is_3d):
         tool.Polyline.clear_polyline()
@@ -79,10 +90,16 @@ try:
     check(dim == 2 and pts == [(0.0, 0.0), (100.0, 0.0), (150.0, 80.0)], "2D draw")
     check(a.ObjectPlacement.RelativePlacement.is_a("IfcAxis2Placement2D"), "2D placement")
     check(A.is_polyline_alignment(a), "not polyline after draw")
-    print("polls on polyline: draw PI", bpy.ops.align.draw_horizontal_alignment.poll(),
-          "| edit PIs", bpy.ops.align.edit_horizontal_pis.poll(),
-          "| edit points", bpy.ops.align.edit_polyline_points.poll(),
-          "| key points", bpy.ops.align.generate_key_points.poll())
+    print(
+        "polls on polyline: draw PI",
+        bpy.ops.align.draw_horizontal_alignment.poll(),
+        "| edit PIs",
+        bpy.ops.align.edit_horizontal_pis.poll(),
+        "| edit points",
+        bpy.ops.align.edit_polyline_points.poll(),
+        "| key points",
+        bpy.ops.align.generate_key_points.poll(),
+    )
     check(not bpy.ops.align.draw_horizontal_alignment.poll(), "PI draw allowed on a polyline alignment")
     check(bpy.ops.align.edit_polyline_points.poll() and bpy.ops.align.load_polyline_table.poll(), "edit disabled")
 

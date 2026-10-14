@@ -27,16 +27,16 @@ All methods are classmethods following Bonsai's tool pattern.
 """
 
 from __future__ import annotations
-import bpy
+
 import difflib
 import json
-import math
 import logging
-import numpy as np
-import bonsai.tool as tool
-import bonsai.bim.import_ifc
-import ifcopenshell.api.alignment
+import math
+from typing import TYPE_CHECKING, Optional
+
+import bpy
 import ifcopenshell.api.aggregate
+import ifcopenshell.api.alignment
 import ifcopenshell.api.geometry
 import ifcopenshell.api.nest
 import ifcopenshell.guid
@@ -45,7 +45,10 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
-from typing import TYPE_CHECKING, Optional, List, Tuple
+import numpy as np
+
+import bonsai.bim.import_ifc
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
     import ifcopenshell
@@ -63,7 +66,7 @@ class Alignment:
     # =========================================================================
 
     @classmethod
-    def get_horizontal_layout(cls, alignment: "ifcopenshell.entity_instance"):
+    def get_horizontal_layout(cls, alignment: ifcopenshell.entity_instance):
         """Get the IfcAlignmentHorizontal layout from an alignment.
 
         Args:
@@ -79,7 +82,7 @@ class Alignment:
     @classmethod
     def create_alignment(
         cls, name: str, start_station: float = 0.0, define_stationing: bool = True
-    ) -> "ifcopenshell.entity_instance":
+    ) -> ifcopenshell.entity_instance:
         """Create a full IfcAlignment with horizontal layout via the alignment API.
 
         Creates the complete IFC structure: IfcAlignment, IfcAlignmentHorizontal,
@@ -124,8 +127,8 @@ class Alignment:
 
     @classmethod
     def add_horizontal_layout_to_alignment(
-        cls, alignment: "ifcopenshell.entity_instance"
-    ) -> "ifcopenshell.entity_instance":
+        cls, alignment: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         """Add an IfcAlignmentHorizontal layout to a bare IfcAlignment.
 
         Creates the nested horizontal layout, zero-length terminal segment,
@@ -200,7 +203,7 @@ class Alignment:
         return h_layout
 
     @classmethod
-    def clear_layout_segments(cls, layout: "ifcopenshell.entity_instance"):
+    def clear_layout_segments(cls, layout: ifcopenshell.entity_instance):
         """Clear the real (non-terminator) segments from a layout.
 
         The alignment API's PI/PVI layout functions *append* segments and
@@ -257,7 +260,7 @@ class Alignment:
     # =========================================================================
 
     @classmethod
-    def is_zero_length_segment(cls, segment: "ifcopenshell.entity_instance") -> bool:
+    def is_zero_length_segment(cls, segment: ifcopenshell.entity_instance) -> bool:
         """Check if a segment is a zero-length terminator segment.
 
         Zero-length segments are required by IFC to mark the end of an alignment
@@ -285,7 +288,7 @@ class Alignment:
         return False
 
     @classmethod
-    def get_real_layout_segments(cls, layout: "ifcopenshell.entity_instance") -> list:
+    def get_real_layout_segments(cls, layout: ifcopenshell.entity_instance) -> list:
         """All of `layout`'s real (non-terminator) IfcAlignmentSegments, in order.
 
         Centralizes the "skip the mandatory zero-length terminator" filter
@@ -330,7 +333,7 @@ class Alignment:
     }
 
     @classmethod
-    def has_real_vertical_segments(cls, alignment: "ifcopenshell.entity_instance") -> bool:
+    def has_real_vertical_segments(cls, alignment: ifcopenshell.entity_instance) -> bool:
         """Whether ``alignment`` has any drawn vertical geometry yet, across
         all of its vertical layouts (direct, or under child alignments per
         IFC CT 4.1.4.4.1.2). Used to gate deleting the horizontal layout: per
@@ -341,7 +344,7 @@ class Alignment:
         return any(cls.get_real_layout_segments(v) for v in cls.get_all_vertical_layouts(alignment))
 
     @classmethod
-    def get_all_cant_layouts(cls, alignment: "ifcopenshell.entity_instance") -> list:
+    def get_all_cant_layouts(cls, alignment: ifcopenshell.entity_instance) -> list:
         """Return all IfcAlignmentCant layouts for ``alignment``.
 
         Mirrors get_all_vertical_layouts(): a cant layout nests onto whichever
@@ -364,7 +367,7 @@ class Alignment:
         return cants
 
     @classmethod
-    def has_real_cant_segments(cls, alignment: "ifcopenshell.entity_instance") -> bool:
+    def has_real_cant_segments(cls, alignment: ifcopenshell.entity_instance) -> bool:
         """Whether ``alignment`` has a cant layout with real segments yet, on
         the top-level alignment or any child (see get_all_cant_layouts).
 
@@ -377,7 +380,7 @@ class Alignment:
         return any(cls.get_real_layout_segments(c) for c in cls.get_all_cant_layouts(alignment))
 
     @classmethod
-    def get_or_create_cant_layout(cls, alignment: "ifcopenshell.entity_instance") -> "ifcopenshell.entity_instance":
+    def get_or_create_cant_layout(cls, alignment: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         """The alignment's IfcAlignmentCant layout, creating one (with its
         mandatory zero-length terminator) if it doesn't have one yet.
 
@@ -515,7 +518,7 @@ class Alignment:
         return specs
 
     @classmethod
-    def pair_cant_with_horizontal(cls, alignment: "ifcopenshell.entity_instance") -> list:
+    def pair_cant_with_horizontal(cls, alignment: ifcopenshell.entity_instance) -> list:
         """Before a horizontal edit: every cant layout that still corresponds one to one with the
         horizontal (the i-th cant segment for the i-th horizontal segment, as generate_cant_layout
         builds it), with (its cant segment, the horizontal segment's turn direction) for each
@@ -542,7 +545,7 @@ class Alignment:
         return pairs
 
     @classmethod
-    def follow_horizontal_with_cant(cls, alignment: "ifcopenshell.entity_instance", pairs: list) -> int:
+    def follow_horizontal_with_cant(cls, alignment: ifcopenshell.entity_instance, pairs: list) -> int:
         """After a horizontal edit, rebuild each cant layout from ``pairs`` (see
         pair_cant_with_horizontal) to match the horizontal again: one cant segment per horizontal
         segment, with its new length and curve family (CANT_TYPE_FOR_HORIZONTAL_TYPE).
@@ -614,7 +617,7 @@ class Alignment:
         return rebuilt
 
     @classmethod
-    def remove_cant_layout(cls, cant_layout: "ifcopenshell.entity_instance") -> None:
+    def remove_cant_layout(cls, cant_layout: ifcopenshell.entity_instance) -> None:
         """Remove one cant layout entirely: its segments, the layout entity,
         its nesting under whichever alignment owns it, and (if present) the
         IfcSegmentedReferenceCurve wrapping that alignment's own Axis/Curve3D
@@ -639,7 +642,7 @@ class Alignment:
         ifcopenshell.util.element.remove_deep2(file, cant_layout)
 
     @classmethod
-    def remove_vertical_layout(cls, vertical_layout: "ifcopenshell.entity_instance") -> None:
+    def remove_vertical_layout(cls, vertical_layout: ifcopenshell.entity_instance) -> None:
         """Remove one vertical layout entirely: its segments, the layout
         entity, and whatever geometric representation existed only for it.
         Caller's responsibility to have already removed its cant layout
@@ -668,10 +671,7 @@ class Alignment:
 
         if owning_alignment.id() == top_level.id():
             for representation in list(ifcopenshell.util.representation.get_representations_iter(owning_alignment)):
-                if (
-                    representation.RepresentationIdentifier == "Axis"
-                    and representation.RepresentationType == "Curve3D"
-                ):
+                if representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Curve3D":
                     ifcopenshell.api.geometry.unassign_representation(file, owning_alignment, representation)
                     ifcopenshell.util.element.remove_deep2(file, representation)
                     break
@@ -690,7 +690,7 @@ class Alignment:
             ifcopenshell.util.element.remove_deep2(file, owning_alignment)
 
     @classmethod
-    def remove_horizontal_layout(cls, alignment: "ifcopenshell.entity_instance") -> None:
+    def remove_horizontal_layout(cls, alignment: ifcopenshell.entity_instance) -> None:
         """Remove the alignment's horizontal layout entirely -- its segments,
         the layout entity, its whole geometric representation (there's
         nothing left to represent once horizontal, the foundation every
@@ -960,9 +960,7 @@ class Alignment:
         return obj
 
     @classmethod
-    def get_alignment_start_end_points(
-        cls, alignment: ifcopenshell.entity_instance
-    ) -> Tuple[List[float], List[float]]:
+    def get_alignment_start_end_points(cls, alignment: ifcopenshell.entity_instance) -> tuple[list[float], list[float]]:
         """The horizontal alignment's start and end points, in local IFC coords.
 
         Read directly from the current segments rather than tracked
@@ -984,7 +982,7 @@ class Alignment:
     @classmethod
     def get_vertical_alignment_start_end_points(
         cls, alignment: ifcopenshell.entity_instance
-    ) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+    ) -> tuple[tuple[float, float], tuple[float, float]]:
         """The vertical alignment's start and end (distance_along, elevation) points.
 
         Mirrors get_alignment_start_end_points() for the vertical layout: the
@@ -1067,7 +1065,7 @@ class Alignment:
         return obj
 
     @classmethod
-    def _find_layout_curve(cls, layout: "ifcopenshell.entity_instance") -> Optional["ifcopenshell.entity_instance"]:
+    def _find_layout_curve(cls, layout: ifcopenshell.entity_instance) -> Optional[ifcopenshell.entity_instance]:
         """Return the composite/gradient/reference curve for a layout.
 
         Extends get_layout_curve with a fallback for horizontal-only alignments
@@ -1105,16 +1103,17 @@ class Alignment:
     @classmethod
     def _map_alignment_segment_to_curve_segments(
         cls,
-        segment: "ifcopenshell.entity_instance",
-        layout: "ifcopenshell.entity_instance",
-        curve: "ifcopenshell.entity_instance",
+        segment: ifcopenshell.entity_instance,
+        layout: ifcopenshell.entity_instance,
+        curve: ifcopenshell.entity_instance,
     ) -> tuple:
         """Map an IfcAlignmentSegment to its IfcCurveSegment(s) in the given curve.
 
         Mirrors the logic of ifcopenshell.api.alignment.get_mapped_segments but
         uses the caller-supplied curve so that FootPrint-derived curves work too.
         """
-        def _count(seg: "ifcopenshell.entity_instance") -> int:
+
+        def _count(seg: ifcopenshell.entity_instance) -> int:
             dp = seg.DesignParameters
             if dp.is_a("IfcAlignmentHorizontalSegment") or dp.is_a("IfcAlignmentCantSegment"):
                 return 2 if getattr(dp, "PredefinedType", None) == "HELMERTCURVE" else 1
@@ -1133,7 +1132,7 @@ class Alignment:
 
     @classmethod
     def _create_segment_curve(
-        cls, segment: "ifcopenshell.entity_instance", index: int, parent_obj: Optional[bpy.types.Object] = None
+        cls, segment: ifcopenshell.entity_instance, index: int, parent_obj: Optional[bpy.types.Object] = None
     ) -> Optional[bpy.types.Object]:
         """Create a Blender curve object for an IFC alignment segment.
 
@@ -1231,7 +1230,7 @@ class Alignment:
         return obj
 
     @classmethod
-    def create_alignment_from_csv(cls, filepath: str) -> "ifcopenshell.entity_instance":
+    def create_alignment_from_csv(cls, filepath: str) -> ifcopenshell.entity_instance:
         """Create alignment(s) from a CSV file via the alignment API.
 
         The CSV format (see ifcopenshell.api.alignment.create_from_csv) is one
@@ -1249,13 +1248,11 @@ class Alignment:
         # and the import path below materializes the referents it creates.
         alignment = align_api.create_from_csv(ifc_file, filepath, start_station=0.0)
         for site in ifc_file.by_type("IfcSite"):
-            ifcopenshell.api.spatial.reference_structure(
-                ifc_file, products=[alignment], relating_structure=site
-            )
+            ifcopenshell.api.spatial.reference_structure(ifc_file, products=[alignment], relating_structure=site)
         return alignment
 
     @classmethod
-    def get_child_alignments(cls, alignment: "ifcopenshell.entity_instance") -> list:
+    def get_child_alignments(cls, alignment: ifcopenshell.entity_instance) -> list:
         """Return child IfcAlignments aggregated under ``alignment``.
 
         Per IFC CT 4.1.4.4.1.2, an alignment reusing one horizontal for
@@ -1272,7 +1269,7 @@ class Alignment:
     @classmethod
     def create_child_vertical_hierarchy(
         cls,
-        child_alignment: "ifcopenshell.entity_instance",
+        child_alignment: ifcopenshell.entity_instance,
         parent_obj: bpy.types.Object,
     ) -> None:
         """Create vertical layout objects for a child alignment under the parent object.
@@ -1292,9 +1289,7 @@ class Alignment:
                         cls.create_objects_for_layout_segments(layout, layout_obj)
 
     @classmethod
-    def _get_top_level_alignment(
-        cls, alignment: "ifcopenshell.entity_instance"
-    ) -> "ifcopenshell.entity_instance":
+    def _get_top_level_alignment(cls, alignment: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         """Walk up IfcRelAggregates to the top-level parent IfcAlignment."""
         for rel in getattr(alignment, "Decomposes", []) or []:
             parent = rel.RelatingObject
@@ -1303,7 +1298,7 @@ class Alignment:
         return alignment
 
     @classmethod
-    def get_all_vertical_layouts(cls, alignment: "ifcopenshell.entity_instance") -> list:
+    def get_all_vertical_layouts(cls, alignment: ifcopenshell.entity_instance) -> list:
         """Return all IfcAlignmentVertical layouts for ``alignment``.
 
         Collects verticals nested directly under the alignment AND verticals
@@ -1330,7 +1325,7 @@ class Alignment:
     POLYLINE_CURVE_TYPES = ("IfcPolyline", "IfcIndexedPolyCurve")
 
     @classmethod
-    def get_polyline_curve(cls, alignment: "ifcopenshell.entity_instance") -> Optional["ifcopenshell.entity_instance"]:
+    def get_polyline_curve(cls, alignment: ifcopenshell.entity_instance) -> Optional[ifcopenshell.entity_instance]:
         """The IfcPolyline/IfcIndexedPolyCurve defining a polyline alignment, or None for any other
         alignment (layout-based ones, bare ones, or ones whose curve is something else)."""
         if alignment is None or ifcopenshell.api.alignment.get_alignment_layouts(alignment):
@@ -1344,7 +1339,7 @@ class Alignment:
         return None
 
     @classmethod
-    def is_polyline_alignment(cls, alignment: "ifcopenshell.entity_instance") -> bool:
+    def is_polyline_alignment(cls, alignment: ifcopenshell.entity_instance) -> bool:
         return cls.get_polyline_curve(alignment) is not None
 
     #: Blender object custom property recording that a still-bare alignment was added (Add Alignment →
@@ -1352,7 +1347,7 @@ class Alignment:
     DEFINITION_PROPERTY = "bonsai_alignment_definition"
 
     @classmethod
-    def is_polyline_to_draw(cls, alignment: "ifcopenshell.entity_instance") -> bool:
+    def is_polyline_to_draw(cls, alignment: ifcopenshell.entity_instance) -> bool:
         """A bare alignment added as a polyline, not drawn yet -- only Draw Polyline applies to it."""
         if not cls.is_bare_alignment(alignment):
             return False
@@ -1360,7 +1355,7 @@ class Alignment:
         return obj is not None and obj.get(cls.DEFINITION_PROPERTY) == "POLYLINE"
 
     @classmethod
-    def is_bare_alignment(cls, alignment: "ifcopenshell.entity_instance") -> bool:
+    def is_bare_alignment(cls, alignment: ifcopenshell.entity_instance) -> bool:
         """No layouts and no geometry yet -- could still become either kind of alignment."""
         return (
             alignment is not None
@@ -1369,7 +1364,7 @@ class Alignment:
         )
 
     @classmethod
-    def get_polyline_points(cls, alignment: "ifcopenshell.entity_instance") -> tuple[list[tuple], int]:
+    def get_polyline_points(cls, alignment: ifcopenshell.entity_instance) -> tuple[list[tuple], int]:
         """(points, dim) of a polyline alignment, in IFC project (local) coordinates.
 
         Raises ValueError for an IfcIndexedPolyCurve with arc segments (IfcArcIndex), which isn't a
@@ -1396,7 +1391,7 @@ class Alignment:
         return points, dim
 
     @classmethod
-    def set_polyline_points(cls, alignment: "ifcopenshell.entity_instance", points, dim: int) -> None:
+    def set_polyline_points(cls, alignment: ifcopenshell.entity_instance, points, dim: int) -> None:
         """Write a polyline alignment's points (IFC project coordinates), creating its geometry if it
         has none yet (a new IfcPolyline, via ifcopenshell.api.alignment's own polyline
         representation) or updating the existing IfcPolyline/IfcIndexedPolyCurve in place (so a
@@ -1431,7 +1426,7 @@ class Alignment:
         cls._sync_bare_stationing(alignment)
 
     @classmethod
-    def _sync_bare_stationing(cls, alignment: "ifcopenshell.entity_instance") -> None:
+    def _sync_bare_stationing(cls, alignment: ifcopenshell.entity_instance) -> None:
         """Keep a polyline or offset curve alignment's stationing referents on its curve after the
         curve changes (its points or offsets edited, or the curve it's offset from edited).
 
@@ -1467,7 +1462,7 @@ class Alignment:
         cls.sync_stationing_referent_placements(alignment)
 
     @classmethod
-    def _match_placement_dimension(cls, alignment: "ifcopenshell.entity_instance", dim: int) -> None:
+    def _match_placement_dimension(cls, alignment: ifcopenshell.entity_instance, dim: int) -> None:
         """Keep the alignment's own placement 2D/3D in step with its polyline (as
         _create_polyline_representation sets it up) when an edit changes the polyline's dimension --
         only for the unrotated placement Bonsai itself creates; anything else is left as it is."""
@@ -1487,7 +1482,7 @@ class Alignment:
     @classmethod
     def create_bare_alignment(
         cls, name: str, start_station: float = 0.0, define_stationing: bool = True
-    ) -> "ifcopenshell.entity_instance":
+    ) -> ifcopenshell.entity_instance:
         """A new, bare IfcAlignment -- aggregated to the project like every alignment
         (ifcopenshell.api.alignment.create does the same), no layouts, and no geometry until it's
         given some: a polyline (set_polyline_points) or an offset curve (set_offset_values). With define_stationing, its start
@@ -1515,7 +1510,7 @@ class Alignment:
     # =========================================================================
 
     @classmethod
-    def get_offset_curve(cls, alignment: "ifcopenshell.entity_instance") -> Optional["ifcopenshell.entity_instance"]:
+    def get_offset_curve(cls, alignment: ifcopenshell.entity_instance) -> Optional[ifcopenshell.entity_instance]:
         """The IfcOffsetCurveByDistances defining an offset curve alignment, or None."""
         if alignment is None or ifcopenshell.api.alignment.get_alignment_layouts(alignment):
             return None
@@ -1528,11 +1523,11 @@ class Alignment:
         return None
 
     @classmethod
-    def is_offset_alignment(cls, alignment: "ifcopenshell.entity_instance") -> bool:
+    def is_offset_alignment(cls, alignment: ifcopenshell.entity_instance) -> bool:
         return cls.get_offset_curve(alignment) is not None
 
     @classmethod
-    def get_offset_dimension(cls, curve: "ifcopenshell.entity_instance") -> int:
+    def get_offset_dimension(cls, curve: ifcopenshell.entity_instance) -> int:
         """3 if an offset curve (or a curve an offset curve could be based on) is 3D, else 2: decided by
         the lowest-level basis curve -- an IfcGradientCurve (or the IfcSegmentedReferenceCurve built on
         one) is 3D, an IfcCompositeCurve is 2D (per the user, 2026-09-25)."""
@@ -1541,9 +1536,7 @@ class Alignment:
         return 3 if curve is not None and curve.is_a() in ("IfcGradientCurve", "IfcSegmentedReferenceCurve") else 2
 
     @classmethod
-    def _offset_depends_on(
-        cls, curve: "ifcopenshell.entity_instance", alignment: "ifcopenshell.entity_instance"
-    ) -> bool:
+    def _offset_depends_on(cls, curve: ifcopenshell.entity_instance, alignment: ifcopenshell.entity_instance) -> bool:
         """Whether an offset curve is (directly or through other offset curves) built on
         ``alignment``'s own curves -- so offsetting ``alignment`` from it would be circular."""
         own_curves = (
@@ -1558,7 +1551,7 @@ class Alignment:
         return False
 
     @classmethod
-    def get_offset_basis_candidates(cls, alignment: Optional["ifcopenshell.entity_instance"] = None) -> list:
+    def get_offset_basis_candidates(cls, alignment: Optional[ifcopenshell.entity_instance] = None) -> list:
         """Curves an offset curve alignment can be defined relative to, as (curve, label, dim):
         every layout-based alignment's horizontal IfcCompositeCurve (2D) and each of its verticals'
         IfcGradientCurve (3D), plus every other offset curve alignment (IfcOffsetCurveByDistances,
@@ -1595,7 +1588,7 @@ class Alignment:
         return found
 
     @classmethod
-    def get_offset_values(cls, alignment: "ifcopenshell.entity_instance") -> tuple:
+    def get_offset_values(cls, alignment: ifcopenshell.entity_instance) -> tuple:
         """(basis curve, rows) of an offset curve alignment -- rows are (distance along, lateral,
         vertical, longitudinal) per IfcPointByDistanceExpression, None where unset."""
         curve = cls.get_offset_curve(alignment)
@@ -1608,7 +1601,7 @@ class Alignment:
         return curve.BasisCurve, rows
 
     @classmethod
-    def set_offset_values(cls, alignment: "ifcopenshell.entity_instance", basis_curve, rows) -> None:
+    def set_offset_values(cls, alignment: ifcopenshell.entity_instance, basis_curve, rows) -> None:
         """Write an offset curve alignment's basis curve and offsets, creating its
         IfcOffsetCurveByDistances (and the Axis representation) if it has none yet, or updating the
         existing one in place -- so anything referring to it (another offset curve built on it) stays
@@ -1666,8 +1659,8 @@ class Alignment:
 
     @classmethod
     def get_reference_horizontal_layout(
-        cls, alignment: "ifcopenshell.entity_instance"
-    ) -> Optional["ifcopenshell.entity_instance"]:
+        cls, alignment: ifcopenshell.entity_instance
+    ) -> Optional[ifcopenshell.entity_instance]:
         """The IfcAlignmentHorizontal an alignment's distances along are measured on, for look-ups
         (lengths, station ranges). A layout-based alignment's own; for an offset curve alignment, which
         has no layouts of its own, the one at the bottom of its chain -- an IfcOffsetCurveByDistances
@@ -1690,7 +1683,7 @@ class Alignment:
         return None
 
     @classmethod
-    def get_offset_profile(cls, alignment: "ifcopenshell.entity_instance", step: float = 1.0) -> list:
+    def get_offset_profile(cls, alignment: ifcopenshell.entity_instance, step: float = 1.0) -> list:
         """A 3D offset curve alignment's elevation profile, for the profile view: one span per stretch
         between its offsets (plus the lead-in before the first and run-out after the last, where the
         offset continues unchanged), as (start distance, end distance, [(distance along, elevation), ...]).
@@ -1728,7 +1721,7 @@ class Alignment:
         return spans
 
     @classmethod
-    def refresh_dependent_offset_alignments(cls, alignment: "ifcopenshell.entity_instance") -> None:
+    def refresh_dependent_offset_alignments(cls, alignment: ifcopenshell.entity_instance) -> None:
         """Rebuild the meshes of every offset curve alignment built (directly or through other offset
         curves) on ``alignment``. Their IFC stays valid through ``alignment``'s own edits -- its curve
         entities are updated in place, not replaced -- but their tessellated geometry doesn't."""
@@ -1742,7 +1735,7 @@ class Alignment:
                 cls._sync_bare_stationing(other)
 
     @classmethod
-    def get_vertical_display_name(cls, vertical_layout: "ifcopenshell.entity_instance") -> str:
+    def get_vertical_display_name(cls, vertical_layout: ifcopenshell.entity_instance) -> str:
         """A name that tells an alignment's verticals apart in the UI.
 
         A user-given name wins -- the layout's own Name, or its child alignment's (IFC CT
@@ -1772,7 +1765,7 @@ class Alignment:
         return f"Vertical {index + 1}"
 
     @classmethod
-    def rename_vertical(cls, vertical_layout: "ifcopenshell.entity_instance", name: str) -> Optional[str]:
+    def rename_vertical(cls, vertical_layout: ifcopenshell.entity_instance, name: str) -> Optional[str]:
         """Name a vertical so it can be told apart from its siblings (see get_vertical_display_name).
 
         Sets the vertical layout's own Name (what the profile view labels it by) and, when it sits
@@ -1795,7 +1788,7 @@ class Alignment:
         return None
 
     @classmethod
-    def create_object_for_referent(cls, referent: "ifcopenshell.entity_instance") -> Optional[bpy.types.Object]:
+    def create_object_for_referent(cls, referent: ifcopenshell.entity_instance) -> Optional[bpy.types.Object]:
         """Create a Blender empty for one IfcReferent (get-or-create).
 
         Matches what loading a file does for referents (e.g. stationing
@@ -1813,7 +1806,7 @@ class Alignment:
         return referent_obj
 
     @classmethod
-    def create_objects_for_referents(cls, alignment: "ifcopenshell.entity_instance") -> int:
+    def create_objects_for_referents(cls, alignment: ifcopenshell.entity_instance) -> int:
         """Create empty objects for every IfcReferent nested on ``alignment``
         that doesn't already have one.
 
@@ -1828,7 +1821,7 @@ class Alignment:
         return count
 
     @classmethod
-    def sync_referent_object_placement(cls, referent: "ifcopenshell.entity_instance") -> None:
+    def sync_referent_object_placement(cls, referent: ifcopenshell.entity_instance) -> None:
         """Move one IfcReferent's Blender object to match its current ObjectPlacement.
 
         add_stationing_referent()'s own docstring spells out why this is needed: with
@@ -1867,7 +1860,7 @@ class Alignment:
         tool.Geometry.record_object_position(referent_obj)
 
     @classmethod
-    def sync_stationing_referent_placements(cls, alignment: "ifcopenshell.entity_instance") -> None:
+    def sync_stationing_referent_placements(cls, alignment: ifcopenshell.entity_instance) -> None:
         """Refresh every stationing referent's Blender object position for ``alignment``.
 
         Call this after (re)generating real horizontal geometry (see
@@ -1882,7 +1875,7 @@ class Alignment:
     # =========================================================================
 
     @classmethod
-    def get_key_point_nests(cls, alignment: "ifcopenshell.entity_instance") -> list:
+    def get_key_point_nests(cls, alignment: ifcopenshell.entity_instance) -> list:
         """Every IfcRelNests holding key-point referents (P.O.B., P.C., P.V.C., ...) for
         ``alignment``'s top-level alignment and its child alignments.
 
@@ -1907,11 +1900,11 @@ class Alignment:
         return nests
 
     @classmethod
-    def has_key_point_referents(cls, alignment: "ifcopenshell.entity_instance") -> bool:
+    def has_key_point_referents(cls, alignment: ifcopenshell.entity_instance) -> bool:
         return bool(cls.get_key_point_nests(alignment))
 
     @classmethod
-    def remove_key_point_referents(cls, alignment: "ifcopenshell.entity_instance") -> None:
+    def remove_key_point_referents(cls, alignment: ifcopenshell.entity_instance) -> None:
         """Delete every key-point referent (and its Blender object) and their nests."""
         from ifcopenshell.api.alignment.update_key_point_referents import _remove_referent
 
@@ -1925,7 +1918,7 @@ class Alignment:
             file.remove(nest)
 
     @classmethod
-    def generate_key_point_referents(cls, alignment: "ifcopenshell.entity_instance") -> int:
+    def generate_key_point_referents(cls, alignment: ifcopenshell.entity_instance) -> int:
         """(Re)generate key-point referents for every layout of ``alignment`` -- horizontal,
         every vertical, every cant -- into one IfcRelNests on the top-level alignment, replacing
         any existing ones (including ones loaded from a file), and create a Blender object for
@@ -1951,7 +1944,7 @@ class Alignment:
         return len(nest.RelatedObjects)
 
     @classmethod
-    def update_key_point_referents_if_present(cls, alignment: "ifcopenshell.entity_instance") -> None:
+    def update_key_point_referents_if_present(cls, alignment: ifcopenshell.entity_instance) -> None:
         """Regenerate key-point referents after the alignment's geometry or stationing changed --
         but only if it already has them (see get_key_point_nests); never adds them unasked.
 
@@ -1967,8 +1960,8 @@ class Alignment:
 
     @classmethod
     def find_stationing_referent_at(
-        cls, alignment: "ifcopenshell.entity_instance", distance_along: float, tol: float = 1e-6
-    ) -> Optional["ifcopenshell.entity_instance"]:
+        cls, alignment: ifcopenshell.entity_instance, distance_along: float, tol: float = 1e-6
+    ) -> Optional[ifcopenshell.entity_instance]:
         """The stationing referent at a given distance along ``alignment``, or None."""
         import ifcopenshell.api.alignment as align_api
         from ifcopenshell.api.alignment._referent_distance_along import _referent_distance_along
@@ -1983,8 +1976,8 @@ class Alignment:
 
     @classmethod
     def get_stationing_referents(
-        cls, alignment: "ifcopenshell.entity_instance"
-    ) -> List[Tuple["ifcopenshell.entity_instance", float, float, Optional[float], Optional[bool]]]:
+        cls, alignment: ifcopenshell.entity_instance
+    ) -> list[tuple[ifcopenshell.entity_instance, float, float, Optional[float], Optional[bool]]]:
         """All stationing referents on ``alignment``, sorted by distance along.
 
         Returns (referent, distance_along, station, incoming_station,
@@ -2012,7 +2005,7 @@ class Alignment:
         return rows
 
     @classmethod
-    def set_stationing_referent_station(cls, referent: "ifcopenshell.entity_instance", station: float) -> None:
+    def set_stationing_referent_station(cls, referent: ifcopenshell.entity_instance, station: float) -> None:
         """Change a stationing referent's outgoing Station value in place.
 
         Used to edit the alignment's start station (the referent at distance
@@ -2046,7 +2039,7 @@ class Alignment:
             obj.name = tool.Loader.get_name(referent)
 
     @classmethod
-    def create_hierarchy_for_alignment(cls, alignment: "ifcopenshell.entity_instance") -> Optional[bpy.types.Object]:
+    def create_hierarchy_for_alignment(cls, alignment: ifcopenshell.entity_instance) -> Optional[bpy.types.Object]:
         """Create the full Blender object hierarchy for an alignment.
 
         Creates:
@@ -2084,8 +2077,8 @@ class Alignment:
 
     @classmethod
     def create_objects_for_layout_segments(
-        cls, layout: "ifcopenshell.entity_instance", layout_obj: bpy.types.Object
-    ) -> List[bpy.types.Object]:
+        cls, layout: ifcopenshell.entity_instance, layout_obj: bpy.types.Object
+    ) -> list[bpy.types.Object]:
         """Create Blender curve objects for all segments in a layout.
 
         Each segment becomes its own selectable curve object, using IfcOpenShell's
@@ -2251,8 +2244,8 @@ class Alignment:
 
     @classmethod
     def validate_layout_has_parent_alignment(
-        cls, layout: "ifcopenshell.entity_instance"
-    ) -> Optional["ifcopenshell.entity_instance"]:
+        cls, layout: ifcopenshell.entity_instance
+    ) -> Optional[ifcopenshell.entity_instance]:
         """Check if a layout entity has a valid parent IfcAlignment.
 
         Orphan layouts (e.g., from undo/redo operations) can cause issues
@@ -2271,7 +2264,7 @@ class Alignment:
 
     @classmethod
     def safe_layout_horizontal_by_pi_method(
-        cls, ifc_file: "ifcopenshell.file", layout: "ifcopenshell.entity_instance", hpoints: list, radii: list
+        cls, ifc_file: ifcopenshell.file, layout: ifcopenshell.entity_instance, hpoints: list, radii: list
     ) -> bool:
         """Safely add segments to a horizontal layout using PI method.
 
@@ -2310,7 +2303,7 @@ class Alignment:
 
     @classmethod
     def safe_layout_vertical_by_pi_method(
-        cls, ifc_file: "ifcopenshell.file", layout: "ifcopenshell.entity_instance", vpoints: list, lengths: list
+        cls, ifc_file: ifcopenshell.file, layout: ifcopenshell.entity_instance, vpoints: list, lengths: list
     ) -> bool:
         """Safely add segments to a vertical layout using the PI method.
 
@@ -2348,7 +2341,7 @@ class Alignment:
     # =========================================================================
 
     @classmethod
-    def design_parameters_end(cls, layout: "ifcopenshell.entity_instance", design_parameters) -> "np.ndarray":
+    def design_parameters_end(cls, layout: ifcopenshell.entity_instance, design_parameters) -> np.ndarray:
         """The 4x4 end placement of a segment with ``design_parameters`` in ``layout``, evaluated by the
         geometry kernel -- for chaining a table of segments (each starts where the previous ends)
         before any of them is written. The kernel works out the segment kind from its layout, so a
@@ -2366,7 +2359,7 @@ class Alignment:
             file.remove(temp)
 
     @classmethod
-    def existing_segment(cls, layout: "ifcopenshell.entity_instance", segment_id: int):
+    def existing_segment(cls, layout: ifcopenshell.entity_instance, segment_id: int):
         """The real segment of ``layout`` with entity id ``segment_id`` (a staged row's source), or None
         -- for a new row (0), or one whose segment is gone or belongs to another layout."""
         if not segment_id:
@@ -2508,7 +2501,7 @@ class Alignment:
         return new_segments
 
     @classmethod
-    def get_layout_end_distance(cls, layout: "ifcopenshell.entity_instance") -> Optional[float]:
+    def get_layout_end_distance(cls, layout: ifcopenshell.entity_instance) -> Optional[float]:
         """Distance along at which a vertical or cant layout ends (its last real segment's
         StartDistAlong + HorizontalLength), or None with no real segments."""
         segments = cls.get_real_layout_segments(layout)
@@ -2518,7 +2511,7 @@ class Alignment:
         return float(dp.StartDistAlong) + float(dp.HorizontalLength)
 
     @classmethod
-    def get_length_mismatch(cls, layout: "ifcopenshell.entity_instance") -> Optional[float]:
+    def get_length_mismatch(cls, layout: ifcopenshell.entity_instance) -> Optional[float]:
         """How far a vertical or cant layout ends past (+) or short of (-) its alignment's horizontal
         layout, or None when they match (within 1e-6 relative) or either has no segments. Verticals
         and cants may legitimately differ in length from the horizontal (per the user, 2026-09-24);
@@ -2534,7 +2527,7 @@ class Alignment:
         return None if abs(delta) <= 1e-6 * max(target, 1.0) else delta
 
     @classmethod
-    def match_layout_length_to_horizontal(cls, layout: "ifcopenshell.entity_instance") -> Optional[str]:
+    def match_layout_length_to_horizontal(cls, layout: ifcopenshell.entity_instance) -> Optional[str]:
         """Stretch or shorten a vertical or cant layout's last real segment so the layout ends exactly
         where the horizontal does. Every other segment is rebuilt unchanged (the same clear + recreate
         a segment-table Apply does). Returns an error message instead of changing anything if the last
@@ -2568,7 +2561,7 @@ class Alignment:
         return None
 
     @classmethod
-    def get_horizontal_alignment_length(cls, h_layout: "ifcopenshell.entity_instance") -> float:
+    def get_horizontal_alignment_length(cls, h_layout: ifcopenshell.entity_instance) -> float:
         """Total plan length of a horizontal layout's real (non-zero-length) segments.
 
         Used to seed the vertical profile view's distance-along range before
@@ -2617,7 +2610,11 @@ class Alignment:
                     for rel2 in getattr(layout, "Nests", []) or []:
                         if rel2.RelatingObject.is_a("IfcAlignment"):
                             return cls._get_top_level_alignment(rel2.RelatingObject)
-            if element.is_a("IfcAlignmentHorizontal") or element.is_a("IfcAlignmentVertical") or element.is_a("IfcAlignmentCant"):
+            if (
+                element.is_a("IfcAlignmentHorizontal")
+                or element.is_a("IfcAlignmentVertical")
+                or element.is_a("IfcAlignmentCant")
+            ):
                 for rel in getattr(element, "Nests", []) or []:
                     if rel.RelatingObject.is_a("IfcAlignment"):
                         return cls._get_top_level_alignment(rel.RelatingObject)

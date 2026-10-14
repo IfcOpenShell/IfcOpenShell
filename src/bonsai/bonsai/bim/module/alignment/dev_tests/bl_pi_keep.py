@@ -7,10 +7,10 @@ import sys
 import traceback
 
 import bpy
+import ifcopenshell.api.alignment
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 
 def check(cond, msg):
@@ -72,7 +72,7 @@ try:
     print("after delete:", [t for _, t in s2])
     # groups before: PI1 = [0..3] (LINE, CLOTHOID, ARC, CLOTHOID), PI2 = [4..7], PI3 = [8, 9], END = [10]
     expected = [g for g, _ in s0[:4]] + [g for g, _ in s0[8:]]
-    check([g for g, _ in s2] == expected, f"delete: {[g for g,_ in s2]} vs {expected}")
+    check([g for g, _ in s2] == expected, f"delete: {[g for g, _ in s2]} vs {expected}")
     no_orphans(ifc)
     print("2 ok")
 
@@ -104,7 +104,7 @@ try:
     ok, msg, _ = op_mod._generate_vertical_alignment_segments(ctx, alignment, [V1[0], V1[2], V1[3]], [150.0])
     check(ok, msg)
     # VPI1 = [grade, arc], VPI2 = [grade, arc], END = [grade]: deleting VPI1 keeps VPI2 and END
-    check([g for g, _ in sig(v)] == vs0[2:], f"v delete {[g for g,_ in sig(v)]} vs {vs0[2:]}")
+    check([g for g, _ in sig(v)] == vs0[2:], f"v delete {[g for g, _ in sig(v)]} vs {vs0[2:]}")
     ok, msg, _ = op_mod._generate_vertical_alignment_segments(ctx, alignment, V1, [220.0, 150.0])
     check(ok, msg)
     gv = [g for g, _ in sig(v)]

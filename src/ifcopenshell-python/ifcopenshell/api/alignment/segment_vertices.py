@@ -20,7 +20,6 @@
 import numpy as np
 
 import ifcopenshell
-import ifcopenshell.util.unit
 from ifcopenshell import entity_instance, ifcopenshell_wrapper
 
 

@@ -19,19 +19,15 @@
 
 """Property groups for the alignment module"""
 
-from bpy.types import PropertyGroup
 from bpy.props import (
-    StringProperty,
-    FloatProperty,
-    IntProperty,
     BoolProperty,
     CollectionProperty,
     EnumProperty,
+    FloatProperty,
+    IntProperty,
+    StringProperty,
 )
-
-
-import bpy
-
+from bpy.types import PropertyGroup
 
 # Horizontal spiral transition curve families that _map_alignment_horizontal_segment
 # (ifcopenshell.api.alignment) maps to real geometry. Shared between HorizontalSegmentRow's
@@ -143,10 +139,7 @@ def _alignment_enum_items(self, context):
     try:
         for a in ifc_file.by_type("IfcAlignment"):
             # Skip child alignments (used in multi-vertical template)
-            if any(
-                rel.RelatingObject.is_a("IfcAlignment")
-                for rel in (getattr(a, "Decomposes", []) or [])
-            ):
+            if any(rel.RelatingObject.is_a("IfcAlignment") for rel in (getattr(a, "Decomposes", []) or [])):
                 continue
             label = a.Name or f"Alignment #{a.id()}"
             items.append((str(a.id()), label, ""))
@@ -270,7 +263,11 @@ class VerticalPIMarker(PropertyGroup):
         default="TANGENT",
     )
     curve_length: FloatProperty(
-        name="Curve Length", description="Horizontal length of the parabolic curve", default=100.0, min=0.0001, unit="LENGTH"
+        name="Curve Length",
+        description="Horizontal length of the parabolic curve",
+        default=100.0,
+        min=0.0001,
+        unit="LENGTH",
     )
 
 
@@ -512,7 +509,11 @@ class HorizontalSegmentRow(PropertyGroup):
                 "cant layout must already cover this segment's station range before Apply, or "
                 "the geometry kernel has nothing to resolve it against",
             ),
-            ("UNSUPPORTED", "Unsupported", "A segment type this table can't edit — remove it or fix it in IFC directly"),
+            (
+                "UNSUPPORTED",
+                "Unsupported",
+                "A segment type this table can't edit — remove it or fix it in IFC directly",
+            ),
         ],
         default="LINE",
     )
@@ -549,7 +550,11 @@ class VerticalSegmentRow(PropertyGroup):
             ("CONSTANTGRADIENT", "Constant Grade", "A straight tangent grade"),
             ("PARABOLICARC", "Parabolic", "A parabolic vertical curve"),
             ("CIRCULARARC", "Circular Arc", "A constant-radius vertical curve"),
-            ("UNSUPPORTED", "Unsupported", "A segment type this table can't edit — remove it or fix it in IFC directly"),
+            (
+                "UNSUPPORTED",
+                "Unsupported",
+                "A segment type this table can't edit — remove it or fix it in IFC directly",
+            ),
         ],
         default="CONSTANTGRADIENT",
     )
@@ -588,7 +593,11 @@ class CantSegmentRow(PropertyGroup):
             ("COSINECURVE", "Cosine Curve", "A cant transition (cosine-based curvature change)"),
             ("SINECURVE", "Sine Curve", "A cant transition (sine-based curvature change)"),
             ("VIENNESEBEND", "Viennese Bend", "A cant transition paired with a horizontal Viennese Bend segment"),
-            ("UNSUPPORTED", "Unsupported", "A segment type this table can't edit — remove it or fix it in IFC directly"),
+            (
+                "UNSUPPORTED",
+                "Unsupported",
+                "A segment type this table can't edit — remove it or fix it in IFC directly",
+            ),
         ],
         default="CONSTANTCANT",
     )
@@ -789,9 +798,7 @@ class PICurveMarkerProperties(PropertyGroup):
     alignment_id: IntProperty(
         name="Alignment ID", description="IFC ID of the IfcAlignment this PI belongs to", default=0
     )
-    pi_index: IntProperty(
-        name="PI Index", description="0-based index among the alignment's interior PIs", default=0
-    )
+    pi_index: IntProperty(name="PI Index", description="0-based index among the alignment's interior PIs", default=0)
     join_next: BoolProperty(
         name="Join to Next PI",
         description=(

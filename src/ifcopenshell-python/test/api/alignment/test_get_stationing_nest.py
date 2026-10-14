@@ -63,9 +63,7 @@ def test_get_stationing_nest_returns_the_station_nest_even_after_key_point_nest_
     )
     _add_real_segment_without_geometry(file, horizontal, design_parameters)
 
-    ifcopenshell.api.alignment.add_stationing_referent(
-        file, "1+00.00", alignment, distance_along=0.0, station=100.0
-    )
+    ifcopenshell.api.alignment.add_stationing_referent(file, "1+00.00", alignment, distance_along=0.0, station=100.0)
 
     station_nest_before = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
     assert station_nest_before is not None
@@ -101,9 +99,7 @@ def test_get_stationing_nest_returns_none_when_only_key_point_nest_exists():
     )
     _add_real_segment_without_geometry(file, horizontal, design_parameters)
 
-    ifcopenshell.api.alignment.add_stationing_referent(
-        file, "1+00.00", alignment, distance_along=0.0, station=100.0
-    )
+    ifcopenshell.api.alignment.add_stationing_referent(file, "1+00.00", alignment, distance_along=0.0, station=100.0)
 
     # remove the stationing nest, leaving only key-point referents behind
     stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
