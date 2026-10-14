@@ -1348,14 +1348,28 @@ class VerticalProfileDecorator:
                 pass
 
     @classmethod
+    def live_area(cls):
+        """The profile area, found by its C pointer among the open windows' areas, or None.
+
+        The stored ``profile_area`` wrapper must not be used directly: when a file is loaded or the
+        area is closed, the area is freed, and accessing it through the old wrapper crashes Blender.
+        If the area is gone, the profile view is treated as closed and the decorator uninstalled.
+        """
+        if not cls.is_installed or cls.profile_area_ptr == 0:
+            return None
+        for window in bpy.context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.as_pointer() == cls.profile_area_ptr:
+                    return area
+        cls.uninstall()
+        return None
+
+    @classmethod
     def tag_redraw(cls) -> None:
         """Force the profile area to redraw (e.g. when VE slider changes)."""
-        if not cls.is_installed or cls.profile_area_ptr == 0:
-            return
-        try:
-            cls.profile_area.tag_redraw()
-        except Exception:
-            pass
+        area = cls.live_area()
+        if area is not None:
+            area.tag_redraw()
 
     @classmethod
     def _refit_zones(cls) -> None:
