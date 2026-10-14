@@ -89,6 +89,10 @@ try:
         if op.input_type != "D":
             check(op.input_ui.get_number_value("D") == 1000.0, f"Distance changed: {op.input_ui.get_text_value('D')}")
     check(abs(op.input_ui.get_number_value("A") - 45.0) < 1e-9, "Angle changed")
+    # the Bearing readout's direction (counter-clockwise from east): N 45 E, not 3D-measured (N 44 59 49.7 E)
+    world = op.input_ui.get_number_value("WORLD_ANGLE")
+    print("WORLD_ANGLE", world)
+    check(abs(world - 45.0) < 1e-6, f"Bearing direction {world}")
     print("TAB_HEIGHT_TEST_OK")
 except Exception:
     traceback.print_exc()

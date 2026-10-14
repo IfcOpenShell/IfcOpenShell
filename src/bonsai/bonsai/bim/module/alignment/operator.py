@@ -2790,21 +2790,27 @@ class _CivilAngleInput:
         # the polyline tool recalculates Distance and Angle in 3D, from a typed point at Z = 0 (or the Z
         # field) to the last point at its own height: a marker 10 m up turned a typed 1000 into 1000.05,
         # and the next recalculation built on that. These tools work in plan, so keep a typed Distance
-        # and Angle as they are, and measure them in plan from a typed X and Y.
+        # and Angle as they are, and measure them in plan from a typed X and Y -- and the world angle the
+        # Bearing readout shows, which was 10" off for the same reason.
         before = {name: self.input_ui.get_text_value(name) for name in ("D", "A")}
         result = super().recalculate_inputs(context)
-        if result and self.number_input and self.input_type in ("D", "A"):
-            before[self.input_type] = self.number_output
-            for name, value in before.items():
-                if value is not None:
-                    self.input_ui.set_value(name, value)
-        elif result and self.number_input and self.input_type in ("X", "Y"):
-            self._plan_distance_and_angle()
+        if result and self.number_input and self.input_type in ("D", "A", "X", "Y"):
+            if self.input_type in ("D", "A"):
+                before[self.input_type] = self.number_output
+                for name, value in before.items():
+                    if value is not None:
+                        self.input_ui.set_value(name, value)
+                # the Bearing from the typed Angle itself, not from the float32 X and Y it gave
+                self._plan_distance_and_angle(angle=self.input_ui.get_number_value("A"))
+            else:
+                self._plan_distance_and_angle()
         return result
 
-    def _plan_distance_and_angle(self):
-        """Distance and Angle in plan from the last point to the X and Y fields, with the polyline tool's
-        Angle convention (counter-clockwise from the back leg, or from +X for a first leg)."""
+    def _plan_distance_and_angle(self, angle=None):
+        """Distance, Angle and world angle in plan from the last point to the X and Y fields, with the
+        polyline tool's conventions: Angle counter-clockwise from the back leg (from +X for a first leg),
+        the world angle counter-clockwise from +X. Given a typed Angle, only the world angle is set,
+        from that Angle."""
         from mathutils import Vector
 
         points = _drawn_points()
@@ -2812,19 +2818,24 @@ class _CivilAngleInput:
         if not points or x is None or y is None:
             return
         last = points[-1]
-        if len(points) > 1:
-            back = points[-2]
+        east = tool.Polyline.use_transform_orientations(Vector((last.x + 1000000000, last.y, last.z)))
+        back = points[-2] if len(points) > 1 else east
+        distance = math.hypot(x - last.x, y - last.y)
+        if angle is not None:
+            direction = math.atan2(back.y - last.y, back.x - last.x) + math.radians(angle)
         else:
-            back = tool.Polyline.use_transform_orientations(Vector((last.x + 1000000000, last.y, last.z)))
-        dx, dy = x - last.x, y - last.y
-        distance = math.hypot(dx, dy)
-        angle = 0.0
-        if distance > 0:
-            back_dir = math.degrees(math.atan2(back.y - last.y, back.x - last.x))
-            angle = (math.degrees(math.atan2(dy, dx)) - back_dir) % 360.0
-            angle = angle - 360.0 if angle > 180.0 else angle
-        self.input_ui.set_value("D", distance)
-        self.input_ui.set_value("A", angle)
+            direction = math.atan2(y - last.y, x - last.x)
+
+        def angle_from(ref):
+            if distance == 0:
+                return 0.0
+            value = math.degrees(direction - math.atan2(ref.y - last.y, ref.x - last.x)) % 360.0
+            return value - 360.0 if value > 180.0 else value
+
+        if angle is None:
+            self.input_ui.set_value("D", distance)
+            self.input_ui.set_value("A", angle_from(back))
+        self.input_ui.set_value("WORLD_ANGLE", angle_from(east))
 
     @staticmethod
     def _civil_angle_to_polyline_angle(kind, value):
