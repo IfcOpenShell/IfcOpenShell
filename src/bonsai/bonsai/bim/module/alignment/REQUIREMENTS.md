@@ -84,8 +84,8 @@ eleven commits on `rab_infrastructure`, each confirmed by the user in the UI:
   `dev_tests/bl_tab_height.py` covers it. Where the 10 m came from in the user's session is unknown
   (in background tests the anchor lands at Z = 0).
 
-Next: profile the interactive operations (PI edit, drag, insert/delete), the original reason for the
-interactive session.
+~~Next: profile the interactive operations (PI edit, drag, insert/delete), the original reason for the
+interactive session.~~ Done the same day: see the update_layout_segments entry above.
 
 **2026-10-14 round (clean-up before the interactive session):**
 
@@ -274,8 +274,12 @@ edits + Insert/Delete PI + PI click-pick (§11), `d6a54a829` cant follows horizo
      `ifcopenshell.api.alignment`'s mapping, not the kernel (PR from `rab_degenerate_segments`).
    - ~~Moving the PI solver, spiral integrands and join-radius root finding to C++~~ -- not worth
      it: the solver takes 0.8 ms. Its spiral maths stays in Python, tested against the kernel.
-   - **Next: profile Bonsai's interactive operations** (PI edit, drag, insert/delete) in UI-mode
-     Blender. This is the remaining performance item.
+   - ~~**Next: profile Bonsai's interactive operations** (PI edit, drag, insert/delete) in UI-mode
+     Blender.~~ Done 2026-10-14, headless: every PI-editing operator timed on 10 to 200 PIs and
+     BPaimio. Nothing felt slow to the user; Apply was quadratic, fixed in `update_layout_segments`
+     (8.2 to 1.6 s at 200 PIs). In-UI profiling (draw callbacks) wasn't needed. Left as is, per the
+     user (200 PIs is uncommon): OpenCASCADE's O(N^2) wire building for long sampled curves, and a
+     layout built from scratch adding its segments one at a time.
    - **Not yet tried in Blender:** a spiral row with equal radii should now draw as an arc, and a
      right-hand curve with cant should roll continuously into its exit transition.
    - ~~The kernel's trapezoidal spiral integration (about 1e-6 m)~~ -- done: adaptive
@@ -289,16 +293,19 @@ edits + Insert/Delete PI + PI click-pick (§11), `d6a54a829` cant follows horizo
 **Smaller open items noted along the way:**
 - Typed/dragged values are still limited to float32 resolution (~3 cm at 500 km coordinates) -- a
   string-backed field would be needed (§12).
-- The cant layout's mirroring when a curve's turn direction flips is implemented but not directly
-  tested (§11).
+- ~~The cant layout's mirroring when a curve's turn direction flips is implemented but not directly
+  tested (§11).~~ Tested 2026-10-14 (`bl_cant_follow.py` step 1b: every PI mirrored, each arc keeps
+  its cant segment with its rails swapped; fails with the swap disabled).
 - ~~An inserted PI is placed on the straight leg (zero deflection); applying without moving it gives
   two collinear tangents, which Edit PIs then can't reconstruct.~~ Fixed 2026-10-14: applying it
   divided by zero in the PI solver (the sign of the turn); a sharp PI where the alignment goes
   straight on now splits the straight there, and Edit PIs keeps it as a split straight
   (`dev_tests/bl_insert_straight.py`). A curve at such a PI is a clear error. `v0.9.0`'s
   `layout_horizontal_alignment_by_pi_method` has the same division (upstream candidate).
-- `_cant_lookup_for_pi_markers` (VIENNESEBEND cant per PI) is positional, so it defaults after a PI
-  insert/delete until the cant layout is regenerated.
+- ~~`_cant_lookup_for_pi_markers` (VIENNESEBEND cant per PI) is positional, so it defaults after a PI
+  insert/delete until the cant layout is regenerated.~~ Fixed 2026-10-14: PIs are matched as
+  `map_segments_by_pi` matches segments (`tool.Alignment.match_pis`), so each keeps its cant through
+  an insert or delete (`bl_cant_lookup.py`).
 - A cant transition that rotates the track about its centreline (left -c to +c, right +c to -c)
   keeps a constant deviating elevation while its cross slope changes. The kernel interpolates the
   cross slope by the deviating elevation, so IFC can't represent it; such a segment is mapped as
@@ -2068,7 +2075,7 @@ layout's design cant -- the largest cant it had anywhere -- and transitions/tang
 from the arcs as Generate Cant Layout does. A cant layout whose segment count had already drifted
 from the horizontal's (hand-edited rows) is left alone, as before. Tested headless: radius change,
 PI delete, PI insert, spiral-family change, and a row added in the horizontal segment table.
-Not directly tested: the mirroring when a curve's turn direction flips.
+The mirroring when a curve's turn direction flips is tested too (step 1b, 2026-10-14).
 
 ## 12. Exact values through the staged tables (float32 precision)
 
