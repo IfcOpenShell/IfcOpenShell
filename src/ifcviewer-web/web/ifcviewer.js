@@ -6,6 +6,7 @@
 //   <script src="ifcviewer.js"></script>
 //   <script>
 //     const viewer = await IfcViewer.create({ canvas: myCanvas,
+//                                             sidecarFormatVersion: 19,
 //                                             navPreset: 'blender' });
 //     await viewer.ready;                       // GPU app is live
 //     await viewer.addFile(file, { replace: true });
@@ -39,6 +40,62 @@
 // selecting nothing.
 (function (global) {
   'use strict';
+
+  // .ifcview head: magic, format version, endian. Native-endian; the web
+  // build and the baker are both little-endian. Must match IfcViewFormat.h.
+  const IFCVIEW_MAGIC  = 0x49465657;  // "IFVW"
+  const IFCVIEW_ENDIAN = 0x01020304;
+
+  // First 12 bytes of a File/Blob or a URL (ranged). Network failure throws
+  // a plain Error; a header that is present but not the expected sidecar
+  // format throws with .sidecarFormat set so the caller can tell the two apart.
+  async function readSidecarHead(source) {
+    let buf;
+    if (typeof source === 'string') {
+      let res;
+      try {
+        res = await fetch(source, { headers: { Range: 'bytes=0-11' } });
+      } catch (err) {
+        throw new Error('could not read .ifcview header: ' + (err && err.message || err));
+      }
+      if (res.status !== 206 && res.status !== 200) {
+        throw new Error('could not read .ifcview header (' + res.status + ')');
+      }
+      buf = await res.arrayBuffer();
+    } else if (source && typeof source.slice === 'function') {
+      buf = await source.slice(0, 12).arrayBuffer();
+    } else {
+      const err = new Error('not an .ifcview file');
+      err.sidecarFormat = true;
+      throw err;
+    }
+    if (buf.byteLength < 12) {
+      const err = new Error('not an .ifcview file');
+      err.sidecarFormat = true;
+      throw err;
+    }
+    const view = new DataView(buf);
+    return {
+      magic:   view.getUint32(0, true),
+      version: view.getUint32(4, true),
+      endian:  view.getUint32(8, true),
+    };
+  }
+
+  function assertSidecarHead(head, expected) {
+    const reject = (message) => {
+      const err = new Error(message);
+      err.sidecarFormat = true;
+      throw err;
+    };
+    if (head.magic !== IFCVIEW_MAGIC || head.endian !== IFCVIEW_ENDIAN) {
+      reject('not an .ifcview file');
+    }
+    if (head.version !== expected) {
+      reject('.ifcview sidecar format is v' + head.version +
+             '; this page loads v' + expected);
+    }
+  }
 
   // Resolve a remote .ifcview's total size so the loader can bound its ranged
   // reads: HEAD Content-Length, falling back to a 0-0 Range's Content-Range.
@@ -158,8 +215,8 @@
     }
   }
 
-  async function cacheEntryName(url) {
-    const bytes = new TextEncoder().encode(url);
+  async function cacheEntryName(url, formatVersion) {
+    const bytes = new TextEncoder().encode(String(formatVersion) + '\0' + url);
     const digest = await crypto.subtle.digest('SHA-256', bytes);
     return Array.from(new Uint8Array(digest).slice(0, 16))
       .map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -345,20 +402,34 @@
   //   {source}  — a Blob-shaped self-filling source
   //   null      — cache unusable here (no OPFS / no validators / second tab):
   //               caller falls back to the plain URL path.
-  async function cachedUrlSource(url) {
+  async function cachedUrlSource(url, formatVersion) {
     if (!(crypto && crypto.subtle) || !(navigator.storage && navigator.storage.getDirectory)) {
       return null;
     }
     const head = await headValidators(url);
     const dir = await openCacheDir();
     if (!dir) return null;
-    const name = await cacheEntryName(url);
-    const meta = await readCacheMeta(dir, name);
+    const name = await cacheEntryName(url, formatVersion);
+    let meta = await readCacheMeta(dir, name);
+    if (meta && meta.formatVersion !== formatVersion) {
+      await removeCacheEntry(dir, name);
+      meta = null;
+    }
 
     const completeLocal = async (m) => {
+      if (m.formatVersion !== formatVersion) return null;
       const fh = await dir.getFileHandle(name);
       const file = await fh.getFile();
-      return file.size === m.size ? { file: file } : null;
+      if (file.size !== m.size) return null;
+      // A copy baked for another sidecar format must not be served, even
+      // offline: the bytes are the wrong cache format for this page.
+      try {
+        assertSidecarHead(await readSidecarHead(file), formatVersion);
+      } catch (err) {
+        await removeCacheEntry(dir, name);
+        return null;
+      }
+      return { file: file };
     };
 
     if (!head) {
@@ -375,15 +446,18 @@
       if (spansCover(meta.spans, 0, meta.size)) {
         const local = await completeLocal(meta);
         if (local) return local;
+        // completeLocal drops an entry whose header is the wrong format.
+        meta = await readCacheMeta(dir, name);
       }
       // Partial copy of the still-current file: resume filling it.
     } else if (meta) {
       await removeCacheEntry(dir, name);      // server has a different file now
+      meta = null;
     }
 
     const fresh = (!meta || !validatorsMatch(meta, head))
       ? { url: url, etag: head.etag, lastModified: head.lastModified,
-          size: head.size, spans: [] }
+          size: head.size, spans: [], formatVersion: formatVersion }
       : meta;
     try {
       await cacheCall('open', name);          // exclusive: a second tab lands in catch
@@ -426,6 +500,11 @@
   // wasm runtime is initialised; `api.ready` resolves once the GPU app is live.
   async function create(opts) {
     opts = opts || {};
+    const sidecarFormatVersion = opts.sidecarFormatVersion;
+    if (!Number.isInteger(sidecarFormatVersion) || sidecarFormatVersion < 1) {
+      throw new Error('IfcViewer.create requires sidecarFormatVersion: the .ifcview ' +
+        'sidecar format this page loads (IFCVIEW_VERSION in IfcViewFormat.h)');
+    }
     const factory = opts.moduleFactory || global.createIfcViewer;
     if (typeof factory !== 'function') {
       throw new Error('createIfcViewer not found — load IfcViewerWeb.js first');
@@ -468,13 +547,22 @@
       requestAnimationFrame(tick);
     }
 
+    // Per-frame '[info] [frame] … fps …' heartbeat lines come from
+    // ViewportCore.cpp (Log::info()) and fire every render tick. Silence
+    // them by default; opt back in with { verboseFrames: true }.
+    const verboseFrames = opts.verboseFrames === true;
+    const defaultPrintErr = function (t) {
+      if (!verboseFrames && typeof t === 'string' && t.startsWith('[info] [frame]')) return;
+      console.warn(t);
+    };
+
     const Module = await factory({
       canvas: opts.canvas,
       // Keep the runtime alive after main() returns so Dawn-web's async
       // adapter/device callbacks land (they set Module._app_ptr).
       noExitRuntime: true,
       print:    opts.print    || function (t) { console.log(t); },
-      printErr: opts.printErr || function (t) { console.warn(t); },
+      printErr: opts.printErr || defaultPrintErr,
       onRuntimeInitialized: function () { startLoop(this); },
     });
 
@@ -637,6 +725,7 @@
     api = {
       module: Module,
       ready: ready,
+      sidecarFormatVersion: sidecarFormatVersion,
       isLive: function () { return live; },
 
       // ---- Events ----------------------------------------------------------
@@ -930,6 +1019,7 @@
       // valid immediately, before the model has streamed, so a transform or
       // name can be set against it right away — see setModelTransform.
       addFile: async function (file, o) {
+        assertSidecarHead(await readSidecarHead(file), sidecarFormatVersion);
         if (o && o.replace) this.clearScene();
         const sid = registerFile(file);
         if (o && o.name) this.setModelName(sid, o.name);
@@ -944,16 +1034,30 @@
       // server, another tab already filling this entry).
       addUrl: async function (url, o) {
         if (o && o.replace) this.clearScene();
+        // The header says which sidecar format the file actually is. A
+        // network failure is not a format error: with cache enabled, a
+        // complete local copy of this same format can still open offline.
+        let offline = null;
+        try {
+          assertSidecarHead(await readSidecarHead(url), sidecarFormatVersion);
+        } catch (err) {
+          if (err && err.sidecarFormat) throw err;
+          if (!(o && o.cache)) throw err;
+          offline = err;
+        }
         let sid = null;
         if (o && o.cache) {
-          const cached = await cachedUrlSource(url).catch(() => null);
+          const cached = await cachedUrlSource(url, sidecarFormatVersion).catch(() => null);
           if (cached) {
             const src = cached.file || cached.source;
             sid = Module.__ifcvSources.length;
             Module.__ifcvSources.push({ file: src, url: null, size: src.size });
           }
         }
-        if (sid === null) sid = await registerUrl(url);
+        if (sid === null) {
+          if (offline) throw offline;
+          sid = await registerUrl(url);
+        }
         if (o && o.name) this.setModelName(sid, o.name);
         Module._load_ifcview_from_source_c(sid);
         return sid;
@@ -971,8 +1075,10 @@
             try {
               const meta = JSON.parse(await (await
                 (await dir.getFileHandle(key)).getFile()).text());
+              if (meta.formatVersion !== sidecarFormatVersion) continue;
               out.entries.push({
                 url: meta.url,
+                formatVersion: meta.formatVersion,
                 size: meta.size,
                 cachedBytes: spansBytes(meta.spans),
                 complete: spansCover(meta.spans, 0, meta.size),
@@ -992,7 +1098,7 @@
       clearCache: async function (url) {
         try {
           const dir = await cacheDirHandle(false);
-          const only = url ? await cacheEntryName(url) : null;
+          const only = url ? await cacheEntryName(url, sidecarFormatVersion) : null;
           const names = [];
           for await (const key of dir.keys()) {
             const base = key.endsWith('.meta') ? key.slice(0, -5) : key;
