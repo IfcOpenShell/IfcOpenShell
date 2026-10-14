@@ -46,6 +46,11 @@ A = ifcopenshell.api.alignment
 LENGTH = 100.0
 POSITION_TOLERANCE = 1e-9  # metres
 DIRECTION_TOLERANCE = 1e-9
+# A LINEARTRANSITION (an IfcClothoid) has a slope along the track at its ends. The cant frame carries
+# that slope in RefDir but keeps Axis in the cross section without re-orthogonalising it, as the IFC
+# Alignment Geometry Implementation Guide's section 4.2 describes, so the segment's placement tips Axis
+# along the track by about the slope and its cross slope is off by up to about 1e-7.
+LINEAR_TRANSITION_CROSS_SLOPE_TOLERANCE = 5e-7
 SPIRALS = ["CLOTHOID", "BLOSSCURVE", "COSINECURVE", "SINECURVE", "HELMERTCURVE", "CUBIC"]
 SPIRAL_RADII = [(0.0, 300.0), (300.0, 0.0), (0.0, -300.0), (300.0, 1000.0), (-1000.0, -300.0)]
 
@@ -187,9 +192,13 @@ def representation_parts(f):
     return {"horizontal": ifcopenshell_wrapper.map_shape(s, curve)}
 
 
-def assert_frames_equal(actual, expected):
+def assert_frames_equal(actual, expected, direction_tolerance=DIRECTION_TOLERANCE):
     assert np.allclose(actual[:3, 3], expected[:3, 3], rtol=0, atol=POSITION_TOLERANCE), (actual, expected)
-    assert np.allclose(actual[:3, :3], expected[:3, :3], rtol=0, atol=DIRECTION_TOLERANCE), (actual, expected)
+    assert np.allclose(actual[:3, :3], expected[:3, :3], rtol=0, atol=direction_tolerance), (actual, expected)
+
+
+def cross_slope_tolerance(kind):
+    return LINEAR_TRANSITION_CROSS_SLOPE_TOLERANCE if kind == "LINEARTRANSITION" else DIRECTION_TOLERANCE
 
 
 def terminator(f, alignment, layout_name):
@@ -221,7 +230,7 @@ def test_vertical_end(unit, kind, g0, g1, radius):
 @pytest.mark.parametrize("kind,c0,c1", CANT)
 def test_cant_end(unit, kind, c0, c1):
     f, _, end = build_cant(unit, kind, c0, c1)
-    assert_frames_equal(end, evaluate_end(representation_parts(f)["cant"]))
+    assert_frames_equal(end, evaluate_end(representation_parts(f)["cant"]), cross_slope_tolerance(kind))
 
 
 # The end frame follows from the design parameters
@@ -251,7 +260,7 @@ def test_cant_end_from_design(unit, kind, c0, c1):
     assert end[0, 3] == pytest.approx(LENGTH * scale, abs=POSITION_TOLERANCE)
     assert end[1, 3] == pytest.approx(c1 / 2.0 * scale, abs=POSITION_TOLERANCE)
     axis = end[:3, 2]
-    assert axis[1] / math.hypot(axis[1], axis[2]) == pytest.approx(c1 / 1.5, abs=DIRECTION_TOLERANCE)
+    assert axis[1] / math.hypot(axis[1], axis[2]) == pytest.approx(c1 / 1.5, abs=cross_slope_tolerance(kind))
 
 
 # The same end without geometry
