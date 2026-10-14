@@ -782,6 +782,7 @@ class Owner:
 @interface
 class Project:
     def append_all_types_from_template(cls, template): pass
+    def append_structure_from_template(cls, template): pass
     def create_empty(cls, name): pass
     def load_default_thumbnails(cls): pass
     def run_aggregate_assign_object(cls, relating_obj=None, related_obj=None): pass
