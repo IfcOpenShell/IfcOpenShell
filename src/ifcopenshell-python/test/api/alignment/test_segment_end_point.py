@@ -44,11 +44,8 @@ from ifcopenshell import ifcopenshell_wrapper
 
 A = ifcopenshell.api.alignment
 LENGTH = 100.0
-POSITION_TOLERANCE = 1e-8  # metres
+POSITION_TOLERANCE = 1e-9  # metres
 DIRECTION_TOLERANCE = 1e-9
-# The kernel recovers a vertical segment's horizontal length from its length along the curve
-# numerically, so its end is up to about 5e-7 short of the design value
-DESIGN_POSITION_TOLERANCE = 1e-6
 SPIRALS = ["CLOTHOID", "BLOSSCURVE", "COSINECURVE", "SINECURVE", "HELMERTCURVE", "CUBIC"]
 SPIRAL_RADII = [(0.0, 300.0), (300.0, 0.0), (0.0, -300.0), (300.0, 1000.0), (-1000.0, -300.0)]
 
@@ -238,8 +235,8 @@ def test_vertical_end_from_design(unit, kind, g0, g1, radius):
     scale = ifcopenshell.util.unit.calculate_unit_scale(f)
     # a parabola's grade changes linearly, so it ends at the mean grade times the length higher
     height = 10.0 + LENGTH * (g0 + g1) / 2.0
-    assert end[0, 3] == pytest.approx(LENGTH * scale, abs=DESIGN_POSITION_TOLERANCE)
-    assert end[1, 3] == pytest.approx(height * scale, abs=DESIGN_POSITION_TOLERANCE)
+    assert end[0, 3] == pytest.approx(LENGTH * scale, abs=POSITION_TOLERANCE)
+    assert end[1, 3] == pytest.approx(height * scale, abs=POSITION_TOLERANCE)
     assert end[1, 0] / end[0, 0] == pytest.approx(g1, abs=DIRECTION_TOLERANCE)
 
 
