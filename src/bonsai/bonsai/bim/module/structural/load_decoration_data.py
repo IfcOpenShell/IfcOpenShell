@@ -155,6 +155,8 @@ class ShaderInfo:
         self.force_unit = ""
         self.moment_unit = ""
         self.length_unit = ""
+        # The scale forces are drawn to while moments are taken about a point, to keep them in proportion.
+        self.moment_force_scale = None
         self.linear_force_unit = ""
         self.linear_moment_unit = ""
         self.planar_force_unit = ""
@@ -170,6 +172,7 @@ class ShaderInfo:
         self.surface_members = {}
         self.get_force_units()
         self.get_structural_elements_and_activities()
+        self.moment_force_scale = self.get_moment_force_scale()
         self.get_linear_loads()
         self.get_point_loads()
         self.get_planar_loads()
@@ -590,6 +593,33 @@ class ShaderInfo:
                     forces.append((point, item[0].id(), location, force))
         return forces
 
+    def get_moment_centre(
+        self,
+    ) -> tuple[Union[ifcopenshell.entity_instance, None], Union[bpy.types.Object, None], Union[np.ndarray, None]]:
+        """The point moments are taken about for the load case drawn, its object and its location, if one is"""
+        props = tool.Structural.get_structural_props()
+        try:
+            group = self.load_group or tool.Ifc.get().by_id(int(props.load_group_to_show))
+        except (ValueError, RuntimeError):
+            return None, None, None
+        if not group.is_a("IfcStructuralLoadGroup") or not (centre := tool.Structural.get_moment_centre(group)):
+            return None, None, None
+        if not (obj := tool.Ifc.get_object(centre)) or obj.type != "MESH" or not obj.data.vertices:
+            return None, None, None
+        # In double precision: Blender's coordinates are single, which its shader uniforms do not take.
+        return centre, obj, np.array(obj.matrix_world @ obj.data.vertices[0].co, dtype=float)
+
+    def get_moment_force_scale(self) -> Union[float, None]:
+        """With moments taken about a point, the scale forces are drawn to, so that they keep in proportion with
+        the distances between points rather than each point's diagram having its own: the largest force reaches
+        0.4 of the way to the furthest loaded point. None without a moment centre."""
+        centre, _, at = self.get_moment_centre()
+        if not centre or not (forces := self.get_moment_forces()):
+            return None
+        reach = float(max(np.linalg.norm(location - at) for _, _, location, _ in forces))
+        largest = float(max(np.linalg.norm(force) for _, _, _, force in forces))
+        return 0.4 * reach / largest if reach and largest else None
+
     def get_moments(self) -> None:
         """Draw the moment of each point force about the point chosen as the moment centre for the load case shown:
         its line of action, its moment arm from the centre, and their sum as a curved arrow at the centre.
@@ -599,20 +629,13 @@ class ShaderInfo:
         """
         props = tool.Structural.get_structural_props()
         ifc_file = tool.Ifc.get()
-        try:
-            group = self.load_group or ifc_file.by_id(int(props.load_group_to_show))
-        except (ValueError, RuntimeError):
-            return
-        if not group.is_a("IfcStructuralLoadGroup") or not (centre := tool.Structural.get_moment_centre(group)):
-            return
-        if not (obj := tool.Ifc.get_object(centre)) or obj.type != "MESH" or not obj.data.vertices:
+        centre, obj, at = self.get_moment_centre()
+        if not centre:
             return
         forces = self.get_moment_forces()
         if not forces:
             return
         first, first_text = len(self.info), len(self.text_info)
-        # In double precision: Blender's coordinates are single, which its shader uniforms do not take.
-        at = np.array(obj.matrix_world @ obj.data.vertices[0].co, dtype=float)
         length_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)  # Metres per project length unit.
         # Sized to what is drawn, as a point's diagram is to its longest arrow.
         reach = float(max(np.linalg.norm(location - at) for _, _, location, _ in forces))
@@ -664,7 +687,7 @@ class ShaderInfo:
         for entry in self.info[first:] + self.text_info[first_text:]:
             entry["object"] = f"{obj.name} moments"  # Kept apart from the centre's own loads, as its own diagram.
         for text in self.text_info[first_text:]:
-            text["label_scale"] = 2.5  # Drawn smaller than force diagrams, so its values would read small.
+            text["label_scale"] = 1.4  # Sized as the force diagrams drawn with it, 0.4 of the distances to 0.3.
 
     def add_moment_context(
         self,
@@ -698,8 +721,7 @@ class ShaderInfo:
             name = point.Name or "Unnamed"
             text = "A" if point == centre and name == "A" else f"A: {name}" if point == centre else name
             self.text_info.append({"position": location, "text": text, "color": gray, "away": np.array((-1, 0, -1.0))})
-        largest = max(np.linalg.norm(force) for _, _, _, force in forces)
-        scale = 0.4 * reach / largest if reach else 1.0 / largest
+        scale = self.moment_force_scale or 1.0 / max(np.linalg.norm(force) for _, _, _, force in forces)
         ifc_file = tool.Ifc.get()
         for i, (_, activity, location, force) in enumerate(forces, 1):
             arrow = force * scale
@@ -859,6 +881,8 @@ class ShaderInfo:
         in_equilibrium = np.linalg.norm(resultant) <= 1e-9 * longest
         if props.force_scale:
             scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get()) / props.force_scale
+        elif self.moment_force_scale:
+            scale = self.moment_force_scale  # In proportion with the distances moments are taken over.
         else:
             scale = 2 / longest
         # Arrowheads, shafts and dashes are sized to the longest arrow, so they read the same at any scale.
