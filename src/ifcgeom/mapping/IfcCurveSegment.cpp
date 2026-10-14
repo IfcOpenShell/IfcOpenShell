@@ -131,6 +131,22 @@ struct spiral_parent_curve : public parent_curve_function {
     using parent_curve_function::parent_curve_function;
 };
 
+// The frame of a cant curve at distance along x, where the deviating elevation is y. The cant curve is
+// in the (distance along, deviating elevation) plane, but its frame is X along the track, Y to the left
+// and Z up, as in the 3D curve it is combined with (see cant_fn_evaluator): the slope of the deviating
+// elevation, theta, pitches X up from the distance along, and Axis is rolled by the cross slope angle phi
+// (90 degrees when the rail heads are level), measured from the horizontal to the left.
+static Eigen::Matrix4d cant_frame(double theta, double phi, double x, double y) {
+    const double ct = cos(theta), st = sin(theta);
+    const double cp = cos(phi), sp = sin(phi);
+    Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+    m.col(0) = Eigen::Vector4d(ct, 0.0, st, 0.0);
+    m.col(1) = Eigen::Vector4d(st * cp, sp, -ct * cp, 0.0);
+    m.col(2) = Eigen::Vector4d(-st * sp, cp, ct * sp, 0.0);
+    m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
+    return m;
+}
+
 // this is the piecewise curve segment function for horizontal and vertical
 struct curve_segment_function {
     curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& parent_curve_normalization, std::shared_ptr<parent_curve_function> parent_curve_fn) :
@@ -160,16 +176,14 @@ struct cant_curve_segment_function {
     }
 
     Eigen::Matrix4d operator()(double u) const {
-        // The parent curve function returns the cant rotation and superelevation for the parent curve.
-        // Subtract the parent_curve_start_point to get the incremental cant rotation and superelevation
-        // Add the incremental cant rotation and superelevation to curve_segment_placement to get the curve_segment_point
+        // The parent curve function returns the cant frame (see cant_frame) and superelevation for the parent curve.
+        // The frame is absolute: its slope comes from the parent curve and its cross slope from this segment's
+        // placement and the next one's, so it is used as it is.
+        // Subtract the parent_curve_start_point to get the incremental superelevation
+        // Add the incremental superelevation to curve_segment_placement to get the curve_segment_point
         Eigen::Matrix4d parent_curve_point = (*parent_curve_fn_)(u);
 
-        Eigen::Matrix3d parent_curve_start_rotation_ = parent_curve_start_point_.block<3, 3>(0, 0);
-        Eigen::Matrix3d parent_curve_point_rotation = parent_curve_point.block<3, 3>(0, 0);
-        Eigen::Matrix3d incremental_rotation = parent_curve_point_rotation * parent_curve_start_rotation_.transpose();
-        Eigen::Matrix3d placement_rotation_ = curve_segment_placement_.block<3, 3>(0, 0);
-        Eigen::Matrix3d curve_segment_rotation = incremental_rotation * placement_rotation_;
+        Eigen::Matrix3d curve_segment_rotation = parent_curve_point.block<3, 3>(0, 0);
 
         Eigen::Vector3d parent_curve_start_translation_ = parent_curve_start_point_.block<3, 1>(0, 3);
         Eigen::Vector3d parent_curve_point_translation = parent_curve_point.block<3, 1>(0, 3);
@@ -512,26 +526,11 @@ class curve_segment_evaluator {
               auto super_elevation = Superelevation(u);
               auto slope = SuperelevationSlope(u);
 
-              // direction along curve segment
-              auto angle = atan(slope);
-              auto dx = cos(angle);
-              auto dy = sin(angle);
-              Eigen::Vector4d ref_dir(dx, dy, 0.0, 0.0);
-
               // tilt angle in the plane of the cross section
               auto cant = Cant(u);
               auto tilt_angle = start_angle + delta_angle * (cant - start_cant) / delta_cant;
-              Eigen::Vector4d axis(0.0, cos(tilt_angle), sin(tilt_angle), 0.0);
 
-              // compute cross slope direction
-              Eigen::Vector4d y = axis.cross3(ref_dir);
-
-              Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-              m.col(0) = ref_dir;
-              m.col(1) = y;
-              m.col(2) = axis;
-              m.col(3) = Eigen::Vector4d(u, super_elevation, 0.0, 1.0);
-              return m;
+              return cant_frame(atan(slope), tilt_angle, u, super_elevation);
           },
           [Cant](double u) -> Eigen::Matrix4d {
                 Eigen::Matrix4d c = Eigen::Matrix4d::Zero();
@@ -1039,13 +1038,15 @@ class curve_segment_evaluator {
                   auto x = pcX + pcDXx * u;
                   auto y = pcY + pcDXy * u;
 
+                  if (segment_type == ST_CANT) {
+                      // the line's slope in the (distance along, deviating elevation) plane, and the cross slope
+                      // of the placement's Axis
+                      return cant_frame(atan2(pcDXy, pcDXx), atan2(pcDZz, pcDZy), x, y);
+                  }
+
                   Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
                   Eigen::Vector3d X(pcDXx, pcDXy, 0);
                   Eigen::Vector3d Z(0, 0, 1);
-
-                  if (segment_type == ST_CANT) {
-                      Z = Eigen::Vector3d(0, pcDZy, pcDZz);
-                  }
 
                   Eigen::Vector3d Y = Z.cross(X).normalized();
 

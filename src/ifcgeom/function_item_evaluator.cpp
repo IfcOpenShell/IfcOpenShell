@@ -160,8 +160,20 @@ struct cant_fn_evaluator : public fn_evaluator {
         g.col(3) = p;
         c.col(3) = p;
 
-        // multiply g and c to get the axes in the correct orientation
-        Eigen::Matrix4d m = g * c;
+        // multiply g and c to get the axes in the correct orientation. g's frame is the gradient curve's tangent
+        // T at grade angle alpha, the horizontal to the left L and the normal N, and c's is pitched by theta, the
+        // slope of the deviating elevation, then rolled about T by the cross slope. The 3D curve's slope is
+        // the grade plus the slope of the deviating elevation, tan(alpha) + tan(theta), so the pitches add up to
+        // atan(tan(alpha) + tan(theta)), not alpha + theta: epsilon makes up the difference about L.
+        const double tan_alpha = g(2, 0) / std::hypot(g(0, 0), g(1, 0));
+        const double tan_theta = c(2, 0) / c(0, 0);
+        const double epsilon = std::atan(tan_alpha + tan_theta) - std::atan(tan_alpha) - std::atan(tan_theta);
+        Eigen::Matrix4d pitch = Eigen::Matrix4d::Identity();
+        pitch(0, 0) = std::cos(epsilon);
+        pitch(0, 2) = -std::sin(epsilon);
+        pitch(2, 0) = std::sin(epsilon);
+        pitch(2, 2) = std::cos(epsilon);
+        Eigen::Matrix4d m = g * pitch * c;
 
         // reinstate the values for x and y.
         // z is the gradient curve z value plus the superelevation

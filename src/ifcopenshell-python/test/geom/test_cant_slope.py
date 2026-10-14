@@ -2,8 +2,9 @@
 
 """The slope of the deviating elevation along a cant segment.
 
-A cant segment's frame points along the track at the slope of its deviating elevation, so the angle of
-its RefDirection is the arctangent of the derivative of the deviating elevation. Each case builds an
+A cant segment's frame points along the track at the slope of its deviating elevation: its RefDirection
+is pitched up from the distance along, (cos θ, 0, sin θ), by the arctangent θ of the derivative of the
+deviating elevation. Each case builds an
 alignment with one cant transition and compares that angle with a central difference of the evaluated
 deviating elevation, for every cant parent curve and in metres and feet.
 """
@@ -128,4 +129,4 @@ def test_refdirection_follows_the_slope_of_the_deviating_elevation(kind, rails, 
         before = np.array(evaluator.evaluate(float(u - h)))[1, 3]
         after = np.array(evaluator.evaluate(float(u + h)))[1, 3]
         slope = (after - before) / (2.0 * h)
-        assert math.atan2(frame[1, 0], frame[0, 0]) == pytest.approx(math.atan(slope), abs=TOLERANCE), u
+        assert math.atan2(frame[2, 0], frame[0, 0]) == pytest.approx(math.atan(slope), abs=TOLERANCE), u
