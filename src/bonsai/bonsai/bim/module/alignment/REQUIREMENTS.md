@@ -7,42 +7,66 @@ resolving them.
 
 ## Status and work plan (resume here)
 
-*Last updated 2026-10-14.* **2026-10-13 round:** `rab_infrastructure` now sits on
-`rab_evaluation_points` ([IfcOpenShell#5360](https://github.com/IfcOpenShell/IfcOpenShell/issues/5360),
-deflection sampling; PR open), which sits on `rab_plugin_debug_postfix` (`1f9f0613c`, Windows
-Debug/Release plug-in loading; PR open). Eleven commits on top, all pushed:
+*Last updated 2026-10-14.* **2026-10-14 round (clean-up before the interactive session):**
 
-- `155bd0cbd` tests for the end point of each layout segment type (`test_segment_end_point.py`).
-- `e3293f28b` each segment's end point is computed once instead of twice (`_add_segment_to_curve`
+- **PRs.** Merged into `v0.9.0`: #9920 (Windows Debug/Release plug-in loading, `d41b4fefe`) and
+  #9932 (cant slope, `11fecaf2c`). #9932 was based on the cant cross slope branch, so it also merged
+  that change (`f52f516a0`), and #9930 was closed with a comment saying so. Still open: #9927
+  (`rab_evaluation_points`, [IfcOpenShell#5360](https://github.com/IfcOpenShell/IfcOpenShell/issues/5360)
+  deflection sampling), #9928 (`rab_helmert_heading`), #9929 (`rab_degenerate_segments`, rebased onto
+  `v0.9.0` to resolve its conflict with the cross slope change) and #9937 (`rab_spiral_quadrature`,
+  opened today, based on #9928 and depending on it). Thomas Krijnen pushes "apply pinned Ruff
+  autofixes" commits onto PR branches; keep them.
+- **`rab_infrastructure`** was rebased onto `v0.9.0` (`d41b4fefe`) and force-pushed: the merged plug-in,
+  cross slope and cant slope commits dropped out, and every hash in this document was updated. It
+  still carries #9927's commits and the cherry-picks of #9928, #9929 and #9937.
+- **Ruff.** CI's lint workflow fails on `ruff format --check` and `ruff check`, with Ruff pinned to
+  0.16.10 (`requirements-tools.txt`) and the settings in `pyproject.toml`. `v0.9.0` is clean, but
+  this branch had 15 unformatted files and 134 lint findings of its own (plus formatting in
+  `dev_tests/`). `01b2ca3fa` applies `ruff format` and `ruff check --fix` to every Python file the branch
+  changes; the pytest fixtures imported by `test/core/test_alignment.py` keep their imports with
+  `# ruff: ignore[unused-import]`, as the other core tests do. **Run the pinned `ruff format` and
+  `ruff check --fix` on changed files before every commit** (install with
+  `python -m pip install ruff==0.16.10`).
+- The GitHub CLI is installed at `%LOCALAPPDATA%\Programs\gh\bin` (portable; winget's source is
+  broken on this machine), logged in as RickBrice.
+- The Release build was rebuilt in full after the rebase, which also brought in upstream's new
+  `vertex-rebase-distance` geometry setting. With it, 713 alignment and geometry tests pass (only
+  the 3 manifold tests fail, as `WITH_MANIFOLD` is off).
+
+**2026-10-13 round:** eleven commits on top of what was then `rab_evaluation_points`, all pushed:
+
+- `0befa88a7` tests for the end point of each layout segment type (`test_segment_end_point.py`).
+- `577eab97e` each segment's end point is computed once instead of twice (`_add_segment_to_curve`
   takes it from its caller): a 164 segment alignment built by the PI method takes about 23% less
   time (402 to 310 ms).
-- `e9604b3e3` the horizontal terminator's StartDirection uses atan2. It was off by pi when the
+- `430a20f03` the horizontal terminator's StartDirection uses atan2. It was off by pi when the
   alignment ended heading into the left half plane, and divided by zero heading due north or south.
-- `0b61b96f9` tests that lock the PI solver's spiral ends (`compute_horizontal_segment_end`) to the
+- `88313c5e0` tests that lock the PI solver's spiral ends (`compute_horizontal_segment_end`) to the
   kernel's (`test_compute_spiral_end.py`).
-- `c0fdd9f78` `helmert_curve_point` returns the heading at arc length s instead of at x, which put a
+- `5ba930a7e` `helmert_curve_point` returns the heading at arc length s instead of at x, which put a
   kink at the midpoint of every Helmert curve (2.2 cm off at the end of a 100 m R300 to R1000
-  transition). C++, so it needs a wrapper rebuild. PR from `rab_helmert_heading` (`ea633a67b`).
-- `c931d4bc8` Helmert curves held to the same tolerances as the other spirals.
-- `8cc56b3dc` a transition that doesn't change (equal start and end radius, gradient or cant) is
+  transition). C++, so it needs a wrapper rebuild. PR #9928 (`rab_helmert_heading`, open).
+- `066a9d9a9` Helmert curves held to the same tolerances as the other spirals.
+- `af8605c3d` a transition that doesn't change (equal start and end radius, gradient or cant) is
   mapped as a line, circular arc, constant gradient or constant cant. These failed in the Python
-  mapping, not the kernel, and CUBIC drew the wrong curve silently. PR from
-  `rab_degenerate_segments` (`d9cf9d717`).
-- `ea60b7cf0` cant transitions rotate by the difference between their rails. In a curve to the
-  right the exit transition used to start rotated as if the curve were to the left. PR from
-  `rab_cant_cross_slope` (`2d0a2490a`).
-- `09ff3d816` this status update.
-- `848000a74` the kernel integrates spiral positions (and the arc lengths of vertical spirals and
+  mapping, not the kernel, and CUBIC drew the wrong curve silently. PR #9929
+  (`rab_degenerate_segments`, open).
+- cant transitions rotate by the difference between their rails. In a curve to the right the exit
+  transition used to start rotated as if the curve were to the left. Now on `v0.9.0` as `f52f516a0`
+  (merged through #9932).
+- `441f581d4` this status update.
+- `81805b276` the kernel integrates spiral positions (and the arc lengths of vertical spirals and
   cubic curves, and `helmert_curve_point`) by adaptive Gauss-Kronrod instead of the trapezoidal
   rule: accurate to 1e-9 m instead of up to 2.2e-5 m, and 15 to 50 times faster per point
   (sampling the 25.6 km BPaimio alignment went from 285 to 20 ms). Each integral is taken over 0
   to 1 and scaled, because Boost compares an unscaled error estimate with a scaled tolerance and
   otherwise subdivides short intervals to its maximum depth. C++, so it needs a wrapper rebuild.
-  PR from `rab_spiral_quadrature` (`5711ab0a5`), which is based on the Helmert PR and depends on it.
-- `9668cd87a` the alignment tests' tolerances that allowed for the trapezoidal rule are tightened
+  PR #9937 (`rab_spiral_quadrature`, open), which is based on #9928 and depends on it.
+- `20f9b336c` the alignment tests' tolerances that allowed for the trapezoidal rule are tightened
   to 1e-9 m.
 
-**2026-10-14, on branch `rab_cant_slope` (off `rab_infrastructure`, not pushed):** `60bb2dd2b` the cant
+**2026-10-14, cant slope (merged as #9932, `11fecaf2c` on `v0.9.0`):** the cant
 frame's slope along the track is the derivative of its deviating elevation for IfcClothoid,
 IfcCosineSpiral and IfcSineSpiral. 42c49af4e3 (2025-03-29) rescaled every cant parent curve's
 deviating elevation from L times to L squared times its curvature law, but updated the slope only
@@ -55,7 +79,7 @@ regenerating with this build; its Chapter 4 (sections 4.4, 4.7 and 4.8) already 
 slopes.
 
 **~~Open (2026-10-14), needs the user's decision~~ -- decided 2026-10-14: accept the documented frame
-(option 1, e1d9d6ef3), the linear transition cross slope checks allow 5e-7:** with the correct slope, 10 alignment tests failed at
+(option 1, `79c46ecb2`), the linear transition cross slope checks allow 5e-7:** with the correct slope, 10 alignment tests failed at
 1e-9 for LINEARTRANSITION segments whose cant decreases (exits, both rails canted): in
 `test_cant_cross_slope` the cross slope at the start and middle is off by about 7e-8, and in
 `test_segment_end_point` the end Axis is 5.6e-8 off level. The cause is the cant frame itself, which
@@ -65,8 +89,8 @@ non-zero slope the frame isn't orthonormal and the placement rotation tips the A
 show; cosine and sine have zero slope at their ends. Either accept it (loosen those cases to about
 1e-7 and say why) or orthonormalize the cant frame in the kernel, which would change Chapter 4.
 
-The four PR commits are cherry-picked here, so they drop out when `rab_infrastructure` is rebased
-onto `v0.9.0` after the PRs merge.
+The open PRs' commits (#9927, #9928, #9929, #9937) are carried here, so they drop out when
+`rab_infrastructure` is rebased onto `v0.9.0` after they merge.
 
 Findings: the Python PI solver takes 0.8 ms for a 161 segment layout, so moving it to C++ isn't
 worth it. Its spiral maths was exact (the 2 cm Helmert difference was the C++ kink) and now agrees
@@ -82,25 +106,26 @@ angles this way.
 **Outside this repo:** the IFC Alignment Geometry Implementation Guide test set and the
 bSI-RailwayRoom unit-test reference were generated with the Helmert kink. The guide's Helmert data has
 been regenerated on its `fix_helmert_kink` branch; its right-hand cant IFC files need regenerating
-again once the cross slope PR merges (their CSVs hold positions only, which don't change). Its
+now that the cross slope fix has merged (their CSVs hold positions only, which don't change), and its
+LinearTransition, CosineCurve and SineCurve cant CSVs now that the cant slope fix has. Its
 reference CSVs, test set and real-world alignments alike, were generated with the trapezoidal kernel
 and carry its error: up to 2e-6 m in the test set and 1.4e-5 m in the BPaimio Helmert halves, where
 the new kernel agrees with an independent integration of its own tangent to 3.7e-9 m. They need
-regenerating once the quadrature PR merges.
+regenerating once #9937 merges.
 
 **2026-10-12 round:** `rab_infrastructure` was rebased onto `v0.9.0`
 (352 upstream commits; force-pushed), then four commits were added on top (the user pushes them):
 
-- `370eff8bf` the IFC4x3 Road/Bridge templates declare `ViewDefinition [Alignment-basedView]` (the
+- `9b68ca4d5` the IFC4x3 Road/Bridge templates declare `ViewDefinition [Alignment-basedView]` (the
   exact spelling the user asked for), and a project created from a template now takes the
   template's MVD (`tool.Project.append_structure_from_template`; `create_file` otherwise hard-codes
   DesignTransferView). UsageType is NOTDEFINED on the IfcRoadPart. The Bridge template follows
   the usBridge spatial breakdown IDS: a GIRDER bridge, and CompositionType/UsageType on the site,
   bridge and parts. Only the IDS's property-set requirements still fail, which is project data.
-- `fa9901f89` curve data for the selected horizontal curve (§3).
-- `3422de04f` `get_local_placement` → `get_placement` (v0.9.0 removed the former; the stationing
+- `4dbf73483` curve data for the selected horizontal curve (§3).
+- `56865e87a` `get_local_placement` → `get_placement` (v0.9.0 removed the former; the stationing
   referent sync swallowed the error and left referents at the origin).
-- `27b0ab7f2` ifcpatch `MergeProjects` removes the merged project's units, which were left
+- `8f5a6cafb` ifcpatch `MergeProjects` removes the merged project's units, which were left
   unreferenced (validation IFC106) in every project created from a template.
 
 After the rebase, Blender needs a matching IfcOpenShell build: the `.pyd` and the generated
@@ -112,22 +137,22 @@ broken on Windows py313, so use a local build.
 length unit, so a merged project's angle, area, volume and other units are reinterpreted silently.
 To be filed as an upstream issue and handled as its own work item.
 
-Pushed as of 2026-09-28: `1ae038098` stationing on offset curve
-alignments (§5.2) + the extend fix (§9), and `ddf24724f` the profile view for 3D offset curves (§5.2). The
+Pushed as of 2026-09-28: `7ebc3b486` stationing on offset curve
+alignments (§5.2) + the extend fix (§9), and `7be1c00db` the profile view for 3D offset curves (§5.2). The
 source tree is on D: on one computer and F: on the other; the
 `IFCOPENSHELL_DIR` environment variable points to it on each.
 
 Branch `rab_infrastructure` (F:\ifcopenshell), 17 commits ahead of
 `origin/rab_infrastructure` before this push (all pushed 2026-09-25). Commits this round, oldest first:
-`5123046cf` typed 180 degree polyline angle fix (also its own branch/PR
-`rab_polyline_tool_180_fix` -- **PR already open**), `97e04ca7e` cherry-pick of #9505 (IFC4x3 Road
-and Bridge templates), `483a4c9a5` interactive PI editing, `2aee75b33` bearings/deflections in the
-Angle field, `5b909888d` distinct vertical names + renaming, `53bacc069` grid-north bearings,
-`53bb23aae` stationing referents on polyline curves (library), `1772f309e` polyline alignments (§5.1),
-`ef30e9235` extending alignments + length matching (§9), `3507bd7e4` offset curve alignments (§5.2),
-`fecdc1919` `update_layout_segments` (library), `a5a42c77b` keeping segment GlobalIds through
-edits + Insert/Delete PI + PI click-pick (§11), `6ea213041` cant follows horizontal edits (§11),
-`92039c2ea` exact values through the staged tables (§12).
+`376bfc69d` typed 180 degree polyline angle fix (also its own branch/PR
+`rab_polyline_tool_180_fix` -- **PR already open**), `be43d60de` cherry-pick of #9505 (IFC4x3 Road
+and Bridge templates), `9078aeb2a` interactive PI editing, `1534f5220` bearings/deflections in the
+Angle field, `4be298c6c` distinct vertical names + renaming, `52b03d8ac` grid-north bearings,
+`87d537e29` stationing referents on polyline curves (library), `9045812d6` polyline alignments (§5.1),
+`c2c6ff8b0` extending alignments + length matching (§9), `7bf8a4e19` offset curve alignments (§5.2),
+`dae110168` `update_layout_segments` (library), `30f1d1c6d` keeping segment GlobalIds through
+edits + Insert/Delete PI + PI click-pick (§11), `d6a54a829` cant follows horizontal edits (§11),
+`44719c9e9` exact values through the staged tables (§12).
 
 **Work plan, in order:**
 
@@ -149,13 +174,13 @@ edits + Insert/Delete PI + PI click-pick (§11), `6ea213041` cant follows horizo
      stationing). Open: who records the video (Claude can write the script/shot list and capture
      screenshots with the UI harness; screen recording + narration is likely a manual step), where
      it is hosted, and how it is embedded (the Bonsai docs have no video precedent yet).
-   - **API docs -- done 2026-09-28 (`01e167ecd`, `8f6bccd4a`).** Every public `ifcopenshell.api.alignment` function added or
+   - **API docs -- done 2026-09-28 (`6f67240a2`, `6fc75236c`).** Every public `ifcopenshell.api.alignment` function added or
      changed on this branch now has an example (all 28 examples extracted from the docstrings and
      executed); stale module overview ("future" list) brought up to date; fixes: `create` notes a
      cant layout needs `include_vertical=True` (otherwise a bare AssertionError),
      `segment_vertices` returns SI metres regardless of project units and had a wrong param name,
      `create_by_pi_method` param name, `clear_layout_segments` example had undefined names.
-     `8f6bccd4a` fixes four upstream examples (`get_basis_curve`, `get_curve`, `get_layout_curve`,
+     `6fc75236c` fixes four upstream examples (`get_basis_curve`, `get_curve`, `get_layout_curve`,
      `get_parent_alignment`) that Sphinx rejected. Full build of `src/ifcopenshell-python/docs`
      (~9 min) leaves no alignment warnings beyond the site-wide duplicate-description and
      ambiguous-`str` ones. `ifcopenshell.validate` has the same broken-example error; not ours.
@@ -193,7 +218,12 @@ edits + Insert/Delete PI + PI click-pick (§11), `6ea213041` cant follows horizo
   keeps a constant deviating elevation while its cross slope changes. The kernel interpolates the
   cross slope by the deviating elevation, so IFC can't represent it; such a segment is mapped as
   constant cant with its start cross slope.
-- Upstream candidates, if wanted: `fecdc1919` (`update_layout_segments`) and `53bb23aae` (polyline
+- Bonsai's `test/core/test_alignment.py` CSV import tests fail (1 failure, 2 errors: "Unpredicted
+  call: get_object('parent')"), before and after the 2026-10-14 Ruff clean-up alike: their mock
+  expectations no longer match `core.alignment`. Run them with
+  `python -m pytest test/core/test_alignment.py -o addopts=""` from `src/bonsai` (the configured
+  options load pytest-blender).
+- Upstream candidates, if wanted: `dae110168` (`update_layout_segments`) and `87d537e29` (polyline
   stationing referents) as their own PRs.
 
 **Testing:** headless Blender scripts (`blender --background --python-exit-code 1 --python X.py`,
