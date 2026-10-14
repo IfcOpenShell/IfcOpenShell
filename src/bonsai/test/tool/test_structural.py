@@ -577,3 +577,43 @@ class TestSolveCentrePosition(NewFile):
         assert "No angle of r" in error
         error = subject.solve_centre_position(self.points, self.forces, self.points[0], -5.0, "REACH", 0)[1]
         assert "no direction" in error
+
+
+class TestSolveForcePoint(NewFile):
+    def test_where_a_force_balances_another(self):
+        # 8 down at 1 to the left of A; 7 down to the right balances it at 8/7.
+        points = [np.array((-1.0, 0, 0)), np.array((0.5, 0, 0))]
+        forces = [np.array((0, 0, -8.0)), np.array((0, 0, -7.0))]
+        point, error = subject.solve_force_point(points, forces, np.zeros(3), 0.0, 1)
+        assert not error and np.allclose(point, (8 / 7, 0, 0))
+
+    def test_its_height_kept(self):
+        points, forces = [np.array((2.0, 0, 3.0))], [np.array((4.0, 0, -10.0))]
+        point, error = subject.solve_force_point(points, forces, np.zeros(3), -50.0, 0)
+        # -10 x - 4 * 3 = -50, so x = 3.8, at the same height.
+        assert not error and np.allclose(point, (3.8, 0, 3.0))
+
+    def test_a_force_along_x(self):
+        points, forces = [np.array((2.0, 0, 3.0))], [np.array((4.0, 0, 0))]
+        assert "runs along X" in subject.solve_force_point(points, forces, np.zeros(3), 5.0, 0)[1]
+
+    def test_along_z(self):
+        # 6 to the right at 2 above A makes -12; moved to make -30, it acts at 5 above.
+        points, forces = [np.array((1.0, 0, 2.0))], [np.array((6.0, 0, 0))]
+        point, error = subject.solve_force_point(points, forces, np.zeros(3), -30.0, 0, "Z")
+        assert not error and np.allclose(point, (1, 0, 5))
+        error = subject.solve_force_point([np.array((1.0, 0, 2.0))], [np.array((0, 0, -6.0))], np.zeros(3), 5.0, 0, "Z")
+        assert "runs along Z" in error[1]
+
+    def test_along_the_line_from_the_centre(self):
+        # 10 down at (3, 4): -30; along its line from the centre to make -60, at twice the distance.
+        points, forces = [np.array((3.0, 0, 4.0))], [np.array((0, 0, -10.0))]
+        point, error = subject.solve_force_point(points, forces, np.zeros(3), -60.0, 0, "REACH")
+        assert not error and np.allclose(point, (6, 0, 8))
+
+    def test_round_the_centre(self):
+        # 10 down at 5 from the centre makes at most 50; -30 at x = 3, nearer where it started above.
+        points, forces = [np.array((3.0, 0, 4.0))], [np.array((0, 0, -10.0))]
+        point, error = subject.solve_force_point(points, forces, np.zeros(3), -40.0, 0, "SWING")
+        assert not error and np.allclose(point, (4, 0, 3)) and math.isclose(math.hypot(point[0], point[2]), 5)
+        assert "No angle" in subject.solve_force_point(points, forces, np.zeros(3), -60.0, 0, "SWING")[1]

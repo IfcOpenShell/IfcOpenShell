@@ -554,9 +554,11 @@ class Structural(bonsai.core.tool.Structural):
     def get_moment_centre_unknown(
         cls, load_group: ifcopenshell.entity_instance
     ) -> tuple[Union[str, None], Union[ifcopenshell.entity_instance, None]]:
-        """Which of the moment centre's place a kept moment finds for a load case, if any: ARM, a force's moment arm
-        d, A sliding along it; REACH, its distance r from the force's point, A sliding along r; or SWING, the angle
-        of r, phi and alpha with it, A swinging round the point. With the applied load whose point it is from."""
+        """Which place a kept moment finds for a load case, if any. Of the moment centre's: ARM, a force's moment
+        arm d, A sliding along it; REACH, its distance r from the force's point, A sliding along r; or SWING, the
+        angle of r, phi and alpha with it, A swinging round the point. Or the force's own, its point moving and A
+        staying: POINT_X or POINT_Z, along X or Z; POINT_REACH, along the line from A; or POINT_SWING, round A.
+        With the applied load it is of."""
         value = ifcopenshell.util.element.get_pset(load_group, "BBIM_Structural", "MomentCentreUnknown")
         try:
             unknown = json.loads(value) if value else {}
@@ -564,7 +566,11 @@ class Structural(bonsai.core.tool.Structural):
         except (ValueError, KeyError, RuntimeError):
             return None, None
         kind = unknown.get("kind")
-        return (kind, activity) if kind in ("ARM", "REACH", "SWING") and activity else (None, None)
+        return (
+            (kind, activity)
+            if kind in ("ARM", "REACH", "SWING", "POINT_X", "POINT_Z", "POINT_REACH", "POINT_SWING") and activity
+            else (None, None)
+        )
 
     @classmethod
     def set_moment_centre_unknown(
@@ -576,6 +582,59 @@ class Structural(bonsai.core.tool.Structural):
         """Choose which of the moment centre's place a kept moment finds, from a force's point, or none"""
         value = json.dumps({"kind": kind, "activity": activity.GlobalId}) if kind and activity else None
         cls.edit_bbim_structural(load_group, {"MomentCentreUnknown": value})
+
+    @classmethod
+    def solve_force_point(
+        cls,
+        points: list[np.ndarray],
+        forces: list[np.ndarray],
+        centre: np.ndarray,
+        moment: float,
+        j: int,
+        axis: str = "X",
+    ) -> tuple[np.ndarray, str]:
+        """Find where force j must act, the centre and the other forces staying, for the moments of point forces
+        about the centre to sum to a moment, counter-clockwise positive as the X-Z plane is seen from -Y.
+
+        Its moment is its Z component times its distance along X from the centre, less its X component times its
+        distance along Z, so it is linear in where it acts along any line, and a sine of its angle round the centre.
+        Along Y it would change no moment in the X-Z plane, so Y is not offered.
+
+        :param axis: How its point moves: X or Z; REACH, along the line from the centre; or SWING, round the
+            centre, its distance kept, to the nearer of the two places that serve.
+        :return: Where it acts, and why not if it cannot be found.
+        """
+        cross = lambda a, b: a[0] * b[2] - a[2] * b[0]
+        total = sum(cross(p - centre, f) for p, f in zip(points, forces))
+        point = np.array(points[j], dtype=float)
+        r = np.array((point[0] - centre[0], 0.0, point[2] - centre[2]))
+        if axis in ("REACH", "SWING") and not np.linalg.norm(r):
+            return points[j], f"F{j + 1} acts at the centre: no line from it to move along, or round"
+        if axis == "SWING":
+            reach, size = float(np.linalg.norm(r)), math.hypot(forces[j][0], forces[j][2])
+            need = moment - (total - cross(r, forces[j]))  # Its own moment must make up the rest.
+            if not size or abs(need) > reach * size * (1 + 1e-12):
+                return points[j], f"No angle round the centre makes that moment with F{j + 1} where it is"
+            # reach (cos t F_z - sin t F_x) = need: a cosine of t less the angle of (F_z, -F_x).
+            towards = math.atan2(-forces[j][0], forces[j][2])
+            turn = math.acos(max(-1.0, min(1.0, need / (reach * size))))
+            now = math.atan2(r[2], r[0])
+            apart = lambda angle: abs((angle - now + math.pi) % (2 * math.pi) - math.pi)
+            angle = min((towards + turn, towards - turn), key=apart)
+            point[0], point[2] = centre[0] + reach * math.cos(angle), centre[2] + reach * math.sin(angle)
+            return point, ""
+        if axis == "REACH":
+            along = r / np.linalg.norm(r)
+            per = cross(along, forces[j])
+            if abs(per) < 1e-12:
+                return points[j], f"F{j + 1} runs along the line from the centre: moving it along it changes no moment"
+            point += (moment - total) / per * along
+            return point, ""
+        k, per = (0, forces[j][2]) if axis == "X" else (2, -forces[j][0])
+        if abs(per) < 1e-12:
+            return points[j], f"F{j + 1} runs along {axis}: moving it along {axis} changes no moment"
+        point[k] += (moment - total) / per
+        return point, ""
 
     @classmethod
     def solve_centre_position(
