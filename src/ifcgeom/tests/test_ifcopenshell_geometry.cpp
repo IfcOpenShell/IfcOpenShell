@@ -447,14 +447,15 @@ DATA;
     REQUIRE(file.good());
     settings settings;
     REQUIRE_FALSE(settings.get<settings::LoftUseRuledSurfaces>().get());
-    settings.set("function-step-param", 2.);
     settings.set("circle-segments", 128);
     settings.set("reorient-shells", true);
     converter mapper(kernels::construct(&file, "passthrough", settings, logger), &file, settings, logger);
     auto loft = std::dynamic_pointer_cast<tx::loft>(mapper.mapping()->map(file.instance_by_id(30)));
     REQUIRE(loft);
     REQUIRE_FALSE(loft->axis);
-    REQUIRE(loft->children.size() > 2);
+    // sections are placed by deflection: along a straight, between sections that differ only by an offset,
+    // the end sections are enough
+    REQUIRE(loft->children.size() >= 2);
     REQUIRE_FALSE(loft->is_polygonal());
     const auto original_section = loft->children.front();
     const auto original_loop = std::static_pointer_cast<tx::face>(original_section)->children.front();
@@ -736,7 +737,6 @@ TEST_CASE("Loft interpolation retains equal curves and samples changing edges co
     }
     settings settings;
     settings.set("circle-segments", 64);
-    settings.set("function-step-param", 1.);
     settings.set("cache-shapes", false);
     settings.set("reorient-shells", true);
     ifcopenshell::logger logger;
