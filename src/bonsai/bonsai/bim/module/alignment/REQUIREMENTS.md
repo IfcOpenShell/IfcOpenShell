@@ -7,7 +7,41 @@ resolving them.
 
 ## Status and work plan (resume here)
 
-*Last updated 2026-10-14.* **2026-10-14 round (clean-up before the interactive session):**
+*Last updated 2026-10-14.* **2026-10-14, interactive testing in Blender (the user's manual tests):**
+eleven commits on `rab_infrastructure`, each confirmed by the user in the UI:
+
+- `0bcd20642` the vertical profile view no longer crashes Blender after a file is loaded: the decorator
+  looks its area up by pointer (`live_area()`) and uninstalls itself when the area is gone, and a
+  `load_post` handler closes it.
+- `7f9d9d849` a spiral's curve data box shows R1 and R2 (infinite radius as ∞).
+- `5d9bdc7fe` reverse curves whose spirals meet at the inflection point are recognised by Edit PIs
+  (`_tangent_bounded_groups` splits there).
+- `10ba5534a` StartDirection is read and written in the file's plane angle unit (radians, degrees or
+  gradians; `ifcopenshell.api.alignment._start_direction`, `test_angle_units.py`). BPaimio, in
+  gradians, now opens in Edit PIs (20 PIs).
+- `5cd80226e` straights split into several collinear segments are kept through Edit PIs (the user's
+  option 3b: don't merge someone's segments without more real-world evidence), with the split points
+  re-placed by station (option 2). A small gap-filling LINE appears in BPaimio from its LandXML
+  conversion; the user said to leave such data issues.
+- `c5673c68b` the horizontal segment panel shows each segment's end bearing (row 2, under Bearing), with
+  E under Type and N under Length; columns resized so both rows' bearings line up.
+- `27321ece5` typed draw input is exact: what was typed (Distance/Angle, bearing, deflection or X/Y) is
+  recorded and the points rebuilt in double precision, so the polyline tool's float32 points don't
+  leave a 0.04" bearing error.
+- `6799fec84` typed distances no longer creep: the snap point is kept at the drawn points' height, and
+  Tab through a field that wasn't typed in keeps its value instead of re-reading the rounded display.
+- `83165cf1f` Move with Distance/Angle moves a marker from where it is (the user's option a; Angle
+  counter-clockwise from east, or a bearing), and the typed move is exact.
+- `752f088ba` and `27b3110cf` the alignment tools keep typed Distance and Angle in plan, and measure
+  the Bearing readout in plan: the polyline tool measures in 3D from a typed point at Z = 0, so an
+  anchor 10 m up turned 1000 into 1000.05 then 1000.10, and 45 degrees into N 44 59 49.67 E.
+  `dev_tests/bl_tab_height.py` covers it. Where the 10 m came from in the user's session is unknown
+  (in background tests the anchor lands at Z = 0).
+
+Next: profile the interactive operations (PI edit, drag, insert/delete), the original reason for the
+interactive session.
+
+**2026-10-14 round (clean-up before the interactive session):**
 
 - **PRs.** Merged into `v0.9.0`: #9920 (Windows Debug/Release plug-in loading, `d41b4fefe`) and
   #9932 (cant slope, `11fecaf2c`). #9932 was based on the cant cross slope branch, so it also merged
