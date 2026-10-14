@@ -12,9 +12,9 @@ describeOrSkip('file and EntityInstance', () => {
 
   it('returns Python-compatible flat info and applies options recursively', () => {
     using file = new ifcopenshell.File('IFC4');
-    const building = file.createEntity('IfcBuilding', { Name: 'Building', Description: 'Ignored' });
-    const wall = file.createEntity('IfcWall', { Name: 'Wall' });
-    const relation = file.createEntity('IfcRelAggregates', { RelatingObject: building, RelatedObjects: [wall, wall] });
+    const building = file.create('IfcBuilding', { Name: 'Building', Description: 'Ignored' });
+    const wall = file.create('IfcWall', { Name: 'Wall' });
+    const relation = file.create('IfcRelAggregates', { RelatingObject: building, RelatedObjects: [wall, wall] });
     const info = relation.getInfo();
     expect(info.id).toBe(relation.id());
     expect(info.type).toBe('IfcRelAggregates');
@@ -61,21 +61,21 @@ END-ISO-10303-21;`));
 
   it('creates arbitrary attributes and removes a failed partial entity', () => {
     using file = new ifcopenshell.File('IFC4');
-    const point = file.createEntity('IfcCartesianPoint', { Coordinates: [1, 2, 3] });
+    const point = file.create('IfcCartesianPoint', { Coordinates: [1, 2, 3] });
     expect(point.get('Coordinates')).toEqual([1, 2, 3]);
-    const wall = file.createEntity('IfcWall', { Name: 'Wall', Description: 'Description', Tag: 'W1', PredefinedType: 'STANDARD' });
+    const wall = file.create('IfcWall', { Name: 'Wall', Description: 'Description', Tag: 'W1', PredefinedType: 'STANDARD' });
     expect(wall.getInfo()).toMatchObject({ Name: 'Wall', Description: 'Description', Tag: 'W1', PredefinedType: 'STANDARD' });
     const before = file.ids;
-    expect(() => file.createEntity('IfcWall', { Name: 'Partial', MissingAttribute: 'invalid' })).toThrow();
+    expect(() => file.create('IfcWall', { Name: 'Partial', MissingAttribute: 'invalid' })).toThrow();
     expect(file.ids).toEqual(before);
-    expect(() => file.createEntity('IfcWall', { Name: 123 })).toThrow();
+    expect(() => file.create('IfcWall', { Name: 123 })).toThrow();
     expect(file.ids).toEqual(before);
   });
 
   it('deduplicates inverses and preserves duplicates and attribute indices on request', () => {
     using file = new ifcopenshell.File('IFC4');
-    const wall = file.createEntity('IfcWall');
-    const relation = file.createEntity('IfcRelConnectsPathElements', { RelatingElement: wall, RelatedElement: wall });
+    const wall = file.create('IfcWall');
+    const relation = file.create('IfcRelConnectsPathElements', { RelatingElement: wall, RelatedElement: wall });
     const unique = file.getInverse(wall);
     {
       expect(unique).toBeInstanceOf(Set);
@@ -116,7 +116,7 @@ END-ISO-10303-21;`));
 
   it('creates and queries files using public classes', () => {
     using file = new ifcopenshell.File('IFC4');
-    const wall = file.createEntity('IfcWall', { Name: 'Wall' });
+    const wall = file.create('IfcWall', { Name: 'Wall' });
     expect(file).toBeInstanceOf(IfcOpenshellFile);
     expect(wall).toBeInstanceOf(IfcOpenshellInstance);
     expect(wall).toBeInstanceOf(ifcopenshell.EntityInstance);
@@ -135,10 +135,10 @@ END-ISO-10303-21;`));
 
   it('reads and writes attributes and inverses as properties', () => {
     using file = new ifcopenshell.File('IFC4');
-    const building = file.createEntity('IfcBuilding', { Name: 'Building' });
-    const wall = file.createEntity('IfcWall', { Name: 'Wall' });
-    const other = file.createEntity('IfcWall', { Name: 'Other' });
-    const point = file.createEntity('IfcCartesianPoint', { Coordinates: [1, 2, 3] });
+    const building = file.create('IfcBuilding', { Name: 'Building' });
+    const wall = file.create('IfcWall', { Name: 'Wall' });
+    const other = file.create('IfcWall', { Name: 'Other' });
+    const point = file.create('IfcCartesianPoint', { Coordinates: [1, 2, 3] });
     expect(wall.constructor.name).toBe('IfcWall');
     expect(point.constructor.name).toBe('IfcCartesianPoint');
     expect('Name' in wall).toBe(true);
@@ -153,7 +153,7 @@ END-ISO-10303-21;`));
     expect(() => { wall.Name = 123; }).toThrow();
     point.Coordinates = [4, 5, 6];
     expect(point.Coordinates).toEqual([4, 5, 6]);
-    const relation = file.createEntity('IfcRelAggregates', { RelatingObject: building, RelatedObjects: [wall] });
+    const relation = file.create('IfcRelAggregates', { RelatingObject: building, RelatedObjects: [wall] });
     expect(relation.RelatingObject.id()).toBe(building.id());
     expect(relation.RelatedObjects.map((item: ifcopenshell.EntityInstance) => item.Name)).toEqual(['Renamed']);
     expect(wall.Decomposes.map((item: ifcopenshell.EntityInstance) => item.id())).toEqual([relation.id()]);
@@ -163,14 +163,14 @@ END-ISO-10303-21;`));
 
   it('labels entities by IFC class', () => {
     using file = new ifcopenshell.File('IFC4');
-    const wall = file.createEntity('IfcWall');
+    const wall = file.create('IfcWall');
     expect(Object.prototype.toString.call(wall)).toBe('[object IfcWall]');
   });
 
   it('rejects unknown attributes like Python AttributeError', async () => {
     using file = new ifcopenshell.File('IFC4');
-    const wall = file.createEntity('IfcWall', { Name: 'Wall' });
-    const point = file.createEntity('IfcCartesianPoint', { Coordinates: [1, 2, 3] });
+    const wall = file.create('IfcWall', { Name: 'Wall' });
+    const point = file.create('IfcCartesianPoint', { Coordinates: [1, 2, 3] });
     expect(() => wall.Nmae).toThrow("entity instance of type 'IFC4.IfcWall' has no attribute 'Nmae'");
     expect(() => point.Name).toThrow("has no attribute 'Name'");
     expect(() => { wall.Nmae = 'x'; }).toThrow("has no attribute 'Nmae'");
@@ -186,7 +186,7 @@ END-ISO-10303-21;`));
 
   it('returns ordinary arrays and reserves Disposable for model owners', () => {
     using file = new ifcopenshell.File('IFC4');
-    const wall = file.createEntity('IfcWall');
+    const wall = file.create('IfcWall');
     expect('dispose' in wall).toBe(false);
     expect(Symbol.dispose in wall).toBe(false);
     expect(Symbol.dispose in file).toBe(true);
@@ -205,9 +205,9 @@ END-ISO-10303-21;`));
 
   it('converts references and aggregates in the binding', () => {
     using file = new ifcopenshell.File('IFC4');
-    const building = file.createEntity('IfcBuilding');
-    const wall = file.createEntity('IfcWall');
-    const relation = file.createEntity('IfcRelAggregates');
+    const building = file.create('IfcBuilding');
+    const wall = file.create('IfcWall');
+    const relation = file.create('IfcRelAggregates');
     relation.set('RelatingObject', building);
     relation.set('RelatedObjects', [wall]);
     const parent = relation.get('RelatingObject') as ifcopenshell.EntityInstance;
@@ -233,7 +233,7 @@ END-ISO-10303-21;`));
       }
     }
     using other = new ifcopenshell.File('IFC4');
-    const otherWall = other.createEntity('IfcWall');
+    const otherWall = other.create('IfcWall');
     expect(() => relation.set('RelatedObjects', [otherWall])).toThrow('different IFC file');
     relation.set('RelatedObjects', []);
     expect(relation.get('RelatedObjects')).toEqual([]);
@@ -241,20 +241,20 @@ END-ISO-10303-21;`));
 
   it('converts scalars, enums, logicals, nulls and nested arrays', () => {
     using file = new ifcopenshell.File('IFC4');
-    const wall = file.createEntity('IfcWall');
+    const wall = file.create('IfcWall');
     wall.set('PredefinedType', 'STANDARD');
     expect(wall.get('PredefinedType')).toBe('STANDARD');
     expect(() => wall.set('PredefinedType', 'NOT_A_VALUE')).toThrow();
     wall.set('Name', null);
     expect(wall.get('Name')).toBeNull();
     expect(() => wall.set('Name', 123)).toThrow();
-    const point = file.createEntity('IfcCartesianPoint');
+    const point = file.create('IfcCartesianPoint');
     point.set('Coordinates', [1, 2.5, 3]);
     expect(point.get('Coordinates')).toEqual([1, 2.5, 3]);
-    const points = file.createEntity('IfcCartesianPointList3D');
+    const points = file.create('IfcCartesianPointList3D');
     points.set('CoordList', [[1, 2, 3], [4, 5, 6]]);
     expect(points.get('CoordList')).toEqual([[1, 2, 3], [4, 5, 6]]);
-    const triangulation = file.createEntity('IfcTriangulatedFaceSet');
+    const triangulation = file.create('IfcTriangulatedFaceSet');
     triangulation.set('CoordIndex', [[1, 2, 3]]);
     expect(triangulation.get('CoordIndex')).toEqual([[1, 2, 3]]);
     triangulation.set('Closed', true);
@@ -264,19 +264,19 @@ END-ISO-10303-21;`));
 
   it('converts binary arrays and nested entity references and preserves derived markers', () => {
     using file = new ifcopenshell.File('IFC4');
-    const point = file.createEntity('IfcCartesianPoint');
+    const point = file.create('IfcCartesianPoint');
     point.set('Coordinates', [0, 0, 0]);
-    const surface = file.createEntity('IfcBSplineSurfaceWithKnots');
+    const surface = file.create('IfcBSplineSurfaceWithKnots');
     surface.set('ControlPointsList', [[point, point], [point, point]]);
     const rows = surface.get('ControlPointsList') as ifcopenshell.EntityInstance[][];
     try {
       expect(rows.map(row => row.map(item => item.id()))).toEqual([[point.id(), point.id()], [point.id(), point.id()]]);
     } finally { rows.flat().forEach(item => item.destroy()); }
-    const texture = file.createEntity('IfcPixelTexture');
+    const texture = file.create('IfcPixelTexture');
     texture.set('Pixel', ['0101', '1111']);
     expect(texture.get('Pixel')).toEqual(['0101', '1111']);
     expect(() => texture.set('Pixel', ['invalid'])).toThrow();
-    const unit = file.createEntity('IfcSIUnit');
+    const unit = file.create('IfcSIUnit');
     unit.set('Dimensions', null);
     expect(unit.get('Dimensions')).toBeNull();
     expect(unit.toString(true)).toContain('IFCSIUNIT(*,');

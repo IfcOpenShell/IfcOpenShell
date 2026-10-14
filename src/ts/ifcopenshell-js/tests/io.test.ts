@@ -138,12 +138,12 @@ describeOrSkip('basic I/O', () => {
     expect(file.schema()).toBe('IFC4');
 
     // f.createIfcCartesianPoint((0.0, 0.0, 0.0))
-    const point = file.createEntity('IfcCartesianPoint');
+    const point = file.create('IfcCartesianPoint');
     point.set('Coordinates', [0, 0, 0]);
     expect(point.isA()).toBe('IfcCartesianPoint');
     expect(point.get('Coordinates')).toEqual([0, 0, 0]);
 
-    const wall = file.createEntity('IfcWall', { Name: 'Wall' });
+    const wall = file.create('IfcWall', { Name: 'Wall' });
     // f[22].Id = "123" / "123" in str(f[22])
     wall.set('Description', '123');
     expect(wall.toString(true)).toContain('123');
@@ -162,9 +162,9 @@ describeOrSkip('basic I/O', () => {
 
   it('keeps inverses and traversals consistent when references move', () => {
     using file = new ifcopenshell.File('IFC4');
-    const building = file.createEntity('IfcBuilding');
-    const wall = file.createEntity('IfcWall');
-    const relation = file.createEntity('IfcRelAggregates');
+    const building = file.create('IfcBuilding');
+    const wall = file.create('IfcWall');
+    const relation = file.create('IfcRelAggregates');
 
     relation.set('RelatingObject', building);
     relation.set('RelatedObjects', [wall]);
@@ -180,8 +180,8 @@ describeOrSkip('basic I/O', () => {
     expect(deep.map(entity => entity.id())).toContain(wall.id());
 
     // f[288].ConnectedTo[0].RelatingElement = f[340], then f[288].ConnectedTo == ()
-    const otherWall = file.createEntity('IfcWall');
-    const connects = file.createEntity('IfcRelConnectsPathElements');
+    const otherWall = file.create('IfcWall');
+    const connects = file.create('IfcRelConnectsPathElements');
     connects.set('RelatingElement', wall);
     expect(wall.inverse('ConnectedTo').map(entity => entity.id())).toEqual([connects.id()]);
     connects.set('RelatingElement', otherWall);
