@@ -1763,6 +1763,30 @@ def _update_vertical_pi_segments(ifc, v_layout, vpoints, lengths) -> bool:
     return True
 
 
+def _tangent_bounded_groups(segments, a_idx, b_idx):
+    """The curves between the LINEs segments[a_idx] and segments[b_idx], split where two spirals meet.
+
+    A reverse curve whose exit spiral runs straight into the next curve's entry spiral has no LINE
+    between its two PIs: the spirals meet at an inflection point where both radii are infinite, a
+    tangent of zero length. The second spiral's StartPoint and StartDirection are that tangent's
+    point and direction, so it stands in for the LINE on both sides of the split.
+
+    Yields (line_a, a_idx, between, line_b) for each group, where between[0] is segments[a_idx + 1].
+    """
+    line_a, start = segments[a_idx], a_idx
+    for j in range(a_idx + 1, b_idx - 1):
+        here, after = segments[j].DesignParameters, segments[j + 1].DesignParameters
+        if (
+            here.PredefinedType in prop.PI_METHOD_SPIRAL_TYPES
+            and after.PredefinedType in prop.PI_METHOD_SPIRAL_TYPES
+            and not here.EndRadiusOfCurvature
+            and not after.StartRadiusOfCurvature
+        ):
+            yield line_a, start, segments[start + 1 : j + 1], segments[j + 1]
+            line_a, start = segments[j + 1], j
+    yield line_a, start, segments[start + 1 : b_idx], segments[b_idx]
+
+
 def _reconstruct_horizontal_pis(h_layout):
     """Classify every interior PI of h_layout's current real segments.
 
@@ -1782,6 +1806,10 @@ def _reconstruct_horizontal_pis(h_layout):
     outer/non-joined spiral at either end of the whole chain -- is also
     recognized and maps to N PI specs (join_next=True on every one but the
     last), not one; see the join_next branch below.
+
+    Two curves whose spirals meet at an inflection point, with no LINE between
+    them (a reverse curve with spirals), are two PIs joined by a tangent of zero
+    length; see _tangent_bounded_groups.
 
     Returns (specs, skipped). ``specs`` is a list of dicts with pi_local
     (x, y) plus curve_type/radius/spiral_in_length/spiral_out_length/
@@ -1818,10 +1846,12 @@ def _reconstruct_horizontal_pis(h_layout):
     for s in segments[line_indices[-1] + 1 :]:
         skipped.append((s, "after the last tangent"))
 
-    for k in range(len(line_indices) - 1):
-        a_idx, b_idx = line_indices[k], line_indices[k + 1]
-        line_a, line_b = segments[a_idx], segments[b_idx]
-        between = segments[a_idx + 1 : b_idx]
+    groups = [
+        group
+        for k in range(len(line_indices) - 1)
+        for group in _tangent_bounded_groups(segments, line_indices[k], line_indices[k + 1])
+    ]
+    for line_a, a_idx, between, line_b in groups:
         types = [s.DesignParameters.PredefinedType for s in between]
         family = "CLOTHOID"  # unused (no spiral), but every spec needs the key
 
