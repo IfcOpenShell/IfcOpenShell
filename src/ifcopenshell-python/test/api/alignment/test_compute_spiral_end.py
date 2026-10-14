@@ -44,11 +44,11 @@ from test.api.alignment.test_segment_end_point import (
     representation_parts,
 )
 
-# The kernel integrates a spiral's position numerically to about this, the solver to about 1e-13
-POSITION_TOLERANCE = 2e-6  # metres
-DIRECTION_TOLERANCE = 1e-8
+# Both integrate a spiral's position to about 1e-13
+POSITION_TOLERANCE = 1e-9  # metres
+DIRECTION_TOLERANCE = 1e-9
 # A curve segment starts exactly where the one before it ends
-JOIN_POSITION_TOLERANCE = 1e-6  # metres
+JOIN_POSITION_TOLERANCE = 1e-9  # metres
 JOIN_DIRECTION_TOLERANCE = 1e-9
 
 SPIRAL_CASES = [
