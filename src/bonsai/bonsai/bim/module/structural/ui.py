@@ -679,6 +679,18 @@ class BIM_PT_show_structural_activities(Panel):
         row.prop(self.props, "activity_type")
         row = self.layout.row(align=True)
         row.prop(self.props, "load_group_to_show")
+        # The point the shown load case's moments are taken about, as A.
+        row = self.layout.row(align=True)
+        try:
+            centre = tool.Structural.get_moment_centre(tool.Ifc.get().by_id(int(self.props.load_group_to_show)))
+        except (ValueError, RuntimeError):
+            centre = None
+        if centre:
+            row.label(text=f"Moments About A: {centre.Name or 'Unnamed'}", icon="FORCE_VORTEX")
+            row.operator("bim.set_structural_moment_centre", text="", icon="EYEDROPPER")
+            row.operator("bim.set_structural_moment_centre", text="", icon="X").clear = True
+        else:
+            row.operator("bim.set_structural_moment_centre", icon="FORCE_VORTEX")
         row = self.layout.row(align=True)
         row.prop(self.props, "force_display")
         row = self.layout.row(align=True)

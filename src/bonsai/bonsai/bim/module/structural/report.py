@@ -126,7 +126,8 @@ def get_report_data(
                 point["tilted_diagram"] = f"diagrams/{resolved}"
             points.append(point)
         if points:
-            cases.append({"name": case.Name or "Unnamed", "points": points})
+            moments = get_moment_calculation(case, drawing, directory, detailed)
+            cases.append({"name": case.Name or "Unnamed", "points": points, "moments": moments})
     project = next(iter(ifc_file.by_type("IfcProject")), None)
     return {
         "title": f"{model.Name or 'Analysis Model'} calculations",
@@ -138,6 +139,129 @@ def get_report_data(
         "has_cases": bool(cases),
         "detailed": detailed,
     }
+
+
+def get_moment_calculation(
+    case: ifcopenshell.entity_instance,
+    drawing: Union[ShaderInfo, None],
+    directory: Path,
+    detailed: bool = False,
+) -> Union[dict[str, Any], None]:
+    """The moments of a load case's point forces about the point chosen as its moment centre, A, if one is.
+
+    Each force's moment is found as its magnitude times its moment arm, then by Varignon's theorem from its
+    components and their distances from A, and they are added. Moments are counter-clockwise positive as the
+    X-Z plane is seen from -Y; moments applied as loads are left out, as the viewport leaves them out.
+    """
+    centre = tool.Structural.get_moment_centre(case)
+    if not centre or not (centre_obj := tool.Ifc.get_object(centre)) or centre_obj.type != "MESH":
+        return None
+    if drawing is None:
+        drawing = ShaderInfo(case)
+        drawing.update()
+    length_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    location = lambda obj: np.array(obj.matrix_world @ obj.data.vertices[0].co, dtype=float) / length_scale
+    at = location(centre_obj)
+    unit, length_unit = drawing.moment_unit, drawing.length_unit
+    text_unit = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", unit) + "}"
+    length_text = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", length_unit) + "}"
+    rows, steps, palette, values = [], [], [], []
+    for item in get_point_items(case):
+        if not (obj := tool.Ifc.get_object(item)) or obj.type != "MESH" or not obj.data.vertices:
+            continue
+        colors = get_force_colors(drawing, item)
+        for activity in [a for a in tool.Structural.get_chain_activities(item, case) if is_point_force(a)]:
+            x, _, z = get_force_terms(activity, 1)["vector"]
+            if not (x or z):
+                continue
+            i = len(values) + 1
+            point = location(obj)
+            moment, arm, _ = tool.Structural.get_moment(at, point, np.array((x, 0.0, z)))
+            dx, dz = point[0] - at[0], point[2] - at[2]
+            color = get_svg_color(colors.get(activity.id(), (1, 1, 1, 2)))
+            palette.append(color)
+            values.append(moment)
+            turn = "↺" if moment > 0 else "↻" if moment < 0 else ""
+            row = get_table_row(f"F_{{{i}}}", activity.AppliedLoad.Name or "Unnamed", math.hypot(x, z), "", [], color)
+            row |= {
+                "at": item.Name or "Unnamed",
+                "dx": f"{dx:.2f}",
+                "dz": f"{dz:.2f}",
+                "arm": f"{arm:.2f}",
+                "moment": f"{abs(moment):.2f} {unit} {turn}".strip(),
+            }
+            row["magnitude"] += f" {drawing.force_unit}"
+            rows.append(row)
+            steps += get_arm_steps(i, dx, dz, x, z, arm, length_text)
+            sign = "-" if moment < 0 else ""
+            steps.append(
+                f"M_{{{i}}} = {sign}F_{{{i}}}\\, d_{{{i}}} = {sign}({math.hypot(x, z):.2f})({arm:.2f}{length_text})"
+                f" = {moment:.2f}{text_unit}"
+            )
+            # By Varignon's theorem: each component times its distance from A, turning the way it does.
+            steps.append(
+                f"M_{{{i}}} = F_{{z{i}}}\\, \\Delta x_{{{i}}} - F_{{x{i}}}\\, \\Delta z_{{{i}}} = ({z:.2f})({dx:.2f})"
+                f" - ({x:.2f})({dz:.2f}) = {moment:.2f}{text_unit}"
+            )
+    if not values:
+        return None
+    total = sum(values)
+    symbol = "\\Sigma M_A" if len(values) > 1 else "M_A"
+    turn = "\\circlearrowleft" if total > 0 else "\\circlearrowright" if total < 0 else ""
+    if len(values) > 1:
+        terms = " + ".join(f"M_{{{i}}}" for i in range(1, len(values) + 1))
+        numbers = " + ".join(f"({v:.2f})" for v in values)
+        steps.append(f"{symbol} = {terms} = {numbers} = {bold(f'{total:.2f}', True, text_unit)}\\ {turn}")
+    else:
+        steps.append(f"{symbol} = M_{{1}} = {bold(f'{total:.2f}', True, text_unit)}\\ {turn}")
+    name = f"{get_slug(case.Name)}_moments_{centre.id()}.svg"
+    has_diagram = write_diagram(drawing, centre, directory / "diagrams" / name, key=f"{centre_obj.name} moments")
+    words = "counter-clockwise" if total > 0 else "clockwise" if total < 0 else "no turning"
+    return {
+        "centre": centre.Name or "Unnamed",
+        "diagram": f"diagrams/{name}" if has_diagram else None,
+        "forces": rows,
+        "steps": [
+            {
+                "latex": get_colored_symbols(
+                    f"{{\\color{{#8c8c8c}}\\qquad {step}}}" if isinstance(step, Detail) else step, palette
+                ),
+                "detail": isinstance(step, Detail),
+            }
+            for step in steps
+            if detailed or not isinstance(step, Detail)
+        ],
+        "summary": f"{'ΣM' if len(values) > 1 else 'M'} about A = {abs(total):.2f} {unit}, {words}.",
+        "unit": unit,
+        "length_unit": length_unit,
+    }
+
+
+def get_arm_steps(i: int, dx: float, dz: float, x: float, z: float, arm: float, length_text: str) -> list[str]:
+    """How a force's moment arm is found, as a text finds it from the figure: r from A to the force's point, the
+    angle phi between r and the force's line of action, and d = r sin phi, the distance square to that line"""
+    r = math.hypot(dx, dz)
+    if r < 1e-9:
+        return [f"r_{{{i}}} = 0:\\ F_{{{i}}} \\text{{ acts at A, so }} d_{{{i}}} = 0"]
+    along_r = math.degrees(math.atan2(dz, dx)) % 360
+    along_force = math.degrees(math.atan2(z, x)) % 360
+    between = abs(along_force - along_r)
+    phi = min(between % 180, 180 - between % 180)  # The acute angle between the two lines.
+    steps = [
+        f"r_{{{i}}} = \\sqrt{{\\Delta x_{{{i}}}^2 + \\Delta z_{{{i}}}^2}} = \\sqrt{{({dx:.2f})^2 + ({dz:.2f})^2}}"
+        f" = {r:.2f}{length_text}",
+        Detail(
+            f"\\text{{From }} +X\\text{{: }} r_{{{i}}} \\text{{ at }} {along_r:.1f}^\\circ,\\ "
+            f"F_{{{i}}} \\text{{ at }} {along_force:.1f}^\\circ"
+        ),
+        Detail(
+            f"|{along_force:.1f}^\\circ - {along_r:.1f}^\\circ| = {between:.1f}^\\circ"
+            f"\\text{{, the lines' acute angle }} {phi:.1f}^\\circ"
+        ),
+        f"\\phi_{{{i}}} = {phi:.1f}^\\circ \\text{{ between }} r_{{{i}}} \\text{{ and }} F_{{{i}}}\\text{{'s line of action}}",
+        f"d_{{{i}}} = r_{{{i}}} \\sin \\phi_{{{i}}} = ({r:.2f}) \\sin {phi:.1f}^\\circ = {arm:.2f}{length_text}",
+    ]
+    return steps
 
 
 def get_force_colors(drawing: ShaderInfo, item: ifcopenshell.entity_instance) -> dict[int, tuple]:
@@ -1007,20 +1131,24 @@ def write_diagram(
     item: ifcopenshell.entity_instance,
     path: Path,
     resultant_found: bool = False,
+    key: Union[str, None] = None,
 ) -> bool:
     """Write a structural item's load diagram as an SVG, as the X-Z plane is seen from -Y, or nothing if none.
 
     Values found by solving are labelled larger: those marked unlocked, and the resultant's if it was found.
+
+    :param key: What the drawing data is tagged with, if not the item's object, as moments about it are.
     """
     if not (obj := tool.Ifc.get_object(item)):
         return False
+    name = key or obj.name
     # Looking along Y, as the drawing's Y axis runs, which is left out.
     shapes = [
         e["primitive"] | {"color": e["color"]}
         for e in drawing.info
-        if e.get("object") == obj.name and "primitive" in e and not e.get("along_view")
+        if e.get("object") == name and "primitive" in e and not e.get("along_view")
     ]
-    texts = [t for t in drawing.text_info if t.get("object") == obj.name and not t.get("along_view")]
+    texts = [t for t in drawing.text_info if t.get("object") == name and not t.get("along_view")]
     # Each force and component named by its symbol in the calculations, as the drawing names them.
     texts = [t | {"text": f"{t['symbol']} = {t['text']}"} if t.get("symbol") else t for t in texts]
     if not shapes:
@@ -1071,9 +1199,16 @@ def write_diagram(
     for text in texts:
         found = "🔓" in text["text"] or (resultant_found and text["text"].startswith("R = "))
         elements.append(get_svg_label(text, to_svg(text["position"]), placed, found, segments))
+    # Cropped to what is drawn, labels where they were placed, rather than margins wide enough for the longest
+    # label on every side, which a page would scale down, and its labels with it.
+    drawn = [to_svg(p) for shape in shapes for k in ("tail", "tip", "start", "end") if (p := shape.get(k)) is not None]
+    drawn += [corner for x, y, w, h in placed for corner in ((x, y), (x + w, y + h))]
+    (left, top), (right, bottom) = np.min(drawn, axis=0) - 12, np.max(drawn, axis=0) + 12
+    width, height = right - left, bottom - top
+    elements[0] = f'<rect x="{left:.1f}" y="{top:.1f}" width="{width:.1f}" height="{height:.1f}" fill="white"/>'
     svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:.0f}" height="{height:.0f}" '
-        f'viewBox="0 0 {width:.0f} {height:.0f}" font-family="sans-serif" font-size="13">\n'
+        f'viewBox="{left:.1f} {top:.1f} {width:.1f} {height:.1f}" font-family="sans-serif" font-size="13">\n'
         + "\n".join(elements)
         + "\n</svg>\n"
     )

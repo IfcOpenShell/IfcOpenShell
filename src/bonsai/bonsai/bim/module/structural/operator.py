@@ -2109,6 +2109,38 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
         return tool.Structural.get_resultant(item, load_case) if item else None
 
 
+class SetStructuralMomentCentre(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.set_structural_moment_centre"
+    bl_label = "Take Moments About Selected Point"
+    bl_description = (
+        "Take the moments of the load case's point forces about the active point connection, as point A, "
+        "drawn with their moment arms and in calculation reports"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    clear: bpy.props.BoolProperty(name="Clear", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def description(cls, context, properties):
+        return "Stop taking moments about a point" if properties.clear else cls.bl_description
+
+    def _execute(self, context):
+        props = tool.Structural.get_structural_props()
+        try:
+            group = tool.Ifc.get().by_id(int(props.load_group_to_show))
+        except (ValueError, RuntimeError):
+            self.report({"ERROR"}, "Choose a load case to show first")
+            return {"CANCELLED"}
+        centre = None
+        if not self.clear:
+            centre = tool.Ifc.get_entity(context.active_object) if context.active_object else None
+            if not centre or not centre.is_a("IfcStructuralPointConnection"):
+                self.report({"ERROR"}, "Select the point connection to take moments about")
+                return {"CANCELLED"}
+        tool.Structural.set_moment_centre(group, centre)
+        redraw_loads(context)
+        return {"FINISHED"}
+
+
 class ExportStructuralCalculations(bpy.types.Operator):
     bl_idname = "bim.export_structural_calculations"
     bl_label = "Export Calculations"

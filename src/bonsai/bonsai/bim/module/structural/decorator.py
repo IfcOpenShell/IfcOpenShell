@@ -310,7 +310,8 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         end = location_3d_to_region_2d(region, rv3d, Vector(info["position"]) + right * size)
         if start is None or end is None:
             return 20.0
-        return min(max((end - start).length * 0.032, 8.0), 24.0)
+        # Some labels read a little larger than their diagram's share, as moments' do.
+        return min(max((end - start).length * 0.032 * info.get("label_scale", 1.0), 8.0), 24.0)
 
     def place_beside(
         self,

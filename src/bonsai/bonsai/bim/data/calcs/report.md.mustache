@@ -77,4 +77,28 @@ $\displaystyle {{{latex}}}$
 {{/tilted}}
 {{/has_tilted}}
 {{/points}}
+{{#moments}}
+
+### Moments about A: {{{centre}}}
+{{#diagram}}
+
+<p align="center"><img src="{{{diagram}}}" alt="Moments about {{{centre}}}"></p>
+{{/diagram}}
+
+Moments are counter-clockwise positive (↺), as the X-Z plane is seen from −Y. Δx and Δz run from A to the
+point a force acts at, in {{{length_unit}}}. d is its moment arm, the distance from A square to its line of
+action: r sin φ, where r runs from A to the force's point and φ is the angle between r and the line of action.
+
+| | Load | At | Magnitude | Δx | Δz | d | Moment |
+|---|---|---|---|---|---|---|---|
+{{#forces}}
+| ${{{colored_symbol}}}$ | {{{name}}} | {{{at}}} | {{{magnitude}}} | {{{dx}}} | {{{dz}}} | {{{arm}}} | {{{moment}}} |
+{{/forces}}
+{{#steps}}
+
+$\displaystyle {{{latex}}}$
+{{/steps}}
+
+**{{{summary}}}**
+{{/moments}}
 {{/cases}}

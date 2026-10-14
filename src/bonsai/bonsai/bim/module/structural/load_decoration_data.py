@@ -154,6 +154,7 @@ class ShaderInfo:
         self.pickables = []
         self.force_unit = ""
         self.moment_unit = ""
+        self.length_unit = ""
         self.linear_force_unit = ""
         self.linear_moment_unit = ""
         self.planar_force_unit = ""
@@ -172,6 +173,7 @@ class ShaderInfo:
         self.get_linear_loads()
         self.get_point_loads()
         self.get_planar_loads()
+        self.get_moments()
         self.tag_new_entries(None)
         if len(self.info):
             self.is_empty = False
@@ -269,6 +271,7 @@ class ShaderInfo:
         length_unit = project_units["LENGTHUNIT"]
         length_unit = ifcunit.get_unit_symbol(length_unit) if length_unit else "m"
         self.moment_unit = self.force_unit + "." + length_unit
+        self.length_unit = length_unit
 
         # Derived units missing from the file are composed from the force and length units.
         first = self.force_unit
@@ -567,6 +570,238 @@ class ShaderInfo:
                 # Moments keep their own symbol; forces are drawn above.
                 loads = self.get_point_loads_values(activity_list, rotation)
                 self.get_point_moment_args(loads[3:], conn_location, rotation)
+
+    def get_moment_forces(self) -> list[tuple[ifcopenshell.entity_instance, int, np.ndarray, np.ndarray]]:
+        """Each point force drawn, as its point, its applied load's id, its point's location and its force in global
+        terms, by point name and then tip-to-tail order, as moments number them"""
+        forces = []
+        for value in sorted(self.point_members.values(), key=lambda v: (v["member"].Name or "", v["member"].id())):
+            point = value["member"]
+            obj = tool.Ifc.get_object(point)
+            if not obj or obj.type != "MESH" or not obj.data.vertices:
+                continue
+            location = np.array(obj.matrix_world @ obj.data.vertices[0].co, dtype=float)
+            rotation, _ = self.preview_axes.get(point.id(), (None, None))
+            rotation = self.get_point_connection_rotation(point) if rotation is None else rotation
+            items = sorted(value["activities"], key=lambda item: tool.Structural.get_draw_order_key(item[0]))
+            for item in items:
+                force = self.get_point_loads_values([item], rotation)[:3]
+                if np.linalg.norm(force):
+                    forces.append((point, item[0].id(), location, force))
+        return forces
+
+    def get_moments(self) -> None:
+        """Draw the moment of each point force about the point chosen as the moment centre for the load case shown:
+        its line of action, its moment arm from the centre, and their sum as a curved arrow at the centre.
+
+        Moments are counter-clockwise positive as the X-Z plane is seen from -Y, as statics texts take them.
+        Moments applied as loads are left out: they are in the project's torque unit, not force times length.
+        """
+        props = tool.Structural.get_structural_props()
+        ifc_file = tool.Ifc.get()
+        try:
+            group = self.load_group or ifc_file.by_id(int(props.load_group_to_show))
+        except (ValueError, RuntimeError):
+            return
+        if not group.is_a("IfcStructuralLoadGroup") or not (centre := tool.Structural.get_moment_centre(group)):
+            return
+        if not (obj := tool.Ifc.get_object(centre)) or obj.type != "MESH" or not obj.data.vertices:
+            return
+        forces = self.get_moment_forces()
+        if not forces:
+            return
+        first, first_text = len(self.info), len(self.text_info)
+        # In double precision: Blender's coordinates are single, which its shader uniforms do not take.
+        at = np.array(obj.matrix_world @ obj.data.vertices[0].co, dtype=float)
+        length_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)  # Metres per project length unit.
+        # Sized to what is drawn, as a point's diagram is to its longest arrow.
+        reach = float(max(np.linalg.norm(location - at) for _, _, location, _ in forces))
+        size = 0.3 * reach if reach else 1.0
+        colors = {t["force_of"]: t["color"] for t in self.text_info if t.get("force_of")}
+        decimals = props.force_decimals
+        total = 0.0
+        for i, (point, activity, location, force) in enumerate(forces, 1):
+            moment, arm, foot = tool.Structural.get_moment(at, location, force)
+            moment /= length_scale  # Its distances in the project's length unit, as its forces are in theirs.
+            arm /= length_scale
+            total += moment
+            color = colors.get(activity, (1, 1, 1, 1))
+            symbol = get_plain_symbol(f"M_{{{i}}}")
+            along = np.array((force[0], 0.0, force[2]))
+            if not np.linalg.norm(along) or arm * length_scale < 1e-9 * max(reach, 1e-9):
+                text = f"{symbol} = 0: its line of action passes through A"
+                self.text_info.append(
+                    {"position": location, "text": text, "color": color, "away": np.array((0, 0, 1.0))}
+                )
+                continue
+            along /= np.linalg.norm(along)
+            # Its line of action, on to the foot of its arm, then the arm, square to it, from the centre.
+            if np.linalg.norm(foot - location) > 1e-9 * reach:
+                self.add_dashed_line(location, foot, size, color)
+            self.add_dashed_line(at, foot, size, color)
+            towards = (at - foot) / np.linalg.norm(at - foot)
+            corner = 0.06 * size
+            if np.linalg.norm(at - foot) > 3 * corner:
+                side = along if np.dot(location - foot, along) >= 0 else -along
+                a, b = foot + towards * corner, foot + side * corner
+                self.add_dashed_line(a, a + side * corner, size, color, dashed=False)
+                self.add_dashed_line(b, b + towards * corner, size, color, dashed=False)
+            turn = "CCW" if moment > 0 else "CW"  # The viewport's font has no turning arrows.
+            self.text_info.append(
+                {
+                    "position": (at + foot) / 2,
+                    "text": f"{symbol} = {abs(moment):.{decimals}f} {self.moment_unit} {turn}, "
+                    f"{get_plain_symbol(f'd_{{{i}}}')} = {arm:.2f} {self.length_unit}",
+                    "color": color,
+                    "away": along,
+                }
+            )
+            self.add_moment_triangle(i, at, location, foot, size, color, length_scale)
+        self.add_moment_arrow(at, total, size, "ΣM_A" if len(forces) > 1 else "M_A")
+        if self.load_group is not None:
+            # A report's diagram stands alone, so it also draws what the viewport has around it.
+            self.add_moment_context(centre, at, forces, size, reach, colors)
+        for entry in self.info[first:] + self.text_info[first_text:]:
+            entry["object"] = f"{obj.name} moments"  # Kept apart from the centre's own loads, as its own diagram.
+        for text in self.text_info[first_text:]:
+            text["label_scale"] = 2.5  # Drawn smaller than force diagrams, so its values would read small.
+
+    def add_moment_context(
+        self,
+        centre: ifcopenshell.entity_instance,
+        at: np.ndarray,
+        forces: list[tuple[ifcopenshell.entity_instance, int, np.ndarray, np.ndarray]],
+        size: float,
+        reach: float,
+        colors: dict[int, tuple],
+    ) -> None:
+        """Draw, for a report's moment diagram, the members along the points, each point's name, and each force at
+        its point, to a scale that keeps them in proportion with the distances, named as the moments number them"""
+        points = {point.id(): (point, location) for point, _, location, _ in forces}
+        points[centre.id()] = (centre, at)
+        gray = (0.6, 0.6, 0.6, 1)
+        for member in tool.Ifc.get().by_type("IfcStructuralCurveMember"):
+            obj = tool.Ifc.get_object(member)
+            if not obj or obj.type != "MESH":
+                continue
+            connected = {rel.RelatedStructuralConnection.id() for rel in member.ConnectedBy or []}
+            vertices = [np.array(obj.matrix_world @ v.co, dtype=float) for v in obj.data.vertices]
+            for edge in obj.data.edges:
+                a, b = (vertices[i] for i in edge.vertices)
+                # Along the points: connected to one, or passing through one, as a beam drawn to its points is.
+                if not connected & points.keys() and not any(
+                    self.is_on_segment(location, a, b, reach) for _, location in points.values()
+                ):
+                    continue
+                self.add_dashed_line(a, b, size, gray, dashed=False)
+        for point, location in points.values():
+            name = point.Name or "Unnamed"
+            text = "A" if point == centre and name == "A" else f"A: {name}" if point == centre else name
+            self.text_info.append({"position": location, "text": text, "color": gray, "away": np.array((-1, 0, -1.0))})
+        largest = max(np.linalg.norm(force) for _, _, _, force in forces)
+        scale = 0.4 * reach / largest if reach else 1.0 / largest
+        ifc_file = tool.Ifc.get()
+        for i, (_, activity, location, force) in enumerate(forces, 1):
+            arrow = force * scale
+            push = tool.Structural.get_push(ifc_file.by_id(activity))
+            tail, tip = (location - arrow, location) if push else (location, location + arrow)
+            color = colors.get(activity, (1, 1, 1, 2))
+            unit = self.force_unit
+            self.add_force_arrow(
+                tail,
+                tip,
+                color,
+                f"{np.linalg.norm(force):.{tool.Structural.get_structural_props().force_decimals}f} {unit}",
+                size,
+                label_at_tail=push,
+            )
+            self.text_info[-1]["symbol"] = f"F_{{{i}}}"
+
+    def is_on_segment(self, point: np.ndarray, a: np.ndarray, b: np.ndarray, reach: float) -> bool:
+        """Whether a point lies on the line between a and b, within a small share of the distances drawn"""
+        length = np.linalg.norm(b - a)
+        if not length:
+            return False
+        t = float(np.dot(point - a, b - a)) / length**2
+        return -1e-6 <= t <= 1 + 1e-6 and np.linalg.norm(a + t * (b - a) - point) <= 1e-3 * max(reach, length)
+
+    def add_moment_triangle(
+        self,
+        i: int,
+        at: np.ndarray,
+        location: np.ndarray,
+        foot: np.ndarray,
+        size: float,
+        color: tuple,
+        length_scale: float,
+    ) -> None:
+        """Complete the right triangle a force's moment arm makes, as a text draws it to find the arm: r, from the
+        centre to the force's point, labelled with its length, and the angle phi between r and the line of action
+        at that point, so that d = r sin phi"""
+        r = location - at
+        if not np.linalg.norm(r):
+            return
+        self.add_dashed_line(at, location, size, color)
+        across = np.array((-r[2], 0.0, r[0])) / np.linalg.norm(r)
+        if np.dot(foot - at, across) > 0:
+            across = -across  # Labelled outside the triangle.
+        self.text_info.append(
+            {
+                "position": (at + location) / 2,
+                "text": f"{get_plain_symbol(f'r_{{{i}}}')} = {np.linalg.norm(r) / length_scale:.2f} {self.length_unit}",
+                "color": color,
+                "away": across,
+            }
+        )
+        to_foot = foot - location
+        if np.linalg.norm(to_foot) < 1e-9 * np.linalg.norm(r):
+            return  # The line of action is square to r: phi is 90 degrees, shown by the arm's corner.
+        start = np.arctan2(-r[2], -r[0])
+        end = np.arctan2(to_foot[2], to_foot[0])
+        sweep = (end - start + np.pi) % (2 * np.pi) - np.pi  # The shorter way round, the acute angle.
+        phi = abs(np.degrees(sweep))
+        if phi < 0.5:
+            return  # Along r: no moment, and no angle to draw.
+        radius = min(0.15 * size, 0.4 * np.linalg.norm(r), 0.4 * np.linalg.norm(to_foot))
+        angles = start + np.linspace(0, sweep, max(4, int(phi / 5)) + 1)
+        arc = [location + radius * np.array((np.cos(a), 0.0, np.sin(a))) for a in angles]
+        for a, b in zip(arc, arc[1:]):
+            self.add_dashed_line(a, b, size, color, dashed=False)
+        middle = start + sweep / 2
+        outward = np.array((np.cos(middle), 0.0, np.sin(middle)))
+        decimals = tool.Structural.get_structural_props().angle_decimals
+        self.text_info.append(
+            {
+                "position": location + radius * outward,
+                "text": f"{get_plain_symbol(f'φ_{{{i}}}')} = {phi:.{decimals}f}°",
+                "color": color,
+                "away": outward,
+            }
+        )
+
+    def add_moment_arrow(self, at: np.ndarray, moment: float, size: float, symbol: str) -> None:
+        """A curved arrow round a point turning the way a moment does, labelled with its value"""
+        color = (1, 1, 1, 2)
+        decimals = tool.Structural.get_structural_props().force_decimals
+        if abs(moment) < 10 ** -(decimals + 1):
+            text = f"{symbol} = 0"
+        else:
+            text = f"{symbol} = {abs(moment):.{decimals}f} {self.moment_unit} {'CCW' if moment > 0 else 'CW'}"
+            radius, sweep = 0.35 * size, (1 if moment > 0 else -1) * np.radians(270)
+            angles = np.radians(-45) + np.linspace(0, sweep, 28)
+            arc = [at + radius * np.array((np.cos(a), 0.0, np.sin(a))) for a in angles]
+            for a, b in zip(arc[:-2], arc[1:-1]):
+                self.add_dashed_line(a, b, size, color, dashed=False)
+            self.add_force_arrow(arc[-3], arc[-1], color, "", size)
+            self.text_info.pop()  # Its head only; the label is the moment's, above.
+        self.text_info.append(
+            {
+                "position": at + np.array((0, 0, 0.35 * size)),
+                "text": text,
+                "color": color,
+                "away": np.array((0, 0, 1.0)),
+            }
+        )
 
     def get_point_force_args(
         self,
