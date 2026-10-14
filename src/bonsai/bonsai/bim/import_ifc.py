@@ -24,7 +24,7 @@ import multiprocessing
 import time
 import traceback
 from collections.abc import Iterable
-from typing import Any, Literal, Optional, Union
+from typing import Any, Optional, Union
 
 import bpy
 import ifcopenshell
@@ -514,12 +514,13 @@ class IfcImporter:
         self, axes: list[ifcopenshell.entity_instance], grid_obj: bpy.types.Object, grid_placement: MatrixType
     ) -> None:
         for axis in axes:
-            shape = tool.Loader.create_generic_shape(axis.AxisCurve)
-            mesh = self.create_mesh(axis, shape)
+            geometry = tool.Loader.create_generic_shape(axis.AxisCurve)
+            mesh = self.create_mesh(axis, geometry)
             obj = bpy.data.objects.new(tool.Loader.get_name(axis), mesh)
             obj.show_in_front = True
             self.link_element(axis, obj)
-            self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement))
+            matrix = tool.Loader.apply_cartesian_point_offset(mesh, grid_placement)
+            self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix))
 
     def create_element_types(self):
         # TODO:
@@ -878,10 +879,9 @@ class IfcImporter:
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, mat))
             if not materials_updated:
                 self.material_creator.create(element, obj, mesh, tool.Geometry.does_shape_has_openings(shape))
-        elif mesh:  # When does this occur?
-            self.set_matrix_world(
-                obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
-            )
+        elif mesh:  # e.g. for natively created meshes
+            mat = tool.Loader.apply_cartesian_point_offset(mesh, self.get_element_matrix(element))
+            self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, mat))
             self.material_creator.create(element, obj, mesh, False)
         elif hasattr(element, "ObjectPlacement"):
             self.set_matrix_world(
@@ -1089,6 +1089,8 @@ class IfcImporter:
         curve.dimensions = "3D"
         curve.resolution_u = 2
 
+        tool.Loader.record_cartesian_point_offset(curve, tool.Loader.get_rebase_offset(geometry))
+
         e = geometry.edges
         v = geometry.verts
         vertices = [[v[i], v[i + 1], v[i + 2], 1] for i in range(0, len(v), 3)]
@@ -1111,15 +1113,18 @@ class IfcImporter:
     def create_mesh(
         self,
         element: ifcopenshell.entity_instance,
-        shape: Union[W.triangulation, W.triangulation_element],
-        cartesian_point_offset: Union[npt.NDArray[np.float64], Literal[False]] = None,
+        shape_or_geometry: Union[W.triangulation, W.triangulation_element],
+        cartesian_point_offset: Optional[npt.NDArray[np.float64]] = None,
     ) -> Union[bpy.types.Mesh, None]:
+        """
+        :param cartesian_point_offset: Offset the vertices are stored relative to, when the
+            caller decides it. Otherwise the offset the iterator rebased the geometry by.
+        """
         try:
-            if isinstance(shape, W.triangulation_element):
-                # shape is ShapeElementType
-                geometry = shape.geometry
+            if isinstance(shape_or_geometry, W.triangulation_element):
+                geometry = shape_or_geometry.geometry
             else:
-                geometry = shape
+                geometry = shape_or_geometry
 
             # Mesh may already exists (e.g. during representation reimport)
             # and we assign some suffix to it to prevent Blender from adding '.001' suffix to the new mesh.
@@ -1128,25 +1133,11 @@ class IfcImporter:
                 old_mesh.name = mesh_name + ".old"
             mesh = bpy.data.meshes.new(mesh_name)
 
-            verts = ifcopenshell.util.shape.get_vertices(geometry)
-            if cartesian_point_offset is False:
-                mesh["has_cartesian_point_offset"] = False
-            elif cartesian_point_offset is not None:
-                verts = verts - cartesian_point_offset
-
-                mesh["has_cartesian_point_offset"] = True
-                mesh["cartesian_point_offset"] = (
-                    f"{cartesian_point_offset[0]},{cartesian_point_offset[1]},{cartesian_point_offset[2]}"
-                )
-            elif verts.size and tool.Loader.is_point_far_away(verts[0], is_meters=True):
-                # Shift geometry close to the origin based off that first vert it found
-                offset = verts[0]
-                verts = verts - offset
-
-                mesh["has_cartesian_point_offset"] = True
-                mesh["cartesian_point_offset"] = f"{offset[0]},{offset[1]},{offset[2]}"
+            if cartesian_point_offset is None:
+                verts, cartesian_point_offset = tool.Loader.get_rebased_vertices(geometry)
             else:
-                mesh["has_cartesian_point_offset"] = False
+                verts = ifcopenshell.util.shape.get_vertices(geometry) - cartesian_point_offset
+            tool.Loader.record_cartesian_point_offset(mesh, cartesian_point_offset)
 
             mesh = tool.Loader.convert_geometry_to_mesh(
                 geometry,

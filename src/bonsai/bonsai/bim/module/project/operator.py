@@ -2526,21 +2526,9 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         geometry = shape.geometry
         mesh = self.meshes.get(geometry.id, None)
         if not mesh:
-            verts = ifcopenshell.util.shape.get_vertices(geometry)
             material_ids = geometry.material_ids
             mesh = tool.Loader.create_mesh_from_shape(geometry, mesh)
-
-            gprops = tool.Georeference.get_georeference_props()
-            if gprops.has_blender_offset and verts.size and tool.Loader.is_point_far_away(verts[0], is_meters=True):
-                vert: np.ndarray = verts[0]
-                # Shift geometry close to the origin based off that first vert it found
-                offset = ifcopenshell.util.shape_builder.np_translation_matrix(-vert)
-                mat = offset @ mat
-
-                mesh["has_cartesian_point_offset"] = True
-                mesh["cartesian_point_offset"] = ",".join(vert.astype(str))
-            else:
-                mesh["has_cartesian_point_offset"] = False
+            tool.Loader.record_cartesian_point_offset(mesh, tool.Loader.get_rebase_offset(geometry))
 
             material_to_slot: dict[int, int] = {}
             max_slot_index = 0

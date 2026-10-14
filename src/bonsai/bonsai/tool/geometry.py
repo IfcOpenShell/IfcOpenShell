@@ -1213,7 +1213,7 @@ class Geometry(bonsai.core.tool.Geometry):
                         elif shape:
                             cartesian_point_offset = cls.get_cartesian_point_offset(obj)
                             if cartesian_point_offset is None:
-                                cartesian_point_offset = False
+                                cartesian_point_offset = np.zeros(3)
                             mesh = ifc_importer.create_mesh(
                                 element, shape, cartesian_point_offset=cartesian_point_offset
                             )
@@ -1493,6 +1493,7 @@ class Geometry(bonsai.core.tool.Geometry):
             "or use restore_or_rebaseline_placement for the restore-or-clear-drift semantic"
         )
         matrix_np = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=True)
+        matrix_np = tool.Loader.apply_cartesian_point_offset(obj.data, matrix_np)
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix_np)
         cls.record_object_position(obj)
 

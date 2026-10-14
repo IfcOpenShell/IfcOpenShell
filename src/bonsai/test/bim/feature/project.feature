@@ -315,11 +315,9 @@ Scenario: Load project elements - auto offset of cartesian points
 
 Scenario: Load project elements - all georeferencing coordinate situations - disabled false origin mode
     # D, G and J have their geometry far from their placement, so each is
-    # shifted onto one of its own verts to keep its precision. Which vert that
-    # is comes from the geometry kernel and has changed before, so these assert
-    # that the origin is on a vert rather than which one, and name verts rather
-    # than origins. In automatic mode the model origin is picked the same way
-    # and everything moves with it, so there they are relative to it.
+    # shifted onto its bounding box centre to keep its precision. These name
+    # verts rather than origins. In automatic mode the model origin is picked
+    # the same way and everything moves with it, so there they are relative to it.
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/geolocation.ifc', is_advanced=True)"
     When I set "scene.BIMProjectProperties.false_origin_mode" to "DISABLED"
@@ -332,17 +330,17 @@ Scenario: Load project elements - all georeferencing coordinate situations - dis
     And the object "IfcActuator/A" is at "7,3,0"
     And the object "IfcActuator/B" is at "6,1,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has its origin at the centre of its bounding box
     And the object "IfcActuator/D" has a vert at "13,4,-1" at map coordinates "13000,4000,-1000"
     And the object "IfcActuator/D" has a vert at "15,2,1" at map coordinates "15000,2000,1000"
     And the object "IfcActuator/E" is at "6,3,0"
     And the object "IfcActuator/F" is at "3,3,0"
-    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has its origin at the centre of its bounding box
     And the object "IfcActuator/G" has a vert at "15,6,-1" at map coordinates "15000,6000,-1000"
     And the object "IfcActuator/G" has a vert at "17,4,1" at map coordinates "17000,4000,1000"
     And the object "IfcActuator/H" is at "9,2,0"
     And the object "IfcActuator/I" is at "3,3,0"
-    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has its origin at the centre of its bounding box
     And the object "IfcActuator/J" has a vert at "11,3,-1" at map coordinates "11000,3000,-1000"
     And the object "IfcActuator/J" has a vert at "13,1,1" at map coordinates "13000,1000,1000"
     And the object "IfcActuator/K" is at "10,0,0"
@@ -354,24 +352,24 @@ Scenario: Load project elements - all georeferencing coordinate situations - aut
     When I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I press "bim.load_project_elements"
     Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
-    And the model origin is on an object vertex
+    And the model origin is at the centre of an object's bounding box
     And the object "IfcSite/My Site" is at "0,0,0"
     And the object "IfcBuilding/My Building" is at "0,0,0"
     And the object "IfcBuildingStorey/My Storey" is at "0,0,0"
     And the object "IfcActuator/A" is at "7,3,0" relative to the model origin at map coordinates "7000,3000,0"
     And the object "IfcActuator/B" is at "6,1,0" relative to the model origin at map coordinates "6000,1000,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has its origin at the centre of its bounding box
     And the object "IfcActuator/D" has a vert at "13,4,-1" relative to the model origin at map coordinates "13000,4000,-1000"
     And the object "IfcActuator/D" has a vert at "15,2,1" relative to the model origin at map coordinates "15000,2000,1000"
     And the object "IfcActuator/E" is at "6,3,0" relative to the model origin at map coordinates "6000,3000,0"
     And the object "IfcActuator/F" is at "3,3,0" relative to the model origin at map coordinates "3000,3000,0"
-    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has its origin at the centre of its bounding box
     And the object "IfcActuator/G" has a vert at "15,6,-1" relative to the model origin at map coordinates "15000,6000,-1000"
     And the object "IfcActuator/G" has a vert at "17,4,1" relative to the model origin at map coordinates "17000,4000,1000"
     And the object "IfcActuator/H" is at "9,2,0" relative to the model origin at map coordinates "9000,2000,0"
     And the object "IfcActuator/I" is at "3,3,0" relative to the model origin at map coordinates "3000,3000,0"
-    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has its origin at the centre of its bounding box
     And the object "IfcActuator/J" has a vert at "11,3,-1" relative to the model origin at map coordinates "11000,3000,-1000"
     And the object "IfcActuator/J" has a vert at "13,1,1" relative to the model origin at map coordinates "13000,1000,1000"
     And the object "IfcActuator/K" is at "10,0,0" relative to the model origin at map coordinates "10000,0,0"
@@ -394,17 +392,17 @@ Scenario: Load project elements - all georeferencing coordinate situations - man
     And the object "IfcActuator/A" is at "-3,3,0"
     And the object "IfcActuator/B" is at "-4,1,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has its origin at the centre of its bounding box
     And the object "IfcActuator/D" has a vert at "3,4,-1" at map coordinates "13000,4000,-1000"
     And the object "IfcActuator/D" has a vert at "5,2,1" at map coordinates "15000,2000,1000"
     And the object "IfcActuator/E" is at "-4,3,0"
     And the object "IfcActuator/F" is at "-7,3,0"
-    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has its origin at the centre of its bounding box
     And the object "IfcActuator/G" has a vert at "5,6,-1" at map coordinates "15000,6000,-1000"
     And the object "IfcActuator/G" has a vert at "7,4,1" at map coordinates "17000,4000,1000"
     And the object "IfcActuator/H" is at "-1,2,0"
     And the object "IfcActuator/I" is at "-7,3,0"
-    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has its origin at the centre of its bounding box
     And the object "IfcActuator/J" has a vert at "1,3,-1" at map coordinates "11000,3000,-1000"
     And the object "IfcActuator/J" has a vert at "3,1,1" at map coordinates "13000,1000,1000"
     And the object "IfcActuator/K" is at "0,0,0"
@@ -422,17 +420,17 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "5.985,14.71,0"
     And the object "IfcActuator/B" is at "5.5367,12.519,0"
     And the object "IfcActuator/C" is at "0,10,0"
-    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has its origin at the centre of its bounding box
     And the object "IfcActuator/D" has a vert at "11.5218,17.2284,-1" at map coordinates "11521.758,17228.35,-1000"
     And the object "IfcActuator/D" has a vert at "13.9712,15.8141,1" at map coordinates "13971.246,15814.136,1000"
     And the object "IfcActuator/E" is at "5.0191,14.451,0"
     And the object "IfcActuator/F" is at "2.1213,13.674,0"
-    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has its origin at the centre of its bounding box
     And the object "IfcActuator/G" has a vert at "12.936,19.6778,-1" at map coordinates "12935.975,19677.841,-1000"
     And the object "IfcActuator/G" has a vert at "15.3855,18.2636,1" at map coordinates "15385.465,18263.627,1000"
     And the object "IfcActuator/H" is at "8.1757,14.261,0"
     And the object "IfcActuator/I" is at "2.1213,13.674,0"
-    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has its origin at the centre of its bounding box
     And the object "IfcActuator/J" has a vert at "9.8487,15.7448,-1" at map coordinates "9848.726,15744.786,-1000"
     And the object "IfcActuator/J" has a vert at "12.2982,14.3306,1" at map coordinates "12298.216,14330.573,1000"
     And the object "IfcActuator/K" is at "9.6593,12.588,0"
@@ -454,17 +452,17 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "7,3,0"
     And the object "IfcActuator/B" is at "6,1,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has its origin at the centre of its bounding box
     And the object "IfcActuator/D" has a vert at "13,4,-1" at map coordinates "11521.758,17228.35,-1000"
     And the object "IfcActuator/D" has a vert at "15,2,1" at map coordinates "13971.246,15814.136,1000"
     And the object "IfcActuator/E" is at "6,3,0"
     And the object "IfcActuator/F" is at "3,3,0"
-    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has its origin at the centre of its bounding box
     And the object "IfcActuator/G" has a vert at "15,6,-1" at map coordinates "12935.975,19677.841,-1000"
     And the object "IfcActuator/G" has a vert at "17,4,1" at map coordinates "15385.465,18263.627,1000"
     And the object "IfcActuator/H" is at "9,2,0"
     And the object "IfcActuator/I" is at "3,3,0"
-    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has its origin at the centre of its bounding box
     And the object "IfcActuator/J" has a vert at "11,3,-1" at map coordinates "9848.726,15744.786,-1000"
     And the object "IfcActuator/J" has a vert at "13,1,1" at map coordinates "12298.216,14330.573,1000"
     And the object "IfcActuator/K" is at "10,0,0"
@@ -487,17 +485,17 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "5.985,4.71,0"
     And the object "IfcActuator/B" is at "5.5367,2.519,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has its origin at the centre of its bounding box
     And the object "IfcActuator/D" has a vert at "11.5218,7.2284,-1" at map coordinates "11521.758,17228.35,-1000"
     And the object "IfcActuator/D" has a vert at "13.9712,5.8141,1" at map coordinates "13971.246,15814.136,1000"
     And the object "IfcActuator/E" is at "5.0191,4.451,0"
     And the object "IfcActuator/F" is at "2.1213,3.674,0"
-    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has its origin at the centre of its bounding box
     And the object "IfcActuator/G" has a vert at "12.936,9.6778,-1" at map coordinates "12935.975,19677.841,-1000"
     And the object "IfcActuator/G" has a vert at "15.3855,8.2636,1" at map coordinates "15385.465,18263.627,1000"
     And the object "IfcActuator/H" is at "8.1757,4.261,0"
     And the object "IfcActuator/I" is at "2.1213,3.674,0"
-    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has its origin at the centre of its bounding box
     And the object "IfcActuator/J" has a vert at "9.8487,5.7448,-1" at map coordinates "9848.726,15744.786,-1000"
     And the object "IfcActuator/J" has a vert at "12.2982,4.3306,1" at map coordinates "12298.216,14330.573,1000"
     And the object "IfcActuator/K" is at "9.6593,2.588,0"
@@ -521,17 +519,17 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "7,3,0"
     And the object "IfcActuator/B" is at "6,1,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has its origin at the centre of its bounding box
     And the object "IfcActuator/D" has a vert at "13,4,-1" at map coordinates "11521.758,17228.35,-1000"
     And the object "IfcActuator/D" has a vert at "15,2,1" at map coordinates "13971.246,15814.136,1000"
     And the object "IfcActuator/E" is at "6,3,0"
     And the object "IfcActuator/F" is at "3,3,0"
-    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has its origin at the centre of its bounding box
     And the object "IfcActuator/G" has a vert at "15,6,-1" at map coordinates "12935.975,19677.841,-1000"
     And the object "IfcActuator/G" has a vert at "17,4,1" at map coordinates "15385.465,18263.627,1000"
     And the object "IfcActuator/H" is at "9,2,0"
     And the object "IfcActuator/I" is at "3,3,0"
-    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has its origin at the centre of its bounding box
     And the object "IfcActuator/J" has a vert at "11,3,-1" at map coordinates "9848.726,15744.786,-1000"
     And the object "IfcActuator/J" has a vert at "13,1,1" at map coordinates "12298.216,14330.573,1000"
     And the object "IfcActuator/K" is at "10,0,0"
@@ -549,17 +547,17 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "7,3,0"
     And the object "IfcActuator/B" is at "6,1,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has its origin at the centre of its bounding box
     And the object "IfcActuator/D" has a vert at "13,4,-1" at map coordinates "28000,4000,-1000"
     And the object "IfcActuator/D" has a vert at "15,2,1" at map coordinates "30000,2000,1000"
     And the object "IfcActuator/E" is at "6,3,0"
     And the object "IfcActuator/F" is at "3,3,0"
-    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has its origin at the centre of its bounding box
     And the object "IfcActuator/G" has a vert at "15,6,-1" at map coordinates "30000,6000,-1000"
     And the object "IfcActuator/G" has a vert at "17,4,1" at map coordinates "32000,4000,1000"
     And the object "IfcActuator/H" is at "9,2,0"
     And the object "IfcActuator/I" is at "3,3,0"
-    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has its origin at the centre of its bounding box
     And the object "IfcActuator/J" has a vert at "11,3,-1" at map coordinates "26000,3000,-1000"
     And the object "IfcActuator/J" has a vert at "13,1,1" at map coordinates "28000,1000,1000"
     And the object "IfcActuator/K" is at "10,0,0"
@@ -571,24 +569,24 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     When I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I press "bim.load_project_elements"
     Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
-    And the model origin is on an object vertex
+    And the model origin is at the centre of an object's bounding box
     And the object "IfcSite/My Site" is at "0,0,0"
     And the object "IfcBuilding/My Building" is at "0,0,0"
     And the object "IfcBuildingStorey/My Storey" is at "0,0,0"
     And the object "IfcActuator/A" is at "22,3,0" relative to the model origin at map coordinates "22000,3000,0"
     And the object "IfcActuator/B" is at "21,1,0" relative to the model origin at map coordinates "21000,1000,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has its origin at the centre of its bounding box
     And the object "IfcActuator/D" has a vert at "28,4,-1" relative to the model origin at map coordinates "28000,4000,-1000"
     And the object "IfcActuator/D" has a vert at "30,2,1" relative to the model origin at map coordinates "30000,2000,1000"
     And the object "IfcActuator/E" is at "21,3,0" relative to the model origin at map coordinates "21000,3000,0"
     And the object "IfcActuator/F" is at "18,3,0" relative to the model origin at map coordinates "18000,3000,0"
-    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has its origin at the centre of its bounding box
     And the object "IfcActuator/G" has a vert at "30,6,-1" relative to the model origin at map coordinates "30000,6000,-1000"
     And the object "IfcActuator/G" has a vert at "32,4,1" relative to the model origin at map coordinates "32000,4000,1000"
     And the object "IfcActuator/H" is at "24,2,0" relative to the model origin at map coordinates "24000,2000,0"
     And the object "IfcActuator/I" is at "18,3,0" relative to the model origin at map coordinates "18000,3000,0"
-    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has its origin at the centre of its bounding box
     And the object "IfcActuator/J" has a vert at "26,3,-1" relative to the model origin at map coordinates "26000,3000,-1000"
     And the object "IfcActuator/J" has a vert at "28,1,1" relative to the model origin at map coordinates "28000,1000,1000"
     And the object "IfcActuator/K" is at "25,0,0" relative to the model origin at map coordinates "25000,0,0"
@@ -611,17 +609,17 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "-3,3,0"
     And the object "IfcActuator/B" is at "-4,1,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has its origin at the centre of its bounding box
     And the object "IfcActuator/D" has a vert at "3,4,-1" at map coordinates "28000,4000,-1000"
     And the object "IfcActuator/D" has a vert at "5,2,1" at map coordinates "30000,2000,1000"
     And the object "IfcActuator/E" is at "-4,3,0"
     And the object "IfcActuator/F" is at "-7,3,0"
-    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has its origin at the centre of its bounding box
     And the object "IfcActuator/G" has a vert at "5,6,-1" at map coordinates "30000,6000,-1000"
     And the object "IfcActuator/G" has a vert at "7,4,1" at map coordinates "32000,4000,1000"
     And the object "IfcActuator/H" is at "-1,2,0"
     And the object "IfcActuator/I" is at "-7,3,0"
-    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has its origin at the centre of its bounding box
     And the object "IfcActuator/J" has a vert at "1,3,-1" at map coordinates "26000,3000,-1000"
     And the object "IfcActuator/J" has a vert at "3,1,1" at map coordinates "28000,1000,1000"
     And the object "IfcActuator/K" is at "0,0,0"
@@ -639,17 +637,17 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "5.985,14.71,0"
     And the object "IfcActuator/B" is at "5.5367,12.519,0"
     And the object "IfcActuator/C" is at "0,10,0"
-    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has its origin at the centre of its bounding box
     And the object "IfcActuator/D" has a vert at "11.5218,17.2284,-1" at map coordinates "26521.758,17228.35,-1000"
     And the object "IfcActuator/D" has a vert at "13.9712,15.8141,1" at map coordinates "28971.246,15814.136,1000"
     And the object "IfcActuator/E" is at "5.0191,14.451,0"
     And the object "IfcActuator/F" is at "2.1213,13.674,0"
-    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has its origin at the centre of its bounding box
     And the object "IfcActuator/G" has a vert at "12.936,19.6778,-1" at map coordinates "27935.975,19677.841,-1000"
     And the object "IfcActuator/G" has a vert at "15.3855,18.2636,1" at map coordinates "30385.465,18263.627,1000"
     And the object "IfcActuator/H" is at "8.1757,14.261,0"
     And the object "IfcActuator/I" is at "2.1213,13.674,0"
-    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has its origin at the centre of its bounding box
     And the object "IfcActuator/J" has a vert at "9.8487,15.7448,-1" at map coordinates "24848.726,15744.786,-1000"
     And the object "IfcActuator/J" has a vert at "12.2982,14.3306,1" at map coordinates "27298.216,14330.573,1000"
     And the object "IfcActuator/K" is at "9.6593,12.588,0"
@@ -671,17 +669,17 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "7,3,0"
     And the object "IfcActuator/B" is at "6,1,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has its origin at the centre of its bounding box
     And the object "IfcActuator/D" has a vert at "13,4,-1" at map coordinates "26521.758,17228.35,-1000"
     And the object "IfcActuator/D" has a vert at "15,2,1" at map coordinates "28971.246,15814.136,1000"
     And the object "IfcActuator/E" is at "6,3,0"
     And the object "IfcActuator/F" is at "3,3,0"
-    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has its origin at the centre of its bounding box
     And the object "IfcActuator/G" has a vert at "15,6,-1" at map coordinates "27935.975,19677.841,-1000"
     And the object "IfcActuator/G" has a vert at "17,4,1" at map coordinates "30385.465,18263.627,1000"
     And the object "IfcActuator/H" is at "9,2,0"
     And the object "IfcActuator/I" is at "3,3,0"
-    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has its origin at the centre of its bounding box
     And the object "IfcActuator/J" has a vert at "11,3,-1" at map coordinates "24848.726,15744.786,-1000"
     And the object "IfcActuator/J" has a vert at "13,1,1" at map coordinates "27298.216,14330.573,1000"
     And the object "IfcActuator/K" is at "10,0,0"
@@ -704,17 +702,17 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/A" is at "5.985,4.71,0"
     And the object "IfcActuator/B" is at "5.5367,2.519,0"
     And the object "IfcActuator/C" is at "0,0,0"
-    And the object "IfcActuator/D" has its origin on a vertex
+    And the object "IfcActuator/D" has its origin at the centre of its bounding box
     And the object "IfcActuator/D" has a vert at "11.5218,7.2284,-1" at map coordinates "26521.758,17228.35,-1000"
     And the object "IfcActuator/D" has a vert at "13.9712,5.8141,1" at map coordinates "28971.246,15814.136,1000"
     And the object "IfcActuator/E" is at "5.0191,4.451,0"
     And the object "IfcActuator/F" is at "2.1213,3.674,0"
-    And the object "IfcActuator/G" has its origin on a vertex
+    And the object "IfcActuator/G" has its origin at the centre of its bounding box
     And the object "IfcActuator/G" has a vert at "12.936,9.6778,-1" at map coordinates "27935.975,19677.841,-1000"
     And the object "IfcActuator/G" has a vert at "15.3855,8.2636,1" at map coordinates "30385.465,18263.627,1000"
     And the object "IfcActuator/H" is at "8.1757,4.261,0"
     And the object "IfcActuator/I" is at "2.1213,3.674,0"
-    And the object "IfcActuator/J" has its origin on a vertex
+    And the object "IfcActuator/J" has its origin at the centre of its bounding box
     And the object "IfcActuator/J" has a vert at "9.8487,5.7448,-1" at map coordinates "24848.726,15744.786,-1000"
     And the object "IfcActuator/J" has a vert at "12.2982,4.3306,1" at map coordinates "27298.216,14330.573,1000"
     And the object "IfcActuator/K" is at "9.6593,2.588,0"
@@ -768,9 +766,9 @@ Scenario: Link IFC - from an empty Blender session - automatic false origin mode
     And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
     When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
     Then the object "Chunk" exists
-    And the object "Chunk" has a vertex at "-11,-2,0"
-    And the object "Chunk" has a vertex at "-4,-5,0"
-    And the object "Chunk" has a vertex at "4,0,0"
+    And the object "Chunk" has a vertex at "-12,-1,-1"
+    And the object "Chunk" has a vertex at "-5,-4,-1"
+    And the object "Chunk" has a vertex at "3,1,-1"
 
 Scenario: Link IFC - from an empty Blender session - manual false origin mode
     Given an empty Blender session
@@ -804,12 +802,12 @@ Scenario: Link IFC - from an empty Blender session - automatic false origin mode
     And I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-mapconversion-angle.ifc', use_cache=False)"
     Then the object "Col:IfcProject/geolocation.ifc:Chunk" exists
     And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" exists
-    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-11,-2,0"
-    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-4,-5,0"
-    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "4,0,0"
-    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "4.732,-3.268,0"
-    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "9.294,-9.366,0"
-    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "18.722,-9.036,0"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-12,-1,-1"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-5,-4,-1"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "3,1,-1"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "3.732,-2.268,-1"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "8.294,-8.366,-1"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "17.722,-8.036,-1"
 
 Scenario: Link IFC - from an empty Blender session - automatic false origin mode - two different false origins and project norths - project north is up because we start with geolocation-mapconversion-angle.ifc
     Given an empty Blender session
@@ -820,12 +818,12 @@ Scenario: Link IFC - from an empty Blender session - automatic false origin mode
     And I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
     Then the object "Col:IfcProject/geolocation.ifc:Chunk" exists
     And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" exists
-    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "-11,-2,0"
-    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "-4,-5,0"
-    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "4,0,0"
-    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-25.258,-8.768,0"
-    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-17.696,-7.866,0"
-    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-13.268,0.464,0"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "-12,-1,-1"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "-5,-4,-1"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "3,1,-1"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-26.258,-7.768,-1"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-18.696,-6.866,-1"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-14.268,1.464,-1"
 
 Scenario: Link IFC - from an empty Blender session - automatic false origin mode - three identical false origins but different project and map units
     Given an empty Blender session
