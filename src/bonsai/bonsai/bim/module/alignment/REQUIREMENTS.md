@@ -7,7 +7,17 @@ resolving them.
 
 ## Status and work plan (resume here)
 
-*Last updated 2026-10-14.* **2026-10-14, cant frame (branch `rab_cant_frame`, off `rab_infrastructure`,
+*Last updated 2026-10-14.* **2026-10-14, every fix PR merged; `rab_infrastructure` rebased:** #9927
+(deflection sampling), #9928 (Helmert heading), #9929 (degenerate segments), #9937 (Gauss-Kronrod),
+#9942 (cant frame), #9567, #9593 and #9505 are on `v0.9.0`. Upstream squash-merges, so the rebase drops
+their commits by hand; the branch's C++ is now exactly `v0.9.0`'s, and what remains is the alignment
+authoring work itself (Bonsai, the alignment API additions, their tests and these notes). #9927 needed
+two rebases: #9921 (taxonomy-level sweeps) rewrote `make_loft` too (resolved keeping both, with
+`section_points` built on `loop::to_polygon`, and its loft tests no longer set the removed
+`function-step-param`), then #9942 met it at one `override`. #9505 also fixed creating IFC2X3
+projects (no IfcSpatialElement there). The hashes below are from before this rebase.
+
+**2026-10-14, cant frame (branch `rab_cant_frame`, off `rab_infrastructure`,
 not pushed; needs a wrapper rebuild, done):** the cant frame mixed two conventions. A cant segment's
 position and parent curve are in (distance along, deviating elevation), but its Axis is (0, cos φ, sin φ)
 with y to the left and z up. The kernel put the slope of the deviating elevation into RefDirection's y,
