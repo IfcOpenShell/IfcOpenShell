@@ -14,18 +14,12 @@ SED:=sed -i
 VENV_ACTIVATE:=bin/activate
 
 ifeq ($(OS),Windows_NT)
-HOSTOS:=win
 PYTHON:=python
 VENV_ACTIVATE:=Scripts/activate
 else
 UNAME_S:=$(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-HOSTOS:=linux
-endif
 ifeq ($(UNAME_S),Darwin)
-HOSTOS:=macos
 PYTHON:=python3
-PATCH:=patch -d
 SED:=sed -i '' -e
 endif
 endif
