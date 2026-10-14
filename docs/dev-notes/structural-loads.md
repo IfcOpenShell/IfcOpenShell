@@ -396,8 +396,11 @@ where Bonsai's eighths would measure from the vertical.
   arm: its line of action dashed on to the foot of its moment arm, the arm from A with a square
   corner, labelled `M₁ = … CW, d₁ = …`, r from A to the force's point, and the angle φ between r
   and the line of action; their sum as a curved arrow round A. The viewport's font has no
-  turning arrows, so labels say CW and CCW. Its labels are scaled up, as the drawing is sized
-  to the distances, smaller than force diagrams.
+  turning arrows, so labels say CW and CCW.
+- **Forces to scale with the distances.** While moments are taken about a point, point forces are
+  drawn to one scale, the largest at 0.4 of the distance to the furthest loaded point, as the
+  report draws them, rather than each point's diagram two metres long, which dwarfs a short
+  beam. An explicit Force Scale still wins.
 - **Reports** add a "Moments about A" section per load case. Its diagram is tagged apart from
   A's own loads, and adds what the viewport shows around it: the members along the points,
   their names, and each force at its point, scaled to the distances. The steps find each arm
