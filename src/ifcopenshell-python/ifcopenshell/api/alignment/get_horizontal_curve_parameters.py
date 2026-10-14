@@ -82,6 +82,13 @@ class HorizontalCurveParameters(NamedTuple):
     """middle ordinate M = R (1 - cos(delta/2)), from the midpoint of the long chord to the midpoint of
     a circular curve"""
 
+    start_radius: Optional[float] = None
+    """R1, the radius at the start of a spiral, always positive and infinite (math.inf) where the spiral
+    starts on a straight. None for straights and circular curves, which give radius instead."""
+
+    end_radius: Optional[float] = None
+    """R2, the radius at the end of a spiral, as for start_radius"""
+
 
 def get_horizontal_curve_parameters(segment: entity_instance) -> HorizontalCurveParameters:
     """
@@ -90,8 +97,8 @@ def get_horizontal_curve_parameters(segment: entity_instance) -> HorizontalCurve
     its design parameters.
 
     Radius, tangent, external and middle ordinate are only defined for CIRCULARARC segments. For
-    spirals, the start, end, P.I., center (normals intersection), delta, length, long chord and the
-    two tangents T1 and T2 are given.
+    spirals, the start, end, P.I., center (normals intersection), delta, length, long chord, the two
+    tangents T1 and T2 and the radii R1 and R2 at the spiral's ends are given.
 
     :param segment: An IfcAlignmentSegment whose DesignParameters is an IfcAlignmentHorizontalSegment,
         or the IfcAlignmentHorizontalSegment itself
@@ -168,6 +175,11 @@ def get_horizontal_curve_parameters(segment: entity_instance) -> HorizontalCurve
             parameters["tangent"] = radius * math.tan(half)
             parameters["external"] = radius * (1.0 / math.cos(half) - 1.0)
         return HorizontalCurveParameters(**parameters)
+
+    # A spiral's radius at each end, infinite where it meets a straight
+    end_radius = design_parameters.EndRadiusOfCurvature or 0.0
+    parameters["start_radius"] = abs(start_radius) if start_radius != 0.0 else math.inf
+    parameters["end_radius"] = abs(end_radius) if end_radius != 0.0 else math.inf
 
     # A spiral has no single center; the start and end normals still meet at a useful reference point
     if abs(cross) > 1e-10:
