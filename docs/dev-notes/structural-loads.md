@@ -454,6 +454,25 @@ where Bonsai's eighths would measure from the vertical.
 - **A force on the boundary of two eighths**, as at 45 degrees, keeps the eighth it was named in
   when its name is generated again.
 
+## 22. Where A must be
+
+- **A's place as the unknown.** Edit Moment Centre has padlocks on a force's moment arm d, on the
+  angle of r (φ and α with it) and on r. One unlocked is the unknown a kept ΣM_A finds, stored on
+  the load case as `MomentCentreUnknown` (its kind and the applied load it is from), one unknown
+  in all with the forces' padlocks.
+- **Solved along a path** (`tool.Structural.solve_centre_position`): moving A changes every
+  force's moment, as all are taken about it, but about A they sum to the sum about the origin
+  less A crossed with the resultant, so the sum is linear in where A is. d slides A along the arm,
+  its foot kept on the line of action; r slides it along r; the angle swings it round the force's
+  point, r kept, to the nearer of the two places that serve.
+- **Kept** as a force's unknown is: Edit Resultant Moment moves A as values are typed, and back
+  on cancelling; editing a force moves it on confirming, not in Edit Load's preview, which would
+  have to put it back on cancelling too.
+- **Drawn** with the unknown's labels marked found, and the triangle's third side, s along the line
+  of action from the force's point to the arm's foot. Reports say A was placed for the kept
+  moment, with one force by its arm, r or angle from the moment; with Detailed Steps, where r's
+  run and rise come from, and s = r cos φ with the sides checked.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
