@@ -110,8 +110,10 @@ Editing with PI markers
 2. Edit the markers:
 
    - **Move** a marker by dragging it. Moving the start or end point moves the ends of the alignment.
-   - Use **Move with Distance/Angle** to place the selected marker with the same typed input as the
-     draw tool, measured from the neighbouring PI.
+   - Use **Move with Distance/Angle** to move the selected marker from where it is, with the same
+     typed input as the draw tool: the distance to move, and the direction as an angle
+     counter-clockwise from east or as a bearing. For example, a distance of 5 at an angle of 90
+     moves the marker 5 north.
    - Click **Insert PI** to add a PI halfway along the tangent after the selected marker, or
      **Delete PI** to remove the selected PI. Its neighbours are rejoined when you apply.
    - Change a PI's curve settings as described in `Adding curves at PIs`_.
