@@ -32,11 +32,11 @@ async function main() {
   try {
     show('step-1', `Empty ${model.schema()} file`);
 
-    const project = model.create('IfcProject', {
+    const project = model.createEntity('IfcProject', {
       GlobalId: newGuid(),
       Name: 'Tutorial project',
     });
-    const wall = model.create('IfcWall', {
+    const wall = model.createEntity('IfcWall', {
       GlobalId: newGuid(),
       Name: 'Tutorial wall',
     });

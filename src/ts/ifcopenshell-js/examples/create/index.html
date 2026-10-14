@@ -40,11 +40,11 @@ const model = new ifcopenshell.File('IFC4');</code></pre>
         </section>
         <section class="lesson-step" data-step="2">
           <h2>2. Create entities</h2>
-          <pre class="lesson-code"><code>const project = model.create('IfcProject', {
+          <pre class="lesson-code"><code>const project = model.createEntity('IfcProject', {
   GlobalId: newGuid(),
   Name: 'Tutorial project',
 });
-const wall = model.create('IfcWall', {
+const wall = model.createEntity('IfcWall', {
   GlobalId: newGuid(),
   Name: 'Tutorial wall',
 });</code></pre>

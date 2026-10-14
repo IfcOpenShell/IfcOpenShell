@@ -9,7 +9,7 @@ and open the hub at `/ifcopenshell-js/examples/`.
 | **1** | [`parse/`](./parse/) | Schema plugin, `open`, `byType` |
 | **1b** | [`stream/`](./stream/) | Read `FILE_SCHEMA` before loading a schema plugin |
 | **2** | [`geom/`](./geom/) | `geom.Settings` and `geom.Iterator` |
-| **3** | [`create/`](./create/) | `new File` and `create()` |
+| **3** | [`create/`](./create/) | `new File` and `createEntity` |
 | **4** | [`full/`](./full/) | Edit an attribute, then tessellate |
 | **5** | [`viewer-threejs/`](./viewer-threejs/) | Three.js |
 | **6** | [`viewer-babylon/`](./viewer-babylon/) | Babylon.js |
