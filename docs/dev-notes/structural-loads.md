@@ -436,6 +436,24 @@ where Bonsai's eighths would measure from the vertical.
 - **A Blender gotcha:** an update callback must take exactly two arguments, even with defaults
   for more; otherwise Blender declines to register the property, reported only at startup.
 
+## 21. A resultant moment
+
+- **Edit Resultant Moment**, from the curved arrow at A or Applied Loads, sets ΣM_A and finds the
+  one force value unlocked, with the same padlocks as Edit Resultant: a moment is one equation,
+  so one value. An unknown magnitude is linear, linked magnitudes following by their ratios; an
+  unknown direction has two answers, and the one nearer the force's own is taken
+  (`tool.Structural.solve_moment_unknown`). ΣM_A has a padlock too: unlocked, it is found from
+  the forces.
+- **Kept**, as a locked resultant is: the load case's BBIM_Structural keeps `ResultantMoment`, and
+  editing a force or moving A solves the unknown again, in the preview as values are typed and on
+  confirming. A kept moment's label at A shows a padlock.
+- **Reports** find the unknown after the sum: the moment it must make, then its magnitude from its
+  arm, or its direction from where it acts.
+- **Components clicked**, their arrows or values, open Edit Load on its Components tab with that
+  component ready to type.
+- **A force on the boundary of two eighths**, as at 45 degrees, keeps the eighth it was named in
+  when its name is generated again.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
