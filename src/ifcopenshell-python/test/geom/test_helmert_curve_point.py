@@ -35,5 +35,5 @@ def test_position_is_the_integral_of_the_heading(a0, a1, a2):
     x = h / 3 * sum(w * math.cos(theta(a0, a1, a2, i * h)) for i, w in enumerate(weights))
     y = h / 3 * sum(w * math.sin(theta(a0, a1, a2, i * h)) for i, w in enumerate(weights))
     point = ifcopenshell_wrapper.helmert_curve_point(a0, a1, a2, s)
-    assert point[0] == pytest.approx(x, abs=1e-6)
-    assert point[1] == pytest.approx(y, abs=1e-6)
+    assert point[0] == pytest.approx(x, abs=1e-9)
+    assert point[1] == pytest.approx(y, abs=1e-9)

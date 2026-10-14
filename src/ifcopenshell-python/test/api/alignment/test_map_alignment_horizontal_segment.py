@@ -1227,7 +1227,7 @@ def _HelmertCurve_100_0_300_1000_1_Meter(file):
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (-0.010524325271366292, 0.4857459946089353)
+        (-0.010524348550173035, 0.48574588124651097)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
         (0.9992439224552503, -0.03887908738956891)
@@ -1275,7 +1275,7 @@ def _HelmertCurve_100_0__300__1000_1_Meter(file):
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (-0.010524325271366292, -0.4857459946089353)
+        (-0.010524348550173035, -0.48574588124651097)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
         (0.9992439224552503, 0.03887908738956891)
@@ -1323,7 +1323,7 @@ def _HelmertCurve_100_0_300_inf_1_Meter(file):
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (-0.011564344091314016, 0.6939306732244495)
+        (-0.011564238478118383, 0.6939305108314464)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
         (0.9984571869987445, -0.05552698200473387)
@@ -1371,7 +1371,7 @@ def _HelmertCurve_100_0__300__inf_1_Meter(file):
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (-0.011564344091314016, -0.6939306732244495)
+        (-0.011564238478118383, -0.6939305108314464)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
         (0.9984571869987445, 0.05552698200473387)
@@ -1419,7 +1419,7 @@ def _HelmertCurve_100_0_1000_300_1_Meter(file):
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (0.010531310422979234, -0.48597988512791773)
+        (0.010531212884270074, -0.4859797773332513)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
         (0.9992439224552503, 0.038879087389568884)
@@ -1467,7 +1467,7 @@ def _HelmertCurve_100_0__1000__300_1_Meter(file):
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (0.010531310422979234, 0.48597988512791773)
+        (0.010531212884270074, 0.4859797773332513)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
         (0.9992439224552503, -0.038879087389568884)
@@ -1515,7 +1515,7 @@ def _HelmertCurve_100_0_inf_300_1_Meter(file):
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (0.01157224746228433, -0.6942979144687005)
+        (0.01157252775554056, -0.6942977411122)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
         (0.9984571869987445, 0.05552698200473389)
@@ -1563,7 +1563,7 @@ def _HelmertCurve_100_0__inf__300_1_Meter(file):
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (0.01157224746228433, 0.6942979144687005)
+        (0.01157252775554056, 0.6942977411122)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
         (0.9984571869987445, -0.05552698200473389)

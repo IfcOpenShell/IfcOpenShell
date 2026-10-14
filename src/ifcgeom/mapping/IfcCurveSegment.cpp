@@ -25,11 +25,13 @@ using namespace ifcopenshell::geom;
 
 #include "../profile_helper.h"
 
-#include <boost/math/quadrature/trapezoidal.hpp>
+#include <boost/math/quadrature/gauss_kronrod.hpp>
 #include <boost/math/tools/roots.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/vector.hpp>
+#include <complex>
 #include <numeric>
+#include <tuple>
 
 namespace {
 // @todo: rb is there a common math library these functions can be moved to?
@@ -43,6 +45,36 @@ enum segment_type_t {
 
 // @todo use std::numbers::pi when upgrading to C++ 20
 static const double PI = boost::math::constants::pi<double>();
+
+// Curve integrands are smooth, so adaptive Gauss-Kronrod quadrature reaches this relative tolerance in a few
+// evaluations of each
+static const double QUADRATURE_TOLERANCE = 1.0e-12;
+static const unsigned QUADRATURE_MAX_DEPTH = 15;
+
+// Integrates f from 0 to b as b times the integral of f(b t) from 0 to 1. Boost compares each interval's error
+// estimate, which isn't scaled by the interval's width, with a tolerance that is, so a short interval of integration
+// would be subdivided to the maximum depth.
+template <typename F>
+auto integrate_from_zero(const F& f, double b) -> decltype(f(0.0)) {
+    using result_type = decltype(f(0.0));
+    if (b == 0.0) {
+        return result_type(0.0);
+    }
+    return b * boost::math::quadrature::gauss_kronrod<double, 15>::integrate(
+        [&f, b](double t) { return f(b * t); }, 0.0, 1.0, QUADRATURE_MAX_DEPTH, QUADRATURE_TOLERANCE);
+}
+
+// Integrates a curve's unit tangent (fnX, fnY) from 0 to b, giving its point at b. The components are integrated
+// as one complex value so the tolerance is relative to the chord, not to each component, which can be zero.
+std::pair<double, double> integrate_tangent(const std::function<double(double)>& fnX, const std::function<double(double)>& fnY, double b) {
+    auto z = integrate_from_zero([&fnX, &fnY](double t) { return std::complex<double>(fnX(t), fnY(t)); }, b);
+    return {z.real(), z.imag()};
+}
+
+// Integrates the length element of a curve, which is at least 1, from 0 to b
+double integrate_length(const std::function<double(double)>& fs, double b) {
+    return integrate_from_zero(fs, b);
+}
 
 double translate_to_length_measure(const IfcSchema::IfcCurve& crv, double param_value) {
     if (std::abs(param_value) < 1.e-7) {
@@ -405,8 +437,7 @@ class curve_segment_evaluator {
             if (start_) {
                 // the spiral doesn't start at the inflection point
                 // compute the point where it starts
-                pcStartX = boost::math::quadrature::trapezoidal(fnX, 0.0, start_ / s);
-                pcStartY = boost::math::quadrature::trapezoidal(fnY, 0.0, start_ / s);
+                std::tie(pcStartX, pcStartY) = integrate_tangent(fnX, fnY, start_ / s);
 
                 // compute the slope of the spiral at the start point
                 pcStartDx = s ? fnX(start_ / s) / s : 1.0;
@@ -437,7 +468,7 @@ class curve_segment_evaluator {
                      auto fs = [df](double x) -> double {
                          return sqrt(pow(df(x), 2) + 1);
                      };
-                     auto s = boost::math::quadrature::trapezoidal(fs, 0.0, x);
+                     auto s = integrate_length(fs, x);
                      return s;
                  };
             }
@@ -450,8 +481,8 @@ class curve_segment_evaluator {
                    auto b = s ? u / s : 0.0;
 
                    // point on parent curve
-                   auto x = boost::math::quadrature::trapezoidal(fnX, 0.0, b);
-                   auto y = boost::math::quadrature::trapezoidal(fnY, 0.0, b);
+                   double x, y;
+                   std::tie(x, y) = integrate_tangent(fnX, fnY, b);
                    auto dx = s ? fnX(b) / s : 1.0;
                    auto dy = s ? fnY(b) / s : 0.0;
 
@@ -1144,7 +1175,7 @@ class curve_segment_evaluator {
                 auto fs = [df](double x) -> double {
                     return sqrt(pow(df(x), 2) + 1);
                 };
-                auto s = boost::math::quadrature::trapezoidal(fs, 0.0, x);
+                auto s = integrate_length(fs, x);
                 return s;
             };
             // There isn't a closed form solution to get x that corresponds to a distance along the curve, u
