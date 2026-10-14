@@ -1897,12 +1897,18 @@ class BIMPolylineProperties(PropertyGroup):
     snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
     insertion_polyline: bpy.props.CollectionProperty(type=Polyline)
     measurement_polyline: bpy.props.CollectionProperty(type=Polyline)
+    rectangle_mode: bpy.props.BoolProperty(
+        name="Rectangle Mode",
+        description="Draw a rectangle defined by two opposite corners instead of a free form polyline",
+        default=False,
+    )
 
     if TYPE_CHECKING:
         snap_mouse_point: bpy.types.bpy_prop_collection_idprop[SnapMousePoint]
         snap_mouse_ref: bpy.types.bpy_prop_collection_idprop[SnapMousePoint]
         insertion_polyline: bpy.types.bpy_prop_collection_idprop[Polyline]
         measurement_polyline: bpy.types.bpy_prop_collection_idprop[Polyline]
+        rectangle_mode: bool
 
 
 class ProductPreviewItem(PropertyGroup):
