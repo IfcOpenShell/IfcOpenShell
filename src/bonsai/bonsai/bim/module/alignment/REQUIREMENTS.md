@@ -54,7 +54,8 @@ and feet. The guide's LinearTransition, CosineCurve and SineCurve cant reference
 regenerating with this build; its Chapter 4 (sections 4.4, 4.7 and 4.8) already has the correct
 slopes.
 
-**Open (2026-10-14), needs the user's decision:** with the correct slope, 10 alignment tests fail at
+**~~Open (2026-10-14), needs the user's decision~~ -- decided 2026-10-14: accept the documented frame
+(option 1, e1d9d6ef3), the linear transition cross slope checks allow 5e-7:** with the correct slope, 10 alignment tests failed at
 1e-9 for LINEARTRANSITION segments whose cant decreases (exits, both rails canted): in
 `test_cant_cross_slope` the cross slope at the start and middle is off by about 7e-8, and in
 `test_segment_end_point` the end Axis is 5.6e-8 off level. The cause is the cant frame itself, which
