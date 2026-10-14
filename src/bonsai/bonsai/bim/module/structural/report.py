@@ -1290,15 +1290,16 @@ def write_diagram(
                 continue
             direction = (tip - tail) / length
             across = np.array((-direction[1], direction[0]))
-            head = min(size * shape["spacing"] * 0.25, length * 0.5)
+            # Its head scaled with its shaft, as in the viewport.
+            head = min(size * shape["spacing"] * shape.get("thickness", 1.0) * 0.25, length * 0.5)
             base = tip - direction * head
-            stroke = 3 if shape["spacing"] > 0.2 else 2
+            stroke = (3 if shape["spacing"] > 0.2 else 2) * shape.get("thickness", 1.0)
             corners = " ".join(
                 f"{x:.1f},{y:.1f}" for x, y in (tip, base + across * head * 0.4, base - across * head * 0.4)
             )
             elements.append(
                 f'<line x1="{tail[0]:.1f}" y1="{tail[1]:.1f}" x2="{base[0]:.1f}" y2="{base[1]:.1f}" '
-                f'stroke="{color}" stroke-width="{stroke}"/>'
+                f'stroke="{color}" stroke-width="{stroke:.2f}"/>'
             )
             elements.append(f'<polygon points="{corners}" fill="{color}"/>')
             segments.append((tail, tip))
