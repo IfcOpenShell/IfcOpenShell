@@ -24,6 +24,7 @@ import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
+from ifcopenshell.api.alignment._start_direction import _to_start_direction
 
 
 def _cant_cross_slope(placement: np.array) -> tuple[float, float]:
@@ -65,7 +66,7 @@ def _update_zero_length_segment_placement(
             zero_length_segment.Placement.Axis.DirectionRatios = (0.0, cos_phi, sin_phi)
     elif zero_length_segment.DesignParameters.is_a("IfcAlignmentHorizontalSegment"):
         zero_length_segment.DesignParameters.StartPoint.Coordinates = (x, y)
-        zero_length_segment.DesignParameters.StartDirection = math.atan2(Rdy, Rdx)
+        zero_length_segment.DesignParameters.StartDirection = _to_start_direction(file, math.atan2(Rdy, Rdx))
     elif zero_length_segment.DesignParameters.is_a("IfcAlignmentVerticalSegment"):
         zero_length_segment.DesignParameters.StartDistAlong = x
         zero_length_segment.DesignParameters.StartHeight = y
