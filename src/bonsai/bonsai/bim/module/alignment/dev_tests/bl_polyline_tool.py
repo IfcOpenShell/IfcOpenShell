@@ -73,10 +73,11 @@ try:
     )
     ifcopenshell.api.geometry.assign_representation(ifc, c, rep)
     check(A.get_polyline_points(c)[0][2] == (120.0, -10.0, 7.0), "indexed read")
+    plist_id = plist.id()  # the point list is removed by the edit, and a removed entity can't be read
     A.set_polyline_points(c, [(0, -50, 5), (80, -60, 6), (120, -10, 9), (150, 0, 9)], 3)
     check(A.get_polyline_curve(c).is_a("IfcIndexedPolyCurve"), "indexed curve type not kept")
     check(A.get_polyline_points(c)[0][3] == (150.0, 0.0, 9.0), "indexed update")
-    check(plist.id() not in [e.id() for e in ifc.by_type("IfcCartesianPointList3D")], "old point list not removed")
+    check(plist_id not in [e.id() for e in ifc.by_type("IfcCartesianPointList3D")], "old point list not removed")
 
     # line-index segments are read in order; arc segments are refused
     d = ifc.createIfcAlignment(GlobalId=ifcopenshell.guid.new(), Name="Seg")
