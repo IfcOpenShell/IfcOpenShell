@@ -42,6 +42,28 @@ Debug/Release plug-in loading; PR open). Eleven commits on top, all pushed:
 - `9668cd87a` the alignment tests' tolerances that allowed for the trapezoidal rule are tightened
   to 1e-9 m.
 
+**2026-10-14, on branch `rab_cant_slope` (off `rab_infrastructure`, not pushed):** `60bb2dd2b` the cant
+frame's slope along the track is the derivative of its deviating elevation for IfcClothoid,
+IfcCosineSpiral and IfcSineSpiral. 42c49af4e3 (2025-03-29) rescaled every cant parent curve's
+deviating elevation from L times to L squared times its curvature law, but updated the slope only
+for the polynomial spirals, so these three were L times too small (up to 1.6e-3 rad over the guide's
+100 m cases; first released in bonsai-0.8.2). Positions are unchanged; only the frame's RefDirection
+(and Y) along the track is. `test/geom/test_cant_slope.py` pins the RefDirection angle to the
+arctangent of a central difference of the deviating elevation for every cant transition, in metres
+and feet. The guide's LinearTransition, CosineCurve and SineCurve cant reference CSVs need
+regenerating with this build; its Chapter 4 (sections 4.4, 4.7 and 4.8) already has the correct
+slopes.
+
+**Open (2026-10-14), needs the user's decision:** with the correct slope, 10 alignment tests fail at
+1e-9 for LINEARTRANSITION segments whose cant decreases (exits, both rails canted): in
+`test_cant_cross_slope` the cross slope at the start and middle is off by about 7e-8, and in
+`test_segment_end_point` the end Axis is 5.6e-8 off level. The cause is the cant frame itself, which
+the guide's Chapter 4 documents: RefDir carries the slope but Axis stays (0, cos, sin), so with a
+non-zero slope the frame isn't orthonormal and the placement rotation tips the Axis along the track
+(by about 7.5e-5 here). Before the fix the clothoid's slope was 100 times too small, so this didn't
+show; cosine and sine have zero slope at their ends. Either accept it (loosen those cases to about
+1e-7 and say why) or orthonormalize the cant frame in the kernel, which would change Chapter 4.
+
 The four PR commits are cherry-picked here, so they drop out when `rab_infrastructure` is rebased
 onto `v0.9.0` after the PRs merge.
 
