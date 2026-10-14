@@ -111,6 +111,20 @@ try:
     )
     print("1 ok")
 
+    # 1b. every curve turns the other way (the PIs mirrored about the x axis): each arc keeps its cant
+    #     segment, with its rails' cant swapped; mirroring back restores it
+    before = arcs(c)
+    check(any(left != right for _, left, right in before), "no arc whose rails differ to mirror")
+    ok, msg = op_mod._generate_alignment_segments(bpy.context, alignment, [(x, -y) for x, y in H], R1)
+    check(ok, msg)
+    in_step(h, c)
+    check([s.GlobalId for s in real(c)] == c0, "mirror cant guids")
+    check(arcs(c) == [(g, right, left) for g, left, right in before], f"not mirrored: {before} -> {arcs(c)}")
+    ok, msg = op_mod._generate_alignment_segments(bpy.context, alignment, H, R1)
+    check(ok, msg)
+    check(arcs(c) == before, f"mirroring back: {before} -> {arcs(c)}")
+    print("1b ok")
+
     # 2. delete PI 1: its 4 cant segments go, the rest are kept, the tuned arc too
     ok, msg = op_mod._generate_alignment_segments(bpy.context, alignment, [H[0], H[2], H[3], H[4]], [R[1], R[2]])
     check(ok, msg)
