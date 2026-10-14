@@ -914,12 +914,20 @@ def solve_horizontal_alignment_by_pi_method(
 
         if entry_length == 0.0 and exit_length == 0.0:
             # tangent runs connect directly to the circular curve
+            if delta == 0.0 and radius != 0.0:
+                raise ValueError(
+                    f"PI {curve_index + 1}: deflection angle is zero; a curve cannot be fitted where the "
+                    "alignment goes straight on"
+                )
             tangent = abs(radius * math.tan(delta / 2))
             tangent_out_this_curve = tangent  # symmetric: PI-to-PC equals PI-to-PT for a plain arc
 
             lc = abs(radius * delta)
 
-            radius *= delta / abs(delta)
+            # the curve turns the way the alignment does; a sharp PI where it goes straight on (an inserted
+            # PI not moved yet) has no curve, and just splits the straight
+            if delta != 0.0:
+                radius *= delta / abs(delta)
 
             xPC = xPI - tangent * math.cos(angleBT)
             yPC = yPI - tangent * math.sin(angleBT)

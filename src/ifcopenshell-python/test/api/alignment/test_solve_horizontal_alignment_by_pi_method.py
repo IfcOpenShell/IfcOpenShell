@@ -369,3 +369,22 @@ def test_solve_viennese_bend_with_cant_factor():
         assert end_position[1] == pytest.approx(start_position[1], abs=1.0e-5)
         direction_gap = math.atan2(math.sin(end_direction - start_direction), math.cos(end_direction - start_direction))
         assert direction_gap == pytest.approx(0.0, abs=1.0e-9)
+
+
+def test_solve_sharp_pi_on_a_straight():
+    """A sharp PI (no curve) where the alignment goes straight on splits the straight there: an inserted
+    PI that hasn't been moved yet. It used to divide by zero working out which way the PI turns."""
+    hpoints = [(0.0, 0.0), (400.0, 0.0), (800.0, 0.0), (1400.0, 600.0)]
+    definitions = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, [0.0, 300.0])
+    assert [d.predefined_type for d in definitions] == ["LINE", "LINE", "CIRCULARARC", "LINE"]
+    first, second = definitions[0], definitions[1]
+    assert first.segment_length == pytest.approx(400.0)
+    assert second.start_point == pytest.approx((400.0, 0.0))
+    assert first.start_direction == pytest.approx(second.start_direction)
+
+
+def test_solve_curve_on_a_straight_is_an_error():
+    """A curve can't be fitted at a PI where the alignment goes straight on."""
+    hpoints = [(0.0, 0.0), (400.0, 0.0), (800.0, 0.0), (1400.0, 600.0)]
+    with pytest.raises(ValueError, match=r"^PI 1: .*deflection angle is zero"):
+        ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, [200.0, 300.0])
