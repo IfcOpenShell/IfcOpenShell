@@ -1762,26 +1762,27 @@ def the_object_name_has_a_vert_at_location_relative_to_the_model_origin_at_map_c
     assert_vert_at_map_coordinates(obj, vert, coordinates)
 
 
-@then(parsers.parse('the object "{name}" has its origin on a vertex'))
-def the_object_name_has_its_origin_on_a_vertex(name):
-    """Far away geometry is shifted onto one of its own verts, which keeps the
-    origin on the geometry and the local coordinates small enough to keep their
-    precision. Which vert that is does not matter."""
+@then(parsers.parse('the object "{name}" has its origin at the centre of its bounding box'))
+def the_object_name_has_its_origin_at_the_centre_of_its_bounding_box(name):
+    """Far away geometry is shifted onto its bounding box centre, which keeps the
+    local coordinates as small as they can be to keep their precision."""
     obj = the_object_name_exists(name)
     mesh = obj.data
     assert isinstance(mesh, bpy.types.Mesh) and len(mesh.vertices), f"Object {obj.name} has no mesh"
-    nearest = min(v.co.length for v in mesh.vertices)
-    assert nearest < 0.001, f"Object origin is {nearest} away from its nearest vert"
+    coords = np.array([v.co for v in mesh.vertices])
+    centre = (coords.min(axis=0) + coords.max(axis=0)) / 2
+    assert np.linalg.norm(centre) < 0.001, f"Object origin is {centre} away from its bounding box centre"
 
 
-@then("the model origin is on an object vertex")
-def the_model_origin_is_on_an_object_vertex():
+@then("the model origin is at the centre of an object's bounding box")
+def the_model_origin_is_at_the_centre_of_an_objects_bounding_box():
     for obj in bpy.data.objects:
         if not isinstance(obj.data, bpy.types.Mesh):
             continue
-        if any(v.length < 0.001 for v in get_world_verts(obj)):
+        coords = np.array(get_world_verts(obj))
+        if np.linalg.norm((coords.min(axis=0) + coords.max(axis=0)) / 2) < 0.001:
             return
-    assert False, "No object has a vert at the model origin"
+    assert False, "No object has its bounding box centre at the model origin"
 
 
 @then(parsers.parse('the object "{name}" has no scale'))

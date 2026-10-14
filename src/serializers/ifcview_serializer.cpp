@@ -59,12 +59,8 @@ void IfcViewSerializer::write(const ifcopenshell::geom::triangulation_element* o
     info.type = o->type();
     elements_.push_back(std::move(info));
 
-    // Zero offset = no vertex rebasing (see the header note).  The placement
-    // is left untouched, so local coords + placement stay consistent; only the
-    // float-precision headroom differs from the streamer bake.
     std::optional<StreamedMesh> new_mesh;
-    const UniqueMesh unique_mesh = mesh_registry_.resolve(
-        kSessionModelId, *o, Eigen::Vector3d::Zero(), new_mesh);
+    const UniqueMesh unique_mesh = mesh_registry_.resolve(kSessionModelId, *o, new_mesh);
     if (new_mesh) serializer_.onMeshReady(*new_mesh);
 
     serializer_.onInstanceReady(makeStreamedInstance(

@@ -3173,6 +3173,7 @@ class Model(bonsai.core.tool.Model):
         tool.Geometry.record_object_materials(obj)
 
         matrix = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=True)
+        matrix = tool.Loader.apply_cartesian_point_offset(obj.data, matrix)
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix)
         tool.Geometry.record_object_position(obj)
 

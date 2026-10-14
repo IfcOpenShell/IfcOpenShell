@@ -37,7 +37,6 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 import numpy as np
 import numpy.typing as npt
-from ifcopenshell.util.shape_builder import np_to_4d
 from mathutils import Matrix, Vector
 from mathutils.kdtree import KDTree
 
@@ -693,6 +692,11 @@ class Loader(bonsai.core.tool.Loader):
             mesh.color_attributes.active_color_index = 0
 
     @classmethod
+    def get_rebase_offset(cls, geometry: W.triangulation) -> npt.NDArray[np.float64]:
+        """The shift the iterator subtracted from the geometry's vertices, zero when none."""
+        return np.array(geometry.rebase_offset)
+
+    @classmethod
     def is_point_far_away(
         cls, point: Union[ifcopenshell.entity_instance, npt.NDArray[np.float64]], is_meters: bool = True
     ) -> bool:
@@ -720,7 +724,7 @@ class Loader(bonsai.core.tool.Loader):
     @classmethod
     def get_rebased_vertices(cls, geometry: W.triangulation) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         """The geometry's vertices and the offset they are stored relative to."""
-        return cls.shift_far_vertices(ifcopenshell.util.shape.get_vertices(geometry))
+        return ifcopenshell.util.shape.get_vertices(geometry), cls.get_rebase_offset(geometry)
 
     @classmethod
     def record_cartesian_point_offset(cls, data: bpy.types.ID, offset: npt.NDArray[np.float64]) -> None:
@@ -755,6 +759,9 @@ class Loader(bonsai.core.tool.Loader):
             # Wire intersection checks is prohibitively slow on advanced breps. See bug #5999.
             settings.set("no-wire-intersection-check", True)
             # settings.set("triangulation-type", ifcopenshell.ifcopenshell_wrapper.POLYHEDRON_WITHOUT_HOLES)
+            # Vertices further than this from their own origin are shifted onto their bounding
+            # box centre and the shift is folded into the shape's placement.
+            settings.set("vertex-rebase-distance", cls.settings.distance_limit)
             if is_gross:
                 settings.set("disable-opening-subtractions", True)
             results.append(settings)
@@ -977,8 +984,9 @@ class Loader(bonsai.core.tool.Loader):
             if not shape:
                 continue
             mat = ifcopenshell.util.shape.get_shape_matrix(shape)
-            verts = ifcopenshell.util.shape.get_vertices(shape.geometry)
-            point = (mat @ np_to_4d(verts[0]))[:3]
+            # The mesh frame's origin: the bounding box centre the iterator rebased far
+            # geometry onto, otherwise the placement.
+            point = mat[:3, 3]
             if cls.is_point_far_away(point, is_meters=True):
                 # Arbitrary origins should be to the nearest millimeter.
                 # Anything more precise is just ridiculous from a practical surveying perspective.
@@ -1033,7 +1041,8 @@ class Loader(bonsai.core.tool.Loader):
     @classmethod
     def apply_blender_offset_to_matrix_world(cls, obj: bpy.types.Object, matrix: np.ndarray) -> Matrix:
         """
-        :param matrix: 4x4 numpy matrix.
+        :param matrix: 4x4 numpy matrix of the object's mesh frame in IFC world coordinates,
+            i.e. the shape matrix, or the placement passed through apply_cartesian_point_offset.
         """
         # Shouldn't mutate original matrix as we return a different object anyway.
         M_TRANSLATION = (slice(0, 3), 3)
@@ -1051,10 +1060,6 @@ class Loader(bonsai.core.tool.Loader):
             oprops.blender_offset_type = "CARTESIAN_POINT"
             if cartesian_point_offset := obj.data.get("cartesian_point_offset", None):
                 oprops.cartesian_point_offset = cartesian_point_offset
-                matrix = matrix.copy()
-                offset_xyz = list(map(float, cartesian_point_offset.split(","))) + [1.0]
-                offset_xyz = matrix @ offset_xyz
-                matrix[M_TRANSLATION] = offset_xyz[:3]
 
         props = tool.Georeference.get_georeference_props()
         if props.has_blender_offset:
@@ -1347,34 +1352,38 @@ class Loader(bonsai.core.tool.Loader):
             return polyline
 
         item = None
+        offset = None
         for item_data, item_style in zip(rep_items, item_styles):
             item = item_data["item"]
 
             polyline = new_polyline(item_style)
             matrix = item_data["matrix"]
-            matrix[0][3] *= unit_scale
-            matrix[1][3] *= unit_scale
-            matrix[2][3] *= unit_scale
+            matrix[:3, 3] *= unit_scale
+            matrix = native_data["matrix"] @ matrix
 
             # TODO: start param, and end param
             geometry = tool.Loader.create_generic_shape(item.Directrix)
             if not geometry:
                 continue
-            e = geometry.edges
-            v = geometry.verts
-            vertices = [list(matrix @ [v[i], v[i + 1], v[i + 2], 1]) for i in range(0, len(v), 3)]
-            edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
+            verts, rebase_offset = tool.Loader.get_rebased_vertices(geometry)
+            # The curve stores its points relative to the first directrix's pivot, in the element's frame.
+            pivot = matrix[:3, :3] @ rebase_offset
+            if offset is None:
+                offset = pivot
+            vertices = (verts @ matrix[:3, :3].T + matrix[:3, 3] + (pivot - offset)).tolist()
+            edges = ifcopenshell.util.shape.get_edges(geometry).tolist()
             v2 = None
             for edge in edges:
                 v1 = vertices[edge[0]]
                 if v1 != v2:
                     polyline = new_polyline(item_style)
-                    polyline.points[-1].co = native_data["matrix"] @ Vector(v1)
+                    polyline.points[-1].co = (*v1, 1.0)
                 v2 = vertices[edge[1]]
                 polyline.points.add(1)
-                polyline.points[-1].co = native_data["matrix"] @ Vector(v2)
+                polyline.points[-1].co = (*v2, 1.0)
 
         assert item is not None
+        tool.Loader.record_cartesian_point_offset(curve, np.zeros(3) if offset is None else offset)
         curve.bevel_depth = unit_scale * item.Radius
         thickness = None
         if (inner_radius := item.InnerRadius) and (thickness := max(item.Radius - inner_radius, 0)):
