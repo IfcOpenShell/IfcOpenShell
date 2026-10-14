@@ -3781,14 +3781,15 @@ def _refresh_vertical_profile_view(context, alignment):
     A no-op if the profile view isn't currently open.
     """
     dec = alignment_decorator.VerticalProfileDecorator
-    if not dec.is_installed:
+    area = dec.live_area()
+    if area is None:
         return
     dec._compute_profile(alignment)
-    space = next((s for s in dec.profile_area.spaces if s.type == "VIEW_3D"), None)
+    space = next((s for s in area.spaces if s.type == "VIEW_3D"), None)
     if space is not None:
-        dec.fit_view(space, area_width=dec.profile_area.width, area_height=dec.profile_area.height)
+        dec.fit_view(space, area_width=area.width, area_height=area.height)
     _sync_profile_visibility_items(context, dec)
-    dec.tag_redraw()
+    area.tag_redraw()
 
 
 _PROFILE_ROTATION_GUARD_INTERVAL = 0.05
@@ -3854,16 +3855,17 @@ def _open_vertical_profile(context, alignment):
 
     dec = alignment_decorator.VerticalProfileDecorator
 
-    if dec.is_installed:
+    area = dec.live_area()
+    if area is not None:
         # Already open — just refresh the data (the active alignment may
         # have changed) and re-fit the view.
         dec._compute_profile(alignment)
-        space = next((s for s in dec.profile_area.spaces if s.type == "VIEW_3D"), None)
+        space = next((s for s in area.spaces if s.type == "VIEW_3D"), None)
         if space is not None:
-            dec.fit_view(space, area_width=dec.profile_area.width, area_height=dec.profile_area.height)
+            dec.fit_view(space, area_width=area.width, area_height=area.height)
         _sync_profile_visibility_items(context, dec)
-        dec.profile_area.tag_redraw()
-        return dec.profile_area
+        area.tag_redraw()
+        return area
 
     dec._compute_profile(alignment)
 
