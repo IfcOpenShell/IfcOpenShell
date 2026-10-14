@@ -46,11 +46,6 @@ A = ifcopenshell.api.alignment
 LENGTH = 100.0
 POSITION_TOLERANCE = 1e-9  # metres
 DIRECTION_TOLERANCE = 1e-9
-# A LINEARTRANSITION (an IfcClothoid) has a slope along the track at its ends. The cant frame carries
-# that slope in RefDir but keeps Axis in the cross section without re-orthogonalising it, as the IFC
-# Alignment Geometry Implementation Guide's section 4.2 describes, so the segment's placement tips Axis
-# along the track by about the slope and its cross slope is off by up to about 1e-7.
-LINEAR_TRANSITION_CROSS_SLOPE_TOLERANCE = 5e-7
 SPIRALS = ["CLOTHOID", "BLOSSCURVE", "COSINECURVE", "SINECURVE", "HELMERTCURVE", "CUBIC"]
 SPIRAL_RADII = [(0.0, 300.0), (300.0, 0.0), (0.0, -300.0), (300.0, 1000.0), (-1000.0, -300.0)]
 
@@ -197,10 +192,6 @@ def assert_frames_equal(actual, expected, direction_tolerance=DIRECTION_TOLERANC
     assert np.allclose(actual[:3, :3], expected[:3, :3], rtol=0, atol=direction_tolerance), (actual, expected)
 
 
-def cross_slope_tolerance(kind):
-    return LINEAR_TRANSITION_CROSS_SLOPE_TOLERANCE if kind == "LINEARTRANSITION" else DIRECTION_TOLERANCE
-
-
 def terminator(f, alignment, layout_name):
     layout = getattr(A, f"get_{layout_name}_layout")(alignment)
     return A.get_alignment_segment_nest(layout).RelatedObjects[-1].DesignParameters
@@ -230,7 +221,7 @@ def test_vertical_end(unit, kind, g0, g1, radius):
 @pytest.mark.parametrize("kind,c0,c1", CANT)
 def test_cant_end(unit, kind, c0, c1):
     f, _, end = build_cant(unit, kind, c0, c1)
-    assert_frames_equal(end, evaluate_end(representation_parts(f)["cant"]), cross_slope_tolerance(kind))
+    assert_frames_equal(end, evaluate_end(representation_parts(f)["cant"]))
 
 
 # The end frame follows from the design parameters
@@ -256,11 +247,11 @@ def test_cant_end_from_design(unit, kind, c0, c1):
     f, _, end = build_cant(unit, kind, c0, c1)
     scale = ifcopenshell.util.unit.calculate_unit_scale(f)
     # the rail heads end at 0 (left) and c1 (right): superelevation at the centre is half of it, and
-    # the cross section is rolled by its slope over the rail head distance
+    # the cross section is rolled by its slope over the rail head distance: Axis's component on the
+    # horizontal to the left, (0, 1, 0) in the cant frame
     assert end[0, 3] == pytest.approx(LENGTH * scale, abs=POSITION_TOLERANCE)
     assert end[1, 3] == pytest.approx(c1 / 2.0 * scale, abs=POSITION_TOLERANCE)
-    axis = end[:3, 2]
-    assert axis[1] / math.hypot(axis[1], axis[2]) == pytest.approx(c1 / 1.5, abs=cross_slope_tolerance(kind))
+    assert end[1, 2] == pytest.approx(c1 / 1.5, abs=DIRECTION_TOLERANCE)
 
 
 # The same end without geometry
@@ -323,3 +314,18 @@ def test_cant_terminator_at_end():
     p = terminator(f, alignment, "cant")
     assert p.StartDistAlong == pytest.approx(LENGTH, abs=POSITION_TOLERANCE)
     assert (p.StartCantLeft, p.StartCantRight) == pytest.approx((0.0, 0.15), abs=POSITION_TOLERANCE)
+
+
+@test.bootstrap.requires_ifc4x3
+@pytest.mark.parametrize("kind,c0,c1", CANT)
+def test_cant_terminal_curve_segment_placement(kind, c0, c1):
+    """The zero-length curve segment ending the cant curve is placed as cant segments are: RefDirection in the
+    plane of distance along and deviating elevation, Axis in the cross section. The cant frame it is placed at
+    has RefDirection pitched up by the slope, (cos θ, 0, sin θ), and Axis rolled in the section normal to it."""
+    f, _, end = build_cant("metre", kind, c0, c1)
+    placement = f.by_type("IfcSegmentedReferenceCurve")[0].Segments[-1].Placement
+    assert placement.RefDirection.DirectionRatios == pytest.approx((end[0, 0], end[2, 0], 0.0), abs=1e-12)
+    sine = c1 / 1.5
+    assert placement.Axis.DirectionRatios == pytest.approx(
+        (0.0, sine, math.sqrt(1.0 - sine**2)), abs=DIRECTION_TOLERANCE
+    )
