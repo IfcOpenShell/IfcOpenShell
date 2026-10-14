@@ -428,6 +428,11 @@ class Unit(bonsai.core.tool.Unit):
         props.active_unit_id = unit.id()
 
     @classmethod
+    def get_assigned_unit_of_type(cls, unit: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        """Get the project's assigned unit of the same unit type as the given unit, if any."""
+        return ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), unit.UnitType)
+
+    @classmethod
     def get_project_currency_unit(cls) -> Union[ifcopenshell.entity_instance, None]:
         if assignment := tool.Ifc.get().by_type("IfcProject")[0].UnitsInContext:
             for unit in assignment.Units:

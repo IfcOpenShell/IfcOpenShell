@@ -1223,6 +1223,7 @@ class Unit:
     def enable_editing_units(cls): pass
     def export_unit_attributes(cls): pass
     def get_currency_name(cls): pass
+    def get_assigned_unit_of_type(cls, unit): pass
     def get_project_currency_unit(cls): pass
     def get_scene_unit_name(cls, unit_type): pass
     def get_scene_unit_si_prefix(cls, name): pass
