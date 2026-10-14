@@ -17,7 +17,7 @@ std::vector<double> ifcopenshell::geom::helmert_curve_point(double A0, double A1
     auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
     auto x = boost::math::quadrature::trapezoidal(fn_x, 0.0, s);
     auto y = boost::math::quadrature::trapezoidal(fn_y, 0.0, s);
-    auto angle = theta(x);
+    auto angle = theta(s);
     return {x, y, angle};
 }
 
