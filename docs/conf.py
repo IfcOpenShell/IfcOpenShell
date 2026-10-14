@@ -29,6 +29,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import posixpath
 import re
 import sys
 import warnings
@@ -87,8 +88,49 @@ def setup(app):
     app.add_role("ios_python_url", ios_python_url)
     app.add_role("ifcconvert_url", ifcconvert_url)
     app.connect("builder-inited", fix_generated_api_pages, priority=600)
+    app.connect("build-finished", write_redirects)
     if skip_python_api:
         app.connect("source-read", omit_python_api_navigation)
+
+
+# Pages that were merged into the shared guides, which show the same
+# explanation once with a C++, Python, and JavaScript tab for every snippet.
+# The old addresses are linked from outside of these docs, so they redirect, and
+# the "lang" query parameter selects the tab of the section they used to be in.
+redirects = {
+    "ifcopenshell-python/hello_world": "ifcopenshell/hello_world.html?lang=python",
+    "ifcopenshell-cpp/hello_world": "ifcopenshell/hello_world.html?lang=cpp",
+    "ifcopenshell-js/hello_world": "ifcopenshell/hello_world.html?lang=js",
+    "ifcopenshell-python/geometry_processing": "ifcopenshell/geometry_processing.html?lang=python",
+    "ifcopenshell-cpp/geometry_processing": "ifcopenshell/geometry_processing.html?lang=cpp",
+    "ifcopenshell-js/geometry_processing": "ifcopenshell/geometry_processing.html?lang=js",
+    "ifcopenshell/geometry_iterator": "ifcopenshell/geometry_processing.html#geometry-iterator",
+}
+
+
+def write_redirects(app, exception):
+    if exception is not None or app.builder.name != "html":
+        return
+    for source, target in redirects.items():
+        url = posixpath.relpath(target, posixpath.dirname(source))
+        url, _, fragment = url.partition("#")
+        path = Path(app.outdir) / f"{source}.html"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Redirecting</title>
+<link rel="canonical" href="{url.partition('?')[0]}">
+<meta http-equiv="refresh" content="0; url={url}{'#' + fragment if fragment else ''}">
+<script>location.replace("{url}" + (location.hash || "{'#' + fragment if fragment else ''}"));</script>
+</head>
+<body><a href="{url}">This page has moved.</a></body>
+</html>
+""",
+            encoding="utf-8",
+        )
 
 
 def omit_python_api_navigation(app, docname, source):
@@ -113,6 +155,7 @@ extensions = [
     "exhale",
     "sphinx.ext.autosectionlabel",
     "sphinx_copybutton",
+    "sphinx_design",
     "myst_parser",
 ]
 skip_python_api = os.environ.get("SKIP_PYTHON_API") == "1"
@@ -256,6 +299,7 @@ html_theme = "furo"
 html_static_path = ["_static"]
 
 html_css_files = ["custom.css"]
+html_js_files = ["tab-scroll.js"]
 
 # Code block styles. Dark styling helps important code examples "pop" on the
 # page even on light themes.

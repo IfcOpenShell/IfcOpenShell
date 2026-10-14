@@ -8,7 +8,14 @@ IfcOpenShell C++ core through WebAssembly. The ``ifcopenshell`` package works
 in Node.js and browsers, with modules for reading and editing IFC files,
 processing geometry, and exporting geometry.
 
-The guides below introduce the operations available in the current bindings.
+IfcOpenShell is also available in :doc:`Python <ifcopenshell-python>` and
+:doc:`C++ <ifcopenshell-cpp>`, and all three use the same C++ core. The
+:doc:`Hello, world! <ifcopenshell/hello_world>` and :doc:`geometry processing
+<ifcopenshell/geometry_processing>` guides are shared between the three
+languages, with a JavaScript tab on every snippet. The other guides in this
+section cover what is specific to JavaScript, such as installation in Node.js
+and the browser, and the WebAssembly plugins.
+
 Examples use JavaScript ES modules and can also be used in TypeScript.
 Only ``File`` and geometry ``Iterator`` implement ``Disposable``: release them
 with ``dispose()`` or TypeScript ``using`` to invoke their native destructors.
@@ -25,9 +32,9 @@ Other wrappers use GC cleanup, and instance queries return ordinary JS arrays.
    :caption: Contents:
 
    ifcopenshell-js/installation
-   ifcopenshell-js/hello_world
+   Hello, world! <ifcopenshell/hello_world>
    ifcopenshell-js/code_examples
-   ifcopenshell-js/geometry_processing
+   Geometry processing <ifcopenshell/geometry_processing>
    ifcopenshell-js/geometry_creation
    ifcopenshell-js/geometry_tree
    ifcopenshell-js/schema_querying
@@ -36,7 +43,5 @@ Other wrappers use GC cleanup, and instance queries return ordinary JS arrays.
 .. seealso::
 
    :doc:`typescript-api` documents the JavaScript and TypeScript API in detail.
-   The equivalent C++ and Python guides are in :doc:`ifcopenshell-cpp` and
-   :doc:`ifcopenshell-python`. Geometry concepts and settings are shared with
-   :doc:`ifcopenshell/geometry_iterator` and
+   Geometry concepts and settings are shared with the other languages, see
    :doc:`ifcopenshell/geometry_settings`.

@@ -142,7 +142,7 @@ Get the XYZ coordinates of a element
 Get the geometry of an element
 ------------------------------
 
-See :doc:`Geometry processing<geometry_processing>` for details.
+See :doc:`Geometry processing<../ifcopenshell/geometry_processing>` for details.
 
 Get the classification of an element
 ------------------------------------

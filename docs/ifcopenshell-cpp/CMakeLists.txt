@@ -1,12 +1,12 @@
 # This file was generated with the assistance of an AI coding tool.
 ################################################################################
 #
-# Builds the standalone C++ sources that are included in the IfcOpenShell C++
-# documentation pages, and runs every one of them:
+# Builds the standalone C++ sources that are included in the documentation
+# pages, and runs every one of them:
 #
-#   hello_world.rst
+#   ../ifcopenshell/hello_world.rst
 #   code_examples.rst
-#   geometry_processing.rst
+#   ../ifcopenshell/geometry_processing.rst
 #
 # This is a standalone project: it consumes an installed IfcOpenShell cmake
 # package through find_package(IfcOpenShell CONFIG), exactly like any other
