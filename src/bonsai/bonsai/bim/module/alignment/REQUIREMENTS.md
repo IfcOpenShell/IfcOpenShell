@@ -137,15 +137,15 @@ left and +Z is up. The cross slope angle is the angle of the cant segment's `Pla
 mean of the rails) is positive either way; the Axis carries the direction of rotation. Report cant
 angles this way.
 
-**Outside this repo:** the IFC Alignment Geometry Implementation Guide test set and the
-bSI-RailwayRoom unit-test reference were generated with the Helmert kink. The guide's Helmert data has
-been regenerated on its `fix_helmert_kink` branch; its right-hand cant IFC files need regenerating
-now that the cross slope fix has merged (their CSVs hold positions only, which don't change), and its
-LinearTransition, CosineCurve and SineCurve cant CSVs now that the cant slope fix has. Its
-reference CSVs, test set and real-world alignments alike, were generated with the trapezoidal kernel
-and carry its error: up to 2e-6 m in the test set and 1.4e-5 m in the BPaimio Helmert halves, where
-the new kernel agrees with an independent integration of its own tangent to 3.7e-9 m. They need
-regenerating once #9937 merges.
+**Outside this repo (done 2026-10-14):** the IFC Alignment Geometry Implementation Guide test set and
+its reference data were generated with the Helmert kink, the wrong-way cant lean and the trapezoidal
+kernel. All of it has been regenerated on the guide's `refactor_for_bSI` branch: the Helmert data
+(`fd00a9e`), the test set and example models with the cant cross slope fix, which changes 78 cant
+segment axes including the right-hand cant IFC files (`bb52200`), and the cant and spiral reference
+CSVs with the cant slope fix and Gauss-Kronrod spiral positions (`2f81798`, up to 1.6e-3 in the
+LinearTransition, CosineCurve and SineCurve cant slopes, up to 1.3e-5 m in spiral positions). Not yet
+pushed there (21 commits ahead of origin when checked). The bSI-RailwayRoom unit-test reference is outside
+our control; nothing to do there.
 
 **2026-10-12 round:** `rab_infrastructure` was rebased onto `v0.9.0`
 (352 upstream commits; force-pushed), then four commits were added on top (the user pushes them):
