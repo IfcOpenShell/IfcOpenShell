@@ -117,6 +117,28 @@ class TestGetBoundaryLines(test.bootstrap.IFC4):
         assert slab not in bounding
 
 
+class TestBuildBoundingTree(test.bootstrap.IFC4):
+    def test_tree_contains_passed_elements(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        _add_extruded_body(self.file, wall, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 3.0)
+        _add_extruded_body(self.file, slab, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 0.3, z_offset=3.0)
+        elements = subject.get_bounding_and_height_elements(self.file)
+        assert wall in elements
+        assert slab in elements
+        tree = subject.build_bounding_tree(self.file, elements)
+        hits = tree.select_ray((0.0, 0.0, 1.0), (0.0, 0.0, 1.0), 100.0)
+        assert any(abs(hit.position[2] - 3.0) < 0.1 for hit in hits)
+
+    def test_tree_ignores_elements_not_passed_in(self):
+        furniture = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFurnishingElement")
+        _add_extruded_body(self.file, furniture, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 1.0, z_offset=1.0)
+        elements = subject.get_bounding_and_height_elements(self.file)
+        assert furniture not in elements
+        tree = subject.build_bounding_tree(self.file, elements)
+        assert not tree.select_ray((0.0, 0.0, 0.5), (0.0, 0.0, 1.0), 100.0)
+
+
 class TestGetSpacePolygon(test.bootstrap.IFC4):
     def test_finds_containing_polygon(self):
         lines = [

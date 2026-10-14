@@ -834,9 +834,7 @@ class Spatial(bonsai.core.tool.Spatial):
             return cached
 
         ifc_file = tool.Ifc.get()
-        include = []
-        for ifc_class in ifcopenshell.util.space.BOUNDING_CLASSES + ifcopenshell.util.space.HEIGHT_DETECTION_CLASSES:
-            include.extend(ifc_file.by_type(ifc_class))
+        include = ifcopenshell.util.space.get_bounding_and_height_elements(ifc_file)
 
         settings = ifcopenshell.geom.settings()
         settings.set("disable-opening-subtractions", True)
@@ -963,11 +961,8 @@ class Spatial(bonsai.core.tool.Spatial):
             container_obj = tool.Ifc.get_object(container)
             props = tool.Model.get_model_props()
             start_z = container_obj.matrix_world.translation.z + props.rl3
-        tree = ifcopenshell.geom.tree(ifc_file)
-        settings = ifcopenshell.geom.settings()
-        settings.set("disable-opening-subtractions", True)
-        settings.set("use-world-coords", True)
-        tree.add_file(ifc_file, settings)
+        elements = ifcopenshell.util.space.get_bounding_and_height_elements(ifc_file)
+        tree = ifcopenshell.util.space.build_bounding_tree(ifc_file, elements)
         return ifcopenshell.util.space.detect_space_volume_strategy(
             ifc_file, cache["shapes"], tree, space_polygon, base_z, bounding_walls, start_z=start_z
         )
