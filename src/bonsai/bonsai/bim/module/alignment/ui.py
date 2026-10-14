@@ -328,6 +328,22 @@ def _rad_to_bearing(rad: float) -> str:
     return _bearing_string(math.degrees(rad))
 
 
+def _horizontal_segment_columns(layout):
+    """The five columns of a horizontal segment row: #, Type, Length, Radius and Bearing.
+
+    Every row of the panel is split the same way, because each nested split adds a gap, and rows built
+    with different nesting don't line up. The widths are 6%, 28%, 27%, 12% and 27% of the panel: a
+    radius is short, and the Length column also holds a full grid Northing in the second row.
+    """
+    columns = []
+    split = layout
+    for factor in (0.06, 0.298, 0.409, 0.308):
+        split = split.split(factor=factor)
+        columns.append(split.column())
+    columns.append(split.column())
+    return columns
+
+
 def _start_en(ifc_file, dp) -> tuple[float | None, float | None]:
     """Return (Easting, Northing) for an IfcAlignmentHorizontalSegment.
 
@@ -996,15 +1012,8 @@ class ALIGN_PT_alignment_segments(Panel):
             return
 
         # Column headers (no separate select column — index cell is the select button)
-        header = box.split(factor=0.08)
-        header.label(text="#")
-        h2 = header.split(factor=0.30)
-        h2.label(text="Type")
-        h3 = h2.split(factor=0.27)
-        h3.label(text="Length")
-        h4 = h3.split(factor=0.37)
-        h4.label(text="Radius")
-        h4.label(text="Bearing")
+        for column, text in zip(_horizontal_segment_columns(box), ("#", "Type", "Length", "Radius", "Bearing")):
+            column.label(text=text)
 
         # grid bearings, matching the E/N shown below (StartDirection is in project coordinates)
         grid_rotation = _grid_rotation_deg(from_blender_world=False)
@@ -1031,30 +1040,32 @@ class ALIGN_PT_alignment_segments(Panel):
             col = box.column(align=True)
             col.alert = is_selected
 
-            # Row 1: index (clickable to select), type, length, radius, bearing
-            row = col.split(factor=0.08)
-            op = row.operator(
+            # Row 1: index (clickable to select), type, length, radius, start bearing
+            number, type_column, length_column, radius_column, bearing_column = _horizontal_segment_columns(col)
+            op = number.operator(
                 "align.select_h_segment",
                 text=str(idx),
                 depress=is_selected,
             )
             op.segment_id = seg_id
+            type_column.label(text=seg_type)
+            length_column.label(text=f"{abs(length):.2f}")
+            radius_column.label(text=f"{abs(r_start):.1f}" if r_start else "-")
+            bearing_column.label(text=bearing)
 
-            r2 = row.split(factor=0.30)
-            r2.label(text=seg_type)
-            r3 = r2.split(factor=0.27)
-            r3.label(text=f"{abs(length):.2f}")
-            r4 = r3.split(factor=0.37)
-            r4.label(text=f"{abs(r_start):.1f}" if r_start else "-")
-            r4.label(text=bearing)
-
-            # Row 2: start Easting / Northing
-            if e is not None:
-                sub = col.split(factor=0.08)
-                sub.label(text="")  # align under # column
-                sub2 = sub.split(factor=0.50)
-                sub2.label(text=f"E: {e:.3f}")
-                sub2.label(text=f"N: {n:.3f}")
+            # Row 2: start Easting under Type, Northing under Length, and the end bearing under the start bearing
+            end_bearing = ""
+            if hasattr(dp, "StartDirection"):
+                try:
+                    delta = ifcopenshell.api.alignment.get_horizontal_curve_parameters(dp).delta
+                    end_bearing = _rad_to_bearing(_get_start_direction(dp) + delta + math.radians(grid_rotation))
+                except Exception:
+                    pass
+            if e is not None or end_bearing:
+                _, type_column, length_column, _, bearing_column = _horizontal_segment_columns(col)
+                type_column.label(text=f"E: {e:.3f}" if e is not None else "")
+                length_column.label(text=f"N: {n:.3f}" if e is not None else "")
+                bearing_column.label(text=end_bearing)
 
             idx += 1
 
