@@ -93,6 +93,83 @@ def poll_ifc4x3(cls, context):
     return True
 
 
+def _drawn_points():
+    """The points drawn so far with the polyline tool."""
+    data = tool.Model.get_polyline_props().insertion_polyline
+    return data[0].polyline_points if data else []
+
+
+def _typed_point_input(op):
+    """What was typed for the point being committed, so _exact_drawn_points can rebuild it exactly, or
+    None. The polyline tool keeps points as float32 and computes a typed point with mathutils, also
+    single precision, so a typed length and angle land about 1e-7 off (0.04" over 1000 m)."""
+    field = op.input_type
+
+    def number(name):
+        if name == field and op.number_input:
+            ok, text = tool.Polyline.validate_input(op.number_output, name)
+            return float(text) if ok else None
+        return op.input_ui.get_number_value(name)
+
+    if field in ("X", "Y"):
+        x, y = number("X"), number("Y")
+        return None if x is None or y is None else {"mode": "XY", "x": x, "y": y}
+    if field in ("D", "A"):
+        civil = None
+        if field == "A" and op.number_input:
+            try:
+                civil = _parse_civil_angle(op.number_output)
+            except ValueError:
+                return None
+        distance = number("D")
+        angle = None if civil else number("A")
+        if distance is None or (civil is None and angle is None):
+            return None
+        return {"mode": "DA", "distance": distance, "angle": angle, "civil": civil}
+    return None
+
+
+def _exact_drawn_points(points, typed_points):
+    """The drawn points (Blender world, metres), with each one that was typed rebuilt in double
+    precision from what was typed and the exact point before it. A clicked point, or one whose
+    stored float32 position no longer matches its record (it was deleted and redrawn), is kept as
+    stored. A typed angle is counter-clockwise from the back leg, as the polyline tool measures it
+    (from +X for the first leg); a bearing or deflection is applied as _CivilAngleInput converts it."""
+    from mathutils import Vector
+
+    exact = []
+    for i, point in enumerate(points):
+        record = typed_points.get(i)
+        if record is None or tuple(point[:2]) != tuple(record["stored"]):
+            exact.append(tuple(point))
+            continue
+        if record["mode"] == "XY":
+            new = (record["x"], record["y"], point[2])
+        elif i == 0:
+            exact.append(tuple(point))
+            continue
+        else:
+            last = exact[i - 1]
+            if i >= 2:
+                back = exact[i - 2]
+            else:
+                reference = tool.Polyline.use_transform_orientations(Vector((last[0] + 1000000000, last[1], last[2])))
+                back = (reference.x, reference.y)
+            back_direction = math.atan2(back[1] - last[1], back[0] - last[0])
+            civil = record["civil"]
+            if civil and civil[0] == "BEARING":
+                direction = math.radians(90.0 - civil[1] - _grid_rotation_deg())
+            elif civil:
+                direction = back_direction + math.pi + math.radians(civil[1])
+            else:
+                direction = back_direction + math.radians(record["angle"])
+            distance = record["distance"]
+            new = (last[0] + distance * math.cos(direction), last[1] + distance * math.sin(direction), point[2])
+        # a record that doesn't describe the stored point (to float32 precision) isn't trusted
+        exact.append(new if math.dist(new[:2], point[:2]) < 1e-3 else tuple(point))
+    return exact
+
+
 def _insert_polyline_point_no_close(op, context, event):
     """Insert polyline points without close-polyline (C key) behavior.
 
@@ -113,11 +190,19 @@ def _insert_polyline_point_no_close(op, context, event):
 
     # RET/ENTER with numeric input: validate and insert
     if op.tool_state.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
+        # what was typed, before recalculate_inputs turns it into float32 coordinates (see _exact_drawn_points)
+        typed_points = getattr(op, "typed_points", None)
+        typed = _typed_point_input(op) if typed_points is not None else None
+        count = len(_drawn_points())
         is_valid = op.recalculate_inputs(context)
         if is_valid:
             result = tool.Polyline.insert_polyline_point(op.input_ui, op.tool_state)
             if result:
                 op.report({"WARNING"}, result)
+            points = _drawn_points()
+            if typed is not None and len(points) == count + 1:
+                typed["stored"] = (points[-1].x, points[-1].y)
+                typed_points[count] = typed
 
         op.tool_state.mode = "Mouse"
         op.tool_state.is_input_on = False
@@ -848,7 +933,7 @@ def _marker_local_ifc(ifc, unit_scale, marker_obj):
     return _world_point_to_local_ifc(ifc, unit_scale, marker_obj.location)
 
 
-def _hpoints_from_polyline(context):
+def _hpoints_from_polyline(context, typed_points=None):
     """Read the drawn polyline and convert it to local IFC coords.
 
     Returns (True, (raw_points, hpoints)) on success, (False, message)
@@ -871,6 +956,8 @@ def _hpoints_from_polyline(context):
 
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
     raw_points = [(p.x, p.y, p.z) for p in polyline_points]
+    if typed_points:
+        raw_points = _exact_drawn_points(raw_points, typed_points)
     hpoints = [_world_point_to_local_ifc(ifc, unit_scale, p) for p in raw_points]
     return True, (raw_points, hpoints)
 
@@ -2750,6 +2837,7 @@ class _DrawHorizontalAlignment(_CivilAngleInput, PolylineOperator, tool.Ifc.Oper
         self.instructions.pop("Offset", None)
         self.instructions.update(_CivilAngleInput.INSTRUCTIONS)
         self._bearing_handle = None
+        self.typed_points = {}  # see _insert_polyline_point_no_close
         self._last_mouse_pos = (0, 0)
 
     def invoke(self, context, event):
@@ -2841,7 +2929,7 @@ class _DrawHorizontalAlignment(_CivilAngleInput, PolylineOperator, tool.Ifc.Oper
         return {"RUNNING_MODAL"}
 
     def _finish(self, context):
-        ok, result = _hpoints_from_polyline(context)
+        ok, result = _hpoints_from_polyline(context, getattr(self, "typed_points", None))
         if not ok:
             self.report({"WARNING"}, result)
             return
@@ -2863,7 +2951,10 @@ class _DrawHorizontalAlignment(_CivilAngleInput, PolylineOperator, tool.Ifc.Oper
         if ok:
             # Always create Start/End Point markers, even with no interior PIs at all (a
             # dead-straight two-point alignment still has an endpoint to drag).
-            _create_pi_markers(context, alignment.id(), raw_points)
+            markers = _create_pi_markers(context, alignment.id(), raw_points)
+            # the exact points the alignment was generated from: a marker's own location is float32
+            for marker, point in zip(markers, hpoints):
+                tool.Alignment.remember_marker_point(marker, point)
             if radii:
                 message += " — select a PI marker and click Apply Curve to add a curve"
             else:
@@ -3150,7 +3241,7 @@ class _ExtendHorizontalAlignment(_DrawHorizontalAlignment):
         return super()._modal(context, event)
 
     def _finish(self, context):
-        ok, result = _hpoints_from_polyline(context)
+        ok, result = _hpoints_from_polyline(context, getattr(self, "typed_points", None))
         if not ok:
             self.report({"WARNING"}, result)
             return
@@ -3170,7 +3261,9 @@ class _ExtendHorizontalAlignment(_DrawHorizontalAlignment):
             ifc = tool.Ifc.get()
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
             world = [_local_ifc_to_world_point(ifc, unit_scale, p) for p in self._existing_hpoints] + list(new_raw)
-            _create_pi_markers(context, alignment.id(), world)
+            markers = _create_pi_markers(context, alignment.id(), world)
+            for marker, point in zip(markers, hpoints):
+                tool.Alignment.remember_marker_point(marker, point)
             message = f"Extended '{alignment.Name}' by {len(new_points)} point(s) — select a PI marker to add curves"
             alignment_obj = tool.Ifc.get_object(alignment)
             if alignment_obj:
