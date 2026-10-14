@@ -29,6 +29,7 @@ import ifcopenshell.api.alignment
 import ifcopenshell.util.geolocation
 from bpy.props import IntProperty
 from bpy.types import Operator, Panel, UIList
+from ifcopenshell.api.alignment._start_direction import _get_start_direction
 
 import bonsai.tool as tool
 
@@ -1021,7 +1022,7 @@ class ALIGN_PT_alignment_segments(Panel):
             seg_type = dp.PredefinedType or "?"
             r_start = getattr(dp, "StartRadiusOfCurvature", None) or 0.0
             bearing = (
-                _rad_to_bearing(dp.StartDirection + math.radians(grid_rotation))
+                _rad_to_bearing(_get_start_direction(dp) + math.radians(grid_rotation))
                 if hasattr(dp, "StartDirection")
                 else ""
             )

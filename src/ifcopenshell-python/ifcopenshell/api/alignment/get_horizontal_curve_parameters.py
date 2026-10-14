@@ -22,6 +22,7 @@ import math
 from typing import NamedTuple, Optional
 
 from ifcopenshell import entity_instance
+from ifcopenshell.api.alignment._start_direction import _get_start_direction
 from ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method import (
     HorizontalSegmentDefinition,
     compute_horizontal_segment_end,
@@ -120,7 +121,7 @@ def get_horizontal_curve_parameters(segment: entity_instance) -> HorizontalCurve
 
     predefined_type = design_parameters.PredefinedType
     sx, sy = design_parameters.StartPoint.Coordinates[0:2]
-    start_direction = design_parameters.StartDirection
+    start_direction = _get_start_direction(design_parameters)
     start_radius = design_parameters.StartRadiusOfCurvature or 0.0
     ex, ey, end_direction = compute_horizontal_segment_end(
         HorizontalSegmentDefinition(
