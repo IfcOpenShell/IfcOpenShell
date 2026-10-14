@@ -13,11 +13,7 @@ from ifcopenshell import ifcopenshell_wrapper
 
 def theta(a0, a1, a2, t):
     """IfcSecondOrderPolynomialSpiral's heading at arc length t, the integral of its curvature"""
-    return (
-        (t / a0 if a0 else 0.0)
-        + (a1 * t**2 / (2 * abs(a1**3)) if a1 else 0.0)
-        + (t**3 / (3 * a2**3) if a2 else 0.0)
-    )
+    return (t / a0 if a0 else 0.0) + (a1 * t**2 / (2 * abs(a1**3)) if a1 else 0.0) + (t**3 / (3 * a2**3) if a2 else 0.0)
 
 
 # the first half of 100 long helmert curves: straight to R300, R300 to straight, R300 to R1000
