@@ -19,7 +19,6 @@
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
-import ifcopenshell.util.element
 from ifcopenshell import entity_instance
 
 

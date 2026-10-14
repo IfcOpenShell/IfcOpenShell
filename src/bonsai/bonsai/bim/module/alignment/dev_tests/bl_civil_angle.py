@@ -10,7 +10,6 @@ import bpy
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 
 def check(cond, msg):

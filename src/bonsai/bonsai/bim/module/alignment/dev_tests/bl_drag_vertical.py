@@ -6,11 +6,11 @@ import traceback
 from types import SimpleNamespace
 
 import bpy
+import ifcopenshell.api.alignment
 from mathutils import Vector
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 
 def check(cond, msg):
@@ -31,9 +31,12 @@ try:
     ifc = tool.Ifc.get()
 
     alignment = ifcopenshell.api.alignment.create_by_pi_method(
-        ifc, "DV",
-        [(0.0, 0.0), (1000.0, 0.0), (1000.0, 1000.0)], [300.0],
-        [(0.0, 100.0), (600.0, 106.0), (1200.0, 100.0), (1800.0, 103.0)], [0.0, 0.0],
+        ifc,
+        "DV",
+        [(0.0, 0.0), (1000.0, 0.0), (1000.0, 1000.0)],
+        [300.0],
+        [(0.0, 100.0), (600.0, 106.0), (1200.0, 100.0), (1800.0, 103.0)],
+        [0.0, 0.0],
     )
     tool.Alignment.create_object_for_alignment(alignment)
     tool.Alignment.refresh_alignment_representation_object(alignment)
@@ -66,8 +69,13 @@ try:
     attrs = {}
     for klass in reversed(Op.__mro__):
         if klass.__module__.startswith("bonsai"):
-            attrs.update({n: m for n, m in vars(klass).items()
-                          if (callable(m) or isinstance(m, property)) and not n.startswith("__")})
+            attrs.update(
+                {
+                    n: m
+                    for n, m in vars(klass).items()
+                    if (callable(m) or isinstance(m, property)) and not n.startswith("__")
+                }
+            )
     attrs.update(HIT_RADIUS_PX=Op.HIT_RADIUS_PX, is_running=True, _generation=1)
     Fake = type("Fake", (), attrs)
     op = Fake()
@@ -78,8 +86,9 @@ try:
     dec_mod.VerticalPIMarkerDecorator.install(bpy.context)
 
     def ev(type_, value, x, y, ascii=""):
-        return SimpleNamespace(type=type_, value=value, mouse_x=x, mouse_y=y, ascii=ascii,
-                               ctrl=False, alt=False, shift=False)
+        return SimpleNamespace(
+            type=type_, value=value, mouse_x=x, mouse_y=y, ascii=ascii, ctrl=False, alt=False, shift=False
+        )
 
     def key(type_, ascii="", x=0, y=0):
         for value in ("PRESS", "RELEASE"):
@@ -106,8 +115,17 @@ try:
     op.modal(bpy.context, ev("MOUSEMOVE", "NOTHING", x + 3, y - 2))
     check(dec_mod.VerticalPIMarkerDecorator.hover == 1, "hover not detected")
     print("hover readout:", hud())
-    check(hud() == [f"Station: {tool.Alignment.format_station(600.0)}", "Elevation: 106.000", "Slope In: 1.00%",
-                    "Distance Along: 600.000", "Slope Out: -1.00%"], "hover readout wrong")
+    check(
+        hud()
+        == [
+            f"Station: {tool.Alignment.format_station(600.0)}",
+            "Elevation: 106.000",
+            "Slope In: 1.00%",
+            "Distance Along: 600.000",
+            "Slope Out: -1.00%",
+        ],
+        "hover readout wrong",
+    )
     check(op.modal(bpy.context, ev("LEFTMOUSE", "PRESS", x + 3, y - 2)) == {"RUNNING_MODAL"}, "press not consumed")
     check(op._drag == 1, "drag not started")
     op.modal(bpy.context, ev("MOUSEMOVE", "NOTHING", 700, 1100))
@@ -156,7 +174,10 @@ try:
     op.modal(bpy.context, ev("LEFTMOUSE", "PRESS", x, y))
     op.modal(bpy.context, ev("LEFTMOUSE", "RELEASE", x, y))
     check(op._active == 2 and op._drag is None, "click didn't select PI 2")
-    key("E", x=x, y=y); type_text("104"); key("TAB"); type_text("-2")
+    key("E", x=x, y=y)
+    type_text("104")
+    key("TAB")
+    type_text("-2")
     print("typing readout:", hud())
     check("Elevation: 104.000  (locked)" in hud() and "Slope In: -2%" in hud(), "typed readout wrong")
     key("RET")
@@ -166,7 +187,9 @@ try:
     check(near(pts[2], (1000.0, 104.0)), f"typed E+S wrong {pts[2]}")
     # a typed distance past the next point (End) is refused and the PI stays put
     reports.clear()
-    key("D", x=x, y=y); type_text("2000"); key("RET")
+    key("D", x=x, y=y)
+    type_text("2000")
+    key("RET")
     check(near(op_mod._staged_vertical_points(props)[2], (1000.0, 104.0)), "refused value moved the PI")
     check(any("past the End" in r for r in reports), f"no refusal message {reports}")
     key("ESC")  # clear the typed values (PI stays where it was)
@@ -178,7 +201,9 @@ try:
     reports.clear()
     check(op.modal(bpy.context, ev("D", "PRESS", x, y, "d")) == {"RUNNING_MODAL"}, "refused D not consumed")
     check(any("only move up and down" in r for r in reports), "D allowed on End")
-    key("S", x=x, y=y); type_text("1"); key("RET")
+    key("S", x=x, y=y)
+    type_text("1")
+    key("RET")
     check(near(op_mod._staged_vertical_points(props)[3], (end_d, 112.0)), "End slope-in wrong")
     # typing while dragging: mouse gives distance, typed elevation wins
     x, y = px(op_mod._staged_vertical_points(props)[1])

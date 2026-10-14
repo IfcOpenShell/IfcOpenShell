@@ -7,10 +7,10 @@ import traceback
 from types import SimpleNamespace
 
 import bpy
+import ifcopenshell.api.alignment
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 
 def check(cond, msg):
@@ -29,7 +29,13 @@ def fake(op_cls, *bases):
     attrs = {}
     for klass in reversed(op_cls.__mro__):
         if klass.__module__.startswith("bonsai.bim.module.alignment"):
-            attrs.update({n: m for n, m in vars(klass).items() if (callable(m) or isinstance(m, property)) and not n.startswith("__")})
+            attrs.update(
+                {
+                    n: m
+                    for n, m in vars(klass).items()
+                    if (callable(m) or isinstance(m, property)) and not n.startswith("__")
+                }
+            )
     cls = type("Fake", bases, attrs)
     op = cls()
     op.report = lambda level, msg: print("  report:", msg)
@@ -63,7 +69,14 @@ try:
     select(tool.Ifc.get_object(a))
     bpy.ops.align.generate_cant_layout(cant_value=0.1)
     cant = A.get_all_cant_layouts(a)[0]
-    print("before: h", round(h_len, 3), "| v end", A.get_layout_end_distance(v), "| cant end", A.get_layout_end_distance(cant))
+    print(
+        "before: h",
+        round(h_len, 3),
+        "| v end",
+        A.get_layout_end_distance(v),
+        "| cant end",
+        A.get_layout_end_distance(cant),
+    )
     check(A.get_length_mismatch(v) is None and A.get_length_mismatch(cant) is None, "should start matched")
 
     # ---- extend the horizontal (the draw tool's pieces, driven directly)
@@ -76,24 +89,38 @@ try:
     if not props_poly.snap_mouse_point:
         props_poly.snap_mouse_point.add()
     check(op._load_existing(a) is None, "load existing")
-    print("existing hpoints:", [tuple(round(c, 3) for c in p) for p in op._existing_hpoints], "radii:", op._existing_radii)
+    print(
+        "existing hpoints:", [tuple(round(c, 3) for c in p) for p in op._existing_hpoints], "radii:", op._existing_radii
+    )
     ifc_unit = ifcopenshell.util.unit.calculate_unit_scale(ifc)
     anchors = [op_mod._local_ifc_to_world_point(ifc, ifc_unit, p) for p in op._existing_hpoints[-2:]]
     op._seeded = op_mod._seed_polyline_tool(op, bpy.context, anchors)
     check(op._seeded == 2, "seeded")
-    check(op_mod._swallow_seed_backspace(op, SimpleNamespace(type="BACK_SPACE")), "backspace would delete an existing point")
+    check(
+        op_mod._swallow_seed_backspace(op, SimpleNamespace(type="BACK_SPACE")),
+        "backspace would delete an existing point",
+    )
     data = props_poly.insertion_polyline[0]
     for x, y in ((1300.0, 300.0), (1700.0, 600.0)):
         p = data.polyline_points.add()
         p.x, p.y, p.z = x, y, 0.0
-    check(not op_mod._swallow_seed_backspace(op, SimpleNamespace(type="BACK_SPACE")), "backspace blocked on a new point")
+    check(
+        not op_mod._swallow_seed_backspace(op, SimpleNamespace(type="BACK_SPACE")), "backspace blocked on a new point"
+    )
     op._finish(bpy.context)
     tool.Polyline.clear_polyline()
     specs, skipped = op_mod._reconstruct_horizontal_pis(h)
-    print("after extend PIs:", [(tuple(round(c, 3) for c in s["pi_local"]), s["curve_type"], s["radius"]) for s in specs])
+    print(
+        "after extend PIs:", [(tuple(round(c, 3) for c in s["pi_local"]), s["curve_type"], s["radius"]) for s in specs]
+    )
     check(not skipped and len(specs) == 3, "wrong PI count after extend")
-    check(specs[0]["curve_type"] == "SPIRAL_CIRCULAR_SPIRAL" and abs(specs[0]["radius"] - 200.0) < 1e-6, "PI 1 curve lost")
-    check(specs[1]["curve_type"] == "TANGENT" and math.dist(specs[1]["pi_local"], (900.0, 300.0)) < 1e-3, "old end not a PI")
+    check(
+        specs[0]["curve_type"] == "SPIRAL_CIRCULAR_SPIRAL" and abs(specs[0]["radius"] - 200.0) < 1e-6, "PI 1 curve lost"
+    )
+    check(
+        specs[1]["curve_type"] == "TANGENT" and math.dist(specs[1]["pi_local"], (900.0, 300.0)) < 1e-3,
+        "old end not a PI",
+    )
     end = A.get_alignment_start_end_points(a)[1]
     check(math.dist(end, (1700.0, 600.0)) < 1e-2, f"new end {end}")
     h_len2 = A.get_horizontal_alignment_length(h)
@@ -108,14 +135,20 @@ try:
     check(dc is None and abs(A.get_layout_end_distance(cant) - h_len2) < 1e-6, "cant didn't follow the horizontal")
 
     # ---- Match Horizontal Length on the vertical: only its last segment changes
-    before = [(s.DesignParameters.PredefinedType, round(s.DesignParameters.HorizontalLength, 6))
-              for s in A.get_real_layout_segments(v)]
+    before = [
+        (s.DesignParameters.PredefinedType, round(s.DesignParameters.HorizontalLength, 6))
+        for s in A.get_real_layout_segments(v)
+    ]
     check(bpy.ops.align.match_horizontal_length(layout_id=v.id()) == {"FINISHED"}, "match vertical")
-    after = [(s.DesignParameters.PredefinedType, round(s.DesignParameters.HorizontalLength, 6))
-             for s in A.get_real_layout_segments(v)]
+    after = [
+        (s.DesignParameters.PredefinedType, round(s.DesignParameters.HorizontalLength, 6))
+        for s in A.get_real_layout_segments(v)
+    ]
     print("vertical segments:", before, "->", after)
     check(after[:-1] == before[:-1] and after[-1][1] > before[-1][1], "vertical match changed the wrong segments")
-    check(A.get_length_mismatch(v) is None and abs(A.get_layout_end_distance(v) - h_len2) < 1e-6, "vertical not matched")
+    check(
+        A.get_length_mismatch(v) is None and abs(A.get_layout_end_distance(v) - h_len2) < 1e-6, "vertical not matched"
+    )
 
     # ---- a layout too short to trim is refused, nothing changed
     #      (shorten the horizontal a lot by redrawing it short, then try to trim the vertical)
@@ -144,9 +177,18 @@ try:
     vop._points.append((3000.0, 99.0))
     vop._finish(bpy.context)
     specs, skipped = op_mod._reconstruct_vertical_pis(v)
-    print("vertical PIs after extend:", [(round(s["dist_along"], 3), round(s["elevation"], 3), s["curve_type"], s["curve_length"]) for s in specs])
-    check(not skipped and specs[0]["curve_type"] == "PARABOLIC" and abs(specs[0]["curve_length"] - 150.0) < 1e-6, "vertical curve lost")
-    check(specs[-1]["curve_type"] == "TANGENT" and abs(specs[-1]["dist_along"] - old_end[0]) < 1e-3, "old vertical end not a PI")
+    print(
+        "vertical PIs after extend:",
+        [(round(s["dist_along"], 3), round(s["elevation"], 3), s["curve_type"], s["curve_length"]) for s in specs],
+    )
+    check(
+        not skipped and specs[0]["curve_type"] == "PARABOLIC" and abs(specs[0]["curve_length"] - 150.0) < 1e-6,
+        "vertical curve lost",
+    )
+    check(
+        specs[-1]["curve_type"] == "TANGENT" and abs(specs[-1]["dist_along"] - old_end[0]) < 1e-3,
+        "old vertical end not a PI",
+    )
     check(abs(A.get_layout_end_distance(v) - 3000.0) < 1e-6, "vertical not extended to 3000")
 
     # ---- extend a 3D polyline alignment

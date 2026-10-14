@@ -6,10 +6,10 @@ import traceback
 from types import SimpleNamespace
 
 import bpy
+import ifcopenshell.api.alignment
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
 
 
 def check(cond, msg):
@@ -59,7 +59,11 @@ try:
         if not klass.__module__.startswith("bonsai"):
             continue
         for name, member in vars(klass).items():
-            if (callable(member) or isinstance(member, property)) and name.startswith("_") and not name.startswith("__"):
+            if (
+                (callable(member) or isinstance(member, property))
+                and name.startswith("_")
+                and not name.startswith("__")
+            ):
                 setattr(Fake, name, member)
     op = Fake()
     reports = []
@@ -75,8 +79,9 @@ try:
     dec_mod.VerticalDrawDecorator.install(bpy.context, op._points)
 
     def ev(type_, value="PRESS", ascii=""):
-        return SimpleNamespace(type=type_, value=value, ascii=ascii, ctrl=False, alt=False, shift=False,
-                               mouse_x=-10, mouse_y=-10)
+        return SimpleNamespace(
+            type=type_, value=value, ascii=ascii, ctrl=False, alt=False, shift=False, mouse_x=-10, mouse_y=-10
+        )
 
     def key(type_, ascii=""):
         results = [op._modal(bpy.context, ev(type_, "PRESS", ascii)), op._modal(bpy.context, ev(type_, "RELEASE"))]
@@ -96,7 +101,10 @@ try:
     check(op._points == [(0.0, 100.0)], f"PI 1 wrong: {op._points}")
 
     # PI 2: Elevation + Slope -> distance derived (Tab order E -> S)
-    key("TAB"); type_text("102"); key("TAB"); type_text("2")
+    key("TAB")
+    type_text("102")
+    key("TAB")
+    type_text("2")
     check(op._active_field == "SLOPE", "Tab didn't move to Slope")
     lines = dec_mod.VerticalDrawDecorator.input_lines
     print("cursor lines while typing:", lines)
@@ -109,16 +117,28 @@ try:
     op._mouse = (150.0, 103.0)
     op._refresh_input_display()
     print("cursor lines, mouse only:", dec_mod.VerticalDrawDecorator.input_lines)
-    check([t for t, _ in dec_mod.VerticalDrawDecorator.input_lines][1:] == [
-        "Elevation: 103.000", "Slope: 2.00%", "Distance Along: 150.000"], "mouse-only readout wrong")
+    check(
+        [t for t, _ in dec_mod.VerticalDrawDecorator.input_lines][1:]
+        == ["Elevation: 103.000", "Slope: 2.00%", "Distance Along: 150.000"],
+        "mouse-only readout wrong",
+    )
     op._mouse = None
 
     # PI 3: Slope + Distance -> elevation derived
-    key("S"); type_text("-1"); key("D"); type_text("300"); key("RET")
+    key("S")
+    type_text("-1")
+    key("D")
+    type_text("300")
+    key("RET")
     check(near(op._points[-1], (300.0, 100.0)), f"S+D wrong: {op._points[-1]}")
 
     # PI 4: third typed value unlocks the oldest (Elevation)
-    key("E"); type_text("90"); key("TAB"); type_text("1"); key("TAB"); type_text("500")
+    key("E")
+    type_text("90")
+    key("TAB")
+    type_text("1")
+    key("TAB")
+    type_text("500")
     key("TAB")  # commits Distance -> Elevation (oldest) is released
     print("locks after 3 values:", op._locks, op._lock_order)
     check(set(op._locks) == {"SLOPE", "DISTANCE"}, f"oldest not unlocked: {op._locks}")
@@ -128,7 +148,10 @@ try:
 
     # Backspace on an empty field unlocks it; Backspace never removes a PI while typing
     n = len(op._points)
-    key("E"); type_text("1"); key("BACK_SPACE"); key("BACK_SPACE")
+    key("E")
+    type_text("1")
+    key("BACK_SPACE")
+    key("BACK_SPACE")
     check(len(op._points) == n and "ELEVATION" not in op._locks, "Backspace misbehaved")
     key("ESC")
     check(not op._locks and op._active_field is None, "Esc didn't clear typed values")
@@ -139,29 +162,47 @@ try:
         (("D", str(int(length) + 50)), "past the end"),
     ):
         reports.clear()
-        key(keys[0]); type_text(keys[1]); key("RET")
+        key(keys[0])
+        type_text(keys[1])
+        key("RET")
         check(len(op._points) == n and any(why in m for _, m in reports), f"not refused: {why} {reports}")
         key("ESC")
     reports.clear()
-    key("E"); type_text("110"); key("S"); type_text("0"); key("RET")
+    key("E")
+    type_text("110")
+    key("S")
+    type_text("0")
+    key("RET")
     check(len(op._points) == n and any("0% slope" in m for _, m in reports), f"flat slope not refused {reports}")
     key("ESC")
 
     # one lock + mouse: Slope locked, distance from the mouse
     op._mouse = (700.0, 999.0)
-    key("S"); type_text("-2"); key("RET")
+    key("S")
+    type_text("-2")
+    key("RET")
     check(near(op._points[-1], (700.0, 98.0)), f"slope + mouse wrong: {op._points[-1]}")
 
     # last PI at the end station, then Enter with nothing typed finishes and builds the vertical
-    key("E"); type_text("95"); key("D"); type_text(f"{length:.6f}"); key("RET")
+    key("E")
+    type_text("95")
+    key("D")
+    type_text(f"{length:.6f}")
+    key("RET")
     print("typed PIs:", op._points)
     r = [op._modal(bpy.context, ev("RET", "PRESS")), op._modal(bpy.context, ev("RET", "RELEASE"))]
     check(r[-1] == {"FINISHED"}, f"Enter with nothing typed didn't finish: {r}")
 
     v_layout = tool.Alignment.get_all_vertical_layouts(alignment)[0]
     segs = tool.Alignment.get_real_layout_segments(v_layout)
-    got = [(round(s.DesignParameters.StartDistAlong, 6), round(s.DesignParameters.StartHeight, 6),
-            round(s.DesignParameters.StartGradient * 100, 6)) for s in segs]
+    got = [
+        (
+            round(s.DesignParameters.StartDistAlong, 6),
+            round(s.DesignParameters.StartHeight, 6),
+            round(s.DesignParameters.StartGradient * 100, 6),
+        )
+        for s in segs
+    ]
     print("vertical segments (dist, height, grade%):", got)
     expected_starts = [p for p in op._points[:-1]]
     check(len(segs) == len(op._points) - 1, "wrong segment count")

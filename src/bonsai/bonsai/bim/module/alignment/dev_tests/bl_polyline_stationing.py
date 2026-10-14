@@ -6,11 +6,11 @@ import sys
 import traceback
 
 import bpy
+import ifcopenshell.api.alignment
+import ifcopenshell.util.placement
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
-import ifcopenshell.util.placement
 
 
 def check(cond, msg):
@@ -44,8 +44,9 @@ try:
     from bonsai.bim.module.alignment import decorator as dec_mod
 
     # ---- Add Alignment (Polyline) with a start station: referent created now, at the origin
-    r = bpy.ops.align.add_alignment(alignment_name="Survey", definition="POLYLINE", define_stationing=True,
-                                    start_station="1+000")
+    r = bpy.ops.align.add_alignment(
+        alignment_name="Survey", definition="POLYLINE", define_stationing=True, start_station="1+000"
+    )
     check(r == {"FINISHED"}, "add")
     a = next(x for x in ifc.by_type("IfcAlignment") if x.Name == "Survey")
     start = A.find_stationing_referent_at(a, 0.0)
@@ -56,7 +57,12 @@ try:
     A.set_polyline_points(a, [(10.0, 20.0, 5.0), (110.0, 20.0, 5.0), (110.0, 70.0, 15.0)], 3)
     check(start.ObjectPlacement.is_a("IfcLinearPlacement"), "start referent not moved onto the curve")
     check(start.ObjectPlacement.RelativePlacement.Location.BasisCurve == A.get_polyline_curve(a), "basis curve")
-    print("start referent after drawing:", where(start), "object at", tuple(round(v, 3) for v in tool.Ifc.get_object(start).location))
+    print(
+        "start referent after drawing:",
+        where(start),
+        "object at",
+        tuple(round(v, 3) for v in tool.Ifc.get_object(start).location),
+    )
     check(where(start) == (10.0, 20.0, 5.0), "start referent not at the first point")
     check(tuple(round(v, 3) for v in tool.Ifc.get_object(start).location) == (10.0, 20.0, 5.0), "referent object")
 
@@ -73,7 +79,16 @@ try:
 
     # ---- editing the points moves the referents, their fallback positions, and their objects
     A.set_polyline_points(a, [(0.0, 0.0, 5.0), (100.0, 0.0, 5.0), (100.0, 50.0, 15.0)], 3)
-    print("after edit: start", where(start), "fallback", fallback(start), "| equation", where(eq), "fallback", fallback(eq))
+    print(
+        "after edit: start",
+        where(start),
+        "fallback",
+        fallback(start),
+        "| equation",
+        where(eq),
+        "fallback",
+        fallback(eq),
+    )
     check(where(start) == (0.0, 0.0, 5.0) and fallback(start) == (0.0, 0.0, 5.0), "start not moved")
     check(where(eq)[:2] == (100.0, round(50.0 * t, 3)) and fallback(eq) == where(eq), "equation not moved")
     check(tuple(round(v, 3) for v in tool.Ifc.get_object(start).location) == (0.0, 0.0, 5.0), "start object not moved")
@@ -83,8 +98,13 @@ try:
     D = dec_mod.VerticalProfileDecorator
     D._compute_profile(a)
     print("profile verticals:", D.available_verticals)
-    print("profile legs:", [(round(i["dist"], 3), round(i["h_len"], 3), round(i["g_start"] * 100, 3), i["start_label"], i["end_label"])
-                            for i in D.segments_info])
+    print(
+        "profile legs:",
+        [
+            (round(i["dist"], 3), round(i["h_len"], 3), round(i["g_start"] * 100, 3), i["start_label"], i["end_label"])
+            for i in D.segments_info
+        ],
+    )
     check(len(D.segments_info) == 2 and D.segments_info[1]["dist"] == 100.0, "profile legs")
     check(abs(D.dist_max - (100.0 + math.hypot(50.0, 10.0))) < 1e-9, "profile length is the 3D length")
     check(D.segments_info[0]["start_label"] == "Start" and D.segments_info[1]["end_label"] == "End", "labels")
@@ -119,7 +139,9 @@ try:
 
     for alignment in (a, b):
         rec = Rec()
-        ui_mod.ALIGN_PT_alignment_segments._draw_polyline(None, rec, bpy.context.scene.CivilAlignmentProperties, alignment)
+        ui_mod.ALIGN_PT_alignment_segments._draw_polyline(
+            None, rec, bpy.context.scene.CivilAlignmentProperties, alignment
+        )
         print("panel:", alignment.Name, rec.out)
     check("<align.show_vertical_profile>" in rec.out or True, "")
     print("POLYLINE_STATIONING_OK")

@@ -7,11 +7,11 @@ import tempfile
 import traceback
 
 import bpy
+import ifcopenshell.api.alignment
+import ifcopenshell.util.element
 
 import bonsai.bim.handler
 import bonsai.tool as tool
-import ifcopenshell.api.alignment
-import ifcopenshell.util.element
 
 
 def check(cond, msg):
@@ -41,9 +41,7 @@ def kp_objects():
 
 def summary(alignment):
     refs = kp_referents(alignment)
-    return [
-        (r.Name, round(ifcopenshell.util.element.get_pset(r, "Pset_Stationing", "Station"), 3)) for r in refs
-    ]
+    return [(r.Name, round(ifcopenshell.util.element.get_pset(r, "Pset_Stationing", "Station"), 3)) for r in refs]
 
 
 def consistent(alignment, label):
@@ -62,9 +60,12 @@ def consistent(alignment, label):
 def create_alignment(name, with_key_points):
     ifc = tool.Ifc.get()
     alignment = ifcopenshell.api.alignment.create_by_pi_method(
-        ifc, name,
-        [(0.0, 0.0), (1000.0, 0.0), (1000.0, 1000.0)], [(300.0, 80.0, 80.0)],
-        [(0.0, 0.0), (1000.0, 5.0), (1900.0, 0.0)], [400.0],
+        ifc,
+        name,
+        [(0.0, 0.0), (1000.0, 0.0), (1000.0, 1000.0)],
+        [(300.0, 80.0, 80.0)],
+        [(0.0, 0.0), (1000.0, 5.0), (1900.0, 0.0)],
+        [400.0],
     )
     ifcopenshell.api.alignment.add_stationing_referent(ifc, "start", alignment, 0.0, 0.0)
     tool.Alignment.create_object_for_alignment(alignment)
@@ -146,8 +147,12 @@ try:
     ifc = tool.Ifc.get()
     a = next(x for x in ifc.by_type("IfcAlignment") if x.Name == "KP")
     b = next(x for x in ifc.by_type("IfcAlignment") if x.Name == "NoKP")
-    print("reloaded: KP has key points:", tool.Alignment.has_key_point_referents(a),
-          "| NoKP:", tool.Alignment.has_key_point_referents(b))
+    print(
+        "reloaded: KP has key points:",
+        tool.Alignment.has_key_point_referents(a),
+        "| NoKP:",
+        tool.Alignment.has_key_point_referents(b),
+    )
     check(tool.Alignment.has_key_point_referents(a), "key points not detected after reload")
     check(not tool.Alignment.has_key_point_referents(b), "false positive after reload")
     check(summary(a) == s4, "reloaded key points differ")

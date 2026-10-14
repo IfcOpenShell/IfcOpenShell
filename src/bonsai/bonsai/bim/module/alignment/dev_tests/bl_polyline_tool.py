@@ -5,12 +5,12 @@ import sys
 import traceback
 
 import bpy
-
-import bonsai.bim.handler
-import bonsai.tool as tool
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.geometry
+
+import bonsai.bim.handler
+import bonsai.tool as tool
 
 
 def check(cond, msg):
@@ -64,7 +64,9 @@ try:
     curve = ifc.createIfcIndexedPolyCurve(Points=plist, Segments=None, SelfIntersect=False)
     rep = ifc.createIfcShapeRepresentation(
         ContextOfItems=ifcopenshell.api.alignment.get_axis_subcontext(ifc),
-        RepresentationIdentifier="Axis", RepresentationType="Curve3D", Items=(curve,),
+        RepresentationIdentifier="Axis",
+        RepresentationType="Curve3D",
+        Items=(curve,),
     )
     c.ObjectPlacement = ifc.createIfcLocalPlacement(
         RelativePlacement=ifc.createIfcAxis2Placement3D(Location=ifc.createIfcCartesianPoint((0.0, 0.0, 0.0)))
@@ -79,10 +81,19 @@ try:
     # line-index segments are read in order; arc segments are refused
     d = ifc.createIfcAlignment(GlobalId=ifcopenshell.guid.new(), Name="Seg")
     pl = ifc.createIfcCartesianPointList2D(((0.0, 0.0), (10.0, 0.0), (20.0, 5.0)))
-    seg_curve = ifc.createIfcIndexedPolyCurve(Points=pl, Segments=[ifc.createIfcLineIndex((1, 2, 3))], SelfIntersect=False)
-    ifcopenshell.api.geometry.assign_representation(ifc, d, ifc.createIfcShapeRepresentation(
-        ContextOfItems=ifcopenshell.api.alignment.get_axis_subcontext(ifc),
-        RepresentationIdentifier="Axis", RepresentationType="Curve2D", Items=(seg_curve,)))
+    seg_curve = ifc.createIfcIndexedPolyCurve(
+        Points=pl, Segments=[ifc.createIfcLineIndex((1, 2, 3))], SelfIntersect=False
+    )
+    ifcopenshell.api.geometry.assign_representation(
+        ifc,
+        d,
+        ifc.createIfcShapeRepresentation(
+            ContextOfItems=ifcopenshell.api.alignment.get_axis_subcontext(ifc),
+            RepresentationIdentifier="Axis",
+            RepresentationType="Curve2D",
+            Items=(seg_curve,),
+        ),
+    )
     check(A.get_polyline_points(d)[0] == [(0.0, 0.0), (10.0, 0.0), (20.0, 5.0)], "line index read")
     seg_curve.Segments = [ifc.createIfcArcIndex((1, 2, 3))]
     try:
