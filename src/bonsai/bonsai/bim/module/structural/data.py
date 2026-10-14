@@ -309,7 +309,7 @@ class StructuralItemLoadsData:
             elif abs(moment) < 10 ** -(props.force_decimals + 1):
                 text = "ΣM = 0"
             else:
-                text = f"ΣM = {abs(moment):.{props.force_decimals}f} {unit} {'CCW' if moment > 0 else 'CW'}"
+                text = f"ΣM = {moment:+.{props.force_decimals}f} {unit}"  # Counter-clockwise positive.
             moments.append({"id": case.id(), "name": case.Name or "Unnamed", "moment": text})
         return sorted(moments, key=lambda moment: moment["name"])
 
