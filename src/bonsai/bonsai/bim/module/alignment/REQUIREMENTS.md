@@ -7,7 +7,43 @@ resolving them.
 
 ## Status and work plan (resume here)
 
-*Last updated 2026-10-14.* **2026-10-14, interactive testing in Blender (the user's manual tests):**
+*Last updated 2026-10-14.* **2026-10-14, cant frame (branch `rab_cant_frame`, off `rab_infrastructure`,
+not pushed; needs a wrapper rebuild, done):** the cant frame mixed two conventions. A cant segment's
+position and parent curve are in (distance along, deviating elevation), but its Axis is (0, cos φ, sin φ)
+with y to the left and z up. The kernel put the slope of the deviating elevation into RefDirection's y,
+which is lateral for Axis, so it came out as a sideways yaw (the 3D RefDirection was D' off the path's
+heading and level while the curve climbed or fell), and composing the frame incrementally from the
+placement left it non-orthonormal (up to 8.5e-5 on a linear transition). Now, with θ = atan(D') and φ the
+cross slope angle, interpolated by D as before:
+
+- the cant frame is absolute, R_c = P(θ)·R_x(φ): RefDir (cos θ, 0, sin θ), Y (sin θ cos φ, sin φ,
+  -cos θ cos φ), Axis (-sin θ sin φ, cos φ, cos θ sin φ), for spirals and IfcLine cant segments
+  (`cant_frame` in `IfcCurveSegment.cpp`); `cant_curve_segment_function` uses it as it is;
+- in 3D (`cant_fn_evaluator`), m = g·P(ε)·c with ε = atan(tan α + tan θ) - α - θ, so RefDir is the
+  exact tangent of the 3D curve (cos β, sin β, tan α + D') normalized and Axis = cos φ L + sin φ N;
+- positions are unchanged, bit for bit (160 cases, 3D and cant alone);
+- `_update_zero_length_segment_placement` writes a cant terminator's placement in the data convention
+  (RefDirection in the (along, D) plane, Axis (0, cos φ, sin φ)) and takes the cross slope from Axis
+  on the horizontal to the left.
+
+Tests: `test/geom/test_cant_frame.py` (every cant segment type, transitions and constant cant, under a
+line and an arc, flat and 4% grade, metres and feet): RefDir equals the normalized central difference
+of the 3D positions to 1e-8, the frame is orthonormal to 1e-12, Axis makes φ with L in the section to
+1e-9, and the cant curve's own frame is P(θ)·R_x(φ). `test_cant_slope.py` reads the slope from
+RefDirection's z; the linear transition cross slope tolerances of `e1d9d6ef3` are back to 1e-9;
+`test_cant_terminal_curve_segment_placement` checks the terminator. 942 alignment and geometry tests
+pass (only the 3 manifold tests fail, `WITH_MANIFOLD` is off). The guide's Chapter 4 is being
+rewritten to this definition; its cant reference CSVs and plots need regenerating with this build.
+
+**2026-10-14, update_layout_segments in linear time (`b2d5b471a` on `rab_infrastructure`, not pushed):**
+profiling the PI-editing operators showed Apply quadratic in the number of segments, almost all of it in
+`update_layout_segments` (`get_mapped_segments` per segment, the curve's Segments copied for each
+segment added, membership in entity lists). Apply on an 800 segment alignment went from 8.2 to 1.6 s,
+BPaimio from 0.8 to 0.19 s. Not done (the user: 200 PIs is uncommon): OpenCASCADE builds a sampled
+polyline's wire one edge at a time, O(N^2) in vertices (0.8 s of the remaining 1.6 s), and a layout
+built from scratch still adds its segments one at a time through `create_layout_segment`.
+
+**2026-10-14, interactive testing in Blender (the user's manual tests):**
 eleven commits on `rab_infrastructure`, each confirmed by the user in the UI:
 
 - `0bcd20642` the vertical profile view no longer crashes Blender after a file is loaded: the decorator
@@ -113,7 +149,8 @@ regenerating with this build; its Chapter 4 (sections 4.4, 4.7 and 4.8) already 
 slopes.
 
 **~~Open (2026-10-14), needs the user's decision~~ -- decided 2026-10-14: accept the documented frame
-(option 1, `79c46ecb2`), the linear transition cross slope checks allow 5e-7:** with the correct slope, 10 alignment tests failed at
+(option 1, `79c46ecb2`), the linear transition cross slope checks allow 5e-7; superseded the same day by
+the cant frame fix above, which makes the frame orthonormal and puts the tolerances back to 1e-9:** with the correct slope, 10 alignment tests failed at
 1e-9 for LINEARTRANSITION segments whose cant decreases (exits, both rails canted): in
 `test_cant_cross_slope` the cross slope at the start and middle is off by about 7e-8, and in
 `test_segment_end_point` the end Axis is 5.6e-8 off level. The cause is the cant frame itself, which
