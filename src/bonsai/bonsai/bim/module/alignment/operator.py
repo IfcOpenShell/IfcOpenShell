@@ -1516,26 +1516,25 @@ def _refresh_pi_marker_visuals(context, alignment_id) -> None:
     context.workspace.status_text_set(draw)
 
 
-def _cant_lookup_for_pi_markers(alignment, n):
-    """(cant, rail_head_distance) per interior PI, in PI order, for feeding into
-    _pi_curve_radii_entry's VIENNESEBEND handling -- a fresh read of the alignment's *current* real
-    segments and cant layout (via _reconstruct_horizontal_pis, which already does this exact
-    positional lookup when reconstructing markers) taken right before a PI-method Apply rebuilds
-    everything, so a marker/row that doesn't itself store cant data still gets the real value.
+def _cant_lookup_for_pi_markers(alignment, pis):
+    """(cant, rail_head_distance) for each of the interior PIs ``pis`` (local IFC positions, in PI
+    order), for feeding into _pi_curve_radii_entry's VIENNESEBEND handling -- a fresh read of the
+    alignment's *current* real segments and cant layout (via _reconstruct_horizontal_pis) taken right
+    before a PI-method Apply rebuilds everything, so a marker/row that doesn't itself store cant data
+    still gets the real value.
 
-    Always returns exactly n entries, defaulting to (0.0, 1.0) for any PI
-    _reconstruct_horizontal_pis doesn't account for (a different count than n means something --
-    typically a manually added/removed marker -- has already broken the positional correspondence
-    this relies on, same as the reason _reconstruct_horizontal_pis/follow_horizontal_with_cant both
-    already tolerate a mismatched count elsewhere rather than erroring on it).
+    Each PI gets the cant of the current PI it corresponds to, matched as map_segments_by_pi matches
+    segments (tool.Alignment.match_pis): by order when the count is unchanged, else unmoved PIs by
+    position, so inserting or deleting a PI doesn't shift the cant onto its neighbours. A new PI, or
+    one with no current counterpart, gets (0.0, 1.0).
     """
+    default = (0.0, 1.0)
     h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     if h_layout is None:
-        return [(0.0, 1.0)] * n
+        return [default] * len(pis)
     specs, _ = _reconstruct_horizontal_pis(h_layout)
-    lookup = [(spec["cant"], spec["rail_head_distance"]) for spec in specs]
-    lookup += [(0.0, 1.0)] * (n - len(lookup))
-    return lookup[:n]
+    matches = tool.Alignment.match_pis([spec["pi_local"] for spec in specs], list(pis))
+    return [default if o is None else (specs[o]["cant"], specs[o]["rail_head_distance"]) for o in matches]
 
 
 def _pi_deflection(hpoints, k):
@@ -2295,7 +2294,7 @@ class ALIGN_OT_edit_horizontal_pis(Operator, tool.Ifc.Operator):
         _populate_join_distances(
             interior_markers,
             [start] + [spec["pi_local"] for spec in specs] + [end],
-            _cant_lookup_for_pi_markers(alignment, len(specs)),
+            _cant_lookup_for_pi_markers(alignment, [spec["pi_local"] for spec in specs]),
         )
 
         alignment_decorator.AlignmentSegmentDecorator.uninstall()
@@ -2361,7 +2360,7 @@ class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
                 return {"CANCELLED"}
 
         hpoints = [start] + [_marker_local_ifc(ifc, unit_scale, m) for m in interior_markers] + [end]
-        cant_lookup = _cant_lookup_for_pi_markers(alignment, len(interior_markers))
+        cant_lookup = _cant_lookup_for_pi_markers(alignment, hpoints[1:-1])
 
         # Compute (and write back onto the markers) any join_next PI's next-PI radius/curve type
         # before building radii, so "Join to Next PI" doesn't require the user to already know a
@@ -2541,7 +2540,7 @@ class ALIGN_OT_load_horizontal_pi_table(Operator, tool.Ifc.Operator):
             hpoints = (
                 [start] + [(tool.Alignment.exact(row, "x"), tool.Alignment.exact(row, "y")) for row in rows] + [end]
             )
-            _populate_join_distances(rows, hpoints, _cant_lookup_for_pi_markers(alignment, len(rows)))
+            _populate_join_distances(rows, hpoints, _cant_lookup_for_pi_markers(alignment, hpoints[1:-1]))
         props.editing_horizontal_pi_alignment_id = alignment.id()
 
         self.report({"INFO"}, f"Loaded {len(specs)} PI(s)")
@@ -2592,7 +2591,7 @@ class ALIGN_OT_apply_horizontal_pi_table(Operator, tool.Ifc.Operator):
 
         rows = list(props.horizontal_pi_rows)
         hpoints = [start] + [(tool.Alignment.exact(row, "x"), tool.Alignment.exact(row, "y")) for row in rows] + [end]
-        cant_lookup = _cant_lookup_for_pi_markers(alignment, len(rows))
+        cant_lookup = _cant_lookup_for_pi_markers(alignment, hpoints[1:-1])
 
         # See ALIGN_OT_apply_pi_curve's own call to this -- same auto-compute, same reasoning,
         # duplicated here rather than shared only because the two operators build hpoints/radii
@@ -3345,7 +3344,7 @@ class _ExtendHorizontalAlignment(_DrawHorizontalAlignment):
             return "Can't extend: some horizontal segments couldn't be read as PIs"
         start, end = tool.Alignment.get_alignment_start_end_points(alignment)
         self._existing_hpoints = [start] + [spec["pi_local"] for spec in specs] + [end]
-        cant_lookup = _cant_lookup_for_pi_markers(alignment, len(specs))
+        cant_lookup = _cant_lookup_for_pi_markers(alignment, [spec["pi_local"] for spec in specs])
         self._existing_radii = []
         for i, spec in enumerate(specs):
             # a stand-in for a PI marker, its values staged exactly as a real marker's are, so

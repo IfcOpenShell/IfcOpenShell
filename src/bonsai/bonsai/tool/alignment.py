@@ -2485,20 +2485,29 @@ class Alignment:
                     new_segments[j] = old_segments[old_groups[o][role]]
 
         pair(len(old_groups) - 1, len(new_groups) - 1)
+        for n, o in enumerate(cls.match_pis(old_pis, new_pis)):
+            if o is not None:
+                pair(o, n)
+        return new_segments
+
+    @classmethod
+    def match_pis(cls, old_pis: list, new_pis: list) -> list[Optional[int]]:
+        """For each new interior PI, the index of the old PI it is (or None for a new one). PIs correspond
+        one to one when their count is unchanged (moved PIs); otherwise unmoved PIs are matched by
+        position, so an inserted or deleted PI doesn't shift the others."""
         if len(old_pis) == len(new_pis):
-            for k in range(len(new_pis)):
-                pair(k, k)
-            return new_segments
+            return list(range(len(new_pis)))
 
         def key(point) -> tuple:
             return tuple(round(float(c), 4) for c in point)
 
+        result: list[Optional[int]] = [None] * len(new_pis)
         matcher = difflib.SequenceMatcher(None, [key(p) for p in old_pis], [key(p) for p in new_pis], autojunk=False)
         for tag, i1, i2, j1, j2 in matcher.get_opcodes():
             if tag in ("equal", "replace"):
                 for o, n in zip(range(i1, i2), range(j1, j2)):
-                    pair(o, n)
-        return new_segments
+                    result[n] = o
+        return result
 
     @classmethod
     def get_layout_end_distance(cls, layout: ifcopenshell.entity_instance) -> Optional[float]:
