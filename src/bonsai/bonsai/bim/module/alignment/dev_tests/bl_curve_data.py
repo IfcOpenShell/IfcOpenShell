@@ -102,6 +102,8 @@ try:
         spiral_in, spiral_arc = dump["Spiral"][1], dump["Spiral"][2]
         x, y, theta = ifcopenshell.api.alignment.compute_clothoid_end(100.0, 0.0, 1.0 / 500.0)
         expected = [
+            "R1 = ∞",  # a spiral's start and end radii (infinite at the tangent)
+            "R2 = 500.00 m",
             f"T1 = {x - y / math.tan(theta):.2f} m",
             f"T2 = {y / math.sin(theta):.2f} m",
             "Δ = 5°43'46.48\" Lt",
