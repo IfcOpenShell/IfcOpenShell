@@ -212,6 +212,44 @@ def test_segment_representations_are_rebuilt():
         assert segment.Representation.Representations[0].Items[0] == curve_segment
 
 
+def _curve_state(layout):
+    """Every IfcCurveSegment of the layout's curve with its transition code and direction, in order."""
+    curve = ifcopenshell.api.alignment.get_layout_curve(layout)
+    directions = [tuple(round(c, 9) for c in cs.Placement.RefDirection.DirectionRatios) for cs in curve.Segments]
+    return list(zip(_geometry(layout), [cs.Transition for cs in curve.Segments], directions))
+
+
+@pytest.mark.parametrize("family", ["CLOTHOID", "HELMERTCURVE"])
+def test_insert_and_delete_rebuild_the_curve_as_a_fresh_layout(family):
+    """Removed, kept and new segments all end up on the curve in order, with the transition codes and
+    terminator of a freshly built layout (a Helmert curve maps to two curve segments)."""
+    radii = [(200.0, 60.0, 60.0, family), (300.0, 50.0, 50.0, family)]
+    file = _file()
+    points = [HPOINTS[0], HPOINTS[1], HPOINTS[3]]
+    alignment = ifcopenshell.api.alignment.create_by_pi_method(file, "A", points, radii[:1], VPOINTS, [100.0, 80.0])
+    h = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+
+    def update(points, radii, mapping):
+        definitions = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(points, radii)
+        ifcopenshell.api.alignment.update_layout_segments(
+            file, h, [(k, _horizontal_design_parameters(file, d)) for k, d in zip(mapping, definitions)]
+        )
+        reference_file = _file()
+        reference = ifcopenshell.api.alignment.get_horizontal_layout(
+            ifcopenshell.api.alignment.create_by_pi_method(reference_file, "R", points, radii, VPOINTS, [100.0, 80.0])
+        )
+        assert _curve_state(h) == _curve_state(reference)
+        assert _terminator_start(h) == _terminator_start(reference)
+        _no_orphan_curve_segments(file)
+
+    # insert PI 2: LINE SPIRAL ARC SPIRAL | LINE SPIRAL ARC SPIRAL (new) | LINE
+    real = _real(h)
+    update(HPOINTS, radii, real[:4] + [None] * 4 + [real[4]])
+    # delete it again
+    real = _real(h)
+    update(points, radii[:1], real[:4] + [real[8]])
+
+
 def test_rejects_segments_from_another_layout():
     file = _file()
     alignment = _alignment(file, [200.0, 300.0])
