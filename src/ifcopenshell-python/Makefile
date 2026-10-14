@@ -1,28 +1,7 @@
-SHELL := sh
-IS_STABLE:=FALSE
-VERSION:=$(shell cat ../../VERSION)
-VERSION_BASE:=$(shell sed -E 's/[[:alpha:]]+[0-9]+$$//' ../../VERSION)
-VERSION_PYTHON:=$(shell sed 's/alpha/a/' ../../VERSION)
-VERSION_DATE:=$(shell date '+%y%m%d')
-VERSION_DAILY:=$(VERSION_BASE)a$(VERSION_DATE)
+include ../vars.mk
+
 PYVERSION:=py311
 PLATFORM:=linux64
-
-PYTHON:=python3
-PIP:=pip3
-SED:=sed -i
-VENV_ACTIVATE:=bin/activate
-
-ifeq ($(OS),Windows_NT)
-PYTHON:=python
-VENV_ACTIVATE:=Scripts/activate
-else
-UNAME_S:=$(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-PYTHON:=python3
-SED:=sed -i '' -e
-endif
-endif
 
 SUPPORTED_PYVERSIONS := py310 py311 py312 py313 py314 py315
 

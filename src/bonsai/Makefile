@@ -16,31 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-SHELL := sh
-PYTHON:=python3
-PIP:=pip3
-SED:=sed -i
-VENV_ACTIVATE:=bin/activate
+include ../vars.mk
 
-ifeq ($(OS),Windows_NT)
-PYTHON:=python
-VENV_ACTIVATE:=Scripts/activate
-else
-UNAME_S:=$(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-PYTHON:=python3
-SED:=sed -i '' -e
-endif
-endif
-
-IS_STABLE:=FALSE
-VERSION:=$(shell cat ../../VERSION)
-VERSION_BASE:=$(shell sed -E 's/[[:alpha:]]+[0-9]+$$//' ../../VERSION)
-VERSION_PYTHON:=$(shell sed 's/alpha/a/' ../../VERSION)
-VERSION_SEMVER:=$(shell sed -E 's/([[:alpha:]]+)([0-9]+)$$/-\1\2/' ../../VERSION)
-VERSION_DATE:=$(shell date '+%y%m%d')
-VERSION_DAILY:=$(VERSION_BASE)a$(VERSION_DATE)
-VERSION_SEMVER_DAILY:=$(VERSION_BASE)-alpha$(VERSION_DATE)
 LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
 LAST_COMMIT_DATE:=$(shell git show -s --format=%cI)
 LAST_GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD)
