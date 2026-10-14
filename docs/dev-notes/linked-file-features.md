@@ -285,7 +285,9 @@ stay compatible.
   entity's STEP id against the *host* session's id map and can return an arbitrary
   host object (in the test project: the drawing camera, crashing
   `generate_material_layers` with "expected 'Mesh' found 'Camera'"). Guarded via
-  `element.file is tool.Ifc.get()` in `generate_material_layers` and the merge step.
+  `element.file == tool.Ifc.get()` in `generate_material_layers` and the merge step.
+  Not `is`: in 0.9 `entity_instance.file` hands out a new wrapper on every access, so
+  an identity test treats every host element as linked and skips cut fills entirely.
 - **Paint order**: the projection-under-cut convention was enforced only in
   OPENCASCADE mode (`move_projection_to_bottom`); BISECT appends its own cut paths
   last so it never needed it — but the retained serializer cuts of linked models are

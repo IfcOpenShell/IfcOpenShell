@@ -765,7 +765,7 @@ class CreateDrawing(bpy.types.Operator):
             if "projection" in el.get("class", "").split():
                 continue
             element = self.get_element_by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
-            if element is None or element.file is not tool.Ifc.get():
+            if element is None or element.file != tool.Ifc.get():
                 # Linked model element - no Blender object to bisect, and its
                 # STEP id must not be resolved against the host session.
                 continue
@@ -1611,7 +1611,7 @@ class CreateDrawing(bpy.types.Operator):
 
             # Resolving a linked element's STEP id against the host session
             # would return an arbitrary host object.
-            obj = tool.Ifc.get_object(element) if element is not None and element.file is tool.Ifc.get() else None
+            obj = tool.Ifc.get_object(element) if element is not None and element.file == tool.Ifc.get() else None
 
             if not obj:  # This is a linked model object. For now, do nothing.
                 continue
