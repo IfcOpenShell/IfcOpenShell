@@ -169,7 +169,8 @@ class CreateProject(bpy.types.Operator):
     def create_objects_for_orphan_spatial_elements(self, context: bpy.types.Context) -> None:
         # A project template may have merged its own spatial structure into the IFC file.
         ifc_file = tool.Ifc.get()
-        orphans = {e for e in ifc_file.by_type("IfcSpatialElement") if tool.Ifc.get_object(e) is None}
+        spatial_class = "IfcSpatialStructureElement" if ifc_file.schema == "IFC2X3" else "IfcSpatialElement"
+        orphans = {e for e in ifc_file.by_type(spatial_class) if tool.Ifc.get_object(e) is None}
         if not orphans:
             return
         logger = logging.getLogger("ImportIFC")
