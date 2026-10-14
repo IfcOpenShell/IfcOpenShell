@@ -300,7 +300,12 @@ def get_kept_centre_steps(
     if not entry:
         return []
     i, _, magnitude, arm, r, _ = entry
-    words = {"ARM": f"moment arm d_{{{i}}}", "REACH": f"distance r_{{{i}}}", "SWING": f"angle \\phi_{{{i}}}"}
+    # Words set as text, not as letters of the maths around them.
+    words = {
+        "ARM": f"\\text{{moment arm }} d_{{{i}}}",
+        "REACH": f"\\text{{distance }} r_{{{i}}}",
+        "SWING": f"\\text{{angle }} \\phi_{{{i}}}",
+    }
     steps = [
         f"\\text{{Kept: }} \\Sigma M_A = {kept:.2f}{text_unit}",
         f"\\text{{A is placed for it, its }} {words[kind]} \\text{{ found}}",
