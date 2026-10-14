@@ -93,7 +93,7 @@ def get_report_data(
     for case in [g for g in model.LoadedBy or [] if g.is_a("IfcStructuralLoadCase")]:
         points = []
         drawing = None
-        for item in get_point_items(case):
+        for item in tool.Structural.get_point_items(case):
             if items is not None and item not in items:
                 continue
             activities = [a for a in tool.Structural.get_chain_activities(item, case) if is_point_force(a)]
@@ -166,7 +166,7 @@ def get_moment_calculation(
     text_unit = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", unit) + "}"
     length_text = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", length_unit) + "}"
     rows, steps, palette, values = [], [], [], []
-    for item in get_point_items(case):
+    for item in tool.Structural.get_point_items(case):
         if not (obj := tool.Ifc.get_object(item)) or obj.type != "MESH" or not obj.data.vertices:
             continue
         colors = get_force_colors(drawing, item)
@@ -296,24 +296,6 @@ def write_resolved_diagram(
         tool.Structural.get_axes_slope(item),
     )
     return write_diagram(drawing, item, path)
-
-
-def get_point_items(case: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-    """The structural point connections with loads in a load case, directly or in its load groups, by name"""
-    items, groups, seen = set(), [case], set()
-    while groups:
-        group = groups.pop()
-        if group.id() in seen:
-            continue
-        seen.add(group.id())
-        for rel in group.IsGroupedBy or []:
-            for obj in rel.RelatedObjects:
-                if obj.is_a("IfcStructuralLoadGroup") and not obj.is_a("IfcStructuralLoadCase"):
-                    groups.append(obj)
-                elif obj.is_a("IfcStructuralActivity") and (connects := obj.AssignedToStructuralItem):
-                    if (item := connects[0].RelatingElement) and item.is_a("IfcStructuralPointConnection"):
-                        items.add(item)
-    return sorted(items, key=lambda item: (item.Name or "", item.id()))
 
 
 def is_point_force(activity: ifcopenshell.entity_instance) -> bool:

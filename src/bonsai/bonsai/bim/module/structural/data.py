@@ -200,7 +200,7 @@ class StructuralItemLoadsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"load_cases": cls.load_cases(), "unloaded_cases": cls.unloaded_cases()}
+        cls.data = {"load_cases": cls.load_cases(), "unloaded_cases": cls.unloaded_cases(), "moments": cls.moments()}
         cls.is_loaded = True
 
     @classmethod
@@ -286,6 +286,32 @@ class StructuralItemLoadsData:
             eighth, angle, _, _ = tool.Structural.get_eighth(x, z)
             label += f" at {angle:.{props.angle_decimals}f}° {eighth}"
         return label
+
+    @classmethod
+    def moments(cls) -> list[dict[str, str]]:
+        """The load cases taking moments about the active item, as point A, with the sum of their moments"""
+        if not (item := cls.get_item()) or not item.is_a("IfcStructuralPointConnection"):
+            return []
+        ifc_file = tool.Ifc.get()
+        props = tool.Structural.get_structural_props()
+        symbol = lambda unit_type, default: (
+            ifcopenshell.util.unit.get_unit_symbol(unit)
+            if (unit := ifcopenshell.util.unit.get_project_unit(ifc_file, unit_type))
+            else default
+        )
+        unit = f"{symbol('FORCEUNIT', 'N')}.{symbol('LENGTHUNIT', 'm')}"
+        moments = []
+        for case in ifc_file.by_type("IfcStructuralLoadGroup"):
+            if tool.Structural.get_moment_centre(case) != item:
+                continue
+            if (moment := tool.Structural.get_moment_about(case, item)) is None:
+                text = "no point forces"
+            elif abs(moment) < 10 ** -(props.force_decimals + 1):
+                text = "ΣM = 0"
+            else:
+                text = f"ΣM = {abs(moment):.{props.force_decimals}f} {unit} {'CCW' if moment > 0 else 'CW'}"
+            moments.append({"id": case.id(), "name": case.Name or "Unnamed", "moment": text})
+        return sorted(moments, key=lambda moment: moment["name"])
 
     @classmethod
     def unloaded_cases(cls) -> list[str]:

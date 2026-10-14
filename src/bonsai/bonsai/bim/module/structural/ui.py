@@ -362,6 +362,16 @@ class BIM_PT_structural_item_loads(Panel):
                 row.operator("bim.remove_structural_activity", text="", icon="X").activity = load["activity"]
         if unloaded := StructuralItemLoadsData.data["unloaded_cases"]:
             layout.label(text=f"No loads in: {', '.join(unloaded)}")
+        if moments := StructuralItemLoadsData.data["moments"]:
+            box = layout.box()
+            box.label(text="Moments About This Point (A)", icon="FORCE_VORTEX")
+            for moment in moments:
+                row = box.row(align=True)
+                row.label(text=f"{moment['name']}: {moment['moment']}")
+                row.operator("bim.edit_structural_moment_centre", text="", icon="GREASEPENCIL").load_case = moment["id"]
+                row.operator(
+                    "bim.show_structural_load_case", text="", icon=get_load_case_eye(moment["id"]), emboss=False
+                ).load_case = moment["id"]
 
 
 class BIM_PT_structural_connection(Panel):
