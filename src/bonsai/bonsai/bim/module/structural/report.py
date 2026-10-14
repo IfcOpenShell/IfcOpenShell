@@ -194,9 +194,9 @@ def get_moment_calculation(
             locks = tool.Structural.get_locks(activity)
             if not locks[0]:
                 row["magnitude"] += " 🔓"  # Found, to make the moment kept.
-            unknowns.append((i, locks, math.hypot(x, z), arm, math.hypot(dx, dz)))
+            unknowns.append((i, locks, math.hypot(x, z), arm, math.hypot(dx, dz), activity))
             rows.append(row)
-            steps += get_arm_steps(i, dx, dz, x, z, arm, length_text)
+            steps += get_arm_steps(i, dx, dz, x, z, arm, length_text, point, at)
             sign = "-" if moment < 0 else ""
             steps.append(
                 f"M_{{{i}}} = {sign}F_{{{i}}}\\, d_{{{i}}} = {sign}({math.hypot(x, z):.2f})({arm:.2f}{length_text})"
@@ -232,6 +232,7 @@ def get_moment_calculation(
                     f"{{\\color{{#8c8c8c}}\\qquad {step}}}" if isinstance(step, Detail) else step, palette
                 ),
                 "detail": isinstance(step, Detail),
+                "lead": isinstance(step, Lead),
             }
             for step in steps
             if detailed or not isinstance(step, Detail)
@@ -245,20 +246,23 @@ def get_moment_calculation(
 def get_kept_moment_steps(
     case: ifcopenshell.entity_instance,
     values: list[float],
-    unknowns: list[tuple[int, tuple[bool, bool], float, float, float]],
+    unknowns: list[tuple[int, tuple[bool, bool], float, float, float, ifcopenshell.entity_instance]],
     text_unit: str,
     force_unit: str,
 ) -> list[str]:
     """How the one unknown was found, when a load case keeps a sum of moments: the moment it must make, then its
     magnitude from its arm, or its direction from where it acts.
 
-    :param unknowns: Each force's number, locks, magnitude, moment arm and distance r from A.
+    :param unknowns: Each force's number, locks, magnitude, moment arm, distance r from A and applied load.
     """
     kept = tool.Structural.get_resultant_moment(case)
+    kind, activity = tool.Structural.get_moment_centre_unknown(case)
+    if kept is not None and kind:
+        return get_kept_centre_steps(kind, activity, kept, values, unknowns, text_unit)
     found = [entry for entry in unknowns if not all(entry[1])]
     if kept is None or not found:
         return []
-    i, locks, magnitude, arm, r = found[0]
+    i, locks, magnitude, arm, r, _ = found[0]
     moment = values[i - 1]
     rest = sum(values) - moment
     force_text = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", force_unit) + "}"
@@ -282,9 +286,69 @@ def get_kept_moment_steps(
     return steps
 
 
-def get_arm_steps(i: int, dx: float, dz: float, x: float, z: float, arm: float, length_text: str) -> list[str]:
+def get_kept_centre_steps(
+    kind: str,
+    activity: ifcopenshell.entity_instance,
+    kept: float,
+    values: list[float],
+    unknowns: list[tuple[int, tuple[bool, bool], float, float, float, ifcopenshell.entity_instance]],
+    text_unit: str,
+) -> list[str]:
+    """How A was placed when a load case keeps a sum of moments and A's place is its unknown: with one force, its
+    arm, r or angle from its moment; with several, A's place follows from them all, as moving A changes each"""
+    entry = next((e for e in unknowns if e[5] == activity), None)
+    if not entry:
+        return []
+    i, _, magnitude, arm, r, _ = entry
+    words = {"ARM": f"moment arm d_{{{i}}}", "REACH": f"distance r_{{{i}}}", "SWING": f"angle \\phi_{{{i}}}"}
+    steps = [
+        f"\\text{{Kept: }} \\Sigma M_A = {kept:.2f}{text_unit}",
+        f"\\text{{A is placed for it, its }} {words[kind]} \\text{{ found}}",
+    ]
+    if len(values) != 1 or not magnitude:
+        return steps  # Moving A changes every force's moment, so its place follows from them all at once.
+    length_text = text_unit.rpartition(".")[2].rstrip("}")
+    length_text = r"\ \text{" + length_text + "}"
+    if kind == "ARM":
+        value = bold(f"{abs(kept) / magnitude:.2f}", True, length_text)
+        steps.append(
+            f"d_{{{i}}} = \\frac{{|M_A|}}{{F_{{{i}}}}} = \\frac{{{abs(kept):.2f}}}{{{magnitude:.2f}}} = {value}"
+        )
+    elif kind == "REACH" and r and arm:
+        sine = arm / r
+        value = bold(f"{abs(kept) / (magnitude * sine):.2f}", True, length_text)
+        steps.append(
+            f"r_{{{i}}} = \\frac{{|M_A|}}{{F_{{{i}}} \\sin \\phi_{{{i}}}}} = "
+            f"\\frac{{{abs(kept):.2f}}}{{({magnitude:.2f})({sine:.4f})}} = {value}"
+        )
+    elif kind == "SWING" and r:
+        sine = min(abs(kept) / (magnitude * r), 1.0)
+        steps.append(
+            f"\\sin \\phi_{{{i}}} = \\frac{{|M_A|}}{{F_{{{i}}}\\, r_{{{i}}}}} = "
+            f"\\frac{{{abs(kept):.2f}}}{{({magnitude:.2f})({r:.2f})}} = {sine:.4f}"
+        )
+        angle = f"{math.degrees(math.asin(sine)):.1f}" + "^\\circ"
+        steps.append(f"\\phi_{{{i}}} = {bold(angle)}")
+    return steps
+
+
+def get_arm_steps(
+    i: int,
+    dx: float,
+    dz: float,
+    x: float,
+    z: float,
+    arm: float,
+    length_text: str,
+    point: Union[np.ndarray, None] = None,
+    at: Union[np.ndarray, None] = None,
+) -> list[str]:
     """How a force's moment arm is found, as a text finds it from the figure: r from A to the force's point, the
-    angle phi between r and the force's line of action, and d = r sin phi, the distance square to that line"""
+    angle phi between r and the force's line of action, d = r sin phi, the distance square to that line, and s =
+    r cos phi, along it from the force's point to the arm's foot, the right triangle's sides checked.
+
+    :param point: Where the force acts and where A is, to show in detail where r's run and rise come from.
+    """
     r = math.hypot(dx, dz)
     if r < 1e-9:
         return [f"r_{{{i}}} = 0:\\ F_{{{i}}} \\text{{ acts at A, so }} d_{{{i}}} = 0"]
@@ -292,7 +356,14 @@ def get_arm_steps(i: int, dx: float, dz: float, x: float, z: float, arm: float, 
     along_force = math.degrees(math.atan2(z, x)) % 360
     between = abs(along_force - along_r)
     phi = min(between % 180, 180 - between % 180)  # The acute angle between the two lines.
-    steps = [
+    steps = []
+    if point is not None and at is not None:
+        # From A to the force's point, as the table's distances run.
+        for axis, k, delta in (("x", 0, dx), ("z", 2, dz)):
+            step = f"\\Delta {axis}_{{{i}}} = {axis}_{{F{i}}} - {axis}_{{A}} = ({point[k]:.2f}) - ({at[k]:.2f}) = {delta:.2f}"
+            steps.append(Lead(step) if axis == "x" else Detail(step))
+    s = r * math.cos(math.radians(phi))
+    steps += [
         f"r_{{{i}}} = \\sqrt{{\\Delta x_{{{i}}}^2 + \\Delta z_{{{i}}}^2}} = \\sqrt{{({dx:.2f})^2 + ({dz:.2f})^2}}"
         f" = {r:.2f}{length_text}",
         Detail(
@@ -305,6 +376,12 @@ def get_arm_steps(i: int, dx: float, dz: float, x: float, z: float, arm: float, 
         ),
         f"\\phi_{{{i}}} = {phi:.1f}^\\circ \\text{{ between }} r_{{{i}}} \\text{{ and }} F_{{{i}}}\\text{{'s line of action}}",
         f"d_{{{i}}} = r_{{{i}}} \\sin \\phi_{{{i}}} = ({r:.2f}) \\sin {phi:.1f}^\\circ = {arm:.2f}{length_text}",
+        # The third side, along the line of action, and the sides checked, as the diagram labels them.
+        Lead(f"s_{{{i}}} = r_{{{i}}} \\cos \\phi_{{{i}}} = ({r:.2f}) \\cos {phi:.1f}^\\circ = {s:.2f}{length_text}"),
+        Detail(
+            f"s_{{{i}}}^2 + d_{{{i}}}^2 = ({s:.2f})^2 + ({arm:.2f})^2 = {s * s + arm * arm:.2f} = "
+            f"({r:.2f})^2 = r_{{{i}}}^2"
+        ),
     ]
     return steps
 

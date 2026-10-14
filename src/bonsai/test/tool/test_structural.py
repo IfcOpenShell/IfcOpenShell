@@ -538,3 +538,42 @@ class TestSolveMomentUnknown(NewFile):
         assert "passes through the centre" in error
         error = subject.solve_moment_unknown(arms, [np.array((0, 0, 1.0))], [(True, False)], 5.0)[1]
         assert "at most 2" in error
+
+
+class TestSolveCentrePosition(NewFile):
+    def setup_method(self):
+        # 10 down at 4 to the right of the origin; A starts at the origin, 40 clockwise.
+        self.points, self.forces = [np.array((4.0, 0, 0))], [np.array((0, 0, -10.0))]
+
+    def moment(self, centre):
+        return sum((p[0] - centre[0]) * f[2] - (p[2] - centre[2]) * f[0] for p, f in zip(self.points, self.forces))
+
+    def test_along_the_arm(self):
+        centre, error = subject.solve_centre_position(self.points, self.forces, np.zeros(3), -20.0, "ARM", 0)
+        assert not error and np.allclose(centre, (2, 0, 0)) and math.isclose(self.moment(centre), -20)
+
+    def test_along_r(self):
+        start = np.array((0.0, 0, 3.0))  # 5 from the point, on a 3:4 line.
+        centre, error = subject.solve_centre_position(self.points, self.forces, start, -20.0, "REACH", 0)
+        assert not error and math.isclose(self.moment(centre), -20)
+        assert np.allclose(centre, (2, 0, 1.5))  # 2.5 from the point, on the same line.
+
+    def test_round_the_point(self):
+        start = np.array((0.0, 0, 3.0))
+        centre, error = subject.solve_centre_position(self.points, self.forces, start, -30.0, "SWING", 0)
+        assert not error and math.isclose(self.moment(centre), -30)
+        assert math.isclose(math.hypot(centre[0] - 4, centre[2]), 5)  # r kept.
+        assert centre[2] > 0  # The nearer of the two places, above as it started.
+
+    def test_several_forces(self):
+        self.points.append(np.array((-2.0, 0, 0)))
+        self.forces.append(np.array((0, 0, -5.0)))
+        centre, error = subject.solve_centre_position(self.points, self.forces, np.zeros(3), 0.0, "ARM", 0)
+        assert not error and math.isclose(self.moment(centre), 0, abs_tol=1e-9)  # Their balance point.
+
+    def test_no_place_serves(self):
+        start = np.array((0.0, 0, 3.0))
+        error = subject.solve_centre_position(self.points, self.forces, start, -100.0, "SWING", 0)[1]
+        assert "No angle of r" in error
+        error = subject.solve_centre_position(self.points, self.forces, self.points[0], -5.0, "REACH", 0)[1]
+        assert "no direction" in error

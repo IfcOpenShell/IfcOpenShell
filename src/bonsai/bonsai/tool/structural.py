@@ -551,6 +551,93 @@ class Structural(bonsai.core.tool.Structural):
         cls.edit_bbim_structural(load_group, {"ResultantMoment": moment})
 
     @classmethod
+    def get_moment_centre_unknown(
+        cls, load_group: ifcopenshell.entity_instance
+    ) -> tuple[Union[str, None], Union[ifcopenshell.entity_instance, None]]:
+        """Which of the moment centre's place a kept moment finds for a load case, if any: ARM, a force's moment arm
+        d, A sliding along it; REACH, its distance r from the force's point, A sliding along r; or SWING, the angle
+        of r, phi and alpha with it, A swinging round the point. With the applied load whose point it is from."""
+        value = ifcopenshell.util.element.get_pset(load_group, "BBIM_Structural", "MomentCentreUnknown")
+        try:
+            unknown = json.loads(value) if value else {}
+            activity = tool.Ifc.get().by_guid(unknown["activity"]) if unknown else None
+        except (ValueError, KeyError, RuntimeError):
+            return None, None
+        kind = unknown.get("kind")
+        return (kind, activity) if kind in ("ARM", "REACH", "SWING") and activity else (None, None)
+
+    @classmethod
+    def set_moment_centre_unknown(
+        cls,
+        load_group: ifcopenshell.entity_instance,
+        kind: Union[str, None],
+        activity: Union[ifcopenshell.entity_instance, None] = None,
+    ) -> None:
+        """Choose which of the moment centre's place a kept moment finds, from a force's point, or none"""
+        value = json.dumps({"kind": kind, "activity": activity.GlobalId}) if kind and activity else None
+        cls.edit_bbim_structural(load_group, {"MomentCentreUnknown": value})
+
+    @classmethod
+    def solve_centre_position(
+        cls,
+        points: list[np.ndarray],
+        forces: list[np.ndarray],
+        centre: np.ndarray,
+        moment: float,
+        kind: str,
+        j: int,
+    ) -> tuple[np.ndarray, str]:
+        """Find where the moment centre must be for the moments of point forces about it to sum to a moment,
+        counter-clockwise positive as the X-Z plane is seen from -Y, moving it one way from where it is.
+
+        Moving the centre changes every force's moment, as all are taken about it: about a centre A, they sum to
+        the sum about the origin less A crossed with their resultant, so the sum is linear in where A is.
+
+        :param points: Where each force acts.
+        :param kind: How it moves, from force j: ARM, along j's moment arm, its foot kept on j's line of action;
+            REACH, along r, from j's point to A; SWING, round j's point, r's length kept, to the nearer of the two
+            places that serve.
+        :return: The centre, and why not if it could not be found.
+        """
+        cross = lambda a, b: a[0] * b[2] - a[2] * b[0]
+        resultant = sum(forces)
+        about_origin = sum(cross(p, f) for p, f in zip(points, forces))
+        # The sum about A is about_origin - cross(A, resultant); find A on its path for it to be the moment.
+        point, force = points[j], forces[j]
+        if kind == "SWING":
+            r = np.array((centre[0] - point[0], 0.0, centre[2] - point[2]))
+            reach = float(np.linalg.norm(r))
+            size = math.hypot(resultant[0], resultant[2])
+            if not reach or not size:
+                return centre, "A is at the force's point, or the forces add to nothing: swinging A changes nothing"
+            # r (cos t resultant_z - sin t resultant_x) must be this, a cosine of t less the resultant's angle.
+            need = about_origin - cross(point, resultant) - moment
+            if abs(need) > reach * size * (1 + 1e-12):
+                return centre, "No angle of r makes that moment: move A further from the force's point, or closer"
+            towards = math.atan2(-resultant[0], resultant[2])
+            turn = math.acos(max(-1.0, min(1.0, need / (reach * size))))
+            now = math.atan2(r[2], r[0])
+            apart = lambda angle: abs((angle - now + math.pi) % (2 * math.pi) - math.pi)
+            angle = min((towards + turn, towards - turn), key=apart)
+            return np.array((point[0] + reach * math.cos(angle), centre[1], point[2] + reach * math.sin(angle))), ""
+        if kind == "ARM":
+            _, _, start = cls.get_moment(centre, point, force)
+            along = np.array((centre[0] - start[0], 0.0, centre[2] - start[2]))
+            if not np.linalg.norm(along):
+                along = np.array((-force[2], 0.0, force[0]))  # On the line of action: either side of it.
+        else:
+            start = np.array(point, dtype=float)
+            along = np.array((centre[0] - point[0], 0.0, centre[2] - point[2]))
+        if not np.linalg.norm(along):
+            return centre, "A is at the force's point: no direction to move it along"
+        along /= np.linalg.norm(along)
+        per = cross(along, resultant)
+        if abs(per) < 1e-12 * max(1.0, np.linalg.norm(resultant)):
+            return centre, "Moving A that way changes no moment: the forces' resultant runs along it"
+        distance = (about_origin - cross(start, resultant) - moment) / per
+        return np.array((start[0] + distance * along[0], centre[1], start[2] + distance * along[2])), ""
+
+    @classmethod
     def solve_moment_unknown(
         cls,
         arms: list[np.ndarray],
