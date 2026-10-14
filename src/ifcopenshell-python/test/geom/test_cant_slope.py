@@ -117,7 +117,7 @@ def cant_evaluator(f):
 def test_refdirection_follows_the_slope_of_the_deviating_elevation(kind, rails, unit):
     start, end = RAILS[rails]
     f = build(unit, kind, start, end)
-    assert [s.ParentCurve.is_a() for s in f.by_type("IfcSegmentedReferenceCurve")[0].Segments][0] == TRANSITIONS[kind]
+    assert next(s.ParentCurve.is_a() for s in f.by_type("IfcSegmentedReferenceCurve")[0].Segments) == TRANSITIONS[kind]
 
     evaluator = cant_evaluator(f)
     length = LENGTH * ifcopenshell.util.unit.calculate_unit_scale(f)  # the kernel works in metres
