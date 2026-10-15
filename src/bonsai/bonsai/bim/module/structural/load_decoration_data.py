@@ -784,9 +784,10 @@ class ShaderInfo:
         if not np.linalg.norm(r):
             return
         self.add_dashed_line(at, location, size, color)
-        if tool.Structural.get_structural_props().show_force_slopes and r[0] and r[2]:
-            # Its slope, from the point to A, as Edit Moment Centre enters it, as a force's slope is shown.
-            self.add_force_slope(location, at, size, color)
+        if tool.Structural.get_structural_props().show_force_slopes:
+            # Its slope, from the point to A, as Edit Moment Centre enters it, as a force's slope is shown; A brought
+            # to the point's X-Z plane, as Blender's single precision can leave it a hair off it, which shows none.
+            self.add_force_slope(location, np.array((at[0], location[1], at[2])), size, color)
         across = np.array((-r[2], 0.0, r[0])) / np.linalg.norm(r)
         if np.dot(foot - at, across) > 0:
             across = -across  # Labelled outside the triangle.
