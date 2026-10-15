@@ -165,7 +165,7 @@ def get_moment_calculation(
     unit, length_unit = drawing.moment_unit, drawing.length_unit
     text_unit = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", unit) + "}"
     length_text = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", length_unit) + "}"
-    rows, steps, palette, values = [], [], [], []
+    rows, steps, palette, values, unknowns = [], [], [], [], []
     for item in tool.Structural.get_point_items(case):
         if not (obj := tool.Ifc.get_object(item)) or obj.type != "MESH" or not obj.data.vertices:
             continue
@@ -191,6 +191,10 @@ def get_moment_calculation(
                 "moment": f"{abs(moment):.2f} {unit} {turn}".strip(),
             }
             row["magnitude"] += f" {drawing.force_unit}"
+            locks = tool.Structural.get_locks(activity)
+            if not locks[0]:
+                row["magnitude"] += " 🔓"  # Found, to make the moment kept.
+            unknowns.append((i, locks, math.hypot(x, z), arm, math.hypot(dx, dz)))
             rows.append(row)
             steps += get_arm_steps(i, dx, dz, x, z, arm, length_text)
             sign = "-" if moment < 0 else ""
@@ -214,6 +218,7 @@ def get_moment_calculation(
         steps.append(f"{symbol} = {terms} = {numbers} = {bold(f'{total:.2f}', True, text_unit)}\\ {turn}")
     else:
         steps.append(f"{symbol} = M_{{1}} = {bold(f'{total:.2f}', True, text_unit)}\\ {turn}")
+    steps += get_kept_moment_steps(case, values, unknowns, text_unit, drawing.force_unit)
     name = f"{get_slug(case.Name)}_moments_{centre.id()}.svg"
     has_diagram = write_diagram(drawing, centre, directory / "diagrams" / name, key=f"{centre_obj.name} moments")
     words = "counter-clockwise" if total > 0 else "clockwise" if total < 0 else "no turning"
@@ -235,6 +240,46 @@ def get_moment_calculation(
         "unit": unit,
         "length_unit": length_unit,
     }
+
+
+def get_kept_moment_steps(
+    case: ifcopenshell.entity_instance,
+    values: list[float],
+    unknowns: list[tuple[int, tuple[bool, bool], float, float, float]],
+    text_unit: str,
+    force_unit: str,
+) -> list[str]:
+    """How the one unknown was found, when a load case keeps a sum of moments: the moment it must make, then its
+    magnitude from its arm, or its direction from where it acts.
+
+    :param unknowns: Each force's number, locks, magnitude, moment arm and distance r from A.
+    """
+    kept = tool.Structural.get_resultant_moment(case)
+    found = [entry for entry in unknowns if not all(entry[1])]
+    if kept is None or not found:
+        return []
+    i, locks, magnitude, arm, r = found[0]
+    moment = values[i - 1]
+    rest = sum(values) - moment
+    force_text = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", force_unit) + "}"
+    steps = [
+        f"\\text{{Kept: }} \\Sigma M_A = {kept:.2f}{text_unit}",
+        f"M_{{{i}}} = \\Sigma M_A - \\textstyle\\sum_{{others}} M = ({kept:.2f}) - ({rest:.2f}) = {moment:.2f}{text_unit}",
+    ]
+    if not locks[0] and arm:
+        value = bold(f"{magnitude:.2f}", True, force_text)
+        steps.append(
+            f"F_{{{i}}} = \\frac{{|M_{{{i}}}|}}{{d_{{{i}}}}} = \\frac{{{abs(moment):.2f}}}{{{arm:.2f}}} = {value}"
+        )
+    elif not locks[1] and magnitude and r:
+        sine = min(abs(moment) / (magnitude * r), 1.0)
+        steps.append(
+            f"\\sin \\phi_{{{i}}} = \\frac{{|M_{{{i}}}|}}{{F_{{{i}}}\\, r_{{{i}}}}} = "
+            f"\\frac{{{abs(moment):.2f}}}{{({magnitude:.2f})({r:.2f})}} = {sine:.4f}"
+        )
+        angle = f"{math.degrees(math.asin(sine)):.1f}" + "^\\circ"
+        steps.append(f"\\phi_{{{i}}} = {bold(angle)}")
+    return steps
 
 
 def get_arm_steps(i: int, dx: float, dz: float, x: float, z: float, arm: float, length_text: str) -> list[str]:
@@ -900,6 +945,11 @@ def get_unknown_steps(
         )
     else:
         find = f"The magnitudes of ${named(found[0])}$ and ${named(found[1])}${with_links}, $R$ being known."
+    # Along parallel lines, as two vertical forces, the sums along X and Z cannot tell the two apart: a value found
+    # so was found another way, as by a kept moment, whose own section shows how.
+    (ax, az), (bx, bz) = lines[0]["unit"], lines[1]["unit"]
+    if abs(ax * bz - az * bx) < 1e-9:
+        return [], ""
     linked = {j for i in found for j in members[i]}
     knowns = [vectors[j] for j in range(len(forces)) if j not in linked]
     steps += get_two_unknown_steps(knowns, lines, None if len(found) == 1 else resultant, text_unit)

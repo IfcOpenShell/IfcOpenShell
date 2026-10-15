@@ -539,6 +539,88 @@ class Structural(bonsai.core.tool.Structural):
         cls.edit_bbim_structural(load_group, {"MomentCentre": centre.GlobalId if centre else None})
 
     @classmethod
+    def get_resultant_moment(cls, load_group: ifcopenshell.entity_instance) -> Union[float, None]:
+        """The sum of moments about its moment centre a load case keeps, counter-clockwise positive, in its force
+        unit times the project's length unit, if it is locked: forces changing re-solve the unknown to keep it"""
+        value = ifcopenshell.util.element.get_pset(load_group, "BBIM_Structural", "ResultantMoment")
+        return None if value is None else float(value)
+
+    @classmethod
+    def set_resultant_moment(cls, load_group: ifcopenshell.entity_instance, moment: Union[float, None]) -> None:
+        """Keep a sum of moments about a load case's moment centre, or forget it"""
+        cls.edit_bbim_structural(load_group, {"ResultantMoment": moment})
+
+    @classmethod
+    def solve_moment_unknown(
+        cls,
+        arms: list[np.ndarray],
+        forces: list[np.ndarray],
+        locks: list[tuple[bool, bool]],
+        moment: float,
+        links: Union[list[Union[str, None]], None] = None,
+        factors: Union[list[float], None] = None,
+    ) -> tuple[list[np.ndarray], str]:
+        """Find the one unknown value of point forces for their moments about a centre to sum to a moment,
+        counter-clockwise positive as the X-Z plane is seen from -Y. A moment is one equation, so finds one value:
+        an unlocked magnitude, forces linked to it following by their ratios, or an unlocked direction, the one
+        nearer its present direction of the two that make the moment.
+
+        :param arms: Where each force acts, from the centre, in the units the moment's lengths are in.
+        :param locks: Whether each force's magnitude and direction are known.
+        :param links: A key per force, the same for forces whose magnitudes are linked, which count as one.
+        :param factors: Each force's magnitude as a factor of the magnitude its link shares.
+        :return: The forces, the unknown found, and why not if it could not be.
+        """
+        links = links or [None] * len(forces)
+        factors = factors or [1.0] * len(forces)
+        forces = [np.array(force, dtype=float) for force in forces]
+        moment_of = lambda i, force: arms[i][0] * force[2] - arms[i][2] * force[0]
+        unknowns, groups = [], set()
+        for i, (magnitude, direction) in enumerate(locks):
+            members = [j for j in range(len(forces)) if links[i] and links[j] == links[i]] or [i]
+            if not magnitude and not any(locks[j][0] for j in members) and links[i] not in groups:
+                unknowns.append(("MAGNITUDE", i, members))
+                if links[i]:
+                    groups.add(links[i])  # Linked magnitudes, all unknown, are one unknown.
+            if not direction:
+                unknowns.append(("DIRECTION", i, [i]))
+        if len(unknowns) != 1:
+            if not unknowns:
+                return forces, "Unlock one force's magnitude or direction for the moment to find"
+            names = ", ".join(f"F{i + 1} {kind.lower()}" for kind, i, _ in unknowns)
+            return forces, f"Unlocked: {names}. A moment finds one value; lock the others"
+        kind, j, members = unknowns[0]
+        if kind == "MAGNITUDE":
+            along = {}
+            for i in members:
+                if not (planar := math.hypot(forces[i][0], forces[i][2])):
+                    return forces, f"F{i + 1} has no direction in the X-Z plane to find its magnitude along"
+                along[i] = np.array((forces[i][0], 0.0, forces[i][2])) / planar
+            per = sum(factors[i] / factors[j] * moment_of(i, along[i]) for i in members)
+            if abs(per) < 1e-12:
+                return forces, f"F{j + 1}'s line of action passes through the centre: its magnitude makes no moment"
+            rest = sum(moment_of(i, force) for i, force in enumerate(forces) if i not in members)
+            magnitude = (moment - rest) / per  # Negative reverses it, a pull becoming a push.
+            for i in members:
+                forces[i] = magnitude * factors[i] / factors[j] * along[i]
+            return forces, ""
+        magnitude = math.hypot(forces[j][0], forces[j][2])
+        reach = math.hypot(arms[j][0], arms[j][2])
+        if not magnitude or not reach:
+            return forces, f"F{j + 1} acts at the centre or has no magnitude: no direction of it makes a moment"
+        # Its moment is magnitude times reach times the sine of the angle from where it acts to its direction.
+        need = moment - sum(moment_of(i, force) for i, force in enumerate(forces) if i != j)
+        if abs(need) > magnitude * reach * (1 + 1e-12):
+            return forces, f"F{j + 1} makes at most {magnitude * reach:.4g} where it acts, too little for that moment"
+        towards = math.atan2(arms[j][2], arms[j][0])
+        turn = math.asin(max(-1.0, min(1.0, need / (magnitude * reach))))
+        now = math.atan2(forces[j][2], forces[j][0])
+        apart = lambda angle: abs((angle - now + math.pi) % (2 * math.pi) - math.pi)
+        angle = min((towards + turn, towards + math.pi - turn), key=apart)
+        forces[j] = np.array((magnitude * math.cos(angle), 0.0, magnitude * math.sin(angle)))
+        return forces, ""
+
+    @classmethod
     def get_moment(cls, centre: np.ndarray, point: np.ndarray, force: np.ndarray) -> tuple[float, float, np.ndarray]:
         """The moment about a centre of a force acting at a point, counter-clockwise positive as the X-Z plane is
         seen from -Y, with its moment arm, the perpendicular distance from the centre to the force's line of
