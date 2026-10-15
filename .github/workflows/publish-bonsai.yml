@@ -17,8 +17,27 @@ jobs:
     - name: Set env
       run: echo ok go
 
-  publish:
+  release:
     needs: upstream-only
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - name: Create release
+      id: release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        VERSION=$(cat VERSION)
+        TAG="bonsai-$VERSION"
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        gh release view "$TAG" || gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes ""
+
+  publish:
+    needs: release
     name: ${{ matrix.config.name }}-${{ matrix.pyver }}
     runs-on: ubuntu-latest
     strategy:
@@ -46,9 +65,6 @@ jobs:
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
       - name: Install lbzip2
         run: sudo apt-get install -y lbzip2
-      - name: Get current version
-        id: version
-        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
       - name: Compile
         env:
           # extensions.blender.org allows one build per platform per version.
@@ -71,7 +87,5 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ steps.find_zip.outputs.filepath }}
           asset_name: ${{ steps.find_zip.outputs.filename }}
-          release_name: "bonsai-${{steps.version.outputs.version}}"
-          tag: "bonsai-${{steps.version.outputs.version}}"
-          target_commit: ${{ github.sha }}
+          tag: ${{ needs.release.outputs.tag }}
           overwrite: true

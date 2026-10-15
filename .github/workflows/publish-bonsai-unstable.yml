@@ -29,22 +29,32 @@ env:
   BLENDER_VERSION: 5.2.0
 
 jobs:
-  set-timestamp:
+  release:
     runs-on: ubuntu-latest
     if: |
       github.repository == 'IfcOpenShell/IfcOpenShell'
     outputs:
-      timestamp: ${{ steps.timestamp.outputs.timestamp }}
+      tag: ${{ steps.release.outputs.tag }}
     steps:
-    - name: Get current timestamp
-      id: timestamp
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - name: Create release
+      id: release
+      env:
+        GH_TOKEN: ${{ github.token }}
       # Include hours and minutes to release tag
       # to avoid possibility of unstable repo's index.json
       # pointing to the new file when index.json itself wasn't yet updated.
-      run: echo "timestamp=$(date +'%y%m%d%H%M')" >> $GITHUB_OUTPUT
+      run: |
+        VERSION=$(sed -E 's/[[:alpha:]]+[0-9]+$//' VERSION)
+        TAG="bonsai-$VERSION-alpha$(date +'%y%m%d%H%M')"
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        gh release view "$TAG" || gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG (unstable)" \
+          --notes "See README in https://github.com/IfcOpenShell/bonsai_unstable_repo/ on how to setup autoupdates for daily Bonsai builds."
 
   build:
-    needs: set-timestamp
+    needs: release
     name: ${{ matrix.config.name }}-${{ matrix.pyver }}
     runs-on: ubuntu-latest
     strategy:
@@ -74,9 +84,6 @@ jobs:
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
       - name: Install lbzip2
         run: sudo apt-get install -y lbzip2
-      - name: Get current version
-        id: version
-        run: echo "version=$(sed -E 's/[[:alpha:]]+[0-9]+$//' VERSION)" >> $GITHUB_OUTPUT
       - name: Compile
         run: |
           cd src/bonsai && make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
@@ -92,11 +99,8 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ steps.find_zip.outputs.filepath }}
           asset_name: ${{ steps.find_zip.outputs.filename }}
-          release_name: "bonsai-${{steps.version.outputs.version}}-alpha${{ needs.set-timestamp.outputs.timestamp }} (unstable)"
-          tag: "bonsai-${{steps.version.outputs.version}}-alpha${{ needs.set-timestamp.outputs.timestamp }}"
-          target_commit: ${{ github.sha }}
+          tag: ${{ needs.release.outputs.tag }}
           overwrite: true
-          body: "See README in https://github.com/IfcOpenShell/bonsai_unstable_repo/ on how to setup autoupdates for daily Bonsai builds."
 
   publish:
     needs: [build]
