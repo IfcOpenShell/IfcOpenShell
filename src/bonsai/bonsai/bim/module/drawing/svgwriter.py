@@ -647,7 +647,7 @@ class SvgWriter:
                 """
             path_data = " ".join(path_data.split())
 
-            svg_path = self.svg.path(style="fill: none; stroke:black; stroke-width:0.18", d=path_data)
+            svg_path = self.svg.path(class_=" ".join(classes), d=path_data)
             if reverse_x:
                 svg_path.update({"transform": f"scale(-1,-1) translate(-{segment_width}, -{thickness})"})
 
@@ -727,7 +727,7 @@ class SvgWriter:
                 polygon.normal_flip()
 
             marker_id = f"revision-cloud-{element.GlobalId}"
-            svg_path = self.svg.path(style="fill: none; stroke:red; stroke-width:0.20", d=revision_pattern)
+            svg_path = self.svg.path(class_=" ".join(classes), d=revision_pattern)
             marker = self.svg.marker(
                 markerUnits="userSpaceOnUse",
                 insert=(safe_offset_x, ref_y),
