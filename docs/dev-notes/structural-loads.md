@@ -500,6 +500,17 @@ where Bonsai's eighths would measure from the vertical.
 - **Arrow Thickness** in Show Loads scales force arrows, shaft and head together, through the
   spacing the shader sizes both from, in the viewport and reports.
 
+## 25. Dimensions and the arm's slope
+
+- **r's run and rise dimensioned**, as a text's figure gives a force's place: Δx above all that is
+  drawn for the force and Δz beside it, with extension lines and ticks, labelled as lengths;
+  clicked, they open Edit Moment Centre on its components. Drawn last for each force, they clear
+  its moment drawing, its own diagram at its point and the curved arrow round A.
+- **The moment arm's slope**, as Slopes are shown, out by its foot, clear of r's.
+- **A gotcha:** slope triangles are drawn only for lines in the X-Z plane, and Blender's single
+  precision can leave two points a hair apart in Y, so r's triangle went missing; lines between
+  points are brought into one point's plane first (fixed in section 20's branch, merged up).
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
