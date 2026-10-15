@@ -462,34 +462,6 @@ force-space-transparency
 
 Overrides transparency of spaces in geometry output.
 
-function-step-param
-^^^^^^^^^^^^^^^^^^^
-
-+--------+---------------------------+---------+
-| Type   | IfcConvert Option         | Default |
-+========+===========================+=========+
-| DOUBLE | ``--function-step-param`` | 0.5     |
-+--------+---------------------------+---------+
-
-Indicates the parameter value for defining step size when evaluating function-based curves.
-
-function-step-type
-^^^^^^^^^^^^^^^^^^
-
-+------+--------------------------+---------+
-| Type | IfcConvert Option        | Default |
-+======+==========================+=========+
-| INT  | ``--function-step-type`` | 0       |
-+------+--------------------------+---------+
-
-Indicates the method used for defining step size when evaluating function-based curves. Provides interpretation of function-step-param
-
-.. code-block:: python
-
-    settings = ifcopenshell.geom.settings()
-    settings.set("triangulation-type", ifcopenshell.ifcopenshell_wrapper.MAXSTEPSIZE) # 0
-    settings.set("triangulation-type", ifcopenshell.ifcopenshell_wrapper.MINSTEPS) # 1
-
 generate-uvs
 ^^^^^^^^^^^^
 
@@ -576,7 +548,8 @@ mesher-angular-deflection
 | DOUBLE | ``--mesher-angular-deflection`` | 0.5     |
 +--------+---------------------------------+---------+
 
-Sets the angular tolerance of the mesher in radians.
+Sets the angular tolerance of the mesher in radians. It also sets how closely function-based curves, such as alignment curves, and the sweeps
+and sectioned solids along them are sampled.
 
 Here is an example in C++:
 
@@ -603,7 +576,8 @@ mesher-linear-deflection
 | DOUBLE | ``--mesher-linear-deflection`` | 1e-3    |
 +--------+--------------------------------+---------+
 
-Sets the deflection tolerance of the mesher.
+Sets the deflection tolerance of the mesher. It also sets how closely function-based curves, such as alignment curves, and the sweeps
+and sectioned solids along them are sampled.
 
 Here is an example in C++:
 

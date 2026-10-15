@@ -1,5 +1,7 @@
 name: Build IfcOpenShell Native WASM
 
+permissions: {}
+
 on:
   workflow_dispatch:
 
@@ -29,31 +31,33 @@ jobs:
       - name: Set up Node
         # For the basic I/O tests, which drive the built artifacts through the
         # TypeScript API on Node.
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
 
       - name: Checkout Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           path: IfcOpenShell
+          persist-credentials: false
 
       - name: Checkout Build Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: IfcOpenShell/build-outputs
           path: ifcopenshell_build
           ref: wasm-native
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
+          persist-credentials: true
 
       - name: Read pinned emsdk version
         id: emsdk
         run: echo "version=$(jq -r .emsdk.version IfcOpenShell/nix/sources.lock.json)" >> "$GITHUB_OUTPUT"
 
       - name: Cache emsdk
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ifcopenshell_build/Linux/wasm/emsdk
           key: emsdk-${{ steps.emsdk.outputs.version }}-${{ runner.os }}
@@ -64,7 +68,7 @@ jobs:
           uv run ../IfcOpenShell/nix/cache_dependencies.py unpack
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.24
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           key: ubuntu-22.04-${{ runner.arch }}-wasm-native
           # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
@@ -79,7 +83,7 @@ jobs:
         run: uv run --with clang==21.1.7 ./IfcOpenShell/nix/build-all.py -v --native-wasm --build-cfg Release
 
       - name: Verify artifacts
-        run: python3 IfcOpenShell/.github/scripts/verify-wasm-artifacts.py
+        run: uv run IfcOpenShell/.github/scripts/verify-wasm-artifacts.py
 
       - name: Run the basic I/O tests
         # `tests/io.test.ts` is the port of `test/tests.py`; it runs against the
@@ -97,7 +101,7 @@ jobs:
 
       - name: Upload Build Logs
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-logs-native-wasm
           path: |
@@ -119,7 +123,7 @@ jobs:
           git push || echo "Push failed"
 
       - name: Upload WASM artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ifcopenshell-native-wasm
           path: ifcopenshell_build/Linux/wasm/build/ifcopenshell/build/ifcwrap/wasm
