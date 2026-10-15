@@ -23,6 +23,7 @@ import ifcopenshell.api.alignment
 import ifcopenshell.api.pset
 import ifcopenshell.guid
 from ifcopenshell import entity_instance
+from ifcopenshell.api.alignment._ensure_alignment_object_placement import _ensure_alignment_object_placement
 from ifcopenshell.api.alignment._referent_distance_along import _referent_distance_along
 from ifcopenshell.api.alignment._sort_nest import _sort_nest
 from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
@@ -94,6 +95,7 @@ def add_stationing_referent(
 
         update_fallback_position(file, object_placement)
     else:
+        _ensure_alignment_object_placement(file, alignment)
         # No resolvable basis curve yet: place the referent at the global origin. Once
         # geometry exists, create_representation() restates the starting referent onto the
         # curve at DistanceAlong 0.0.
