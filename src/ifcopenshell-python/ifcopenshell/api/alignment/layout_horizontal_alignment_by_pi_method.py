@@ -64,11 +64,19 @@ def layout_horizontal_alignment_by_pi_method(
 
         delta = angleFT - angleBT
 
+        if delta == 0.0 and radius != 0.0:
+            raise ValueError(
+                f"PI {i - 1}: deflection angle is zero; a curve cannot be fitted where the alignment goes straight on"
+            )
+
         tangent = abs(radius * math.tan(delta / 2))
 
         lc = abs(radius * delta)
 
-        radius *= delta / abs(delta)
+        # the curve turns the way the alignment does; a PI with no curve where the alignment goes
+        # straight on just splits the straight
+        if delta != 0.0:
+            radius *= delta / abs(delta)
 
         xPC = xPI - tangent * math.cos(angleBT)
         yPC = yPI - tangent * math.sin(angleBT)
