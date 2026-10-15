@@ -34,6 +34,9 @@ def publish_asset(asset: GitReleaseAsset, token: str, repo_root: Path) -> None:
 
     files = {"version_file": temp_path.read_bytes()}
     response = requests.post(url, headers=headers, files=files)
+    if not response.ok:
+        # E.g. a validation error or the new version upload cooldown.
+        print(f"Failed to publish {asset.name}: {response.text}")
     response.raise_for_status()
 
     temp_path.unlink()
