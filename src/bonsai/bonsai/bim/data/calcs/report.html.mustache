@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<!-- This file was generated with the assistance of an AI coding tool. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<link rel="stylesheet" href="katex/katex.min.css">
+<script defer src="katex/katex.min.js"></script>
+<script defer src="katex/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}, {left: '$', right: '$', display: false}]});"></script>
+<style>
+  body { font-family: system-ui, sans-serif; color: #222; max-width: 820px; margin: 2rem auto; padding: 0 1rem; line-height: 1.45; }
+  header { border-bottom: 2px solid #222; margin-bottom: 1.5rem; }
+  header h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
+  dl.cover { display: grid; grid-template-columns: max-content 1fr; gap: 0.15rem 1rem; margin: 0.5rem 0 1rem; }
+  dl.cover dt { font-weight: 600; }
+  dl.cover dd { margin: 0; }
+  .note { color: #555; font-size: 0.9rem; }
+  h2 { border-bottom: 1px solid #999; padding-bottom: 0.2rem; margin-top: 2rem; }
+  section.calculation { break-inside: avoid; margin-bottom: 2rem; }
+  figure { margin: 1rem 0; text-align: center; }
+  figure img { max-width: 100%; }
+  table { border-collapse: collapse; width: 100%; margin: 0.75rem 0; font-size: 0.95rem; }
+  th, td { border: 1px solid #bbb; padding: 0.3rem 0.5rem; text-align: left; }
+  th { background: #f0f0f0; }
+  .steps .katex-display { margin: 0.4rem 0; text-align: left; }
+  .steps .katex-display > .katex { text-align: left; }
+  /* Values found by solving, set in bold in the steps, a size larger too. */
+  .steps .katex .mathbf, .steps .katex .textbf { font-size: 1.33em; }
+  /* With detailed steps, each main step starts a group, its working below it. */
+  .detailed .steps .main { padding-top: 0.5rem; }
+  .detailed .steps .main:first-child { padding-top: 0; }
+  .detailed .steps .lead { padding-top: 0.5rem; }  /* Working that starts afresh. */
+  h4 { margin: 1rem 0 0.25rem; }
+  .result { font-weight: 600; border: 1px solid #222; padding: 0.4rem 0.6rem; display: inline-block; }
+  @page { size: letter; margin: 18mm; }
+  @media print { body { margin: 0; max-width: none; } h2 { break-before: auto; } }
+</style>
+</head>
+<body{{#detailed}} class="detailed"{{/detailed}}>
+<header>
+  <h1>{{title}}</h1>
+  <dl class="cover">
+    <dt>Project</dt><dd>{{project}}</dd>
+    <dt>Analysis model</dt><dd>{{model}}</dd>
+    <dt>Force unit</dt><dd>{{force_unit}}</dd>
+    <dt>Date</dt><dd>{{date}}</dd>
+  </dl>
+  <p class="note">Forces lie in the X-Z plane, seen from −Y: +X to the right, +Z up. Angles are measured from the
+  axis of the eighth (Q1 to Q8, counter-clockwise from +X) a force points into, as Bonsai enters them.
+  🔓 marks a value that was unknown, found by solving.</p>
+</header>
+{{^has_cases}}
+<p>No point forces in this analysis model's load cases.</p>
+{{/has_cases}}
+{{#cases}}
+<h2>{{name}}</h2>
+{{#points}}
+<section class="calculation">
+  <h3>Forces at {{name}}</h3>
+  {{#diagram}}<figure><img src="{{diagram}}" alt="Forces at {{name}}"></figure>{{/diagram}}
+  <table>
+    <tr><th></th><th>Load</th><th>Magnitude</th><th>Direction</th><th>Found</th></tr>
+    {{#forces}}
+    <tr style="color: {{color}}"><td>\({{symbol}}\)</td><td>{{name}}</td><td>{{#magnitude_found}}<strong>{{magnitude}}</strong>{{/magnitude_found}}{{^magnitude_found}}{{magnitude}}{{/magnitude_found}}</td><td>{{#direction_found}}<strong>{{direction}}</strong>{{/direction_found}}{{^direction_found}}{{direction}}{{/direction_found}}</td><td>{{#found}}🔓 {{found}}{{/found}}</td></tr>
+    {{/forces}}
+  </table>
+  {{#find}}<p><strong>Find:</strong> {{find}}</p>{{/find}}
+  <h4>{{#has_solving}}Components{{/has_solving}}{{^has_solving}}Components and resultant{{/has_solving}}</h4>
+  <div class="steps">
+    {{#components}}
+    <div class="{{#detail}}detail{{/detail}}{{^detail}}main{{/detail}}{{#lead}} lead{{/lead}}">$${{latex}}$$</div>
+    {{/components}}
+  </div>
+  {{#has_solving}}
+  <h4>Solving</h4>
+  <div class="steps">
+    {{#solving}}
+    <div class="{{#detail}}detail{{/detail}}{{^detail}}main{{/detail}}{{#lead}} lead{{/lead}}">$${{latex}}$$</div>
+    {{/solving}}
+  </div>
+  <h4>Resultant</h4>
+  {{/has_solving}}
+  <div class="steps">
+    {{#steps}}
+    <div class="{{#detail}}detail{{/detail}}{{^detail}}main{{/detail}}{{#lead}} lead{{/lead}}">$${{latex}}$$</div>
+    {{/steps}}
+  </div>
+  <p class="result">{{summary}}</p>
+  {{#has_tilted}}
+  <h4>Along the point's axes</h4>
+  <p>{{tilt_note}}</p>
+  <div class="steps">
+    {{#tilted}}
+    <div class="{{#detail}}detail{{/detail}}{{^detail}}main{{/detail}}{{#lead}} lead{{/lead}}">$${{latex}}$$</div>
+    {{/tilted}}
+  </div>
+  {{/has_tilted}}
+</section>
+{{/points}}
+{{/cases}}
+</body>
+</html>

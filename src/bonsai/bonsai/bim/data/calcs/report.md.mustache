@@ -1,0 +1,72 @@
+<!-- This file was generated with the assistance of an AI coding tool. -->
+# {{{title}}}
+
+| | |
+|---|---|
+| Project | {{{project}}} |
+| Analysis model | {{{model}}} |
+| Force unit | {{{force_unit}}} |
+| Date | {{{date}}} |
+
+Forces lie in the X-Z plane, seen from −Y: +X to the right, +Z up. Angles are measured from the axis of the
+eighth (Q1 to Q8, counter-clockwise from +X) a force points into, as Bonsai enters them. 🔓 marks a value that
+was unknown, found by solving.
+{{^has_cases}}
+
+No point forces in this analysis model's load cases.
+{{/has_cases}}
+{{#cases}}
+
+## {{{name}}}
+{{#points}}
+
+### Forces at {{{name}}}
+{{#diagram}}
+
+<p align="center"><img src="{{{diagram}}}" alt="Forces at {{{name}}}"></p>
+{{/diagram}}
+
+| | Load | Magnitude | Direction | Found |
+|---|---|---|---|---|
+{{#forces}}
+| ${{{colored_symbol}}}$ | {{{name}}} | {{#magnitude_found}}**{{{magnitude}}}**{{/magnitude_found}}{{^magnitude_found}}{{{magnitude}}}{{/magnitude_found}} | {{#direction_found}}**{{{direction}}}**{{/direction_found}}{{^direction_found}}{{{direction}}}{{/direction_found}} | {{#found}}🔓 {{{found}}}{{/found}} |
+{{/forces}}
+{{#find}}
+
+**Find:** {{{find}}}
+{{/find}}
+
+
+#### {{#has_solving}}Components{{/has_solving}}{{^has_solving}}Components and resultant{{/has_solving}}
+{{#components}}
+
+$\displaystyle {{{latex}}}$
+{{/components}}
+{{#has_solving}}
+
+#### Solving
+{{#solving}}
+
+$\displaystyle {{{latex}}}$
+{{/solving}}
+
+#### Resultant
+{{/has_solving}}
+{{#steps}}
+
+$\displaystyle {{{latex}}}$
+{{/steps}}
+
+**{{{summary}}}**
+{{#has_tilted}}
+
+#### Along the point's axes
+
+{{{tilt_note}}}
+{{#tilted}}
+
+$\displaystyle {{{latex}}}$
+{{/tilted}}
+{{/has_tilted}}
+{{/points}}
+{{/cases}}

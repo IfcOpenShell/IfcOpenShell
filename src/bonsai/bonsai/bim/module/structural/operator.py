@@ -18,7 +18,9 @@
 
 import math
 import re
+import webbrowser
 from math import degrees
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Union
 
 import bpy
@@ -1713,6 +1715,46 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
         connects = activities[0].AssignedToStructuralItem if activities else None
         if connects and (load_case := tool.Structural.get_activity_load_case(activities[0])):
             return tool.Structural.get_resultant(connects[0].RelatingElement, load_case)
+
+
+class ExportStructuralCalculations(bpy.types.Operator):
+    bl_idname = "bim.export_structural_calculations"
+    bl_label = "Export Calculations"
+    bl_description = (
+        "Write the current analysis model's calculations, with diagrams, as HTML to print and as Markdown, "
+        "into a folder in the one chosen"
+    )
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
+    filter_folder: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
+    selected_only: bpy.props.BoolProperty(
+        name="Selected Items Only", description="Report only the structural items selected", default=False
+    )
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Structural.get_current_structural_analysis_model():
+            cls.poll_message_set("Choose a current analysis model")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        if ifc_path := tool.Ifc.get_path():
+            self.directory = str(Path(ifc_path).parent)
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        from bonsai.bim.module.structural import report
+
+        model = tool.Structural.get_current_structural_analysis_model()
+        items = None
+        if self.selected_only:
+            items = {e for o in context.selected_objects if (e := tool.Ifc.get_entity(o))}
+        folder = Path(self.directory) / f"{report.get_slug(model.Name)}_calcs"
+        page = report.write_report(folder, model, items, tool.Structural.get_structural_props().report_detailed_steps)
+        webbrowser.open(page.as_uri())
+        self.report({"INFO"}, f"Calculations written to {folder}")
+        return {"FINISHED"}
 
 
 class ShowStructuralLoadCase(bpy.types.Operator):
