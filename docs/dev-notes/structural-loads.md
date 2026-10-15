@@ -385,6 +385,35 @@ where Bonsai's eighths would measure from the vertical.
   magnitudes counting once (`tool.Structural.get_resultant_found`, shared by both). A locked
   resultant has none; one summed from known forces is found, so is marked.
 
+## 19. Moments about a point
+
+- **A moment centre per load case.** Show Loads takes moments about the active point connection,
+  kept in the load case's BBIM_Structural as `MomentCentre` (its GlobalId), and called A.
+- **Counter-clockwise positive**, as the X-Z plane is seen from -Y, as statics texts take it.
+  IFC's MomentY, by the right-hand rule about +Y, is the negative of this
+  (`tool.Structural.get_moment`).
+- **Drawn** for each point force, in its colour, as the right triangle a text draws to find the
+  arm: its line of action dashed on to the foot of its moment arm, the arm from A with a square
+  corner, labelled `M₁ = … CW, d₁ = …`, r from A to the force's point, and the angle φ between r
+  and the line of action; their sum as a curved arrow round A. The viewport's font has no
+  turning arrows, so labels say CW and CCW.
+- **Forces to scale with the distances.** While moments are taken about a point, point forces are
+  drawn to one scale, the largest at 0.4 of the distance to the furthest loaded point, as the
+  report draws them, rather than each point's diagram two metres long, which dwarfs a short
+  beam. An explicit Force Scale still wins.
+- **Reports** add a "Moments about A" section per load case. Its diagram is tagged apart from
+  A's own loads, and adds what the viewport shows around it: the members along the points,
+  their names, and each force at its point, scaled to the distances. The steps find each arm
+  as d = r sin φ, each moment as F·d and again by Varignon's theorem from the force's
+  components, then ΣM_A.
+- **Report diagrams are cropped** to what is drawn, labels where they were placed. Margins as
+  wide as the longest label on every side made a diagram wider than the page, which then scaled
+  it, and its labels, down.
+- **A Blender gotcha:** shader uniforms take Python floats; single-precision NumPy values, as
+  from a mesh's coordinates, raise inside the draw handler and stop the shapes after them.
+- **Moments applied as loads are left out** for now: IFC keeps them in the project's torque
+  unit, which need not be force times length. Couples come next, with that conversion.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through

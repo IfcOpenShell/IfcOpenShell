@@ -61,6 +61,7 @@ classes = (
     operator.AddStructuralLoadAtPoint,
     operator.EditStructuralResultant,
     operator.ShowStructuralLoadCase,
+    operator.SetStructuralMomentCentre,
     operator.ExportStructuralCalculations,
     operator.EnableEditingStructuralLoadCase,
     operator.DisableEditingStructuralLoadCase,

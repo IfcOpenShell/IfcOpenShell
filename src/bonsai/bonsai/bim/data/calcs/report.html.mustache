@@ -100,6 +100,27 @@
   {{/has_tilted}}
 </section>
 {{/points}}
+{{#moments}}
+<section class="calculation">
+  <h3>Moments about A: {{centre}}</h3>
+  {{#diagram}}<figure><img src="{{diagram}}" alt="Moments about {{centre}}"></figure>{{/diagram}}
+  <p>Moments are counter-clockwise positive (↺), as the X-Z plane is seen from −Y. Δx and Δz run from A to the
+  point a force acts at, in {{length_unit}}. d is its moment arm, the distance from A square to its line of action:
+  r sin φ, where r runs from A to the force's point and φ is the angle between r and the line of action.</p>
+  <table>
+    <tr><th></th><th>Load</th><th>At</th><th>Magnitude</th><th>Δx</th><th>Δz</th><th>d</th><th>Moment</th></tr>
+    {{#forces}}
+    <tr style="color: {{color}}"><td>\({{symbol}}\)</td><td>{{name}}</td><td>{{at}}</td><td>{{magnitude}}</td><td>{{dx}}</td><td>{{dz}}</td><td>{{arm}}</td><td>{{moment}}</td></tr>
+    {{/forces}}
+  </table>
+  <div class="steps">
+    {{#steps}}
+    <div class="{{#detail}}detail{{/detail}}{{^detail}}main{{/detail}}">$${{latex}}$$</div>
+    {{/steps}}
+  </div>
+  <p class="result">{{summary}}</p>
+</section>
+{{/moments}}
 {{/cases}}
 </body>
 </html>

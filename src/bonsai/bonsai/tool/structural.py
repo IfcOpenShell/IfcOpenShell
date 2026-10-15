@@ -477,6 +477,42 @@ class Structural(bonsai.core.tool.Structural):
         cls.edit_bbim_structural(item, {"ResultantEighths": json.dumps(eighths) if eighths else None})
 
     @classmethod
+    def get_moment_centre(cls, load_group: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        """The point connection moments are taken about for a load case or load group, if one is chosen"""
+        guid = ifcopenshell.util.element.get_pset(load_group, "BBIM_Structural", "MomentCentre")
+        try:
+            centre = tool.Ifc.get().by_guid(guid) if guid else None
+        except RuntimeError:
+            return None  # Removed since.
+        return centre if centre and centre.is_a("IfcStructuralPointConnection") else None
+
+    @classmethod
+    def set_moment_centre(
+        cls, load_group: ifcopenshell.entity_instance, centre: Union[ifcopenshell.entity_instance, None]
+    ) -> None:
+        """Choose the point connection to take moments about for a load case or load group, or none"""
+        cls.edit_bbim_structural(load_group, {"MomentCentre": centre.GlobalId if centre else None})
+
+    @classmethod
+    def get_moment(cls, centre: np.ndarray, point: np.ndarray, force: np.ndarray) -> tuple[float, float, np.ndarray]:
+        """The moment about a centre of a force acting at a point, counter-clockwise positive as the X-Z plane is
+        seen from -Y, with its moment arm, the perpendicular distance from the centre to the force's line of
+        action, and the foot of the arm on that line.
+
+        It is the force's X and Z components times their distances from the centre, by Varignon's theorem.
+        IFC's MomentY, by the right-hand rule about +Y, is its negative.
+        """
+        dx, dz = point[0] - centre[0], point[2] - centre[2]
+        moment = dx * force[2] - dz * force[0]
+        planar = math.hypot(force[0], force[2])
+        if not planar:
+            return 0.0, 0.0, np.array(point, dtype=float)
+        along = np.array((force[0], 0.0, force[2])) / planar
+        foot = point + float(np.dot(centre - point, along)) * along
+        foot[1] = point[1]  # On the force's line of action, in its own X-Z plane.
+        return moment, abs(moment) / planar, foot
+
+    @classmethod
     def solve_unknowns(
         cls,
         forces: list[tuple[float, float, float]],

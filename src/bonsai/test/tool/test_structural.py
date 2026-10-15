@@ -462,3 +462,36 @@ class TestGetResultantFound(NewFile):
         assert subject.get_resultant_found(locks) == []
         assert subject.get_resultant_found(locks, [None, "T", "T"]) == ["magnitude"]
         assert subject.get_resultant_found([(True, True), (False, True)], ["T", "T"]) == ["magnitude", "direction"]
+
+
+class TestGetMoment(NewFile):
+    def test_counter_clockwise_positive_seen_from_minus_y(self):
+        # A force up, to the right of the centre, turns counter-clockwise.
+        moment, arm, foot = subject.get_moment(np.zeros(3), np.array((2.0, 0, 0)), np.array((0, 0, 5.0)))
+        assert math.isclose(moment, 10) and math.isclose(arm, 2) and np.allclose(foot, (2, 0, 0))
+        moment, _, _ = subject.get_moment(np.zeros(3), np.array((2.0, 0, 0)), np.array((0, 0, -5.0)))
+        assert math.isclose(moment, -10)
+
+    def test_the_arm_square_to_an_inclined_line_of_action(self):
+        # Along a 3:4 line through (4, 0, 0), from the origin: the arm is 4 sin of its angle from X.
+        force = np.array((-30.0, 0, 40.0))
+        moment, arm, foot = subject.get_moment(np.zeros(3), np.array((4.0, 0, 0)), force)
+        assert math.isclose(arm, 4 * 0.8) and math.isclose(moment, 50 * arm)
+        assert math.isclose(float(np.dot(foot, force)), 0, abs_tol=1e-9)  # The arm is square to the force.
+
+    def test_a_line_of_action_through_the_centre(self):
+        moment, arm, _ = subject.get_moment(np.zeros(3), np.array((3.0, 0, 4.0)), np.array((6.0, 0, 8.0)))
+        assert math.isclose(moment, 0, abs_tol=1e-9) and math.isclose(arm, 0, abs_tol=1e-9)
+
+
+class TestMomentCentre(NewFile):
+    def test_choosing_and_forgetting(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        case = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralLoadCase")
+        point = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralPointConnection")
+        assert subject.get_moment_centre(case) is None
+        subject.set_moment_centre(case, point)
+        assert subject.get_moment_centre(case) == point
+        subject.set_moment_centre(case, None)
+        assert subject.get_moment_centre(case) is None
