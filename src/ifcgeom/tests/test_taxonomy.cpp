@@ -242,6 +242,109 @@ TEST_CASE("Taxonomy conic polygons respect settings and curve senses", "[taxonom
     REQUIRE(elliptic.front().ccomponents().isApprox(std::get<tx::point3::ptr>(arc->start)->ccomponents()));
 }
 
+TEST_CASE("Taxonomy untrimmed conic edges cover a full turn", "[taxonomy][conic]") {
+    settings settings;
+    settings.set("circle-segments", 64);
+    auto circle = tx::make<tx::circle>();
+    circle->radius = 2.;
+    auto ellipse = tx::make<tx::ellipse>();
+    ellipse->radius = 2.;
+    ellipse->radius2 = 0.5;
+    for (const tx::curve::ptr& basis : std::vector<tx::curve::ptr>{circle, ellipse}) {
+        auto edge = tx::make<tx::edge>();
+        edge->basis = basis;
+        auto points = edge->to_polygon(settings);
+        REQUIRE(points.size() == 65);
+        REQUIRE(points.front().ccomponents().isApprox(points.back().ccomponents()));
+        REQUIRE(points[16].ccomponents().x() == Catch::Approx(0.).margin(1.e-12));
+        REQUIRE(points[16].ccomponents().y() == Catch::Approx(basis == circle ? 2. : 0.5));
+        edge->reverse();
+        auto reversed = edge->to_polygon(settings);
+        REQUIRE(reversed[1].ccomponents().isApprox(points[points.size() - 2].ccomponents()));
+        edge->start = 0.;
+        REQUIRE_THROWS(edge->to_polygon(settings));
+    }
+    auto line = tx::make<tx::edge>();
+    line->basis = tx::make<tx::line>();
+    REQUIRE_THROWS(line->to_polygon(settings));
+}
+
+TEST_CASE("Conic extrusion kernels preserve full profiles and reversed annular arcs", "[taxonomy][conic]") {
+    hierarchy_helper<IfcSchema> file;
+    std::vector<std::string> backends;
+#ifdef TAXONOMY_TEST_MANIFOLD
+    backends.push_back("manifold");
+#endif
+#ifdef TAXONOMY_TEST_CGAL
+    backends.push_back("cgal");
+#endif
+    for (const auto& backend : backends) {
+        for (int segments : {0, 64}) {
+            settings settings;
+            settings.set("circle-segments", segments);
+            settings.set("mesher-linear-deflection", 0.001);
+            for (int profile : {0, 1, 2}) {
+                CAPTURE(backend, segments, profile);
+                auto face = tx::make<tx::face>();
+                auto loop = tx::make<tx::loop>();
+                loop->closed = true;
+                loop->external = true;
+                double expected_volume;
+                if (profile < 2) {
+                    auto edge = tx::make<tx::edge>();
+                    if (profile == 0) {
+                        auto circle = tx::make<tx::circle>();
+                        circle->radius = 2.;
+                        circle->matrix = tx::make<tx::matrix4>();
+                        edge->basis = circle;
+                        edge->start = 0.;
+                        edge->end = 2. * pi;
+                        expected_volume = 16. * pi;
+                    } else {
+                        auto ellipse = tx::make<tx::ellipse>();
+                        ellipse->radius = 2.;
+                        ellipse->radius2 = 0.5;
+                        ellipse->matrix = tx::make<tx::matrix4>();
+                        edge->basis = ellipse;
+                        expected_volume = 4. * pi;
+                    }
+                    loop->children = {edge};
+                } else {
+                    const double start = -1. / 3., end = 1. / 3.;
+                    auto arc = [&](double radius) {
+                        auto circle = tx::make<tx::circle>();
+                        circle->radius = radius;
+                        circle->matrix = tx::make<tx::matrix4>();
+                        auto edge = tx::make<tx::edge>();
+                        edge->basis = circle;
+                        edge->start = start;
+                        edge->end = end;
+                        return edge;
+                    };
+                    auto point = [](double radius, double angle) {
+                        return tx::make<tx::point3>(radius * std::cos(angle), radius * std::sin(angle), 0.);
+                    };
+                    auto inner = arc(17.85);
+                    inner->reverse();
+                    loop->children = {
+                        arc(18.15), tx::make<tx::edge>(point(18.15, end), point(17.85, end)), inner, tx::make<tx::edge>(point(17.85, start), point(18.15, start))};
+                    expected_volume = 14.4;
+                }
+                face->children = {loop};
+                auto extrusion = tx::make<tx::extrusion>(
+                    tx::make<tx::matrix4>(), face, tx::make<tx::direction3>(0., 0., 1.), 4.);
+                extrusion->instance = file.create<IfcSchema::IfcBuildingElementProxy>();
+                auto kernel = kernels::construct(nullptr, backend, settings);
+                kernel->propagate_exceptions = true;
+                std::vector<conversion_result> converted;
+                REQUIRE(kernel->convert(extrusion, converted));
+                REQUIRE(converted.size() == 1);
+                REQUIRE(converted.front().shape()->volume().to_double() == Catch::Approx(expected_volume).epsilon(0.005));
+            }
+        }
+    }
+}
+
 TEST_CASE("Taxonomy lofts connect corresponding vertices and preserve placement", "[taxonomy]") {
     auto loft = tx::make<tx::loft>();
     auto a = polyline({{0., 0., 0.}, {1., 0., 0.}, {1., 1., 0.}, {0., 1., 0.}}, true);

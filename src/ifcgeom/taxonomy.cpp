@@ -178,7 +178,10 @@ std::vector<point3> trimmed_curve::to_polygon(const ifcopenshell::geom::settings
         if (!c) {
             throw std::runtime_error("Unsupported curve basis");
         }
-        double a = curve_parameter(underlying, start), b = curve_parameter(underlying, end);
+        const bool full_conic = start.index() == 0 && end.index() == 0 &&
+                                (c->kind() == CIRCLE || c->kind() == ELLIPSE);
+        double a = full_conic ? 0. : curve_parameter(underlying, start);
+        double b = full_conic ? 2. * polygon_pi : curve_parameter(underlying, end);
         if (!curve_sense.value_or(true)) {
             std::swap(a, b);
         }
