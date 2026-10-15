@@ -1539,9 +1539,8 @@ def _cant_lookup_for_pi_markers(alignment, pis):
 
 def _pi_deflection(hpoints, k):
     """Deflection angle at hpoints[k] (an interior PI, 1 <= k <= len(hpoints) - 2), radians --
-    the raw (un-normalized) angleFT - angleBT quantity solve_horizontal_alignment_by_pi_method
-    itself computes for each PI; its callees (curve_tangent_out/solve_join_next_radius) normalize
-    it themselves, same as the main solver's own spiral branch does, so this doesn't need to.
+    the raw (un-normalized) angleFT - angleBT; its callees (curve_tangent_out/solve_join_next_radius)
+    normalize it themselves, as solve_horizontal_alignment_by_pi_method does, so this doesn't need to.
     """
     bx, by = hpoints[k][0] - hpoints[k - 1][0], hpoints[k][1] - hpoints[k - 1][1]
     fx, fy = hpoints[k + 1][0] - hpoints[k][0], hpoints[k + 1][1] - hpoints[k][1]

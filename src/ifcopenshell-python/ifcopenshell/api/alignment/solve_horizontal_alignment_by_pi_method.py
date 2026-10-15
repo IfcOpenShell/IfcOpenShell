@@ -903,7 +903,9 @@ def solve_horizontal_alignment_by_pi_method(
         dyFT = yFT - yPI
         angleFT = math.atan2(dyFT, dxFT)
 
-        delta = angleFT - angleBT
+        # deflection angle, normalized so a curve whose tangents cross the +/-180 degree direction
+        # doesn't turn the long way round
+        delta = math.atan2(math.sin(angleFT - angleBT), math.cos(angleFT - angleBT))
 
         # true PI-to-PI distance for the leg shared with a join_next curve; distinct from lengthBT,
         # which is measured from the previous curve's end point rather than from the previous PI

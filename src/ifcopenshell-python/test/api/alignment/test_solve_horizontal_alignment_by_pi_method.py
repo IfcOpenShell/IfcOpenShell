@@ -388,3 +388,22 @@ def test_solve_curve_on_a_straight_is_an_error():
     hpoints = [(0.0, 0.0), (400.0, 0.0), (800.0, 0.0), (1400.0, 600.0)]
     with pytest.raises(ValueError, match=r"^PI 1: .*deflection angle is zero"):
         ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, [200.0, 300.0])
+
+
+@pytest.mark.parametrize("radius", [200.0, (200.0, 40.0, 40.0)])
+@pytest.mark.parametrize("back, forward, turn", [(170.0, 190.0, 1.0), (190.0, 170.0, -1.0)])
+def test_solve_deflection_across_west(radius, back, forward, turn):
+    """A curve whose tangents cross the +/-180 degree direction (heading west) turns by the deflection
+    angle, not by 360 degrees less it."""
+    b, f = math.radians(back), math.radians(forward)
+    hpoints = [
+        (0.0, 0.0),
+        (100.0 * math.cos(b), 100.0 * math.sin(b)),
+        (100.0 * (math.cos(b) + math.cos(f)), 100.0 * (math.sin(b) + math.sin(f))),
+    ]
+    definitions = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, [radius])
+    arc = next(d for d in definitions if d.predefined_type == "CIRCULARARC")
+    assert arc.start_radius_of_curvature == pytest.approx(turn * 200.0)
+    spirals = sum(d.segment_length for d in definitions if d.predefined_type == "CLOTHOID")
+    # a clothoid turns by half its length over the radius, so the arc takes what is left of the 20 degrees
+    assert arc.segment_length == pytest.approx(200.0 * math.radians(20.0) - spirals / 2.0)
