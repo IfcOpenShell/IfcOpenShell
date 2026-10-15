@@ -70,7 +70,7 @@ def build_default_wrapper_config(repo_root: Path) -> WrapperConfig:
         allowed_namespaces=["ifcopenshell", "express"],
         enum_names={"ifcopenshell::filetype": "FileType"},
         parameter_names={"type": "filetype", "read_only": "readonly"},
-        class_handle_kinds={"ifcopenshell::file": "shared_ptr"},
+        class_handle_kinds={"ifcopenshell::file": "shared_ptr", "ifcopenshell::spf_header": "borrowed_ptr"},
         class_owner_types={
             "express::base": "ifcopenshell::file",
             "express::entity": "ifcopenshell::file",

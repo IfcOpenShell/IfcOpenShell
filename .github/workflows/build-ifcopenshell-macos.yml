@@ -1,5 +1,7 @@
 name: Build IfcOpenShell macOS
 
+permissions: {}
+
 on:
   workflow_dispatch:
 
@@ -28,18 +30,20 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Checkout Build Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: IfcOpenShell/build-outputs
           path: ./build
           ref: ${{ matrix.os }}-${{ matrix.arch }}
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
+          persist-credentials: true
 
       - name: Set up uv
         uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
@@ -72,11 +76,9 @@ jobs:
       # .zip archives" step below runs `cargo build --release` via
       # packaging/build.py. Match the dedicated connector workflow's stable
       # toolchain, rather than whatever Rust the runner image happens to ship.
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: Install aws cli
-        run: |
-          python -m pip install awscli
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # v1
+        with:
+          toolchain: stable
 
       - name: Unpack Dependencies
         run: |
@@ -84,7 +86,7 @@ jobs:
           uv run ../nix/cache_dependencies.py unpack
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.24
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           key: mac-${{ matrix.arch }}
           # If we drop cross-compilation:
@@ -117,7 +119,7 @@ jobs:
 
       - name: Upload Build Logs
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-logs-osx-${{ matrix.arch }}
           path: |
@@ -152,12 +154,13 @@ jobs:
           uv run test/package/run_against_package.py ${{ matrix.test_args }} "$HOME/output"
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      # AWS CLI is preinstalled on the runner image.
       - name: Upload .zip archives to S3
         run: |
           aws s3 cp ~/output s3://ifcopenshell-builds/ --recursive

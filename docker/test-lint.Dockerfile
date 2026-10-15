@@ -92,6 +92,9 @@ RUN poe check-whitespace --check && echo 0 > /statuses/check-whitespace || echo 
 # "ESLint (TypeScript)" step.
 RUN cd src/ts/ifcopenshell-js && npm run lint && echo 0 > /statuses/ts-eslint || echo 1 > /statuses/ts-eslint
 
+# "zizmor" step.
+RUN poe zizmor && echo 0 > /statuses/zizmor || echo 1 > /statuses/zizmor
+
 # "Check TypeScript whitespace" step.
 RUN uv run .github/scripts/check-whitespace.py src/ts/ifcopenshell-js/src --check \
     && echo 0 > /statuses/ts-whitespace \
@@ -100,7 +103,7 @@ RUN uv run .github/scripts/check-whitespace.py src/ts/ifcopenshell-js/src --chec
 # "Final check" step. Mirrors the workflow's aggregation of the
 # `continue-on-error` steps, so the image build fails exactly when it would.
 RUN ERROR=0; \
-    for step in syntax-errors ruff-format ty-bonsai ty-ios ruff check-whitespace ts-eslint ts-whitespace; do \
+    for step in syntax-errors ruff-format ty-bonsai ty-ios ruff check-whitespace ts-eslint zizmor ts-whitespace; do \
         if [ "$(cat "/statuses/$step")" != "0" ]; then \
             echo "::error::Step '$step' failed, see the corresponding layer in the build log for the details."; \
             ERROR=1; \

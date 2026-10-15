@@ -14,8 +14,8 @@ const runtime = await ifcopenshell.init();
 await runtime.loadPlugin('schema', 'ifc4');
 using model = new ifcopenshell.File('IFC4');
 const wall = model.create('IfcWall', { Name: 'Example' });
-console.log(wall.id(), wall.get('Name'));
-wall.set('Name', 'Updated');
+console.log(wall.id(), wall.Name);
+wall.Name = 'Updated';
 ```
 
 ## Geometry
@@ -33,6 +33,10 @@ if (iterator.initialize()) do {
   // Read shape.asTriangulationElement().geometry() here.
 } while (iterator.next());
 ```
+
+## Examples
+
+[`examples/threejs.html`](./examples/threejs.html) and [`examples/babylon.html`](./examples/babylon.html) load `ifcopenshell` and `@ifcopenshell/wasm` from the jsDelivr CDN. Serve `src/ts` over HTTP and open either page.
 
 ## Documentation
 
