@@ -26,10 +26,42 @@ from ifcopenshell import entity_instance
 def _get_axis(file: ifcopenshell.file, Ds: float, rail_head_distance: float) -> entity_instance:
     # solves the ratio right triangle legs to hypotenous
     # Dh^2 = Dy^2 + Dz^2
+    # Ds is half the cant difference, right - left, so Dy is the height of the right rail above the left
     Dh = rail_head_distance  # hypotenous
     Dy = 2 * Ds  # horizontal leg
     Dz = math.sqrt(Dh * Dh - Dy * Dy)  # vertical leg
     return file.createIfcDirection((0.0, Dy / Dh, Dz / Dh))
+
+
+def _has_constant_superelevation(design_parameters: entity_instance) -> bool:
+    """Whether the superelevation, the mean of the cant at each rail, is the same at the start and end"""
+    p = design_parameters
+    end_left = p.EndCantLeft if p.EndCantLeft is not None else p.StartCantLeft
+    end_right = p.EndCantRight if p.EndCantRight is not None else p.StartCantRight
+    return p.StartCantLeft + p.StartCantRight == end_left + end_right
+
+
+def _get_start_axis(
+    file: ifcopenshell.file, design_parameters: entity_instance, rail_head_distance: float
+) -> entity_instance:
+    """The axis of the track at the start of a cant segment, leaning by the cant difference between its rails"""
+    return _get_axis(
+        file, 0.5 * (design_parameters.StartCantRight - design_parameters.StartCantLeft), rail_head_distance
+    )
+
+
+def _get_middle_axis(
+    file: ifcopenshell.file, design_parameters: entity_instance, rail_head_distance: float
+) -> entity_instance:
+    """
+    The axis of the track half way along a symmetric cant transition. The cross slope angle changes in
+    proportion to the deviating elevation, which is half way there, so the angle is half way between the
+    start and end angles.
+    """
+    p = design_parameters
+    start_angle = math.asin((p.StartCantRight - p.StartCantLeft) / rail_head_distance)
+    end_angle = math.asin((p.EndCantRight - p.EndCantLeft) / rail_head_distance)
+    return _get_axis(file, 0.5 * rail_head_distance * math.sin(0.5 * (start_angle + end_angle)), rail_head_distance)
 
 
 def _map_constant_cant(
@@ -56,7 +88,7 @@ def _map_constant_cant(
         Transition=transition,
         Placement=file.createIfcAxis2Placement3D(
             Location=start_point,
-            Axis=_get_axis(file, 0.5 * (Dsr - Dsl), rail_head_distance),
+            Axis=_get_start_axis(file, design_parameters, rail_head_distance),
             RefDirection=file.createIfcDirection((math.cos(start_direction), math.sin(start_direction), 0.0)),
         ),
         SegmentStart=file.createIfcLengthMeasure(0.0),
@@ -105,7 +137,7 @@ def _map_linear_transition(
         Transition=transition,
         Placement=file.createIfcAxis2Placement3D(
             Location=start_point,
-            Axis=_get_axis(file, Ds, rail_head_distance),
+            Axis=_get_start_axis(file, design_parameters, rail_head_distance),
             RefDirection=file.createIfcDirection((math.cos(start_direction), math.sin(start_direction), 0.0)),
         ),
         SegmentStart=file.createIfcLengthMeasure(0.0),
@@ -168,7 +200,7 @@ def _map_helmert_curve(
         Transition=transition,
         Placement=file.createIfcAxis2Placement3D(
             Location=start_point_1,
-            Axis=_get_axis(file, Ds / 2.0, rail_head_distance),
+            Axis=_get_start_axis(file, design_parameters, rail_head_distance),
             RefDirection=file.createIfcDirection((math.cos(start_direction_1), math.sin(start_direction_1), 0.0)),
         ),
         SegmentStart=file.createIfcLengthMeasure(0.0),
@@ -215,7 +247,7 @@ def _map_helmert_curve(
         Transition=transition,
         Placement=file.createIfcAxis2Placement3D(
             Location=start_point_2,
-            Axis=_get_axis(file, (Ds + De) / 4.0, rail_head_distance),
+            Axis=_get_middle_axis(file, design_parameters, rail_head_distance),
             RefDirection=file.createIfcDirection((math.cos(start_direction_2), math.sin(start_direction_2), 0.0)),
         ),
         SegmentStart=file.createIfcLengthMeasure(length / 2.0),
@@ -269,7 +301,7 @@ def _map_bloss_curve(
         Transition=transition,
         Placement=file.createIfcAxis2Placement3D(
             Location=start_point,
-            Axis=_get_axis(file, Ds, rail_head_distance),
+            Axis=_get_start_axis(file, design_parameters, rail_head_distance),
             RefDirection=file.createIfcDirection((math.cos(start_direction), math.sin(start_direction), 0.0)),
         ),
         SegmentStart=file.createIfcLengthMeasure(0.0),
@@ -316,7 +348,7 @@ def _map_cosine_curve(
         Transition=transition,
         Placement=file.createIfcAxis2Placement3D(
             Location=start_point,
-            Axis=_get_axis(file, Ds, rail_head_distance),
+            Axis=_get_start_axis(file, design_parameters, rail_head_distance),
             RefDirection=file.createIfcDirection((math.cos(start_direction), math.sin(start_direction), 0.0)),
         ),
         SegmentStart=file.createIfcLengthMeasure(0.0),
@@ -366,7 +398,7 @@ def _map_sine_curve(
         Transition=transition,
         Placement=file.createIfcAxis2Placement3D(
             Location=start_point,
-            Axis=_get_axis(file, Ds, rail_head_distance),
+            Axis=_get_start_axis(file, design_parameters, rail_head_distance),
             RefDirection=file.createIfcDirection((math.cos(start_direction), math.sin(start_direction), 0.0)),
         ),
         SegmentStart=file.createIfcLengthMeasure(0.0),
@@ -431,7 +463,7 @@ def _map_viennese_bend(
         Transition=transition,
         Placement=file.createIfcAxis2Placement3D(
             Location=start_point,
-            Axis=_get_axis(file, Ds, rail_head_distance),
+            Axis=_get_start_axis(file, design_parameters, rail_head_distance),
             RefDirection=file.createIfcDirection((math.cos(start_direction), math.sin(start_direction), 0.0)),
         ),
         SegmentStart=file.createIfcLengthMeasure(0.0),
@@ -455,7 +487,9 @@ def _map_alignment_cant_segment(
         raise TypeError(f"Expected to see type '{expected_type}', instead received '{segment.is_a()}'.")
 
     predefined_type = segment.DesignParameters.PredefinedType
-    if predefined_type == "CONSTANTCANT":
+    if predefined_type == "CONSTANTCANT" or _has_constant_superelevation(segment.DesignParameters):
+        # a transition whose superelevation doesn't change is a constant cant, and its parent curve
+        # can't be written because its terms divide by the change in superelevation
         result = _map_constant_cant(file, segment.DesignParameters, rail_head_distance)
     elif predefined_type == "LINEARTRANSITION":
         result = _map_linear_transition(file, segment.DesignParameters, rail_head_distance)
