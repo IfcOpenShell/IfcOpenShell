@@ -1,6 +1,5 @@
-import { EntityInstance } from './entity_instance.js';
+import { adoptInstance } from './entity_instance.js';
 import {
-  IfcOpenshellInstance,
   IfcOpenShellError,
   IfcOpenShellErrorCode,
   IfcOpenShellErrorKind,
@@ -111,7 +110,7 @@ async function initialize(options: InitOptions): Promise<IfcOpenShell> {
     loadPlugin: (kind, id) => loadPlugin(raw, kind, id),
     loadedPlugins: () => raw.loadedPlugins(),
   };
-  raw.setInstanceFactory((handle: IfcOpenshellInstance) => new EntityInstance(handle));
+  raw.setInstanceFactory(adoptInstance);
   return Object.freeze(runtime);
 }
 

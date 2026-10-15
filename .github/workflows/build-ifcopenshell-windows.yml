@@ -1,5 +1,7 @@
 name: Build IfcOpenShell Windows
 
+permissions: {}
+
 on:
   workflow_dispatch:
 
@@ -30,22 +32,24 @@ jobs:
         uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
 
       - name: Checkout Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Checkout Build Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: IfcOpenShell/build-outputs
           path: ${{ matrix.deps_dir }}
           ref: ${{ matrix.build_branch }}
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
+          persist-credentials: true
 
       - name: Install Dependencies
         run: |
-          choco install -y sed 7zip.install awscli
+          choco install -y sed 7zip.install
 
       - name: Unpack Dependencies
         run: |
@@ -59,7 +63,7 @@ jobs:
           }
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.24
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           key: win-${{ matrix.arch }}
           # Windows ccache needs ~1GB
@@ -67,7 +71,7 @@ jobs:
           max-size: 5000MB
 
       - name: Run Build Script And Pack .zip Archives
-        shell: cmd
+        shell: cmd # zizmor: ignore[misfeature] needed for vcvars environment
         run: |
           call ${{ matrix.vcvars }}
           cd win
@@ -104,12 +108,13 @@ jobs:
           uv run test/package/run_against_package.py "$env:USERPROFILE\output"
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      # AWS CLI is preinstalled on the runner image.
       - name: Upload .zip Archives to S3
         env:
           AWS_DEBUG: 1

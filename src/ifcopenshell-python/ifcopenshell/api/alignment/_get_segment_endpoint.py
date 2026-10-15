@@ -72,7 +72,9 @@ def _get_segment_endpoint(file: ifcopenshell.file, segment: entity_instance) -> 
             src = file.createIfcSegmentedReferenceCurve(
                 Segments=[curve_segment],
                 EndPoint=file.createIfcAxis2Placement3D(
-                    Location=file.createIfcCartesianPoint((segment.DesignParameters.StartDistAlong, 0.5 * cant, 0.0)),
+                    Location=file.createIfcCartesianPoint(
+                        (segment.DesignParameters.StartDistAlong, 0.5 * (Del + Der), 0.0)
+                    ),
                     RefDirection=file.createIfcDirection((1.0, 0.0, 0.0)),
                     Axis=file.createIfcDirection((0.0, Ay, Az)),
                 ),

@@ -8596,7 +8596,6 @@ bool ifcopenshell_geom_settings_get_int(ifcopenshell_geom_settings_t* self, cons
         bool matched = false;
         if (auto* p = std::get_if<int>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
         if (auto* p = std::get_if<ifcopenshell::geom::settings_detail::IteratorOutputOptions>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
-        if (auto* p = std::get_if<ifcopenshell::geom::settings_detail::FunctionStepMethod>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
         if (auto* p = std::get_if<ifcopenshell::geom::settings_detail::OutputDimensionalityTypes>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
         if (auto* p = std::get_if<ifcopenshell::geom::settings_detail::TriangulationMethod>(&val)) { *out_result = static_cast<int32_t>(*p); matched = true; }
         if (!matched) { throw std::runtime_error("Setting is not of expected type"); }

@@ -192,7 +192,10 @@ def require_command(command: str) -> str:
 
 
 def validate_cmake_version() -> None:
-    MIN_CMAKE_VERSION = (3, 21, 0)
+    cmakelists = (REPO_ROOT / "cmake" / "CMakeLists.txt").read_text()
+    min_version_match = re.search(r"cmake_minimum_required\(VERSION (\d+\.\d+)", cmakelists)
+    assert min_version_match
+    MIN_CMAKE_VERSION = tuple(map(int, min_version_match[1].split(".")))
     error_msg = f"CMake v{'.'.join(map(str, MIN_CMAKE_VERSION))} or higher is required"
 
     if not shutil.which("cmake"):
