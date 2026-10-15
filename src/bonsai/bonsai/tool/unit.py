@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import math
+from functools import cache
 from typing import TYPE_CHECKING, Any, Literal, Union
 
 import bpy
@@ -33,6 +34,12 @@ import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bonsai.bim.module.unit.prop import BIMUnitProperties
+
+
+@cache
+def _get_distance_parser(grammar: str) -> Lark:
+    """Return a cached Lark parser for ``grammar``, compiling it on first use."""
+    return Lark(grammar)
 
 
 class Unit(bonsai.core.tool.Unit):
@@ -271,11 +278,11 @@ class Unit(bonsai.core.tool.Unit):
 
             # Try to parse with the project's default grammar first
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                primary_parser = Lark(grammar_imperial)
-                fallback_parser = Lark(grammar_metric)
+                primary_parser = _get_distance_parser(grammar_imperial)
+                fallback_parser = _get_distance_parser(grammar_metric)
             else:
-                primary_parser = Lark(grammar_metric)
-                fallback_parser = Lark(grammar_imperial)
+                primary_parser = _get_distance_parser(grammar_metric)
+                fallback_parser = _get_distance_parser(grammar_imperial)
 
             # Try parsing with primary grammar
             parse_tree = None
@@ -426,6 +433,11 @@ class Unit(bonsai.core.tool.Unit):
     def set_active_unit(cls, unit: ifcopenshell.entity_instance) -> None:
         props = cls.get_unit_props()
         props.active_unit_id = unit.id()
+
+    @classmethod
+    def get_assigned_unit_of_type(cls, unit: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        """Get the project's assigned unit of the same unit type as the given unit, if any."""
+        return ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), unit.UnitType)
 
     @classmethod
     def get_project_currency_unit(cls) -> Union[ifcopenshell.entity_instance, None]:
