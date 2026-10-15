@@ -1714,6 +1714,27 @@ class BIM_PT_tab_misc(Panel):
         pass
 
 
+class BIM_PT_tab_object_structural(Panel):
+    bl_idname = "BIM_PT_tab_object_structural"
+    bl_label = "Structural"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+    bl_options = {"DEFAULT_CLOSED"}
+    bim_tab_name = "OBJECT"
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) or not tool.Ifc.get():
+            return False
+        element = tool.Ifc.get_entity(context.active_object) if context.active_object else None
+        return bool(element and element.is_a("IfcStructuralItem"))
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_tab_handover(Panel):
     bl_idname = "BIM_PT_tab_handover"
     bl_label = "Handover"
