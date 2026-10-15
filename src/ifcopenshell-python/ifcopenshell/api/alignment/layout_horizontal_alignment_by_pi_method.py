@@ -62,7 +62,9 @@ def layout_horizontal_alignment_by_pi_method(
         dyFT = yFT - yPI
         angleFT = math.atan2(dyFT, dxFT)
 
-        delta = angleFT - angleBT
+        # deflection angle, normalized so a curve whose tangents cross the +/-180 degree direction
+        # doesn't turn the long way round
+        delta = math.atan2(math.sin(angleFT - angleBT), math.cos(angleFT - angleBT))
 
         if delta == 0.0 and radius != 0.0:
             raise ValueError(
