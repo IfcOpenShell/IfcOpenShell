@@ -64,13 +64,13 @@ When Blender ships with a new Python version:
    * - ``.github/workflows/test-lint.yml``
      - ``MIN_BLENDER_PY_VERSION``
    * - ``.github/workflows/publish-bonsai.yml``
-     - ``pyver`` matrix
+     - ``pyver`` matrix, ``SEMVER_SUFFIX``
    * - ``.github/workflows/publish-bonsai-unstable.yml``
      - ``pyver`` matrix
-   * - ``.github/scripts/publish-bonsai-releases.py``
-     - ``CURRENT_PYTHON_VERSION``
+   * - ``.github/workflows/publish-bonsai-releases.yml``
+     - ``--python-version`` arguments, ``only_py311`` input
    * - ``src/bonsai/Makefile``
-     - ``SUPPORTED_PYVERSIONS``
+     - ``SUPPORTED_PYVERSIONS``, ``blender_version_min`` / ``blender_version_max`` per ``PYVERSION``
    * - ``src/bonsai/scripts/dev_environment.py``
      - ``PYTHON_VERSION`` mapping (Blender version, bundled Python version)
 
@@ -93,9 +93,10 @@ Notes:
 
 - Multiple Blender Python Versions:
 
-  - Blender does not allow multiple builds for the same platform with different Python versions (e.g., cannot have both ``bonsai_py311-0.8.5-windows-x64.zip`` and ``bonsai_py313-0.8.5-windows-x64.zip``)
-  - Workaround: publish different Python versions as different extension versions (e.g., py313 as ``0.8.5`` and py311 as ``0.8.5-post1``)
-  - Set the maximum Blender version on the Blender extensions platform UI to prevent conflicts (e.g., set max version ``5.1.0`` for ``0.8.5-post1``, which restricts it to versions below 5.1.0)
+  - Blender does not allow multiple builds for the same platform with different Python versions (e.g., cannot have both ``bonsai_py311-0.9.0-windows-x64.zip`` and ``bonsai_py313-0.9.0-windows-x64.zip``), see `extensions-website#393 <https://projects.blender.org/infrastructure/extensions-website/issues/393>`_
+  - Workaround: py311 builds get a ``-py311`` version suffix, e.g. py313 is published as ``0.9.0`` and py311 as ``0.9.0-py311``
+  - py311 builds set ``blender_version_max`` in ``blender_manifest.toml``, so they are not offered to Blender versions with a newer Python (e.g. ``5.1.0`` excludes Blender 5.1 and later)
+  - The platform allows uploading a new version only every 2 hours, so ``publish-bonsai-releases.yml`` publishing py313 then py311 will fail on py311. Rerun it 2 hours later with the ``only_py311`` input. See `extensions-website#429 <https://projects.blender.org/infrastructure/extensions-website/issues/429>`_
 
 Things to update:
 
