@@ -271,35 +271,6 @@ namespace {
 		return std::get<taxonomy::point3::ptr>(edge->start)->ccomponents();
 	}
 
-	void evaluate_curve(const taxonomy::line::ptr& c, double u, taxonomy::point3& p) {
-		Eigen::Vector4d xy{ 0, 0, u, 1. };
-		p.components() = (c->matrix->ccomponents() * xy).head<3>();
-	}
-
-	void evaluate_curve(const taxonomy::circle::ptr& c, double u, taxonomy::point3& p) {
-		Eigen::Vector4d xy{ c->radius * std::cos(u), c->radius * std::sin(u), 0, 1. };
-		p.components() = (c->matrix->ccomponents() * xy).head<3>();
-	}
-
-	void evaluate_curve(const taxonomy::ellipse::ptr& c, double u, taxonomy::point3& p) {
-		Eigen::Vector4d xy{ c->radius * std::cos(u), c->radius2 * std::sin(u), 0, 1. };
-		p.components() = (c->matrix->ccomponents() * xy).head<3>();
-	}
-
-	void project_onto_curve(const taxonomy::line::ptr& c, const taxonomy::point3& p, double& u) {
-		u = (c->matrix->ccomponents().inverse() * p.ccomponents().homogeneous())(2);
-	}
-
-	void project_onto_curve(const taxonomy::circle::ptr& c, const taxonomy::point3& p, double& u) {
-		Eigen::Vector2d xy = (c->matrix->ccomponents().inverse() * p.ccomponents().homogeneous()).head<2>();
-		u = std::atan2(xy(1), xy(0));
-	}
-
-	void project_onto_curve(const taxonomy::ellipse::ptr& c, const taxonomy::point3& p, double& u) {
-		Eigen::Vector2d xy = (c->matrix->ccomponents().inverse() * p.ccomponents().homogeneous()).head<2>();
-		u = std::atan2(xy(1), xy(0));
-	}
-
 	taxonomy::item::ptr effective_curve_basis(const taxonomy::edge::ptr& edge) {
 		auto basis = edge ? edge->basis : nullptr;
 		while (basis && basis->kind() == taxonomy::EDGE) {
@@ -310,28 +281,6 @@ namespace {
 			basis = nested->basis;
 		}
 		return basis;
-	}
-
-	bool resolve_curve_parameter(const taxonomy::item::ptr& curve, const std::variant<boost::blank, taxonomy::point3::ptr, double>& trim, double& u) {
-		if (auto value = std::get_if<double>(&trim)) {
-			u = *value;
-			return std::isfinite(u);
-		}
-		if (auto point = std::get_if<taxonomy::point3::ptr>(&trim)) {
-			if (auto line = taxonomy::dcast<taxonomy::line>(curve)) {
-				project_onto_curve(line, **point, u);
-				return std::isfinite(u);
-			}
-			if (auto circle = taxonomy::dcast<taxonomy::circle>(curve)) {
-				project_onto_curve(circle, **point, u);
-				return std::isfinite(u);
-			}
-			if (auto ellipse = taxonomy::dcast<taxonomy::ellipse>(curve)) {
-				project_onto_curve(ellipse, **point, u);
-				return std::isfinite(u);
-			}
-		}
-		return false;
 	}
 
 	bool basis_from_points(const std::vector<Eigen::Vector3d>& points, Eigen::Vector3d& origin, Eigen::Vector3d& x, Eigen::Vector3d& y) {
@@ -432,11 +381,11 @@ namespace {
 		return true;
 	}
 
-	bool append_extrusion_loop_points(const taxonomy::loop::ptr& loop, int circle_segments, double precision, std::vector<Eigen::Vector3d>& points);
+	bool append_extrusion_loop_points(const taxonomy::loop::ptr& loop, const settings& polygon_settings, double precision, std::vector<Eigen::Vector3d>& points);
 	bool loop_polygon_from_points(const std::vector<Eigen::Vector3d>& points, const Eigen::Vector3d& origin, const Eigen::Vector3d& x, const Eigen::Vector3d& y, double precision, loop_polygon& polygon);
 	double signed_area(const loop_polygon& polygon);
 
-	bool extrusion_face_polygons(const taxonomy::face::ptr& face, int circle_segments, double precision, Eigen::Vector3d& origin, Eigen::Vector3d& x, Eigen::Vector3d& y, std::vector<loop_polygon>& polygons, size_t& outer_index) {
+	bool extrusion_face_polygons(const taxonomy::face::ptr& face, const settings& polygon_settings, double precision, Eigen::Vector3d& origin, Eigen::Vector3d& x, Eigen::Vector3d& y, std::vector<loop_polygon>& polygons, size_t& outer_index) {
 		polygons.clear();
 		outer_index = 0;
 		if (!extrusion_face_supported(face)) {
@@ -448,7 +397,7 @@ namespace {
 		loops.reserve(face->children.size());
 		for (const auto& loop : face->children) {
 			std::vector<Eigen::Vector3d> points;
-			if (!append_extrusion_loop_points(loop, circle_segments, precision, points)) {
+			if (!append_extrusion_loop_points(loop, polygon_settings, precision, points)) {
 				return false;
 			}
 			Eigen::Vector3d loop_origin;
@@ -853,95 +802,22 @@ namespace {
 		}
 	}
 
-	bool append_extrusion_edge_points(const taxonomy::edge::ptr& edge, int circle_segments, double precision, std::vector<Eigen::Vector3d>& points) {
+	bool append_extrusion_edge_points(const taxonomy::edge::ptr& edge, const settings& polygon_settings, double precision, std::vector<Eigen::Vector3d>& points) {
 		if (!edge) {
 			return false;
 		}
-		const auto two_pi = 2. * std::acos(-1.);
-		std::vector<taxonomy::point3> edge_points;
-		if (!edge->basis) {
-			if (edge->start.index() != 1 || edge->end.index() != 1) {
-				return false;
-			}
-			edge_points.push_back(*std::get<taxonomy::point3::ptr>(edge->start));
-			edge_points.push_back(*std::get<taxonomy::point3::ptr>(edge->end));
-			extend_points(points, edge_points, precision);
-			return true;
-		}
-		auto basis = effective_curve_basis(edge);
-		if (!basis) {
-			return false;
-		}
-		double a;
-		double b;
-		const bool full_conic = edge->start.index() == 0 && edge->end.index() == 0 && (basis->kind() == taxonomy::CIRCLE || basis->kind() == taxonomy::ELLIPSE);
-		if (full_conic) {
-			a = 0.;
-			b = two_pi;
-		} else {
-			if (!resolve_curve_parameter(basis, edge->start, a) || !resolve_curve_parameter(basis, edge->end, b)) {
-				return false;
-			}
-		}
-		const bool reverse = !edge->curve_sense.value_or(true);
-		if (reverse) {
-			std::swap(a, b);
-		}
-		taxonomy::point3 point;
-		if (auto line = taxonomy::dcast<taxonomy::line>(basis)) {
-			evaluate_curve(line, a, point);
-			edge_points.push_back(point);
-			evaluate_curve(line, b, point);
-			edge_points.push_back(point);
-		} else if (auto circle = taxonomy::dcast<taxonomy::circle>(basis)) {
-			a = std::fmod(a, two_pi);
-			b = std::fmod(b, two_pi);
-			if (b <= a) {
-				b += two_pi;
-			}
-			const auto num_segments = std::max(1, (int)std::ceil(std::fabs(a - b) / two_pi * circle_segments));
-			const auto du = (b - a) / num_segments;
-			evaluate_curve(circle, a, point);
-			edge_points.push_back(point);
-			for (int i = 1; i < num_segments; ++i) {
-				evaluate_curve(circle, a + du * i, point);
-				edge_points.push_back(point);
-			}
-			evaluate_curve(circle, b, point);
-			edge_points.push_back(point);
-		} else if (auto ellipse = taxonomy::dcast<taxonomy::ellipse>(basis)) {
-			a = std::fmod(a, two_pi);
-			b = std::fmod(b, two_pi);
-			if (b <= a) {
-				b += two_pi;
-			}
-			const auto num_segments = std::max(1, (int)std::ceil(std::fabs(a - b) / two_pi * circle_segments));
-			const auto du = (b - a) / num_segments;
-			evaluate_curve(ellipse, a, point);
-			edge_points.push_back(point);
-			for (int i = 1; i < num_segments; ++i) {
-				evaluate_curve(ellipse, a + du * i, point);
-				edge_points.push_back(point);
-			}
-			evaluate_curve(ellipse, b, point);
-			edge_points.push_back(point);
-		} else {
-			return false;
-		}
-		if (reverse) {
-			std::reverse(edge_points.begin(), edge_points.end());
-		}
+		const auto edge_points = edge->to_polygon(polygon_settings);
 		extend_points(points, edge_points, precision);
 		return true;
 	}
 
-	bool append_extrusion_loop_points(const taxonomy::loop::ptr& loop, int circle_segments, double precision, std::vector<Eigen::Vector3d>& points) {
+	bool append_extrusion_loop_points(const taxonomy::loop::ptr& loop, const settings& polygon_settings, double precision, std::vector<Eigen::Vector3d>& points) {
 		points.clear();
 		if (!loop || loop->children.empty()) {
 			return false;
 		}
 		for (const auto& edge : loop->children) {
-			if (!append_extrusion_edge_points(edge, circle_segments, precision, points)) {
+			if (!append_extrusion_edge_points(edge, polygon_settings, precision, points)) {
 				return false;
 			}
 		}
@@ -1170,7 +1046,7 @@ namespace {
 	}
 
 	mesh_type transform_mesh(const mesh_type& mesh, const taxonomy::matrix4::ptr& place);
-    std::optional<part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, int circle_segments);
+    std::optional<part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, const settings& polygon_settings);
 
 	Eigen::Matrix4d matrix_or_identity(const taxonomy::matrix4::ptr& matrix) {
 		return matrix ? matrix->ccomponents() : Eigen::Matrix4d::Identity();
@@ -1417,7 +1293,7 @@ namespace {
 		return part_from_polygon_extrusion({std::move(polygon)}, 0, normal, extrusion_dir * -inside_sign, max_depth + margin, precision, dilation);
 	}
 
-	std::optional<part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, int circle_segments) {
+	std::optional<part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, const settings& polygon_settings) {
 		if (extrusion->depth < precision) {
 			return std::nullopt;
 		}
@@ -1430,7 +1306,7 @@ namespace {
 		Eigen::Vector3d y;
 		std::vector<loop_polygon> polygons;
 		size_t outer_index = 0;
-		if (!extrusion_face_polygons(face, circle_segments, precision, origin, x, y, polygons, outer_index)) {
+		if (!extrusion_face_polygons(face, polygon_settings, precision, origin, x, y, polygons, outer_index)) {
 			return std::nullopt;
 		}
 		auto normal = x.cross(y);
@@ -1453,7 +1329,7 @@ namespace {
 		Eigen::Vector3d y;
 		std::vector<loop_polygon> polygons;
 		size_t outer_index = 0;
-		if (!extrusion_face_polygons(face, settings::CircleSegments::defaultvalue, precision, origin, x, y, polygons, outer_index)) {
+		if (!extrusion_face_polygons(face, settings{}, precision, origin, x, y, polygons, outer_index)) {
 			return false;
 		}
 		auto dir = extrusion->direction->ccomponents();
@@ -1584,7 +1460,7 @@ namespace {
 }
 
 bool manifold_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, std::vector<ifcopenshell::geom::conversion_result>& results) {
-	auto part = part_from_extrusion(extrusion, settings_.get<settings::Precision>().get(), dilation_hack, settings_.get<settings::CircleSegments>().get());
+	auto part = part_from_extrusion(extrusion, settings_.get<settings::Precision>().get(), dilation_hack, settings_);
 	if (!part) {
 		logger_.warning("Manifold kernel: failed to convert extrusion, requires planar bounds with line, circle or ellipse edges", extrusion->instance);
 		return false;
