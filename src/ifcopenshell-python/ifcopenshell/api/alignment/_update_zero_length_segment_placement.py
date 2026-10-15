@@ -26,6 +26,16 @@ import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
 
 
+def _cant_cross_slope(placement: np.array) -> tuple[float, float]:
+    """The cosine and sine of the cross slope angle of a cant frame: the angle of its Axis from the horizontal
+    to the left (0, 1, 0), in the section normal to its RefDirection (cos θ, 0, sin θ)."""
+    Rdx, Rdz = float(placement[0, 0]), float(placement[2, 0])
+    Adx, Ady, Adz = float(placement[0, 2]), float(placement[1, 2]), float(placement[2, 2])
+    cos_phi, sin_phi = Ady, Rdx * Adz - Rdz * Adx  # Axis on the left and on the section's normal, RefDir x left
+    norm = math.hypot(cos_phi, sin_phi)
+    return cos_phi / norm, sin_phi / norm
+
+
 def _update_zero_length_segment_placement(
     file: ifcopenshell.file, zero_length_segment: entity_instance, placement: np.array
 ) -> None:
@@ -40,18 +50,19 @@ def _update_zero_length_segment_placement(
     Rdx = float(placement[0, 0])
     Rdy = float(placement[1, 0])
     Rdz = float(placement[2, 0])
-    Adx = float(placement[0, 2])
-    Ady = float(placement[1, 2])
-    Adz = float(placement[2, 2])
 
     if zero_length_segment.is_a("IfcCurveSegment"):
         if zero_length_segment.Placement.is_a("IfcAxis2Placement2D"):
             zero_length_segment.Placement.Location.Coordinates = (x, y)
             zero_length_segment.Placement.RefDirection.DirectionRatios = (Rdx, Rdy)
         else:
+            # a cant segment: its placement has RefDirection in the (distance along, deviating elevation) plane
+            # and Axis in the cross section, but the cant frame's RefDirection is pitched up by the slope
+            # and its Axis rolled in the section normal to it
+            cos_phi, sin_phi = _cant_cross_slope(placement)
             zero_length_segment.Placement.Location.Coordinates = (x, y, z)
-            zero_length_segment.Placement.RefDirection.DirectionRatios = (Rdx, Rdy, Rdz)
-            zero_length_segment.Placement.Axis.DirectionRatios = (Adx, Ady, Adz)
+            zero_length_segment.Placement.RefDirection.DirectionRatios = (Rdx, Rdz, 0.0)
+            zero_length_segment.Placement.Axis.DirectionRatios = (0.0, cos_phi, sin_phi)
     elif zero_length_segment.DesignParameters.is_a("IfcAlignmentHorizontalSegment"):
         zero_length_segment.DesignParameters.StartPoint.Coordinates = (x, y)
         zero_length_segment.DesignParameters.StartDirection = math.atan(Rdy / Rdx)
@@ -61,7 +72,7 @@ def _update_zero_length_segment_placement(
         zero_length_segment.DesignParameters.StartGradient = Rdy / Rdx
         zero_length_segment.DesignParameters.EndGradient = zero_length_segment.DesignParameters.StartGradient
     else:
-        slope = Ady / math.sqrt(Ady**2 + Adz**2)
+        slope, _ = _cant_cross_slope(placement)
         layout = ifcopenshell.api.alignment.get_layout(zero_length_segment)
         railhead = layout.RailHeadDistance
 

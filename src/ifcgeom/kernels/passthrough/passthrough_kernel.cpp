@@ -137,12 +137,13 @@ namespace {
 		std::vector<int> indices(polygon.size());
 		std::iota(indices.begin(), indices.end(), 0);
 		auto orientation = signed_area(polygon);
-		if (std::abs(orientation) <= precision * precision) {
+		const double area_precision = precision * precision;
+		if (std::abs(orientation) <= area_precision) {
 			return false;
 		}
 		auto is_convex = [&](int a, int b, int c) {
 			auto cross = triangle_cross(polygon[a], polygon[b], polygon[c]);
-			return orientation > 0. ? cross > precision : cross < -precision;
+			return orientation > 0. ? cross > area_precision : cross < -area_precision;
 		};
 		while (indices.size() > 3) {
 			bool clipped = false;
@@ -158,7 +159,7 @@ namespace {
 					if (idx == prev || idx == curr || idx == next) {
 						continue;
 					}
-					if (point_in_triangle(polygon[idx], polygon[prev], polygon[curr], polygon[next], precision)) {
+					if (point_in_triangle(polygon[idx], polygon[prev], polygon[curr], polygon[next], area_precision)) {
 						contains = true;
 						break;
 					}
@@ -250,16 +251,54 @@ namespace {
 		}
 		return shell;
 	}
+
+	taxonomy::shell::ptr triangulate_shell_caps(const taxonomy::shell::ptr& source, double precision) {
+		auto shell = taxonomy::make<taxonomy::shell>();
+		shell->instance = source->instance;
+		shell->matrix = source->matrix;
+		shell->surface_style = source->surface_style;
+		shell->closed = source->closed;
+		for (const auto& face : source->children) {
+			if (!face || face->children.size() != 1) {
+				return nullptr;
+			}
+			const auto& loop = face->children.front();
+			if (!loop) {
+				return nullptr;
+			}
+			if (loop->children.size() <= 4) {
+				shell->children.push_back(face);
+				continue;
+			}
+			std::vector<Eigen::Vector3d> points;
+			std::vector<Eigen::Vector2d> projected;
+			Eigen::Vector3d origin, x, y, normal;
+			std::vector<std::array<int, 3>> triangles;
+			if (!loop_points(loop, points) || !polygon_basis(points, precision, origin, x, y, normal, projected) ||
+				!triangulate_polygon(projected, precision, triangles)) {
+				return nullptr;
+			}
+			for (const auto& tri : triangles) {
+				auto triangle = make_face({points[tri[0]], points[tri[1]], points[tri[2]]});
+				triangle->instance = face->instance;
+				triangle->surface_style = face->surface_style;
+				shell->children.push_back(triangle);
+			}
+		}
+		return shell;
+	}
 }
 
 bool passthrough_kernel::convert_impl(const taxonomy::shell::ptr shell, std::vector<ifcopenshell::geom::conversion_result>& results) {
-	if (!shell_supported(shell)) {
+	auto triangulated = shell_supported(shell) ? shell : triangulate_shell_caps(shell, settings_.get<settings::Precision>().get());
+	if (!shell_supported(triangulated)) {
+		logger_.error("Passthrough kernel: failed to triangulate polygonal shell faces", shell->instance);
 		return false;
 	}
 	results.emplace_back(ifcopenshell::geom::conversion_result(
 		shell->instance.id(),
 		shell->matrix,
-		new ifcopenshell::geom::passthrough_shape(passthrough_part{ shell, taxonomy::make<taxonomy::matrix4>(), shell->closed.value_or(false) }),
+		new ifcopenshell::geom::passthrough_shape(passthrough_part{ triangulated, taxonomy::make<taxonomy::matrix4>(), shell->closed.value_or(false) }),
 		shell->surface_style));
 	return true;
 }
