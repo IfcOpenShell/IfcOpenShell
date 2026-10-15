@@ -103,7 +103,8 @@ def get_report_data(
                 drawing = ShaderInfo(case)
                 drawing.update()
             name = f"{get_slug(case.Name)}_{get_slug(item.Name)}_{item.id()}.svg"
-            resultant_found = bool(get_resultant_found([tool.Structural.get_locks(a) for a in activities]))
+            links = tool.Structural.get_magnitude_groups(activities)
+            resultant_found = bool(get_resultant_found([tool.Structural.get_locks(a) for a in activities], links))
             has_diagram = write_diagram(drawing, item, directory / "diagrams" / name, resultant_found)
             point = {"name": item.Name or "Unnamed", "diagram": f"diagrams/{name}" if has_diagram else None}
             colors = get_force_colors(drawing, item)
@@ -202,9 +203,17 @@ def get_slug(name: Union[str, None]) -> str:
     return re.sub(r"[^\w.-]+", "_", name or "").strip("_") or "Unnamed"
 
 
-def get_resultant_found(locks: list[tuple[bool, bool]]) -> list[str]:
-    """What of a resultant was found, from how many force values were: Edit Resultant finds two unknowns in all"""
+def get_resultant_found(locks: list[tuple[bool, bool]], links: Union[list[Union[str, None]], None] = None) -> list[str]:
+    """What of a resultant was found, from how many force values were: Edit Resultant finds two unknowns in all.
+
+    :param links: A key per force, the same for forces of equal magnitude, whose magnitudes count as one.
+    """
     unknown = sum(not locked for lock in locks for locked in lock)
+    # Linked magnitudes unknown together count once; linked to a known one, not at all.
+    links = links or [None] * len(locks)
+    for key in {k for k in links if k}:
+        members = [lock for lock, k in zip(locks, links) if k == key]
+        unknown -= sum(not lock[0] for lock in members) - (0 if any(lock[0] for lock in members) else 1)
     return [["magnitude", "direction"], ["magnitude"]][unknown] if unknown < 2 else []
 
 
@@ -245,13 +254,23 @@ def get_resultant_calculation(
     """
     text_unit = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", unit) + "}"
     forces = [get_force_terms(activity, i) for i, activity in enumerate(activities, 1)]
+    for force, link, factor in zip(forces, *tool.Structural.get_magnitude_links(activities)):
+        force["link"], force["factor"] = link, factor
     # Each force in the colour of its arrow. Markdown keeps colour only in math, so symbols are coloured there.
     palette = [(colors or {}).get(activity.id(), NEUTRAL) for activity in activities]
+    sources = get_link_sources(forces)
     rows = []
-    for force, color in zip(forces, palette):
+    for i, (force, color) in enumerate(zip(forces, palette)):
         found = [text for text, locked in zip(("magnitude", "direction"), force["locks"]) if not locked]
         if force.get("given") and "magnitude" not in found:
             found.insert(0, "magnitude")  # Found from its known component.
+        if i in sources and "magnitude" in found:
+            # Tied to another's, as "magnitude = 0.25 × F₂", so that it does not read as free.
+            source, k = sources[i]
+            symbol = re.sub(r"_\{(\d+)\}", lambda m: m.group(1).translate(SUBSCRIPTS), forces[source]["symbol"])
+            found[found.index("magnitude")] = (
+                f"magnitude = {symbol}" if math.isclose(k, 1.0) else f"magnitude = {k:g} × {symbol}"
+            )
         rows.append(get_table_row(force["symbol"], force["name"], force["magnitude"], force["direction"], found, color))
         rows[-1]["magnitude"] += f" {unit}"
     solving, find = get_solving_steps(forces, text_unit, resultant_eighth)
@@ -261,7 +280,7 @@ def get_resultant_calculation(
         for i, force in enumerate(forces)
         if not all(force["locks"]) or force.get("given")
     }
-    resultant_found = get_resultant_found([force["locks"] for force in forces])
+    resultant_found = get_resultant_found([force["locks"] for force in forces], [force["link"] for force in forces])
     components, steps, summary = get_sum_steps(
         forces, text_unit, unit, found if solving else None, resultant_found, resultant_eighth
     )
@@ -693,11 +712,36 @@ def get_unknown_steps(
         for kind, locked in zip(("MAGNITUDE", "DIRECTION"), force["locks"])
         if not locked
     ]
+    # Forces of equal magnitude count as one unknown, written as the first of them, or follow one known.
+    groups = get_link_groups(forces)
+    known_links = {forces[i]["link"] for i, f in enumerate(forces) if f.get("link") and f["locks"][0]}
+    unknowns = [
+        (i, kind)
+        for i, kind in unknowns
+        if kind != "MAGNITUDE"
+        or not forces[i].get("link")
+        or (forces[i]["link"] not in known_links and i == groups[forces[i]["link"]][0])
+    ]
     if not unknowns or len(unknowns) > 2 or not all(force["in_plane"] for force in forces):
         return [], ""
     vectors = [np.array((force["vector"][0], force["vector"][2])) for force in forces]
     resultant = sum(vectors)
-    steps = []
+    # Said first, as texts say it: "but T1 = T2". One following a known magnitude is worked out there and then.
+    steps = [
+        get_link_statement(forces, members)
+        for members in groups.values()
+        if not any(forces[j]["locks"][0] for j in members)
+    ]
+    for j, (known, k) in get_link_sources(forces).items():
+        if not forces[known]["locks"][0]:
+            continue
+        value = bold(f"{np.linalg.norm(vectors[j]):.2f}", True, text_unit)
+        symbol, known_symbol = forces[j]["symbol"], forces[known]["symbol"]
+        if math.isclose(k, 1.0):
+            steps.append(f"{symbol} = {known_symbol} = {value}")
+        else:
+            known_value = np.linalg.norm(vectors[known])
+            steps.append(f"{symbol} = {k:g}\\, {known_symbol} = {k:g}({known_value:.2f}) = {value}")
     if len(unknowns) == 2 and unknowns[0][0] == unknowns[1][0]:
         # A whole force: what the others leave of the resultant.
         i = unknowns[0][0]
@@ -723,10 +767,27 @@ def get_unknown_steps(
     if any(kind == "DIRECTION" for _, kind in unknowns) or any(not vectors[i].any() for i, _ in unknowns):
         return [], ""
     found = [i for i, _ in unknowns]
+    # An unknown standing for forces of equal magnitude: the sum of their directions, its terms theirs together.
+    members = {i: groups.get(forces[i].get("link"), [i]) for i in found}
+    unit = lambda j: vectors[j] / np.linalg.norm(vectors[j])
+    # Each linked force as a multiple of the first of them, which stands for them, by their ratios.
+    multiple = lambda i, j: forces[j].get("factor", 1.0) / forces[i].get("factor", 1.0)
     lines = [
-        {"symbol": forces[i]["symbol"], "unit": vectors[i] / np.linalg.norm(vectors[i]), "terms": forces[i]["terms"]}
+        {
+            "symbol": forces[i]["symbol"],
+            "unit": sum(multiple(i, j) * unit(j) for j in members[i]),
+            "terms": (
+                forces[i]["terms"]
+                if len(members[i]) == 1
+                else get_joined_terms([forces[j] for j in members[i]], [multiple(i, j) for j in members[i]])
+            ),
+        }
         for i in found
     ]
+    named = lambda i: forces[i]["symbol"]
+    # The links found with them, said after what is found: "F_{2} and R (with F_{3} = 0.25\, F_{2})".
+    said = [get_link_statement(forces, members[i]) for i in found if len(members[i]) > 1]
+    with_links = f" (with ${'$, $'.join(said)}$)" if said else ""
     if len(found) == 1:
         # A force's magnitude, and the resultant's along its known direction.
         if np.linalg.norm(resultant) < 1e-9:
@@ -738,13 +799,78 @@ def get_unknown_steps(
         # Said as the resultant is measured elsewhere in the report, from the eighth chosen for it if any.
         shown, shown_angle = get_resultant_direction(resultant[0], resultant[1], resultant_eighth)
         find = (
-            f"The magnitudes of ${forces[found[0]]['symbol']}$ and $R$, "
+            f"The magnitudes of ${named(found[0])}$ and $R${with_links}, "
             f"$R$ acting at ${shown_angle:.1f}^\\circ$ {shown}, {EIGHTH_AXES[shown]}."
         )
     else:
-        find = f"The magnitudes of ${lines[0]['symbol']}$ and ${lines[1]['symbol']}$, $R$ being known."
-    knowns = [vectors[j] for j in range(len(forces)) if j not in found]
-    return get_two_unknown_steps(knowns, lines, None if len(found) == 1 else resultant, text_unit), find
+        find = f"The magnitudes of ${named(found[0])}$ and ${named(found[1])}${with_links}, $R$ being known."
+    linked = {j for i in found for j in members[i]}
+    knowns = [vectors[j] for j in range(len(forces)) if j not in linked]
+    steps += get_two_unknown_steps(knowns, lines, None if len(found) == 1 else resultant, text_unit)
+    # Each linked force takes the one found, times its ratio.
+    for i in found:
+        if len(members[i]) < 2:
+            continue
+        found_value = np.linalg.norm(vectors[i])
+        if all(math.isclose(multiple(i, j), 1.0) for j in members[i]):
+            steps.append(f"{get_link_statement(forces, members[i])} = {bold(f'{found_value:.2f}', True, text_unit)}")
+            continue
+        for j in members[i][1:]:
+            k = f"{multiple(i, j):g}"
+            value = bold(f"{np.linalg.norm(vectors[j]):.2f}", True, text_unit)
+            steps.append(f"{forces[j]['symbol']} = {k}\\, {forces[i]['symbol']} = {k}({found_value:.2f}) = {value}")
+    return steps, find
+
+
+def get_link_statement(forces: list[dict[str, Any]], members: list[int]) -> str:
+    """Linked magnitudes said as texts say them, F_{2} = F_{3}, or F_{3} = 0.25\\, F_{2} for a ratio"""
+    first = members[0]
+    multiples = [forces[j].get("factor", 1.0) / forces[first].get("factor", 1.0) for j in members]
+    if all(math.isclose(m, 1.0) for m in multiples):
+        return " = ".join(forces[j]["symbol"] for j in members)
+    return ",\\quad ".join(
+        f"{forces[j]['symbol']} = {m:g}\\, {forces[first]['symbol']}" for j, m in zip(members[1:], multiples[1:])
+    )
+
+
+SUBSCRIPTS = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+
+
+def get_link_sources(forces: list[dict[str, Any]]) -> dict[int, tuple[int, float]]:
+    """Each linked force but the one its group is given from, with that one and its multiple of it: the one of
+    known magnitude if any, otherwise the first"""
+    sources = {}
+    for members in get_link_groups(forces).values():
+        first = next((j for j in members if forces[j]["locks"][0]), members[0])
+        for j in members:
+            if j != first:
+                sources[j] = (first, forces[j].get("factor", 1.0) / forces[first].get("factor", 1.0))
+    return sources
+
+
+def get_link_groups(forces: list[dict[str, Any]]) -> dict[str, list[int]]:
+    """The forces linked as of equal magnitude, by link, if two or more share one"""
+    groups: dict[str, list[int]] = {}
+    for i, force in enumerate(forces):
+        if force.get("link"):
+            groups.setdefault(force["link"], []).append(i)
+    return {key: members for key, members in groups.items() if len(members) > 1}
+
+
+def get_joined_terms(forces: list[dict[str, Any]], multiples: Union[list[float], None] = None) -> dict[str, str]:
+    """The trigonometry of linked forces together, per axis, each times its multiple of the first, as
+    (-\\cos 30.0^\\circ - 0.25 \\cos 60.0^\\circ)"""
+    multiples = multiples or [1.0] * len(forces)
+    joined = {}
+    for axis in ("x", "z"):
+        parts = []
+        for term, m in zip((force["terms"][axis] for force in forces), multiples):
+            sign, trig = ("-", term[1:]) if term.startswith("-") else ("+", term)
+            parts.append((sign, trig if math.isclose(m, 1.0) else f"{m:g}\\, {trig}"))
+        first = f"{'-' if parts[0][0] == '-' else ''}{parts[0][1]}"
+        rest = "".join(f" {sign} {trig}" for sign, trig in parts[1:])
+        joined[axis] = f"\\left({first}{rest}\\right)"
+    return joined
 
 
 def get_two_unknown_steps(

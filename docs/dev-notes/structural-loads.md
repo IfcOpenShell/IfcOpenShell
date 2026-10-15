@@ -361,6 +361,21 @@ where Bonsai's eighths would measure from the vertical.
   by solving from the eighth chosen for it in Edit Resultant, as the rest of the report does,
   rather than the eighth it falls in.
 
+## 17. Linked magnitudes
+
+- **Magnitude As.** Texts pose some problems with a condition rather than a value, "T₁ = T₂", or
+  one force a quarter of another. Edit Load can link a load's magnitude to another point force
+  in the chain, times a ratio, stored in BBIM_Structural as `SameMagnitudeAs` (the other load's
+  GlobalId) and `MagnitudeRatio` (left out when 1). Links chain: each linked load's magnitude is
+  a factor of one its group shares (`tool.Structural.get_magnitude_links`).
+- **Solving.** Linked unknown magnitudes count as one unknown: they are solved as one force along
+  the sum of their directions, each weighted by its factor, then shared out
+  (`solve_linked_unknowns`). A linked magnitude follows a known one in its group. Edit Load's
+  preview solves with the link as it stands in the dialog.
+- **Reports** state a link first, as texts do, carry the ratio into the sums' terms, and work out
+  each linked force from the one found, or from the known one before the sums use it. The forces
+  table marks a linked magnitude "magnitude = 0.25 × F₂", so that it does not read as free.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
