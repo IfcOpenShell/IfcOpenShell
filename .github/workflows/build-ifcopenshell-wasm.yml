@@ -105,6 +105,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      # AWS CLI is preinstalled on the runner image.
       - name: Upload .zip archives to S3
         run: |
           aws s3 cp dist s3://ifcopenshell-builds/ --recursive --exclude "*" --include "*.whl"

@@ -49,7 +49,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          choco install -y sed 7zip.install awscli
+          choco install -y sed 7zip.install
 
       - name: Unpack Dependencies
         run: |
@@ -114,6 +114,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      # AWS CLI is preinstalled on the runner image.
       - name: Upload .zip Archives to S3
         env:
           AWS_DEBUG: 1
