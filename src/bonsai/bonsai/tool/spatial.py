@@ -524,8 +524,20 @@ class Spatial(bonsai.core.tool.Spatial):
         previous_container_index = props.active_container_index
         props.containers.clear()
         cls.contracted_containers = json.loads(props.contracted_containers)
+        cls.sync_moved_spatial_placements()
         cls.import_spatial_element(tool.Ifc.get().by_type("IfcProject")[0], 0)
         props.active_container_index = tool.Blender.get_valid_uilist_index(previous_container_index, props.containers)
+
+    @classmethod
+    def sync_moved_spatial_placements(cls) -> None:
+        """Commit the placement of moved spatial elements so the container manager shows current elevations."""
+        ifc_file = tool.Ifc.get()
+        for element in ifc_file.by_type(tool.Root.get_spatial_element_class()):
+            obj = tool.Ifc.get_object(element)
+            if isinstance(obj, bpy.types.Object) and tool.Ifc.is_moved(obj):
+                # Refresh paths are not tool.Ifc.Operator flows, so mark the committed change ourselves.
+                tool.Blender.get_bim_props().is_dirty = True
+                tool.Geometry.commit_placement_if_moved(obj)
 
     @classmethod
     def import_spatial_element(cls, element: ifcopenshell.entity_instance, level_index: int) -> None:
@@ -536,12 +548,13 @@ class Spatial(bonsai.core.tool.Spatial):
         new.ifc_class = element.is_a()
         new["name"] = element.Name or "Unnamed"
         new.description = element.Description or ""
-        new.long_name = element.LongName or ""
+        # Assign via subscript so the update callbacks, which write back to IFC, don't fire. See #8545.
+        new["long_name"] = element.LongName or ""
         if not element.is_a("IfcProject"):
             elevation = ifcopenshell.util.placement.get_storey_elevation(element)
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             elevation_in_meters = elevation * unit_scale
-            new.elevation = tool.Unit.format_distance(elevation_in_meters)
+            new["elevation"] = tool.Unit.format_distance(elevation_in_meters)
         new.is_expanded = element.id() not in cls.contracted_containers
         new.level_index = level_index
         children = ifcopenshell.util.element.get_parts(element)
@@ -1309,6 +1322,13 @@ class Spatial(bonsai.core.tool.Spatial):
                         for subelement3 in ifcopenshell.util.element.get_parts(subelement2):
                             if subelement3.is_a("IfcBuildingStorey"):
                                 return subelement3
+                # No Building > Storey convention found (e.g. a template-defined
+                # facility). Descend while unambiguous, without hardcoding classes.
+                container = subelement
+                while len(children := ifcopenshell.util.element.get_parts(container)) == 1:
+                    container = children[0]
+                if container != subelement:
+                    return container
         if subelement:
             return subelement
         return None
