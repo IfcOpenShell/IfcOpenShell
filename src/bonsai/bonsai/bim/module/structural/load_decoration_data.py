@@ -604,6 +604,7 @@ class ShaderInfo:
             label = f"{np.linalg.norm(vector):.{props.force_decimals}f} {self.force_unit}"
             if has_angle:
                 label += self.get_unknown_marks(activity)[0]
+            side = None  # Beside a tip-to-tail chain's polygon, if it is one.
             if centre is None:
                 self.add_force_arrow(tail, tip, color, label, size, activity=activity)
             else:
