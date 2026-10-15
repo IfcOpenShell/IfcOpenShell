@@ -55,7 +55,7 @@ namespace {
 #ifndef IFOPSH_SIMPLE_KERNEL
 	// Open surfaces have no marked volume. Construct their Nef as a union of
 	// facets so subtraction retains the surface instead of regularizing it away.
-	CGAL::Nef_polyhedron_3<kernel_> mesh_to_nef(const cgal_polyhedron& mesh) {
+	CGAL::Nef_polyhedron_3<kernel_> mesh_to_nef(cgal_polyhedron& mesh) {
 	    if (mesh.empty()) {
 	        return CGAL::Nef_polyhedron_3<kernel_>();
 	    }
