@@ -5,7 +5,7 @@ IS_STABLE:=FALSE
 
 VERSION:=$(shell cat ../../VERSION)
 VERSION_BASE:=$(shell sed -E 's/[[:alpha:]]+[0-9]+$$//' ../../VERSION)
-VERSION_PYTHON:=$(shell sed 's/alpha/a/' ../../VERSION)
+VERSION_PYTHON:=$(shell sed -e 's/alpha/a/' -e 's/post/.post/' ../../VERSION)
 VERSION_SEMVER:=$(shell sed -E 's/([[:alpha:]]+)([0-9]+)$$/-\1\2/' ../../VERSION)
 VERSION_DATE:=$(shell date '+%y%m%d')
 VERSION_DAILY:=$(VERSION_BASE)a$(VERSION_DATE)
