@@ -650,6 +650,8 @@ class ShaderInfo:
         decimals = props.force_decimals
         total = 0.0
         starts = []  # Where each force's drawing starts, to hide it with its point.
+        kind, unknown_activity = tool.Structural.get_moment_centre_unknown(group)
+        found_focus = {"ARM": ("arm",), "REACH": ("distance",), "SWING": ("phi", "alpha", "angle")}.get(kind, ())
         for i, (point, activity, location, force) in enumerate(forces, 1):
             starts.append((len(self.info), len(self.text_info), point, activity))
             moment, arm, foot = tool.Structural.get_moment(at, location, force)
@@ -697,6 +699,11 @@ class ShaderInfo:
                 entry["visible_with"] = (obj.name, point_obj.name) if point_obj else (obj.name,)
             # Hovered, its lines and labels highlight together; clicked, they edit where A is from its point.
             texts = self.text_info[text:text_end]
+            if unknown_activity is not None and unknown_activity.id() == activity:
+                # The value of A's place a kept moment finds, marked as found values are.
+                for label in texts:
+                    if label.get("focus") in found_focus and not label["text"].startswith("M"):
+                        label["text"] += " 🔓"
             self.add_moment_pickable(info, info_end, texts, group.id(), point.id(), activity)
         self.add_moment_arrow(at, total, size, "ΣM_A" if len(forces) > 1 else "M_A", group.id())
         if self.load_group is not None:
@@ -800,6 +807,20 @@ class ShaderInfo:
                 "focus": "distance",
             }
         )
+        along = foot - location
+        if np.linalg.norm(along) > 1e-9 * np.linalg.norm(r):
+            # The triangle's third side, along the line of action from the force's point to the arm's foot,
+            # r cos phi, labelled outside the triangle, away from A.
+            outside = foot - at
+            self.text_info.append(
+                {
+                    "position": (location + foot) / 2,
+                    "text": f"{get_plain_symbol(f's_{{{i}}}')} = {np.linalg.norm(along) / length_scale:.2f} "
+                    f"{self.length_unit}",
+                    "color": color,
+                    "away": outside / (np.linalg.norm(outside) or 1),
+                }
+            )
         if tool.Structural.get_structural_props().show_force_angles:
             # r's direction from the point, as Edit Moment Centre enters it, measured as a force's angle is.
             first_text, reference_axes = len(self.text_info), {}

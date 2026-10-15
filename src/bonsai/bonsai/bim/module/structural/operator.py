@@ -2449,6 +2449,17 @@ class EditStructuralMomentCentre(
         max=90.0,
         update=move_moment_angle,
     )
+    arm_locked: bpy.props.BoolProperty(
+        name="d Known", description="Whether the moment arm is known. If not, a kept moment finds it", default=True
+    )
+    angle_locked: bpy.props.BoolProperty(
+        name="Angle Known",
+        description="Whether the angle of r, and with it φ and α, is known. If not, a kept moment finds it",
+        default=True,
+    )
+    reach_locked: bpy.props.BoolProperty(
+        name="r Known", description="Whether r's length is known. If not, a kept moment finds it", default=True
+    )
     alpha: bpy.props.FloatProperty(
         name="α",
         description="Degrees at A between r and the moment arm, 90 less φ. A swings round the force's point",
@@ -2477,6 +2488,12 @@ class EditStructuralMomentCentre(
         elif self.focus == "distance" and self.input_mode == "COMPONENTS":
             self.input_mode = "ANGLE"
         self.focus = self.focus or ("dx" if self.input_mode == "COMPONENTS" else "distance")
+        # Which of A's place a kept moment finds, if it is from this force's point.
+        kind, activity = tool.Structural.get_moment_centre_unknown(tool.Ifc.get().by_id(self.load_case))
+        mine = activity is not None and activity.id() == self.activity
+        self.arm_locked, self.angle_locked, self.reach_locked = (
+            not (mine and kind == k) for k in ("ARM", "SWING", "REACH")
+        )
         fill_moment_inputs(self.properties, context)
         if not get_moment_centre_objects(self)[0]:
             self.report({"ERROR"}, "The load case takes moments about no point")
@@ -2503,9 +2520,21 @@ class EditStructuralMomentCentre(
             box = layout.box()
             load = tool.Ifc.get().by_id(self.activity).AppliedLoad
             box.label(text=f"Moment Arm of {load.Name or 'Unnamed'}")
-            draw_with_lock(box, self, ("arm",), focus=self.focus)
-            draw_with_lock(box, self, ("phi",), focus=self.focus)
-            draw_with_lock(box, self, ("alpha",), focus=self.focus)
+            draw_with_lock(box, self, ("arm",), "arm_locked", focus=self.focus)
+            draw_with_lock(box, self, ("phi",), "angle_locked", focus=self.focus)
+            draw_with_lock(box, self, ("alpha",), "angle_locked", focus=self.focus)
+            row = box.row(align=True)
+            force, point = get_moment_arm_force(self)
+            centre_obj, _ = get_moment_centre_objects(self)
+            length_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            reach = (get_vertex_location(centre_obj) - point).length / length_scale if centre_obj else 0.0
+            row.label(text=f"r = {reach:.4f} {get_project_unit_symbol('LENGTHUNIT', 'm')}")
+            row.prop(self, "reach_locked", text="", icon="LOCKED" if self.reach_locked else "UNLOCKED")
+            unlocked = [not lock for lock in (self.arm_locked, self.angle_locked, self.reach_locked)]
+            if sum(unlocked) > 1:
+                box.label(text="Unlock one of d, the angle and r: a kept moment finds one", icon="ERROR")
+            elif any(unlocked) and tool.Structural.get_resultant_moment(tool.Ifc.get().by_id(self.load_case)) is None:
+                box.label(text="Found once ΣM_A is kept, in Edit Resultant Moment", icon="INFO")
         case = tool.Ifc.get().by_id(self.load_case)
         centre = tool.Structural.get_moment_centre(case)
         kept = tool.Structural.get_resultant_moment(case)
@@ -2523,6 +2552,21 @@ class EditStructuralMomentCentre(
 
     def _execute(self, context):
         centre_obj, _ = get_moment_centre_objects(self)
+        case = tool.Ifc.get().by_id(self.load_case)
+        if get_moment_arm_force(self)[0]:
+            unlocked = [
+                k
+                for k, lock in (("ARM", self.arm_locked), ("SWING", self.angle_locked), ("REACH", self.reach_locked))
+                if not lock
+            ]
+            if len(unlocked) > 1:
+                self.report({"ERROR"}, "Unlock one of d, the angle and r: a kept moment finds one")
+                return {"CANCELLED"}
+            # The unknown of A's place, from this force's point, or none; another force's is left as it is.
+            kind, activity = tool.Structural.get_moment_centre_unknown(case)
+            if unlocked or (activity is not None and activity.id() == self.activity):
+                activity = tool.Ifc.get().by_id(self.activity)
+                tool.Structural.set_moment_centre_unknown(case, unlocked[0] if unlocked else None, activity)
         MOMENT_CENTRE_PREVIEW.clear()  # A is where the preview left it.
         ShaderInfo.preview = {}  # The kept moment's forces are written below.
         if centre_obj:
@@ -2584,15 +2628,62 @@ def solve_case_moment(
     return changed, error
 
 
+# The words for which of A's place is found, by its kind.
+CENTRE_UNKNOWN_WORDS = {"ARM": "moment arm d", "REACH": "distance r", "SWING": "angle of r (φ, α)"}
+
+
+def solve_case_centre(case: ifcopenshell.entity_instance, moment: float) -> tuple[Union[np.ndarray, None], str]:
+    """Where the moment centre must be, in the project's length unit, for a load case's moments to sum to a
+    moment, if its place is the unknown, moving it the way its unknown says; None if a force value is unknown"""
+    kind, activity = tool.Structural.get_moment_centre_unknown(case)
+    if not kind:
+        return None, ""
+    activities, arms, forces = get_case_moment_forces(case)
+    if activity not in activities:
+        return None, "The force A's place is found from is no longer in the load case"
+    if not all(locked for a in activities for locked in tool.Structural.get_locks(a)):
+        return None, "A's place and a force's value are both unknown: a moment finds one"
+    at = get_case_centre_location(case)
+    points = [arm + at for arm in arms]
+    return tool.Structural.solve_centre_position(points, forces, at, moment, kind, activities.index(activity))
+
+
+def get_case_centre_location(case: ifcopenshell.entity_instance) -> np.ndarray:
+    """Where a load case's moment centre is, in the project's length unit"""
+    obj = tool.Ifc.get_object(tool.Structural.get_moment_centre(case))
+    return np.array(get_vertex_location(obj)) / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+
+def move_case_centre(
+    case: ifcopenshell.entity_instance, at: np.ndarray, context: bpy.types.Context, preview: bool = False
+) -> None:
+    """Move a load case's moment centre to where it is found, in the project's length unit: to preview it, to be
+    put back on cancelling, or for good, written to the IFC"""
+    obj = tool.Ifc.get_object(tool.Structural.get_moment_centre(case))
+    if preview:
+        MOMENT_CENTRE_PREVIEW.setdefault(obj.name, obj.matrix_world.translation.copy())
+    target = Vector(at) * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    obj.matrix_world.translation += target - get_vertex_location(obj)
+    context.view_layer.update()
+    if not preview:
+        bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+
 def keep_resultant_moments(activities: list[ifcopenshell.entity_instance]) -> None:
     """Solve again the unknown of each load case these applied loads are in that keeps a sum of moments, as a
-    locked resultant is kept, after a force or the moment centre changes"""
+    locked resultant is kept, after a force or the moment centre changes: a force's value, or A's place"""
     cases = {group for activity in activities for group in get_activity_load_groups(activity)}
     for case in cases:
-        if (moment := tool.Structural.get_resultant_moment(case)) is not None:
-            forces, error = solve_case_moment(case, moment)
+        if (moment := tool.Structural.get_resultant_moment(case)) is None:
+            continue
+        if tool.Structural.get_moment_centre_unknown(case)[0]:
+            at, error = solve_case_centre(case, moment)
             if not error:
-                write_forces(forces)
+                move_case_centre(case, at, bpy.context)
+            continue
+        forces, error = solve_case_moment(case, moment)
+        if not error:
+            write_forces(forces)
 
 
 def get_resultant_moment_locks(props: "EditStructuralResultantMoment") -> list[tuple[bool, bool]]:
@@ -2611,6 +2702,10 @@ def solve_resultant_moment(
     it is then found from the forces, which must all be known"""
     case = tool.Ifc.get().by_id(props.load_case)
     locks = get_resultant_moment_locks(props)
+    if props.moment_locked and tool.Structural.get_moment_centre_unknown(case)[0]:
+        if not all(locked for lock in locks for locked in lock):
+            return {}, "A's place and a force's value are both unknown: a moment finds one"
+        return {}, solve_case_centre(case, get_signed_moment(props))[1]  # A moves; no force changes.
     if props.moment_locked:
         return solve_case_moment(case, get_signed_moment(props), locks)
     if not all(locked for lock in locks for locked in lock):
@@ -2624,6 +2719,11 @@ def update_resultant_moment(props: "EditStructuralResultantMoment", context: bpy
         return
     forces, error = solve_resultant_moment(props)
     ShaderInfo.preview = {} if error else {load.id(): get_force_attributes(load, f) for load, f in forces.items()}
+    case = tool.Ifc.get().by_id(props.load_case)
+    if props.moment_locked and not error and tool.Structural.get_moment_centre_unknown(case)[0]:
+        restore_moment_centre(context)  # Solved from where A was, not from the last preview.
+        at, _ = solve_case_centre(case, get_signed_moment(props))
+        move_case_centre(case, at, context, preview=True)
     redraw_loads(context)
 
 
@@ -2722,11 +2822,19 @@ class EditStructuralResultantMoment(bpy.types.Operator, tool.Ifc.Operator):
             for prop, text in (("magnitude_locks", "Magnitude"), ("direction_locks", "Direction")):
                 locked = getattr(self, prop)[i]
                 row.prop(self, prop, index=i, text=text, icon="LOCKED" if locked else "UNLOCKED")
+        kind, activity = tool.Structural.get_moment_centre_unknown(case)
+        if kind:
+            number = activities.index(activity) + 1 if activity in activities else 0
+            row = layout.row()
+            row.label(text=f"A's place: the {CENTRE_UNKNOWN_WORDS[kind]} of F{number} is found", icon="UNLOCKED")
         forces, error = solve_resultant_moment(self)
         if error:
             layout.label(text=error, icon="ERROR")
             return
         box = layout.box()
+        if kind and self.moment_locked:
+            box.label(text="A moves to make this moment; no force changes", icon="FORCE_VORTEX")
+            return
         force_unit = get_project_unit_symbol("FORCEUNIT", "N")
         for load, force in forces.items():
             old = get_force(load)
@@ -2741,9 +2849,11 @@ class EditStructuralResultantMoment(bpy.types.Operator, tool.Ifc.Operator):
 
     def cancel(self, context):
         clear_previews(context)
+        restore_moment_centre(context)
 
     def _execute(self, context):
         ShaderInfo.preview = {}  # The edit below refreshes the shown loads.
+        restore_moment_centre(context)  # Moved for good below, if its place is the unknown.
         case = tool.Ifc.get().by_id(self.load_case)
         locks = get_resultant_moment_locks(self)
         forces, error = solve_resultant_moment(self)
@@ -2753,6 +2863,9 @@ class EditStructuralResultantMoment(bpy.types.Operator, tool.Ifc.Operator):
         for activity, (magnitude, direction) in zip(get_case_moment_forces(case)[0], locks):
             tool.Structural.set_locks(activity, magnitude, direction)
         write_forces(forces)
+        if self.moment_locked and tool.Structural.get_moment_centre_unknown(case)[0]:
+            at, _ = solve_case_centre(case, get_signed_moment(self))
+            move_case_centre(case, at, context)
         # Kept, so that changing a force or the moment centre later solves the unknown again to keep it; or, found
         # from the forces, no longer kept.
         tool.Structural.set_resultant_moment(case, get_signed_moment(self) if self.moment_locked else None)
