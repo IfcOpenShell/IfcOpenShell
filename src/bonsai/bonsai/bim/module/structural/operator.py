@@ -1051,9 +1051,29 @@ def get_load_attributes(props: "StructuralForceInput", category: str) -> dict[st
 
 is_normalising_angle = False
 is_setting_magnitude = False
+is_remeasuring = False
 
 
 def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context) -> None:
+    # Edit Resultant only: an eighth clicked chooses the axis the same direction is measured from, and the way it
+    # turns, as Q6 measures from -Z turning left; the angle typed then sets the direction.
+    global is_remeasuring, is_normalising_angle
+    measured = getattr(self, "measured_direction", "")
+    if (
+        measured
+        and self.input_mode == "ANGLE"
+        and not (is_remeasuring or is_normalising_angle)
+        and self.direction != measured
+    ):
+        x, z = tool.Structural.get_in_plane_components("ANGLE", magnitude=1.0, angle=self.angle, direction=measured)
+        if (angle := tool.Structural.get_angle_from_eighth(x, z, self.direction)) is not None:
+            is_remeasuring = True  # Setting the angle updates again, which must not measure it again.
+            try:
+                self.angle = round(angle, 9)
+            finally:
+                is_remeasuring = False
+    if measured:
+        self.measured_direction = self.direction
     if self.input_mode == "SLOPE" and self.magnitude:
         # Both eighths of a quadrant give a slope the same direction, so show the one it lands in.
         x, z = tool.Structural.get_in_plane_components(
@@ -1081,8 +1101,9 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
                 self.magnitude = magnitude
             finally:
                 is_setting_magnitude = False
-    global is_normalising_angle
-    if self.input_mode == "ANGLE" and self.magnitude and not 0 <= self.angle <= 45 and not is_normalising_angle:
+    # Edit Resultant measures from any eighth's axis, so all the way round.
+    limit = 360 if measured else 45
+    if self.input_mode == "ANGLE" and self.magnitude and not 0 <= self.angle <= limit and not is_normalising_angle:
         # An angle past its eighth points into another: show it there, from that eighth's axis, as names are read.
         x, z = tool.Structural.get_in_plane_components(
             "ANGLE", magnitude=self.magnitude, angle=self.angle, direction=self.direction
@@ -1117,8 +1138,10 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
                     ShaderInfo.preview[load.id()].update({k: v for k, v in attributes.items() if "Moment" in k})
         redraw_loads(context)
     elif getattr(self, "is_previewing", False) and LoadsDecorator.is_installed:
-        forces, _, _ = solve_resultant(self)
+        forces, resultant, _ = solve_resultant(self)
         ShaderInfo.preview = {load.id(): get_force_attributes(load, force) for load, force in (forces or {}).items()}
+        item = get_resultant_item_and_load_case(self)[0]
+        ShaderInfo.preview_resultant_eighths = {item.id(): get_chosen_eighth(self, resultant)} if item else {}
         redraw_loads(context)
 
 
@@ -1220,6 +1243,27 @@ def solve_resultant(
     return {load: force for load, force, lock in zip(loads, forces, locks) if not all(lock)}, resultant, ""
 
 
+def get_resultant_item_and_load_case(
+    props: "EditStructuralResultant",
+) -> tuple[Union[ifcopenshell.entity_instance, None], Union[ifcopenshell.entity_instance, None]]:
+    """The structural item Edit Resultant's forces act on and their load case, if both are known"""
+    activities = get_resultant_activities(props)
+    connects = activities[0].AssignedToStructuralItem if activities else None
+    if connects and (load_case := tool.Structural.get_activity_load_case(activities[0])):
+        return connects[0].RelatingElement, load_case
+    return None, None
+
+
+def get_chosen_eighth(props: "EditStructuralResultant", resultant: Union[tuple, None]) -> Union[str, None]:
+    """The eighth Edit Resultant measures the resultant's angle in, if chosen rather than the one it falls in"""
+    if props.input_mode != "ANGLE" or not resultant or resultant[1]:
+        return None
+    x, z = resultant[0], resultant[2]
+    if not (x or z):
+        return None  # No direction to measure.
+    return None if props.direction == tool.Structural.get_eighth(x, z)[0] else props.direction
+
+
 def get_force_name(force: tuple[float, float, float], unit: str) -> str:
     """A generated name for a force, by its angle from the nearest axis if it lies in the X-Z plane"""
     x, y, z = force
@@ -1232,8 +1276,8 @@ def get_force_name(force: tuple[float, float, float], unit: str) -> str:
 
 def clear_previews(context: bpy.types.Context) -> None:
     """Stop showing a dialog's values in the loads drawing, as when it is confirmed or cancelled"""
-    if ShaderInfo.preview or ShaderInfo.preview_axes:
-        ShaderInfo.preview, ShaderInfo.preview_axes = {}, {}
+    if ShaderInfo.preview or ShaderInfo.preview_axes or ShaderInfo.preview_resultant_eighths:
+        ShaderInfo.preview, ShaderInfo.preview_axes, ShaderInfo.preview_resultant_eighths = {}, {}, {}
         redraw_loads(context)
 
 
@@ -1704,6 +1748,8 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
         update=update_force_inputs,
     )
     is_previewing: bpy.props.BoolProperty(options={"HIDDEN", "SKIP_SAVE"})
+    # The eighth the angle was last measured in, to tell a click on the other eighth of its quadrant.
+    measured_direction: bpy.props.StringProperty(options={"HIDDEN", "SKIP_SAVE"})
 
     def invoke(self, context, event):
         activities = get_resultant_activities(self)
@@ -1717,6 +1763,13 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
         self.x, self.y, self.z = x, y, z
         self.set_in_plane_inputs(x, z)
         self.input_mode = "ANGLE" if not y else "COMPONENTS"
+        # Reopen measured in the eighth chosen for it, as from -X rather than +Z.
+        item, load_case = self.get_item_and_load_case()
+        eighth = tool.Structural.get_resultant_eighth(item, load_case) if item and not y else None
+        if eighth and (angle := tool.Structural.get_angle_from_eighth(x, z, eighth)) is not None:
+            self.measured_direction = eighth  # First, so that the angle may pass 45 degrees.
+            self.direction, self.angle = eighth, angle
+        self.measured_direction = self.direction
         locks = [tool.Structural.get_locks(activity) for activity in activities[:32]]
         self.magnitude_locks = [lock[0] for lock in locks] + [True] * (32 - len(locks))
         self.direction_locks = [lock[1] for lock in locks] + [True] * (32 - len(locks))
@@ -1766,7 +1819,7 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
         clear_previews(context)
 
     def _execute(self, context):
-        ShaderInfo.preview = {}  # The edit below refreshes the shown loads.
+        ShaderInfo.preview, ShaderInfo.preview_resultant_eighths = {}, {}  # The edit below refreshes the shown loads.
         forces, resultant, error = solve_resultant(self)
         if error:
             self.report({"ERROR"}, error)
@@ -1776,18 +1829,20 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
             tool.Structural.set_locks(activity, self.magnitude_locks[i], self.direction_locks[i])
         write_forces(forces)
         # Keep the resultant as locked, so that editing a force later solves the unknowns again to keep it.
-        connects = activities[0].AssignedToStructuralItem
-        if connects and (load_case := tool.Structural.get_activity_load_case(activities[0])):
-            tool.Structural.set_resultant(
-                connects[0].RelatingElement, load_case, self.magnitude_locked, self.direction_locked, resultant
-            )
+        item, load_case = self.get_item_and_load_case()
+        if item:
+            tool.Structural.set_resultant(item, load_case, self.magnitude_locked, self.direction_locked, resultant)
+            tool.Structural.set_resultant_eighth(item, load_case, get_chosen_eighth(self, resultant))
         return {"FINISHED"}
 
+    def get_item_and_load_case(
+        self,
+    ) -> tuple[Union[ifcopenshell.entity_instance, None], Union[ifcopenshell.entity_instance, None]]:
+        return get_resultant_item_and_load_case(self)
+
     def get_locked_resultant(self) -> Union[dict, None]:
-        activities = get_resultant_activities(self)
-        connects = activities[0].AssignedToStructuralItem if activities else None
-        if connects and (load_case := tool.Structural.get_activity_load_case(activities[0])):
-            return tool.Structural.get_resultant(connects[0].RelatingElement, load_case)
+        item, load_case = self.get_item_and_load_case()
+        return tool.Structural.get_resultant(item, load_case) if item else None
 
 
 class ExportStructuralCalculations(bpy.types.Operator):
