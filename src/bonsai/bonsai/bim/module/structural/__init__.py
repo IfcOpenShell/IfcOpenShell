@@ -62,6 +62,7 @@ classes = (
     operator.EditStructuralResultant,
     operator.ShowStructuralLoadCase,
     operator.SetStructuralMomentCentre,
+    operator.EditStructuralMomentCentre,
     operator.ExportStructuralCalculations,
     operator.EnableEditingStructuralLoadCase,
     operator.DisableEditingStructuralLoadCase,

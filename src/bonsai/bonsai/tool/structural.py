@@ -32,6 +32,7 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import numpy as np
 
 import bonsai.bim.helper
@@ -475,6 +476,50 @@ class Structural(bonsai.core.tool.Structural):
         else:
             eighths.pop(load_case.GlobalId, None)
         cls.edit_bbim_structural(item, {"ResultantEighths": json.dumps(eighths) if eighths else None})
+
+    @classmethod
+    def get_point_items(cls, case: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        """The structural point connections with loads in a load case, directly or in its load groups, by name"""
+        items, groups, seen = set(), [case], set()
+        while groups:
+            group = groups.pop()
+            if group.id() in seen:
+                continue
+            seen.add(group.id())
+            for rel in group.IsGroupedBy or []:
+                for obj in rel.RelatedObjects:
+                    if obj.is_a("IfcStructuralLoadGroup") and not obj.is_a("IfcStructuralLoadCase"):
+                        groups.append(obj)
+                    elif obj.is_a("IfcStructuralActivity") and (connects := obj.AssignedToStructuralItem):
+                        if (item := connects[0].RelatingElement) and item.is_a("IfcStructuralPointConnection"):
+                            items.add(item)
+        return sorted(items, key=lambda item: (item.Name or "", item.id()))
+
+    @classmethod
+    def get_moment_about(
+        cls, case: ifcopenshell.entity_instance, centre: ifcopenshell.entity_instance
+    ) -> Union[float, None]:
+        """The sum of the moments of a load case's point forces about a point connection, counter-clockwise
+        positive as the X-Z plane is seen from -Y, in its force unit times the project's length unit, or None if
+        it has no point forces. Moments applied as loads are left out, as the drawing leaves them out."""
+        location = lambda obj: np.array(obj.matrix_world @ obj.data.vertices[0].co, dtype=float)
+        has_point = lambda obj: obj and obj.type == "MESH" and obj.data.vertices
+        if not has_point(centre_obj := tool.Ifc.get_object(centre)):
+            return None
+        at = location(centre_obj)
+        length_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        total, found = 0.0, False
+        for item in cls.get_point_items(case):
+            if not has_point(obj := tool.Ifc.get_object(item)):
+                continue
+            for activity in cls.get_chain_activities(item, case):
+                load = activity.AppliedLoad
+                if not load or not load.is_a("IfcStructuralLoadSingleForce"):
+                    continue
+                force = np.array([getattr(load, a) or 0.0 for a in ("ForceX", "ForceY", "ForceZ")])
+                total += cls.get_moment(at, location(obj), force)[0] / length_scale
+                found = True
+        return total if found else None
 
     @classmethod
     def get_moment_centre(cls, load_group: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:

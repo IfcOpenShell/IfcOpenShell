@@ -33,6 +33,7 @@ from bpy_extras.view3d_utils import location_3d_to_region_2d
 from mathutils import Euler, Matrix, Vector
 
 import bonsai.bim.helper
+import bonsai.core.geometry
 import bonsai.core.structural as core
 import bonsai.tool as tool
 from bonsai.bim.module.structural.data import (
@@ -95,6 +96,13 @@ def draw_with_lock(
         cell.prop(props, name)
     if lock:
         row.prop(props, lock, text="", icon="LOCKED" if getattr(props, lock) else "UNLOCKED")
+
+
+def set_in_plane_direction(props: bpy.types.Operator, x: float, z: float) -> None:
+    """Fill a direction input's eighth, angle and slope from in-plane components, measured from the nearest axis"""
+    props.direction, props.angle, _, _ = tool.Structural.get_eighth(x, z)
+    # A rise is vertical and a run horizontal, whichever axis the angle is from.
+    props.rise, props.run = tool.Structural.get_simple_slope(abs(x), abs(z))
 
 
 def get_direction_input(subject: str, update: Callable, options: set[str]) -> Any:
@@ -176,6 +184,14 @@ class PickStructuralLoads(bpy.types.Operator):
                             obj.select_set(True)
                             context.view_layer.objects.active = obj
                         bpy.ops.bim.edit_structural_connection_axes("INVOKE_DEFAULT", focus=focus)
+                    elif hovered.get("moment_of"):
+                        bpy.ops.bim.edit_structural_moment_centre(
+                            "INVOKE_DEFAULT",
+                            load_case=hovered["moment_of"],
+                            from_point=hovered["moment_from"],
+                            activity=hovered.get("moment_activity", 0),
+                            focus=focus,
+                        )
                     elif hovered.get("activities"):
                         activities = ",".join(str(i) for i in hovered["activities"])
                         bpy.ops.bim.edit_structural_resultant("INVOKE_DEFAULT", activities=activities, focus=focus)
@@ -1475,10 +1491,8 @@ class StructuralForceInput(get_direction_input("the force", update_force_inputs,
 
     def set_in_plane_inputs(self, x: float, z: float) -> None:
         """Fill the angle and slope inputs from in-plane components, measured from the nearest axis"""
-        self.direction, self.angle, _, _ = tool.Structural.get_eighth(x, z)
+        set_in_plane_direction(self, x, z)
         self.magnitude = math.hypot(x, z)
-        # A rise is vertical and a run horizontal, whichever axis the angle is from.
-        self.rise, self.run = tool.Structural.get_simple_slope(abs(x), abs(z))
 
     def get_unit_symbol(self, category: str) -> str:
         return get_load_unit_symbol(category)
@@ -2139,6 +2153,366 @@ class SetStructuralMomentCentre(bpy.types.Operator, tool.Ifc.Operator):
         tool.Structural.set_moment_centre(group, centre)
         redraw_loads(context)
         return {"FINISHED"}
+
+
+# Where a moment centre was before Edit Moment Centre moved it to preview, by its object's name, to put it back.
+MOMENT_CENTRE_PREVIEW: dict[str, Vector] = {}
+# The loaded points Edit Moment Centre offers, kept referenced for Blender's enum, which does not copy them.
+MOMENT_POINT_ITEMS: list[tuple[str, str, str]] = []
+
+
+def get_moment_point_items(self: "EditStructuralMomentCentre", context: bpy.types.Context) -> list:
+    MOMENT_POINT_ITEMS.clear()
+    try:
+        case = tool.Ifc.get().by_id(self.load_case)
+    except RuntimeError:
+        return MOMENT_POINT_ITEMS
+    centre = tool.Structural.get_moment_centre(case)
+    for item in tool.Structural.get_point_items(case):
+        if item != centre:
+            MOMENT_POINT_ITEMS.append((str(item.id()), item.Name or "Unnamed", "Measure the centre from this point"))
+    return MOMENT_POINT_ITEMS
+
+
+def get_moment_centre_objects(
+    props: "EditStructuralMomentCentre",
+) -> tuple[Union[bpy.types.Object, None], Union[bpy.types.Object, None]]:
+    """The objects of the moment centre being edited and of the point it is measured from, if both have them"""
+    ifc_file = tool.Ifc.get()
+    try:
+        case = ifc_file.by_id(props.load_case)
+        point = ifc_file.by_id(int(props.point))
+    except (RuntimeError, ValueError, TypeError):
+        return None, None
+    centre = tool.Structural.get_moment_centre(case)
+    has_vertex = lambda obj: obj if obj and obj.type == "MESH" and obj.data.vertices else None
+    return has_vertex(tool.Ifc.get_object(centre) if centre else None), has_vertex(tool.Ifc.get_object(point))
+
+
+def get_vertex_location(obj: bpy.types.Object) -> Vector:
+    return obj.matrix_world @ obj.data.vertices[0].co
+
+
+# Set while the dialog fills its inputs from where A is, so that filling them does not move it.
+MOMENT_CENTRE_FILLING: list[bool] = [False]
+
+
+def get_moment_offset(props: "EditStructuralMomentCentre") -> tuple[float, float]:
+    """Where A is from the point it is measured from, as entered: Δx and Δz, or a distance and its direction"""
+    if props.input_mode == "COMPONENTS":
+        return props.dx, props.dz
+    return tool.Structural.get_in_plane_components(
+        props.input_mode,
+        magnitude=props.distance,
+        angle=props.angle,
+        rise=props.rise,
+        run=props.run,
+        direction=props.direction,
+    )
+
+
+# The inputs each input mode enters A by, which filling from where A is leaves alone while they are typed in.
+MOMENT_MODE_INPUTS = {
+    "COMPONENTS": ("dx", "dz"),
+    "ANGLE": ("distance", "direction", "angle"),
+    "SLOPE": ("distance", "direction", "rise", "run"),
+}
+
+
+def get_moment_arm_force(
+    props: "EditStructuralMomentCentre",
+) -> tuple[Union[Vector, None], Union[Vector, None]]:
+    """The force whose moment arm the dialog edits, as X and Z, and where it acts, if one is"""
+    try:
+        activity = tool.Ifc.get().by_id(props.activity) if props.activity else None
+    except RuntimeError:
+        return None, None
+    return get_moment_arm_force_of(activity) if activity else (None, None)
+
+
+def get_moment_arm_force_of(
+    activity: ifcopenshell.entity_instance,
+) -> tuple[Union[Vector, None], Union[Vector, None]]:
+    """An applied load's force, as X and Z, and where it acts, if it is a point force in the X-Z plane"""
+    load = activity.AppliedLoad
+    connects = activity.AssignedToStructuralItem if activity else None
+    if not load or not load.is_a("IfcStructuralLoadSingleForce") or not connects:
+        return None, None
+    obj = tool.Ifc.get_object(connects[0].RelatingElement)
+    force = Vector((load.ForceX or 0.0, 0.0, load.ForceZ or 0.0))
+    if not obj or obj.type != "MESH" or not obj.data.vertices or not force.length:
+        return None, None
+    return force, get_vertex_location(obj)
+
+
+def place_moment_centre(props: "EditStructuralMomentCentre", context: bpy.types.Context, x: float, z: float) -> None:
+    """Move the moment centre to X and Z, keeping its Y, to preview the moments about it, and put it back on
+    cancelling"""
+    centre_obj, _ = get_moment_centre_objects(props)
+    if not centre_obj:
+        return
+    MOMENT_CENTRE_PREVIEW.setdefault(centre_obj.name, centre_obj.matrix_world.translation.copy())
+    at = get_vertex_location(centre_obj)
+    centre_obj.matrix_world.translation += Vector((x, at.y, z)) - at
+    context.view_layer.update()
+    redraw_loads(context)
+
+
+def move_moment_centre(props: "EditStructuralMomentCentre", context: bpy.types.Context) -> None:
+    """Move the moment centre to where it is entered from the point it is measured from"""
+    if MOMENT_CENTRE_FILLING[0]:
+        return
+    _, point_obj = get_moment_centre_objects(props)
+    if not point_obj:
+        return
+    dx, dz = get_moment_offset(props)
+    point = get_vertex_location(point_obj)
+    place_moment_centre(props, context, point.x + dx, point.z + dz)
+    fill_moment_inputs(props, context, MOMENT_MODE_INPUTS[props.input_mode])
+
+
+def move_moment_arm(props: "EditStructuralMomentCentre", context: bpy.types.Context) -> None:
+    """Slide the moment centre along a force's moment arm to the arm's length entered, keeping the arm's foot on
+    the line of action"""
+    centre_obj, _ = get_moment_centre_objects(props)
+    force, point = get_moment_arm_force(props)
+    if MOMENT_CENTRE_FILLING[0] or not centre_obj or not force:
+        return
+    at = get_vertex_location(centre_obj)
+    _, _, foot = tool.Structural.get_moment(np.array(at), np.array(point), np.array(force))
+    away = Vector((at.x - foot[0], 0.0, at.z - foot[2]))
+    if not away.length:
+        return  # On the line of action: no side of it to slide out to.
+    target = Vector(foot) + away.normalized() * props.arm
+    place_moment_centre(props, context, target.x, target.z)
+    fill_moment_inputs(props, context, ("arm",))
+
+
+def move_moment_angle(props: "EditStructuralMomentCentre", context: bpy.types.Context) -> None:
+    """Swing the moment centre round a force's point to the angle phi entered between r and the line of action"""
+    swing_moment_centre(props, context, props.phi, "phi")
+
+
+def move_moment_alpha(props: "EditStructuralMomentCentre", context: bpy.types.Context) -> None:
+    """Swing the moment centre to the angle alpha entered at it, between r and the arm, 90 degrees less phi"""
+    swing_moment_centre(props, context, 90.0 - props.alpha, "alpha")
+
+
+def swing_moment_centre(
+    props: "EditStructuralMomentCentre", context: bpy.types.Context, phi: float, typed: str
+) -> None:
+    """Swing the moment centre round a force's point to an angle phi between r and the line of action, keeping r's
+    length and the side of the line A is on, leaving the input typed in as it is"""
+    centre_obj, _ = get_moment_centre_objects(props)
+    force, point = get_moment_arm_force(props)
+    if MOMENT_CENTRE_FILLING[0] or not centre_obj or not force:
+        return
+    r = get_vertex_location(centre_obj) - point
+    r.y = 0.0
+    along = force.normalized() * (1 if r.dot(force) >= 0 else -1)  # The line of action, towards A.
+    across = Vector((-along.z, 0.0, along.x))
+    across *= -1 if r.dot(across) < 0 else 1
+    angle = math.radians(phi)
+    target = point + r.length * (along * math.cos(angle) + across * math.sin(angle))
+    place_moment_centre(props, context, target.x, target.z)
+    fill_moment_inputs(props, context, (typed,))
+
+
+def fill_moment_inputs(
+    props: "EditStructuralMomentCentre", context: bpy.types.Context, keep: tuple[str, ...] = ()
+) -> None:
+    """Fill the inputs from where A is now, as Edit Load fills a force's, so that another point or input mode
+    reads the same place rather than moving it.
+
+    :param keep: Inputs being typed in, left as they are, so that an angle typed does not jump to the next
+        eighth's.
+    """
+    centre_obj, point_obj = get_moment_centre_objects(props)
+    if not centre_obj or not point_obj:
+        return
+    at, point = get_vertex_location(centre_obj), get_vertex_location(point_obj)
+    dx, dz = at.x - point.x, at.z - point.z
+    values = {"dx": dx, "dz": dz, "distance": math.hypot(dx, dz)}
+    if dx or dz:
+        values["direction"], values["angle"], _, _ = tool.Structural.get_eighth(dx, dz)
+        values["rise"], values["run"] = tool.Structural.get_simple_slope(abs(dx), abs(dz))
+    force, force_point = get_moment_arm_force(props)
+    if force:
+        _, arm, foot = tool.Structural.get_moment(np.array(at), np.array(force_point), np.array(force))
+        values["arm"] = arm
+        r, to_foot = at - force_point, Vector(foot) - force_point
+        r.y = to_foot.y = 0.0
+        values["phi"] = 90.0 if not to_foot.length or not r.length else math.degrees(r.angle(to_foot))
+        values["alpha"] = 90.0 - values["phi"]
+    MOMENT_CENTRE_FILLING[0] = True
+    try:
+        for name, value in values.items():
+            if name not in keep:
+                setattr(props, name, value)
+    finally:
+        MOMENT_CENTRE_FILLING[0] = False
+
+
+def refill_moment_inputs(props: "EditStructuralMomentCentre", context: bpy.types.Context) -> None:
+    """Fill every input from where A is: an update callback, which Blender requires to take exactly two
+    arguments, so fill_moment_inputs, which takes more, cannot be one"""
+    fill_moment_inputs(props, context)
+
+
+class EditStructuralMomentCentre(
+    bpy.types.Operator,
+    tool.Ifc.Operator,
+    get_direction_input("A, from the point,", move_moment_centre, {"SKIP_SAVE"}),
+):
+    bl_idname = "bim.edit_structural_moment_centre"
+    bl_label = "Edit Moment Centre"
+    bl_description = (
+        "Move the point moments are taken about, A, by its distance and direction from a loaded point, as a force "
+        "is entered, or by a force's moment arm, previewing the moments"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    load_case: bpy.props.IntProperty(options={"HIDDEN", "SKIP_SAVE"})
+    # The point to measure from first, as the one whose moment was clicked, if any.
+    from_point: bpy.props.IntProperty(options={"HIDDEN", "SKIP_SAVE"})
+    # The applied load whose moment arm is edited, as the one whose moment was clicked, if any.
+    activity: bpy.props.IntProperty(options={"HIDDEN", "SKIP_SAVE"})
+    # The value to start editing, as the label clicked stands for, as Edit Load's focus.
+    focus: bpy.props.StringProperty(options={"HIDDEN", "SKIP_SAVE"})
+    point: bpy.props.EnumProperty(
+        name="From",
+        description="The loaded point A is placed from",
+        items=get_moment_point_items,
+        update=refill_moment_inputs,
+    )
+    input_mode: bpy.props.EnumProperty(
+        name="Input",
+        items=[
+            ("COMPONENTS", "Components", "Δx and Δz, from the point to A"),
+            ("ANGLE", "Angle", "Distance and angle, from the point to A"),
+            ("SLOPE", "Slope", "Distance and rise over run, from the point to A"),
+        ],
+        update=refill_moment_inputs,
+    )
+    distance: bpy.props.FloatProperty(
+        name="Distance", description="From the point to A", subtype="DISTANCE", update=move_moment_centre
+    )
+    dx: bpy.props.FloatProperty(
+        name="Δx to A",
+        description="From the point to A, along X. The report's table measures the other way, from A to the point",
+        subtype="DISTANCE",
+        update=move_moment_centre,
+    )
+    dz: bpy.props.FloatProperty(
+        name="Δz to A",
+        description="From the point to A, along Z. The report's table measures the other way, from A to the point",
+        subtype="DISTANCE",
+        update=move_moment_centre,
+    )
+    arm: bpy.props.FloatProperty(
+        name="d",
+        description="The moment arm: from A square to the force's line of action. A slides along it",
+        subtype="DISTANCE",
+        min=0.0,
+        update=move_moment_arm,
+    )
+    phi: bpy.props.FloatProperty(
+        name="φ",
+        description="Degrees between r, from the force's point to A, and its line of action. A swings round the point",
+        min=0.0,
+        max=90.0,
+        update=move_moment_angle,
+    )
+    alpha: bpy.props.FloatProperty(
+        name="α",
+        description="Degrees at A between r and the moment arm, 90 less φ. A swings round the force's point",
+        min=0.0,
+        max=90.0,
+        update=move_moment_alpha,
+    )
+
+    def invoke(self, context, event):
+        MOMENT_CENTRE_PREVIEW.clear()
+        items = get_moment_point_items(self, context)
+        if not items:
+            self.report({"ERROR"}, "The load case has no loaded points to measure the moment centre from")
+            return {"CANCELLED"}
+        ids = [item[0] for item in items]
+        self.point = str(self.from_point) if str(self.from_point) in ids else ids[0]
+        if not self.activity:
+            # The force at the point measured from, if it is the only one there, for its moment arm.
+            case, point = tool.Ifc.get().by_id(self.load_case), tool.Ifc.get().by_id(int(self.point))
+            forces = [a for a in tool.Structural.get_chain_activities(point, case) if get_moment_arm_force_of(a)[0]]
+            self.activity = forces[0].id() if len(forces) == 1 else 0
+        # A value clicked opens in the input mode that enters it, ready to type over.
+        modes = {"dx": "COMPONENTS", "dz": "COMPONENTS", "angle": "ANGLE", "rise": "SLOPE", "run": "SLOPE"}
+        if mode := modes.get(self.focus):
+            self.input_mode = mode
+        elif self.focus == "distance" and self.input_mode == "COMPONENTS":
+            self.input_mode = "ANGLE"
+        self.focus = self.focus or ("dx" if self.input_mode == "COMPONENTS" else "distance")
+        fill_moment_inputs(self.properties, context)
+        if not get_moment_centre_objects(self)[0]:
+            self.report({"ERROR"}, "The load case takes moments about no point")
+            return {"CANCELLED"}
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        if len(MOMENT_POINT_ITEMS) > 1:
+            layout.prop(self, "point")
+        layout.row().prop(self, "input_mode", expand=True)
+        if self.input_mode == "COMPONENTS":
+            draw_with_lock(layout, self, ("dx",), focus=self.focus)
+            draw_with_lock(layout, self, ("dz",), focus=self.focus)
+        else:
+            self.draw_direction_inputs(layout)
+            draw_with_lock(layout, self, ("distance",), focus=self.focus)
+            dx, dz = get_moment_offset(self)
+            length_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            unit = get_project_unit_symbol("LENGTHUNIT", "m")
+            text = f"To A: Δx = {dx / length_scale:.4f}   Δz = {dz / length_scale:.4f} {unit}"
+            layout.label(text=text, icon="ORIENTATION_GLOBAL")
+        if get_moment_arm_force(self)[0]:
+            box = layout.box()
+            load = tool.Ifc.get().by_id(self.activity).AppliedLoad
+            box.label(text=f"Moment Arm of {load.Name or 'Unnamed'}")
+            draw_with_lock(box, self, ("arm",), focus=self.focus)
+            draw_with_lock(box, self, ("phi",), focus=self.focus)
+            draw_with_lock(box, self, ("alpha",), focus=self.focus)
+        case = tool.Ifc.get().by_id(self.load_case)
+        centre = tool.Structural.get_moment_centre(case)
+        moment = tool.Structural.get_moment_about(case, centre) if centre else None
+        if moment is not None:
+            decimals = tool.Structural.get_structural_props().force_decimals
+            unit = f"{get_project_unit_symbol('FORCEUNIT', 'N')}.{get_project_unit_symbol('LENGTHUNIT', 'm')}"
+            text = f"ΣM_A = {abs(moment):.{decimals}f} {unit} {'CCW' if moment > 0 else 'CW'}"
+            layout.label(text=text, icon="FORCE_VORTEX")
+
+    def cancel(self, context):
+        restore_moment_centre(context)
+
+    def _execute(self, context):
+        centre_obj, _ = get_moment_centre_objects(self)
+        MOMENT_CENTRE_PREVIEW.clear()  # A is where the preview left it.
+        if centre_obj:
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=centre_obj)
+        redraw_loads(context)
+        return {"FINISHED"}
+
+
+def get_project_unit_symbol(unit_type: str, default: str) -> str:
+    unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), unit_type)
+    return ifcopenshell.util.unit.get_unit_symbol(unit) if unit else default
+
+
+def restore_moment_centre(context: bpy.types.Context) -> None:
+    """Put a moment centre moved to preview back where it was"""
+    for name, translation in MOMENT_CENTRE_PREVIEW.items():
+        if obj := bpy.data.objects.get(name):
+            obj.matrix_world.translation = translation
+    MOMENT_CENTRE_PREVIEW.clear()
+    context.view_layer.update()
+    redraw_loads(context)
 
 
 class ExportStructuralCalculations(bpy.types.Operator):

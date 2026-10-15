@@ -143,11 +143,14 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
 
     @classmethod
     def is_visible(cls, info: dict) -> bool:
-        """Whether drawing data is shown: loads hide with their structural item, in the viewport being drawn"""
-        if not (name := info.get("object")) or not (obj := bpy.data.objects.get(name)):
-            return True
+        """Whether drawing data is shown: loads hide with their structural item, in the viewport being drawn, and
+        what belongs to several items, as a moment to its point and its centre, with any of them"""
         space = bpy.context.space_data
-        return obj.visible_get(viewport=space) if space and space.type == "VIEW_3D" else obj.visible_get()
+        for name in info.get("visible_with") or [info.get("object")]:
+            if name and (obj := bpy.data.objects.get(name)):
+                if not (obj.visible_get(viewport=space) if space and space.type == "VIEW_3D" else obj.visible_get()):
+                    return False
+        return True
 
     @classmethod
     def pick(cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, x: float, y: float) -> Union[dict, None]:
@@ -163,16 +166,18 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         for pickable in cls.pickables:
             if pickable.get("label_only") or not cls.is_visible(cls.shader_info[pickable["info"]]):
                 continue
-            tail = location_3d_to_region_2d(region, rv3d, Vector(pickable["tail"]))
-            tip = location_3d_to_region_2d(region, rv3d, Vector(pickable["tip"]))
-            if tail is None or tip is None or not (tip - tail).length:
-                continue
-            along = max(0.0, min(1.0, (mouse - tail).dot(tip - tail) / (tip - tail).length_squared))
-            if along * (tip - tail).length < 15 and not pickable.get("anywhere"):
-                continue  # Leave the tail, where the loaded point is, free for selecting it.
-            distance = (tail + (tip - tail) * along - mouse).length
-            if distance < best_distance:
-                best, best_distance = pickable, distance
+            # An arrow is one segment; a drawing of several lines, as a moment's, is picked along any of them.
+            for start, end in pickable.get("segments") or [(pickable["tail"], pickable["tip"])]:
+                tail = location_3d_to_region_2d(region, rv3d, Vector(start))
+                tip = location_3d_to_region_2d(region, rv3d, Vector(end))
+                if tail is None or tip is None or not (tip - tail).length:
+                    continue
+                along = max(0.0, min(1.0, (mouse - tail).dot(tip - tail) / (tip - tail).length_squared))
+                if along * (tip - tail).length < 15 and not pickable.get("anywhere"):
+                    continue  # Leave the tail, where the loaded point is, free for selecting it.
+                distance = (tail + (tip - tail) * along - mouse).length
+                if distance < best_distance:
+                    best, best_distance = pickable, distance
         return best
 
     def __call__(self) -> None:
@@ -202,7 +207,8 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
             # What is hovered: a force's arrow, with its angle's arc and slope triangle if drawn.
             hovered = set()
             if self.hovered and self.hovered_part == "arrow":
-                hovered = {self.hovered["info"]}
+                # A drawing of several lines, as a moment's, highlights whole.
+                hovered = set(self.hovered.get("whole") or [self.hovered["info"]])
             elif self.hovered:
                 hovered = set(self.hovered.get("parts", {}).get(self.hovered_part, []))
             for i, info in enumerate(self.shader_info):
@@ -310,8 +316,9 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         end = location_3d_to_region_2d(region, rv3d, Vector(info["position"]) + right * size)
         if start is None or end is None:
             return 20.0
-        # Some labels read a little larger than their diagram's share, as moments' do.
-        return min(max((end - start).length * 0.032 * info.get("label_scale", 1.0), 8.0), 24.0)
+        # Some labels read a little larger than their diagram's share, as moments' do; all as the user sizes them.
+        chosen = tool.Structural.get_structural_props().label_size
+        return min(max((end - start).length * 0.032 * info.get("label_scale", 1.0), 8.0), 24.0) * chosen
 
     def place_beside(
         self,
