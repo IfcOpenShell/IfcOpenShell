@@ -635,6 +635,7 @@ class ShaderInfo:
         """
         props = tool.Structural.get_structural_props()
         ifc_file = tool.Ifc.get()
+        self.tag_new_entries(None)  # The last item's drawing tagged as its own, as dimensions look for it.
         centre, obj, at, group = self.get_moment_centre()
         if not centre:
             return
@@ -679,6 +680,10 @@ class ShaderInfo:
                 a, b = foot + towards * corner, foot + side * corner
                 self.add_dashed_line(a, a + side * corner, size, color, dashed=False)
                 self.add_dashed_line(b, b + towards * corner, size, color, dashed=False)
+            if props.show_force_slopes:
+                # The arm's slope, out by its foot, clear of r's by A; A brought to the arm's own X-Z plane, as
+                # Blender's single precision can leave it a hair off it, which would show no slope.
+                self.add_force_slope(np.array((at[0], foot[1], at[2])), foot, size, color)
             # The arm's length, then its moment beneath it: labels placed later move clear of earlier ones, away
             # from the arm, which is down, or across for a level line of action.
             away = -along if along[2] > 0 else along
@@ -690,6 +695,10 @@ class ShaderInfo:
                     {"position": (at + foot) / 2, "text": text, "color": color, "away": away, "focus": "arm"}
                 )
             self.add_moment_triangle(i, at, location, foot, size, color, length_scale)
+            # Last, so that they clear all of it and the force's own diagram at its point.
+            point_obj = tool.Ifc.get_object(point)
+            drawn = self.get_drawn_points(starts[-1][0], starts[-1][1], point_obj.name if point_obj else None)
+            self.add_moment_dimensions(i, at, location, size, color, length_scale, drawn)
         # Each force's moment hides with its point as its force does, and all of them with the centre.
         ends = [(info, text) for info, text, _, _ in starts[1:]] + [(len(self.info), len(self.text_info))]
         for (info, text, point, activity), (info_end, text_end) in zip(starts, ends):
@@ -833,6 +842,74 @@ class ShaderInfo:
             return  # The line of action is square to r: phi is 90 degrees, shown by the arm's corner.
         self.add_angle_between(location, at, foot, size, color, get_plain_symbol(f"φ_{{{i}}}"), "phi")
         self.add_angle_between(at, location, foot, size, color, get_plain_symbol(f"α_{{{i}}}"), "alpha")
+
+    def get_drawn_points(self, first: int, first_text: int, obj_name: Union[str, None]) -> list[np.ndarray]:
+        """The ends of the lines and arrows, and the labels' anchors, drawn from first on, and those of an object's
+        own drawing, as a point's force diagram, which dimensions are to keep clear of"""
+        points = []
+        for index, entry in enumerate(self.info):
+            if index >= first or (obj_name and entry.get("object") == obj_name):
+                primitive = entry.get("primitive") or {}
+                points += [np.array(primitive[k]) for k in ("start", "end", "tail", "tip") if k in primitive]
+        for index, text in enumerate(self.text_info):
+            if index >= first_text or (obj_name and text.get("object") == obj_name):
+                points.append(np.array(text["position"]))
+        return points
+
+    def add_moment_dimensions(
+        self,
+        i: int,
+        at: np.ndarray,
+        location: np.ndarray,
+        size: float,
+        color: tuple,
+        length_scale: float,
+        drawn: Union[list[np.ndarray], None] = None,
+    ) -> None:
+        """Dimension r's run and rise, Δx and Δz from A to where the force acts, as a text's figure gives them: a
+        horizontal dimension above all that is drawn and a vertical one beside it, with extension lines and ticks.
+
+        :param drawn: Points of what is drawn, which they keep clear of, with room for its labels.
+        """
+        clear = 0.3 * size  # Beyond what is drawn, with room for the labels anchored at its edge.
+        tick = 0.03 * size
+        y = location[1]
+        # The curved arrow round A, drawn after, and its label above it.
+        reach = 0.35 * size
+        points = (drawn or []) + [location, at + np.array((-reach, 0, 0)), at + np.array((0, 0, 2 * reach))]
+        top = max(p[2] for p in points) + clear
+        side = min(p[0] for p in points) - clear  # On the left, as texts draw them.
+        for k, start, end, line_at, focus, axis in (
+            (0, at[0], location[0], top, "dx", "x"),
+            (2, at[2], location[2], side, "dz", "z"),
+        ):
+            delta = end - start
+            if abs(delta) < 1e-9 * max(size, 1e-9):
+                continue  # Level, or plumb: nothing to dimension.
+            if k == 0:
+                a, b = np.array((start, y, line_at)), np.array((end, y, line_at))
+                extensions = ((np.array((at[0], y, at[2])), a), (np.array((location[0], y, location[2])), b))
+                slash = np.array((tick, 0.0, tick))
+                away = np.array((0, 0, 1.0))
+            else:
+                a, b = np.array((line_at, y, start)), np.array((line_at, y, end))
+                extensions = ((np.array((at[0], y, at[2])), a), (np.array((location[0], y, location[2])), b))
+                slash = np.array((tick, 0.0, tick))
+                away = np.array((-1.0, 0, 0))
+            for p, q in extensions:
+                self.add_dashed_line(p, q, size, color)
+            self.add_dashed_line(a, b, size, color, dashed=False)
+            for end_point in (a, b):
+                self.add_dashed_line(end_point - slash, end_point + slash, size, color, dashed=False)
+            self.text_info.append(
+                {
+                    "position": (a + b) / 2,
+                    "text": f"Δ{get_plain_symbol(f'{axis}_{{{i}}}')} = {abs(delta) / length_scale:.2f} {self.length_unit}",  # A length, as dimensions give.
+                    "color": color,
+                    "away": away,
+                    "focus": focus,
+                }
+            )
 
     def add_angle_between(
         self,
