@@ -30,6 +30,43 @@ using namespace ifcopenshell::geom;
 
 #ifdef SCHEMA_HAS_IfcOffsetCurveByDistances
 
+namespace {
+// Lateral (y) and vertical (z) offset from the basis curve, the same over the whole span
+struct constant_offset_function : public taxonomy::span_function {
+    constant_offset_function(double y, double z) : y_(y), z_(z) {}
+
+    Eigen::Matrix4d operator()(double /*u*/) const override {
+        Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+        m.col(3)(1) = y_;
+        m.col(3)(2) = z_;
+        return m;
+    }
+
+    double y_, z_;
+};
+
+// Lateral (y) and vertical (z) offset from the basis curve, varying linearly over a span of length l
+struct linear_offset_function : public taxonomy::span_function {
+    linear_offset_function(double y_start, double y_end, double z_start, double z_end, double l) : y_start_(y_start), y_end_(y_end), z_start_(z_start), z_end_(z_end), l_(l) {}
+
+    Eigen::Matrix4d operator()(double u) const override {
+        Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+        m.col(3)(1) = (l_ == 0.0 ? y_start_ : (y_start_ + (y_end_ - y_start_) * u / l_));
+        m.col(3)(2) = (l_ == 0.0 ? z_start_ : (z_start_ + (z_end_ - z_start_) * u / l_));
+        return m;
+    }
+
+    double y_start_, y_end_, z_start_, z_end_, l_;
+};
+
+taxonomy::span_info offset_span_info(taxonomy::span_curve curve) {
+    taxonomy::span_info info;
+    info.layout = taxonomy::span_layout::OFFSET;
+    info.curve = curve;
+    return info;
+}
+} // namespace
+
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst) {
     auto offset_values = inst.OffsetValues();
     if (offset_values.empty()) {
@@ -85,12 +122,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst
         py *= length_unit_;
         pz *= length_unit_;
 
-        auto fn = [py, pz](double /*u*/) -> Eigen::Matrix4d {
-           Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-           m.col(3)(1) = py;
-           m.col(3)(2) = pz;
-           return m; };
-        offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(first_distance, fn));
+        auto fn = std::make_shared<constant_offset_function>(py, pz);
+        offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(first_distance, fn, offset_span_info(taxonomy::span_curve::CONSTANT), inst));
 	}
 
     auto iter = offset_values.begin();
@@ -147,13 +180,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst
         }
 
 
-        auto fn = [yp, yn, zp, zn, l](double u) -> Eigen::Matrix4d {
-            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-            m.col(3)(1) = (l == 0.0 ? yp : (yp + (yn - yp) * u / l));
-            m.col(3)(2) = (l == 0.0 ? zp : (zp + (zn - zp) * u / l));
-            return m;
-        };
-        offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
+        auto fn = std::make_shared<linear_offset_function>(yp, yn, zp, zn, l);
+        offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn, offset_span_info(taxonomy::span_curve::LINEAR), inst));
     }
 
 	 // at this point, next == end and prev == end-1
@@ -171,13 +199,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst
          py *= length_unit_;
          pz *= length_unit_;
          double l = basis_curve_length - last_distance;
-         auto fn = [py, pz](double /*u*/) -> Eigen::Matrix4d {
-            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-            m.col(3)(1) = py;
-            m.col(3)(2) = pz;
-            return m; };
-
-         offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
+         auto fn = std::make_shared<constant_offset_function>(py, pz);
+         offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn, offset_span_info(taxonomy::span_curve::CONSTANT), inst));
     }
 
    auto offsets = taxonomy::make<taxonomy::piecewise_function>(start,offset_spans);

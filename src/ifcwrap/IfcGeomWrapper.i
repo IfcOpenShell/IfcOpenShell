@@ -611,9 +611,6 @@ assign_matrix_access(revolve);
 	void set_(const std::string& name, ifcopenshell::geom::settings::IteratorOutputOptions val) {
 		return $self->set(name, val);
 	}
-	void set_(const std::string& name, ifcopenshell::geom::settings::FunctionStepMethod val) {
-		return $self->set(name, val);
-	}
 	void set_(const std::string& name, ifcopenshell::geom::settings::OutputDimensionalityTypes val) {
 		return $self->set(name, val);
 	}
@@ -863,6 +860,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
         item_ids = property(item_ids)
         uvs = property(uvs)
         edges_item_ids = property(edges_item_ids)
+        rebase_offset = property(rebase_offset)
 
         faces_buffer = property(faces_buffer)
         edges_buffer = property(edges_buffer)
