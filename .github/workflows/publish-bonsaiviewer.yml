@@ -59,4 +59,5 @@ jobs:
           asset_name: bonsaiviewer-${{ steps.version.outputs.version }}-${{ matrix.config.short_name }}.zip
           release_name: "bonsaiviewer-${{steps.version.outputs.version}}"
           tag: "bonsaiviewer-${{steps.version.outputs.version}}"
+          target_commit: ${{ github.sha }}
           overwrite: true

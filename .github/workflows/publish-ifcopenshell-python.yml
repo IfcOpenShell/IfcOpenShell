@@ -65,4 +65,5 @@ jobs:
           asset_name: ifcopenshell-python-${{ steps.version.outputs.version }}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
           release_name: "ifcopenshell-python-${{steps.version.outputs.version}}"
           tag: "ifcopenshell-python-${{steps.version.outputs.version}}"
+          target_commit: ${{ github.sha }}
           overwrite: true

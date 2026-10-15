@@ -94,6 +94,7 @@ jobs:
           asset_name: ${{ steps.find_zip.outputs.filename }}
           release_name: "bonsai-${{steps.version.outputs.version}}-alpha${{ needs.set-timestamp.outputs.timestamp }} (unstable)"
           tag: "bonsai-${{steps.version.outputs.version}}-alpha${{ needs.set-timestamp.outputs.timestamp }}"
+          target_commit: ${{ github.sha }}
           overwrite: true
           body: "See README in https://github.com/IfcOpenShell/bonsai_unstable_repo/ on how to setup autoupdates for daily Bonsai builds."
 

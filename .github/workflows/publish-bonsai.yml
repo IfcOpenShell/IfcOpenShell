@@ -73,4 +73,5 @@ jobs:
           asset_name: ${{ steps.find_zip.outputs.filename }}
           release_name: "bonsai-${{steps.version.outputs.version}}"
           tag: "bonsai-${{steps.version.outputs.version}}"
+          target_commit: ${{ github.sha }}
           overwrite: true
