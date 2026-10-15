@@ -4,6 +4,13 @@ permissions: {}
 
 on:
   workflow_dispatch:
+    # Can be removed when issue below is resolved
+    # https://projects.blender.org/infrastructure/extensions-website/issues/429
+    inputs:
+      only_py311:
+        description: "Publish only the py311 zips (e.g. later, after the new version upload cooldown)"
+        type: boolean
+        default: false
 
 jobs:
   publish:
@@ -15,6 +22,15 @@ jobs:
 
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
 
-      - run: uv run .github/scripts/publish-bonsai-releases.py
+      - name: Publish to Blender Extensions
+        run: |
+          if [ "${{ inputs.only_py311 }}" != "true" ]; then
+            uv run .github/scripts/publish-bonsai-releases.py --python-version py313
+          fi
+          uv run .github/scripts/publish-bonsai-releases.py --python-version py311 || {
+            echo "::error::Failed to publish py311 zips, likely because of the 2h new version upload cooldown" \
+              "(see the response above). Rerun later with only_py311."
+            exit 1
+          }
         env:
           BLENDER_EXTENSIONS_TOKEN: ${{ secrets.BLENDER_EXTENSIONS_TOKEN }}
