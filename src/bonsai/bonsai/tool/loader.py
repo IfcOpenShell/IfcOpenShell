@@ -705,6 +705,33 @@ class Loader(bonsai.core.tool.Loader):
         return any(abs(c) > limit for c in coords)
 
     @classmethod
+    def shift_far_vertices(
+        cls, verts: npt.NDArray[np.float64]
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+        """Shift vertices onto their bounding box centre when any is far from the origin.
+
+        :return: The shifted vertices and the shift, zero when none was needed.
+        """
+        if verts.size and cls.is_point_far_away(np.abs(verts).max(axis=0), is_meters=True):
+            centre = (verts.min(axis=0) + verts.max(axis=0)) / 2
+            return verts - centre, centre
+        return verts, np.zeros(3)
+
+    @classmethod
+    def get_rebased_vertices(cls, geometry: W.triangulation) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+        """The geometry's vertices and the offset they are stored relative to."""
+        return cls.shift_far_vertices(ifcopenshell.util.shape.get_vertices(geometry))
+
+    @classmethod
+    def record_cartesian_point_offset(cls, data: bpy.types.ID, offset: npt.NDArray[np.float64]) -> None:
+        """Record on mesh or curve data that its points are stored relative to ``offset``."""
+        data["has_cartesian_point_offset"] = bool(offset.any())
+        if offset.any():
+            data["cartesian_point_offset"] = f"{offset[0]},{offset[1]},{offset[2]}"
+        elif "cartesian_point_offset" in data:
+            del data["cartesian_point_offset"]
+
+    @classmethod
     def is_element_far_away(cls, element: ifcopenshell.entity_instance) -> bool:
         try:
             placement = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=True)
@@ -987,6 +1014,21 @@ class Loader(bonsai.core.tool.Loader):
         if building and cls.is_element_far_away(building):
             return cls.guess_false_origin_and_project_north(ifc_file, building)
         return cls.guess_false_origin_from_elements(ifc_file)
+
+    @classmethod
+    def apply_cartesian_point_offset(cls, data: Optional[bpy.types.ID], matrix: np.ndarray) -> np.ndarray:
+        """Move an IFC placement onto the frame of the mesh data.
+
+        A mesh with a cartesian point offset stores its vertices relative to that offset, so
+        the object's matrix is the placement translated along its own axes by the offset.
+        """
+        if not data or not data.get("has_cartesian_point_offset", None):
+            return matrix
+        if not (cartesian_point_offset := data.get("cartesian_point_offset", None)):
+            return matrix
+        matrix = matrix.copy()
+        matrix[:3, 3] += matrix[:3, :3] @ np.array(cartesian_point_offset.split(","), dtype=np.float64)
+        return matrix
 
     @classmethod
     def apply_blender_offset_to_matrix_world(cls, obj: bpy.types.Object, matrix: np.ndarray) -> Matrix:

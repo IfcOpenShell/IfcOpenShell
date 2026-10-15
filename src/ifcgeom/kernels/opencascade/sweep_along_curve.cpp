@@ -163,6 +163,9 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 
 	gp_Trsf directrix;
 	TopoDS_Wire wire = std::get<TopoDS_Wire>(w);
+    TopoDS_Vertex first_vertex, last_vertex;
+    TopExp::Vertices(wire, first_vertex, last_vertex);
+    const bool closed_directrix = !first_vertex.IsNull() && first_vertex.IsSame(last_vertex);
 
 	const bool is_plane = surface && surface->DynamicType() == STANDARD_TYPE(Geom_Plane);
 
@@ -271,20 +274,24 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 			if (!builder.IsDone()) {
 				return false;
 			}
-			auto w0 = TopoDS::Wire(builder.FirstShape());
-			auto w1 = TopoDS::Wire(builder.LastShape());
-			if (mf0) {
-				mf0->Add(w0);
-				mf1->Add(w1);
-			} else {
-				f0 = BRepBuilderAPI_MakeFace(w0).Face();
-				f1 = BRepBuilderAPI_MakeFace(w1).Face();
-				if (f0.IsNull() || f1.IsNull()) {
-					return false;
-				}
-				mf0.reset(new BRepBuilderAPI_MakeFace(f0));
-				mf1.reset(new BRepBuilderAPI_MakeFace(f1));
-			}
+            // A closed directrix has no end boundary. Adding caps here creates
+            // coincident internal faces at the seam of the swept shell.
+            if (!closed_directrix) {
+                auto w0 = TopoDS::Wire(builder.FirstShape());
+                auto w1 = TopoDS::Wire(builder.LastShape());
+                if (mf0) {
+                    mf0->Add(w0);
+                    mf1->Add(w1);
+                } else {
+                    f0 = BRepBuilderAPI_MakeFace(w0).Face();
+                    f1 = BRepBuilderAPI_MakeFace(w1).Face();
+                    if (f0.IsNull() || f1.IsNull()) {
+                        return false;
+                    }
+                    mf0.reset(new BRepBuilderAPI_MakeFace(f0));
+                    mf1.reset(new BRepBuilderAPI_MakeFace(f1));
+                }
+            }
 
 			for (TopExp_Explorer exp2(builder.Shape(), TopAbs_FACE); exp2.More(); exp2.Next()) {
 				BB.Add(comp, exp2.Current());
@@ -292,13 +299,15 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 		}
 	}
 
-	if (mf0->IsDone() && mf1->IsDone()) {
-		BB.Add(comp, TopoDS::Face(mf0->Face().Reversed()));
-		BB.Add(comp, mf1->Face());
-	} else {
-		BB.Add(comp, TopoDS::Face(f0.Reversed()));
-		BB.Add(comp, f1);
-	}
+    if (!closed_directrix) {
+        if (mf0->IsDone() && mf1->IsDone()) {
+            BB.Add(comp, TopoDS::Face(mf0->Face().Reversed()));
+            BB.Add(comp, mf1->Face());
+        } else {
+            BB.Add(comp, TopoDS::Face(f0.Reversed()));
+            BB.Add(comp, f1);
+        }
+    }
 
 	result = BRepBuilderAPI_MakeSolid(comp).Solid();
 

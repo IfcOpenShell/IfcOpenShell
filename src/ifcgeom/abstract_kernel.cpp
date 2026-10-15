@@ -67,6 +67,17 @@ const ifcopenshell::geom::settings& ifcopenshell::geom::kernels::abstract_kernel
 	return settings_;
 }
 
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::loft::ptr loft, std::vector<conversion_result>& results) {
+    if (!loft->is_polygonal()) {
+        return convert(loft->make_polygonal_sections(settings_)->to_polyhedron(), results);
+    }
+    return convert(loft->to_polyhedron(), results);
+}
+
+bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::sweep_along_curve::ptr sweep, std::vector<conversion_result>& results) {
+    return convert(sweep->to_polyhedron(settings_), results);
+}
+
 bool ifcopenshell::geom::kernels::abstract_kernel::convert_impl(const taxonomy::collection::ptr collection, std::vector<ifcopenshell::geom::conversion_result>& r) {
 	auto s = r.size();
 	for (auto& c : collection->children) {
