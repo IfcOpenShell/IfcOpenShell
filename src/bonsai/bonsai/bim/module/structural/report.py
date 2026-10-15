@@ -181,14 +181,13 @@ def get_moment_calculation(
             color = get_svg_color(colors.get(activity.id(), (1, 1, 1, 2)))
             palette.append(color)
             values.append(moment)
-            turn = "↺" if moment > 0 else "↻" if moment < 0 else ""
             row = get_table_row(f"F_{{{i}}}", activity.AppliedLoad.Name or "Unnamed", math.hypot(x, z), "", [], color)
             row |= {
                 "at": item.Name or "Unnamed",
                 "dx": f"{dx:.2f}",
                 "dz": f"{dz:.2f}",
                 "arm": f"{arm:.2f}",
-                "moment": f"{abs(moment):.2f} {unit} {turn}".strip(),
+                "moment": f"{moment:+.2f} {unit}",  # Counter-clockwise positive, as the steps are.
             }
             row["magnitude"] += f" {drawing.force_unit}"
             locks = tool.Structural.get_locks(activity)
@@ -211,17 +210,15 @@ def get_moment_calculation(
         return None
     total = sum(values)
     symbol = "\\Sigma M_A" if len(values) > 1 else "M_A"
-    turn = "\\circlearrowleft" if total > 0 else "\\circlearrowright" if total < 0 else ""
     if len(values) > 1:
         terms = " + ".join(f"M_{{{i}}}" for i in range(1, len(values) + 1))
         numbers = " + ".join(f"({v:.2f})" for v in values)
-        steps.append(f"{symbol} = {terms} = {numbers} = {bold(f'{total:.2f}', True, text_unit)}\\ {turn}")
+        steps.append(f"{symbol} = {terms} = {numbers} = {bold(f'{total:.2f}', True, text_unit)}")
     else:
-        steps.append(f"{symbol} = M_{{1}} = {bold(f'{total:.2f}', True, text_unit)}\\ {turn}")
+        steps.append(f"{symbol} = M_{{1}} = {bold(f'{total:.2f}', True, text_unit)}")
     steps += get_kept_moment_steps(case, values, unknowns, text_unit, drawing.force_unit)
     name = f"{get_slug(case.Name)}_moments_{centre.id()}.svg"
     has_diagram = write_diagram(drawing, centre, directory / "diagrams" / name, key=f"{centre_obj.name} moments")
-    words = "counter-clockwise" if total > 0 else "clockwise" if total < 0 else "no turning"
     return {
         "centre": centre.Name or "Unnamed",
         "diagram": f"diagrams/{name}" if has_diagram else None,
@@ -237,7 +234,7 @@ def get_moment_calculation(
             for step in steps
             if detailed or not isinstance(step, Detail)
         ],
-        "summary": f"{'ΣM' if len(values) > 1 else 'M'} about A = {abs(total):.2f} {unit}, {words}.",
+        "summary": f"{'ΣM' if len(values) > 1 else 'M'} about A = {total:+.2f} {unit}, counter-clockwise positive.",
         "unit": unit,
         "length_unit": length_unit,
     }

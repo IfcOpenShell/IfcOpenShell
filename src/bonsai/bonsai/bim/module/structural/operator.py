@@ -2542,7 +2542,7 @@ class EditStructuralMomentCentre(
         if moment is not None:
             decimals = tool.Structural.get_structural_props().force_decimals
             unit = f"{get_project_unit_symbol('FORCEUNIT', 'N')}.{get_project_unit_symbol('LENGTHUNIT', 'm')}"
-            text = f"ΣM_A = {abs(moment):.{decimals}f} {unit} {'CCW' if moment > 0 else 'CW'}"
+            text = f"ΣM_A = {moment:+.{decimals}f} {unit}"  # Counter-clockwise positive.
             if kept is not None:
                 text += "  🔒 kept: the unknown force follows"
             layout.label(text=text, icon="FORCE_VORTEX")
@@ -2692,7 +2692,7 @@ def get_resultant_moment_locks(props: "EditStructuralResultantMoment") -> list[t
 
 
 def get_signed_moment(props: "EditStructuralResultantMoment") -> float:
-    return props.moment if props.turn == "CCW" else -props.moment
+    return props.moment
 
 
 def solve_resultant_moment(
@@ -2737,7 +2737,9 @@ class EditStructuralResultantMoment(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     load_case: bpy.props.IntProperty(options={"HIDDEN", "SKIP_SAVE"})
     moment: bpy.props.FloatProperty(
-        name="ΣM_A", description="The sum of the moments about A", min=0.0, update=update_resultant_moment
+        name="ΣM_A",
+        description="The sum of the moments about A, counter-clockwise positive",
+        update=update_resultant_moment,
     )
     moment_locked: bpy.props.BoolProperty(
         name="ΣM_A Known",
@@ -2745,11 +2747,6 @@ class EditStructuralResultantMoment(bpy.types.Operator, tool.Ifc.Operator):
         "found from the forces",
         default=True,
         options={"SKIP_SAVE"},
-        update=update_resultant_moment,
-    )
-    turn: bpy.props.EnumProperty(
-        name="Turning",
-        items=[("CCW", "CCW", "Counter-clockwise, positive"), ("CW", "CW", "Clockwise, negative")],
         update=update_resultant_moment,
     )
     magnitude_locks: bpy.props.BoolVectorProperty(
@@ -2782,7 +2779,7 @@ class EditStructuralResultantMoment(bpy.types.Operator, tool.Ifc.Operator):
             if kept is not None
             else tool.Structural.get_moment_about(case, tool.Structural.get_moment_centre(case))
         )
-        self.moment, self.turn = abs(moment or 0.0), "CW" if (moment or 0.0) < 0 else "CCW"
+        self.moment = moment or 0.0
         locks = [tool.Structural.get_locks(activity) for activity in activities]
         self.magnitude_locks = [lock[0] for lock in locks] + [True] * (32 - len(locks))
         self.direction_locks = [lock[1] for lock in locks] + [True] * (32 - len(locks))
@@ -2808,11 +2805,9 @@ class EditStructuralResultantMoment(bpy.types.Operator, tool.Ifc.Operator):
             found = tool.Structural.get_moment_about(case, centre) if centre else None
             text = "ΣM_A: found from the forces"
             if found is not None:
-                text = f"ΣM_A = {abs(found):.2f} {unit} {'CCW' if found > 0 else 'CW'}  (found)"
+                text = f"ΣM_A = {found:+.2f} {unit}  (found)"
             row.label(text=text)
         row.prop(self, "moment_locked", text="", icon="LOCKED" if self.moment_locked else "UNLOCKED")
-        if self.moment_locked:
-            layout.row().prop(self, "turn", expand=True)
         layout.label(text="Forces, and which of their values are known:")
         activities = get_case_moment_forces(case)[0][:32]
         for i, activity in enumerate(activities):

@@ -679,13 +679,12 @@ class ShaderInfo:
                 a, b = foot + towards * corner, foot + side * corner
                 self.add_dashed_line(a, a + side * corner, size, color, dashed=False)
                 self.add_dashed_line(b, b + towards * corner, size, color, dashed=False)
-            turn = "CCW" if moment > 0 else "CW"  # The viewport's font has no turning arrows.
             # The arm's length, then its moment beneath it: labels placed later move clear of earlier ones, away
             # from the arm, which is down, or across for a level line of action.
             away = -along if along[2] > 0 else along
             for text in (
                 f"{get_plain_symbol(f'd_{{{i}}}')} = {arm:.2f} {self.length_unit}",
-                f"{symbol} = {abs(moment):.{decimals}f} {self.moment_unit} {turn}",
+                f"{symbol} = {moment:+.{decimals}f} {self.moment_unit}",  # Counter-clockwise positive.
             ):
                 self.text_info.append(
                     {"position": (at + foot) / 2, "text": text, "color": color, "away": away, "focus": "arm"}
@@ -882,7 +881,7 @@ class ShaderInfo:
         if abs(moment) < 10 ** -(decimals + 1):
             text = f"{symbol} = 0"
         else:
-            text = f"{symbol} = {abs(moment):.{decimals}f} {self.moment_unit} {'CCW' if moment > 0 else 'CW'}"
+            text = f"{symbol} = {moment:+.{decimals}f} {self.moment_unit}"  # Counter-clockwise positive.
             radius, sweep = 0.35 * size, (1 if moment > 0 else -1) * np.radians(270)
             angles = np.radians(-45) + np.linspace(0, sweep, 28)
             arc = [at + radius * np.array((np.cos(a), 0.0, np.sin(a))) for a in angles]

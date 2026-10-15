@@ -473,6 +473,13 @@ where Bonsai's eighths would measure from the vertical.
   moment, with one force by its arm, r or angle from the moment; with Detailed Steps, where r's
   run and rise come from, and s = r cos φ with the sides checked.
 
+## 23. Signed moments
+
+- **Moments read signed**, counter-clockwise positive, rather than as a size and CW or CCW: `+300`
+  and `-707` are quicker to read, and match the report's steps, which add them. The viewport's
+  labels, Applied Loads, both moment dialogs and the report's table and summary do so, the report
+  stating the sign convention. Edit Resultant Moment takes ΣM_A as one signed value.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
@@ -486,6 +493,12 @@ Later, for rigid bodies: **ΣFx, ΣFz and ΣM_A solved together.** Edit Resultan
 force equations for two unknowns, and a resultant moment the moment equation for one. Together
 they are the three equations of a rigid body's equilibrium, for three unknowns, as reactions at
 supports are found in Chapter 3. Left until the book reaches them.
+
+Later, with the book's resultant of parallel forces: **where a resultant acts.** Forces at
+several points add to the same R as at one, but R acts along the line that gives their moment
+about A: d_R = |ΣM_A| / |R| from A, on the side that turns the same way. Draw R there, with its
+arm and where its line crosses the member (x̄), and give reports R's components, d_R and x̄.
+Forces adding to nothing with a moment left are a couple, with no line to draw R on.
 
 Later, for load authoring: **directions in the XY and YZ planes.** Angles and slopes are entered
 in the X-Z plane only; other planes need components. A Plane choice (XZ, XY, YZ) in the force
