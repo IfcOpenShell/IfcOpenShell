@@ -944,6 +944,7 @@ class ShaderInfo:
             if has_angle:
                 label += self.get_unknown_marks(activity)[0]
             force_of = activity if has_angle else 0
+            side = None  # Beside a tip-to-tail chain's polygon, if it is one.
             if has_angle and activity in pushes:
                 # Slid along its line to pull, with the line it arrives along shown beyond the point.
                 label += " (push)"

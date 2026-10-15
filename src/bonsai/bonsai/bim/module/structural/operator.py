@@ -97,7 +97,7 @@ def draw_with_lock(
         row.prop(props, lock, text="", icon="LOCKED" if getattr(props, lock) else "UNLOCKED")
 
 
-def get_direction_input(subject: str, update: Callable, options: set[str]) -> type:
+def get_direction_input(subject: str, update: Callable, options: set[str]) -> Any:
     """A mixin of the inputs for a direction in the X-Z plane: an eighth of a circle, and an angle or slope in it.
 
     :param subject: What points that way, as named in the direction's description.
