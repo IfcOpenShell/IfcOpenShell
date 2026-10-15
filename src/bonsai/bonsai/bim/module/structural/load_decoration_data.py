@@ -616,6 +616,7 @@ class ShaderInfo:
         # Arrows can be picked to edit their load only when they stand for one applied load.
         single = activities[0] if len(activities) == 1 else 0
         resultant = sum(forces)
+        resultant_marks = self.get_resultant_marks(activities)
 
         # All forces share one scale so that their lengths compare, as in a graphical solution.
         longest = max(np.linalg.norm(resultant), *(np.linalg.norm(force) for force in forces))
@@ -725,9 +726,10 @@ class ShaderInfo:
 
         if show_resultant and not in_equilibrium:
             label = f"{'R = ' if len(forces) > 1 else ''}{np.linalg.norm(resultant):.{props.force_decimals}f} {self.force_unit}"
-            label += self.get_unknown_marks(single)[0]  # A single force is drawn as this resultant.
+            label += resultant_marks[0]
             if abs(resultant[1]) < 1e-9 and not props.show_force_angles:
                 label += f" at {np.degrees(np.arctan2(resultant[2], resultant[0])):.{props.angle_decimals}f} deg"
+                label += resultant_marks[1]
             # Alpha 2 because the shader caps opacity at half of it; the resultant draws fully opaque.
             # Labelled to the side, as a resultant often runs along one of the forces: outside the chain's
             # polygon, or else above.
@@ -760,10 +762,11 @@ class ShaderInfo:
                     single or None,
                     measured_from=None if local else self.get_resultant_eighth(activities),
                     pickable=picked,
+                    marks=resultant_marks,
                 )
             if props.show_force_slopes:
                 arrow = (flip(tip), location) if arriving else (location, tip)
-                self.add_force_slope(*arrow, size, (1, 1, 1, 1), avoid=side, pickable=picked)
+                self.add_force_slope(*arrow, size, (1, 1, 1, 1), avoid=side, pickable=picked, marks=resultant_marks)
         if show_resultant and in_equilibrium and len(forces) > 1:
             self.add_equilibrium_marker(location, size, activities)
         self.add_reference_axes(reference_axes, size)
@@ -1020,6 +1023,18 @@ class ShaderInfo:
         magnitude = magnitude and not tool.Structural.get_known_component(element)
         return ("" if magnitude else " 🔓"), ("" if direction else " 🔓")
 
+    def get_resultant_marks(self, activities: list[int]) -> tuple[str, str]:
+        """Marks for a resultant's magnitude and direction labels, if they were found: a single force's own, or what
+        Edit Resultant finds of the resultant of several, as the report's table marks it"""
+        if len(activities) == 1:
+            return self.get_unknown_marks(activities[0])
+        if not activities or not all(activities):
+            return "", ""
+        elements = [tool.Ifc.get().by_id(a) for a in activities]
+        locks = [tool.Structural.get_locks(element) for element in elements]
+        found = tool.Structural.get_resultant_found(locks, tool.Structural.get_magnitude_groups(elements))
+        return (" 🔓" if "magnitude" in found else ""), (" 🔓" if "direction" in found else "")
+
     def add_force_angle(
         self,
         tail: np.ndarray,
@@ -1031,11 +1046,13 @@ class ShaderInfo:
         activity: Union[int, None] = None,
         measured_from: Union[str, None] = None,
         pickable: Union[int, None] = None,
+        marks: Union[tuple[str, str], None] = None,
     ) -> None:
         """Mark a force's angle from a reference axis, as an arc in the X-Z plane.
 
         :param measured_from: An eighth chosen to measure it from, as a resultant's can be.
         :param pickable: The force's pickable, which its arc and label join, to be clicked and highlighted with it.
+        :param marks: The magnitude and direction marks, as a resultant's, if not its applied load's.
         """
         if abs(vector[1]) > 1e-9 * np.linalg.norm(vector):
             return  # Not in the X-Z plane, so one angle does not describe it.
@@ -1067,7 +1084,7 @@ class ShaderInfo:
             {
                 "position": tail + radius * outward,
                 "text": f"θ = {angle:.{props.angle_decimals}f}°{f' {eighth}' if eighth else ''}"
-                + self.get_unknown_marks(activity)[1],
+                + (marks or self.get_unknown_marks(activity))[1],
                 "color": color,
                 "away": away / np.linalg.norm(away),
                 "focus": "angle",
@@ -1162,11 +1179,13 @@ class ShaderInfo:
         activity: Union[int, None] = None,
         avoid: Union[np.ndarray, None] = None,
         pickable: Union[int, None] = None,
+        marks: Union[tuple[str, str], None] = None,
     ) -> None:
         """Mark a force's slope as a triangle beside it, its legs along and across the axis its angle is from.
 
         :param avoid: The side of the force its label is on, to keep the triangle off it.
         :param pickable: The force's pickable, which its triangle and labels join, as its angle's do.
+        :param marks: The magnitude and direction marks, as a resultant's, if not its applied load's.
         """
         first, first_text = len(self.info), len(self.text_info)
         vector = tip - tail
@@ -1249,7 +1268,8 @@ class ShaderInfo:
             self.text_info.append(
                 {
                     "position": middle,
-                    "text": run_text if leg == "run" else rise_text,
+                    # An unknown direction marked once, on the rise.
+                    "text": run_text if leg == "run" else rise_text + (marks or self.get_unknown_marks(activity))[1],
                     "color": color,
                     "away": away / np.linalg.norm(away),
                     "focus": leg,

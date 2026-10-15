@@ -196,6 +196,22 @@ class Structural(bonsai.core.tool.Structural):
         ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties=properties)
 
     @classmethod
+    def get_resultant_found(
+        cls, locks: list[tuple[bool, bool]], links: Union[list[Union[str, None]], None] = None
+    ) -> list[str]:
+        """What of a resultant was found, from how many force values were: Edit Resultant finds two unknowns in all.
+
+        :param links: A key per force, the same for forces of equal magnitude, whose magnitudes count as one.
+        """
+        unknown = sum(not locked for lock in locks for locked in lock)
+        # Linked magnitudes unknown together count once; linked to a known one, not at all.
+        links = links or [None] * len(locks)
+        for key in {k for k in links if k}:
+            members = [lock for lock, k in zip(locks, links) if k == key]
+            unknown -= sum(not lock[0] for lock in members) - (0 if any(lock[0] for lock in members) else 1)
+        return [["magnitude", "direction"], ["magnitude"]][unknown] if unknown < 2 else []
+
+    @classmethod
     def get_locks(cls, activity: ifcopenshell.entity_instance) -> tuple[bool, bool]:
         """Whether an applied load's magnitude and direction are known, so kept when solving for a resultant"""
         pset = ifcopenshell.util.element.get_pset(activity, "BBIM_Structural") or {}

@@ -104,7 +104,9 @@ def get_report_data(
                 drawing.update()
             name = f"{get_slug(case.Name)}_{get_slug(item.Name)}_{item.id()}.svg"
             links = tool.Structural.get_magnitude_groups(activities)
-            resultant_found = bool(get_resultant_found([tool.Structural.get_locks(a) for a in activities], links))
+            resultant_found = bool(
+                tool.Structural.get_resultant_found([tool.Structural.get_locks(a) for a in activities], links)
+            )
             has_diagram = write_diagram(drawing, item, directory / "diagrams" / name, resultant_found)
             point = {"name": item.Name or "Unnamed", "diagram": f"diagrams/{name}" if has_diagram else None}
             colors = get_force_colors(drawing, item)
@@ -203,20 +205,6 @@ def get_slug(name: Union[str, None]) -> str:
     return re.sub(r"[^\w.-]+", "_", name or "").strip("_") or "Unnamed"
 
 
-def get_resultant_found(locks: list[tuple[bool, bool]], links: Union[list[Union[str, None]], None] = None) -> list[str]:
-    """What of a resultant was found, from how many force values were: Edit Resultant finds two unknowns in all.
-
-    :param links: A key per force, the same for forces of equal magnitude, whose magnitudes count as one.
-    """
-    unknown = sum(not locked for lock in locks for locked in lock)
-    # Linked magnitudes unknown together count once; linked to a known one, not at all.
-    links = links or [None] * len(locks)
-    for key in {k for k in links if k}:
-        members = [lock for lock, k in zip(locks, links) if k == key]
-        unknown -= sum(not lock[0] for lock in members) - (0 if any(lock[0] for lock in members) else 1)
-    return [["magnitude", "direction"], ["magnitude"]][unknown] if unknown < 2 else []
-
-
 def bold(text: str, is_bold: bool = True, suffix: str = "") -> str:
     """A value in bold in LaTeX, for one found by solving, with its suffix, as a unit, bold too"""
     if not is_bold:
@@ -280,7 +268,9 @@ def get_resultant_calculation(
         for i, force in enumerate(forces)
         if not all(force["locks"]) or force.get("given")
     }
-    resultant_found = get_resultant_found([force["locks"] for force in forces], [force["link"] for force in forces])
+    resultant_found = tool.Structural.get_resultant_found(
+        [force["locks"] for force in forces], [force["link"] for force in forces]
+    )
     components, steps, summary = get_sum_steps(
         forces, text_unit, unit, found if solving else None, resultant_found, resultant_eighth
     )
