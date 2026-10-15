@@ -27,6 +27,10 @@ namespace ifcopenshell {
 			}
 		};
 
+		/// @brief World positions of the points of a face's or loop's edges, by loop, as
+		/// sampled_section::loops expects them: a closed loop repeats its first point at the end.
+		IFC_GEOM_API std::vector<std::vector<Eigen::Vector3d>> section_points(const taxonomy::geom_item::ptr& section);
+
 		IFC_GEOM_API taxonomy::loft::ptr make_loft(const ifcopenshell::geom::settings& settings, const express::base inst, const taxonomy::function_item::ptr& directrix, std::vector<cross_section>& cross_sections, logger& logger = ifcopenshell::logger::root());
 	}
 
