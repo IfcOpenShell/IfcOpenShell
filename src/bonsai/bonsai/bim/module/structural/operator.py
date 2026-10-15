@@ -105,7 +105,7 @@ def set_in_plane_direction(props: bpy.types.Operator, x: float, z: float) -> Non
     props.rise, props.run = tool.Structural.get_simple_slope(abs(x), abs(z))
 
 
-def get_direction_input(subject: str, update: Callable, options: set[str], prefix: str = "") -> type:
+def get_direction_input(subject: str, update: Callable, options: set[str], prefix: str = "") -> Any:
     """A mixin of the inputs for a direction in the X-Z plane: an eighth of a circle, and an angle or slope in it.
 
     :param subject: What points that way, as named in the direction's description.
