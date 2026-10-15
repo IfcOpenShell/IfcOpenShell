@@ -20,6 +20,10 @@
 
 import math
 
+import ifcopenshell
+import ifcopenshell.api.root
+import ifcopenshell.api.structural
+
 import bonsai.core.tool
 from bonsai.tool.structural import Structural as subject
 from test.bim.bootstrap import NewFile
@@ -154,3 +158,31 @@ class TestSolveUnknowns(NewFile):
             2
         ]
         assert "not supported" in error
+
+
+class TestGetAxesTilt(NewFile):
+    def test_a_point_without_axes_of_its_own(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        point = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralPointConnection")
+        assert subject.get_axes_tilt(point) == 0.0
+
+    def test_axes_tilted_in_the_x_z_plane(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        point = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralPointConnection")
+        for tilt in (25, -60, 135):
+            angle = math.radians(tilt)
+            ifcopenshell.api.structural.edit_structural_connection_cs(
+                ifc_file,
+                structural_item=point,
+                axis=(-math.sin(angle), 0, math.cos(angle)),
+                ref_direction=(math.cos(angle), 0, math.sin(angle)),
+            )
+            assert math.isclose(subject.get_axes_tilt(point), tilt)
+
+    def test_axes_turned_out_of_the_x_z_plane(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        point = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralPointConnection")
+        ifcopenshell.api.structural.edit_structural_connection_cs(
+            ifc_file, structural_item=point, axis=(0, 0, 1), ref_direction=(0.6, 0.8, 0)
+        )
+        assert subject.get_axes_tilt(point) is None

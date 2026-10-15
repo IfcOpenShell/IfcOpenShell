@@ -556,6 +556,38 @@ class DisableEditingStructuralConnectionCS(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class TiltStructuralConnectionAxes(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.tilt_structural_connection_axes"
+    bl_label = "Tilt Axes"
+    bl_description = (
+        "Tilt the point's own axes in the X-Z plane, as along an inclined surface. Show loads with the local "
+        "reference frame to see forces resolved along them"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    angle: bpy.props.FloatProperty(
+        name="Tilt", description="Degrees x' turns from +X towards +Z, z' turning with it", options={"SKIP_SAVE"}
+    )
+
+    @classmethod
+    def poll(cls, context):
+        element = tool.Ifc.get_entity(context.active_object) if context.active_object else None
+        return bool(element and element.is_a("IfcStructuralPointConnection"))
+
+    def invoke(self, context, event):
+        self.angle = tool.Structural.get_axes_tilt(tool.Ifc.get_entity(context.active_object)) or 0.0
+        return context.window_manager.invoke_props_dialog(self)
+
+    def _execute(self, context):
+        angle = math.radians(self.angle)
+        ifcopenshell.api.structural.edit_structural_connection_cs(
+            tool.Ifc.get(),
+            structural_item=tool.Ifc.get_entity(context.active_object),
+            axis=(-math.sin(angle), 0.0, math.cos(angle)),
+            ref_direction=(math.cos(angle), 0.0, math.sin(angle)),
+        )
+        return {"FINISHED"}
+
+
 class EditStructuralConnectionCS(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_structural_connection_cs"
     bl_label = "Edit Structural Connection CS"

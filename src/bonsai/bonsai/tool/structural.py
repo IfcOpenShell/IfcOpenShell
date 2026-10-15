@@ -30,6 +30,7 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.structural
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 
 import bonsai.bim.helper
@@ -203,6 +204,20 @@ class Structural(bonsai.core.tool.Structural):
     def set_locks(cls, activity: ifcopenshell.entity_instance, magnitude: bool, direction: bool) -> None:
         if (magnitude, direction) != cls.get_locks(activity):
             cls.edit_bbim_structural(activity, {"MagnitudeLocked": magnitude, "DirectionLocked": direction})
+
+    @classmethod
+    def get_axes_tilt(cls, item: ifcopenshell.entity_instance) -> Union[float, None]:
+        """The degrees a structural item's own axes are tilted by in the X-Z plane, x' turning from +X towards +Z.
+
+        :return: 0 if they are not set, or None if they are turned otherwise than in that plane.
+        """
+        if not (ccs := getattr(item, "ConditionCoordinateSystem", None)):
+            return 0.0
+        rotation = ifcopenshell.util.placement.get_placement(ccs)[:3, :3]
+        x, y = rotation[:, 0], rotation[:, 1]
+        if abs(x[1]) > 1e-6 or abs(y[1] - 1) > 1e-6:
+            return None
+        return math.degrees(math.atan2(x[2], x[0]))
 
     @classmethod
     def get_activity_load_case(
