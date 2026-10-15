@@ -194,10 +194,9 @@
 %ignore KeepBoundingBoxes;
 %ignore SurfaceColour;
 %ignore ComputeCurvature;
-%ignore FunctionStepType;
-%ignore FunctionStepParam;
 %ignore ModelOffset;
 %ignore ModelRotation;
+%ignore VertexRebaseDistance;
 %ignore TriangulationType;
 %ignore CgalEmitOriginalEdges;
 %ignore OcctNoCleanTriangulation;
@@ -213,6 +212,7 @@
 %ignore SvgUseEdgeClassification;
 %ignore SvgRenderCreaseEdges;
 %ignore SvgRenderSharpEdges;
+%ignore LoftUseRuledSurfaces;
 
 %ignore filetype;
 %ignore guess_file_type;
