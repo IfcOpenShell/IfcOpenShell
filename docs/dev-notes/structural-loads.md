@@ -198,6 +198,25 @@ Selecting a structural item gave no way to see what loads it.
 - The Structural Loads panel is **Load Definitions**, with an *Unused Only* filter, as
   definitions are what applied loads share. An item's analysis models are set from the item.
 
+## 7. Known and unknown values
+
+Statics problems state which magnitudes and directions are known and which are to be found.
+
+- **Locks.** Apply Load and Edit Load lock an applied load's magnitude and direction as known,
+  kept as `BBIM_Structural.MagnitudeLocked` and `DirectionLocked` (unset means known). Edit
+  Load opened from a load definition shows them when one applied load uses it, as locks
+  belong to applied loads.
+- **Edit Resultant** has locks for the resultant too, and finds the two values left unlocked
+  with `tool.Structural.solve_unknowns`: two force magnitudes, a force's and the resultant's
+  magnitude, a whole force, or just the sum. Finding a direction together with another
+  unknown, which can have two answers, is reported as not supported. With too many or too few
+  unknowns it names them, `F₁ magnitude, R magnitude`, in the order forces are numbered.
+- **A locked resultant is kept.** Edit Resultant stores the resultant's locks and value on
+  the structural item, by load case GlobalId, in `BBIM_Structural.Resultants`, as a resultant
+  is not an IFC entity. Editing or adding a force there solves the unknowns again to keep it,
+  and Edit Load's preview shows them moving.
+- Diagram labels of unlocked values carry 🔓.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through

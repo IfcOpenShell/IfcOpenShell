@@ -112,3 +112,45 @@ class TestSolveTwoForceMagnitudes(NewFile):
 
     def test_a_target_out_of_their_plane_has_no_solution(self):
         assert subject.solve_two_force_magnitudes((0, 10, 0), (1, 0, 0), (0, 0, 1)) is None
+
+
+class TestSolveUnknowns(NewFile):
+    def test_two_force_magnitudes_for_a_known_resultant(self):
+        forces, resultant, error = subject.solve_unknowns(
+            [(10, 0, 0), (0, 0, 10), (5, 0, 5)], [(False, True), (False, True), (True, True)], (35, 0, 45), (True, True)
+        )
+        assert not error
+        assert math.isclose(forces[0][0], 30) and math.isclose(forces[1][2], 40)
+        assert forces[2] == (5, 0, 5) and resultant == (35, 0, 45)
+
+    def test_a_force_magnitude_and_the_resultant_along_its_direction(self):
+        # A known pull down and right, and a pull down and left of unknown size, whose sum acts straight down.
+        forces, resultant, error = subject.solve_unknowns(
+            [(30, 0, -40), (-1, 0, -1)], [(True, True), (False, True)], (0, 0, -1), (False, True)
+        )
+        assert not error
+        assert math.isclose(forces[1][0], -30) and math.isclose(forces[1][2], -30)
+        assert math.isclose(resultant[0], 0, abs_tol=1e-9) and math.isclose(resultant[2], -70)
+
+    def test_a_whole_force_making_up_a_known_resultant(self):
+        forces, resultant, error = subject.solve_unknowns(
+            [(20, 0, 0), (1, 0, 1)], [(True, True), (False, False)], (5, 0, 12), (True, True)
+        )
+        assert not error and forces[1] == (-15, 0, 12)
+
+    def test_the_sum_when_only_the_resultant_is_unknown(self):
+        forces, resultant, error = subject.solve_unknowns(
+            [(3, 0, 4), (1, 0, -1)], [(True, True), (True, True)], (0, 0, 0), (False, False)
+        )
+        assert not error and resultant == (4, 0, 3)
+
+    def test_naming_the_unknowns_when_there_are_not_two(self):
+        error = subject.solve_unknowns([(1, 0, 0)], [(False, True)], (0, 0, 1), (False, False))[2]
+        assert error.startswith("Unlocked: F₁ magnitude, R magnitude, R direction")
+        assert subject.solve_unknowns([(1, 0, 0)], [(True, True)], (1, 0, 0), (True, True))[2].startswith("Nothing")
+
+    def test_a_direction_with_another_unknown_is_not_solved(self):
+        error = subject.solve_unknowns([(1, 0, 0), (0, 0, 1)], [(True, False), (False, True)], (1, 0, 1), (True, True))[
+            2
+        ]
+        assert "not supported" in error
