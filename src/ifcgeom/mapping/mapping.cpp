@@ -872,18 +872,41 @@ void mapping::initialize_units_() {
     angle_unit_ = -1.;
     length_unit_name_ = "METER";
 
+    IfcSchema::IfcUnitAssignment unit_assignment;
+
 #ifdef SCHEMA_HAS_IfcContext
-    auto projects = file_->instances_by_type<IfcSchema::IfcContext>();
+    // IfcProjectLibrary is also an IfcContext. Prefer the unique IfcProject,
+    // then a unique IfcContext, then the only context carrying units.
+    auto ifc_projects = file_->instances_by_type<IfcSchema::IfcProject>();
+    if (ifc_projects.size() == 1) {
+        unit_assignment = ifc_projects.front().UnitsInContext();
+    } else {
+        auto contexts = file_->instances_by_type<IfcSchema::IfcContext>();
+        if (contexts.size() == 1) {
+            unit_assignment = contexts.front().UnitsInContext();
+        } else {
+            std::vector<IfcSchema::IfcUnitAssignment> with_units;
+            for (auto& context : contexts) {
+                if (context.UnitsInContext()) {
+                    with_units.push_back(context.UnitsInContext());
+                }
+            }
+            if (with_units.size() == 1) {
+                unit_assignment = with_units.front();
+            } else {
+                logger_.warning("GEO", 308, "Not a single project or context in file");
+            }
+        }
+    }
 #else
     auto projects = file_->instances_by_type<IfcSchema::IfcProject>();
-#endif
-    IfcSchema::IfcUnitAssignment unit_assignment;
     if (projects.size() == 1) {
         auto& project = projects.front();
         unit_assignment = project.UnitsInContext();
     } else {
         logger_.warning("GEO", 308, "Not a single project or context in file");
     }
+#endif
     if (!unit_assignment) {
         logger_.warning("GEO", 309, "Unable to detect unit information");
         return;
