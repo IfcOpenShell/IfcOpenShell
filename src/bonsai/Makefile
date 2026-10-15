@@ -24,6 +24,11 @@ LAST_GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD)
 PYPI_IMP:=cp
 
 SUPPORTED_PYVERSIONS := py311 py313
+# Appended to the stable extension version, e.g. `SEMVER_SUFFIX=-py311` -> `0.9.0-post1-py311`.
+# Blender extensions platform allows just one build per platform per version,
+# so separate Python builds need distinct versions.
+# See: https://projects.blender.org/infrastructure/extensions-website/issues/393
+SEMVER_SUFFIX:=
 
 ifdef PYVERSION
 ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
@@ -221,7 +226,7 @@ endif
 
 	cp pyproject.toml build/
 ifeq ($(IS_STABLE), TRUE)
-	$(SED) "s/0.0.0/$(VERSION_SEMVER)/" build/bonsai/blender_manifest.toml
+	$(SED) "s/0.0.0/$(VERSION_SEMVER)$(SEMVER_SUFFIX)/" build/bonsai/blender_manifest.toml
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/pyproject.toml
 else
 	$(SED) "s/0.0.0/$(VERSION_SEMVER_DAILY)/" build/bonsai/blender_manifest.toml
@@ -234,6 +239,9 @@ endif
 # Blender 5.1+ requires Python 3.13.
 ifeq ($(PYVERSION), py313)
 	$(SED) 's/blender_version_min = "4\.2\.0"/blender_version_min = "5.1.0"/' build/bonsai/blender_manifest.toml
+endif
+ifeq ($(PYVERSION), py311)
+	$(SED) 's/^# blender_version_max = /blender_version_max = /' build/bonsai/blender_manifest.toml
 endif
 
 	$(SED) "s/os-arch/$(BLENDER_PLATFORM)/" build/bonsai/blender_manifest.toml
@@ -275,7 +283,7 @@ endif
 	rm -rf build/bonsai/libs/
 
 ifeq ($(IS_STABLE), TRUE)
-	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION_SEMVER)-$(BLENDER_PLATFORM).zip ./bonsai
+	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION_SEMVER)$(SEMVER_SUFFIX)-$(BLENDER_PLATFORM).zip ./bonsai
 else
 	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION_SEMVER_DAILY)-$(BLENDER_PLATFORM).zip ./bonsai
 endif

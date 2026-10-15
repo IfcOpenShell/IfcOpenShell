@@ -50,8 +50,15 @@ jobs:
         id: version
         run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
       - name: Compile
+        env:
+          # extensions.blender.org allows one build per platform per version.
+          SEMVER_SUFFIX: ${{ matrix.pyver == 'py311' && '-py311' || '' }}
         run: |
-          cd src/bonsai && make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }} IS_STABLE=TRUE
+          cd src/bonsai && make dist \
+            PLATFORM=${{ matrix.config.short_name }} \
+            PYVERSION=${{ matrix.pyver }} \
+            IS_STABLE=TRUE \
+            SEMVER_SUFFIX="$SEMVER_SUFFIX"
       - name: Find zip file name
         id: find_zip
         run: |
