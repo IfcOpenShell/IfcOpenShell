@@ -16,44 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-SHELL := sh
-PYTHON:=python3
-PIP:=pip3
-PATCH:=patch
-SED:=sed -i
-VENV_ACTIVATE:=bin/activate
+include ../vars.mk
 
-ifeq ($(OS),Windows_NT)
-HOSTOS:=win
-PYTHON:=python
-VENV_ACTIVATE:=Scripts/activate
-else
-UNAME_S:=$(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-HOSTOS:=linux
-endif
-ifeq ($(UNAME_S),Darwin)
-HOSTOS:=macos
-PYTHON:=python3
-PATCH:=patch -d
-SED:=sed -i '' -e
-endif
-endif
-
-IS_STABLE:=FALSE
-VERSION:=$(shell cat ../../VERSION)
-VERSION_BASE:=$(shell sed -E 's/[[:alpha:]]+[0-9]+$$//' ../../VERSION)
-VERSION_PYTHON:=$(shell sed 's/alpha/a/' ../../VERSION)
-VERSION_SEMVER:=$(shell sed -E 's/([[:alpha:]]+)([0-9]+)$$/-\\1\\2/' ../../VERSION)
-VERSION_DATE:=$(shell date '+%y%m%d')
-VERSION_DAILY:=$(VERSION_BASE)a$(VERSION_DATE)
-VERSION_SEMVER_DAILY:=$(VERSION_BASE)-alpha$(VERSION_DATE)
 LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
 LAST_COMMIT_DATE:=$(shell git show -s --format=%cI)
 LAST_GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD)
 PYPI_IMP:=cp
 
 SUPPORTED_PYVERSIONS := py311 py313
+# Blender extensions platform allows just one build per platform per version,
+# so we add suffix for different Python versions builds.
+SEMVER_SUFFIX:=
 
 ifdef PYVERSION
 ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
@@ -251,7 +224,7 @@ endif
 
 	cp pyproject.toml build/
 ifeq ($(IS_STABLE), TRUE)
-	$(SED) "s/0.0.0/$(VERSION_SEMVER)/" build/bonsai/blender_manifest.toml
+	$(SED) "s/0.0.0/$(VERSION_SEMVER)$(SEMVER_SUFFIX)/" build/bonsai/blender_manifest.toml
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/pyproject.toml
 else
 	$(SED) "s/0.0.0/$(VERSION_SEMVER_DAILY)/" build/bonsai/blender_manifest.toml
@@ -265,15 +238,13 @@ endif
 ifeq ($(PYVERSION), py313)
 	$(SED) 's/blender_version_min = "4\.2\.0"/blender_version_min = "5.1.0"/' build/bonsai/blender_manifest.toml
 endif
+ifeq ($(PYVERSION), py311)
+	$(SED) 's/^# blender_version_max = /blender_version_max = /' build/bonsai/blender_manifest.toml
+endif
 
 	$(SED) "s/os-arch/$(BLENDER_PLATFORM)/" build/bonsai/blender_manifest.toml
 
 	# Provides bonsai Add-on functionality
-ifeq ($(IS_STABLE), TRUE)
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/pyproject.toml
-else
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/pyproject.toml
-endif
 	cd build && if command -v uv >/dev/null 2>&1; then \
 		uv build --wheel; \
 	else \
@@ -310,7 +281,7 @@ endif
 	rm -rf build/bonsai/libs/
 
 ifeq ($(IS_STABLE), TRUE)
-	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION_SEMVER)-$(BLENDER_PLATFORM).zip ./bonsai
+	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION_SEMVER)$(SEMVER_SUFFIX)-$(BLENDER_PLATFORM).zip ./bonsai
 else
 	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION_SEMVER_DAILY)-$(BLENDER_PLATFORM).zip ./bonsai
 endif

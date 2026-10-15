@@ -27,6 +27,9 @@ tags = [
     "UV"
 ]
 blender_version_min = "4.2.0"
+# Blender version that extension does not support.
+# Needed as a guard for Python 3.11 extensions - Blender 5.1 has Python 3.13.
+# blender_version_max = "5.1.0"
 license = ["SPDX:GPL-3.0-or-later"]
 platforms = ["os-arch"]
 permissions.network = "Augin / Cove.Tool integration for VR and environmental analysis"
