@@ -27,6 +27,11 @@ To begin using the structural analysis features in Bonsai:
 2. Access the Structural Analysis panel in the Bonsai interface
 3. Define load cases and boundary conditions
 
+.. toctree::
+   :maxdepth: 1
+
+   calculation_reports
+
 .. seealso::
    - :doc:`/guides/authoring/index`
    - :doc:`/guides/authoring/advanced_modeling/index`
