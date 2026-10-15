@@ -21,7 +21,6 @@
 #                                                                             #
 ###############################################################################
 #
-import datetime
 import os
 import re
 import shutil
@@ -929,14 +928,6 @@ def install_qt6(
             sys.exit(1)
 
 
-def python_consider_rc(python_version: str) -> str:
-    # TODO: remove after Python 3.15 release.
-    # Python 3.15.0 final was postponed to ~2026-10-09, before that only rc builds are available.
-    if python_version == "3.15.0" and datetime.date.today() < datetime.date(2026, 11, 1):
-        python_version += "-rc3"
-    return python_version
-
-
 def install_python(
     vs_cfg_vars: VsCfgResult,
     ifcos_install_python: bool,
@@ -957,8 +948,6 @@ def install_python(
     if not ifcos_install_python:
         logger.info("IFCOS_INSTALL_PYTHON not 'TRUE', skipping installation of Python.")
         return None
-
-    python_version = python_consider_rc(python_version)
 
     if not vs_cfg_vars.is_vs_platform("ARM64") and not vs_cfg_vars.is_vs_platform("x64"):
         # nuget doesn't support providing architecture for packages.

@@ -206,6 +206,13 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
                 file.remove(inverse)
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
+        elif inverse.is_a("IfcRelConnectsStructuralActivity"):
+            # Connecting nothing once the item or the activity is gone. The activity stays, for another item it
+            # acts on, or for its load group, if the item is removed.
+            history = inverse.OwnerHistory
+            file.remove(inverse)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelFlowControlElements"):
             if inverse.RelatingFlowElement == product:
                 history = inverse.OwnerHistory
