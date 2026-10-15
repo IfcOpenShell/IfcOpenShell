@@ -366,6 +366,8 @@ class Geometry(bonsai.core.tool.Geometry):
                 bpy.data.curves.remove(data)
             except TypeError:
                 bpy.data.cameras.remove(data)
+        except ReferenceError:
+            pass  # Already removed elsewhere.
 
     @classmethod
     def is_locked(cls, element: ifcopenshell.entity_instance) -> bool:

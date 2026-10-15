@@ -24,6 +24,7 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.api.type
 import numpy as np
+import pytest
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -82,6 +83,13 @@ class TestDeleteData(NewFile):
         data = bpy.data.meshes.new("Mesh")
         subject.delete_data(data)
         assert not bpy.data.meshes.get("Mesh")
+
+    @pytest.mark.parametrize("collection,args", [("meshes", ()), ("curves", ("CURVE",))])
+    def test_ignoring_data_that_is_already_removed(self, collection, args):
+        blocks = getattr(bpy.data, collection)
+        data = blocks.new("Data", *args)
+        blocks.remove(data)
+        subject.delete_data(data)
 
 
 class TestDoesRepresentationIdExist(NewFile):
