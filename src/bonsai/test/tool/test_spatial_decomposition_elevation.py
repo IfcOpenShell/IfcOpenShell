@@ -44,3 +44,33 @@ class TestImportSpatialDecomposition(NewIfc):
         container = next(c for c in tool.Spatial.get_spatial_props().containers if c.ifc_definition_id == storey.id())
         assert container.elevation == tool.Unit.format_distance(3.0)
         assert props.is_dirty
+
+    def test_unparseable_elevation_leaves_the_placement_untouched(self):
+        storey, obj = self.create_raised_storey()
+        tool.Geometry.run_edit_object_placement(obj)
+        subject.import_spatial_decomposition()
+        container = next(c for c in tool.Spatial.get_spatial_props().containers if c.ifc_definition_id == storey.id())
+        container.elevation = "not a distance"
+        assert obj.matrix_world.translation.z == pytest.approx(3.0)
+        assert ifcopenshell.util.placement.get_storey_elevation(storey) == pytest.approx(3.0)
+        assert container.elevation == tool.Unit.format_distance(3.0)
+
+    def test_unparseable_elevation_restores_storey_elevation_attribute(self):
+        storey, obj = self.create_raised_storey()
+        tool.Geometry.record_object_position(obj)
+        storey.ObjectPlacement = None
+        storey.Elevation = 5.0
+        subject.import_spatial_decomposition()
+        container = next(c for c in tool.Spatial.get_spatial_props().containers if c.ifc_definition_id == storey.id())
+        assert container.elevation == tool.Unit.format_distance(5.0)
+        container.elevation = "not a distance"
+        assert container.elevation == tool.Unit.format_distance(5.0)
+
+    def test_rebuild_does_not_write_placements_to_ifc(self):
+        storey, obj = self.create_raised_storey()
+        tool.Geometry.run_edit_object_placement(obj)
+        subject.import_spatial_decomposition()
+        ifc = tool.Ifc.get()
+        placements = [e.id() for e in ifc.by_type("IfcLocalPlacement")]
+        subject.import_spatial_decomposition()
+        assert [e.id() for e in ifc.by_type("IfcLocalPlacement")] == placements

@@ -20,6 +20,8 @@ from typing import TYPE_CHECKING, Literal, Union
 
 import bpy
 import ifcopenshell.api.attribute
+import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
@@ -78,7 +80,14 @@ def update_elevation(self: "BIMContainer", context: bpy.types.Context) -> None:
             elevation = float(self.elevation)
         except Exception as e:
             print(f"Elevation parsing failed for '{self.elevation}': {e}")
-            elevation = 0
+            # Restore the field to the elevation stored in IFC and leave the placement untouched. See #8545.
+            if ifc_definition_id := self.ifc_definition_id:
+                entity = tool.Ifc.get().by_id(ifc_definition_id)
+                if hasattr(entity, "ObjectPlacement"):
+                    elevation = ifcopenshell.util.placement.get_storey_elevation(entity)
+                    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                    self["elevation"] = tool.Unit.format_distance(elevation * unit_scale)
+            return
 
     # Update the object's position in the 3D scene
     if ifc_definition_id := self.ifc_definition_id:
