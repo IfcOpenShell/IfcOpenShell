@@ -52,12 +52,18 @@ def extract_preserving_symlinks(zip_path: Path, dest: Path) -> None:
                     target.chmod(permissions)
 
 
+def is_win_arm64() -> bool:
+    return sys.platform == "win32" and platform.machine() == "ARM64"
+
+
 def find_oldest_zip(output_dir: Path) -> tuple[Path, str]:
     """Return the zip with the lowest Python version and that version (e.g. "3.13")."""
+    # uv has no Windows ARM64 Python downloads before 3.11.
+    min_version = (3, 11) if is_win_arm64() else (0, 0)
     zips: defaultdict[tuple[int, int], list[Path]] = defaultdict(list)
     for path in output_dir.iterdir():
-        if match := ZIP_PATTERN.fullmatch(path.name):
-            zips[(int(match[1]), int(match[2]))].append(path)
+        if (match := ZIP_PATTERN.fullmatch(path.name)) and (version := (int(match[1]), int(match[2]))) >= min_version:
+            zips[version].append(path)
     if not zips:
         sys.exit(f"No ifcopenshell-python zips found in {str(output_dir)!r}")
     version = min(zips)
@@ -69,7 +75,7 @@ def find_oldest_zip(output_dir: Path) -> tuple[Path, str]:
 def run_python_tests(output_dir: Path, pytest_args: list[str]) -> int:
     zip_path, python_version = find_oldest_zip(output_dir)
     python_request = python_version
-    if sys.platform == "win32" and platform.machine() == "ARM64":
+    if is_win_arm64():
         # On Windows ARM64 uv defaults to x86_64 Python, which can't load an ARM64 .pyd.
         # See https://github.com/astral-sh/uv/issues/12906
         python_request = f"{python_version}-aarch64"
