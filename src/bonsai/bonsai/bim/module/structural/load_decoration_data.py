@@ -619,6 +619,8 @@ class ShaderInfo:
 
         # All forces share one scale so that their lengths compare, as in a graphical solution.
         longest = max(np.linalg.norm(resultant), *(np.linalg.norm(force) for force in forces))
+        # Forces in equilibrium leave only rounding noise, whose direction means nothing, so no resultant is drawn.
+        in_equilibrium = np.linalg.norm(resultant) <= 1e-9 * longest
         if props.force_scale:
             scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get()) / props.force_scale
         else:
@@ -689,15 +691,15 @@ class ShaderInfo:
                 self.add_dashed_line(location, location - vector * scale * 0.4, size, color)
             if arriving:
                 side = None
-                self.add_force_arrow(
+                picked = self.add_force_arrow(
                     flip(tip), flip(tail), color, label, size, activity=activity, force_of=force_of, label_at_tail=True
                 )
             elif centre is None:
-                self.add_force_arrow(tail, tip, color, label, size, activity=activity, force_of=force_of)
+                picked = self.add_force_arrow(tail, tip, color, label, size, activity=activity, force_of=force_of)
             else:
                 side = self.get_label_side(vector, (tail + tip) / 2 - centre)
                 onward = vector / np.linalg.norm(vector) + side  # Past the tip, leaning outside the polygon.
-                self.add_force_arrow(
+                picked = self.add_force_arrow(
                     tail,
                     tip,
                     color,
@@ -713,14 +715,15 @@ class ShaderInfo:
                 tilted = props.reference_frame == "LOCAL_COORDS" and not np.allclose(rotation, np.eye(3))
                 self.text_info[-1]["component"] = "xyz"[k] + ("′" if tilted else "")
             if props.show_force_angles and has_angle:
-                self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes, activity)
+                self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes, activity, pickable=picked)
             if props.show_force_slopes and has_angle:
                 arrow = (flip(tip), flip(tail)) if arriving else (tail, tip)
-                self.add_force_slope(*arrow, size, color, activity, avoid=None if centre is None else side)
+                avoid = None if centre is None else side
+                self.add_force_slope(*arrow, size, color, activity, avoid=avoid, pickable=picked)
             start = tip
             running = running + vector
 
-        if show_resultant:
+        if show_resultant and not in_equilibrium:
             label = f"{'R = ' if len(forces) > 1 else ''}{np.linalg.norm(resultant):.{props.force_decimals}f} {self.force_unit}"
             label += self.get_unknown_marks(single)[0]  # A single force is drawn as this resultant.
             if abs(resultant[1]) < 1e-9 and not props.show_force_angles:
@@ -731,7 +734,7 @@ class ShaderInfo:
             tip = location + resultant * scale
             outside = np.array((0, 0, 1.0)) if centre is None else (location + tip) / 2 - centre
             side = self.get_label_side(resultant, outside)
-            self.add_force_arrow(
+            picked = self.add_force_arrow(
                 flip(tip) if arriving else location,
                 location if arriving else tip,
                 (1, 1, 1, 2),
@@ -756,15 +759,19 @@ class ShaderInfo:
                     reference_axes,
                     single or None,
                     measured_from=None if local else self.get_resultant_eighth(activities),
+                    pickable=picked,
                 )
             if props.show_force_slopes:
                 arrow = (flip(tip), location) if arriving else (location, tip)
-                self.add_force_slope(*arrow, size, (1, 1, 1, 1), avoid=side)
+                self.add_force_slope(*arrow, size, (1, 1, 1, 1), avoid=side, pickable=picked)
+        if show_resultant and in_equilibrium and len(forces) > 1:
+            self.add_equilibrium_marker(location, size, activities)
         self.add_reference_axes(reference_axes, size)
-        self.add_global_axes(location, size, first)
+        point = self.get_activities_item(activities)
+        self.add_global_axes(location, size, first, point.id() if point else 0, activities)
         if not np.allclose(rotation, np.eye(3)):
             drawn = [vector * scale for vector, *_ in vectors] + ([resultant * scale] if show_resultant else [])
-            self.add_point_axes(location, rotation, size, slope, drawn)
+            self.add_point_axes(location, rotation, size, slope, drawn, point.id() if point else 0)
         self.add_symbols(self.text_info[first_text:], numbers)
 
     def draw_resolved_point_forces(
@@ -819,6 +826,23 @@ class ShaderInfo:
         for entry in self.info[start[0] :] + self.text_info[start[1] :]:
             entry["object"] = object_name
 
+    def add_equilibrium_marker(self, location: np.ndarray, size: float, activities: list[int]) -> None:
+        """Label forces in equilibrium at a point R = 0, in place of the resultant, a label that can be clicked to
+        edit the resultant as its value would be"""
+        self.pickables.append(
+            {
+                "tail": location,
+                "tip": location,
+                "activity": 0,
+                "info": None,
+                "activities": activities,
+                "label_only": True,
+            }
+        )
+        away = np.array((1.0, 0, 0.4)) / np.linalg.norm((1.0, 0, 0.4))
+        text = {"position": location, "text": f"R = 0 {self.force_unit}", "color": (1, 1, 1, 1), "away": away}
+        self.text_info.append(text | {"pickable": len(self.pickables) - 1, "part": "magnitude"})
+
     def add_symbols(self, texts: list[dict], numbers: dict[int, int]) -> None:
         """Name each force's and component's label by its symbol in the calculations, as F_{1}: a force by its
         number, a single force's components as its own, F_{x1}, several forces' as their resultant's, R_{x}, and
@@ -833,13 +857,23 @@ class ShaderInfo:
             elif axis and numbers:
                 text["symbol"] = f"R_{{{axis}}}"
 
-    def add_global_axes(self, location: np.ndarray, size: float, first: int = 0) -> None:
+    def add_global_axes(
+        self,
+        location: np.ndarray,
+        size: float,
+        first: int = 0,
+        item: int = 0,
+        activities: Union[list[int], None] = None,
+    ) -> None:
         """Mark the global X and Z axes through a point, faint and dashed, named at their positive ends, so that a
         diagram reads on its own, as a report's does. Y runs into the view.
 
         :param first: Where the point's drawing starts in the drawing data: each way, an axis reaches just past
             what is drawn there, or a short way if nothing is.
+        :param item: The point's id, to make the axes' names a pickable that adds a load there, beside the
+            applied loads given, as Add Load does.
         """
+        first_axis, first_text = len(self.info), len(self.text_info)
         ends = [
             np.array(p) - location
             for entry in self.info[first:]
@@ -854,6 +888,19 @@ class ShaderInfo:
             high = max([0.0] + [p[k] for p in ends]) + past
             self.add_dashed_line(location + axis * low, location + axis * high, size, color)
             self.text_info.append({"position": location + axis * high, "text": name, "color": color, "away": axis})
+        if item and activities:
+            self.pickables.append(
+                {
+                    "tail": location,
+                    "tip": location,
+                    "activity": 0,
+                    "info": first_axis,
+                    "add_load_to": item,
+                    "with_activities": activities,
+                    "label_only": True,
+                }
+            )
+            self.join_pickable(len(self.pickables) - 1, first_axis, self.text_info[first_text:], "add")
 
     def add_point_axes(
         self,
@@ -862,12 +909,35 @@ class ShaderInfo:
         size: float,
         slope: Union[tuple[float, float], None] = None,
         drawn: Union[list[np.ndarray], None] = None,
+        item: int = 0,
     ) -> None:
+        """Mark a point's own axes, and, given the point's id, make them a pickable that edits them: clicked, a
+        value, the tilt or a slope's rise or run, is ready to type over, as forces' values are"""
+        first = len(self.info)
+        parts = self.draw_point_axes(location, rotation, size, slope, drawn)
+        if item:
+            self.pickables.append(
+                {"tail": location, "tip": location, "activity": 0, "info": first, "axes_of": item, "label_only": True}
+            )
+            ends = parts[1:] + [("", len(self.info), len(self.text_info))]
+            for (part, info, text), (_, next_info, next_text) in zip(parts, ends):
+                self.join_pickable(len(self.pickables) - 1, info, self.text_info[text:next_text], part, next_info)
+
+    def draw_point_axes(
+        self,
+        location: np.ndarray,
+        rotation: np.ndarray,
+        size: float,
+        slope: Union[tuple[float, float], None] = None,
+        drawn: Union[list[np.ndarray], None] = None,
+    ) -> list[tuple[str, int, int]]:
         """Mark a point's own axes, x' and z' coloured as their components, and their tilt if in X-Z.
 
         :param slope: The rise and run the axes were set by, shown as a triangle under x' beside the angle.
         :param drawn: The arrows drawn from the point, as drawn, to keep the triangle clear of.
+        :return: Where each part starts in the drawing data and labels: the axes, the slope and the angle.
         """
+        parts = [("axes", len(self.info), len(self.text_info))]
         x_axis = rotation[:, 0]
         # The triangle goes on the side of the point that arrows along x' reach least into.
         reach = lambda side: max(
@@ -882,12 +952,13 @@ class ShaderInfo:
                 {"position": location + axis * size * 0.85, "text": name, "color": color, "away": axis}
             )
         if abs(x_axis[1]) > 1e-6:
-            return  # Turned out of the X-Z plane, so one tilt does not describe it.
+            return parts  # Turned out of the X-Z plane, so one tilt does not describe it.
         tilt = np.degrees(np.arctan2(x_axis[2], x_axis[0]))
         if abs(tilt) < 0.01:
-            return
+            return parts
         color = (1, 0.35, 0.35, 1)
         if slope and abs(x_axis[0]) > 1e-6 and abs(x_axis[2]) > 1e-6:
+            parts.append(("slope", len(self.info), len(self.text_info)))
             # The incline as given: its hypotenuse along x', its legs level and plumb, the corner beneath.
             a, b = location + side * x_axis * size * 0.35, location + side * x_axis * size * 0.7
             low, high = (a, b) if a[2] < b[2] else (b, a)
@@ -900,9 +971,11 @@ class ShaderInfo:
                 middle = (p + q) / 2
                 away = (middle - centroid) / np.linalg.norm(middle - centroid)
                 text = f"{abs(slope[1] if level else slope[0]):g}"
-                self.text_info.append({"position": middle, "text": text, "color": color, "away": away})
+                leg = "run" if level else "rise"
+                self.text_info.append({"position": middle, "text": text, "color": color, "away": away, "focus": leg})
         # The tilt from +X, as an arc like the force angles, with +X marked where it starts. On the side kept
         # clear of arrows, from -X to -x', which makes the same angle with the horizontal.
+        parts.append(("angle", len(self.info), len(self.text_info)))
         radius = size * 0.12
         start = 180.0 if side < 0 and abs(tilt) <= 90 else 0.0
         level = np.array((np.cos(np.radians(start)), 0, 0))
@@ -917,8 +990,15 @@ class ShaderInfo:
         middle = np.radians(start + tilt / 2)
         outward = np.array((np.cos(middle), 0, np.sin(middle)))
         self.text_info.append(
-            {"position": location + radius * outward, "text": f"{abs(tilt):.1f}°", "color": color, "away": outward}
+            {
+                "position": location + radius * outward,
+                "text": f"{abs(tilt):.1f}°",
+                "color": color,
+                "away": outward,
+                "focus": "angle",
+            }
         )
+        return parts
 
     def get_unknown_marks(self, activity: Union[int, None]) -> tuple[str, str]:
         """Marks for an applied load's magnitude and direction labels, if they are unknown: to be found"""
@@ -940,13 +1020,16 @@ class ShaderInfo:
         reference_axes: dict[tuple, tuple],
         activity: Union[int, None] = None,
         measured_from: Union[str, None] = None,
+        pickable: Union[int, None] = None,
     ) -> None:
         """Mark a force's angle from a reference axis, as an arc in the X-Z plane.
 
         :param measured_from: An eighth chosen to measure it from, as a resultant's can be.
+        :param pickable: The force's pickable, which its arc and label join, to be clicked and highlighted with it.
         """
         if abs(vector[1]) > 1e-9 * np.linalg.norm(vector):
             return  # Not in the X-Z plane, so one angle does not describe it.
+        first = len(self.info)
         props = tool.Structural.get_structural_props()
         start, end, eighth = self.get_angle_reference(vector, props.angle_reference, activity, measured_from)
         if abs(end - start) < 0.01:
@@ -977,8 +1060,17 @@ class ShaderInfo:
                 + self.get_unknown_marks(activity)[1],
                 "color": color,
                 "away": away / np.linalg.norm(away),
+                "focus": "angle",
             }
         )
+        self.join_pickable(pickable, first, self.text_info[-1:], "angle")
+
+    def get_activities_item(self, activities: list[int]) -> Union[ifcopenshell.entity_instance, None]:
+        """The structural item applied loads act on, by the first's id"""
+        if not activities or not activities[0]:
+            return None
+        connects = tool.Ifc.get().by_id(activities[0]).AssignedToStructuralItem
+        return connects[0].RelatingElement if connects else None
 
     def get_resultant_eighth(self, activities: list[int]) -> Union[str, None]:
         """The eighth chosen for the angle of the resultant of applied loads, as Edit Resultant previews or keeps it"""
@@ -1012,17 +1104,44 @@ class ShaderInfo:
             start = 90.0 * (int(eighth[1]) // 2)
             end = start + (chosen if int(eighth[1]) % 2 else -chosen)
         elif reference == "EIGHTH":
-            # From the axis of the eighth Edit Load enters it in, which its generated name records.
+            # From the axis of the eighth Edit Load enters it in, which its generated name records: one of the
+            # point's own axes if the eighth is primed, as the force was entered against them.
             load = tool.Ifc.get().by_id(activity).AppliedLoad if activity else None
-            named = re.search(r" (Q[1-8])$", (load.Name or "") if load else "")
-            eighth, angle, _, _ = tool.Structural.get_eighth(vector[0], vector[2], named[1] if named else None)
-            start = 90.0 * (int(eighth[1]) // 2)
+            named = re.search(r" (Q[1-8])′?$", (load.Name or "") if load else "")
+            tilt = self.get_entry_tilt(activity)
+            x, z = tool.Structural.to_axes(vector[0], vector[2], tilt) if tilt else (vector[0], vector[2])
+            eighth, angle, _, _ = tool.Structural.get_eighth(x, z, named[1] if named else None)
+            start = tilt + 90.0 * (int(eighth[1]) // 2)
             end = start + (angle if int(eighth[1]) % 2 else -angle)
+            eighth += "′" if tilt else ""
         elif reference == "HORIZONTAL" and vector[0] < -1e-9 * np.linalg.norm(vector):
             # Measured from -X, so that the angle is the acute one statics texts draw.
             start = 180.0
             end = end if end > 0 else end + 360
         return start, end, eighth
+
+    def join_pickable(
+        self, pickable: Union[int, None], first: int, texts: list[dict], part: str, end: Union[int, None] = None
+    ) -> None:
+        """Make the lines drawn from first, to end or so far, and labels, a part of a force's pickable, as its angle
+        is: clicked, they edit the force, and hovered, the part is highlighted on its own"""
+        if pickable is None:
+            return
+        parts = self.pickables[pickable].setdefault("parts", {})
+        parts.setdefault(part, []).extend(range(first, len(self.info) if end is None else end))
+        for text in texts:
+            text["pickable"], text["part"] = pickable, part
+
+    def get_entry_tilt(self, activity: Union[int, None]) -> float:
+        """The tilt of the point's own axes an applied load was entered against, as a primed eighth in its
+        generated name records, or 0 if it was entered against X and Z, or the frame shown is not global"""
+        if not activity or tool.Structural.get_structural_props().reference_frame == "LOCAL_COORDS":
+            return 0.0
+        element = tool.Ifc.get().by_id(activity)
+        if not element.AppliedLoad or not re.search(r" Q[1-8]′$", element.AppliedLoad.Name or ""):
+            return 0.0
+        connects = element.AssignedToStructuralItem
+        return (tool.Structural.get_axes_tilt(connects[0].RelatingElement) if connects else None) or 0.0
 
     def add_force_slope(
         self,
@@ -1032,11 +1151,14 @@ class ShaderInfo:
         color: tuple,
         activity: Union[int, None] = None,
         avoid: Union[np.ndarray, None] = None,
+        pickable: Union[int, None] = None,
     ) -> None:
         """Mark a force's slope as a triangle beside it, its legs along and across the axis its angle is from.
 
         :param avoid: The side of the force its label is on, to keep the triangle off it.
+        :param pickable: The force's pickable, which its triangle and labels join, as its angle's do.
         """
+        first, first_text = len(self.info), len(self.text_info)
         vector = tip - tail
         length = np.linalg.norm(vector)
         if not length or abs(vector[1]) > 1e-9 * length:
@@ -1050,7 +1172,11 @@ class ShaderInfo:
         if along < 1e-6 or across < 1e-6:
             return  # Along or square to the axis, so there is no slope to show.
         direction = vector / length
-        level, plumb = abs(direction[0]), abs(direction[2])
+        # The run lies along X and the rise along Z, or along x' and z' for a force entered against the point's
+        # own axes, as its angle is measured from them.
+        tilt = np.radians(self.get_entry_tilt(activity) if reference == "EIGHTH" else 0.0)
+        run_axis, rise_axis = np.array((np.cos(tilt), 0, np.sin(tilt))), np.array((-np.sin(tilt), 0, np.cos(tilt)))
+        level, plumb = abs(float(direction @ run_axis)), abs(float(direction @ rise_axis))
         # Rise over run, as a roof pitch is given: whole numbers when small ones fit, else the rise to a run of 1.
         rise, run = tool.Structural.get_simple_slope(level, plumb)
         if float(rise).is_integer() and float(run).is_integer():
@@ -1058,7 +1184,7 @@ class ShaderInfo:
         else:
             rise_text, run_text = f"{plumb / level:.3g}", "1"
         axis = np.array((np.cos(np.radians(start)), 0, np.sin(np.radians(start))))
-        # The run, the level leg, is the same length on every triangle, so that they compare, the rise showing the
+        # The run is the same length on every triangle, so that they compare, the rise showing the
         # slope; a steep force keeps its rise to 2.5 runs, shortening its run instead. The hypotenuse lies along
         # the force, out towards its tip, beyond the angle arcs at its tail and short of its head, and the legs meet
         # off to one side; on a short force it moves back to fit, and only a force too short to hold it shrinks it.
@@ -1106,13 +1232,20 @@ class ShaderInfo:
             self.add_dashed_line(start_point, end_point, size, color, dashed=False)
         centroid = (a + b + corner) / 3
         for p, q in ((a, corner), (corner, b)):
-            # The level leg is the run, and the plumb one the rise.
-            text = run_text if abs(q[2] - p[2]) < abs(q[0] - p[0]) else rise_text
+            # The leg along the run's axis is the run, and the other the rise.
+            leg = "run" if abs(float((q - p) @ run_axis)) > abs(float((q - p) @ rise_axis)) else "rise"
             middle = (p + q) / 2
             away = middle - centroid
             self.text_info.append(
-                {"position": middle, "text": text, "color": color, "away": away / np.linalg.norm(away)}
+                {
+                    "position": middle,
+                    "text": run_text if leg == "run" else rise_text,
+                    "color": color,
+                    "away": away / np.linalg.norm(away),
+                    "focus": leg,
+                }
             )
+        self.join_pickable(pickable, first, self.text_info[first_text:], "slope")
 
     def get_point_segments(self, tail: np.ndarray, tip: np.ndarray) -> list[tuple[tuple, tuple]]:
         """The arrows and solid lines drawn at the point so far, in the X-Z plane, but a force's own arrow, from
@@ -1175,7 +1308,7 @@ class ShaderInfo:
         resultant_of: Union[list[int], None] = None,
         force_of: int = 0,
         label_at_tail: bool = False,
-    ) -> None:
+    ) -> Union[int, None]:
         """Add an arrow from tail to tip, its head and shaft sized to size, the longest arrow drawn with it.
 
         :param force_of: The activity whose whole force the arrow is, not a component, to name it in a report.
@@ -1209,18 +1342,24 @@ class ShaderInfo:
                 "color": color,
             }
         )
+        picked = None
         if activity or resultant_of:
             pickable = {"tail": tail, "tip": tip, "activity": activity, "info": len(self.info) - 1}
             if resultant_of:
                 pickable["activities"] = resultant_of
             self.pickables.append(pickable)
+            picked = len(self.pickables) - 1
         # Labelled beside the tip, as arrows often share their tail.
         away = (-direction if label_at_tail else direction) if label_away is None else label_away
         position = tail if label_at_tail else tip
         text = {"position": position, "text": label, "color": color, "away": away}
+        if picked is not None:
+            text["pickable"] = picked  # Its value can be clicked as the arrow can, to type over its magnitude.
+            text["focus"], text["part"] = "magnitude", "magnitude"
         if force_of:
             text["force_of"] = force_of
         self.text_info.append(text)
+        return picked
 
     def add_dashed_line(
         self, start: np.ndarray, end: np.ndarray, size: float, color: tuple, dashed: bool = True

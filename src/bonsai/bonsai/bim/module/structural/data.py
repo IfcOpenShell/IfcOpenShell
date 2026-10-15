@@ -249,20 +249,27 @@ class StructuralItemLoadsData:
                     },
                 )
                 load = activity.AppliedLoad
+                is_force = bool(
+                    load and load.is_a("IfcStructuralLoadSingleForce") and activity.GlobalOrLocal != "LOCAL_COORDS"
+                )
                 entry["loads"].append(
                     {
                         "activity": activity.id(),
                         "order": tool.Structural.get_draw_order_key(activity),
                         "name": (load.Name if load else None) or "Unnamed",
                         "group": (subgroup.Name or "Unnamed") if subgroup else None,
+                        "is_force": is_force,
                     }
                 )
-                if load and load.is_a("IfcStructuralLoadSingleForce") and activity.GlobalOrLocal != "LOCAL_COORDS":
+                if is_force:
                     entry["forces"].append(tuple(getattr(load, a) or 0.0 for a in ("ForceX", "ForceY", "ForceZ")))
         for entry in cases.values():
             entry["resultant"] = cls.get_resultant_label(entry.pop("forces"))
             # As they are drawn tip to tail.
             entry["loads"].sort(key=lambda load: load.pop("order"))
+            # The forces Edit Resultant adds up, as their resultant's arrow passes them, tip to tail.
+            forces = [str(load["activity"]) for load in entry["loads"] if load.pop("is_force")]
+            entry["resultant_of"] = ",".join(forces) if len(forces) > 1 else ""
         return sorted(cases.values(), key=lambda entry: entry["name"])
 
     @classmethod

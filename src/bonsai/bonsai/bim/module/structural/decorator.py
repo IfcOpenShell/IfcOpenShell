@@ -89,7 +89,13 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
     shader_info = []
     depth_array = None
     pickables = []
+    # Where clickable values were last drawn, as boxes with the pickable each stands for, by viewport region.
+    label_boxes: dict[int, list[tuple[float, float, float, float, int, str, str]]] = {}
     hovered: Union[dict, None] = None
+    hovered_focus = ""  # The value the label hovered stands for, to start editing it, or "" for an arrow.
+    # The part of what is hovered, highlighted on its own: its arrow, or its magnitude, angle, slope or axes.
+    hovered_part = "arrow"
+    picked_part = "arrow"  # As pick last found, before it is taken as hovered.
     is_picking = False  # Whether bim.pick_structural_loads is running.
 
     @classmethod
@@ -114,6 +120,7 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
             bpy.app.handlers.depsgraph_update_post.remove(update_loads_after_moves)
         super().uninstall()
         cls.pickables = []
+        cls.label_boxes = {}
         cls.hovered = None
         cls.redraw_properties()
 
@@ -131,6 +138,7 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         cls.text_info = cls.decoration_data.text_info
         cls.shader_info = cls.decoration_data.info
         cls.pickables = cls.decoration_data.pickables
+        cls.label_boxes = {}  # Until the labels are drawn again.
         cls.hovered = None
 
     @classmethod
@@ -143,18 +151,24 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
 
     @classmethod
     def pick(cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, x: float, y: float) -> Union[dict, None]:
-        """Get the pickable arrow nearest the region coordinates x and y, if one is within a few pixels"""
+        """Get the pickable arrow nearest the region coordinates x and y, if one is within a few pixels, or the one
+        whose value is under them, which comes first"""
+        cls.hovered_focus, cls.picked_part = "", "arrow"
+        for left, low, width, height, index, focus, part in cls.label_boxes.get(region.as_pointer(), []):
+            if left - 3 <= x <= left + width + 3 and low - 3 <= y <= low + height + 3 and index < len(cls.pickables):
+                cls.hovered_focus, cls.picked_part = focus, part
+                return cls.pickables[index]
         mouse = Vector((x, y))
         best, best_distance = None, 10.0
         for pickable in cls.pickables:
-            if not cls.is_visible(cls.shader_info[pickable["info"]]):
+            if pickable.get("label_only") or not cls.is_visible(cls.shader_info[pickable["info"]]):
                 continue
             tail = location_3d_to_region_2d(region, rv3d, Vector(pickable["tail"]))
             tip = location_3d_to_region_2d(region, rv3d, Vector(pickable["tip"]))
             if tail is None or tip is None or not (tip - tail).length:
                 continue
             along = max(0.0, min(1.0, (mouse - tail).dot(tip - tail) / (tip - tail).length_squared))
-            if along * (tip - tail).length < 15:
+            if along * (tip - tail).length < 15 and not pickable.get("anywhere"):
                 continue  # Leave the tail, where the loaded point is, free for selecting it.
             distance = (tail + (tip - tail) * along - mouse).length
             if distance < best_distance:
@@ -185,7 +199,12 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
     def draw_batch(self) -> None:
         """draw the 3D representation of loads"""
         if not self.decoration_data.is_empty:
-            hovered = self.hovered["info"] if self.hovered else -1
+            # What is hovered: a force's arrow, with its angle's arc and slope triangle if drawn.
+            hovered = set()
+            if self.hovered and self.hovered_part == "arrow":
+                hovered = {self.hovered["info"]}
+            elif self.hovered:
+                hovered = set(self.hovered.get("parts", {}).get(self.hovered_part, []))
             for i, info in enumerate(self.shader_info):
                 if not self.is_visible(info):
                     continue
@@ -200,7 +219,7 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
                 shader.uniform_float("viewProjectionMatrix", matrix)
 
                 for key, value in info["uniforms"]:
-                    if key == "color" and i == hovered:
+                    if key == "color" and i in hovered:
                         rgb = [min(c, 1.0) for c in value[:3]]
                         # Highlight by contrast: light arrows, such as white resultants, darken; others brighten.
                         if 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2] > 0.85:
@@ -230,6 +249,7 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
 
         placed: list[tuple[float, float, float, float]] = []
         segments = self.get_screen_segments(context)
+        boxes = self.label_boxes[context.region.as_pointer()] = []
         # Each item's diagram size, its longest arrow, so that labels keep to it as in a report's diagram.
         sizes: dict[str, float] = {}
         for entry in self.shader_info:
@@ -241,6 +261,14 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
             text_position = self.location_3d_to_region_2d(info["position"], context)
             if text_position is not None:
                 font_id = 0
+                index = info.get("pickable")
+                # The labels of what is hovered, its arrow or themselves, are highlighted with it, by colour alone.
+                hovered = (
+                    index is not None
+                    and index < len(self.pickables)
+                    and self.pickables[index] is self.hovered
+                    and info.get("part") == self.hovered_part
+                )
                 blf.size(font_id, self.get_label_size(info, sizes.get(info.get("object", "")), context))
                 # Named by its symbol, as in calculations and reports.
                 text = (
@@ -250,10 +278,26 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
                 if (away := info.get("away")) is not None:
                     x, y = self.place_beside(info["position"], away, x, y, text, context, placed, segments)
                 blf.position(font_id, x, y, text_position[2])
+                if index is not None:
+                    boxes.append(
+                        (x, y, *blf.dimensions(font_id, text), index, info.get("focus", ""), info.get("part", ""))
+                    )
                 # Labels take the colour of what they describe, lightened to stay legible on a dark viewport.
-                r, g, b = (min(c, 1.0) + (1 - min(c, 1.0)) * 0.35 for c in info.get("color", (0.85, 0.85, 0.85))[:3])
+                rgb = [min(c, 1.0) for c in info.get("color", (0.85, 0.85, 0.85))[:3]]
+                r, g, b = (c + (1 - c) * 0.35 for c in rgb)
+                if hovered:
+                    # As arrows are highlighted: light ones, as the resultant's, darken; others brighten.
+                    if 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2] > 0.85:
+                        r, g, b = (c * 0.6 for c in rgb)
+                    else:
+                        r, g, b = (c + (1 - c) * 0.75 for c in rgb)
                 blf.color(font_id, r, g, b, 1.0)
                 blf.draw(font_id, text)
+                if hovered and info.get("part") == "add":
+                    # A note for what clicking it does, as +X and +Z add a load at their point.
+                    blf.position(font_id, x + blf.dimensions(font_id, text)[0] + 8, y, text_position[2])
+                    blf.color(font_id, 1.0, 1.0, 1.0, 1.0)
+                    blf.draw(font_id, "Add Load")
 
     def get_label_size(self, info: dict, size: Union[float, None], context: bpy.types.Context) -> float:
         """A label's font size: a share of its diagram's longest arrow on screen, as a report's diagram has, so

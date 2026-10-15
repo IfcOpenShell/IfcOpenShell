@@ -330,6 +330,28 @@ where Bonsai's eighths would measure from the vertical.
 - **Viewport labels sized to their diagram**, a share of its longest arrow on screen as in a
   report's diagram, between 8 and 24 px, so that zooming scales them with the arrows.
 
+## 15. Point axes input and editing by click
+
+- **Point Axes.** Apply Load and Edit Load take a direction against a point's tilted axes, x'
+  and z', as texts give a force along an incline, when the point's axes are tilted in the X-Z
+  plane. Forces are still stored as global components, so solving, reports and Edit Resultant
+  are unchanged (`tool.Structural.to_axes`, `from_axes`). The generated name primes the eighth,
+  `100 lbf at 30 deg Q6′`, which is how Edit Load reopens against the axes, how diagrams measure
+  its angle and slope from them, and how reports describe it; a re-solved load keeps it.
+  Switching the toggle keeps the force, measured the other way. A known X or Z component is not
+  offered against the axes.
+- **Equilibrium.** Forces in equilibrium leave only rounding noise, so no resultant is drawn,
+  but an `R = 0` label, which can be clicked like a resultant's value. The Applied Loads panel
+  has a pencil beside each case's resultant to open Edit Resultant.
+- **Edit by click.** Values, angles, slopes and a point's tilt are clickable as well as arrows,
+  opening their dialog with that value ready to type (`activate_init`); the viewport records
+  where it drew each label to pick it. Hovered, each part highlights on its own, by colour
+  alone, as arrows do. Clicking +X or +Z at a loaded point adds a force there at 45 degrees, the
+  average of those beside it, and opens it in Edit Load, which removes it if cancelled.
+- **A Blender gotcha fixed on the way.** Edit Load's preview looked up the applied load whose
+  locks keep a resultant through an operator method, which update callbacks cannot reach, so
+  unknowns only moved on the dialog's first draw. It now works from the properties.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through

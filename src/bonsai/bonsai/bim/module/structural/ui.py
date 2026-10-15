@@ -339,6 +339,11 @@ class BIM_PT_structural_item_loads(Panel):
             row.label(text=load_case["name"], icon="CON_CLAMPTO")
             if load_case["resultant"]:
                 row.label(text=load_case["resultant"])
+            if load_case["resultant_of"]:
+                # Its arrow can be clicked too, but a resultant of forces in equilibrium has none to click.
+                row.operator("bim.edit_structural_resultant", text="", icon="GREASEPENCIL").activities = load_case[
+                    "resultant_of"
+                ]
             # The order they are drawn tip to tail.
             chain = [load["activity"] for load in load_case["loads"]]
             draw_chain_reverse_button(row, chain, tool.Ifc.get_entity(context.active_object).id(), load_case["id"])
