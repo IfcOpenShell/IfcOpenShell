@@ -1,4 +1,5 @@
 #include "opencascade_kernel.h"
+#include "base_utils.h"
 #include "wire_builder.h"
 
 #include <Geom_Line.hxx>
@@ -210,6 +211,9 @@ namespace {
 			TopoDS_Wire W;
 			B.MakeWire(W);
 			B.Add(W, E);
+			if (e->matrix && !e->matrix->is_identity()) {
+				W = TopoDS::Wire(util::apply_transformation(W, *e->matrix));
+			}
 			return result = W;
 		}
 
