@@ -57,7 +57,7 @@ EIGHTH_ITEMS = [
 ]
 
 
-def draw_pinwheel(layout: bpy.types.UILayout, props: bpy.types.Operator) -> None:
+def draw_pinwheel(layout: bpy.types.UILayout, props: bpy.types.Operator, prop: str = "direction") -> None:
     """A pinwheel of the eight directions, counter-clockwise from Q1 just above +X"""
     pinwheel = layout.column(align=True)
     for cells in (
@@ -69,7 +69,7 @@ def draw_pinwheel(layout: bpy.types.UILayout, props: bpy.types.Operator) -> None
         row = pinwheel.row(align=True)
         for cell in cells:
             if cell:
-                row.prop_enum(props, "direction", cell)
+                row.prop_enum(props, prop, cell)
             else:
                 row.label(text="")
 
@@ -105,38 +105,44 @@ def set_in_plane_direction(props: bpy.types.Operator, x: float, z: float) -> Non
     props.rise, props.run = tool.Structural.get_simple_slope(abs(x), abs(z))
 
 
-def get_direction_input(subject: str, update: Callable, options: set[str]) -> Any:
+def get_direction_input(subject: str, update: Callable, options: set[str], prefix: str = "") -> Any:
     """A mixin of the inputs for a direction in the X-Z plane: an eighth of a circle, and an angle or slope in it.
 
     :param subject: What points that way, as named in the direction's description.
     :param update: Called when any of them changes.
+    :param prefix: Put before each input's name, and that of the input mode they follow and of their drawing
+        method, so that a dialog can have a second set, as Edit Load's for where a force acts.
     """
-
-    class DirectionInput:
-        direction: bpy.props.EnumProperty(
+    annotations = {
+        f"{prefix}direction": bpy.props.EnumProperty(
             name="Direction",
             description=f"The eighth of a circle {subject} points into; the angle or slope is measured from its axis",
             items=EIGHTH_ITEMS,
             options=options,
             update=update,
-        )
-        angle: bpy.props.FloatProperty(
+        ),
+        f"{prefix}angle": bpy.props.FloatProperty(
             name="Angle", description="Degrees from the eighth's axis", options=options, update=update
-        )
-        rise: bpy.props.FloatProperty(
+        ),
+        f"{prefix}rise": bpy.props.FloatProperty(
             name="Rise", description="Towards +Z", default=1.0, options=options, update=update
-        )
-        run: bpy.props.FloatProperty(name="Run", description="Towards +X", default=1.0, options=options, update=update)
+        ),
+        f"{prefix}run": bpy.props.FloatProperty(
+            name="Run", description="Towards +X", default=1.0, options=options, update=update
+        ),
+    }
 
-        def draw_direction_inputs(
-            self, layout: bpy.types.UILayout, lock: Union[str, None] = None, grey_unknowns: bool = False
-        ) -> None:
-            """Draw the pinwheel, then the angle or the rise and run, as the input mode has it"""
-            draw_pinwheel(layout, self)
-            names = ("angle",) if self.input_mode == "ANGLE" else ("rise", "run")
-            draw_with_lock(layout, self, names, lock, grey_unknowns, getattr(self, "focus", ""))
+    def draw_direction_inputs(
+        self, layout: bpy.types.UILayout, lock: Union[str, None] = None, grey_unknowns: bool = False
+    ) -> None:
+        """Draw the pinwheel, then the angle or the rise and run, as the input mode has it"""
+        draw_pinwheel(layout, self, f"{prefix}direction")
+        names = ("angle",) if getattr(self, f"{prefix}input_mode") == "ANGLE" else ("rise", "run")
+        draw_with_lock(layout, self, tuple(prefix + n for n in names), lock, grey_unknowns, getattr(self, "focus", ""))
 
-    return DirectionInput
+    return type(
+        "DirectionInput", (), {"__annotations__": annotations, f"draw_{prefix}direction_inputs": draw_direction_inputs}
+    )
 
 
 class PickStructuralLoads(bpy.types.Operator):
@@ -1762,7 +1768,114 @@ def get_activity_load_groups(activity: ifcopenshell.entity_instance) -> list[ifc
     ]
 
 
-class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, StructuralForceInput):
+def get_load_location_objects(
+    props: "EditStructuralLoadValues",
+) -> tuple[Union[bpy.types.Object, None], Union[bpy.types.Object, None]]:
+    """The objects of the point an edited applied load acts at and of the moment centre of a load case it is in,
+    if it is a point's and one is"""
+    if not props.activity:
+        return None, None
+    activity = tool.Ifc.get().by_id(props.activity)
+    connects = activity.AssignedToStructuralItem
+    point = connects[0].RelatingElement if connects else None
+    if not point or not point.is_a("IfcStructuralPointConnection"):
+        return None, None
+    has_vertex = lambda obj: obj if obj and obj.type == "MESH" and obj.data.vertices else None
+    for case in get_activity_load_groups(activity):
+        if centre := tool.Structural.get_moment_centre(case):
+            centre_obj, point_obj = has_vertex(tool.Ifc.get_object(centre)), has_vertex(tool.Ifc.get_object(point))
+            if centre_obj and point_obj and centre_obj != point_obj:
+                return point_obj, centre_obj
+    return None, None
+
+
+# The kinds of where a force acts that a kept moment can find, by the padlock in Edit Load that unlocks each.
+LOCATION_LOCKS = {
+    "POINT_X": "location_x_locked",
+    "POINT_Z": "location_z_locked",
+    "POINT_REACH": "location_distance_locked",
+    "POINT_SWING": "location_angle_locked",
+}
+
+
+def get_load_place_unknown(props: "EditStructuralLoadValues") -> Union[str, None]:
+    """Which of where the edited applied load acts a load case it is in finds, if any"""
+    activity = tool.Ifc.get().by_id(props.activity)
+    for case in get_activity_load_groups(activity):
+        kind, unknown = tool.Structural.get_moment_centre_unknown(case)
+        if unknown == activity and kind in LOCATION_LOCKS:
+            return kind
+    return None
+
+
+def get_load_location_offset(props: "EditStructuralLoadValues") -> tuple[float, float]:
+    """Where the force's point is from A, as entered: Δx and Δz, or a distance and its direction"""
+    if props.location_input_mode == "COMPONENTS":
+        return props.location_dx, props.location_dz
+    return tool.Structural.get_in_plane_components(
+        props.location_input_mode,
+        magnitude=props.location_distance,
+        angle=props.location_angle,
+        rise=props.location_rise,
+        run=props.location_run,
+        direction=props.location_direction,
+    )
+
+
+# The location inputs each input mode enters the point by, left alone while typed in.
+LOCATION_MODE_INPUTS = {
+    "COMPONENTS": ("location_dx", "location_dz"),
+    "ANGLE": ("location_distance", "location_direction", "location_angle"),
+    "SLOPE": ("location_distance", "location_direction", "location_rise", "location_run"),
+}
+
+
+def fill_load_location(props: "EditStructuralLoadValues", keep: tuple[str, ...] = ()) -> None:
+    """Fill the location inputs from where the force's point is from A, leaving those typed in"""
+    point_obj, centre_obj = get_load_location_objects(props)
+    if not point_obj:
+        return
+    at, point = get_vertex_location(centre_obj), get_vertex_location(point_obj)
+    dx, dz = point.x - at.x, point.z - at.z
+    values = {"location_dx": dx, "location_dz": dz, "location_distance": math.hypot(dx, dz)}
+    if dx or dz:
+        values["location_direction"], values["location_angle"], _, _ = tool.Structural.get_eighth(dx, dz)
+        values["location_rise"], values["location_run"] = tool.Structural.get_simple_slope(abs(dx), abs(dz))
+    MOMENT_CENTRE_FILLING[0] = True  # Filling them must not move the point.
+    try:
+        for name, value in values.items():
+            if name not in keep:
+                setattr(props, name, value)
+    finally:
+        MOMENT_CENTRE_FILLING[0] = False
+
+
+def refill_load_location(props: "EditStructuralLoadValues", context: bpy.types.Context) -> None:
+    """Read where the point is in another input mode: an update callback, so of exactly two arguments"""
+    fill_load_location(props)
+
+
+def move_load_location(props: "EditStructuralLoadValues", context: bpy.types.Context) -> None:
+    """Move the edited load's point to where it is entered from the moment centre, keeping its Y, to preview the
+    moments with it there"""
+    point_obj, centre_obj = get_load_location_objects(props)
+    if not point_obj or MOMENT_CENTRE_FILLING[0]:
+        return
+    MOMENT_CENTRE_PREVIEW.setdefault(point_obj.name, point_obj.matrix_world.translation.copy())
+    dx, dz = get_load_location_offset(props)
+    at, point = get_vertex_location(centre_obj), get_vertex_location(point_obj)
+    point_obj.matrix_world.translation += Vector((at.x + dx, point.y, at.z + dz)) - point
+    context.view_layer.update()
+    fill_load_location(props, LOCATION_MODE_INPUTS[props.location_input_mode])
+    update_force_inputs(props, context)  # Its preview again, so that a kept moment's unknown follows the point.
+
+
+class EditStructuralLoadValues(
+    bpy.types.Operator,
+    tool.Ifc.Operator,
+    StructuralForceInput,
+    get_direction_input("the force's point, from A,", move_load_location, {"SKIP_SAVE"}, prefix="location_"),
+):
     bl_idname = "bim.edit_structural_load_values"
     bl_label = "Edit Structural Load"
     bl_description = "Edit the force of a structural load"
@@ -1773,6 +1886,68 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
     new_load_case_name: bpy.props.StringProperty(name="New Load Case", default="Load Case")
     # A load just added to be edited, as Add Load at a point does, is removed again if the edit is cancelled.
     remove_on_cancel: bpy.props.BoolProperty(options={"HIDDEN", "SKIP_SAVE"})
+    place_from_a: bpy.props.BoolProperty(
+        name="Place From A",
+        description="Enter where the force acts, from the moment centre A, as components, an angle or a slope, rather "
+        "than the force. It moves the force's point, and every load at it",
+        default=False,
+        options={"SKIP_SAVE"},
+    )
+    location_input_mode: bpy.props.EnumProperty(
+        name="Input",
+        items=[
+            ("COMPONENTS", "Components", "Δx and Δz, from A to the force's point"),
+            ("ANGLE", "Angle", "Distance and angle, from A to the force's point"),
+            ("SLOPE", "Slope", "Distance and rise over run, from A to the force's point"),
+        ],
+        options={"SKIP_SAVE"},
+        update=refill_load_location,
+    )
+    location_x_locked: bpy.props.BoolProperty(
+        name="Δx Known",
+        description="If not, a kept moment moves the point along X",
+        default=True,
+        options={"SKIP_SAVE"},
+    )
+    location_z_locked: bpy.props.BoolProperty(
+        name="Δz Known",
+        description="If not, a kept moment moves the point along Z",
+        default=True,
+        options={"SKIP_SAVE"},
+    )
+    location_distance_locked: bpy.props.BoolProperty(
+        name="Distance Known",
+        description="If not, a kept moment moves the point along the line from A",
+        default=True,
+        options={"SKIP_SAVE"},
+    )
+    location_angle_locked: bpy.props.BoolProperty(
+        name="Direction Known",
+        description="If not, a kept moment swings the point round A, its distance kept",
+        default=True,
+        options={"SKIP_SAVE"},
+    )
+    location_distance: bpy.props.FloatProperty(
+        name="Distance",
+        description="From A to the force's point",
+        subtype="DISTANCE",
+        options={"SKIP_SAVE"},
+        update=move_load_location,
+    )
+    location_dx: bpy.props.FloatProperty(
+        name="Δx from A",
+        description="From the moment centre to the force's point, along X, as the report's table measures it",
+        subtype="DISTANCE",
+        options={"SKIP_SAVE"},
+        update=move_load_location,
+    )
+    location_dz: bpy.props.FloatProperty(
+        name="Δz from A",
+        description="From the moment centre to the force's point, along Z, as the report's table measures it",
+        subtype="DISTANCE",
+        options={"SKIP_SAVE"},
+        update=move_load_location,
+    )
     same_magnitude_as: bpy.props.EnumProperty(
         name="Magnitude As",
         description=(
@@ -1854,6 +2029,11 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
                     self.magnitude_ratio = tool.Structural.get_magnitude_ratio(lock_activity)
         if (activities := self.get_movable_activities()) and (groups := get_activity_load_groups(activities[0])):
             self.load_group = str(groups[0].id())
+        MOMENT_CENTRE_PREVIEW.clear()
+        fill_load_location(self.properties)
+        # Which of where it acts a kept moment finds, if it is this force's.
+        for kind, prop in LOCATION_LOCKS.items():
+            setattr(self, prop, not (self.activity and get_load_place_unknown(self) == kind))
         # Set last, so that filling in the values above does not start a preview.
         self.preview_load = load.id()
         if self.remove_on_cancel:
@@ -1892,6 +2072,11 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         load_cases = {g for user in users for g in get_activity_load_groups(user)}
         if len(load_cases) > 1 and not self.get_movable_activities():
             layout.label(text=f"Used in {len(load_cases)} load cases: move one from its applied load", icon="INFO")
+        if get_load_location_objects(self)[0]:
+            layout.prop(self, "place_from_a")
+            if self.place_from_a:
+                self.draw_location_inputs(layout)
+                return
         lock_activity = self.get_lock_activity()
         if not lock_activity:
             layout.label(text="Open it from an applied load to lock its values", icon="INFO")
@@ -1905,8 +2090,35 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         if self.input_mode != "COMPONENTS" and (self.y or self.moment_x or self.moment_y or self.moment_z):
             layout.label(text="Y and moments will be set to zero", icon="ERROR")
 
+    def draw_location_inputs(self, layout: bpy.types.UILayout) -> None:
+        """Where the force acts, from A, in the input modes the force is entered in"""
+        layout.row().prop(self, "location_input_mode", expand=True)
+        if self.location_input_mode == "COMPONENTS":
+            draw_with_lock(layout, self, ("location_dx",), "location_x_locked")
+            draw_with_lock(layout, self, ("location_dz",), "location_z_locked")
+        else:
+            self.draw_location_direction_inputs(layout, "location_angle_locked")
+            draw_with_lock(layout, self, ("location_distance",), "location_distance_locked")
+            dx, dz = get_load_location_offset(self)
+            length_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            unit = get_project_unit_symbol("LENGTHUNIT", "m")
+            text = f"From A: Δx = {dx / length_scale:.4f}   Δz = {dz / length_scale:.4f} {unit}"
+            layout.label(text=text, icon="ORIENTATION_GLOBAL")
+        point = tool.Ifc.get_entity(get_load_location_objects(self)[0])
+        count = len([r for r in point.AssignedStructuralActivity or [] if r.RelatedStructuralActivity])
+        if count > 1:
+            layout.label(text=f"Moves the point, and all {count} of its loads with it", icon="INFO")
+        unlocked = [kind for kind, prop in LOCATION_LOCKS.items() if not getattr(self, prop)]
+        if len(unlocked) > 1:
+            layout.label(text="Unlock one of where it acts: a kept moment finds one", icon="ERROR")
+        elif unlocked:
+            activity = tool.Ifc.get().by_id(self.activity)
+            if all(tool.Structural.get_resultant_moment(c) is None for c in get_activity_load_groups(activity)):
+                layout.label(text="Found once ΣM_A is kept, in Edit Resultant Moment", icon="INFO")
+
     def cancel(self, context):
         clear_previews(context)
+        restore_moment_centre(context)  # The point, moved to preview its location.
         if self.remove_on_cancel and self.activity:
             load = self.get_load()
             bpy.ops.bim.remove_structural_activity(activity=self.activity)
@@ -1921,6 +2133,22 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         attributes["Name"] = self.get_load_name(category)
         ifc_file = tool.Ifc.get()
         ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
+        point_obj, _ = get_load_location_objects(self)
+        if point_obj and self.activity:
+            unlocked = [kind for kind, prop in LOCATION_LOCKS.items() if not getattr(self, prop)]
+            if len(unlocked) > 1:
+                self.report({"ERROR"}, "Unlock one of where it acts: a kept moment finds one")
+                return {"CANCELLED"}
+            # Its place unlocked here is the load case's unknown; one this force had, locked here, no longer is.
+            activity = tool.Ifc.get().by_id(self.activity)
+            for case in get_activity_load_groups(activity):
+                kind, unknown = tool.Structural.get_moment_centre_unknown(case)
+                if unlocked or (unknown == activity and kind in LOCATION_LOCKS):
+                    tool.Structural.set_moment_centre_unknown(case, unlocked[0] if unlocked else None, activity)
+        if point_obj and point_obj.name in MOMENT_CENTRE_PREVIEW:
+            # Where its location put it, written to the IFC, before kept values are solved again with it there.
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=point_obj)
+        MOMENT_CENTRE_PREVIEW.clear()
         if lock_activity := self.get_lock_activity():
             tool.Structural.set_locks(lock_activity, self.magnitude_locked, self.direction_locked)
             tool.Structural.set_push(lock_activity, self.acts_as == "PUSH")
@@ -2564,7 +2792,8 @@ class EditStructuralMomentCentre(
                 return {"CANCELLED"}
             # The unknown of A's place, from this force's point, or none; another force's is left as it is.
             kind, activity = tool.Structural.get_moment_centre_unknown(case)
-            if unlocked or (activity is not None and activity.id() == self.activity):
+            mine = activity is not None and activity.id() == self.activity and kind in ("ARM", "REACH", "SWING")
+            if unlocked or mine:  # A force's position, found in Edit Resultant Moment, is left as it is.
                 activity = tool.Ifc.get().by_id(self.activity)
                 tool.Structural.set_moment_centre_unknown(case, unlocked[0] if unlocked else None, activity)
         MOMENT_CENTRE_PREVIEW.clear()  # A is where the preview left it.
@@ -2628,24 +2857,65 @@ def solve_case_moment(
     return changed, error
 
 
-# The words for which of A's place is found, by its kind.
-CENTRE_UNKNOWN_WORDS = {"ARM": "moment arm d", "REACH": "distance r", "SWING": "angle of r (φ, α)"}
+# The words for which place is found, by its kind: of A, or of a force.
+CENTRE_UNKNOWN_WORDS = {
+    "ARM": "moment arm d",
+    "REACH": "distance r",
+    "SWING": "angle of r (φ, α)",
+    "POINT_X": "point along X",
+    "POINT_Z": "point along Z",
+    "POINT_REACH": "point along the line from A",
+    "POINT_SWING": "point round A",
+}
 
 
-def solve_case_centre(case: ifcopenshell.entity_instance, moment: float) -> tuple[Union[np.ndarray, None], str]:
-    """Where the moment centre must be, in the project's length unit, for a load case's moments to sum to a
-    moment, if its place is the unknown, moving it the way its unknown says; None if a force value is unknown"""
-    kind, activity = tool.Structural.get_moment_centre_unknown(case)
+def solve_case_place(
+    case: ifcopenshell.entity_instance,
+    moment: float,
+    unknown: Union[tuple[Union[str, None], Union[ifcopenshell.entity_instance, None]], None] = None,
+    locks: Union[list[tuple[bool, bool]], None] = None,
+) -> tuple[Union[bpy.types.Object, None], Union[np.ndarray, None], str]:
+    """Where the moment centre, or a force's point, must be, in the project's length unit, for a load case's
+    moments to sum to a moment, if a place is its unknown: the object to move there, and why not if it cannot be.
+
+    :param unknown: The kind and applied load of the place to find, if not the load case's own, as a dialog has it.
+    :param locks: The forces' locks, if not their own, as a dialog has them.
+    """
+    kind, activity = unknown or tool.Structural.get_moment_centre_unknown(case)
     if not kind:
-        return None, ""
+        return None, None, ""
     activities, arms, forces = get_case_moment_forces(case)
     if activity not in activities:
-        return None, "The force A's place is found from is no longer in the load case"
-    if not all(locked for a in activities for locked in tool.Structural.get_locks(a)):
-        return None, "A's place and a force's value are both unknown: a moment finds one"
+        return None, None, "The force the place is found from is no longer in the load case"
+    if error := get_unlocked_values_error(activities, locks):
+        return None, None, error
     at = get_case_centre_location(case)
     points = [arm + at for arm in arms]
-    return tool.Structural.solve_centre_position(points, forces, at, moment, kind, activities.index(activity))
+    j = activities.index(activity)
+    if kind in ("POINT_X", "POINT_Z", "POINT_REACH", "POINT_SWING"):
+        # The force's point moves, its loads with it; A stays.
+        place, error = tool.Structural.solve_force_point(points, forces, at, moment, j, kind.split("_", 1)[1])
+        obj = tool.Ifc.get_object(activity.AssignedToStructuralItem[0].RelatingElement)
+        return obj, place, error
+    place, error = tool.Structural.solve_centre_position(points, forces, at, moment, kind, j)
+    return tool.Ifc.get_object(tool.Structural.get_moment_centre(case)), place, error
+
+
+def get_unlocked_values_error(
+    activities: list[ifcopenshell.entity_instance], locks: Union[list[tuple[bool, bool]], None] = None
+) -> str:
+    """Why a place cannot be the unknown, if a force's value is unknown too, naming it, from the forces' locks or
+    those given"""
+    locks = locks or [tool.Structural.get_locks(a) for a in activities]
+    unlocked = [
+        f"F{i + 1} {kind}"
+        for i, lock in enumerate(locks)
+        for kind, known in zip(("magnitude", "direction"), lock)
+        if not known
+    ]
+    if not unlocked:
+        return ""
+    return f"A place is unknown, and so is {', '.join(unlocked)}: a moment finds one value; lock {'it' if len(unlocked) == 1 else 'them'}"
 
 
 def get_case_centre_location(case: ifcopenshell.entity_instance) -> np.ndarray:
@@ -2654,15 +2924,12 @@ def get_case_centre_location(case: ifcopenshell.entity_instance) -> np.ndarray:
     return np.array(get_vertex_location(obj)) / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
 
-def move_case_centre(
-    case: ifcopenshell.entity_instance, at: np.ndarray, context: bpy.types.Context, preview: bool = False
-) -> None:
-    """Move a load case's moment centre to where it is found, in the project's length unit: to preview it, to be
-    put back on cancelling, or for good, written to the IFC"""
-    obj = tool.Ifc.get_object(tool.Structural.get_moment_centre(case))
+def move_to_place(obj: bpy.types.Object, place: np.ndarray, context: bpy.types.Context, preview: bool = False) -> None:
+    """Move a point, the moment centre or a force's, to where it is found, in the project's length unit: to preview
+    it, to be put back on cancelling, or for good, written to the IFC"""
     if preview:
         MOMENT_CENTRE_PREVIEW.setdefault(obj.name, obj.matrix_world.translation.copy())
-    target = Vector(at) * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    target = Vector(place) * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     obj.matrix_world.translation += target - get_vertex_location(obj)
     context.view_layer.update()
     if not preview:
@@ -2671,15 +2938,15 @@ def move_case_centre(
 
 def keep_resultant_moments(activities: list[ifcopenshell.entity_instance]) -> None:
     """Solve again the unknown of each load case these applied loads are in that keeps a sum of moments, as a
-    locked resultant is kept, after a force or the moment centre changes: a force's value, or A's place"""
+    locked resultant is kept, after a force or the moment centre changes: a force's value, or a place"""
     cases = {group for activity in activities for group in get_activity_load_groups(activity)}
     for case in cases:
         if (moment := tool.Structural.get_resultant_moment(case)) is None:
             continue
         if tool.Structural.get_moment_centre_unknown(case)[0]:
-            at, error = solve_case_centre(case, moment)
+            obj, place, error = solve_case_place(case, moment)
             if not error:
-                move_case_centre(case, at, bpy.context)
+                move_to_place(obj, place, bpy.context)
             continue
         forces, error = solve_case_moment(case, moment)
         if not error:
@@ -2691,6 +2958,29 @@ def get_resultant_moment_locks(props: "EditStructuralResultantMoment") -> list[t
     return list(zip(props.magnitude_locks[:count], props.direction_locks[:count]))
 
 
+def get_dialog_place_unknown(
+    props: "EditStructuralResultantMoment",
+) -> tuple[Union[str, None], Union[ifcopenshell.entity_instance, None], str]:
+    """The place Edit Resultant Moment finds, as its padlocks have it: a force's point along X or Z unlocked
+    there, or else the load case's own unknown place, unless it is a force's point locked there. With why not, if
+    several."""
+    case = tool.Ifc.get().by_id(props.load_case)
+    activities = get_case_moment_forces(case)[0][:32]
+    unlocked = [
+        (kind, a)
+        for i, a in enumerate(activities)
+        for kind, locks in (("POINT_X", props.position_locks), ("POINT_Z", props.position_z_locks))
+        if not locks[i]
+    ]
+    if len(unlocked) > 1:
+        return None, None, "Unlock one force position, X or Z: a moment finds one value"
+    if unlocked:
+        return unlocked[0][0], unlocked[0][1], ""
+    kind, activity = tool.Structural.get_moment_centre_unknown(case)
+    # A force's point along X or Z is the padlocks' here; along or round A, Edit Load's, so kept.
+    return (None, None, "") if kind in ("POINT_X", "POINT_Z") else (kind, activity, "")
+
+
 def get_signed_moment(props: "EditStructuralResultantMoment") -> float:
     return props.moment
 
@@ -2699,13 +2989,17 @@ def solve_resultant_moment(
     props: "EditStructuralResultantMoment",
 ) -> tuple[dict[ifcopenshell.entity_instance, tuple], str]:
     """The forces Edit Resultant Moment changes, as solve_case_moment gives them, or none with the sum unlocked, as
-    it is then found from the forces, which must all be known"""
+    it is then found from the forces, which must all be known, or with a place to find"""
     case = tool.Ifc.get().by_id(props.load_case)
     locks = get_resultant_moment_locks(props)
-    if props.moment_locked and tool.Structural.get_moment_centre_unknown(case)[0]:
-        if not all(locked for lock in locks for locked in lock):
-            return {}, "A's place and a force's value are both unknown: a moment finds one"
-        return {}, solve_case_centre(case, get_signed_moment(props))[1]  # A moves; no force changes.
+    kind, activity, error = get_dialog_place_unknown(props)
+    if error:
+        return {}, error
+    if kind and not props.moment_locked:
+        return {}, "ΣM_A is unlocked, so found from the forces: lock their positions, or lock ΣM_A to find one"
+    if props.moment_locked and kind:
+        # It moves; no force does. With the dialog's padlocks, not those last kept.
+        return {}, solve_case_place(case, get_signed_moment(props), (kind, activity), locks)[2]
     if props.moment_locked:
         return solve_case_moment(case, get_signed_moment(props), locks)
     if not all(locked for lock in locks for locked in lock):
@@ -2714,16 +3008,18 @@ def solve_resultant_moment(
 
 
 def update_resultant_moment(props: "EditStructuralResultantMoment", context: bpy.types.Context) -> None:
-    """Preview the forces found for the moment entered, moments redrawn with them"""
+    """Preview the forces, or the place, found for the moment entered, moments redrawn with them"""
     if not props.is_previewing:
         return
     forces, error = solve_resultant_moment(props)
     ShaderInfo.preview = {} if error else {load.id(): get_force_attributes(load, f) for load, f in forces.items()}
-    case = tool.Ifc.get().by_id(props.load_case)
-    if props.moment_locked and not error and tool.Structural.get_moment_centre_unknown(case)[0]:
-        restore_moment_centre(context)  # Solved from where A was, not from the last preview.
-        at, _ = solve_case_centre(case, get_signed_moment(props))
-        move_case_centre(case, at, context, preview=True)
+    restore_moment_centre(context)  # Solved from where things were, not from the last preview.
+    kind, activity, _ = get_dialog_place_unknown(props)
+    if props.moment_locked and not error and kind:
+        case = tool.Ifc.get().by_id(props.load_case)
+        locks = get_resultant_moment_locks(props)
+        obj, place, _ = solve_case_place(case, get_signed_moment(props), (kind, activity), locks)
+        move_to_place(obj, place, context, preview=True)
     redraw_loads(context)
 
 
@@ -2765,6 +3061,22 @@ class EditStructuralResultantMoment(bpy.types.Operator, tool.Ifc.Operator):
         options={"SKIP_SAVE"},
         update=update_resultant_moment,
     )
+    position_locks: bpy.props.BoolVectorProperty(
+        name="X Position Known",
+        description="Whether where this force acts along X is known. If not, its point moves to make the moment",
+        size=32,
+        default=[True] * 32,
+        options={"SKIP_SAVE"},
+        update=update_resultant_moment,
+    )
+    position_z_locks: bpy.props.BoolVectorProperty(
+        name="Z Position Known",
+        description="Whether where this force acts along Z is known. If not, its point moves to make the moment",
+        size=32,
+        default=[True] * 32,
+        options={"SKIP_SAVE"},
+        update=update_resultant_moment,
+    )
     is_previewing: bpy.props.BoolProperty(options={"HIDDEN", "SKIP_SAVE"})
 
     def invoke(self, context, event):
@@ -2783,7 +3095,10 @@ class EditStructuralResultantMoment(bpy.types.Operator, tool.Ifc.Operator):
         locks = [tool.Structural.get_locks(activity) for activity in activities]
         self.magnitude_locks = [lock[0] for lock in locks] + [True] * (32 - len(locks))
         self.direction_locks = [lock[1] for lock in locks] + [True] * (32 - len(locks))
-        # Known if kept, or if a force's value is left to find; otherwise found from the forces.
+        kind, unknown = tool.Structural.get_moment_centre_unknown(case)
+        rest = [True] * (32 - len(activities))
+        self.position_locks = [not (kind == "POINT_X" and a == unknown) for a in activities] + rest
+        self.position_z_locks = [not (kind == "POINT_Z" and a == unknown) for a in activities] + rest
         self.moment_locked = kept is not None or not all(locked for lock in locks for locked in lock)
         self.is_previewing = True  # Set last, so that filling in the values above does not start a preview.
         update_resultant_moment(self.properties, context)
@@ -2814,11 +3129,16 @@ class EditStructuralResultantMoment(bpy.types.Operator, tool.Ifc.Operator):
             row = layout.row(align=True)
             symbol = "F" + str(i + 1).translate(str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉"))
             row.label(text=f"{symbol}: {activity.AppliedLoad.Name or 'Unnamed'}", icon="FORCE_FORCE")
-            for prop, text in (("magnitude_locks", "Magnitude"), ("direction_locks", "Direction")):
+            for prop, text in (
+                ("magnitude_locks", "Magnitude"),
+                ("direction_locks", "Direction"),
+                ("position_locks", "X"),
+                ("position_z_locks", "Z"),
+            ):
                 locked = getattr(self, prop)[i]
                 row.prop(self, prop, index=i, text=text, icon="LOCKED" if locked else "UNLOCKED")
-        kind, activity = tool.Structural.get_moment_centre_unknown(case)
-        if kind:
+        kind, activity, _ = get_dialog_place_unknown(self)
+        if kind and kind not in ("POINT_X", "POINT_Z", "POINT_REACH", "POINT_SWING"):
             number = activities.index(activity) + 1 if activity in activities else 0
             row = layout.row()
             row.label(text=f"A's place: the {CENTRE_UNKNOWN_WORDS[kind]} of F{number} is found", icon="UNLOCKED")
@@ -2828,7 +3148,9 @@ class EditStructuralResultantMoment(bpy.types.Operator, tool.Ifc.Operator):
             return
         box = layout.box()
         if kind and self.moment_locked:
-            box.label(text="A moves to make this moment; no force changes", icon="FORCE_VORTEX")
+            name = activity.AppliedLoad.Name or "The force"
+            text = f"{name} moves" if kind in ("POINT_X", "POINT_Z", "POINT_REACH", "POINT_SWING") else "A moves"
+            box.label(text=f"{text} to make this moment; no force's value changes", icon="FORCE_VORTEX")
             return
         force_unit = get_project_unit_symbol("FORCEUNIT", "N")
         for load, force in forces.items():
@@ -2858,9 +3180,14 @@ class EditStructuralResultantMoment(bpy.types.Operator, tool.Ifc.Operator):
         for activity, (magnitude, direction) in zip(get_case_moment_forces(case)[0], locks):
             tool.Structural.set_locks(activity, magnitude, direction)
         write_forces(forces)
-        if self.moment_locked and tool.Structural.get_moment_centre_unknown(case)[0]:
-            at, _ = solve_case_centre(case, get_signed_moment(self))
-            move_case_centre(case, at, context)
+        # A force's position unlocked here is the load case's unknown place; one locked here no longer is.
+        kind, activity, _ = get_dialog_place_unknown(self)
+        points = ("POINT_X", "POINT_Z")
+        if kind in points or tool.Structural.get_moment_centre_unknown(case)[0] in points:
+            tool.Structural.set_moment_centre_unknown(case, kind, activity)
+        if self.moment_locked and kind:
+            obj, place, _ = solve_case_place(case, get_signed_moment(self), (kind, activity), locks)
+            move_to_place(obj, place, context)
         # Kept, so that changing a force or the moment centre later solves the unknown again to keep it; or, found
         # from the forces, no longer kept.
         tool.Structural.set_resultant_moment(case, get_signed_moment(self) if self.moment_locked else None)

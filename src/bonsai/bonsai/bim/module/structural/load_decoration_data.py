@@ -1722,6 +1722,7 @@ class ShaderInfo:
         direction = (tip - tail) / length
         # The shader works in units of a fifth of size: the head is 2 * spacing of them long.
         unit = size / 5
+        thickness = tool.Structural.get_structural_props().arrow_thickness
         d2, d3 = self.get_perpendicular_axes(direction)
         d2, d3 = d2 * unit, d3 * unit
         self.info.append(
@@ -1738,9 +1739,17 @@ class ShaderInfo:
                     ],
                 },
                 "indices": [(0, 1, 2), (0, 3, 4)],
-                "uniforms": [["color", color], ["spacing", spacing]],
+                # The shader sizes the shaft and the head from spacing, so thickness scales them together.
+                "uniforms": [["color", color], ["spacing", float(spacing * thickness)]],
                 # The arrow itself, for drawing it elsewhere than the viewport, as in a report.
-                "primitive": {"type": "ARROW", "tail": tail, "tip": tip, "size": size, "spacing": spacing},
+                "primitive": {
+                    "type": "ARROW",
+                    "tail": tail,
+                    "tip": tip,
+                    "size": size,
+                    "spacing": spacing,
+                    "thickness": thickness,
+                },
                 "color": color,
             }
         )

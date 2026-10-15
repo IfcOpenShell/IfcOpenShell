@@ -268,6 +268,15 @@ class BIMStructuralProperties(PropertyGroup):
         max=8,
         update=update_loads_display,
     )
+    arrow_thickness: FloatProperty(
+        name="Arrow Thickness",
+        description="Scale force arrows, their shafts and heads together, in the viewport and in exported calculations",
+        default=1.0,
+        min=0.25,
+        max=5.0,
+        step=10,
+        update=update_loads_display,
+    )
     label_size: FloatProperty(
         name="Label Size",
         description="Scale the labels of load diagrams, in the viewport and in exported calculations",
@@ -367,6 +376,7 @@ class BIMStructuralProperties(PropertyGroup):
         force_decimals: int
         angle_decimals: int
         label_size: float
+        arrow_thickness: float
 
 
 class BIMObjectStructuralProperties(PropertyGroup):

@@ -480,6 +480,26 @@ where Bonsai's eighths would measure from the vertical.
   labels, Applied Loads, both moment dialogs and the report's table and summary do so, the report
   stating the sign convention. Edit Resultant Moment takes ΣM_A as one signed value.
 
+## 24. Where a force acts
+
+- **A force's point as the unknown**, as texts ask "how far can he walk before it tips?": A and
+  the other forces stay, and the force's point moves, its loads with it, until a kept ΣM_A holds
+  (`tool.Structural.solve_force_point`). Its moment, F_z Δx − F_x Δz, is linear in where it acts
+  along any line and a sine of its angle round A, so it moves along X or Z, along the line from A,
+  or round A to the nearer of two places. Along Y it would change no moment in the X-Z plane, so
+  Y waits for moments about the other axes. Stored with A's place as `MomentCentreUnknown`, one
+  unknown in all.
+- **Padlocks** for X and Z in Edit Resultant Moment's force rows, and **Place From A** in Edit
+  Load: ticked, its Components, Angle and Slope tabs place the force's point from A rather than
+  the force, each value with a padlock, the point moving as values are typed and back on
+  cancelling. Its inputs are a second set of direction inputs: `get_direction_input` takes a
+  prefix, here `location_`.
+- **The dialogs' padlocks, not the file's:** finding a place checks the padlocks as a dialog has
+  them, not as last kept, so locking a force's direction there frees its position to be found.
+- **Reports** find Δx or Δz from the moment the force must make.
+- **Arrow Thickness** in Show Loads scales force arrows, shaft and head together, through the
+  spacing the shader sizes both from, in the viewport and reports.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through

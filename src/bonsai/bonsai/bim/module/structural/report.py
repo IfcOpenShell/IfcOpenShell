@@ -166,6 +166,7 @@ def get_moment_calculation(
     text_unit = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", unit) + "}"
     length_text = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", length_unit) + "}"
     rows, steps, palette, values, unknowns = [], [], [], [], []
+    place_kind, place_activity = tool.Structural.get_moment_centre_unknown(case)
     for item in tool.Structural.get_point_items(case):
         if not (obj := tool.Ifc.get_object(item)) or obj.type != "MESH" or not obj.data.vertices:
             continue
@@ -193,7 +194,9 @@ def get_moment_calculation(
             locks = tool.Structural.get_locks(activity)
             if not locks[0]:
                 row["magnitude"] += " 🔓"  # Found, to make the moment kept.
-            unknowns.append((i, locks, math.hypot(x, z), arm, math.hypot(dx, dz), activity))
+            if place_kind in ("POINT_X", "POINT_Z") and activity == place_activity:
+                row["dx" if place_kind == "POINT_X" else "dz"] += " 🔓"  # Where it acts, found for the moment kept.
+            unknowns.append((i, locks, math.hypot(x, z), arm, math.hypot(dx, dz), activity, x, z, dz, dx))
             rows.append(row)
             steps += get_arm_steps(i, dx, dz, x, z, arm, length_text, point, at)
             sign = "-" if moment < 0 else ""
@@ -243,7 +246,7 @@ def get_moment_calculation(
 def get_kept_moment_steps(
     case: ifcopenshell.entity_instance,
     values: list[float],
-    unknowns: list[tuple[int, tuple[bool, bool], float, float, float, ifcopenshell.entity_instance]],
+    unknowns: list[tuple],  # Each force's number, locks, magnitude, arm, r, applied load, X, Z and Δz.
     text_unit: str,
     force_unit: str,
 ) -> list[str]:
@@ -259,7 +262,7 @@ def get_kept_moment_steps(
     found = [entry for entry in unknowns if not all(entry[1])]
     if kept is None or not found:
         return []
-    i, locks, magnitude, arm, r, _ = found[0]
+    i, locks, magnitude, arm, r, *_ = found[0]
     moment = values[i - 1]
     rest = sum(values) - moment
     force_text = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", force_unit) + "}"
@@ -288,15 +291,45 @@ def get_kept_centre_steps(
     activity: ifcopenshell.entity_instance,
     kept: float,
     values: list[float],
-    unknowns: list[tuple[int, tuple[bool, bool], float, float, float, ifcopenshell.entity_instance]],
+    unknowns: list[tuple],  # Each force's number, locks, magnitude, arm, r, applied load, X, Z and Δz.
     text_unit: str,
 ) -> list[str]:
-    """How A was placed when a load case keeps a sum of moments and A's place is its unknown: with one force, its
-    arm, r or angle from its moment; with several, A's place follows from them all, as moving A changes each"""
+    """How a place was found when a load case keeps a sum of moments and a place is its unknown. A force's point
+    along X: from the moment it must make, as A and the other forces stay. A's place: with one force, its arm, r or
+    angle from its moment; with several, it follows from them all, as moving A changes each"""
     entry = next((e for e in unknowns if e[5] == activity), None)
     if not entry:
         return []
-    i, _, magnitude, arm, r, _ = entry
+    i, _, magnitude, arm, r, _, x, z, dz, dx = entry
+    if kind in ("POINT_REACH", "POINT_SWING"):
+        how = "along the line from A" if kind == "POINT_REACH" else "round A, its distance kept"
+        return [
+            f"\\text{{Kept: }} \\Sigma M_A = {kept:.2f}{text_unit}",
+            f"\\text{{The point of }} F_{{{i}}} \\text{{ is placed for it, {how}}}",
+        ]
+    if kind in ("POINT_X", "POINT_Z") and (z if kind == "POINT_X" else x):
+        moment = values[i - 1]
+        length_text = r"\ \text{" + text_unit.rpartition(".")[2].rstrip("}") + "}"
+        steps = [
+            f"\\text{{Kept: }} \\Sigma M_A = {kept:.2f}{text_unit}",
+            f"\\text{{The point of }} F_{{{i}}} \\text{{ is placed for it, along {kind[-1]}}}",
+            f"M_{{{i}}} = \\Sigma M_A - \\textstyle\\sum_{{others}} M = ({kept:.2f}) - ({sum(values) - moment:.2f})"
+            f" = {moment:.2f}{text_unit}",
+        ]
+        # From its moment, F_z dx - F_x dz, the distance along the way it moves.
+        if kind == "POINT_X":
+            found = bold(f"{(moment + x * dz) / z:.2f}", True, length_text)
+            steps.append(
+                f"\\Delta x_{{{i}}} = \\frac{{M_{{{i}}} + F_{{x{i}}}\\, \\Delta z_{{{i}}}}}{{F_{{z{i}}}}} = "
+                f"\\frac{{({moment:.2f}) + ({x:.2f})({dz:.2f})}}{{{z:.2f}}} = {found}"
+            )
+        else:
+            found = bold(f"{(z * dx - moment) / x:.2f}", True, length_text)
+            steps.append(
+                f"\\Delta z_{{{i}}} = \\frac{{F_{{z{i}}}\\, \\Delta x_{{{i}}} - M_{{{i}}}}}{{F_{{x{i}}}}} = "
+                f"\\frac{{({z:.2f})({dx:.2f}) - ({moment:.2f})}}{{{x:.2f}}} = {found}"
+            )
+        return steps
     # Words set as text, not as letters of the maths around them.
     words = {
         "ARM": f"\\text{{moment arm }} d_{{{i}}}",
@@ -1295,15 +1328,16 @@ def write_diagram(
                 continue
             direction = (tip - tail) / length
             across = np.array((-direction[1], direction[0]))
-            head = min(size * shape["spacing"] * 0.25, length * 0.5)
+            # Its head scaled with its shaft, as in the viewport.
+            head = min(size * shape["spacing"] * shape.get("thickness", 1.0) * 0.25, length * 0.5)
             base = tip - direction * head
-            stroke = 3 if shape["spacing"] > 0.2 else 2
+            stroke = (3 if shape["spacing"] > 0.2 else 2) * shape.get("thickness", 1.0)
             corners = " ".join(
                 f"{x:.1f},{y:.1f}" for x, y in (tip, base + across * head * 0.4, base - across * head * 0.4)
             )
             elements.append(
                 f'<line x1="{tail[0]:.1f}" y1="{tail[1]:.1f}" x2="{base[0]:.1f}" y2="{base[1]:.1f}" '
-                f'stroke="{color}" stroke-width="{stroke}"/>'
+                f'stroke="{color}" stroke-width="{stroke:.2f}"/>'
             )
             elements.append(f'<polygon points="{corners}" fill="{color}"/>')
             segments.append((tail, tip))
