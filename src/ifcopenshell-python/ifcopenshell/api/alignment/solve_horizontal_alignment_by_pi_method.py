@@ -907,12 +907,11 @@ def solve_horizontal_alignment_by_pi_method(
         # doesn't turn the long way round
         delta = math.atan2(math.sin(angleFT - angleBT), math.cos(angleFT - angleBT))
 
-        # true PI-to-PI distance for the leg shared with a join_next curve; distinct from lengthBT,
-        # which is measured from the previous curve's end point rather than from the previous PI
-        if previous_join_next:
-            prev_pi_x, prev_pi_y = hpoints[curve_index]
-            cur_pi_x, cur_pi_y = hpoints[curve_index + 1]
-            pi_to_pi_distance = math.hypot(cur_pi_x - prev_pi_x, cur_pi_y - prev_pi_y)
+        # true PI-to-PI distance, used for the leg shared with a join_next curve; distinct from
+        # lengthBT, which is measured from the previous curve's end point rather than from the previous PI
+        prev_pi_x, prev_pi_y = hpoints[curve_index]
+        cur_pi_x, cur_pi_y = hpoints[curve_index + 1]
+        pi_to_pi_distance = math.hypot(cur_pi_x - prev_pi_x, cur_pi_y - prev_pi_y)
 
         if entry_length == 0.0 and exit_length == 0.0:
             # tangent runs connect directly to the circular curve
