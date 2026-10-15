@@ -280,8 +280,9 @@ edits + Insert/Delete PI + PI click-pick (§11), `d6a54a829` cant follows horizo
      (8.2 to 1.6 s at 200 PIs). In-UI profiling (draw callbacks) wasn't needed. Left as is, per the
      user (200 PIs is uncommon): OpenCASCADE's O(N^2) wire building for long sampled curves, and a
      layout built from scratch adding its segments one at a time.
-   - **Not yet tried in Blender:** a spiral row with equal radii should now draw as an arc, and a
-     right-hand curve with cant should roll continuously into its exit transition.
+   - ~~**Not yet tried in Blender:** a spiral row with equal radii should now draw as an arc, and a
+     right-hand curve with cant should roll continuously into its exit transition.~~ Both confirmed
+     by the user in Blender, 2026-10-15.
    - ~~The kernel's trapezoidal spiral integration (about 1e-6 m)~~ -- done: adaptive
      Gauss-Kronrod, accurate to 1e-9 m and 15 to 50 times faster (PR from `rab_spiral_quadrature`).
 3. **Before the PR for the final work is posted: delete `dev_tests/`** (see Testing below).
