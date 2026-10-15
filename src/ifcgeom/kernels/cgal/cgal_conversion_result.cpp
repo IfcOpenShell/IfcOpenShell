@@ -442,11 +442,14 @@ void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings se
 		}
 	}
 
+	const auto triangulation_type = settings.get<ifcopenshell::geom::settings::TriangulationType>().get();
+	const bool polyhedral_output = triangulation_type != ifcopenshell::geom::settings::TRIANGLE_MESH;
+
 	// Facet -> planar component map for determining which
 	// edges are to be registered.
 	std::vector<std::set<facet_const_handle>> components;
 	std::map<facet_const_handle, typename decltype(components)::const_iterator> facet_to_component;
-	if (!setting_use_original_edges) {
+	if (!setting_use_original_edges || polyhedral_output) {
 		partition_coplanar_components(*shape_to_use, components);
 		for (auto it = components.begin(); it != components.end(); ++it) {
 			for (auto& f : *it) {
@@ -476,6 +479,8 @@ void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings se
 	std::map<postion_normal, size_t> welds;
 
 	std::set<std::pair<int, int>> registered_edges;
+	// #5485 triangles per coplanar component, for polyhedral output
+	std::map<typename decltype(components)::const_iterator, std::vector<std::tuple<int, int, int>>> component_triangles;
 
 	int num_faces = 0, num_vertices = 0;
 	for (auto &face : faces(*shape_to_use)) {
@@ -562,6 +567,12 @@ void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings se
 			++current_halfedge;
 		} while (current_halfedge != face->facet_begin());
 
+		if (polyhedral_output) {
+			component_triangles[facet_to_component[face]].push_back({ vertexidx[0], vertexidx[1], vertexidx[2] });
+			++num_faces;
+			continue;
+		}
+
 		t->addFace(item_id, surface_style_id, vertexidx[0], vertexidx[1], vertexidx[2]);
 		for (size_t boundary_index = 0; boundary_index < 3; ++boundary_index) {
 			if (is_face_boundary[boundary_index]) {
@@ -584,6 +595,20 @@ void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings se
 		++num_faces;
 	}
 
+	for (auto& component : component_triangles) {
+		auto loops = ifcopenshell::geom::util::find_boundary_loops(t->verts(), component.second);
+		if (triangulation_type == ifcopenshell::geom::settings::POLYHEDRON_WITHOUT_HOLES) {
+			if (loops.size() == 1) {
+				t->addFace(item_id, surface_style_id, loops[0]);
+			} else {
+				for (auto& tri : component.second) {
+					t->addFace(item_id, surface_style_id, std::vector<int>{ std::get<0>(tri), std::get<1>(tri), std::get<2>(tri) });
+				}
+			}
+		} else if (!loops.empty()) {
+			t->addFace(item_id, surface_style_id, loops);
+		}
+	}
 }
 
 void ifcopenshell::geom::cgal_shape::serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& r) const {
