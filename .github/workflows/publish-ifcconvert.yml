@@ -68,4 +68,5 @@ jobs:
           asset_name: ifcconvert-${{ steps.version.outputs.version }}-${{ matrix.config.short_name }}.zip
           release_name: "ifcconvert-${{steps.version.outputs.version}}"
           tag: "ifcconvert-${{steps.version.outputs.version}}"
+          target_commit: ${{ github.sha }}
           overwrite: true

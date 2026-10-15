@@ -40,4 +40,5 @@ jobs:
           asset_name: ifcsverchok-${{steps.version.outputs.version}}.zip
           release_name: "ifcsverchok-${{steps.version.outputs.version}}"
           tag: "ifcsverchok-${{steps.version.outputs.version}}"
+          target_commit: ${{ github.sha }}
           overwrite: true
