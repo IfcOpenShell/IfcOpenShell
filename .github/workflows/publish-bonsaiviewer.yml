@@ -1,5 +1,7 @@
 name: Publish Bonsai Viewer
 
+permissions: {}
+
 on:
   workflow_dispatch:
 
@@ -12,10 +14,37 @@ jobs:
     - name: Set env
       run: echo ok go
 
-  publish:
+  release:
     needs: upstream-only
+    runs-on: ubuntu-latest
+    permissions:
+      # Create the release.
+      contents: write
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Create release
+      id: release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        VERSION=$(cat VERSION)
+        TAG="bonsaiviewer-$VERSION"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        gh release view "$TAG" || gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes ""
+
+  publish:
+    needs: release
     name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
+    permissions:
+      # upload-release-action uploads assets
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -41,10 +70,9 @@ jobs:
             short_name: macosm164
           }
     steps:
-      - uses: actions/checkout@v7
-      - name: Get current version
-        id: version
-        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       # The binaries come from the platform build workflows, pinned by
       # BUILD_COMMIT in the Makefile like IfcConvert and IfcOpenShell-Python.
       - name: Fetch build
@@ -52,11 +80,10 @@ jobs:
           cd src/ifcopenshell-python &&
           make zip-bonsaiviewer PLATFORM=${{ matrix.config.short_name }}
       - name: Upload zip file to release
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # 2.11.5
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: src/ifcopenshell-python/dist/bonsaiviewer-${{ steps.version.outputs.version }}-${{ matrix.config.short_name }}.zip
-          asset_name: bonsaiviewer-${{ steps.version.outputs.version }}-${{ matrix.config.short_name }}.zip
-          release_name: "bonsaiviewer-${{steps.version.outputs.version}}"
-          tag: "bonsaiviewer-${{steps.version.outputs.version}}"
+          file: src/ifcopenshell-python/dist/bonsaiviewer-${{ needs.release.outputs.version }}-${{ matrix.config.short_name }}.zip
+          asset_name: bonsaiviewer-${{ needs.release.outputs.version }}-${{ matrix.config.short_name }}.zip
+          tag: ${{ needs.release.outputs.tag }}
           overwrite: true

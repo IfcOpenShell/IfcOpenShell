@@ -334,7 +334,7 @@ class sqlite(file):
         return self._schema
 
     @property
-    def header(self) -> types.SimpleNamespace:
+    def header(self) -> types.SimpleNamespace:  # ty: ignore[invalid-property-type-override]
         # Mimicking `file_header` object from `ifcopenshell.file`.
         header = types.SimpleNamespace(
             file_description=types.SimpleNamespace(description=(self.mvd_str,)),
