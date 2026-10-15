@@ -524,8 +524,20 @@ class Spatial(bonsai.core.tool.Spatial):
         previous_container_index = props.active_container_index
         props.containers.clear()
         cls.contracted_containers = json.loads(props.contracted_containers)
+        cls.sync_moved_spatial_placements()
         cls.import_spatial_element(tool.Ifc.get().by_type("IfcProject")[0], 0)
         props.active_container_index = tool.Blender.get_valid_uilist_index(previous_container_index, props.containers)
+
+    @classmethod
+    def sync_moved_spatial_placements(cls) -> None:
+        """Commit the placement of moved spatial elements so the container manager shows current elevations."""
+        ifc_file = tool.Ifc.get()
+        for element in ifc_file.by_type(tool.Root.get_spatial_element_class()):
+            obj = tool.Ifc.get_object(element)
+            if isinstance(obj, bpy.types.Object) and tool.Ifc.is_moved(obj):
+                # Refresh paths are not tool.Ifc.Operator flows, so mark the committed change ourselves.
+                tool.Blender.get_bim_props().is_dirty = True
+                tool.Geometry.commit_placement_if_moved(obj)
 
     @classmethod
     def import_spatial_element(cls, element: ifcopenshell.entity_instance, level_index: int) -> None:
