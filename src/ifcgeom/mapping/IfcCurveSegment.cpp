@@ -25,11 +25,13 @@ using namespace ifcopenshell::geom;
 
 #include "../profile_helper.h"
 
-#include <boost/math/quadrature/trapezoidal.hpp>
+#include <boost/math/quadrature/gauss_kronrod.hpp>
 #include <boost/math/tools/roots.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/vector.hpp>
+#include <complex>
 #include <numeric>
+#include <tuple>
 
 namespace {
 // @todo: rb is there a common math library these functions can be moved to?
@@ -43,6 +45,36 @@ enum segment_type_t {
 
 // @todo use std::numbers::pi when upgrading to C++ 20
 static const double PI = boost::math::constants::pi<double>();
+
+// Curve integrands are smooth, so adaptive Gauss-Kronrod quadrature reaches this relative tolerance in a few
+// evaluations of each
+static const double QUADRATURE_TOLERANCE = 1.0e-12;
+static const unsigned QUADRATURE_MAX_DEPTH = 15;
+
+// Integrates f from 0 to b as b times the integral of f(b t) from 0 to 1. Boost compares each interval's error
+// estimate, which isn't scaled by the interval's width, with a tolerance that is, so a short interval of integration
+// would be subdivided to the maximum depth.
+template <typename F>
+auto integrate_from_zero(const F& f, double b) -> decltype(f(0.0)) {
+    using result_type = decltype(f(0.0));
+    if (b == 0.0) {
+        return result_type(0.0);
+    }
+    return b * boost::math::quadrature::gauss_kronrod<double, 15>::integrate(
+        [&f, b](double t) { return f(b * t); }, 0.0, 1.0, QUADRATURE_MAX_DEPTH, QUADRATURE_TOLERANCE);
+}
+
+// Integrates a curve's unit tangent (fnX, fnY) from 0 to b, giving its point at b. The components are integrated
+// as one complex value so the tolerance is relative to the chord, not to each component, which can be zero.
+std::pair<double, double> integrate_tangent(const std::function<double(double)>& fnX, const std::function<double(double)>& fnY, double b) {
+    auto z = integrate_from_zero([&fnX, &fnY](double t) { return std::complex<double>(fnX(t), fnY(t)); }, b);
+    return {z.real(), z.imag()};
+}
+
+// Integrates the length element of a curve, which is at least 1, from 0 to b
+double integrate_length(const std::function<double(double)>& fs, double b) {
+    return integrate_from_zero(fs, b);
+}
 
 double translate_to_length_measure(const IfcSchema::IfcCurve& crv, double param_value) {
     if (std::abs(param_value) < 1.e-7) {
@@ -131,15 +163,31 @@ struct spiral_parent_curve : public parent_curve_function {
     using parent_curve_function::parent_curve_function;
 };
 
+// The frame of a cant curve at distance along x, where the deviating elevation is y. The cant curve is
+// in the (distance along, deviating elevation) plane, but its frame is X along the track, Y to the left
+// and Z up, as in the 3D curve it is combined with (see cant_fn_evaluator): the slope of the deviating
+// elevation, theta, pitches X up from the distance along, and Axis is rolled by the cross slope angle phi
+// (90 degrees when the rail heads are level), measured from the horizontal to the left.
+static Eigen::Matrix4d cant_frame(double theta, double phi, double x, double y) {
+    const double ct = cos(theta), st = sin(theta);
+    const double cp = cos(phi), sp = sin(phi);
+    Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+    m.col(0) = Eigen::Vector4d(ct, 0.0, st, 0.0);
+    m.col(1) = Eigen::Vector4d(st * cp, sp, -ct * cp, 0.0);
+    m.col(2) = Eigen::Vector4d(-st * sp, cp, ct * sp, 0.0);
+    m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
+    return m;
+}
+
 // this is the piecewise curve segment function for horizontal and vertical
-struct curve_segment_function {
+struct curve_segment_function : public taxonomy::span_function {
     curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& parent_curve_normalization, std::shared_ptr<parent_curve_function> parent_curve_fn) :
        curve_segment_placement_(curve_segment_placement),
        parent_curve_normalization_(parent_curve_normalization),
        parent_curve_fn_(parent_curve_fn) {
     }
 
-    Eigen::Matrix4d operator()(double u) const {
+    Eigen::Matrix4d operator()(double u) const override {
         Eigen::Matrix4d parent_curve_point = (*parent_curve_fn_)(u);
         Eigen::Matrix4d curve_segment_point = curve_segment_placement_ * parent_curve_normalization_ * parent_curve_point;
         return curve_segment_point + parent_curve_fn_->curvature(u);
@@ -152,24 +200,22 @@ struct curve_segment_function {
 };
 
 // this is the piecewise curve segment function for cant
-struct cant_curve_segment_function {
+struct cant_curve_segment_function : public taxonomy::span_function {
     cant_curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& parent_curve_start_point, std::shared_ptr<parent_curve_function> parent_curve_fn) :
        curve_segment_placement_(curve_segment_placement),
        parent_curve_start_point_(parent_curve_start_point),
        parent_curve_fn_(parent_curve_fn) {
     }
 
-    Eigen::Matrix4d operator()(double u) const {
-        // The parent curve function returns the cant rotation and superelevation for the parent curve.
-        // Subtract the parent_curve_start_point to get the incremental cant rotation and superelevation
-        // Add the incremental cant rotation and superelevation to curve_segment_placement to get the curve_segment_point
+    Eigen::Matrix4d operator()(double u) const override {
+        // The parent curve function returns the cant frame (see cant_frame) and superelevation for the parent curve.
+        // The frame is absolute: its slope comes from the parent curve and its cross slope from this segment's
+        // placement and the next one's, so it is used as it is.
+        // Subtract the parent_curve_start_point to get the incremental superelevation
+        // Add the incremental superelevation to curve_segment_placement to get the curve_segment_point
         Eigen::Matrix4d parent_curve_point = (*parent_curve_fn_)(u);
 
-        Eigen::Matrix3d parent_curve_start_rotation_ = parent_curve_start_point_.block<3, 3>(0, 0);
-        Eigen::Matrix3d parent_curve_point_rotation = parent_curve_point.block<3, 3>(0, 0);
-        Eigen::Matrix3d incremental_rotation = parent_curve_point_rotation * parent_curve_start_rotation_.transpose();
-        Eigen::Matrix3d placement_rotation_ = curve_segment_placement_.block<3, 3>(0, 0);
-        Eigen::Matrix3d curve_segment_rotation = incremental_rotation * placement_rotation_;
+        Eigen::Matrix3d curve_segment_rotation = parent_curve_point.block<3, 3>(0, 0);
 
         Eigen::Vector3d parent_curve_start_translation_ = parent_curve_start_point_.block<3, 1>(0, 3);
         Eigen::Vector3d parent_curve_point_translation = parent_curve_point.block<3, 1>(0, 3);
@@ -231,6 +277,8 @@ class curve_segment_evaluator {
 
     std::optional<Eigen::Matrix4d> curve_segment_placement_; // placement of this segment
     std::optional<Eigen::Matrix4d> next_segment_placement_; // placement of the next segment
+
+    taxonomy::span_curve span_curve_ = taxonomy::span_curve::UNSPECIFIED; // kind of parent curve, set by its operator()
 
   public:
     curve_segment_evaluator(mapping* mapping, const IfcSchema::IfcCurveSegment& inst, double length_unit)
@@ -346,9 +394,15 @@ class curve_segment_evaluator {
 
         auto length = fabs(this->length());
 
+        taxonomy::span_info info;
+        info.layout = segment_type_ == ST_HORIZONTAL ? taxonomy::span_layout::HORIZONTAL
+                    : segment_type_ == ST_VERTICAL   ? taxonomy::span_layout::VERTICAL
+                                                     : taxonomy::span_layout::CANT;
+        info.curve = span_curve_;
+
         if (segment_type_ == ST_CANT) {
-            auto fn = cant_curve_segment_function(*curve_segment_placement_, *parent_curve_start_point_, parent_curve_fn_);
-            return taxonomy::make<taxonomy::functor_item>(length, fn);
+            auto fn = std::make_shared<cant_curve_segment_function>(*curve_segment_placement_, *parent_curve_start_point_, parent_curve_fn_);
+            return taxonomy::make<taxonomy::functor_item>(length, fn, info, inst_);
         } else {
             // The parent curve function returns the 4x4 matrix for the parent curve.
             // Normalize the parent curve so that the trim start point and tangent direction at the start point
@@ -370,8 +424,8 @@ class curve_segment_evaluator {
            parent_curve_normalization(0, 3) = xn;
            parent_curve_normalization(1, 3) = yn;
 
-            auto fn = curve_segment_function(*curve_segment_placement_, parent_curve_normalization, parent_curve_fn_);
-            return taxonomy::make<taxonomy::functor_item>(length, fn);
+            auto fn = std::make_shared<curve_segment_function>(*curve_segment_placement_, parent_curve_normalization, parent_curve_fn_);
+            return taxonomy::make<taxonomy::functor_item>(length, fn, info, inst_);
         }
     }
 
@@ -383,8 +437,7 @@ class curve_segment_evaluator {
             if (start_) {
                 // the spiral doesn't start at the inflection point
                 // compute the point where it starts
-                pcStartX = boost::math::quadrature::trapezoidal(fnX, 0.0, start_ / s);
-                pcStartY = boost::math::quadrature::trapezoidal(fnY, 0.0, start_ / s);
+                std::tie(pcStartX, pcStartY) = integrate_tangent(fnX, fnY, start_ / s);
 
                 // compute the slope of the spiral at the start point
                 pcStartDx = s ? fnX(start_ / s) / s : 1.0;
@@ -415,7 +468,7 @@ class curve_segment_evaluator {
                      auto fs = [df](double x) -> double {
                          return sqrt(pow(df(x), 2) + 1);
                      };
-                     auto s = boost::math::quadrature::trapezoidal(fs, 0.0, x);
+                     auto s = integrate_length(fs, x);
                      return s;
                  };
             }
@@ -428,8 +481,8 @@ class curve_segment_evaluator {
                    auto b = s ? u / s : 0.0;
 
                    // point on parent curve
-                   auto x = boost::math::quadrature::trapezoidal(fnX, 0.0, b);
-                   auto y = boost::math::quadrature::trapezoidal(fnY, 0.0, b);
+                   double x, y;
+                   std::tie(x, y) = integrate_tangent(fnX, fnY, b);
                    auto dx = s ? fnX(b) / s : 1.0;
                    auto dy = s ? fnY(b) / s : 0.0;
 
@@ -512,26 +565,11 @@ class curve_segment_evaluator {
               auto super_elevation = Superelevation(u);
               auto slope = SuperelevationSlope(u);
 
-              // direction along curve segment
-              auto angle = atan(slope);
-              auto dx = cos(angle);
-              auto dy = sin(angle);
-              Eigen::Vector4d ref_dir(dx, dy, 0.0, 0.0);
-
               // tilt angle in the plane of the cross section
               auto cant = Cant(u);
               auto tilt_angle = start_angle + delta_angle * (cant - start_cant) / delta_cant;
-              Eigen::Vector4d axis(0.0, cos(tilt_angle), sin(tilt_angle), 0.0);
 
-              // compute cross slope direction
-              Eigen::Vector4d y = axis.cross3(ref_dir);
-
-              Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-              m.col(0) = ref_dir;
-              m.col(1) = y;
-              m.col(2) = axis;
-              m.col(3) = Eigen::Vector4d(u, super_elevation, 0.0, 1.0);
-              return m;
+              return cant_frame(atan(slope), tilt_angle, u, super_elevation);
           },
           [Cant](double u) -> Eigen::Matrix4d {
                 Eigen::Matrix4d c = Eigen::Matrix4d::Zero();
@@ -567,6 +605,7 @@ class curve_segment_evaluator {
 
 #ifdef SCHEMA_HAS_IfcClothoid
     void operator()(const IfcSchema::IfcClothoid& c) {
+        span_curve_ = taxonomy::span_curve::CLOTHOID;
         auto A = c.ClothoidConstant() * length_unit_;
         auto L = length(); // already includes length_unit_
 
@@ -580,7 +619,8 @@ class curve_segment_evaluator {
             }
 
             if (!slope.has_value()) {
-                slope = [A, L](double /*t*/) -> double { return A ? L * A / fabs(pow(A, 3)) : 0.0; };
+                // the derivative of cant
+                slope = [A, L](double /*t*/) -> double { return A ? L * L * A / fabs(pow(A, 3)) : 0.0; };
             }
 
            set_cant_spiral_function(*super,*slope, cant);
@@ -596,6 +636,7 @@ class curve_segment_evaluator {
 
 #if defined SCHEMA_HAS_IfcCosineSpiral
     void operator()(const IfcSchema::IfcCosineSpiral& c) {
+        span_curve_ = taxonomy::span_curve::COSINE_SPIRAL;
         auto constant_term = c.ConstantTerm();
         if (constant_term.has_value()) {
             constant_term.value() *= length_unit_;
@@ -633,8 +674,9 @@ class curve_segment_evaluator {
             }
 
             if (!slope.has_value()) {
+                // the derivative of cant
                 slope = [cosine_term, L](double t) -> double {
-                    auto a1 = -(PI / cosine_term) * sin(PI * t / L);
+                    auto a1 = -(PI * L / cosine_term) * sin(PI * t / L);
                     return a1;
                 };
             }
@@ -658,6 +700,7 @@ class curve_segment_evaluator {
 
 #if defined SCHEMA_HAS_IfcSineSpiral
     void operator()(const IfcSchema::IfcSineSpiral& c) {
+        span_curve_ = taxonomy::span_curve::SINE_SPIRAL;
         auto constant_term = c.ConstantTerm();
         if (constant_term.has_value()) {
             constant_term.value() *= length_unit_;
@@ -701,9 +744,10 @@ class curve_segment_evaluator {
             }
 
             if (!slope.has_value()) {
+                // the derivative of cant
                 slope = [linear_term, sine_term, L](double t) -> double {
-                    auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / linear_term.value(), 2.0) * (1.0 / L) : 0.0;
-                    auto a2 = (2 * PI / sine_term) * cos(2 * PI * t / L);
+                    auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / linear_term.value(), 2.0) : 0.0;
+                    auto a2 = (2 * PI * L / sine_term) * cos(2 * PI * t / L);
                     return a1 + a2;
                 };
             }
@@ -799,6 +843,7 @@ class curve_segment_evaluator {
 
 #ifdef SCHEMA_HAS_IfcSecondOrderPolynomialSpiral
     void operator()(const IfcSchema::IfcSecondOrderPolynomialSpiral& c) {
+        span_curve_ = taxonomy::span_curve::SECOND_ORDER_POLYNOMIAL_SPIRAL;
         auto A0 = c.ConstantTerm();
         auto A1 = c.LinearTerm();
         auto A2 = c.QuadraticTerm();
@@ -814,6 +859,7 @@ class curve_segment_evaluator {
 
 #ifdef SCHEMA_HAS_IfcThirdOrderPolynomialSpiral
     void operator()(const IfcSchema::IfcThirdOrderPolynomialSpiral& c) {
+        span_curve_ = taxonomy::span_curve::THIRD_ORDER_POLYNOMIAL_SPIRAL;
         auto A0 = c.ConstantTerm();
         auto A1 = c.LinearTerm();
         auto A2 = c.QuadraticTerm();
@@ -834,6 +880,7 @@ class curve_segment_evaluator {
 
 #ifdef SCHEMA_HAS_IfcSeventhOrderPolynomialSpiral
     void operator()(const IfcSchema::IfcSeventhOrderPolynomialSpiral& c) {
+        span_curve_ = taxonomy::span_curve::SEVENTH_ORDER_POLYNOMIAL_SPIRAL;
         auto A0 = c.ConstantTerm();
         auto A1 = c.LinearTerm();
         auto A2 = c.QuadraticTerm();
@@ -852,6 +899,7 @@ class curve_segment_evaluator {
 #endif
 
     void operator()(const IfcSchema::IfcCircle& c) {
+        span_curve_ = taxonomy::span_curve::CIRCLE;
         if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
             auto R = c.Radius() * length_unit_;
             auto parent_curve_position = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c.Position()))->ccomponents();
@@ -983,6 +1031,7 @@ class curve_segment_evaluator {
     }
 
     void operator()(const IfcSchema::IfcLine& l) {
+        span_curve_ = taxonomy::span_curve::LINE;
        projected_length_ = length_;
 
        auto c = l.Pnt().Coordinates();
@@ -1036,13 +1085,15 @@ class curve_segment_evaluator {
                   auto x = pcX + pcDXx * u;
                   auto y = pcY + pcDXy * u;
 
+                  if (segment_type == ST_CANT) {
+                      // the line's slope in the (distance along, deviating elevation) plane, and the cross slope
+                      // of the placement's Axis
+                      return cant_frame(atan2(pcDXy, pcDXx), atan2(pcDZz, pcDZy), x, y);
+                  }
+
                   Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
                   Eigen::Vector3d X(pcDXx, pcDXy, 0);
                   Eigen::Vector3d Z(0, 0, 1);
-
-                  if (segment_type == ST_CANT) {
-                      Z = Eigen::Vector3d(0, pcDZy, pcDZz);
-                  }
 
                   Eigen::Vector3d Y = Z.cross(X).normalized();
 
@@ -1070,6 +1121,7 @@ class curve_segment_evaluator {
 
 #ifdef SCHEMA_HAS_IfcPolynomialCurve
     void operator()(const IfcSchema::IfcPolynomialCurve& pc) {
+        span_curve_ = taxonomy::span_curve::POLYNOMIAL_CURVE;
         // see https://forums.buildingsmart.org/t/ifcpolynomialcurve-clarification/4716 for discussion on IfcPolynomialCurve
         auto coeffX = pc.CoefficientsX().value_or(std::vector<double>());
         auto coeffY = pc.CoefficientsY().value_or(std::vector<double>());
@@ -1123,7 +1175,7 @@ class curve_segment_evaluator {
                 auto fs = [df](double x) -> double {
                     return sqrt(pow(df(x), 2) + 1);
                 };
-                auto s = boost::math::quadrature::trapezoidal(fs, 0.0, x);
+                auto s = integrate_length(fs, x);
                 return s;
             };
             // There isn't a closed form solution to get x that corresponds to a distance along the curve, u
