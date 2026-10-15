@@ -33,6 +33,13 @@ def refresh():
     BoundaryConditionsData.is_loaded = False
     LoadGroupDecorationData.is_loaded = False
 
+    # Keep the loads shown in the viewport in step with every change, undo included.
+    from bonsai.bim.module.structural.decorator import LoadsDecorator
+
+    if LoadsDecorator.is_installed:
+        LoadsDecorator.update()
+        tool.Blender.update_all_viewports()
+
 
 class LoadGroupDecorationData:
     data = {}

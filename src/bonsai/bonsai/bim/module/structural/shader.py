@@ -36,6 +36,7 @@ class DecorationShader:
             "SINGLE FORCE",
             "SINGLE MOMENT",
             "PLANAR LOAD",
+            "DASHED LINE",
         ],
     ) -> gpu.types.GPUShader:
         """pattern: string description of the desired shader
@@ -48,6 +49,7 @@ class DecorationShader:
         SINGLE FORCE: pattern for single forces
         SINGLE MOMENT: pattern for single moments
         PLANAR LOAD: pattern for planar loads
+        DASHED LINE: pattern for construction lines, with dashes every spacing along coord y
         """
         valid_patterns = {
             "PERPENDICULAR DISTRIBUTED FORCE",
@@ -56,6 +58,7 @@ class DecorationShader:
             "SINGLE FORCE",
             "SINGLE MOMENT",
             "PLANAR LOAD",
+            "DASHED LINE",
         }
         if pattern not in valid_patterns:
             raise ValueError("""pattern must be one of:
@@ -64,11 +67,12 @@ class DecorationShader:
                              DISTRIBUTED MOMENT,
                              SINGLE FORCE,
                              SINGLE MOMENT,
-                             PLANAR LOAD""")
+                             PLANAR LOAD,
+                             DASHED LINE""")
         if "DISTRIBUTED" in pattern.upper():
             shader = self.get_linear_shader(pattern)
             return shader
-        elif "SINGLE" in pattern.upper():
+        elif "SINGLE" in pattern.upper() or pattern == "DASHED LINE":
             shader = self.get_point_shader(pattern)
             return shader
         elif "PLANAR" in pattern.upper():
@@ -199,10 +203,11 @@ class DecorationShader:
         del shader_info
         return shader
 
-    def get_point_shader(self, pattern: Literal["SINGLE FORCE", "SINGLE MOMENT"]) -> gpu.types.GPUShader:
+    def get_point_shader(self, pattern: Literal["SINGLE FORCE", "SINGLE MOMENT", "DASHED LINE"]) -> gpu.types.GPUShader:
         """param: pattern: type of pattern
         SINGLE FORCE,
-        SINGLE MOMENT"""
+        SINGLE MOMENT,
+        DASHED LINE"""
         vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
         vert_out.smooth("VEC3", "co")
 
@@ -244,6 +249,11 @@ class DecorationShader:
                 "if (d == 0.0) discard;"
                 "FragColor = vec4(color.xyz,d*color.w);"
                 "}"
+            )
+
+        elif pattern == "DASHED LINE":
+            shader_info.fragment_source(
+                "void main(){if (fract(co.y / spacing) > 0.5) discard;FragColor = vec4(color.xyz, 0.5 * color.w);}"
             )
 
         shader = gpu.shader.create_from_info(shader_info)

@@ -108,3 +108,32 @@ out, such as assigning the load case or the point to the model, failed silently.
 An operator property's `update` callback receives the operator's properties, not the
 operator, so the dialogs' shared input logic is in module-level functions that the callbacks
 and the operator methods both call.
+
+## 3. Readable point force diagrams
+
+Show Loads drew each component of the summed force at a point as a fixed-length arrow pointing
+at the point, so separate forces and how they combine could not be seen.
+
+- A **Point Forces** setting offers five views. *Components*, *Both* and *Resultant* draw the
+  sum of the forces at a point: its components, the components with their resultant, or the
+  resultant alone. *Parallelogram* and *Tip-to-Tail* draw each applied force separately and
+  build their resultant by the parallelogram law or tip to tail. A single force is shown
+  resolved into its components, which are the legs of its parallelogram.
+- Forces are drawn from the point outwards to a shared **Force Scale**, a force per unit
+  length, or fitted automatically. Arrowheads, shafts and dashes are sized to the longest arrow,
+  so the diagram reads the same at any scale. Resultants are white and heavier.
+- **Angles** marks each force and resultant lying in the X-Z plane with an arc from a
+  horizontal reference axis. By default this is the acute angle from the nearest horizontal,
+  as statics texts give it, measured from -X for forces pointing left; *Angle From* can switch
+  to counter-clockwise from +X. Reference axes are coloured in bands by the arc that starts in
+  each.
+- Values are coloured as their arrow, placed beside their line rather than on it (in a
+  tip-to-tail chain, at the middle of each arrow outside the force polygon), with settable
+  decimals. Forces are chained in the order they were applied.
+- Load glyphs no longer write depth, so they do not hide each other or the values, whose
+  visibility is tested against depth; later glyphs, such as resultants, draw on top.
+- Shown loads redraw after every IFC operation, undo included, when a structural item moves,
+  even during a grab, and when a display setting changes, instead of waiting for F5.
+
+Not yet exercised: point loads placed along curve members, which are drawn through the same
+code but which nothing creates yet.
