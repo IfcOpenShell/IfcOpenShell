@@ -1,5 +1,7 @@
 name: Test Bonsai
 
+permissions: {}
+
 on:
   pull_request:
   workflow_dispatch:
@@ -21,7 +23,7 @@ jobs:
     outputs:
       should_run: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.bonsai == 'true' }}
     steps:
-      - uses: dorny/paths-filter@v4
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         if: github.event_name != 'workflow_dispatch'
         with:
@@ -48,11 +50,12 @@ jobs:
     needs: detect-bonsai-changes
     if: needs.detect-bonsai-changes.outputs.should_run == 'true'
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
+          persist-credentials: false
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.13'
 
