@@ -44,6 +44,8 @@ from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
 NEUTRAL = "#222222"
 # X, Y and Z components, as red, green and blue that read on white and on dark pages alike.
 AXIS_COLORS = {(1.0, 0.0, 0.0): "#d23a3a", (0.0, 1.0, 0.0): "#2e9e44", (0.0, 0.0, 1.0): "#3b74d8"}
+# A symbol's subscript in diagram labels, written F_{x1} as in the steps.
+SUBSCRIPT = re.compile(r"_\{([^}]*)\}")
 
 # How each eighth's angle is measured, as Edit Load enters it.
 EIGHTH_AXES = {
@@ -101,14 +103,22 @@ def get_report_data(
                 drawing.update()
             name = f"{get_slug(case.Name)}_{get_slug(item.Name)}_{item.id()}.svg"
             # Forces are numbered as they are drawn, tip to tail; the diagram names them so too.
-            symbols = {a.id(): f"F{str(i).translate(SUBSCRIPTS)}" for i, a in enumerate(activities, 1)}
+            numbers = {a.id(): i for i, a in enumerate(activities, 1)}
             resultant_found = bool(get_resultant_found([tool.Structural.get_locks(a) for a in activities]))
-            has_diagram = write_diagram(drawing, item, directory / "diagrams" / name, symbols, resultant_found)
+            has_diagram = write_diagram(drawing, item, directory / "diagrams" / name, numbers, resultant_found)
             point = {"name": item.Name or "Unnamed", "diagram": f"diagrams/{name}" if has_diagram else None}
             colors = get_force_colors(drawing, item)
             tilt = tool.Structural.get_axes_tilt(item)
             axis_colors = get_axis_colors(len(activities), tilt)
-            point.update(get_resultant_calculation(activities, unit, colors, detailed, tilt, axis_colors))
+            slope = tool.Structural.get_axes_slope(item)
+            svg_colors = {activity: get_svg_color(color) for activity, color in colors.items()}
+            point.update(get_resultant_calculation(activities, unit, svg_colors, detailed, tilt, axis_colors, slope))
+            # Resolved along the point's tilted axes too, whatever the viewport shows.
+            resolved = name.replace(".svg", "_axes.svg")
+            if point["has_tilted"] and write_resolved_diagram(
+                item, activities, colors, directory / "diagrams" / resolved, numbers
+            ):
+                point["tilted_diagram"] = f"diagrams/{resolved}"
             points.append(point)
         if points:
             cases.append({"name": case.Name or "Unnamed", "points": points})
@@ -125,18 +135,39 @@ def get_report_data(
     }
 
 
-SUBSCRIPTS = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
-
-
-def get_force_colors(drawing: ShaderInfo, item: ifcopenshell.entity_instance) -> dict[int, str]:
-    """The colour each activity's force is drawn in at an item, for paper"""
+def get_force_colors(drawing: ShaderInfo, item: ifcopenshell.entity_instance) -> dict[int, tuple]:
+    """The colour each activity's force is drawn in at an item, as in the viewport"""
     if not (obj := tool.Ifc.get_object(item)):
         return {}
     return {
-        text["force_of"]: get_svg_color(text["color"])
+        text["force_of"]: text["color"]
         for text in drawing.text_info
         if text.get("object") == obj.name and text.get("force_of")
     }
+
+
+def write_resolved_diagram(
+    item: ifcopenshell.entity_instance,
+    activities: list[ifcopenshell.entity_instance],
+    colors: dict[int, tuple],
+    path: Path,
+    numbers: dict[int, int],
+) -> bool:
+    """Write a diagram of each force at a point resolved along its tilted axes, as the steps resolve them"""
+    if not (obj := tool.Ifc.get_object(item)):
+        return False
+    drawing = ShaderInfo()
+    drawing.get_force_units()
+    forces = [np.array(get_force_terms(activity, i)["vector"]) for i, activity in enumerate(activities, 1)]
+    drawing.draw_resolved_point_forces(
+        obj.name,
+        forces,
+        tool.Structural.get_axes_rotation(item),
+        [colors.get(activity.id(), (1, 1, 1, 2)) for activity in activities],
+        [activity.id() for activity in activities],
+        tool.Structural.get_axes_slope(item),
+    )
+    return write_diagram(drawing, item, path, numbers)
 
 
 def get_point_items(case: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -198,6 +229,7 @@ def get_resultant_calculation(
     detailed: bool = False,
     tilt: Union[float, None] = 0.0,
     axis_colors: Union[dict[str, str], None] = None,
+    slope: Union[tuple[float, float], None] = None,
 ) -> dict[str, Any]:
     """The steps for concurrent point forces and their resultant.
 
@@ -215,12 +247,16 @@ def get_resultant_calculation(
     rows = []
     for force, color in zip(forces, palette):
         found = [text for text, locked in zip(("magnitude", "direction"), force["locks"]) if not locked]
+        if force.get("given") and "magnitude" not in found:
+            found.insert(0, "magnitude")  # Found from its known component.
         rows.append(get_table_row(force["symbol"], force["name"], force["magnitude"], force["direction"], found, color))
         rows[-1]["magnitude"] += f" {unit}"
     solving, find = get_solving_steps(forces, text_unit)
     # Components first, then the unknowns found from them, then the resultant with what was found.
     found = {
-        i: "MAGNITUDE" if force["locks"][1] else "WHOLE" for i, force in enumerate(forces) if not all(force["locks"])
+        i: "MAGNITUDE" if force["locks"][1] else "WHOLE"
+        for i, force in enumerate(forces)
+        if not all(force["locks"]) or force.get("given")
     }
     resultant_found = get_resultant_found([force["locks"] for force in forces])
     components, steps, summary = get_sum_steps(forces, text_unit, unit, found if solving else None, resultant_found)
@@ -240,16 +276,16 @@ def get_resultant_calculation(
     rows[-1]["magnitude"] += f" {unit}"
     # Detailed steps in grey, applied in LaTeX so that both formats show it; force symbols keep their colours.
     gray = lambda step: f"{{\\color{{#8c8c8c}}\\qquad {step}}}" if isinstance(step, Detail) else step  # Indented.
-    render = lambda steps: [
+    render = lambda steps, colors=axis_colors, resolved=len(forces) == 1: [
         {
-            "latex": get_colored_symbols(gray(step), palette, axis_colors, len(forces) == 1),
+            "latex": get_colored_symbols(gray(step), palette, colors, resolved),
             "detail": isinstance(step, Detail),
             "lead": isinstance(step, Lead),
         }
         for step in steps
         if detailed or not isinstance(step, Detail)
     ]
-    tilted = get_tilted_steps(forces, tilt, text_unit) if tilt else []
+    tilted = get_tilted_steps(forces, tilt, text_unit, slope) if tilt else []
     return {
         "forces": rows,
         "find": get_colored_symbols(find, palette),  # With inline math, $F_{2}$, as both formats read.
@@ -258,51 +294,95 @@ def get_resultant_calculation(
         "components": render(components),
         "steps": render(steps),
         "summary": summary,
-        "tilted": render(tilted),
+        # Its diagram draws each force's components along x' and z', so they take their axes' colours.
+        "tilted": render(tilted, {"x'": AXIS_COLORS[(1.0, 0.0, 0.0)], "z'": AXIS_COLORS[(0.0, 0.0, 1.0)]}, True),
         "has_tilted": bool(tilted),
-        "tilt_note": f"x′ is tilted {tilt:.1f}° from +X towards +Z, with z′ square to it." if tilted else "",
+        "tilt_note": (
+            (f"x′ runs along a {slope[0]:g}:{slope[1]:g} slope, " if slope else "x′ is ")
+            + f"tilted {tilt:.1f}° from +X towards +Z, with z′ square to it."
+            if tilted
+            else ""
+        ),
+        # A push added to other forces is drawn, and added, as a pull along its line.
+        "push_note": (
+            "By the principle of transmissibility, a push is added as a pull along its line of action."
+            if len(forces) > 1 and any(force.get("push") for force in forces)
+            else ""
+        ),
     }
 
 
-def get_tilted_steps(forces: list[dict[str, Any]], tilt: float, text_unit: str) -> list[str]:
-    """Each force resolved along a point's tilted axes x' and z', by its angle to each, then their sums"""
-    steps: list[str] = [
-        Detail("\\text{A component along an axis is the force times the cosine of the angle between them}")
-    ]
+def get_tilted_steps(
+    forces: list[dict[str, Any]],
+    tilt: float,
+    text_unit: str,
+    slope: Union[tuple[float, float], None] = None,
+) -> list[str]:
+    """Each force resolved along a point's tilted axes x' and z' as a textbook does, then their sums.
+
+    A component uses the smaller of the two angles the force's line makes with the axes, as P sin θ and
+    P cos θ, and the ratios of the slope's sides when that angle is the slope's own. Its sign is told in
+    words: up or down the slope, away from or into the surface.
+
+    :param slope: The rise and run the axes were tilted by, if they were.
+    """
+    steps: list[str] = [Detail("\\text{Each component uses the smaller angle the force's line makes with the axes}")]
+    x_axis = (math.cos(math.radians(tilt)), math.sin(math.radians(tilt)))
+    z_axis = (-x_axis[1], x_axis[0])
+    # x' points up a slope rising to the right, and down one falling to the right.
+    heading = tilt % 360
+    x_words = ("along +x'", "along -x'")
+    if 0 < heading < 90:
+        x_words = ("up the slope", "down the slope")
+    elif 270 < heading < 360:
+        x_words = ("down the slope", "up the slope")
+    words = {
+        "x'": x_words,
+        "z'": ("away from the surface", "into the surface")
+        if -90 < (tilt + 180) % 360 - 180 < 90
+        else ("along +z'", "along -z'"),
+    }
+    slope_angle = math.degrees(math.atan2(*slope)) if slope else None
     totals = {"x'": [], "z'": []}
     for i, force in enumerate(forces, 1):
         if not force["in_plane"]:
             continue
         x, _, z = force["vector"]
         magnitude, direction = math.hypot(x, z), math.degrees(math.atan2(z, x)) % 360
+        between = abs((direction - tilt + 180) % 360 - 180)  # Between the force and x', 0 to 180.
+        with_x = min(between, 180 - between)  # Between their lines.
+        with_z = 90 - with_x
         steps.append(Lead(f"{force['symbol']} \\text{{ acts at }} {direction:.1f}^\\circ \\text{{ from }} +X"))
-        for name, axis in (("x'", tilt % 360), ("z'", (tilt + 90) % 360)):
-            difference = abs(direction - axis)
-            between = min(difference, 360 - difference)
-            cosine = math.cos(math.radians(between))
-            value = magnitude * cosine
-            steps.append(Lead(f"{name} \\text{{ lies at }} {axis:.1f}^\\circ \\text{{ from }} +X"))
-            steps.append(
-                Detail(
-                    f"\\text{{Angle between: }} |{direction:.1f}^\\circ - {axis:.1f}^\\circ| = {difference:.1f}^\\circ"
-                )
+        steps.append(
+            Detail(
+                f"\\text{{Its line makes }} {with_x:.1f}^\\circ \\text{{ with }} x' \\text{{ and }} {with_z:.1f}^\\circ \\text{{ with }} z'"
             )
-            if difference > 180:
-                steps.append(
-                    Detail(
-                        f"\\text{{The smaller way round: }} 360^\\circ - {difference:.1f}^\\circ = {between:.1f}^\\circ"
-                    )
-                )
+        )
+        angle = min(with_x, with_z)
+        # cos of the angle with its own axis, sin of the angle with the other.
+        functions = {"x'": "\\cos" if with_x <= with_z else "\\sin", "z'": "\\sin" if with_x <= with_z else "\\cos"}
+        by_slope = slope is not None and math.isclose(angle, abs(slope_angle), abs_tol=1e-6)
+        for name, axis in (("x'", x_axis), ("z'", z_axis)):
+            value = x * axis[0] + z * axis[1]
+            if by_slope:
+                rise, run = abs(slope[0]), abs(slope[1])
+                side = rise if functions[name] == "\\sin" else run
+                term = f"\\left(\\frac{{{side:g}}}{{{get_slope_hypotenuse(rise, run)}}}\\right)"
+            else:
+                term = f"{functions[name]} {angle:.1f}^\\circ"
+            sign = "-" if value < -1e-9 else ""
+            part = abs(value) / magnitude
             steps.append(
-                f"F_{{{name}{i}}} = F_{{{i}}} \\cos {between:.1f}^\\circ = ({magnitude:.2f}) \\cos {between:.1f}^\\circ "
-                f"= {value:.2f}{text_unit}"
+                f"F_{{{name}{i}}} = {sign}F_{{{i}}} {term} = {sign}({magnitude:.2f}) {term} = {value:.2f}{text_unit}"
             )
-            steps.append(Detail(f"\\cos {between:.1f}^\\circ = {cosine:.4f}"))
-            steps.append(Detail(f"({magnitude:.2f})({cosine:.4f}) = {value:.2f}"))
-            if value < -0.005:
-                steps.append(Detail(f"\\text{{Negative: it points along }} -{name}"))
-            elif abs(value) < 0.005:
+            steps.append(Detail(f"{term} = {part:.4f}"))
+            steps.append(Detail(f"{sign}({magnitude:.2f})({part:.4f}) = {value:.2f}"))
+            if abs(value) < 0.005:
                 steps.append(Detail(f"\\text{{Zero: it lies square to }} {name}"))
+            else:
+                steps.append(
+                    Detail(f"\\text{{{'Negative' if sign else 'Positive'}: it points {words[name][bool(sign)]}}}")
+                )
             totals[name].append((i, value))
     for name, values in totals.items():
         if len(values) > 1:
@@ -400,7 +480,44 @@ def get_force_terms(activity: ifcopenshell.entity_instance, i: int) -> dict[str,
         eighth, angle, _, _ = tool.Structural.get_eighth(x, z, named[1] if named else None)
         force["direction"] = f"{angle:.1f}° {eighth}, {EIGHTH_AXES[eighth]}"
         force["terms"] = get_component_terms(x, z, eighth, angle)
+        # Entered as a slope, its components follow by similar triangles, as ratios of the slope's sides.
+        if (slope := get_named_slope(load.Name or "", x, z)) is not None:
+            rise, run = slope
+            force["slope"] = slope
+            force["direction"] = f"{rise:g}:{run:g} slope, {force['direction']}"
+            force["terms"] = get_slope_terms(x, z, rise, run)
+    force["given"] = tool.Structural.get_known_component(activity) if force["in_plane"] else None
+    if tool.Structural.get_push(activity):
+        force["push"] = True
+        force["direction"] += ", push"
     return force
+
+
+def get_named_slope(name: str, x: float, z: float) -> Union[tuple[float, float], None]:
+    """The rise and run a generated load name records, if they are the slope of the components x and z"""
+    if not (match := re.search(r" at (-?[\d.]+):(-?[\d.]+)(?: \S+)?$", name)):
+        return None
+    rise, run = abs(float(match[1])), abs(float(match[2]))
+    if not (rise or run) or not math.isclose(abs(x) * rise, abs(z) * run, rel_tol=1e-6, abs_tol=1e-9):
+        return None
+    return rise, run
+
+
+def get_slope_hypotenuse(rise: float, run: float) -> str:
+    """The slope triangle's hypotenuse, as a number if it is a whole one, as 5 for 3:4, else as a root"""
+    hypotenuse = math.hypot(rise, run)
+    if math.isclose(hypotenuse, round(hypotenuse), abs_tol=1e-9):
+        return f"{round(hypotenuse)}"
+    return f"\\sqrt{{{rise * rise + run * run:g}}}"
+
+
+def get_slope_terms(x: float, z: float, rise: float, run: float) -> dict[str, str]:
+    """The ratios of the X and Z components of a slope to its force, with signs, as -\\left(\\frac{4}{5}\\right)"""
+    hypotenuse = get_slope_hypotenuse(rise, run)
+    return {
+        "x": f"{'-' if x < 0 else ''}\\left(\\frac{{{run:g}}}{{{hypotenuse}}}\\right)",
+        "z": f"{'-' if z < 0 else ''}\\left(\\frac{{{rise:g}}}{{{hypotenuse}}}\\right)",
+    }
 
 
 def get_component_terms(x: float, z: float, eighth: str, angle: float) -> dict[str, str]:
@@ -433,6 +550,17 @@ def get_sum_steps(
     for i, force in enumerate(forces, 1):
         x, y, z = force["vector"]
         if force["in_plane"]:
+            if slope := force.get("slope"):
+                # The slope triangle's sides, the hypotenuse found first.
+                rise, run = slope
+                hypotenuse = get_slope_hypotenuse(rise, run)
+                value = f"{hypotenuse} = {math.hypot(rise, run):.4f}" if "sqrt" in hypotenuse else hypotenuse
+                components.append(
+                    Lead(
+                        f"{force['symbol']} \\text{{ rises }} {rise:g} \\text{{ in }} {run:g} \\text{{ along its slope}}"
+                    )
+                )
+                components.append(Detail(f"\\sqrt{{{rise:g}^2 + {run:g}^2}} = {value}"))
             for axis, value in (("x", x), ("z", z)):
                 term = force["terms"][axis]
                 sign, trig = ("-", term[1:]) if term.startswith("-") else ("", term)
@@ -493,6 +621,28 @@ def get_sum_steps(
 
 
 def get_solving_steps(forces: list[dict[str, Any]], text_unit: str) -> tuple[list[str], str]:
+    """The steps finding what was unknown, and what they find: magnitudes from known components, then unlocked values"""
+    steps, finds = [], []
+    for n, force in enumerate(forces, 1):
+        if not (given := force.get("given")):
+            continue
+        # The known component, written with the unknown magnitude, then solved for it.
+        axis = given.lower()
+        value = force["vector"][0 if axis == "x" else 2]
+        term = force["terms"][axis]
+        sign, ratio = ("-", term[1:]) if term.startswith("-") else ("", term)
+        part = abs(value) / force["magnitude"]
+        steps.append(f"F_{{{axis}{n}}} = {sign}F_{{{n}}} {ratio} = {value:.2f}{text_unit}")
+        steps.append(Detail(f"{ratio} = {part:.4f}"))
+        steps.append(Detail(f"\\text{{Divide both sides by }} {ratio}:"))
+        magnitude = f"{force['magnitude']:.2f}"
+        steps.append(f"F_{{{n}}} = \\frac{{{abs(value):.2f}}}{{{ratio}}} = {bold(magnitude, True, text_unit)}")
+        finds.append(f"The magnitude of ${force['symbol']}$, its {axis} component and direction being known.")
+    unknown_steps, unknown_find = get_unknown_steps(forces, text_unit)
+    return steps + unknown_steps, " ".join(finds + ([unknown_find] if unknown_find else []))
+
+
+def get_unknown_steps(forces: list[dict[str, Any]], text_unit: str) -> tuple[list[str], str]:
     """The steps finding the unknown (unlocked) values, and what they find, or none if all were known.
 
     Unknown magnitudes are found from the sums along X and Z, as the book does.
@@ -698,7 +848,7 @@ def write_diagram(
     drawing: ShaderInfo,
     item: ifcopenshell.entity_instance,
     path: Path,
-    symbols: Union[dict[int, str], None] = None,
+    numbers: Union[dict[int, int], None] = None,
     resultant_found: bool = False,
 ) -> bool:
     """Write a structural item's load diagram as an SVG, as the X-Z plane is seen from -Y, or nothing if none.
@@ -711,11 +861,22 @@ def write_diagram(
         e["primitive"] | {"color": e["color"]} for e in drawing.info if e.get("object") == obj.name and "primitive" in e
     ]
     texts = [t for t in drawing.text_info if t.get("object") == obj.name]
-    # Name each force's magnitude by its symbol in the calculations.
-    texts = [
-        t | {"text": f"{symbols[t['force_of']]} = {t['text']}"} if t.get("force_of") in (symbols or {}) else t
-        for t in texts
-    ]
+    # Name each force and component by its symbol in the calculations: a single force's components as its
+    # own, F_x1, and several forces' as their resultant's, R_x.
+    numbers = numbers or {}
+
+    def get_symbol(text: dict) -> Union[str, None]:
+        if text.get("force_of") in numbers:
+            return f"F_{{{numbers[text['force_of']]}}}"
+        if (axis := text.get("component")) and text.get("component_of") in numbers:
+            return f"F_{{{axis}{numbers[text['component_of']]}}}"  # A component of one force, resolved.
+        if axis:
+            if len(numbers) == 1:
+                return f"F_{{{axis}{next(iter(numbers.values()))}}}"
+            return f"R_{{{axis}}}"
+        return None
+
+    texts = [t | {"text": f"{symbol} = {t['text']}"} if (symbol := get_symbol(t)) else t for t in texts]
     if not shapes:
         return False
     flat = lambda point: np.array((point[0], -point[2]))  # SVG's Y runs down.
@@ -723,7 +884,9 @@ def write_diagram(
     points += [flat(text["position"]) for text in texts]
     low, high = np.min(points, axis=0), np.max(points, axis=0)
     scale = 420 / max(*(high - low), 1e-9)
-    margin = 90
+    # Room for the longest label beside its anchor, as labels run out from their anchors.
+    longest = max((len(get_shown_text(t["text"])) for t in texts), default=0)
+    margin = max(90, 20 + 8.2 * longest)
     to_svg = lambda point: (flat(point) - low) * scale + margin
     width, height = (high - low) * scale + 2 * margin
     # On white, as a figure on paper, so that its near-black lines read on dark pages too.
@@ -779,6 +942,11 @@ def get_svg_color(color: tuple) -> str:
     return "#" + "".join(f"{round(c * 0.72 * 255):02x}" for c in rgb)
 
 
+def get_shown_text(text: str) -> str:
+    """A label as read, its subscripts inline, as they take about as much room as they show"""
+    return SUBSCRIPT.sub(r"\1", text)
+
+
 def get_svg_label(
     text: dict, anchor: np.ndarray, placed: list[tuple[float, float, float, float]], found: bool = False
 ) -> str:
@@ -789,7 +957,7 @@ def get_svg_label(
     content = str(text["text"])
     # Found values a little larger than the 13 px of the rest, rather than bold, which reads badly in SVG.
     font_size = 15 if found else 13
-    width, height = 7.5 * font_size / 13 * len(content), 14.0 * font_size / 13
+    width, height = 7.5 * font_size / 13 * len(get_shown_text(content)), 14.0 * font_size / 13
     align = "start" if direction[0] > 0.3 else "end" if direction[0] < -0.3 else "middle"
     position = anchor + 8 * direction
     for _ in range(40):
@@ -802,6 +970,8 @@ def get_svg_label(
     # The label's middle line sits at the box's middle, which is its top plus half its height.
     color = get_svg_color(text.get("color", (0.3, 0.3, 0.3, 1)))
     escaped = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    # Symbols' subscripts, written F_{x1} as in the steps, set lower and smaller; Unicode has no subscript z.
+    escaped = SUBSCRIPT.sub(r'<tspan baseline-shift="sub" font-size="75%">\1</tspan>', escaped)
     size = f' font-size="{font_size}"' if found else ""
     # On a white box, so that lines running under it do not cross the text.
     return (

@@ -19,16 +19,18 @@
 import math
 import re
 import webbrowser
+from collections.abc import Callable
 from math import degrees
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 import bpy
 import ifcopenshell.api.group
 import ifcopenshell.api.structural
 import ifcopenshell.util.unit
+import numpy as np
 from bpy_extras.view3d_utils import location_3d_to_region_2d
-from mathutils import Matrix, Vector
+from mathutils import Euler, Matrix, Vector
 
 import bonsai.bim.helper
 import bonsai.core.structural as core
@@ -40,6 +42,86 @@ from bonsai.bim.module.structural.data import (
 )
 from bonsai.bim.module.structural.decorator import LoadsDecorator
 from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
+
+# The eighths of a circle, counter-clockwise from +X, that directions are given in.
+EIGHTH_ITEMS = [
+    ("Q1", "Q1", "From → (+X), turning up"),
+    ("Q2", "Q2", "From ↑ (+Z), turning right"),
+    ("Q3", "Q3", "From ↑ (+Z), turning left"),
+    ("Q4", "Q4", "From ← (-X), turning up"),
+    ("Q5", "Q5", "From ← (-X), turning down"),
+    ("Q6", "Q6", "From ↓ (-Z), turning left"),
+    ("Q7", "Q7", "From ↓ (-Z), turning right"),
+    ("Q8", "Q8", "From → (+X), turning down"),
+]
+
+
+def draw_pinwheel(layout: bpy.types.UILayout, props: bpy.types.Operator) -> None:
+    """A pinwheel of the eight directions, counter-clockwise from Q1 just above +X"""
+    pinwheel = layout.column(align=True)
+    for cells in (
+        (None, "Q3", "Q2", None),
+        ("Q4", None, None, "Q1"),
+        ("Q5", None, None, "Q8"),
+        (None, "Q6", "Q7", None),
+    ):
+        row = pinwheel.row(align=True)
+        for cell in cells:
+            if cell:
+                row.prop_enum(props, "direction", cell)
+            else:
+                row.label(text="")
+
+
+def draw_with_lock(
+    layout: bpy.types.UILayout,
+    props: bpy.types.Operator,
+    names: tuple[str, ...],
+    lock: Union[str, None] = None,
+    grey_unknowns: bool = False,
+) -> None:
+    """Draw values in a row, with a lock beside them if given, greyed out while it shows them unknown"""
+    row = layout.row(align=True)
+    values = row.row(align=True)
+    values.enabled = not (lock and grey_unknowns and not getattr(props, lock))
+    for name in names:
+        values.prop(props, name)
+    if lock:
+        row.prop(props, lock, text="", icon="LOCKED" if getattr(props, lock) else "UNLOCKED")
+
+
+def get_direction_input(subject: str, update: Callable, options: set[str]) -> Any:
+    """A mixin of the inputs for a direction in the X-Z plane: an eighth of a circle, and an angle or slope in it.
+
+    :param subject: What points that way, as named in the direction's description.
+    :param update: Called when any of them changes.
+    """
+
+    class DirectionInput:
+        direction: bpy.props.EnumProperty(
+            name="Direction",
+            description=f"The eighth of a circle {subject} points into; the angle or slope is measured from its axis",
+            items=EIGHTH_ITEMS,
+            options=options,
+            update=update,
+        )
+        angle: bpy.props.FloatProperty(
+            name="Angle", description="Degrees from the eighth's axis", options=options, update=update
+        )
+        rise: bpy.props.FloatProperty(
+            name="Rise", description="Towards +Z", default=1.0, options=options, update=update
+        )
+        run: bpy.props.FloatProperty(name="Run", description="Towards +X", default=1.0, options=options, update=update)
+
+        def draw_direction_inputs(
+            self, layout: bpy.types.UILayout, lock: Union[str, None] = None, grey_unknowns: bool = False
+        ) -> None:
+            """Draw the pinwheel, then the angle or the rise and run, as the input mode has it"""
+            draw_pinwheel(layout, self)
+            names = ("angle",) if self.input_mode == "ANGLE" else ("rise", "run")
+            draw_with_lock(layout, self, names, lock, grey_unknowns)
+
+    return DirectionInput
 
 
 class PickStructuralLoads(bpy.types.Operator):
@@ -490,85 +572,57 @@ class EditStructuralItemAxis(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingStructuralConnectionCS(bpy.types.Operator):
-    bl_idname = "bim.enable_editing_structural_connection_cs"
-    bl_label = "Enable Editing Structural Item Connection CS"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        obj = context.active_object
-        assert obj
-        props = tool.Structural.get_object_structural_props(obj)
-
-        self.file = tool.Ifc.get()
-        item = tool.Ifc.get_entity(obj)
-        assert item
-
-        location = obj.data.vertices[0].co
-        empty = bpy.data.objects.new("Item Connection CS", None)
-        empty.empty_display_type = "ARROWS"
-        empty.location = location
-
-        if item.ConditionCoordinateSystem is not None:
-            z_axis = (
-                Vector(item.ConditionCoordinateSystem.Axis.DirectionRatios).normalized() @ obj.matrix_world
-                if item.ConditionCoordinateSystem.Axis
-                else None
-            )
-            x_axis = (
-                Vector(item.ConditionCoordinateSystem.RefDirection.DirectionRatios).normalized() @ obj.matrix_world
-                if item.ConditionCoordinateSystem.RefDirection
-                else None
-            )
-
-            if z_axis:
-                y_axis = (z_axis.cross(x_axis)).normalized()
-                x_axis = (y_axis.cross(z_axis)).normalized()
-                empty.matrix_world = Matrix(
-                    (
-                        (x_axis[0], y_axis[0], z_axis[0], location[0]),
-                        (x_axis[1], y_axis[1], z_axis[1], location[1]),
-                        (x_axis[2], y_axis[2], z_axis[2], location[2]),
-                        (0, 0, 0, 1),
-                    )
-                )
-
-        props.ccs_x_angle = degrees(empty.rotation_euler[0])
-        props.ccs_y_angle = degrees(empty.rotation_euler[1])
-        props.ccs_z_angle = degrees(empty.rotation_euler[2])
-        props.ccs_empty = empty
-        context.scene.collection.objects.link(empty)
-
-        props.is_editing_connection_cs = True
-        return {"FINISHED"}
+def get_dialog_axes(props: "EditStructuralConnectionAxes") -> np.ndarray:
+    """The point's axes the dialog describes, as the columns x', y' and z' of a rotation"""
+    if props.input_mode == "THREE_D":
+        euler = Euler([math.radians(a) for a in (props.rotation_x, props.rotation_y, props.rotation_z)], "XYZ")
+        return np.array(euler.to_matrix())
+    x, z = tool.Structural.get_in_plane_components(
+        props.input_mode, magnitude=1.0, angle=props.angle, rise=props.rise, run=props.run, direction=props.direction
+    )
+    if not (length := math.hypot(x, z)):
+        x, z, length = 1.0, 0.0, 1.0
+    x, z = x / length, z / length
+    # In the X-Z plane, z' a quarter turn on from x', so that y' stays +Y.
+    return np.array(((x, 0.0, -z), (0.0, 1.0, 0.0), (z, 0.0, x)))
 
 
-class DisableEditingStructuralConnectionCS(bpy.types.Operator):
-    bl_idname = "bim.disable_editing_structural_connection_cs"
-    bl_label = "Disable Editing Structural Connection CS"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        obj = context.active_object
-        assert obj
-        props = tool.Structural.get_object_structural_props(obj)
-        props.is_editing_connection_cs = False
-        if props.ccs_empty:
-            bpy.data.objects.remove(props.ccs_empty)
-        return {"FINISHED"}
+def get_dialog_slope(props: "EditStructuralConnectionAxes") -> Union[tuple[float, float], None]:
+    """The rise and run the dialog sets the axes by, if it sets them by a slope"""
+    return (props.rise, props.run) if props.input_mode == "SLOPE" and (props.rise or props.run) else None
 
 
-class TiltStructuralConnectionAxes(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.tilt_structural_connection_axes"
-    bl_label = "Tilt Axes"
+def update_axes_preview(self: "EditStructuralConnectionAxes", context: bpy.types.Context) -> None:
+    """Show the point's axes as the dialog has them until it is confirmed or cancelled"""
+    if self.item and LoadsDecorator.is_installed:
+        ShaderInfo.preview_axes = {self.item: (get_dialog_axes(self), get_dialog_slope(self))}
+        redraw_loads(context)
+
+
+class EditStructuralConnectionAxes(
+    bpy.types.Operator, tool.Ifc.Operator, get_direction_input("x'", update_axes_preview, {"SKIP_SAVE"})
+):
+    bl_idname = "bim.edit_structural_connection_axes"
+    bl_label = "Edit Axes"
     bl_description = (
-        "Tilt the point's own axes in the X-Z plane, as along an inclined surface. Show loads with the local "
-        "reference frame to see forces resolved along them"
+        "Set the point's own axes: x' at an angle or slope, as along an incline, or turned in 3D. Show loads "
+        "with the local reference frame to see forces resolved along them"
     )
     bl_options = {"REGISTER", "UNDO"}
-    angle: bpy.props.FloatProperty(
-        name="Tilt", description="Degrees x' turns from +X towards +Z, z' turning with it", options={"SKIP_SAVE"}
+    item: bpy.props.IntProperty(options={"HIDDEN", "SKIP_SAVE"})
+    input_mode: bpy.props.EnumProperty(
+        name="Input",
+        items=[
+            ("ANGLE", "Angle", "x' at an angle, in the X-Z plane"),
+            ("SLOPE", "Slope", "x' along a rise over a run, as a roof pitch, in the X-Z plane"),
+            ("THREE_D", "3D", "Turned any way, by rotations about X, Y and Z"),
+        ],
+        options={"SKIP_SAVE"},
+        update=update_axes_preview,
     )
+    rotation_x: bpy.props.FloatProperty(name="X", options={"SKIP_SAVE"}, update=update_axes_preview)
+    rotation_y: bpy.props.FloatProperty(name="Y", options={"SKIP_SAVE"}, update=update_axes_preview)
+    rotation_z: bpy.props.FloatProperty(name="Z", options={"SKIP_SAVE"}, update=update_axes_preview)
 
     @classmethod
     def poll(cls, context):
@@ -576,42 +630,45 @@ class TiltStructuralConnectionAxes(bpy.types.Operator, tool.Ifc.Operator):
         return bool(element and element.is_a("IfcStructuralPointConnection"))
 
     def invoke(self, context, event):
-        self.angle = tool.Structural.get_axes_tilt(tool.Ifc.get_entity(context.active_object)) or 0.0
-        return context.window_manager.invoke_props_dialog(self)
+        element = tool.Ifc.get_entity(context.active_object)
+        # Reopen in the terms the axes were set in: a slope, an angle in the X-Z plane, or else in 3D.
+        self.input_mode, eighth, angle, slope = tool.Structural.get_axes_terms(element)
+        if self.input_mode == "THREE_D":
+            rotation = tool.Structural.get_axes_rotation(element)
+            self.rotation_x, self.rotation_y, self.rotation_z = (
+                math.degrees(a) for a in Matrix(rotation.tolist()).to_euler("XYZ")
+            )
+        else:
+            self.direction, self.angle = eighth, angle
+            if slope:
+                self.rise, self.run = slope
+        self.item = element.id()  # Set last, so that filling in the values above does not start a preview.
+        return context.window_manager.invoke_props_dialog(self, width=320)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.row().prop(self, "input_mode", expand=True)
+        if self.input_mode == "THREE_D":
+            layout.label(text="Rotations, in degrees:")
+            for prop in ("rotation_x", "rotation_y", "rotation_z"):
+                layout.prop(self, prop)
+        else:
+            self.draw_direction_inputs(layout)
+        rotation = get_dialog_axes(self)
+        for k, name in ((0, "x′"), (2, "z′")):
+            layout.label(text=f"{name} = ({rotation[0, k]:.3f}, {rotation[1, k]:.3f}, {rotation[2, k]:.3f})")
+
+    def cancel(self, context):
+        clear_previews(context)
 
     def _execute(self, context):
-        angle = math.radians(self.angle)
+        clear_previews(context)
+        element = tool.Ifc.get().by_id(self.item)
+        rotation = get_dialog_axes(self)
         ifcopenshell.api.structural.edit_structural_connection_cs(
-            tool.Ifc.get(),
-            structural_item=tool.Ifc.get_entity(context.active_object),
-            axis=(-math.sin(angle), 0.0, math.cos(angle)),
-            ref_direction=(math.cos(angle), 0.0, math.sin(angle)),
+            tool.Ifc.get(), structural_item=element, axis=rotation[:, 2].tolist(), ref_direction=rotation[:, 0].tolist()
         )
-        return {"FINISHED"}
-
-
-class EditStructuralConnectionCS(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.edit_structural_connection_cs"
-    bl_label = "Edit Structural Connection CS"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        obj = context.active_object
-        assert obj
-        item = tool.Ifc.get_entity(obj)
-        assert item
-        props = tool.Structural.get_object_structural_props(obj)
-        relative_matrix = props.ccs_empty.matrix_world @ obj.matrix_world.inverted()
-        x_axis = relative_matrix.col[0][0:3]
-        z_axis = relative_matrix.col[2][0:3]
-        self.file = tool.Ifc.get()
-        ifcopenshell.api.structural.edit_structural_connection_cs(
-            self.file,
-            structural_item=item,
-            axis=z_axis,
-            ref_direction=x_axis,
-        )
-        bpy.ops.bim.disable_editing_structural_connection_cs()
+        tool.Structural.set_axes_slope(element, get_dialog_slope(self))
         return {"FINISHED"}
 
 
@@ -993,6 +1050,7 @@ def get_load_attributes(props: "StructuralForceInput", category: str) -> dict[st
 
 
 is_normalising_angle = False
+is_setting_magnitude = False
 
 
 def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context) -> None:
@@ -1005,6 +1063,24 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
         if eighth != self.direction and (int(eighth[1]) + 1) // 2 == (int(self.direction[1]) + 1) // 2:
             self.direction = eighth  # Which updates again, with this eighth.
             return
+    global is_setting_magnitude
+    if (
+        self.input_mode != "COMPONENTS"
+        and getattr(self, "given", "MAGNITUDE") != "MAGNITUDE"
+        and not is_setting_magnitude
+    ):
+        x, z = tool.Structural.get_in_plane_components(
+            self.input_mode, magnitude=1.0, angle=self.angle, rise=self.rise, run=self.run, direction=self.direction
+        )
+        part = abs(x if self.given == "X" else z)
+        magnitude = abs(self.given_value) / part if part > 1e-9 else 0.0
+        # Blender keeps float properties to single precision, so compare as closely as it can hold them.
+        if not math.isclose(magnitude, self.magnitude, rel_tol=1e-6, abs_tol=1e-9):
+            is_setting_magnitude = True  # Setting it updates again, which must not set it again.
+            try:
+                self.magnitude = magnitude
+            finally:
+                is_setting_magnitude = False
     global is_normalising_angle
     if self.input_mode == "ANGLE" and self.magnitude and not 0 <= self.angle <= 45 and not is_normalising_angle:
         # An angle past its eighth points into another: show it there, from that eighth's axis, as names are read.
@@ -1039,13 +1115,11 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
                 ShaderInfo.preview[load.id()] = get_force_attributes(load, solved)
                 if load.id() == self.preview_load:  # Its own unknowns are found too.
                     ShaderInfo.preview[load.id()].update({k: v for k, v in attributes.items() if "Moment" in k})
-        LoadsDecorator.update()
-        tool.Blender.update_all_viewports(context)
+        redraw_loads(context)
     elif getattr(self, "is_previewing", False) and LoadsDecorator.is_installed:
         forces, _, _ = solve_resultant(self)
         ShaderInfo.preview = {load.id(): get_force_attributes(load, force) for load, force in (forces or {}).items()}
-        LoadsDecorator.update()
-        tool.Blender.update_all_viewports(context)
+        redraw_loads(context)
 
 
 def get_resolved_forces(
@@ -1156,15 +1230,14 @@ def get_force_name(force: tuple[float, float, float], unit: str) -> str:
     return f"{math.hypot(x, z):g} {unit} at {angle:g} deg{get_direction_suffix(eighth)}"
 
 
-def clear_load_preview(context: bpy.types.Context) -> None:
-    if ShaderInfo.preview:
-        ShaderInfo.preview = {}
-        if LoadsDecorator.is_installed:
-            LoadsDecorator.update()
-            tool.Blender.update_all_viewports(context)
+def clear_previews(context: bpy.types.Context) -> None:
+    """Stop showing a dialog's values in the loads drawing, as when it is confirmed or cancelled"""
+    if ShaderInfo.preview or ShaderInfo.preview_axes:
+        ShaderInfo.preview, ShaderInfo.preview_axes = {}, {}
+        redraw_loads(context)
 
 
-class StructuralForceInput:
+class StructuralForceInput(get_direction_input("the force", update_force_inputs, {"ANIMATABLE"})):
     """Force inputs shared by the Apply Load and Edit Load dialogs."""
 
     load_category: bpy.props.StringProperty(options={"HIDDEN", "SKIP_SAVE"})
@@ -1178,25 +1251,21 @@ class StructuralForceInput:
         ],
         update=update_force_inputs,
     )
-    direction: bpy.props.EnumProperty(
-        name="Direction",
-        description="The eighth of a circle the force points into; the angle or slope is measured from its axis",
+    magnitude: bpy.props.FloatProperty(name="Magnitude", update=update_force_inputs)
+    given: bpy.props.EnumProperty(
+        name="Given",
+        description="The value known: the magnitude, or a component, from which and the direction the magnitude follows",
         items=[
-            ("Q1", "Q1", "From → (+X), turning up"),
-            ("Q2", "Q2", "From ↑ (+Z), turning right"),
-            ("Q3", "Q3", "From ↑ (+Z), turning left"),
-            ("Q4", "Q4", "From ← (-X), turning up"),
-            ("Q5", "Q5", "From ← (-X), turning down"),
-            ("Q6", "Q6", "From ↓ (-Z), turning left"),
-            ("Q7", "Q7", "From ↓ (-Z), turning right"),
-            ("Q8", "Q8", "From → (+X), turning down"),
+            ("MAGNITUDE", "Magnitude", "The magnitude is known"),
+            ("X", "X", "The X component is known, as a horizontal capacity; the magnitude is found"),
+            ("Z", "Z", "The Z component is known, as a vertical capacity; the magnitude is found"),
         ],
+        options={"SKIP_SAVE"},
         update=update_force_inputs,
     )
-    magnitude: bpy.props.FloatProperty(name="Magnitude", update=update_force_inputs)
-    angle: bpy.props.FloatProperty(name="Angle", description="Degrees from +X towards +Z", update=update_force_inputs)
-    rise: bpy.props.FloatProperty(name="Rise", description="Towards +Z", default=1.0, update=update_force_inputs)
-    run: bpy.props.FloatProperty(name="Run", description="Towards +X", default=1.0, update=update_force_inputs)
+    given_value: bpy.props.FloatProperty(
+        name="Component", description="The size of the known component", update=update_force_inputs
+    )
     x: bpy.props.FloatProperty(name="X", update=update_force_inputs)
     y: bpy.props.FloatProperty(name="Y", update=update_force_inputs)
     z: bpy.props.FloatProperty(name="Z", update=update_force_inputs)
@@ -1210,6 +1279,15 @@ class StructuralForceInput:
         default=True,
         options={"SKIP_SAVE"},
         update=update_force_inputs,
+    )
+    acts_as: bpy.props.EnumProperty(
+        name="Acts As",
+        description="Whether the force pulls on its item or pushes on it, which only changes how it is drawn",
+        items=[
+            ("PULL", "Pull", "Drawn from its point, as a cable pulls"),
+            ("PUSH", "Push", "Drawn arriving at its point, as a strut pushes"),
+        ],
+        options={"SKIP_SAVE"},
     )
     direction_locked: bpy.props.BoolProperty(
         name="Direction Known",
@@ -1245,21 +1323,13 @@ class StructuralForceInput:
         show_name: bool = True,
         show_locks: bool = False,
         grey_unknowns: bool = False,
+        show_given: bool = False,
     ) -> None:
         """Draw the force inputs.
 
         :param show_locks: Show whether the magnitude and direction are known, beside them.
         :param grey_unknowns: Grey out values that are not known, as they are found rather than entered.
         """
-
-        def draw_with_lock(props: tuple[str, ...], lock: Union[str, None]) -> None:
-            row = layout.row(align=True)
-            values = row.row(align=True)
-            values.enabled = not (lock and grey_unknowns and not getattr(self, lock))
-            for prop in props:
-                values.prop(self, prop)
-            if lock:
-                row.prop(self, lock, text="", icon="LOCKED" if getattr(self, lock) else "UNLOCKED")
 
         layout.row().prop(self, "input_mode", expand=True)
         if self.input_mode == "COMPONENTS":
@@ -1273,25 +1343,15 @@ class StructuralForceInput:
                 for prop in ("moment_x", "moment_y", "moment_z"):
                     layout.prop(self, prop)
         else:
-            # A pinwheel of the eight directions, counter-clockwise from Q1 just above +X.
-            pinwheel = layout.column(align=True)
-            for cells in (
-                (None, "Q3", "Q2", None),
-                ("Q4", None, None, "Q1"),
-                ("Q5", None, None, "Q8"),
-                (None, "Q6", "Q7", None),
-            ):
-                row = pinwheel.row(align=True)
-                for cell in cells:
-                    if cell:
-                        row.prop_enum(self, "direction", cell)
-                    else:
-                        row.label(text="")
-            draw_with_lock(
-                ("angle",) if self.input_mode == "ANGLE" else ("rise", "run"),
-                "direction_locked" if show_locks else None,
-            )
-            draw_with_lock(("magnitude",), "magnitude_locked" if show_locks else None)
+            self.draw_direction_inputs(layout, "direction_locked" if show_locks else None, grey_unknowns)
+            if show_given:
+                layout.row().prop(self, "given", expand=True)
+            if show_given and self.given != "MAGNITUDE":
+                # The component is typed, and the magnitude found from it.
+                layout.prop(self, "given_value", text=f"{self.given} Component")
+                layout.label(text=f"Magnitude = {self.magnitude:.4f}  (found)", icon="UNLOCKED")
+            else:
+                draw_with_lock(layout, self, ("magnitude",), "magnitude_locked" if show_locks else None, grey_unknowns)
             x, _, z = self.get_components()
             unit = self.get_unit_symbol(category) if category else ""
             layout.label(text=f"X = {x:.4f}   Z = {z:.4f} {unit}", icon="ORIENTATION_GLOBAL")
@@ -1352,7 +1412,9 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
         layout.prop(self, "load_group")
         if self.load_group == "0":
             layout.prop(self, "new_load_case_name")
-        self.draw_force_inputs(layout, category, show_locks=True)
+        self.draw_force_inputs(layout, category, show_locks=True, show_given=True)
+        if category == "IfcStructuralPointConnection":
+            layout.row().prop(self, "acts_as", expand=True)
         if category:
             layout.label(text=f"Applies to {len(elements)} {category[3:]}", icon="INFO")
         if not tool.Ifc.get().by_type("IfcStructuralAnalysisModel"):
@@ -1406,6 +1468,8 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
         ifcopenshell.api.group.assign_group(ifc_file, products=activities, group=group)
         for activity in activities:  # Only an unlocked value is recorded; loads are known unless said.
             tool.Structural.set_locks(activity, self.magnitude_locked, self.direction_locked)
+            tool.Structural.set_push(activity, self.acts_as == "PUSH")
+            tool.Structural.set_known_component(activity, None if self.given == "MAGNITUDE" else self.given)
         resolve_resultants(self, activities)
         self.show_load_group(context, group)
         return {"FINISHED"}
@@ -1498,6 +1562,10 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         self.load_name = get_default_load_name(self, category) if DEFAULT_LOAD_NAME.match(name) else name
         if lock_activity := self.get_lock_activity():
             self.magnitude_locked, self.direction_locked = tool.Structural.get_locks(lock_activity)
+            self.acts_as = "PUSH" if tool.Structural.get_push(lock_activity) else "PULL"
+            if self.input_mode != "COMPONENTS" and (component := tool.Structural.get_known_component(lock_activity)):
+                self.given_value = abs(x if component == "X" else z)
+                self.given = component
         if (activities := self.get_movable_activities()) and (groups := get_activity_load_groups(activities[0])):
             self.load_group = str(groups[0].id())
         # Set last, so that filling in the values above does not start a preview.
@@ -1537,12 +1605,14 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         lock_activity = self.get_lock_activity()
         if not lock_activity:
             layout.label(text="Open it from an applied load to lock its values", icon="INFO")
-        self.draw_force_inputs(layout, category, show_locks=bool(lock_activity))
+        self.draw_force_inputs(layout, category, show_locks=bool(lock_activity), show_given=bool(lock_activity))
+        if lock_activity and category == "IfcStructuralPointConnection":
+            layout.row().prop(self, "acts_as", expand=True)
         if self.input_mode != "COMPONENTS" and (self.y or self.moment_x or self.moment_y or self.moment_z):
             layout.label(text="Y and moments will be set to zero", icon="ERROR")
 
     def cancel(self, context):
-        clear_load_preview(context)
+        clear_previews(context)
 
     def _execute(self, context):
         ShaderInfo.preview = {}  # The edit below refreshes the shown loads.
@@ -1554,6 +1624,9 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
         if lock_activity := self.get_lock_activity():
             tool.Structural.set_locks(lock_activity, self.magnitude_locked, self.direction_locked)
+            tool.Structural.set_push(lock_activity, self.acts_as == "PUSH")
+            known = None if self.input_mode == "COMPONENTS" or self.given == "MAGNITUDE" else self.given
+            tool.Structural.set_known_component(lock_activity, known)
         activities = self.get_movable_activities()
         if activities and (target := self.get_target_load_group(ifc_file)):
             for activity in activities:
@@ -1690,7 +1763,7 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
                 box.label(text=f"  also used by {len(users) - 1} other applied load(s)", icon="INFO")
 
     def cancel(self, context):
-        clear_load_preview(context)
+        clear_previews(context)
 
     def _execute(self, context):
         ShaderInfo.preview = {}  # The edit below refreshes the shown loads.

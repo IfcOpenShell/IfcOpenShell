@@ -65,6 +65,7 @@
     <tr style="color: {{color}}"><td>\({{symbol}}\)</td><td>{{name}}</td><td>{{#magnitude_found}}<strong>{{magnitude}}</strong>{{/magnitude_found}}{{^magnitude_found}}{{magnitude}}{{/magnitude_found}}</td><td>{{#direction_found}}<strong>{{direction}}</strong>{{/direction_found}}{{^direction_found}}{{direction}}{{/direction_found}}</td><td>{{#found}}🔓 {{found}}{{/found}}</td></tr>
     {{/forces}}
   </table>
+  {{#push_note}}<p>{{push_note}}</p>{{/push_note}}
   {{#find}}<p><strong>Find:</strong> {{find}}</p>{{/find}}
   <h4>{{#has_solving}}Components{{/has_solving}}{{^has_solving}}Components and resultant{{/has_solving}}</h4>
   <div class="steps">
@@ -90,6 +91,7 @@
   {{#has_tilted}}
   <h4>Along the point's axes</h4>
   <p>{{tilt_note}}</p>
+  {{#tilted_diagram}}<figure><img src="{{tilted_diagram}}" alt="Forces at {{name}} along its axes"></figure>{{/tilted_diagram}}
   <div class="steps">
     {{#tilted}}
     <div class="{{#detail}}detail{{/detail}}{{^detail}}main{{/detail}}{{#lead}} lead{{/lead}}">$${{latex}}$$</div>

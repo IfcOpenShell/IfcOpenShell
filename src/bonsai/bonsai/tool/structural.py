@@ -32,6 +32,7 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import numpy as np
 
 import bonsai.bim.helper
 import bonsai.core.tool
@@ -206,18 +207,84 @@ class Structural(bonsai.core.tool.Structural):
             cls.edit_bbim_structural(activity, {"MagnitudeLocked": magnitude, "DirectionLocked": direction})
 
     @classmethod
+    def get_known_component(cls, activity: ifcopenshell.entity_instance) -> Union[str, None]:
+        """Which component of an applied load is known, X or Z, its magnitude following from it and its direction"""
+        component = ifcopenshell.util.element.get_pset(activity, "BBIM_Structural", "KnownComponent")
+        return component if component in ("X", "Z") else None
+
+    @classmethod
+    def set_known_component(cls, activity: ifcopenshell.entity_instance, component: Union[str, None]) -> None:
+        if component != cls.get_known_component(activity):
+            cls.edit_bbim_structural(activity, {"KnownComponent": component})
+
+    @classmethod
+    def get_push(cls, activity: ifcopenshell.entity_instance) -> bool:
+        """Whether an applied load pushes on its item rather than pulls, which IFC's force vector cannot say"""
+        return bool(ifcopenshell.util.element.get_pset(activity, "BBIM_Structural", "Push"))
+
+    @classmethod
+    def set_push(cls, activity: ifcopenshell.entity_instance, push: bool) -> None:
+        if push != cls.get_push(activity):
+            cls.edit_bbim_structural(activity, {"Push": push})
+
+    @classmethod
+    def get_axes_rotation(cls, item: ifcopenshell.entity_instance) -> np.ndarray:
+        """A structural item's own axes, as the columns x', y' and z' of a rotation, global ones if it has none"""
+        if ccs := getattr(item, "ConditionCoordinateSystem", None):
+            return ifcopenshell.util.placement.get_placement(ccs)[:3, :3]
+        return np.eye(3)
+
+    @classmethod
     def get_axes_tilt(cls, item: ifcopenshell.entity_instance) -> Union[float, None]:
         """The degrees a structural item's own axes are tilted by in the X-Z plane, x' turning from +X towards +Z.
 
         :return: 0 if they are not set, or None if they are turned otherwise than in that plane.
         """
-        if not (ccs := getattr(item, "ConditionCoordinateSystem", None)):
+        if not getattr(item, "ConditionCoordinateSystem", None):
             return 0.0
-        rotation = ifcopenshell.util.placement.get_placement(ccs)[:3, :3]
+        rotation = cls.get_axes_rotation(item)
         x, y = rotation[:, 0], rotation[:, 1]
         if abs(x[1]) > 1e-6 or abs(y[1] - 1) > 1e-6:
             return None
         return math.degrees(math.atan2(x[2], x[0]))
+
+    @classmethod
+    def get_axes_slope(cls, item: ifcopenshell.entity_instance) -> Union[tuple[float, float], None]:
+        """The rise and run a point's axes were tilted by, if set as a slope and still matching their tilt"""
+        pset = ifcopenshell.util.element.get_pset(item, "BBIM_Structural") or {}
+        rise, run, tilt = pset.get("AxesRise"), pset.get("AxesRun"), cls.get_axes_tilt(item)
+        if rise is None or run is None or tilt is None or not (rise or run):
+            return None
+        # Against the line's angle from the horizontal, as a slope falling to the right has the same one.
+        line = abs(tilt) % 180
+        if not math.isclose(math.degrees(math.atan2(abs(rise), abs(run))), min(line, 180 - line), abs_tol=1e-6):
+            return None
+        return rise, run
+
+    @classmethod
+    def set_axes_slope(cls, item: ifcopenshell.entity_instance, slope: Union[tuple[float, float], None]) -> None:
+        """Remember the slope a point's axes were tilted by, as an incline is given, or forget it"""
+        pset = ifcopenshell.util.element.get_pset(item, "BBIM_Structural") or {}
+        rise, run = slope or (None, None)
+        # Against what is stored, so that a slope gone stale is cleared too.
+        if (rise, run) != (pset.get("AxesRise"), pset.get("AxesRun")):
+            cls.edit_bbim_structural(item, {"AxesRise": rise, "AxesRun": run})
+
+    @classmethod
+    def get_axes_terms(
+        cls, item: ifcopenshell.entity_instance
+    ) -> tuple[str, Union[str, None], float, Union[tuple[float, float], None]]:
+        """The terms a point's axes were set in, as Edit Axes takes them.
+
+        :return: "THREE_D", or "ANGLE" or "SLOPE" in the X-Z plane, then the eighth x' points into, its angle
+            from that eighth's axis, and the slope's rise and run if set as one.
+        """
+        if cls.get_axes_tilt(item) is None:
+            return "THREE_D", None, 0.0, None
+        rotation = cls.get_axes_rotation(item)
+        eighth, angle, _, _ = cls.get_eighth(rotation[0, 0], rotation[2, 0])
+        slope = cls.get_axes_slope(item)
+        return ("SLOPE" if slope else "ANGLE"), eighth, angle, slope
 
     @classmethod
     def get_activity_load_case(

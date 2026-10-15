@@ -23,8 +23,10 @@ import math
 import ifcopenshell
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
+import numpy as np
 
 import bonsai.core.tool
+import bonsai.tool as tool
 from bonsai.tool.structural import Structural as subject
 from test.bim.bootstrap import NewFile
 
@@ -186,3 +188,107 @@ class TestGetAxesTilt(NewFile):
             ifc_file, structural_item=point, axis=(0, 0, 1), ref_direction=(0.6, 0.8, 0)
         )
         assert subject.get_axes_tilt(point) is None
+
+
+def new_point() -> ifcopenshell.entity_instance:
+    ifc_file = ifcopenshell.file(schema="IFC4")
+    tool.Ifc.set(ifc_file)
+    return ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralPointConnection")
+
+
+def tilt_axes(point: ifcopenshell.entity_instance, tilt: float) -> None:
+    angle = math.radians(tilt)
+    ifcopenshell.api.structural.edit_structural_connection_cs(
+        tool.Ifc.get(),
+        structural_item=point,
+        axis=(-math.sin(angle), 0, math.cos(angle)),
+        ref_direction=(math.cos(angle), 0, math.sin(angle)),
+    )
+
+
+class TestGetAxesRotation(NewFile):
+    def test_global_axes_for_a_point_without_its_own(self):
+        assert (subject.get_axes_rotation(new_point()) == np.eye(3)).all()
+
+    def test_x_and_z_as_columns(self):
+        point = new_point()
+        tilt_axes(point, 30)
+        rotation = subject.get_axes_rotation(point)
+        assert np.allclose(rotation[:, 0], (math.cos(math.radians(30)), 0, 0.5))
+        assert np.allclose(rotation[:, 2], (-0.5, 0, math.cos(math.radians(30))))
+
+
+class TestAxesSlope(NewFile):
+    def test_a_slope_matching_the_tilt(self):
+        point = new_point()
+        tilt_axes(point, math.degrees(math.atan2(4, 12)))
+        subject.set_axes_slope(point, (4.0, 12.0))
+        assert subject.get_axes_slope(point) == (4.0, 12.0)
+
+    def test_a_slope_falling_to_the_right(self):
+        point = new_point()
+        tilt_axes(point, -math.degrees(math.atan2(4, 12)))
+        subject.set_axes_slope(point, (4.0, 12.0))
+        assert subject.get_axes_slope(point) == (4.0, 12.0)
+
+    def test_a_slope_gone_stale_is_not_given(self):
+        point = new_point()
+        tilt_axes(point, 30)
+        subject.set_axes_slope(point, (4.0, 12.0))
+        assert subject.get_axes_slope(point) is None
+
+    def test_forgetting_a_slope(self):
+        point = new_point()
+        tilt_axes(point, math.degrees(math.atan2(4, 12)))
+        subject.set_axes_slope(point, (4.0, 12.0))
+        subject.set_axes_slope(point, None)
+        assert subject.get_axes_slope(point) is None
+
+
+class TestGetAxesTerms(NewFile):
+    def test_global_axes(self):
+        assert subject.get_axes_terms(new_point()) == ("ANGLE", "Q1", 0.0, None)
+
+    def test_axes_set_by_an_angle(self):
+        point = new_point()
+        tilt_axes(point, -25)
+        mode, eighth, angle, slope = subject.get_axes_terms(point)
+        assert (mode, eighth, slope) == ("ANGLE", "Q8", None)
+        assert math.isclose(angle, 25)
+
+    def test_axes_set_by_a_slope(self):
+        point = new_point()
+        tilt_axes(point, math.degrees(math.atan2(4, 12)))
+        subject.set_axes_slope(point, (4.0, 12.0))
+        mode, eighth, angle, slope = subject.get_axes_terms(point)
+        assert (mode, eighth, slope) == ("SLOPE", "Q1", (4.0, 12.0))
+        assert math.isclose(angle, math.degrees(math.atan2(4, 12)))
+
+    def test_axes_turned_in_3d(self):
+        point = new_point()
+        ifcopenshell.api.structural.edit_structural_connection_cs(
+            tool.Ifc.get(), structural_item=point, axis=(0, 0, 1), ref_direction=(0.6, 0.8, 0)
+        )
+        assert subject.get_axes_terms(point) == ("THREE_D", None, 0.0, None)
+
+
+class TestPushAndKnownComponent(NewFile):
+    def test_a_push(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        activity = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralPointAction")
+        assert not subject.get_push(activity)
+        subject.set_push(activity, True)
+        assert subject.get_push(activity)
+        subject.set_push(activity, False)
+        assert not subject.get_push(activity)
+
+    def test_a_known_component(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        activity = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralPointAction")
+        assert subject.get_known_component(activity) is None
+        subject.set_known_component(activity, "Z")
+        assert subject.get_known_component(activity) == "Z"
+        subject.set_known_component(activity, None)
+        assert subject.get_known_component(activity) is None

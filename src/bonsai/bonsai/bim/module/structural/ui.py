@@ -400,27 +400,21 @@ class BIM_PT_structural_connection(Panel):
                 row = self.layout.row()
                 row.operator("bim.enable_editing_structural_item_axis", text="Edit Axis", icon="GREASEPENCIL")
         elif StructuralConnectionData.data["active_object_class"] == "IfcStructuralPointConnection":
-            if self.props.is_editing_connection_cs:
-                row = self.layout.row(align=True)
-                row.label(text="Editing Connection CS")
-                row.operator("bim.edit_structural_connection_cs", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_structural_connection_cs", text="", icon="CANCEL")
-                row = self.layout.row(align=True)
-                row.prop(self.props, "ccs_x_angle", text="X Angle")
-                row = self.layout.row(align=True)
-                row.prop(self.props, "ccs_y_angle", text="Y Angle")
-                row = self.layout.row(align=True)
-                row.prop(self.props, "ccs_z_angle", text="Z Angle")
+            # The point's own axes, in the terms they were set in, with one dialog to edit them.
+            element = tool.Ifc.get_entity(obj)
+            mode, eighth, angle, slope = tool.Structural.get_axes_terms(element)
+            tilt = tool.Structural.get_axes_tilt(element)
+            if mode == "THREE_D":
+                text = "Axes: Turned in 3D"
+            elif slope:
+                text = f"Axes: {slope[0]:g}:{slope[1]:g} {eighth} ({tilt:.1f}°)"
+            elif abs(tilt) < 1e-9:
+                text = "Axes: Global"
             else:
-                # Tilted in the X-Z plane, as statics problems tilt axes along an incline, or turned in 3D.
-                tilt = tool.Structural.get_axes_tilt(tool.Ifc.get_entity(obj))
-                row = self.layout.row(align=True)
-                row.label(text=f"Axes Tilt: {tilt:.1f}°" if tilt is not None else "Axes Turned in 3D")
-                row.operator("bim.tilt_structural_connection_axes", text="", icon="GREASEPENCIL")
-                row = self.layout.row()
-                row.operator(
-                    "bim.enable_editing_structural_connection_cs", text="Edit Connection CS", icon="GREASEPENCIL"
-                )
+                text = f"Axes: {angle:.1f}° {eighth}"
+            row = self.layout.row(align=True)
+            row.label(text=text)
+            row.operator("bim.edit_structural_connection_axes", text="", icon="GREASEPENCIL")
         else:
             row = self.layout.row()
             row.label(text="TODO")

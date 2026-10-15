@@ -31,6 +31,10 @@ No point forces in this analysis model's load cases.
 {{#forces}}
 | ${{{colored_symbol}}}$ | {{{name}}} | {{#magnitude_found}}**{{{magnitude}}}**{{/magnitude_found}}{{^magnitude_found}}{{{magnitude}}}{{/magnitude_found}} | {{#direction_found}}**{{{direction}}}**{{/direction_found}}{{^direction_found}}{{{direction}}}{{/direction_found}} | {{#found}}🔓 {{{found}}}{{/found}} |
 {{/forces}}
+{{#push_note}}
+
+{{{push_note}}}
+{{/push_note}}
 {{#find}}
 
 **Find:** {{{find}}}
@@ -63,6 +67,10 @@ $\displaystyle {{{latex}}}$
 #### Along the point's axes
 
 {{{tilt_note}}}
+{{#tilted_diagram}}
+
+<p align="center"><img src="{{{tilted_diagram}}}" alt="Forces at {{{name}}} along its axes"></p>
+{{/tilted_diagram}}
 {{#tilted}}
 
 $\displaystyle {{{latex}}}$

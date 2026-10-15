@@ -83,6 +83,8 @@ ProcessedLoad = TypedDict(
 class ShaderInfo:
     # Values of a load being edited, by load id, shown in place of its own until the edit is confirmed or cancelled.
     preview: dict[int, dict[str, Union[float, None]]] = {}
+    # A point's axes being edited, and the slope they are set by if any, by its id, shown in place of its own likewise.
+    preview_axes: dict[int, tuple[np.ndarray, Union[tuple[float, float], None]]] = {}
 
     def __init__(self, load_group: Union[ifcopenshell.entity_instance, None] = None) -> None:
         """
@@ -505,20 +507,26 @@ class ShaderInfo:
             blender_object = tool.Ifc.get_object_by_identifier(getattr(conn, "GlobalId", None))
             if blender_object.type == "MESH":
                 conn_location = blender_object.matrix_world @ blender_object.data.vertices[0].co
-                rotation = self.get_point_connection_rotation(conn)
-                self.get_point_force_args(activity_list, conn_location, rotation)
+                rotation, slope = self.preview_axes.get(conn.id(), (None, None))
+                if rotation is None:
+                    rotation, slope = self.get_point_connection_rotation(conn), tool.Structural.get_axes_slope(conn)
+                self.get_point_force_args(activity_list, conn_location, rotation, slope)
                 # Moments keep their own symbol; forces are drawn above.
                 loads = self.get_point_loads_values(activity_list, rotation)
                 self.get_point_moment_args(loads[3:], conn_location, rotation)
 
     def get_point_force_args(
-        self, activity_list: list[tuple[ifcopenshell.entity_instance, float]], location: Vector, rotation: np.ndarray
+        self,
+        activity_list: list[tuple[ifcopenshell.entity_instance, float]],
+        location: Vector,
+        rotation: np.ndarray,
+        slope: Union[tuple[float, float], None] = None,
     ) -> None:
-        """Draw the point forces applied at a point"""
+        """Draw the point forces applied at a point, and its own axes, set by slope if given"""
         # In their set draw order, else in the order they were applied.
         items = sorted(activity_list, key=lambda item: tool.Structural.get_draw_order_key(item[0]))
         forces = [self.get_point_loads_values([item], rotation)[:3] for item in items]
-        self.draw_point_forces(forces, location, rotation, [item[0].id() for item in items])
+        self.draw_point_forces(forces, location, rotation, [item[0].id() for item in items], slope)
 
     def draw_point_forces(
         self,
@@ -526,6 +534,7 @@ class ShaderInfo:
         location: Vector,
         rotation: np.ndarray,
         activities: Union[list[int], None] = None,
+        slope: Union[tuple[float, float], None] = None,
     ) -> None:
         """Draw point forces at a point from the point outwards, to scale, as chosen by force_display:
         the components or resultant of their sum, or each force added by the parallelogram law or tip to tail.
@@ -593,6 +602,12 @@ class ShaderInfo:
         # the polygon the chain and its resultant make; elsewhere tails are shared, so labels go at the tips.
         chain = np.cumsum([np.zeros(3)] + [vector for vector, *_ in vectors], axis=0) * scale + location
         centre = chain.mean(axis=0) if mode == "TIP_TO_TAIL" else None
+        # A push arrives at its point. Drawn alone, its picture is mirrored through the point, arrows
+        # reversed; added to others, it is slid along its line to pull, by the principle of transmissibility.
+        ifc_file = tool.Ifc.get()
+        pushes = {a for a in activities if a and tool.Structural.get_push(ifc_file.by_id(a))}
+        arriving = len(activities) == 1 and activities[0] in pushes
+        flip = lambda point: 2 * location - point if arriving else point
         for i, (vector, color, has_angle, activity) in enumerate(vectors):
             tail = start if mode == "TIP_TO_TAIL" else location
             if mode == "PARALLELOGRAM" and i:
@@ -600,17 +615,26 @@ class ShaderInfo:
                 # as the vector it is parallel to; the sum of the vectors so far is a resultant, in white.
                 corner = location + (running + vector) * scale
                 running_color = vectors[0][1] if i == 1 else (1, 1, 1, 1)
-                self.add_dashed_line(location + running * scale, corner, size, color)
-                self.add_dashed_line(location + vector * scale, corner, size, running_color)
+                self.add_dashed_line(flip(location + running * scale), flip(corner), size, color)
+                self.add_dashed_line(flip(location + vector * scale), flip(corner), size, running_color)
                 if i < len(vectors) - 1:
-                    self.add_dashed_line(location, corner, size, (1, 1, 1, 1))  # An intermediate resultant.
+                    self.add_dashed_line(location, flip(corner), size, (1, 1, 1, 1))  # An intermediate resultant.
             tip = tail + vector * scale
             label = f"{np.linalg.norm(vector):.{props.force_decimals}f} {self.force_unit}"
             if has_angle:
                 label += self.get_unknown_marks(activity)[0]
             force_of = activity if has_angle else 0
             side = None  # Beside a tip-to-tail chain's polygon, if it is one.
-            if centre is None:
+            if has_angle and activity in pushes:
+                # Slid along its line to pull, with the line it arrives along shown beyond the point.
+                label += " (push)"
+                self.add_dashed_line(location, location - vector * scale * 0.4, size, color)
+            if arriving:
+                side = None
+                self.add_force_arrow(
+                    flip(tip), flip(tail), color, label, size, activity=activity, force_of=force_of, label_at_tail=True
+                )
+            elif centre is None:
                 self.add_force_arrow(tail, tip, color, label, size, activity=activity, force_of=force_of)
             else:
                 side = self.get_label_side(vector, (tail + tip) / 2 - centre)
@@ -625,10 +649,16 @@ class ShaderInfo:
                     activity=activity,
                     force_of=force_of,
                 )
+            if not has_angle:
+                # A component, tagged with its axis so that a report can name it, as F_x1 or R_x.
+                k = int(np.argmax(np.abs(axes.T @ vector)))
+                tilted = props.reference_frame == "LOCAL_COORDS" and not np.allclose(rotation, np.eye(3))
+                self.text_info[-1]["component"] = "xyz"[k] + ("′" if tilted else "")
             if props.show_force_angles and has_angle:
                 self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes, activity)
             if props.show_force_slopes and has_angle:
-                self.add_force_slope(tail, tip, size, color, activity, avoid=None if centre is None else side)
+                arrow = (flip(tip), flip(tail)) if arriving else (tail, tip)
+                self.add_force_slope(*arrow, size, color, activity, avoid=None if centre is None else side)
             start = tip
             running = running + vector
 
@@ -644,52 +674,141 @@ class ShaderInfo:
             outside = np.array((0, 0, 1.0)) if centre is None else (location + tip) / 2 - centre
             side = self.get_label_side(resultant, outside)
             self.add_force_arrow(
-                location,
-                tip,
+                flip(tip) if arriving else location,
+                location if arriving else tip,
                 (1, 1, 1, 2),
                 label,
                 size,
                 spacing=0.3,
-                label_away=side,
+                label_away=None if arriving else side,
                 label_at_middle=centre is not None,
                 activity=single,
                 resultant_of=activities if len(activities) > 1 else None,
                 force_of=single,
+                label_at_tail=arriving,
             )
             if props.show_force_angles:
                 self.add_force_angle(
                     location, resultant, size, (1, 1, 1, 1), arcs_at_tail, reference_axes, single or None
                 )
             if props.show_force_slopes:
-                self.add_force_slope(location, tip, size, (1, 1, 1, 1), avoid=side)
+                arrow = (flip(tip), location) if arriving else (location, tip)
+                self.add_force_slope(*arrow, size, (1, 1, 1, 1), avoid=side)
         self.add_reference_axes(reference_axes, size)
         if not np.allclose(rotation, np.eye(3)):
-            self.add_point_axes(location, rotation, size)
+            drawn = [vector * scale for vector, *_ in vectors] + ([resultant * scale] if show_resultant else [])
+            self.add_point_axes(location, rotation, size, slope, drawn)
 
-    def add_point_axes(self, location: np.ndarray, rotation: np.ndarray, size: float) -> None:
-        """Mark a point's own axes, x' and z' coloured as their components, and their tilt from +X if in X-Z"""
+    def draw_resolved_point_forces(
+        self,
+        object_name: str,
+        forces: list[np.ndarray],
+        rotation: np.ndarray,
+        colors: list[tuple],
+        activities: list[int],
+        slope: Union[tuple[float, float], None] = None,
+    ) -> None:
+        """Draw each force at a point resolved along the point's own axes, as a report shows them along an incline.
+
+        Each force is drawn as its components' resultant is, its components along x' and z' in their axes'
+        colours, and the sides of its rectangle dashed, whatever the forces are shown as in the viewport.
+
+        :param forces: The X, Y and Z components of each force, in global coordinates.
+        :param colors: The colour each force is drawn in.
+        :param slope: The rise and run the axes were set by, if they were.
+        """
+        props = tool.Structural.get_structural_props()
+        location = np.zeros(3)  # A report's diagram is drawn on its own, so wherever the point is.
+        longest = max((np.linalg.norm(force) for force in forces), default=0.0)
+        if not longest:
+            return
+        scale, size = 2 / longest, 2.0
+        start = len(self.info), len(self.text_info)
+        drawn = []
+        pushes = {a for a in activities if a and tool.Structural.get_push(tool.Ifc.get().by_id(a))}
+        axes = ((0, "x′", (1, 0, 0, 1)), (2, "z′", (0, 0, 1, 1)))
+        for force, color, activity in zip(forces, colors, activities):
+            tip = location + force * scale
+            for k, name, axis_color in axes:
+                value = float(rotation[:, k] @ force)
+                if abs(value) < 1e-9 * longest:
+                    continue
+                corner = location + rotation[:, k] * value * scale
+                # The side across from a component is parallel to the other axis, so takes its colour.
+                other = next(c for j, _, c in axes if j != k)
+                self.add_dashed_line(corner, tip, size, other)
+                label = f"{abs(value):.{props.force_decimals}f} {self.force_unit}"
+                self.add_force_arrow(location, corner, axis_color, label, size)
+                self.text_info[-1] |= {"component": name, "component_of": activity}
+                drawn.append(corner - location)
+            label = f"{np.linalg.norm(force):.{props.force_decimals}f} {self.force_unit}"
+            label += self.get_unknown_marks(activity)[0] + (" (push)" if activity in pushes else "")
+            self.add_force_arrow(location, tip, color, label, size, spacing=0.3, force_of=activity)
+            drawn.append(tip - location)
+        self.add_point_axes(location, rotation, size, slope, drawn)
+        for entry in self.info[start[0] :] + self.text_info[start[1] :]:
+            entry["object"] = object_name
+
+    def add_point_axes(
+        self,
+        location: np.ndarray,
+        rotation: np.ndarray,
+        size: float,
+        slope: Union[tuple[float, float], None] = None,
+        drawn: Union[list[np.ndarray], None] = None,
+    ) -> None:
+        """Mark a point's own axes, x' and z' coloured as their components, and their tilt if in X-Z.
+
+        :param slope: The rise and run the axes were set by, shown as a triangle under x' beside the angle.
+        :param drawn: The arrows drawn from the point, as drawn, to keep the triangle clear of.
+        """
+        x_axis = rotation[:, 0]
+        # The triangle goes on the side of the point that arrows along x' reach least into.
+        reach = lambda side: max(
+            [side * float(v @ x_axis) for v in drawn or [] if abs(float(v @ x_axis)) > 0.7 * np.linalg.norm(v)] + [0.0]
+        )
+        side = 1.0 if reach(1.0) <= reach(-1.0) else -1.0
         for k, name, color in ((0, "x′", (1, 0.35, 0.35, 1)), (2, "z′", (0.4, 0.55, 1, 1))):
             axis = rotation[:, k]
-            self.add_dashed_line(location - axis * size * 0.3, location + axis * size * 0.85, size, color)
+            back = 0.75 if k == 0 and slope and side < 0 else 0.3  # Far enough back to carry a triangle there.
+            self.add_dashed_line(location - axis * size * back, location + axis * size * 0.85, size, color)
             self.text_info.append(
                 {"position": location + axis * size * 0.85, "text": name, "color": color, "away": axis}
             )
-        x_axis = rotation[:, 0]
         if abs(x_axis[1]) > 1e-6:
             return  # Turned out of the X-Z plane, so one tilt does not describe it.
         tilt = np.degrees(np.arctan2(x_axis[2], x_axis[0]))
         if abs(tilt) < 0.01:
             return
-        # The tilt from +X, as an arc like the force angles, with +X marked where it starts.
-        radius, color = size * 0.12, (1, 0.35, 0.35, 1)
-        self.add_dashed_line(location, location + np.array((size * 0.2, 0, 0)), size, color)
+        color = (1, 0.35, 0.35, 1)
+        if slope and abs(x_axis[0]) > 1e-6 and abs(x_axis[2]) > 1e-6:
+            # The incline as given: its hypotenuse along x', its legs level and plumb, the corner beneath.
+            a, b = location + side * x_axis * size * 0.35, location + side * x_axis * size * 0.7
+            low, high = (a, b) if a[2] < b[2] else (b, a)
+            corner = np.array((high[0], high[1], low[2]))
+            for start, end in ((a, corner), (corner, b), (a, b)):
+                self.add_dashed_line(start, end, size, color, dashed=False)
+            centroid = (a + b + corner) / 3
+            for p, q in ((a, corner), (corner, b)):
+                level = abs(p[2] - q[2]) < 1e-9
+                middle = (p + q) / 2
+                away = (middle - centroid) / np.linalg.norm(middle - centroid)
+                text = f"{abs(slope[1] if level else slope[0]):g}"
+                self.text_info.append({"position": middle, "text": text, "color": color, "away": away})
+        # The tilt from +X, as an arc like the force angles, with +X marked where it starts. On the side kept
+        # clear of arrows, from -X to -x', which makes the same angle with the horizontal.
+        radius = size * 0.12
+        start = 180.0 if side < 0 and abs(tilt) <= 90 else 0.0
+        level = np.array((np.cos(np.radians(start)), 0, 0))
+        self.add_dashed_line(location, location + level * size * 0.2, size, color)
         steps = max(4, int(abs(tilt) / 5))
         points = [
-            location + radius * np.array((np.cos(a), 0, np.sin(a))) for a in np.radians(np.linspace(0, tilt, steps + 1))
+            location + radius * np.array((np.cos(a), 0, np.sin(a)))
+            for a in np.radians(np.linspace(start, start + tilt, steps + 1))
         ]
         for a, b in zip(points, points[1:]):
             self.add_dashed_line(a, b, size, color, dashed=False)
-        middle = np.radians(tilt / 2)
+        middle = np.radians(start + tilt / 2)
         outward = np.array((np.cos(middle), 0, np.sin(middle)))
         self.text_info.append(
             {"position": location + radius * outward, "text": f"{abs(tilt):.1f}°", "color": color, "away": outward}
@@ -699,7 +818,10 @@ class ShaderInfo:
         """Marks for an applied load's magnitude and direction labels, if they are unknown: to be found"""
         if not activity:
             return "", ""
-        magnitude, direction = tool.Structural.get_locks(tool.Ifc.get().by_id(activity))
+        element = tool.Ifc.get().by_id(activity)
+        magnitude, direction = tool.Structural.get_locks(element)
+        # A magnitude following from a known component is found too.
+        magnitude = magnitude and not tool.Structural.get_known_component(element)
         return ("" if magnitude else " 🔓"), ("" if direction else " 🔓")
 
     def add_force_angle(
@@ -864,10 +986,12 @@ class ShaderInfo:
         activity: int = 0,
         resultant_of: Union[list[int], None] = None,
         force_of: int = 0,
+        label_at_tail: bool = False,
     ) -> None:
         """Add an arrow from tail to tip, its head and shaft sized to size, the longest arrow drawn with it.
 
         :param force_of: The activity whose whole force the arrow is, not a component, to name it in a report.
+        :param label_at_tail: Label it beyond its tail, as a push arriving at its point is.
         """
         length = np.linalg.norm(tip - tail)
         if not length:
@@ -903,8 +1027,8 @@ class ShaderInfo:
                 pickable["activities"] = resultant_of
             self.pickables.append(pickable)
         # Labelled beside the tip, as arrows often share their tail.
-        away = direction if label_away is None else label_away
-        position = (tail + tip) / 2 if label_at_middle else tip
+        away = (-direction if label_at_tail else direction) if label_away is None else label_away
+        position = (tail + tip) / 2 if label_at_middle else tail if label_at_tail else tip
         text = {"position": position, "text": label, "color": color, "away": away}
         if force_of:
             text["force_of"] = force_of
