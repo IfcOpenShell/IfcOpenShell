@@ -23,6 +23,7 @@ from typing import Optional
 
 import ifcopenshell
 import ifcopenshell.api.alignment
+import ifcopenshell.api.nest
 import ifcopenshell.util.element
 from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment._add_segment_to_curve import _add_segments_to_curve
