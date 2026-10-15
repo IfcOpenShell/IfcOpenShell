@@ -352,6 +352,15 @@ where Bonsai's eighths would measure from the vertical.
   locks keep a resultant through an operator method, which update callbacks cannot reach, so
   unknowns only moved on the dialog's first draw. It now works from the properties.
 
+## 16. The +Y axis
+
+- **+Y at loaded points**, beside +X and +Z, as far as the longer of them reaches, and clickable
+  to add a load as they are. It is drawn along the view in the drawing data (`along_view`), so
+  reports, which look along Y, leave it out.
+- **A found resultant in its chosen eighth.** The report's Find line measures a resultant found
+  by solving from the eighth chosen for it in Edit Resultant, as the rest of the report does,
+  rather than the eighth it falls in.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
@@ -360,6 +369,14 @@ the factors, so combinations need a panel to create them, add cases with factors
 them to the current model; PyNite takes them as `add_load_combo`. When combinations come, fix
 `recursive_subgroups` in `load_decoration_data.py`, which multiplies factors cumulatively
 across a group's relationships, so that 1.2 D + 1.6 L would draw the live load at 1.92.
+
+Later, for load authoring: **directions in the XY and YZ planes.** Angles and slopes are entered
+in the X-Z plane only; other planes need components. A Plane choice (XZ, XY, YZ) in the force
+dialogs would read the pinwheel, angle and slope against that plane's axes (XY seen from +Z, X
+right and Y up; YZ from +X, Y right and Z up), record the plane in generated names as primed
+eighths record Point Axes, draw a force's arc and triangle in its plane, and set out its report
+steps in it. Forces in different planes at one point make a 3D problem, whose resultant would be
+given as components; Edit Resultant would stay with forces sharing a plane.
 
 Revisit with combinations:
 

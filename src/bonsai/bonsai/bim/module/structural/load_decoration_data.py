@@ -882,12 +882,22 @@ class ShaderInfo:
             if (p := primitive.get(k)) is not None
         ]
         color, past = (0.55, 0.55, 0.55, 1), size * 0.1
+        reaches = {}
         for k, name in ((0, "+X"), (2, "+Z")):
             axis = np.eye(3)[k]
             low = min([0.0] + [p[k] for p in ends]) - past
             high = max([0.0] + [p[k] for p in ends]) + past
+            reaches[k] = (low, high)
             self.add_dashed_line(location + axis * low, location + axis * high, size, color)
             self.text_info.append({"position": location + axis * high, "text": name, "color": color, "away": axis})
+        # Y as far as the longer of them reaches, as forces in the X-Z plane give it no length of its own. Seen
+        # orbiting the view; a report, looking along Y, leaves it out.
+        reach = max(max(abs(low), abs(high)) for low, high in reaches.values())
+        axis = np.array((0, 1.0, 0))
+        self.add_dashed_line(location - axis * reach, location + axis * reach, size, color)
+        self.info[-1]["along_view"] = True
+        text = {"position": location + axis * reach, "text": "+Y", "color": color, "away": axis, "along_view": True}
+        self.text_info.append(text)
         if item and activities:
             self.pickables.append(
                 {
