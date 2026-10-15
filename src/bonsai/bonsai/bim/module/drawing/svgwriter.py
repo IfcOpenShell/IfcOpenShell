@@ -674,9 +674,17 @@ class SvgWriter:
             self.svg.add(self.svg.polyline(points=points, class_=" ".join(classes), style=polyline_style))
 
         def draw_revision_cloud_annotation() -> None:
-            segment_width = 15.0
-            base_height = 1
-            width = 5
+            element = tool.Ifc.get_entity(obj)
+            assert element
+            # bubble size is in paper millimetres so it stays the same at any drawing scale
+            bubble_size = ifcopenshell.util.element.get_pset(element, "BBIM_RevisionCloud", "BubbleSize")
+            if not bubble_size or bubble_size <= 0:
+                bubble_size = 15.0
+            size_factor = bubble_size / 15.0
+
+            segment_width = bubble_size
+            base_height = 1 * size_factor
+            width = 5 * size_factor
 
             def get_svg_half_circle(height: float, width: float) -> str:
                 cp0 = f"0,-{height}"
@@ -707,12 +715,10 @@ class SvgWriter:
                     edges.append(edge)
                 return edges
 
-            element = tool.Ifc.get_entity(obj)
-            assert element
-            safe_offset_x = 2.0
+            safe_offset_x = 2.0 * size_factor
             marker_width = segment_width + safe_offset_x * 2
-            market_height = 15.0
-            ref_y = 5.0
+            market_height = 15.0 * size_factor
+            ref_y = 5.0 * size_factor
             revision_pattern = get_revision_pattern(Vector([safe_offset_x, ref_y]))
 
             bm = tool.Blender.get_bmesh_for_mesh(obj.data).copy()
