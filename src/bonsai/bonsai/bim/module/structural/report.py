@@ -945,6 +945,11 @@ def get_unknown_steps(
         )
     else:
         find = f"The magnitudes of ${named(found[0])}$ and ${named(found[1])}${with_links}, $R$ being known."
+    # Along parallel lines, as two vertical forces, the sums along X and Z cannot tell the two apart: a value found
+    # so was found another way, as by a kept moment, whose own section shows how.
+    (ax, az), (bx, bz) = lines[0]["unit"], lines[1]["unit"]
+    if abs(ax * bz - az * bx) < 1e-9:
+        return [], ""
     linked = {j for i in found for j in members[i]}
     knowns = [vectors[j] for j in range(len(forces)) if j not in linked]
     steps += get_two_unknown_steps(knowns, lines, None if len(found) == 1 else resultant, text_unit)
