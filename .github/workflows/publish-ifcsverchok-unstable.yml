@@ -49,4 +49,5 @@ jobs:
           asset_name: ifcsverchok-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}.zip
           release_name: "ifcsverchok-${{steps.version.outputs.version}}.${{steps.date.outputs.date}} (unstable)"
           tag: "ifcsverchok-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}"
+          target_commit: ${{ github.sha }}
           overwrite: true
