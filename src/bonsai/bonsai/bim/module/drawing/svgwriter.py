@@ -890,7 +890,11 @@ class SvgWriter:
 
         v1 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, 0)))
         v2 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, -1)))
-        angle = -math.degrees((v2 - v1).xy.angle_signed(Vector((0, 1))))
+        delta = (v2 - v1).xy
+        if delta.length <= 1e-6:
+            v2 = self.project_point_onto_camera(obj.matrix_world @ Vector((1, 0, 0)))
+            delta = (v2 - v1).xy
+        angle = -math.degrees(delta.angle_signed(Vector((0, 1)))) if delta.length > 1e-6 else 90.0
 
         transform = "rotate({}, {}, {})".format(angle, *symbol_position_svg.xy)
 
@@ -910,9 +914,33 @@ class SvgWriter:
         )
 
     def get_reference_and_sheet_id_from_annotation(self, element: ifcopenshell.entity_instance) -> tuple[str, str]:
-        reference_id = "-"
-        sheet_id = "-"
+        # Document-reference annotations link to an IfcDocumentInformation via
+        # IfcRelAssociatesDocument rather than to a drawing product.
+        if tool.Drawing.is_document_reference(element):
+            doc_info = tool.Drawing.get_annotation_reference_doc(element)
+            if not doc_info:
+                return ("-", "-")
+            doc_references = tool.Document.get_document_references(doc_info)
+            ext_location = (
+                tool.Drawing.get_path_with_ext(doc_references[0].Location, "svg") if doc_references else None
+            )
+            if not ext_location:
+                return ("-", "-")
+            for sheet_reference in tool.Ifc.get().by_type("IfcDocumentReference"):
+                if tool.Drawing.get_reference_description(sheet_reference) != "REFERENCE":
+                    continue
+                if sheet_reference.Location != ext_location:
+                    continue
+                sheet = tool.Drawing.get_reference_document(sheet_reference)
+                if sheet:
+                    reference_id = tool.Document.get_external_reference_id(sheet_reference) or "-"
+                    sheet_id = tool.Document.get_document_information_id(sheet) or "-"
+                    return (reference_id, sheet_id)
+            return ("-", "-")
+
         drawing = tool.Drawing.get_annotation_element(element)
+        if not drawing:
+            return ("-", "-")
         reference = tool.Drawing.get_drawing_reference(drawing)
         if reference:
             for sheet_reference in tool.Ifc.get().by_type("IfcDocumentReference"):
