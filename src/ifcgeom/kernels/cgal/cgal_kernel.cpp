@@ -20,6 +20,7 @@
 #include <cmath>
 
 #include "cgal_kernel.h"
+#include "cgal_profile.h"
 
 #include "../../../ifcparse/logger.h"
 #include "../../../ifcgeom/kernels/cgal/cgal_conversion_result.h"
@@ -38,11 +39,191 @@
 #include <CGAL/Polygon_triangulation_decomposition_2.h>
 #include <CGAL/Polygon_mesh_processing/locate.h>
 
+#ifndef IFOPSH_SIMPLE_KERNEL
+#include <CGAL/Nef_nary_union_3.h>
+#include <CGAL/Polygon_mesh_processing/corefinement.h>
+#include <CGAL/Polygon_mesh_processing/manifoldness.h>
+#include <CGAL/Polygon_mesh_processing/orient_polygon_soup.h>
+#include <CGAL/boost/graph/convert_nef_polyhedron_to_polygon_mesh.h>
+#endif
+
 using namespace ifcopenshell::geom;
 using namespace ifcopenshell::geom::kernels;
 using ifcopenshell::logger;
 
 namespace {
+#ifndef IFOPSH_SIMPLE_KERNEL
+	// Open surfaces have no marked volume. Construct their Nef as a union of
+	// facets so subtraction retains the surface instead of regularizing it away.
+	CGAL::Nef_polyhedron_3<kernel_> mesh_to_nef(const cgal_polyhedron& mesh) {
+	    if (mesh.empty()) {
+	        return CGAL::Nef_polyhedron_3<kernel_>();
+	    }
+	    if (mesh.is_closed()) {
+	        return CGAL::Nef_polyhedron_3<kernel_>(mesh);
+	    }
+	    CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<kernel_>> facets;
+	    for (auto f : faces(mesh)) {
+	        std::vector<kernel_::Point_3> points;
+	        for (auto v : CGAL::vertices_around_face(f->halfedge(), mesh)) {
+	            points.push_back(v->point());
+	        }
+	        facets.add_polyhedron(CGAL::Nef_polyhedron_3<kernel_>(points.begin(), points.end()));
+	    }
+	    return facets.get_union();
+	}
+
+	void nef_to_mesh(const CGAL::Nef_polyhedron_3<kernel_>& nef, cgal_polyhedron& mesh) {
+	    mesh.clear();
+	    if (nef.is_empty()) {
+	        return;
+	    }
+	    if (nef.is_simple()) {
+	        nef.convert_to_polyhedron(mesh);
+	    } else {
+	        std::vector<kernel_::Point_3> points;
+	        std::vector<std::vector<std::size_t>> polygons;
+	        CGAL::convert_nef_polyhedron_to_polygon_soup(nef, points, polygons, true);
+	        // Split vertices at non-manifold junctions to represent the boundary
+	        // in Polyhedron_3, including open surfaces and facets with holes.
+	        CGAL::Polygon_mesh_processing::orient_polygon_soup(points, polygons);
+	        CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh(points, polygons, mesh);
+	    }
+	    if (!mesh.is_valid()) {
+	        throw std::runtime_error("Invalid mesh extracted from Nef");
+	    }
+	}
+
+	bool prepare_corefinement(cgal_polyhedron& mesh, logger& log, const express::base& instance) {
+	    IFOPSH_CGAL_PROFILE_SCOPE(total, log, "prepare.total", instance);
+	    namespace PMP = CGAL::Polygon_mesh_processing;
+	    if (mesh.empty()) {
+	        return true;
+	    }
+	    {
+	        IFOPSH_CGAL_PROFILE_SCOPE(timer, log, "prepare.validity_triangulation", instance);
+	        if (!mesh.is_valid() || !mesh.is_closed() || !PMP::triangulate_faces(mesh)) {
+	            log.message(logger::LOG_DEBUG, "CGP", 2, "CGAL prepare rejected invalid, open or untriangulatable mesh", instance);
+	            return false;
+	        }
+	    }
+	    std::vector<cgal_polyhedron::Halfedge_handle> non_manifold;
+	    {
+	        IFOPSH_CGAL_PROFILE_SCOPE(timer, log, "prepare.manifold_check", instance);
+	        PMP::non_manifold_vertices(mesh, std::back_inserter(non_manifold));
+	    }
+	    {
+	        IFOPSH_CGAL_PROFILE_SCOPE(timer, log, "prepare.self_intersection", instance);
+	        if (!non_manifold.empty() || PMP::does_self_intersect(mesh)) {
+	            log.message(logger::LOG_DEBUG, "CGP", 2, "CGAL prepare rejected non-manifold or self-intersecting mesh", instance);
+	            return false;
+	        }
+	    }
+	    {
+	        IFOPSH_CGAL_PROFILE_SCOPE(timer, log, "prepare.orient", instance);
+	        PMP::orient_to_bound_a_volume(mesh);
+	    }
+	    IFOPSH_CGAL_PROFILE_SCOPE(timer, log, "prepare.bounds_volume", instance);
+	    return PMP::does_bound_a_volume(mesh);
+	}
+
+	struct profile_visitor : CGAL::Polygon_mesh_processing::Corefinement::Default_visitor<cgal_polyhedron> {
+	    logger* log;
+	    express::base instance;
+	    using clock = std::chrono::steady_clock;
+	    std::shared_ptr<std::map<std::string, clock::time_point>> starts = std::make_shared<std::map<std::string, clock::time_point>>();
+	    profile_visitor(logger& logger, const express::base& ref) : log(&logger), instance(ref) {}
+	    void start(const char* phase) const { (*starts)[phase] = clock::now(); }
+	    void end(const char* phase) const {
+	        auto found = starts->find(phase);
+	        if (found != starts->end()) {
+	            double seconds = std::chrono::duration<double>(clock::now() - found->second).count();
+	            log->message(logger::LOG_DEBUG, "CGP", 1, std::string("CGAL corefine.") + phase + ": " + std::to_string(seconds), instance);
+	        }
+	    }
+	    void start_filtering_intersections() const { start("filter_intersections"); }
+	    void end_filtering_intersections() const { end("filter_intersections"); }
+	    void start_triangulating_faces(std::size_t) const { start("retriangulate"); }
+	    void end_triangulating_faces() const { end("retriangulate"); }
+	    void start_handling_intersection_of_coplanar_faces(std::size_t) const { start("coplanar_intersections"); }
+	    void end_handling_intersection_of_coplanar_faces() const { end("coplanar_intersections"); }
+	    void start_handling_edge_face_intersections(std::size_t) const { start("edge_face_intersections"); }
+	    void end_handling_edge_face_intersections() const { end("edge_face_intersections"); }
+	    void start_building_output() const { start("classify_build_output"); }
+	    void end_building_output() const { end("classify_build_output"); }
+	};
+
+	bool corefine_boolean(cgal_polyhedron a, cgal_polyhedron b, taxonomy::boolean_result::operation_type operation, cgal_polyhedron& result, logger& log, const express::base& instance) {
+	    IFOPSH_CGAL_PROFILE_SCOPE(timer, log, "corefine.api", instance);
+	    using boolean = taxonomy::boolean_result;
+	    if (a.empty() || b.empty()) {
+	        result = operation == boolean::INTERSECTION ? cgal_polyhedron() : (operation == boolean::UNION && a.empty() ? b : a);
+	        return true;
+	    }
+	    profile_visitor visitor(log, instance);
+	    // Inputs are checked by prepare_corefinement; successful exact Booleans
+	    // preserve that invariant. Rechecking intersecting patches at every cut
+	    // dominates the cost on walls with many openings.
+	    auto params = CGAL::parameters::throw_on_self_intersection(false).visitor(visitor);
+	    switch (operation) {
+	    case boolean::UNION:
+	        return CGAL::Polygon_mesh_processing::corefine_and_compute_union(a, b, result, params);
+	    case boolean::SUBTRACTION:
+	        return CGAL::Polygon_mesh_processing::corefine_and_compute_difference(a, b, result, params);
+	    case boolean::INTERSECTION:
+	        return CGAL::Polygon_mesh_processing::corefine_and_compute_intersection(a, b, result, params);
+	    }
+	    return false;
+	}
+
+	bool dilate_subtraction_operand(cgal_polyhedron& mesh, double dilation, logger& log, const express::base& instance) {
+	    IFOPSH_CGAL_PROFILE_SCOPE(total, log, "dilate.total", instance);
+	    namespace PMP = CGAL::Polygon_mesh_processing;
+	    if (mesh.empty() || dilation == 0.) {
+	        return true;
+	    }
+	    if (!mesh.is_valid() || !PMP::triangulate_faces(mesh)) {
+	        return false;
+	    }
+	    {
+	        IFOPSH_CGAL_PROFILE_SCOPE(timer, log, "dilate.self_intersection_orient", instance);
+	        if (mesh.is_closed() && !PMP::does_self_intersect(mesh)) {
+	            PMP::orient_to_bound_a_volume(mesh);
+	        }
+	    }
+
+	    // Match the manifold kernel: normalize the sum of area-weighted triangle
+	    // normals, and compute every displacement before moving any vertex.
+	    std::map<cgal_vertex_descriptor, Eigen::Vector3d> normals;
+	    for (auto v : vertices(mesh)) {
+	        normals.emplace(v, Eigen::Vector3d::Zero());
+	    }
+	    for (auto f : faces(mesh)) {
+	        auto h = f->halfedge();
+	        const auto& a = h->vertex()->point();
+	        const auto& b = h->next()->vertex()->point();
+	        const auto& c = h->next()->next()->vertex()->point();
+	        auto cross = CGAL::cross_product(b - a, c - a);
+	        Eigen::Vector3d normal(CGAL::to_double(cross.x()) / 2., CGAL::to_double(cross.y()) / 2., CGAL::to_double(cross.z()) / 2.);
+	        for (auto v : CGAL::vertices_around_face(h, mesh)) {
+	            normals.at(v) += normal;
+	        }
+	    }
+	    for (auto& entry : normals) {
+	        auto& normal = entry.second;
+	        if (normal.norm() > 0.) {
+	            normal.normalize();
+	        }
+	        normal *= dilation;
+	        // Store the approximate normal offset as exact coordinates so later
+	        // predicates and corefinement still use the exact arithmetic backend.
+	        entry.first->point() = entry.first->point() + kernel_::Vector_3(normal.x(), normal.y(), normal.z());
+	    }
+	    return true;
+	}
+
+#endif
+
 	struct polyhedron_builder : public CGAL::Modifier_base<CGAL::Polyhedron_3<kernel_>::HalfedgeDS> {
 	private:
 		std::list<cgal_face> *face_list;
@@ -92,18 +273,13 @@ CGAL::Polyhedron_3<kernel_> ifcopenshell::geom::utils::create_polyhedron(std::li
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 CGAL::Polyhedron_3<kernel_> ifcopenshell::geom::utils::create_polyhedron(const CGAL::Nef_polyhedron_3<kernel_>& nef_polyhedron, logger& logger) {
-	if (nef_polyhedron.is_simple()) {
-		try {
-			CGAL::Polyhedron_3<kernel_> polyhedron;
-			nef_polyhedron.convert_to_polyhedron(polyhedron);
-			return polyhedron;
-		} catch (...) {
-			logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 70, "Conversion from Nef to polyhedron failed!");
-			return CGAL::Polyhedron_3<kernel_>();
-		}
-	} else {
-        logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 71, "Nef polyhedron not simple: cannot create polyhedron!");
-		return CGAL::Polyhedron_3<kernel_>();
+	try {
+		cgal_polyhedron polyhedron;
+		nef_to_mesh(nef_polyhedron, polyhedron);
+		return polyhedron;
+	} catch (...) {
+		logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 70, "Conversion from Nef to polyhedron failed!");
+		return cgal_polyhedron();
 	}
 }
 
@@ -121,7 +297,7 @@ CGAL::Nef_polyhedron_3<kernel_> ifcopenshell::geom::utils::create_nef_polyhedron
 	CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
 	CGAL::Nef_polyhedron_3<kernel_> nef_polyhedron;
 	try {
-		nef_polyhedron = CGAL::Nef_polyhedron_3<kernel_>(polyhedron);
+		nef_polyhedron = mesh_to_nef(polyhedron);
 	} catch (...) {
         logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 73, "Conversion to Nef polyhedron failed!");
 	}
@@ -142,12 +318,12 @@ CGAL::Nef_polyhedron_3<kernel_> ifcopenshell::geom::utils::create_nef_polyhedron
 		}
 	}
 
-	if (polyhedron.is_valid(false, 3) && polyhedron.is_closed()) {
+	if (polyhedron.is_valid(false, 3)) {
 		// @todo is it necessary to triangulat?
 		CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
 		CGAL::Nef_polyhedron_3<kernel_> nef_polyhedron;
 		try {
-			nef_polyhedron = CGAL::Nef_polyhedron_3<kernel_>(polyhedron);
+			nef_polyhedron = mesh_to_nef(polyhedron);
 		} catch (...) {
             logger.message(ifcopenshell::logger::LOG_ERROR, "GEO", 75, "Conversion to Nef polyhedron failed!");
 		}
@@ -631,16 +807,13 @@ bool ifcopenshell::geom::kernels::cgal_kernel::convert_openings(const express::b
 	(void)cut_shapes;
 	return false;
 #else
-	CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<kernel_>> second_operand_collector;
-	size_t second_operand_collector_size = 0;
-
+	IFOPSH_CGAL_PROFILE_SCOPE(total, logger(), "openings.total", entity);
+	std::list<cgal_polyhedron> first_operands;
 	std::list<std::pair<express::base, std::list<cgal_polyhedron>>> operands;
-
-	std::list<express::base> second_operand_instances;
-	std::list<cgal_polyhedron> first_operands, second_operands;
-	std::list<CGAL::Nef_polyhedron_3<kernel_>> first_operands_nef, second_operands_nef;
+	operands.emplace_back(entity, std::list<cgal_polyhedron>());
 
 	for (auto& shp : entity_shapes) {
+		IFOPSH_CGAL_PROFILE_SCOPE(timer, logger(), "openings.host_copy_transform", entity);
 		cgal_polyhedron entity_shape = *std::static_pointer_cast<cgal_shape>(shp.shape());
 		const auto& m = shp.placement()->ccomponents();
 		if (!m.isIdentity()) {
@@ -651,23 +824,15 @@ bool ifcopenshell::geom::kernels::cgal_kernel::convert_openings(const express::b
 			}
 		}
 		first_operands.push_back(entity_shape);
-
-
-		CGAL::Nef_polyhedron_3<kernel_> a;
-		if (!preprocess_boolean_operand(entity, {}, {}, {}, entity_shape, a, PP_NONE /*PP_UNIFY_PLANES_INTERNALLY*/)) {
-			return false;
-		}
-
-		first_operands_nef.push_back(a);
 	}
 
-	std::list<kernel_::Plane_3> all_operand_planes;
-
 	for (auto& op : openings) {
+		IFOPSH_CGAL_PROFILE_SCOPE(timer, logger(), "openings.cutter_convert_transform", op.first->instance);
 		auto opening_trsf = op.second;
 		Eigen::Matrix4d relative = entity_trsf.ccomponents().inverse() * opening_trsf.ccomponents();
 		opening_trsf = relative;
 
+		operands.emplace_back(op.first->instance, std::list<cgal_polyhedron>());
 		std::vector<conversion_result> opening_shapes;
 		abstract_kernel::convert(op.first, opening_shapes);
 
@@ -684,63 +849,26 @@ bool ifcopenshell::geom::kernels::cgal_kernel::convert_openings(const express::b
 					vertex->point() = vertex->point().transform(trsf);
 				}
 			}
-			CGAL::Nef_polyhedron_3<kernel_> nef;
-			if (!preprocess_boolean_operand(op.first->instance, {}, {}, {}, entity_shape, nef, PP_NONE)) {
-				continue;
-			}
-
-			// auto tree = build_halfspace_tree_decomposed(nef, all_operand_planes);
-
-			second_operand_instances.push_back(op.first->instance);
-			second_operands.push_back(entity_shape);
-			second_operands_nef.push_back(nef);
+			operands.back().second.push_back(std::move(entity_shape));
 		}
 	}
 
-	auto iit = second_operand_instances.begin();
-	auto pit = second_operands.begin();
-	for (auto& nef : second_operands_nef) {
-		auto& inst = *iit++;
-		auto& entity_shape = *pit++;
-		if (!preprocess_boolean_operand(inst, first_operands, first_operands_nef, all_operand_planes, entity_shape, nef, PP_MINKOWSKY_DILATE/*PP_SNAP_PLANES_TO_FIRST_OPERAND*/)) {
-			continue;
-		}
-		second_operand_collector.add_polyhedron(nef);
-		second_operand_collector_size++;
-	}
-
-	if (!second_operand_collector_size) {
+	if (operands.size() == 1) {
 		return false;
 	}
 
-	auto opening_union = second_operand_collector.get_union();
-
+	std::vector<conversion_result> converted;
 	auto it = entity_shapes.begin();
-	auto nit = first_operands_nef.begin();
 	for (auto& entity_shape : first_operands) {
-		auto& a = *nit;
-
-		if constexpr (false) {
-			static int NN = 0;
-			auto s = std::string("debug-first-operand-") + std::to_string(NN++) + ".off";
-			std::ofstream ofs(s.c_str());
-			ofs << entity_shape;
-		}
-
-		a -= opening_union;
-		cgal_polyhedron a_poly;
-
-		try {
-			a.convert_to_polyhedron(a_poly);
-		} catch (...) {
-            logger().message(ifcopenshell::logger::LOG_ERROR, "GEO", 88, "Could not convert from Nef:", entity);
+		operands.front().second = { entity_shape };
+		cgal_polyhedron result;
+		if (!boolean_operation(operands, taxonomy::boolean_result::SUBTRACTION, result)) {
 			return false;
 		}
-
-		cut_shapes.push_back(ifcopenshell::geom::conversion_result(it->ItemId(), new cgal_shape(a_poly), it->style_ptr()));
-		it++;
-		nit++;
+		converted.emplace_back(it->ItemId(), new cgal_shape(result), it->style_ptr());
+		++it;
 	}
+	cut_shapes.insert(cut_shapes.end(), converted.begin(), converted.end());
 
 	return true;
 #endif
@@ -1070,6 +1198,125 @@ CGAL::Polyhedron_3<kernel_> ifcopenshell::geom::utils::create_cube(const kernel_
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 
+bool cgal_kernel::boolean_operation(const std::list<std::pair<express::base, std::list<cgal_polyhedron>>>& original_operands,
+                                    taxonomy::boolean_result::operation_type operation,
+                                    cgal_polyhedron& result) {
+    using boolean = taxonomy::boolean_result;
+    IFOPSH_CGAL_PROFILE_SCOPE(total, logger(), "boolean.total", original_operands.empty() ? express::base() : original_operands.front().first);
+    std::list<std::pair<express::base, std::list<cgal_polyhedron>>> operands;
+    {
+        IFOPSH_CGAL_PROFILE_SCOPE(timer, logger(), "boolean.copy_operands");
+        operands = original_operands;
+    }
+    if (operands.empty() || operands.front().second.empty()) {
+        return false;
+    }
+
+    if (operation == boolean::SUBTRACTION) {
+        try {
+            for (auto operand = std::next(operands.begin()); operand != operands.end(); ++operand) {
+                for (auto& mesh : operand->second) {
+                    if (!dilate_subtraction_operand(mesh, settings_.get<settings::Precision>().get() * 10., logger(), operand->first)) {
+                        logger().message(ifcopenshell::logger::LOG_ERROR, "Could not dilate subtraction operand", operand->first);
+                        return false;
+                    }
+                }
+            }
+        } catch (const std::exception& e) {
+            logger().message(ifcopenshell::logger::LOG_ERROR, e.what(), operands.front().first);
+            return false;
+        }
+    }
+
+    // Corefinement modifies both inputs, so work on copies and restart from the
+    // original operands if any stage fails or produces a non-manifold boundary.
+    try {
+        IFOPSH_CGAL_PROFILE_SCOPE(attempt, logger(), "corefine.attempt", operands.front().first);
+        cgal_polyhedron accumulated;
+        bool first = true;
+        bool success = true;
+        for (const auto& operand : operands) {
+            IFOPSH_CGAL_PROFILE_SCOPE(operand_timer, logger(), "corefine.operand", operand.first);
+            logger().message(logger::LOG_DEBUG, "CGP", 2, "CGAL accumulated vertices=" + std::to_string(accumulated.size_of_vertices()) + " facets=" + std::to_string(accumulated.size_of_facets()), operand.first);
+            cgal_polyhedron group;
+            for (auto mesh : operand.second) {
+                cgal_polyhedron joined;
+                IFOPSH_CGAL_PROFILE_SCOPE(mesh_timer, logger(), "corefine.prepare_and_group", operand.first);
+                logger().message(logger::LOG_DEBUG, "CGP", 2, "CGAL input vertices=" + std::to_string(mesh.size_of_vertices()) + " facets=" + std::to_string(mesh.size_of_facets()), operand.first);
+                if (!prepare_corefinement(mesh, logger(), operand.first) || !corefine_boolean(group, mesh, boolean::UNION, joined, logger(), operand.first)) {
+                    success = false;
+                    break;
+                }
+                group = std::move(joined);
+            }
+            if (!success) {
+                break;
+            }
+            if (first) {
+                accumulated = std::move(group);
+                first = false;
+            } else {
+                cgal_polyhedron output;
+                IFOPSH_CGAL_PROFILE_SCOPE(timer, logger(), "corefine.compute_with_copies", operand.first);
+                if (!corefine_boolean(accumulated, group, operation, output, logger(), operand.first)) {
+                    logger().message(logger::LOG_DEBUG, "CGP", 2, "CGAL corefinement returned false; restarting with Nef", operand.first);
+                    success = false;
+                    break;
+                }
+                accumulated = std::move(output);
+            }
+        }
+        if (success) {
+            result = std::move(accumulated);
+            return true;
+        }
+    } catch (const std::exception& e) {
+        logger().message(ifcopenshell::logger::LOG_NOTICE, e.what(), operands.front().first);
+    }
+
+    logger().message(ifcopenshell::logger::LOG_NOTICE, "Using Nef fallback for boolean operation", operands.front().first);
+    try {
+        IFOPSH_CGAL_PROFILE_SCOPE(fallback, logger(), "nef.fallback", operands.front().first);
+        CGAL::Nef_polyhedron_3<kernel_> accumulated;
+        bool first = true;
+        for (const auto& operand : operands) {
+            CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<kernel_>> collector;
+            for (const auto& mesh : operand.second) {
+                IFOPSH_CGAL_PROFILE_SCOPE(timer, logger(), "nef.mesh_to_nef", operand.first);
+                CGAL::Nef_polyhedron_3<kernel_> nef;
+                if (!preprocess_boolean_operand(operand.first, {}, {}, {}, mesh, nef, PP_NONE)) {
+                    return false;
+                }
+                collector.add_polyhedron(nef);
+            }
+            CGAL::Nef_polyhedron_3<kernel_> group;
+            {
+                IFOPSH_CGAL_PROFILE_SCOPE(timer, logger(), "nef.group_union", operand.first);
+                group = operand.second.empty() ? CGAL::Nef_polyhedron_3<kernel_>() : collector.get_union();
+            }
+            IFOPSH_CGAL_PROFILE_SCOPE(timer, logger(), "nef.accumulate", operand.first);
+            if (first) {
+                accumulated = group;
+                first = false;
+            } else if (operation == boolean::UNION) {
+                accumulated += group;
+            } else if (operation == boolean::INTERSECTION) {
+                accumulated *= group;
+            } else {
+                accumulated -= group;
+            }
+        }
+        {
+            IFOPSH_CGAL_PROFILE_SCOPE(timer, logger(), "nef.extract_mesh", operands.front().first);
+            nef_to_mesh(accumulated, result);
+        }
+        return true;
+    } catch (const std::exception& e) {
+        logger().message(ifcopenshell::logger::LOG_ERROR, e.what(), operands.front().first);
+        return false;
+    }
+}
+
 bool cgal_kernel::thin_solid(const CGAL::Nef_polyhedron_3<kernel_>& a, CGAL::Nef_polyhedron_3<kernel_>& result) {
 	// @todo this should be possible as a minkowski sum of facet & cube. rather than a set of boolean ops.
 
@@ -1092,17 +1339,16 @@ bool cgal_kernel::thin_solid(const CGAL::Nef_polyhedron_3<kernel_>& a, CGAL::Nef
 
 bool cgal_kernel::preprocess_boolean_operand(const express::base& log_reference, const std::list<cgal_polyhedron>& first_operands, const std::list<CGAL::Nef_polyhedron_3<kernel_>>& first_operands_nef, const std::list<kernel_::Plane_3>& all_operand_planes, const cgal_polyhedron& shape_const, CGAL::Nef_polyhedron_3<kernel_>& result, boolean_operand_preprocess proc) {
 	cgal_polyhedron shape = shape_const;
+	if (shape.empty()) {
+		result = CGAL::Nef_polyhedron_3<kernel_>();
+		return true;
+	}
 
 	if (!shape.is_valid()) {
         logger().message(ifcopenshell::logger::LOG_ERROR, "GEO", 90, "Conversion to Nef will fail. Invalid geometry:", log_reference);
 		return false;
 	}
 
-	if (!shape.is_closed()) {
-		// TODO: There can be substractions to remove parts of non-volumetric objects. Maybe iterate over all faces of an entity and put them in a Nef_polyhedron_3 through Boolean union? Highly inefficient but maybe desirable...
-        logger().message(ifcopenshell::logger::LOG_ERROR, "UNS", 6, "Subtraction of openings not supported for non-closed geometry:", log_reference);
-		return false;
-	}
 
 	bool success = false;
 
@@ -1116,11 +1362,6 @@ bool cgal_kernel::preprocess_boolean_operand(const express::base& log_reference,
 
 	if (!success) {
         logger().message(ifcopenshell::logger::LOG_ERROR, "GEO", 93, "Triangulation of geometry failed:", log_reference);
-		return false;
-	}
-
-	if (CGAL::Polygon_mesh_processing::does_self_intersect(shape)) {
-		logger().message(ifcopenshell::logger::LOG_ERROR, "GEO", 94, "Conversion to Nef will fail. Self-intersecting geometry:", log_reference);
 		return false;
 	}
 
@@ -1191,7 +1432,10 @@ bool cgal_kernel::preprocess_boolean_operand(const express::base& log_reference,
 	}
 
 	try {
-		result = CGAL::Nef_polyhedron_3<kernel_>(shape);
+		if (shape.is_closed() && !CGAL::Polygon_mesh_processing::does_self_intersect(shape)) {
+			CGAL::Polygon_mesh_processing::orient_to_bound_a_volume(shape);
+		}
+		result = mesh_to_nef(shape);
 	} catch (CGAL::Failure_exception& e) {
         logger().notice("GEO", 95, e);
         logger().message(ifcopenshell::logger::LOG_ERROR, "GEO", 96, "Could not convert geometry to Nef:", log_reference);
@@ -1260,7 +1504,7 @@ bool cgal_kernel::preprocess_boolean_operand(const express::base& log_reference,
 		result = mapped->evaluate();
 	}
 
-	if (proc == PP_MINKOWSKY_DILATE) {
+	if (proc == PP_MINKOWSKY_DILATE && shape.is_closed()) {
 		auto precision_cube_ = precision_cube();
 		try {
 			// @todo don't dilate in 3 dimensions but only in the XY plane, orthogonal to wall axis.
@@ -1288,18 +1532,8 @@ bool cgal_kernel::preprocess_boolean_operand(const express::base& log_reference,
 	}
 	*/
 
-	try {
-		cgal_polyhedron convert_back;
-		result.convert_to_polyhedron(convert_back);
-	} catch (CGAL::Failure_exception& e) {
-        logger().notice("GEO", 99, e);
-        logger().message(ifcopenshell::logger::LOG_WARNING, "GEO", 100, "Final conversion will likely fail. Could not convert geometry from Nef:", log_reference);
-	}
-
 	return true;
 }
-
-#include <CGAL/Nef_nary_union_3.h>
 
 #endif
 
@@ -1680,9 +1914,6 @@ bool cgal_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::vect
 #else
 	bool first = true;
 
-	CGAL::Nef_polyhedron_3<kernel_> a;
-	CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<kernel_>> second_operand_collector;
-	size_t second_operand_collector_size = 0;
 
 	taxonomy::style::ptr first_item_style = nullptr;
 
@@ -1774,11 +2005,11 @@ bool cgal_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::vect
 				for (auto& v : vertices(poly)) {
 					v->point() = v->point().transform(trsf);
 				}
-				CGAL::Nef_polyhedron_3<kernel_> poly_nef(poly);
-				CGAL::Nef_polyhedron_3<kernel_> box_nef(box);
-				auto intersection = poly_nef * box_nef;
 				cgal_polyhedron intersection_poly;
-				intersection.convert_to_polyhedron(intersection_poly);
+				if (!boolean_operation({ { c->instance, { poly } }, { c->instance, { box } } },
+					taxonomy::boolean_result::INTERSECTION, intersection_poly)) {
+					return false;
+				}
 				operands.back().second.push_back(intersection_poly);
 			} else {
 				operands.back().second.push_back(box);
@@ -1849,58 +2080,8 @@ bool cgal_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::vect
 	return true;
 	*/
 
-	first = true;
-
-	std::list<cgal_polyhedron> ops;
-	std::list<CGAL::Nef_polyhedron_3<kernel_>> nefops;
-	std::list<kernel_::Plane_3> all_operand_planes;
-
-	for (auto& li : operands) {
-
-		auto entity_instance = li.first;
-		for (auto& entity_shape : li.second) {
-
-			CGAL::Nef_polyhedron_3<kernel_> nef;
-			if (!preprocess_boolean_operand(entity_instance, ops, nefops, all_operand_planes, entity_shape, nef,
-				// Snap boolean subtraction operands
-				first ? PP_NONE : PP_MINKOWSKY_DILATE/*PP_SNAP_PLANES_TO_FIRST_OPERAND*/)) {
-				continue;
-			}
-
-			ops.push_front(entity_shape);
-			nefops.push_back(nef);
-
-			if (first) {
-				a = nef;
-			} else {
-				if (br->operation == taxonomy::boolean_result::SUBTRACTION) {
-					second_operand_collector.add_polyhedron(nef);
-					second_operand_collector_size++;
-					// a -= nef;
-				} else if (br->operation == taxonomy::boolean_result::INTERSECTION) {
-					a *= nef;
-				} else if (br->operation == taxonomy::boolean_result::UNION) {
-					a += nef;
-				}
-			}
-		}
-
-		first = false;
-	}
-
-	if (br->operation == taxonomy::boolean_result::SUBTRACTION && second_operand_collector_size) {
-		a -= second_operand_collector.get_union();
-	}
-
 	cgal_polyhedron a_poly;
-
-	// CGAL::Nef_polyhedron_3<kernel_> b;
-	// thin_solid(a, b);
-
-	try {
-		a.convert_to_polyhedron(a_poly);
-	} catch (...) {
-        logger().message(ifcopenshell::logger::LOG_ERROR, "GEO", 104, "Could not convert geometry with openings from Nef:", br->instance);
+	if (!boolean_operation(operands, br->operation, a_poly)) {
 		return false;
 	}
 
