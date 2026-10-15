@@ -80,6 +80,57 @@ ProcessedLoad = TypedDict(
 )
 
 
+def box_crosses_segments(
+    left: float, low: float, width: float, height: float, segments: Iterable[tuple[Iterable, Iterable]]
+) -> bool:
+    """Whether a label's box, from (left, low) and of a width and height in 2D, touches any of the lines given as
+    pairs of end points, so that labels can keep off arrows and arcs as well as each other"""
+    right, high = left + width, low + height
+    for (x1, y1), (x2, y2) in segments:
+        if max(x1, x2) < left or min(x1, x2) > right or max(y1, y2) < low or min(y1, y2) > high:
+            continue  # Nowhere near, which most lines are; quick to rule out, as this runs on every redraw.
+        # Clip the line to the box (Liang-Barsky): any part left means it crosses the box.
+        t0, t1 = 0.0, 1.0
+        dx, dy = x2 - x1, y2 - y1
+        for p, q in ((-dx, x1 - left), (dx, right - x1), (-dy, y1 - low), (dy, high - y1)):
+            if p == 0:
+                if q < 0:
+                    break  # Parallel to this edge and outside it.
+                continue
+            t = q / p
+            if p < 0:
+                t0 = max(t0, t)
+            else:
+                t1 = min(t1, t)
+            if t0 > t1:
+                break
+        else:
+            return True
+    return False
+
+
+def get_plain_symbol(symbol: str) -> str:
+    """A symbol written F_{x1}, as reports set it, in plain text with Unicode subscripts where there are some, as
+    F₁ or Fₓ₁; Unicode has no subscript z, so it stays as it is"""
+    lower = str.maketrans("0123456789x", "₀₁₂₃₄₅₆₇₈₉ₓ")
+    return re.sub(r"_\{([^}]*)\}", lambda m: m[1].translate(lower), symbol)
+
+
+def segments_cross(p1: Iterable, p2: Iterable, q1: Iterable, q2: Iterable) -> bool:
+    """Whether two lines in a plane, given by their end points as (x, y), cross or touch"""
+
+    def turn(a: Iterable, b: Iterable, c: Iterable) -> float:
+        return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+
+    d1, d2, d3, d4 = turn(q1, q2, p1), turn(q1, q2, p2), turn(p1, p2, q1), turn(p1, p2, q2)
+    if ((d1 > 0) != (d2 > 0)) and ((d3 > 0) != (d4 > 0)) and 0 not in (d1, d2, d3, d4):
+        return True
+    on = lambda a, b, c, d: (
+        d == 0 and min(a[0], b[0]) <= c[0] <= max(a[0], b[0]) and min(a[1], b[1]) <= c[1] <= max(a[1], b[1])
+    )
+    return on(q1, q2, p1, d1) or on(q1, q2, p2, d2) or on(p1, p2, q1, d3) or on(p1, p2, q2, d4)
+
+
 class ShaderInfo:
     # Values of a load being edited, by load id, shown in place of its own until the edit is confirmed or cancelled.
     preview: dict[int, dict[str, Union[float, None]]] = {}
@@ -546,6 +597,11 @@ class ShaderInfo:
         """
         props = tool.Structural.get_structural_props()
         location = np.array(location)
+        first = len(self.info)  # This point's drawing starts here, which its axes reach across.
+        self.point_first = first  # And which its slope triangles keep clear of.
+        first_text = len(self.text_info)
+        # Forces are numbered as they are drawn, tip to tail, as calculations number them.
+        numbers = {activity: i for i, activity in enumerate(activities or [], 1) if activity}
         if props.reference_frame == "LOCAL_COORDS":
             forces = [rotation @ force for force in forces]
         kept = [
@@ -600,8 +656,8 @@ class ShaderInfo:
         running = np.zeros(3)
         arcs_at_tail: dict[tuple, int] = {}
         reference_axes: dict[tuple, tuple] = {}
-        # In a tip-to-tail chain every tip is the next tail, so labels go at the middle of each arrow, outside
-        # the polygon the chain and its resultant make; elsewhere tails are shared, so labels go at the tips.
+        # Labels go at the tips. In a tip-to-tail chain, where every tip is the next tail, they lean outside the
+        # polygon the chain and its resultant make, and keep off the next arrow as labels keep off lines.
         chain = np.cumsum([np.zeros(3)] + [vector for vector, *_ in vectors], axis=0) * scale + location
         centre = chain.mean(axis=0) if mode == "TIP_TO_TAIL" else None
         # A push arrives at its point. Drawn alone, its picture is mirrored through the point, arrows
@@ -640,14 +696,14 @@ class ShaderInfo:
                 self.add_force_arrow(tail, tip, color, label, size, activity=activity, force_of=force_of)
             else:
                 side = self.get_label_side(vector, (tail + tip) / 2 - centre)
+                onward = vector / np.linalg.norm(vector) + side  # Past the tip, leaning outside the polygon.
                 self.add_force_arrow(
                     tail,
                     tip,
                     color,
                     label,
                     size,
-                    label_away=side,
-                    label_at_middle=True,
+                    label_away=onward / np.linalg.norm(onward),
                     activity=activity,
                     force_of=force_of,
                 )
@@ -683,7 +739,6 @@ class ShaderInfo:
                 size,
                 spacing=0.3,
                 label_away=None if arriving else side,
-                label_at_middle=centre is not None,
                 activity=single,
                 resultant_of=activities if len(activities) > 1 else None,
                 force_of=single,
@@ -706,9 +761,11 @@ class ShaderInfo:
                 arrow = (flip(tip), location) if arriving else (location, tip)
                 self.add_force_slope(*arrow, size, (1, 1, 1, 1), avoid=side)
         self.add_reference_axes(reference_axes, size)
+        self.add_global_axes(location, size, first)
         if not np.allclose(rotation, np.eye(3)):
             drawn = [vector * scale for vector, *_ in vectors] + ([resultant * scale] if show_resultant else [])
             self.add_point_axes(location, rotation, size, slope, drawn)
+        self.add_symbols(self.text_info[first_text:], numbers)
 
     def draw_resolved_point_forces(
         self,
@@ -756,9 +813,47 @@ class ShaderInfo:
             label += self.get_unknown_marks(activity)[0] + (" (push)" if activity in pushes else "")
             self.add_force_arrow(location, tip, color, label, size, spacing=0.3, force_of=activity)
             drawn.append(tip - location)
+        self.add_global_axes(location, size, start[0])
         self.add_point_axes(location, rotation, size, slope, drawn)
+        self.add_symbols(self.text_info[start[1] :], {a: i for i, a in enumerate(activities, 1) if a})
         for entry in self.info[start[0] :] + self.text_info[start[1] :]:
             entry["object"] = object_name
+
+    def add_symbols(self, texts: list[dict], numbers: dict[int, int]) -> None:
+        """Name each force's and component's label by its symbol in the calculations, as F_{1}: a force by its
+        number, a single force's components as its own, F_{x1}, several forces' as their resultant's, R_{x}, and
+        a force's components resolved apart as its own"""
+        for text in texts:
+            if text.get("force_of") in numbers:
+                text["symbol"] = f"F_{{{numbers[text['force_of']]}}}"
+            elif (axis := text.get("component")) and text.get("component_of") in numbers:
+                text["symbol"] = f"F_{{{axis}{numbers[text['component_of']]}}}"
+            elif axis and len(numbers) == 1:
+                text["symbol"] = f"F_{{{axis}{next(iter(numbers.values()))}}}"
+            elif axis and numbers:
+                text["symbol"] = f"R_{{{axis}}}"
+
+    def add_global_axes(self, location: np.ndarray, size: float, first: int = 0) -> None:
+        """Mark the global X and Z axes through a point, faint and dashed, named at their positive ends, so that a
+        diagram reads on its own, as a report's does. Y runs into the view.
+
+        :param first: Where the point's drawing starts in the drawing data: each way, an axis reaches just past
+            what is drawn there, or a short way if nothing is.
+        """
+        ends = [
+            np.array(p) - location
+            for entry in self.info[first:]
+            if (primitive := entry.get("primitive"))
+            for k in ("tail", "tip", "start", "end")
+            if (p := primitive.get(k)) is not None
+        ]
+        color, past = (0.55, 0.55, 0.55, 1), size * 0.1
+        for k, name in ((0, "+X"), (2, "+Z")):
+            axis = np.eye(3)[k]
+            low = min([0.0] + [p[k] for p in ends]) - past
+            high = max([0.0] + [p[k] for p in ends]) + past
+            self.add_dashed_line(location + axis * low, location + axis * high, size, color)
+            self.text_info.append({"position": location + axis * high, "text": name, "color": color, "away": axis})
 
     def add_point_axes(
         self,
@@ -954,43 +1049,90 @@ class ShaderInfo:
         along, across = abs(np.cos(turned)), abs(np.sin(turned))
         if along < 1e-6 or across < 1e-6:
             return  # Along or square to the axis, so there is no slope to show.
-        rise, run = tool.Structural.get_simple_slope(along, across)
+        direction = vector / length
+        level, plumb = abs(direction[0]), abs(direction[2])
+        # Rise over run, as a roof pitch is given: whole numbers when small ones fit, else the rise to a run of 1.
+        rise, run = tool.Structural.get_simple_slope(level, plumb)
         if float(rise).is_integer() and float(run).is_integer():
             rise_text, run_text = f"{abs(rise):g}", f"{abs(run):g}"
         else:
-            rise_text, run_text = f"{across / along:.3g}", "1"
-        direction = vector / length
+            rise_text, run_text = f"{plumb / level:.3g}", "1"
         axis = np.array((np.cos(np.radians(start)), 0, np.sin(np.radians(start))))
-        # The hypotenuse lies along the force, out towards its tip, beyond the angle arcs at its tail and short of
-        # its head, and the legs meet off to one side. A force too short for that keeps it nearer its middle.
-        hypotenuse = min(size * 0.3, length * 0.4)
-        near = max(length * 0.75 - hypotenuse / 2, size * 0.3)
-        if (room := length - size * 0.06 - near) >= hypotenuse * 0.5:
-            hypotenuse = min(hypotenuse, room)
-        else:
-            near = length * 0.6 - hypotenuse / 2
-        a = tail + direction * near
-        b = a + direction * hypotenuse
-        towards_axis = a + axis * hypotenuse * np.cos(turned)
-        away_from_axis = b - axis * hypotenuse * np.cos(turned)  # The same triangle turned to the other side.
+        # The run, the level leg, is the same length on every triangle, so that they compare, the rise showing the
+        # slope; a steep force keeps its rise to 2.5 runs, shortening its run instead. The hypotenuse lies along
+        # the force, out towards its tip, beyond the angle arcs at its tail and short of its head, and the legs meet
+        # off to one side; on a short force it moves back to fit, and only a force too short to hold it shrinks it.
+        run_length = size * 0.1125
+        hypotenuse = min(run_length / level if level else np.inf, 2.5 * run_length / plumb if plumb else np.inf)
+        end = length - size * 0.06  # Short of the head.
+        near = min(max(length * 0.75 - hypotenuse / 2, size * 0.3), end - hypotenuse)
+        if near < size * 0.05:
+            near, hypotenuse = size * 0.05, max(end - size * 0.05, 0.0)
+        if hypotenuse * min(along, across) < run_length * 0.15:
+            return  # A sliver too flat to read, as for a force nearly along the axis; its angle says it.
+
+        def build(near: float, away_from_axis: bool) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+            """The triangle's corners: the hypotenuse's ends along the force, and where the legs meet"""
+            a = tail + direction * near
+            b = a + direction * hypotenuse
+            # Turned to the other side, the same triangle meets at the hypotenuse's far end.
+            corner = (
+                b - axis * hypotenuse * np.cos(turned) if away_from_axis else a + axis * hypotenuse * np.cos(turned)
+            )
+            side = corner - a - np.dot(corner - a, direction) * direction
+            offset = side / np.linalg.norm(side) * size * 0.05
+            return a + offset, b + offset, corner + offset
+
         # The angle's arc and label lie between the force and its axis, so the triangle goes on the other side.
-        corner = away_from_axis if props.show_force_angles else towards_axis
+        away_from_axis = bool(props.show_force_angles)
+        a, b, corner = build(near, away_from_axis)
         if avoid is not None and np.dot(corner - a, avoid) > 0:
-            corner = towards_axis if corner is away_from_axis else away_from_axis
-        side = corner - a - np.dot(corner - a, direction) * direction
-        offset = side / np.linalg.norm(side) * size * 0.05
-        a, b, corner = a + offset, b + offset, corner + offset
+            away_from_axis = not away_from_axis
+        # Off lines drawn at the point already, as another force's triangle along a force beside it: further back
+        # along the force first, then on the other side, the first place clear.
+        drawn = self.get_point_segments(tail, tip)
+        flat = lambda p: (p[0], p[2])
+        crosses = lambda corners: any(
+            segments_cross(flat(p), flat(q), s, e)
+            for p, q in ((corners[0], corners[2]), (corners[2], corners[1]), (corners[0], corners[1]))
+            for s, e in drawn
+        )
+        places = [n for n in (near, near - hypotenuse * 0.6, near - hypotenuse * 1.2) if n >= size * 0.05]
+        a, b, corner = next(
+            (c for side in (away_from_axis, not away_from_axis) for n in places if not crosses(c := build(n, side))),
+            build(near, away_from_axis),
+        )
         for start_point, end_point in ((a, corner), (corner, b), (a, b)):
             self.add_dashed_line(start_point, end_point, size, color, dashed=False)
         centroid = (a + b + corner) / 3
         for p, q in ((a, corner), (corner, b)):
-            # The leg along the axis is the run.
-            text = run_text if abs(np.dot((q - p) / np.linalg.norm(q - p), axis)) > 0.5 else rise_text
+            # The level leg is the run, and the plumb one the rise.
+            text = run_text if abs(q[2] - p[2]) < abs(q[0] - p[0]) else rise_text
             middle = (p + q) / 2
             away = middle - centroid
             self.text_info.append(
                 {"position": middle, "text": text, "color": color, "away": away / np.linalg.norm(away)}
             )
+
+    def get_point_segments(self, tail: np.ndarray, tip: np.ndarray) -> list[tuple[tuple, tuple]]:
+        """The arrows and solid lines drawn at the point so far, in the X-Z plane, but a force's own arrow, from
+        tail to tip, which its slope triangle lies beside"""
+        flat = lambda p: (float(p[0]), float(p[2]))
+        own = {flat(tail), flat(tip)}
+        segments = []
+        for entry in self.info[getattr(self, "point_first", 0) :]:
+            if not (primitive := entry.get("primitive")):
+                continue
+            if primitive["type"] == "ARROW":
+                ends = (flat(primitive["tail"]), flat(primitive["tip"]))
+                if set(ends) == own:
+                    continue
+            elif not primitive["dashed"]:
+                ends = (flat(primitive["start"]), flat(primitive["end"]))
+            else:
+                continue  # Dashed guides may be crossed.
+            segments.append(ends)
+        return segments
 
     def add_reference_axes(self, reference_axes: dict[tuple, tuple], size: float) -> None:
         """Draw the axes angles are measured from, each band coloured as the arc that starts in it"""
@@ -1029,7 +1171,6 @@ class ShaderInfo:
         size: float,
         spacing: float = 0.2,
         label_away: Union[np.ndarray, None] = None,
-        label_at_middle: bool = False,
         activity: int = 0,
         resultant_of: Union[list[int], None] = None,
         force_of: int = 0,
@@ -1075,7 +1216,7 @@ class ShaderInfo:
             self.pickables.append(pickable)
         # Labelled beside the tip, as arrows often share their tail.
         away = (-direction if label_at_tail else direction) if label_away is None else label_away
-        position = (tail + tip) / 2 if label_at_middle else tail if label_at_tail else tip
+        position = tail if label_at_tail else tip
         text = {"position": position, "text": label, "color": color, "away": away}
         if force_of:
             text["force_of"] = force_of

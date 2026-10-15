@@ -29,6 +29,7 @@ import datetime
 import math
 import re
 import shutil
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Union
 
@@ -38,7 +39,7 @@ import numpy as np
 import pystache
 
 import bonsai.tool as tool
-from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
+from bonsai.bim.module.structural.load_decoration_data import ShaderInfo, box_crosses_segments
 
 # What is white in the viewport, as resultants, made near black for paper; symbols in it are left uncoloured.
 NEUTRAL = "#222222"
@@ -102,10 +103,8 @@ def get_report_data(
                 drawing = ShaderInfo(case)
                 drawing.update()
             name = f"{get_slug(case.Name)}_{get_slug(item.Name)}_{item.id()}.svg"
-            # Forces are numbered as they are drawn, tip to tail; the diagram names them so too.
-            numbers = {a.id(): i for i, a in enumerate(activities, 1)}
             resultant_found = bool(get_resultant_found([tool.Structural.get_locks(a) for a in activities]))
-            has_diagram = write_diagram(drawing, item, directory / "diagrams" / name, numbers, resultant_found)
+            has_diagram = write_diagram(drawing, item, directory / "diagrams" / name, resultant_found)
             point = {"name": item.Name or "Unnamed", "diagram": f"diagrams/{name}" if has_diagram else None}
             colors = get_force_colors(drawing, item)
             tilt = tool.Structural.get_axes_tilt(item)
@@ -119,7 +118,7 @@ def get_report_data(
             # Resolved along the point's tilted axes too, whatever the viewport shows.
             resolved = name.replace(".svg", "_axes.svg")
             if point["has_tilted"] and write_resolved_diagram(
-                item, activities, colors, directory / "diagrams" / resolved, numbers
+                item, activities, colors, directory / "diagrams" / resolved
             ):
                 point["tilted_diagram"] = f"diagrams/{resolved}"
             points.append(point)
@@ -154,7 +153,6 @@ def write_resolved_diagram(
     activities: list[ifcopenshell.entity_instance],
     colors: dict[int, tuple],
     path: Path,
-    numbers: dict[int, int],
 ) -> bool:
     """Write a diagram of each force at a point resolved along its tilted axes, as the steps resolve them"""
     if not (obj := tool.Ifc.get_object(item)):
@@ -170,7 +168,7 @@ def write_resolved_diagram(
         [activity.id() for activity in activities],
         tool.Structural.get_axes_slope(item),
     )
-    return write_diagram(drawing, item, path, numbers)
+    return write_diagram(drawing, item, path)
 
 
 def get_point_items(case: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -876,7 +874,6 @@ def write_diagram(
     drawing: ShaderInfo,
     item: ifcopenshell.entity_instance,
     path: Path,
-    numbers: Union[dict[int, int], None] = None,
     resultant_found: bool = False,
 ) -> bool:
     """Write a structural item's load diagram as an SVG, as the X-Z plane is seen from -Y, or nothing if none.
@@ -889,29 +886,15 @@ def write_diagram(
         e["primitive"] | {"color": e["color"]} for e in drawing.info if e.get("object") == obj.name and "primitive" in e
     ]
     texts = [t for t in drawing.text_info if t.get("object") == obj.name]
-    # Name each force and component by its symbol in the calculations: a single force's components as its
-    # own, F_x1, and several forces' as their resultant's, R_x.
-    numbers = numbers or {}
-
-    def get_symbol(text: dict) -> Union[str, None]:
-        if text.get("force_of") in numbers:
-            return f"F_{{{numbers[text['force_of']]}}}"
-        if (axis := text.get("component")) and text.get("component_of") in numbers:
-            return f"F_{{{axis}{numbers[text['component_of']]}}}"  # A component of one force, resolved.
-        if axis:
-            if len(numbers) == 1:
-                return f"F_{{{axis}{next(iter(numbers.values()))}}}"
-            return f"R_{{{axis}}}"
-        return None
-
-    texts = [t | {"text": f"{symbol} = {t['text']}"} if (symbol := get_symbol(t)) else t for t in texts]
+    # Each force and component named by its symbol in the calculations, as the drawing names them.
+    texts = [t | {"text": f"{t['symbol']} = {t['text']}"} if t.get("symbol") else t for t in texts]
     if not shapes:
         return False
     flat = lambda point: np.array((point[0], -point[2]))  # SVG's Y runs down.
     points = [flat(p) for shape in shapes for k in ("tail", "tip", "start", "end") if (p := shape.get(k)) is not None]
     points += [flat(text["position"]) for text in texts]
     low, high = np.min(points, axis=0), np.max(points, axis=0)
-    scale = 420 / max(*(high - low), 1e-9)
+    scale = 600 / max(*(high - low), 1e-9)  # Large enough that labels, at a fixed size, keep apart.
     # Room for the longest label beside its anchor, as labels run out from their anchors.
     longest = max((len(get_shown_text(t["text"])) for t in texts), default=0)
     margin = max(90, 20 + 8.2 * longest)
@@ -919,6 +902,9 @@ def write_diagram(
     width, height = (high - low) * scale + 2 * margin
     # On white, as a figure on paper, so that its near-black lines read on dark pages too.
     elements = ['<rect width="100%" height="100%" fill="white"/>']
+    placed: list[tuple[float, float, float, float]] = []
+    # The arrows and solid lines drawn, which labels keep off.
+    segments: list[tuple[np.ndarray, np.ndarray]] = []
     for shape in shapes:
         color, size = get_svg_color(shape["color"]), shape["size"] * scale
         if shape["type"] == "LINE":
@@ -927,6 +913,8 @@ def write_diagram(
             elements.append(
                 f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="{color}" stroke-width="1"{dash}/>'
             )
+            if not shape["dashed"]:
+                segments.append(((x1, y1), (x2, y2)))  # Arcs and slope triangles; dashed guides may be crossed.
         else:
             tail, tip = to_svg(shape["tail"]), to_svg(shape["tip"])
             if not (length := np.linalg.norm(tip - tail)):
@@ -944,10 +932,10 @@ def write_diagram(
                 f'stroke="{color}" stroke-width="{stroke}"/>'
             )
             elements.append(f'<polygon points="{corners}" fill="{color}"/>')
-    placed: list[tuple[float, float, float, float]] = []
+            segments.append((tail, tip))
     for text in texts:
         found = "🔓" in text["text"] or (resultant_found and text["text"].startswith("R = "))
-        elements.append(get_svg_label(text, to_svg(text["position"]), placed, found))
+        elements.append(get_svg_label(text, to_svg(text["position"]), placed, found, segments))
     svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:.0f}" height="{height:.0f}" '
         f'viewBox="0 0 {width:.0f} {height:.0f}" font-family="sans-serif" font-size="13">\n'
@@ -976,9 +964,17 @@ def get_shown_text(text: str) -> str:
 
 
 def get_svg_label(
-    text: dict, anchor: np.ndarray, placed: list[tuple[float, float, float, float]], found: bool = False
+    text: dict,
+    anchor: np.ndarray,
+    placed: list[tuple[float, float, float, float]],
+    found: bool = False,
+    segments: Iterable[tuple[Iterable, Iterable]] = (),
 ) -> str:
-    """A label beside its anchor towards its away direction, moved further until it clears those placed"""
+    """A label beside its anchor towards its away direction, moved further until it clears those placed.
+
+    :param segments: Lines it should keep off too, such as arrows and arcs; if it cannot within reach, it keeps
+        the nearest place clear of the other labels.
+    """
     away = text.get("away")
     direction = np.array((away[0], -away[2])) if away is not None else np.array((1.0, 0.0))
     direction = direction / np.linalg.norm(direction) if np.linalg.norm(direction) else np.array((1.0, 0.0))
@@ -986,14 +982,34 @@ def get_svg_label(
     # Found values a little larger than the 13 px of the rest, rather than bold, which reads badly in SVG.
     font_size = 15 if found else 13
     width, height = 7.5 * font_size / 13 * len(get_shown_text(content)), 14.0 * font_size / 13
-    align = "start" if direction[0] > 0.3 else "end" if direction[0] < -0.3 else "middle"
-    position = anchor + 8 * direction
-    for _ in range(40):
+
+    def get_layout(towards: np.ndarray, distance: float) -> tuple[np.ndarray, str, float, float]:
+        """Where a label sits a distance from its anchor towards a direction: its anchor, alignment and box corner"""
+        align = "start" if towards[0] > 0.3 else "end" if towards[0] < -0.3 else "middle"
+        position = anchor + distance * towards
         left = position[0] - (0 if align == "start" else width if align == "end" else width / 2)
-        top = position[1] - (0 if direction[1] > 0.3 else height if direction[1] < -0.3 else height / 2)
-        if not any(left < x + w and x < left + width and top < y + h and y < top + height for x, y, w, h in placed):
+        top = position[1] - (0 if towards[1] > 0.3 else height if towards[1] < -0.3 else height / 2)
+        return position, align, left, top
+
+    # The nearest place clear of other labels and of lines, trying its own direction first at each distance,
+    # then turning further from it, so that it moves round an arrow beside it rather than across it.
+    turns = [np.radians(t) for t in (0, 30, -30, 60, -60, 90, -90, 135, -135, 180)]
+    rotate = lambda v, t: np.array((v[0] * np.cos(t) - v[1] * np.sin(t), v[0] * np.sin(t) + v[1] * np.cos(t)))
+    candidates = [rotate(direction, t) for t in turns]
+    chosen = fallback = None  # Clear of all; clear of the labels only, if lines cannot be cleared too.
+    for step in range(60):
+        for towards in candidates:
+            layout = get_layout(towards, 8 + 4 * step)
+            left, top = layout[2], layout[3]
+            if any(left < x + w and x < left + width and top < y + h and y < top + height for x, y, w, h in placed):
+                continue
+            fallback = fallback or layout
+            if not box_crosses_segments(left - 2, top - 1, width + 4, height + 2, segments):  # As its backing.
+                chosen = layout
+                break
+        if chosen:
             break
-        position = position + 4 * direction
+    position, align, left, top = chosen or fallback or get_layout(direction, 8)
     placed.append((left, top, width, height))
     # The label's middle line sits at the box's middle, which is its top plus half its height.
     color = get_svg_color(text.get("color", (0.3, 0.3, 0.3, 1)))

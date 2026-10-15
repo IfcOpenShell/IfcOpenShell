@@ -302,6 +302,34 @@ where Bonsai's eighths would measure from the vertical.
   on the side away from the axis its angle is measured from while angles are shown, so that
   the angle's label never overlaps them.
 
+## 14. Legible diagrams
+
+- **Global axes.** Each loaded point draws the global X and Z axes, faint and dashed, named +X
+  and +Z at their positive ends, so that a diagram reads on its own (Y runs into the view). They
+  are part of the drawing data, so the viewport and both report diagrams share them; each way, an
+  axis reaches just past what is drawn at the point.
+- **Labels keep off lines.** Labels keep off arrows, angle arcs and slope triangles as well as
+  each other (`box_crosses_segments`); dashed guides may run under them. A label tries its own
+  direction first at each distance, then turns further from it, up to the opposite side, so it
+  moves round an arrow beside it rather than across it. The viewport runs this on every redraw,
+  so it tests only lines within reach and, after a number of tries, settles for a place clear of
+  the other labels only; reports search fully.
+- **Larger report diagrams.** Drawn to 600 px rather than 420, with the HTML page widened to
+  960 px so that they are not scaled back down; labels keep their size, so they have more room.
+- **Slope triangles to one scale.** Every triangle has the same run, the level leg, with its rise
+  drawn to scale and capped at 2.5 runs, labelled rise over run as a roof pitch is. A triangle
+  keeps off arrows and lines drawn at its point, moving back along its force and then to the
+  force's other side to find a clear place. Triangles too flat to read are left out; the angle
+  gives the direction.
+- **Values at the tips.** In a tip-to-tail chain, values sit at each arrow's tip, leaning outside
+  the force polygon, rather than at its middle.
+- **Named as in calculations.** The drawing names each label by its symbol (`add_symbols`): a
+  force by its number in the tip-to-tail order, a single force's components as its own, several
+  forces' as their resultant's. Reports set them with subscripts; the viewport with Unicode ones
+  (`get_plain_symbol`), z having none.
+- **Viewport labels sized to their diagram**, a share of its longest arrow on screen as in a
+  report's diagram, between 8 and 24 px, so that zooming scales them with the arrows.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
