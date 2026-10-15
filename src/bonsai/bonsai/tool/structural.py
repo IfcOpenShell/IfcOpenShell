@@ -26,8 +26,10 @@ from typing import TYPE_CHECKING, Any, Union
 import bpy
 import ifcopenshell
 import ifcopenshell.api.context
+import ifcopenshell.api.pset
 import ifcopenshell.api.structural
 import ifcopenshell.util.attribute
+import ifcopenshell.util.element
 import ifcopenshell.util.representation
 
 import bonsai.bim.helper
@@ -116,28 +118,99 @@ class Structural(bonsai.core.tool.Structural):
         angle: float = 0.0,
         rise: float = 0.0,
         run: float = 0.0,
-        direction: str = "UP_RIGHT",
+        direction: str = "Q1",
     ) -> tuple[float, float]:
         """Get the horizontal and vertical components of a force in a vertical plane.
 
-        :param mode: ANGLE for an angle in degrees above the horizontal, or SLOPE
-            for a rise over a run. Negative angles, rises or runs give downward
-            or leftward components.
-        :param direction: UP_RIGHT, UP_LEFT, DOWN_LEFT or DOWN_RIGHT. The angle or
-            slope is measured from the horizontal towards this quadrant, so that
-            40 degrees UP_LEFT points 140 degrees from +X.
+        :param mode: ANGLE for an angle in degrees, or SLOPE for a rise over a run.
+        :param direction: Q1 to Q8, the eighths of a circle counter-clockwise from +X.
+            An angle is measured from the axis the eighth touches, turning into it:
+            Q1 from +X towards +Z, Q2 from +Z towards +X, Q3 from +Z towards -X, and
+            so on, so that 40 degrees Q4 points 140 degrees from +X. A slope's rise is
+            always vertical and its run horizontal, as for a roof pitch, so the eighth
+            only gives the quadrant: Q1 and Q2 are up and right, Q3 and Q4 up and left,
+            and so on. Negative angles, rises or runs turn the other way.
         :return: The horizontal (X) and vertical (Z) components.
         """
-        if mode == "ANGLE":
-            x, z = magnitude * math.cos(math.radians(angle)), magnitude * math.sin(math.radians(angle))
-        elif length := math.hypot(rise, run):
-            x, z = magnitude * run / length, magnitude * rise / length
-        else:
-            return 0.0, 0.0
-        sign_x, sign_z = {"UP_RIGHT": (1, 1), "UP_LEFT": (-1, 1), "DOWN_LEFT": (-1, -1), "DOWN_RIGHT": (1, -1)}[
-            direction
+        eighth = int(direction[1])
+        if mode == "SLOPE":
+            if not (length := math.hypot(rise, run)):
+                return 0.0, 0.0
+            sign_x = 1 if eighth in (1, 2, 7, 8) else -1
+            sign_z = 1 if eighth <= 4 else -1
+            return magnitude * sign_x * run / length, magnitude * sign_z * rise / length
+        turned = math.radians(angle)
+        theta = math.radians(90 * (eighth // 2)) + (turned if eighth % 2 else -turned)
+        x, z = magnitude * math.cos(theta), magnitude * math.sin(theta)
+        # Keep components along an axis exactly zero rather than rounding noise.
+        return (0.0 if abs(x) < 1e-12 * magnitude else x), (0.0 if abs(z) < 1e-12 * magnitude else z)
+
+    @classmethod
+    def get_draw_order_key(cls, activity: ifcopenshell.entity_instance) -> tuple[int, int, int]:
+        """A sort key for drawing applied loads tip to tail: by their set draw order, else in the order applied"""
+        order = ifcopenshell.util.element.get_pset(activity, "BBIM_Structural", "DrawOrder")
+        return (0, order, activity.id()) if order is not None else (1, 0, activity.id())
+
+    @classmethod
+    def get_chain_activities(
+        cls, item: ifcopenshell.entity_instance, load_case: Union[ifcopenshell.entity_instance, None]
+    ) -> list[ifcopenshell.entity_instance]:
+        """The applied loads on an item in a load case, or in none, in the order they are drawn tip to tail"""
+
+        def is_in_case(activity: ifcopenshell.entity_instance) -> bool:
+            groups = [
+                r.RelatingGroup
+                for r in activity.HasAssignments
+                if r.is_a("IfcRelAssignsToGroup") and r.RelatingGroup and r.RelatingGroup.is_a("IfcStructuralLoadGroup")
+            ]
+            if not load_case:
+                return not groups
+            # Directly, or through a load group within the case.
+            return any(
+                g == load_case
+                or any(r.is_a("IfcRelAssignsToGroup") and r.RelatingGroup == load_case for r in g.HasAssignments)
+                for g in groups
+            )
+
+        activities = [
+            r.RelatedStructuralActivity for r in item.AssignedStructuralActivity if r.RelatedStructuralActivity
         ]
-        return sign_x * x, sign_z * z
+        return sorted(filter(is_in_case, activities), key=cls.get_draw_order_key)
+
+    @classmethod
+    def set_draw_order(cls, activities: list[ifcopenshell.entity_instance]) -> None:
+        """Record the order applied loads are drawn tip to tail, which IFC does not order"""
+        ifc_file = tool.Ifc.get()
+        for order, activity in enumerate(activities, 1):
+            if pset := ifcopenshell.util.element.get_pset(activity, "BBIM_Structural"):
+                pset = ifc_file.by_id(pset["id"])
+            else:
+                pset = ifcopenshell.api.pset.add_pset(ifc_file, product=activity, name="BBIM_Structural")
+            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"DrawOrder": order})
+
+    @classmethod
+    def get_eighth(cls, x: float, z: float, preferred: Union[str, None] = None) -> tuple[str, float, float, float]:
+        """Get which eighth of a circle (Q1 to Q8) in-plane components point into, and their angle from its axis.
+
+        :param preferred: An eighth to use if the components lie in it, such as the one a
+            load was entered with, as a force on a boundary lies in two.
+        :return: The eighth, the angle in degrees from the axis it touches (0 to 45),
+            and the components along and across that axis, as a run and a rise.
+        """
+        theta = math.degrees(math.atan2(z, x)) % 360
+
+        def get_angle(eighth: int) -> float:
+            turned = (theta - 90 * (eighth // 2) + 180) % 360 - 180
+            return turned if eighth % 2 else -turned
+
+        eighths = [int(preferred[1])] if preferred else []
+        # On a diagonal, measure from the horizontal as statics texts do.
+        eighths += [{1: 1, 2: 1, 3: 4, 4: 4, 5: 5, 6: 5, 7: 8, 8: 8}[min(int(theta // 45), 7) + 1]]
+        eighths += [min(int(theta // 45), 7) + 1]
+        eighth = next(e for e in eighths if -1e-6 <= get_angle(e) <= 45 + 1e-6)
+        angle = min(max(get_angle(eighth), 0.0), 45.0) + 0.0  # Not -0.0
+        length = math.hypot(x, z)
+        return f"Q{eighth}", angle, length * math.cos(math.radians(angle)), length * math.sin(math.radians(angle))
 
     @classmethod
     def solve_two_force_magnitudes(

@@ -59,6 +59,7 @@ from bonsai.bim.module.model.decorator import (
 )
 from bonsai.bim.module.model.wall import WallGizmoPreviewDecorator
 from bonsai.bim.module.nest.decorator import NestDecorator
+from bonsai.bim.module.structural.decorator import LoadsDecorator, show_loads_after_load
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 global_subscription_owner = object()
@@ -522,8 +523,13 @@ def _install_viewport_overlays() -> None:
     DoorSwingReadonlyDecorator.uninstall()
     ArrayPreviewDecorator.uninstall()
     ArraySelectionHighlightDecorator.uninstall()
+    LoadsDecorator.uninstall()
+    LoadsDecorator.is_picking = False  # Loading a file ends running operators.
     uninstall_decorator_cache_handlers()
     try:
+        # Shown after the load handlers, as the IFC may not be loaded yet.
+        if tool.Structural.get_structural_props().show_loads:
+            bpy.app.timers.register(show_loads_after_load, first_interval=0.5)
         if georeference_props.should_visualise:
             GeoreferenceDecorator.install(bpy.context)
         if aggregate_props.aggregate_decorator:

@@ -41,18 +41,41 @@ class TestGetInPlaneComponents(NewFile):
         assert math.isclose(x, 120 / 13)
         assert math.isclose(z, 50 / 13)
 
-    def test_directions_measure_from_the_nearest_horizontal(self):
-        x, z = subject.get_in_plane_components("ANGLE", magnitude=100, angle=40, direction="UP_LEFT")
+    def test_angles_measure_from_the_axis_of_their_eighth(self):
+        x, z = subject.get_in_plane_components("ANGLE", magnitude=100, angle=40, direction="Q4")
         assert math.isclose(x, -100 * math.cos(math.radians(40)))
         assert math.isclose(z, 100 * math.sin(math.radians(40)))
-        x, z = subject.get_in_plane_components("SLOPE", magnitude=200, rise=3, run=4, direction="DOWN_LEFT")
-        assert math.isclose(x, -160)
-        assert math.isclose(z, -120)
-        x, z = subject.get_in_plane_components("ANGLE", magnitude=1, angle=60, direction="DOWN_RIGHT")
-        assert x > 0 and z < 0
+        # Q6 is measured from -Z, turning left.
+        x, z = subject.get_in_plane_components("ANGLE", magnitude=100, angle=25, direction="Q6")
+        assert math.isclose(x, -100 * math.sin(math.radians(25)))
+        assert math.isclose(z, -100 * math.cos(math.radians(25)))
+
+    def test_slopes_rise_vertically_in_any_eighth_of_their_quadrant(self):
+        for direction in ("Q5", "Q6"):
+            x, z = subject.get_in_plane_components("SLOPE", magnitude=200, rise=3, run=4, direction=direction)
+            assert math.isclose(x, -160)
+            assert math.isclose(z, -120)
+
+    def test_an_axis_direction_has_no_rounding_noise(self):
+        assert subject.get_in_plane_components("ANGLE", magnitude=50, angle=0, direction="Q7") == (0.0, -50.0)
 
     def test_a_zero_slope_gives_no_force(self):
         assert subject.get_in_plane_components("SLOPE", magnitude=10, rise=0, run=0) == (0.0, 0.0)
+
+
+class TestGetEighth(NewFile):
+    def test_the_eighth_and_angle_from_its_axis(self):
+        eighth, angle, along, across = subject.get_eighth(-30, 40)
+        assert eighth == "Q3"
+        assert math.isclose(angle, math.degrees(math.atan2(30, 40)))
+        assert math.isclose(along, 40) and math.isclose(across, 30)
+
+    def test_a_diagonal_measures_from_the_horizontal(self):
+        assert subject.get_eighth(-1, -1)[0] == "Q5"
+
+    def test_a_preferred_eighth_on_its_boundary(self):
+        assert subject.get_eighth(1, 1, "Q2")[0] == "Q2"
+        assert subject.get_eighth(1, 2, "Q8")[0] == "Q2"  # Not in Q8, so not taken.
 
 
 class TestGetSimpleSlope(NewFile):

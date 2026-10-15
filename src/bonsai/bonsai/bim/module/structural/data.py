@@ -252,6 +252,7 @@ class StructuralItemLoadsData:
                 entry["loads"].append(
                     {
                         "activity": activity.id(),
+                        "order": tool.Structural.get_draw_order_key(activity),
                         "name": (load.Name if load else None) or "Unnamed",
                         "group": (subgroup.Name or "Unnamed") if subgroup else None,
                     }
@@ -260,6 +261,8 @@ class StructuralItemLoadsData:
                     entry["forces"].append(tuple(getattr(load, a) or 0.0 for a in ("ForceX", "ForceY", "ForceZ")))
         for entry in cases.values():
             entry["resultant"] = cls.get_resultant_label(entry.pop("forces"))
+            # As they are drawn tip to tail.
+            entry["loads"].sort(key=lambda load: load.pop("order"))
         return sorted(cases.values(), key=lambda entry: entry["name"])
 
     @classmethod
@@ -272,10 +275,9 @@ class StructuralItemLoadsData:
         unit = ifcopenshell.util.unit.get_unit_symbol(force_unit) if force_unit else "N"
         label = f"R = {math.sqrt(x * x + y * y + z * z):.{props.force_decimals}f} {unit}"
         if not y and (x or z):
-            # From the nearest horizontal, as forces are entered and shown.
-            angle = math.degrees(math.atan2(abs(z), abs(x)))
-            direction = f"{'up' if z >= 0 else 'down'}-{'right' if x >= 0 else 'left'}"
-            label += f" at {angle:.{props.angle_decimals}f}° {direction}"
+            # From the nearest axis, as forces are entered.
+            eighth, angle, _, _ = tool.Structural.get_eighth(x, z)
+            label += f" at {angle:.{props.angle_decimals}f}° {eighth}"
         return label
 
     @classmethod
@@ -300,12 +302,18 @@ class StructuralAnalysisModelsData:
             "total_models": cls.total_models(),
             "active_model_ids": cls.active_model_ids(),
             "current_model": cls.current_model(),
+            "models": cls.models(),
         }
         cls.is_loaded = True
 
     @classmethod
     def total_models(cls):
         return len(tool.Ifc.get().by_type("IfcStructuralAnalysisModel"))
+
+    @classmethod
+    def models(cls):
+        models = tool.Ifc.get().by_type("IfcStructuralAnalysisModel")
+        return [{"id": m.id(), "name": m.Name or "Unnamed"} for m in models]
 
     @classmethod
     def current_model(cls):
@@ -320,7 +328,7 @@ class StructuralAnalysisModelsData:
             return []
         results = []
         for rel in getattr(element, "HasAssignments", []) or []:
-            if rel.is_a("IfcRelAssignsToGroup"):
+            if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup:
                 results.append(rel.RelatingGroup.id())
         return results
 
@@ -363,7 +371,18 @@ class StructuralLoadCasesData:
                     if related_object.is_a("IfcStructuralLoadGroup"):
                         load_groups.append({"id": related_object.id(), "name": related_object.Name or "Unnamed"})
                     elif related_object.is_a("IfcStructuralActivity"):
-                        activities.append({"id": related_object.id(), "name": cls.activity_name(related_object)})
+                        rels = related_object.AssignedToStructuralItem
+                        activities.append(
+                            {
+                                "id": related_object.id(),
+                                "name": cls.activity_name(related_object),
+                                "item": rels[0].RelatingElement.id() if rels else 0,
+                                "item_name": (rels[0].RelatingElement.Name if rels else None) or "Unnamed",
+                                "order": tool.Structural.get_draw_order_key(related_object),
+                            }
+                        )
+            # By item, and each item's in the order they are drawn tip to tail.
+            activities.sort(key=lambda activity: (activity["item"], activity.pop("order")))
             results.append(
                 {
                     "id": load_case.id(),

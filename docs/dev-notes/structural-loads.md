@@ -174,10 +174,37 @@ Selecting a structural item gave no way to see what loads it.
   open one stops showing loads. One load case is shown at a time, as in analysis software;
   showing several together is what load combinations are for.
 
+## 6. Entering and displaying loads
+
+- **Directions by eighths.** The Direction input is a pinwheel of eight sections, Q1 to Q8
+  counter-clockwise from +X. An angle is measured from the axis its section touches, so it
+  runs 0 to 45 degrees, and one typed past that moves to the section it points into. A
+  slope's rise is always vertical and its run horizontal, as a roof pitch is, so the two
+  sections of a quadrant give a slope the same direction; the pinwheel shows the one it lands
+  in. Generated names record the section (`600 lbf at 40 deg Q8`), Edit Load reopens them,
+  older up/down-left/right names included, and regenerates them when it opens.
+- **Diagrams.** Point forces default to *Parallelogram*. Angles are measured as the inputs
+  are, from the axis of each force's section, with the section in the label; *Angle From*
+  keeps the nearest horizontal and +X. A **Slopes** toggle draws each force's slope as a rise
+  and run triangle beside it. Labels move apart when they would overlap. Forces follow their
+  item's visibility, and Apply Load shows the load case it applied to. Forces default to whole
+  numbers and angles to a tenth.
+- **Tip-to-tail order** is kept per applied load as `BBIM_Structural.DrawOrder`, as IFC leaves
+  the loads on an item unordered; move and reverse buttons set it, in the item's Applied
+  Loads and in a load case's list, which lists loads by item.
+- **A Structural Loads overlay** under Bonsai Decorators, on by default, replaces Show Loads:
+  loads show on visible structural items while it is on, including after an IFC loads, and
+  clicking one still edits it through an internal operator that runs while they are shown.
+- The Structural Loads panel is **Load Definitions**, with an *Unused Only* filter, as
+  definitions are what applied loads share. An item's analysis models are set from the item.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
-`IfcRelAssignsToGroupByFactor`), then the PyNite bridge. When combinations come, fix
+`IfcRelAssignsToGroupByFactor`), then analysis. Results go to a `results.json` keyed to
+GlobalIds, read by Bonsai as an overlay rather than written into the IFC, through
+[ifc_structural_mechanics](https://github.com/brunopostle/ifc_structural_mechanics), with
+PyNite added as a second backend beside CalculiX (see #9866). When combinations come, fix
 `recursive_subgroups` in `load_decoration_data.py`, which multiplies factors cumulatively
 across a group's relationships, so that 1.2 D + 1.6 L would draw the live load at 1.92.
 

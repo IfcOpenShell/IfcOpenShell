@@ -45,6 +45,33 @@ def update_loads_after_moves(scene: bpy.types.Scene, depsgraph: bpy.types.Depsgr
                 return
 
 
+def show_loads(shown: bool) -> None:
+    """Show or hide the structural loads overlay, and pick loads to edit while they are shown"""
+    if shown and tool.Ifc.get():
+        LoadsDecorator.install(bpy.context)
+        if not bpy.app.timers.is_registered(start_load_picking):
+            bpy.app.timers.register(start_load_picking)
+    elif LoadsDecorator.is_installed:
+        LoadsDecorator.uninstall()
+    tool.Blender.update_all_viewports()
+
+
+def show_loads_after_load() -> None:
+    """Restore the loads overlay once a file and its IFC have loaded"""
+    show_loads(tool.Structural.get_structural_props().show_loads)
+
+
+def start_load_picking() -> None:
+    """Start picking shown loads to edit, which needs a window to run an operator in"""
+    if (
+        LoadsDecorator.is_installed
+        and not LoadsDecorator.is_picking
+        and (windows := bpy.context.window_manager.windows)
+    ):
+        with bpy.context.temp_override(window=windows[0]):
+            bpy.ops.bim.pick_structural_loads("INVOKE_DEFAULT")
+
+
 class LoadsDecorator(tool.Blender.ViewportDecorator):
     """Decorator to show structural loads in 3D"""
 
@@ -62,6 +89,7 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
     depth_array = None
     pickables = []
     hovered: Union[dict, None] = None
+    is_picking = False  # Whether bim.pick_structural_loads is running.
 
     @classmethod
     def install(cls, context: bpy.types.Context) -> None:
@@ -105,11 +133,21 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         cls.hovered = None
 
     @classmethod
+    def is_visible(cls, info: dict) -> bool:
+        """Whether drawing data is shown: loads hide with their structural item, in the viewport being drawn"""
+        if not (name := info.get("object")) or not (obj := bpy.data.objects.get(name)):
+            return True
+        space = bpy.context.space_data
+        return obj.visible_get(viewport=space) if space and space.type == "VIEW_3D" else obj.visible_get()
+
+    @classmethod
     def pick(cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, x: float, y: float) -> Union[dict, None]:
         """Get the pickable arrow nearest the region coordinates x and y, if one is within a few pixels"""
         mouse = Vector((x, y))
         best, best_distance = None, 10.0
         for pickable in cls.pickables:
+            if not cls.is_visible(cls.shader_info[pickable["info"]]):
+                continue
             tail = location_3d_to_region_2d(region, rv3d, Vector(pickable["tail"]))
             tip = location_3d_to_region_2d(region, rv3d, Vector(pickable["tip"]))
             if tail is None or tip is None or not (tip - tail).length:
@@ -124,6 +162,8 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
 
     def __call__(self) -> None:
         """set gpu configurations to draw 3D representations"""
+        if not self.shader_info:
+            return  # No loads, as in most models, which show loads by default.
         # set open gl configurations
         original_blend = gpu.state.blend_get()
         original_depth_test = gpu.state.depth_test_get()
@@ -146,6 +186,8 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         if not self.decoration_data.is_empty:
             hovered = self.hovered["info"] if self.hovered else -1
             for i, info in enumerate(self.shader_info):
+                if not self.is_visible(info):
+                    continue
                 shader = info["shader"]
                 args = info["args"]
                 indices = info["indices"]
@@ -170,6 +212,8 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
 
     def draw_load_values(self, context: bpy.types.Context) -> None:
         """draw text representing the load values"""
+        if not self.text_info:
+            return  # Nothing to draw, so spare reading the depth buffer.
         # getting depth buffer info, code adapted from:
         # https://blender.stackexchange.com/questions/177185/is-there-a-way-to-render-depth-buffer-into-a-texture-with-gpu-bgl-python-modules
         framebuffer = gpu.state.active_framebuffer_get()
@@ -183,14 +227,17 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
 
         self.depth_array = n / (f - (f - n) * depth_array) * (f - n)
 
+        placed: list[tuple[float, float, float, float]] = []
         for info in self.text_info:
+            if not self.is_visible(info):
+                continue
             text_position = self.location_3d_to_region_2d(info["position"], context)
             if text_position is not None:
                 font_id = 0
                 blf.size(font_id, 20.0)
                 x, y = text_position[0], text_position[1]
                 if (away := info.get("away")) is not None:
-                    x, y = self.place_beside(info["position"], away, x, y, info["text"], context)
+                    x, y = self.place_beside(info["position"], away, x, y, info["text"], context, placed)
                 blf.position(font_id, x, y, text_position[2])
                 # Labels take the colour of what they describe, lightened to stay legible on a dark viewport.
                 r, g, b = (min(c, 1.0) + (1 - min(c, 1.0)) * 0.35 for c in info.get("color", (0.85, 0.85, 0.85))[:3])
@@ -198,9 +245,20 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
                 blf.draw(font_id, info["text"])
 
     def place_beside(
-        self, position: Iterable, away: Iterable, x: float, y: float, text: str, context: bpy.types.Context
+        self,
+        position: Iterable,
+        away: Iterable,
+        x: float,
+        y: float,
+        text: str,
+        context: bpy.types.Context,
+        placed: Union[list[tuple[float, float, float, float]], None] = None,
     ) -> tuple[float, float]:
-        """Offset a label from its anchor towards away, so that it sits beside its line rather than on it"""
+        """Offset a label from its anchor towards away, so that it sits beside its line rather than on it.
+
+        :param placed: The boxes of labels already drawn. The label moves further away until it clears them,
+            and its box is added.
+        """
         start = location_3d_to_region_2d(context.region, context.region_data, Vector(position))
         end = location_3d_to_region_2d(context.region, context.region_data, Vector(position) + Vector(away))
         if start is None or end is None or not (end - start).length:
@@ -211,6 +269,17 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         # The text box goes on the away side of the anchor, centred across directions near perpendicular to it.
         x += gap * direction.x + (0 if direction.x > 0.3 else -width if direction.x < -0.3 else -width / 2)
         y += gap * direction.y + (0 if direction.y > 0.3 else -height if direction.y < -0.3 else -height / 2)
+        if placed is None:
+            return x, y
+        margin = 3
+        for _ in range(40):
+            if not any(
+                x < px + pw + margin and px < x + width + margin and y < py + ph + margin and py < y + height + margin
+                for px, py, pw, ph in placed
+            ):
+                break
+            x, y = x + 4 * direction.x, y + 4 * direction.y
+        placed.append((x, y, width, height))
         return x, y
 
     def location_3d_to_region_2d(self, coord: Iterable, context: bpy.types.Context) -> Union[Vector, None]:

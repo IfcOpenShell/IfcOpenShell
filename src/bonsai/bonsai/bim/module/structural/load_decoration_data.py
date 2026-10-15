@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 from collections.abc import Iterable
 from math import sin
 from typing import Literal, TypedDict, Union
@@ -103,6 +104,7 @@ class ShaderInfo:
         self.text_info = []
         # Arrows that stand for one applied load, so that they can be picked in the viewport to edit it.
         self.pickables = []
+        self.tagging_object = None
         self.curve_members = {}
         self.point_members = {}
         self.surface_members = {}
@@ -111,6 +113,7 @@ class ShaderInfo:
         self.get_linear_loads()
         self.get_point_loads()
         self.get_planar_loads()
+        self.tag_new_entries(None)
         if len(self.info):
             self.is_empty = False
 
@@ -339,6 +342,17 @@ class ShaderInfo:
         if group.is_a("IfcStructuralLoadGroup"):
             recursive_subgroups([group], 10, props.activity_type)
 
+    def tag_new_entries(self, obj: Union[bpy.types.Object, None]) -> None:
+        """Mark the drawing data added so far without an item as belonging to the item just drawn.
+
+        Each load type draws one structural item at a time, calling this with the next item before
+        drawing it, so that a load's arrows and values hide with their item.
+        """
+        if self.tagging_object is not None:
+            for entry in self.info + self.text_info:
+                entry.setdefault("object", self.tagging_object)
+        self.tagging_object = obj.name if obj else None
+
     def get_planar_loads(self) -> None:
         """get the necessary information to render the planar load representation in 3D and its text information"""
 
@@ -347,6 +361,7 @@ class ShaderInfo:
         maximum = 0
         for value in list_of_surfaces.values():
             surf = value["member"]
+            self.tag_new_entries(tool.Ifc.get_object(surf))
             activity_list = value["activities"]
             if len(activity_list) == 0:
                 continue
@@ -479,6 +494,7 @@ class ShaderInfo:
         list_of_point_connections = self.point_members
         for value in list_of_point_connections.values():
             conn = value["member"]
+            self.tag_new_entries(tool.Ifc.get_object(conn))
             activity_list = value["activities"]
             if len(activity_list) == 0:
                 continue
@@ -495,8 +511,8 @@ class ShaderInfo:
         self, activity_list: list[tuple[ifcopenshell.entity_instance, float]], location: Vector, rotation: np.ndarray
     ) -> None:
         """Draw the point forces applied at a point"""
-        # In the order they were applied, which is how a tip-to-tail chain is usually drawn.
-        items = sorted(activity_list, key=lambda item: item[0].id())
+        # In their set draw order, else in the order they were applied.
+        items = sorted(activity_list, key=lambda item: tool.Structural.get_draw_order_key(item[0]))
         forces = [self.get_point_loads_values([item], rotation)[:3] for item in items]
         self.draw_point_forces(forces, location, rotation, [item[0].id() for item in items])
 
@@ -586,6 +602,7 @@ class ShaderInfo:
                     self.add_dashed_line(location, corner, size, (1, 1, 1, 1))  # An intermediate resultant.
             tip = tail + vector * scale
             label = f"{np.linalg.norm(vector):.{props.force_decimals}f} {self.force_unit}"
+            side = None  # Beside a tip-to-tail chain's polygon, if it is one.
             if centre is None:
                 self.add_force_arrow(tail, tip, color, label, size, activity=activity)
             else:
@@ -594,7 +611,9 @@ class ShaderInfo:
                     tail, tip, color, label, size, label_away=side, label_at_middle=True, activity=activity
                 )
             if props.show_force_angles and has_angle:
-                self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes)
+                self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes, activity)
+            if props.show_force_slopes and has_angle:
+                self.add_force_slope(tail, tip, size, color, activity, avoid=None if centre is None else side)
             start = tip
             running = running + vector
 
@@ -607,6 +626,7 @@ class ShaderInfo:
             # polygon, or else above.
             tip = location + resultant * scale
             outside = np.array((0, 0, 1.0)) if centre is None else (location + tip) / 2 - centre
+            side = self.get_label_side(resultant, outside)
             self.add_force_arrow(
                 location,
                 tip,
@@ -614,13 +634,15 @@ class ShaderInfo:
                 label,
                 size,
                 spacing=0.3,
-                label_away=self.get_label_side(resultant, outside),
+                label_away=side,
                 label_at_middle=centre is not None,
                 activity=single,
                 resultant_of=activities if len(activities) > 1 else None,
             )
             if props.show_force_angles:
                 self.add_force_angle(location, resultant, size, (1, 1, 1, 1), arcs_at_tail, reference_axes)
+            if props.show_force_slopes:
+                self.add_force_slope(location, tip, size, (1, 1, 1, 1), avoid=side)
         self.add_reference_axes(reference_axes, size)
 
     def add_force_angle(
@@ -631,17 +653,13 @@ class ShaderInfo:
         color: tuple,
         arcs_at_tail: dict[tuple, int],
         reference_axes: dict[tuple, tuple],
+        activity: Union[int, None] = None,
     ) -> None:
-        """Mark a force's angle from a horizontal reference axis, as an arc in the X-Z plane"""
+        """Mark a force's angle from a reference axis, as an arc in the X-Z plane"""
         if abs(vector[1]) > 1e-9 * np.linalg.norm(vector):
             return  # Not in the X-Z plane, so one angle does not describe it.
         props = tool.Structural.get_structural_props()
-        end = np.degrees(np.arctan2(vector[2], vector[0]))
-        start = 0.0
-        if props.angle_reference == "HORIZONTAL" and vector[0] < -1e-9 * np.linalg.norm(vector):
-            # Measured from -X, so that the angle is the acute one statics texts draw.
-            start = 180.0
-            end = end if end > 0 else end + 360
+        start, end, eighth = self.get_angle_reference(vector, props.angle_reference, activity)
         if abs(end - start) < 0.01:
             return
         key = tuple(np.round(tail, 6))
@@ -658,22 +676,99 @@ class ShaderInfo:
             self.add_dashed_line(a, b, size, color, dashed=False)
         middle = np.radians((start + end) / 2)
         outward = np.array((np.cos(middle), 0, np.sin(middle)))
-        # Away from the arc, and above or below the reference axis so small angles keep off the lines.
-        away = outward + np.array((0, 0, np.sign(vector[2])))
-        angle = abs(end - start) if props.angle_reference == "HORIZONTAL" else end
+        # Away from the arc, and off the reference axis towards the force so small angles keep off the lines.
+        axis = np.array((np.cos(np.radians(start)), 0, np.sin(np.radians(start))))
+        across = vector / np.linalg.norm(vector) - np.dot(vector, axis) / np.linalg.norm(vector) * axis
+        away = outward + across / (np.linalg.norm(across) or 1)
+        angle = end if props.angle_reference == "POSITIVE_X" else abs(end - start)
         self.text_info.append(
             {
                 "position": tail + radius * outward,
-                "text": f"θ = {angle:.{props.angle_decimals}f}°",
+                "text": f"θ = {angle:.{props.angle_decimals}f}°{f' {eighth}' if eighth else ''}",
                 "color": color,
                 "away": away / np.linalg.norm(away),
             }
         )
 
+    def get_angle_reference(
+        self, vector: np.ndarray, reference: str, activity: Union[int, None] = None
+    ) -> tuple[float, float, Union[str, None]]:
+        """Get the angles in degrees of the axis a force in the X-Z plane is measured from and of the force,
+        counter-clockwise from +X, and the eighth it is measured in, if by eighths"""
+        end = np.degrees(np.arctan2(vector[2], vector[0]))
+        start = 0.0
+        eighth = None
+        if reference == "EIGHTH":
+            # From the axis of the eighth Edit Load enters it in, which its generated name records.
+            load = tool.Ifc.get().by_id(activity).AppliedLoad if activity else None
+            named = re.search(r" (Q[1-8])$", (load.Name or "") if load else "")
+            eighth, angle, _, _ = tool.Structural.get_eighth(vector[0], vector[2], named[1] if named else None)
+            start = 90.0 * (int(eighth[1]) // 2)
+            end = start + (angle if int(eighth[1]) % 2 else -angle)
+        elif reference == "HORIZONTAL" and vector[0] < -1e-9 * np.linalg.norm(vector):
+            # Measured from -X, so that the angle is the acute one statics texts draw.
+            start = 180.0
+            end = end if end > 0 else end + 360
+        return start, end, eighth
+
+    def add_force_slope(
+        self,
+        tail: np.ndarray,
+        tip: np.ndarray,
+        size: float,
+        color: tuple,
+        activity: Union[int, None] = None,
+        avoid: Union[np.ndarray, None] = None,
+    ) -> None:
+        """Mark a force's slope as a triangle beside it, its legs along and across the axis its angle is from.
+
+        :param avoid: The side of the force its label is on, to keep the triangle off it.
+        """
+        vector = tip - tail
+        length = np.linalg.norm(vector)
+        if not length or abs(vector[1]) > 1e-9 * length:
+            return  # Not in the X-Z plane, so one slope does not describe it.
+        props = tool.Structural.get_structural_props()
+        # A full turn from +X makes no triangle, so measure from the nearest horizontal instead.
+        reference = "HORIZONTAL" if props.angle_reference == "POSITIVE_X" else props.angle_reference
+        start, end, _ = self.get_angle_reference(vector, reference, activity)
+        turned = np.radians(end - start)
+        along, across = abs(np.cos(turned)), abs(np.sin(turned))
+        if along < 1e-6 or across < 1e-6:
+            return  # Along or square to the axis, so there is no slope to show.
+        rise, run = tool.Structural.get_simple_slope(along, across)
+        if float(rise).is_integer() and float(run).is_integer():
+            rise_text, run_text = f"{abs(rise):g}", f"{abs(run):g}"
+        else:
+            rise_text, run_text = f"{across / along:.3g}", "1"
+        direction = vector / length
+        axis = np.array((np.cos(np.radians(start)), 0, np.sin(np.radians(start))))
+        # The hypotenuse lies along the force, a little past its middle, and the legs meet off to one side.
+        hypotenuse = min(size * 0.3, length * 0.4)
+        a = tail + direction * (length * 0.6 - hypotenuse / 2)
+        b = a + direction * hypotenuse
+        corner = a + axis * hypotenuse * np.cos(turned)
+        if avoid is not None and np.dot(corner - a, avoid) > 0:
+            corner = b - axis * hypotenuse * np.cos(turned)  # The same triangle turned to the other side.
+        side = corner - a - np.dot(corner - a, direction) * direction
+        offset = side / np.linalg.norm(side) * size * 0.05
+        a, b, corner = a + offset, b + offset, corner + offset
+        for start_point, end_point in ((a, corner), (corner, b), (a, b)):
+            self.add_dashed_line(start_point, end_point, size, color, dashed=False)
+        centroid = (a + b + corner) / 3
+        for p, q in ((a, corner), (corner, b)):
+            # The leg along the axis is the run.
+            text = run_text if abs(np.dot((q - p) / np.linalg.norm(q - p), axis)) > 0.5 else rise_text
+            middle = (p + q) / 2
+            away = middle - centroid
+            self.text_info.append(
+                {"position": middle, "text": text, "color": color, "away": away / np.linalg.norm(away)}
+            )
+
     def add_reference_axes(self, reference_axes: dict[tuple, tuple], size: float) -> None:
-        """Draw the horizontal axes angles are measured from, each band coloured as the arc that starts in it"""
+        """Draw the axes angles are measured from, each band coloured as the arc that starts in it"""
         for tail, start, arcs in reference_axes.values():
-            direction = np.array((np.cos(np.radians(start)), 0, 0))
+            direction = np.array((np.cos(np.radians(start)), 0, np.sin(np.radians(start))))
             arcs.sort(key=lambda arc: arc[0])
             band_start = 0.0
             for i, (radius, color) in enumerate(arcs):
@@ -842,6 +937,7 @@ class ShaderInfo:
         list_of_curve_members = self.curve_members
         for value in list_of_curve_members.values():
             member = value["member"]
+            self.tag_new_entries(tool.Ifc.get_object(member))
             activity_list = value["activities"]
             if len(activity_list) == 0:
                 continue

@@ -31,29 +31,30 @@ from mathutils import Matrix, Vector
 import bonsai.bim.helper
 import bonsai.core.structural as core
 import bonsai.tool as tool
-from bonsai.bim.module.structural.data import StructuralAnalysisModelsData, StructuralLoadCasesData
+from bonsai.bim.module.structural.data import (
+    LoadGroupDecorationData,
+    StructuralAnalysisModelsData,
+    StructuralLoadCasesData,
+)
 from bonsai.bim.module.structural.decorator import LoadsDecorator
 from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
 
 
-class ShowLoads(bpy.types.Operator):
-    """Draw decorations to show structural actions in 3d view"""
+class PickStructuralLoads(bpy.types.Operator):
+    """Highlight the shown load under the mouse, and edit it when clicked. Runs while loads are shown"""
 
-    bl_idname = "bim.show_loads"
-    bl_label = "Show Loads in 3D View"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_idname = "bim.pick_structural_loads"
+    bl_label = "Pick Structural Loads"
+    bl_options = {"INTERNAL"}
 
     def modal(self, context, event):
         assert context.screen
         if not LoadsDecorator.is_installed:
-            return {"FINISHED"}  # Loads were hidden from a load case's eye.
+            LoadsDecorator.is_picking = False
+            return {"FINISHED"}  # The loads overlay was turned off.
         if event.type == "F5":
             LoadsDecorator.update()
             tool.Blender.update_all_viewports(context)
-        if event.type == "ESC":
-            LoadsDecorator.uninstall()
-            tool.Blender.update_all_viewports(context)
-            return {"FINISHED"}
         if event.type == "MOUSEMOVE":
             hovered = None
             if view := self.get_view_under_mouse(context, event):
@@ -134,24 +135,15 @@ class ShowLoads(bpy.types.Operator):
                     return area, region, area.spaces.active.region_3d
 
     def invoke(self, context, event):
-        assert context.window and context.window_manager and context.screen
-        collection = bpy.data.collections.get("IfcStructuralItem")
-        if collection is None:
-            self.report({"ERROR"}, "No IfcStructuralItems found.")
+        assert context.window_manager
+        if not LoadsDecorator.is_installed or LoadsDecorator.is_picking:
             return {"CANCELLED"}
-
-        collection.hide_viewport = False
-        context.window.cursor_modal_set("WAIT")
-        try:
-            LoadsDecorator.install(context)
-        except Exception as exc:
-            context.window.cursor_modal_restore()
-            raise exc
-        context.window.cursor_modal_restore()
+        LoadsDecorator.is_picking = True
         context.window_manager.modal_handler_add(self)
-        tool.Blender.update_all_viewports(context)
-
         return {"RUNNING_MODAL"}
+
+    def cancel(self, context):
+        LoadsDecorator.is_picking = False
 
 
 class AddStructuralMemberConnection(bpy.types.Operator, tool.Ifc.Operator):
@@ -815,6 +807,59 @@ class RemoveStructuralActivity(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+def get_chain_activities(item: ifcopenshell.entity_instance, load_case: int) -> list[ifcopenshell.entity_instance]:
+    """The applied loads on an item in a load case (0 for none), in their draw order"""
+    return tool.Structural.get_chain_activities(item, tool.Ifc.get().by_id(load_case) if load_case else None)
+
+
+def redraw_loads(context: bpy.types.Context) -> None:
+    if LoadsDecorator.is_installed:
+        LoadsDecorator.update()
+        tool.Blender.update_all_viewports(context)
+
+
+class MoveStructuralActivity(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.move_structural_activity"
+    bl_label = "Move Applied Load"
+    bl_description = "Move the applied load earlier or later in its item's tip-to-tail chain for the load case"
+    bl_options = {"REGISTER", "UNDO"}
+    activity: bpy.props.IntProperty()
+    load_case: bpy.props.IntProperty()
+    offset: bpy.props.IntProperty(default=-1)
+
+    def _execute(self, context):
+        activity = tool.Ifc.get().by_id(self.activity)
+        if not (rels := activity.AssignedToStructuralItem):
+            return {"CANCELLED"}
+        activities = get_chain_activities(rels[0].RelatingElement, self.load_case)
+        if activity not in activities:
+            return {"CANCELLED"}
+        i = activities.index(activity)
+        j = i + self.offset
+        if not 0 <= j < len(activities):
+            return {"CANCELLED"}
+        activities[i], activities[j] = activities[j], activities[i]
+        tool.Structural.set_draw_order(activities)
+        redraw_loads(context)
+        return {"FINISHED"}
+
+
+class ReverseStructuralActivities(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.reverse_structural_activities"
+    bl_label = "Reverse Applied Loads"
+    bl_description = "Reverse the order of the item's applied loads in the load case's tip-to-tail chain"
+    bl_options = {"REGISTER", "UNDO"}
+    item: bpy.props.IntProperty()
+    load_case: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        if len(activities := get_chain_activities(tool.Ifc.get().by_id(self.item), self.load_case)) < 2:
+            return {"CANCELLED"}
+        tool.Structural.set_draw_order(activities[::-1])
+        redraw_loads(context)
+        return {"FINISHED"}
+
+
 # Load class, activity class, force attributes and moment attributes for each kind of structural item.
 APPLY_LOAD_CLASSES = {
     "IfcStructuralPointConnection": (
@@ -839,14 +884,24 @@ APPLY_LOAD_CLASSES = {
 
 # Matches the load names generated by StructuralForceInput.get_default_load_name.
 _NUMBER = r"-?[\d.]+(?:e[-+]?\d+)?"
-_DIRECTION = r"(?: ((?:up|down)-(?:left|right)))?"
+_DIRECTION = r"(?: (Q[1-8]|(?:up|down)-(?:left|right)))?"
 DEFAULT_LOAD_NAME = re.compile(
     rf"^(?:{_NUMBER} \S+ at {_NUMBER} deg{_DIRECTION}|{_NUMBER} \S+ at {_NUMBER}:{_NUMBER}{_DIRECTION}"
     rf"|(?:[XYZ] {_NUMBER}(?:, [XYZ] {_NUMBER})*|0) \S+)$"
 )
 SLOPE_LOAD_NAME = re.compile(rf"^{_NUMBER} \S+ at ({_NUMBER}):({_NUMBER}){_DIRECTION}$")
 ANGLE_LOAD_NAME = re.compile(rf"^{_NUMBER} \S+ at ({_NUMBER}) deg{_DIRECTION}$")
-DIRECTION_NAMES = {"UP_RIGHT": "", "UP_LEFT": " up-left", "DOWN_LEFT": " down-left", "DOWN_RIGHT": " down-right"}
+# Names made before the eighths used quadrants measured from the horizontal, which are these eighths.
+QUADRANT_EIGHTHS = {"up-right": "Q1", "up-left": "Q4", "down-left": "Q5", "down-right": "Q8"}
+
+
+def get_direction_suffix(direction: str) -> str:
+    """Q1, measured from +X like a plain angle, is left out of names"""
+    return "" if direction == "Q1" else f" {direction}"
+
+
+def get_named_direction(word: Union[str, None]) -> str:
+    return QUADRANT_EIGHTHS.get(word, word) if word else "Q1"
 
 
 def get_load_category(load: ifcopenshell.entity_instance) -> Union[str, None]:
@@ -884,7 +939,7 @@ def get_load_unit_symbol(category: str) -> str:
 
 def get_default_load_name(props: "StructuralForceInput", category: str) -> str:
     unit = get_load_unit_symbol(category)
-    direction = DIRECTION_NAMES[props.direction]
+    direction = get_direction_suffix(props.direction)
     if props.input_mode == "ANGLE":
         return f"{props.magnitude:g} {unit} at {props.angle:g} deg{direction}"
     elif props.input_mode == "SLOPE":
@@ -903,7 +958,31 @@ def get_load_attributes(props: "StructuralForceInput", category: str) -> dict[st
     return {name: value or None for name, value in zip(force_attributes + moment_attributes, values)}
 
 
+is_normalising_angle = False
+
+
 def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context) -> None:
+    if self.input_mode == "SLOPE" and self.magnitude:
+        # Both eighths of a quadrant give a slope the same direction, so show the one it lands in.
+        x, z = tool.Structural.get_in_plane_components(
+            "SLOPE", magnitude=self.magnitude, rise=self.rise, run=self.run, direction=self.direction
+        )
+        eighth = tool.Structural.get_eighth(x, z, self.direction)[0]
+        if eighth != self.direction and (int(eighth[1]) + 1) // 2 == (int(self.direction[1]) + 1) // 2:
+            self.direction = eighth  # Which updates again, with this eighth.
+            return
+    global is_normalising_angle
+    if self.input_mode == "ANGLE" and self.magnitude and not 0 <= self.angle <= 45 and not is_normalising_angle:
+        # An angle past its eighth points into another: show it there, from that eighth's axis, as names are read.
+        x, z = tool.Structural.get_in_plane_components(
+            "ANGLE", magnitude=self.magnitude, angle=self.angle, direction=self.direction
+        )
+        is_normalising_angle = True  # Setting each updates again, before the other is set.
+        try:
+            self.direction, angle, _, _ = tool.Structural.get_eighth(x, z, self.direction)
+            self.angle = round(angle, 9)
+        finally:
+            is_normalising_angle = False
     # Keep a generated name in step with the values, but never overwrite a name the user typed.
     if self.load_category and (not self.load_name or DEFAULT_LOAD_NAME.match(self.load_name)):
         self.load_name = get_default_load_name(self, self.load_category)
@@ -970,14 +1049,13 @@ def solve_resultant(
 
 
 def get_force_name(force: tuple[float, float, float], unit: str) -> str:
-    """A generated name for a force, by its angle from the nearest horizontal if it lies in the X-Z plane"""
+    """A generated name for a force, by its angle from the nearest axis if it lies in the X-Z plane"""
     x, y, z = force
     if y:
         values = [f"{axis} {value:g}" for axis, value in zip("XYZ", force) if value]
         return f"{', '.join(values) or '0'} {unit}"
-    direction = DIRECTION_NAMES[f"{'UP' if z >= 0 else 'DOWN'}_{'RIGHT' if x >= 0 else 'LEFT'}"]
-    angle = math.degrees(math.atan2(abs(z), abs(x)))
-    return f"{math.hypot(x, z):g} {unit} at {angle:g} deg{direction}"
+    eighth, angle, _, _ = tool.Structural.get_eighth(x, z)
+    return f"{math.hypot(x, z):g} {unit} at {angle:g} deg{get_direction_suffix(eighth)}"
 
 
 def clear_load_preview(context: bpy.types.Context) -> None:
@@ -1004,12 +1082,16 @@ class StructuralForceInput:
     )
     direction: bpy.props.EnumProperty(
         name="Direction",
-        description="The quadrant the force points into; the angle or slope is measured from the horizontal",
+        description="The eighth of a circle the force points into; the angle or slope is measured from its axis",
         items=[
-            ("UP_RIGHT", "Up-Right", "Measured up from +X"),
-            ("UP_LEFT", "Up-Left", "Measured up from -X"),
-            ("DOWN_LEFT", "Down-Left", "Measured down from -X"),
-            ("DOWN_RIGHT", "Down-Right", "Measured down from +X"),
+            ("Q1", "Q1", "From → (+X), turning up"),
+            ("Q2", "Q2", "From ↑ (+Z), turning right"),
+            ("Q3", "Q3", "From ↑ (+Z), turning left"),
+            ("Q4", "Q4", "From ← (-X), turning up"),
+            ("Q5", "Q5", "From ← (-X), turning down"),
+            ("Q6", "Q6", "From ↓ (-Z), turning left"),
+            ("Q7", "Q7", "From ↓ (-Z), turning right"),
+            ("Q8", "Q8", "From → (+X), turning down"),
         ],
         update=update_force_inputs,
     )
@@ -1032,10 +1114,10 @@ class StructuralForceInput:
         return get_load_attributes(self, category)
 
     def set_in_plane_inputs(self, x: float, z: float) -> None:
-        """Fill the angle and slope inputs from in-plane components, measured from the nearest horizontal"""
-        self.direction = f"{'UP' if z >= 0 else 'DOWN'}_{'RIGHT' if x >= 0 else 'LEFT'}"
+        """Fill the angle and slope inputs from in-plane components, measured from the nearest axis"""
+        self.direction, self.angle, _, _ = tool.Structural.get_eighth(x, z)
         self.magnitude = math.hypot(x, z)
-        self.angle = math.degrees(math.atan2(abs(z), abs(x)))
+        # A rise is vertical and a run horizontal, whichever axis the angle is from.
         self.rise, self.run = tool.Structural.get_simple_slope(abs(x), abs(z))
 
     def get_unit_symbol(self, category: str) -> str:
@@ -1053,14 +1135,27 @@ class StructuralForceInput:
                 for prop in ("moment_x", "moment_y", "moment_z"):
                     layout.prop(self, prop)
         else:
-            layout.row().prop(self, "direction", expand=True)
-            layout.prop(self, "magnitude")
+            # A pinwheel of the eight directions, counter-clockwise from Q1 just above +X.
+            pinwheel = layout.column(align=True)
+            for cells in (
+                (None, "Q3", "Q2", None),
+                ("Q4", None, None, "Q1"),
+                ("Q5", None, None, "Q8"),
+                (None, "Q6", "Q7", None),
+            ):
+                row = pinwheel.row(align=True)
+                for cell in cells:
+                    if cell:
+                        row.prop_enum(self, "direction", cell)
+                    else:
+                        row.label(text="")
             if self.input_mode == "ANGLE":
                 layout.prop(self, "angle")
             else:
                 row = layout.row(align=True)
                 row.prop(self, "rise")
                 row.prop(self, "run")
+            layout.prop(self, "magnitude")
             x, _, z = self.get_components()
             unit = self.get_unit_symbol(category) if category else ""
             layout.label(text=f"X = {x:.4f}   Z = {z:.4f} {unit}", icon="ORIENTATION_GLOBAL")
@@ -1173,7 +1268,17 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
             for element in elements
         ]
         ifcopenshell.api.group.assign_group(ifc_file, products=activities, group=group)
+        self.show_load_group(context, group)
         return {"FINISHED"}
+
+    def show_load_group(self, context: bpy.types.Context, group: ifcopenshell.entity_instance) -> None:
+        """Show the loads of the load case just applied to, so that the new load is seen"""
+        LoadGroupDecorationData.is_loaded = False  # A new load case is not listed yet.
+        try:
+            tool.Structural.get_structural_props().load_group_to_show = str(group.id())
+        except TypeError:
+            return  # Not in the current analysis model, so it cannot be shown.
+        tool.Structural.get_structural_props().show_loads = True
 
 
 edit_load_group_items: list[tuple[str, str, str]] = []
@@ -1233,7 +1338,7 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         self.moment_x, self.moment_y, self.moment_z = (
             (getattr(load, a) or 0.0 for a in moment_attributes) if moment_attributes else (0.0, 0.0, 0.0)
         )
-        # IFC only stores components, so derive the in-plane inputs from them, from the nearest horizontal...
+        # IFC only stores components, so derive the in-plane inputs from them, from the nearest axis...
         x, y, z = (getattr(load, a) or 0.0 for a in force_attributes)
         self.set_in_plane_inputs(x, z)
         self.input_mode = "COMPONENTS"
@@ -1241,15 +1346,17 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         name = load.Name or ""
         if not y and (match := SLOPE_LOAD_NAME.match(name)):
             rise, run = float(match[1]), float(match[2])
-            direction = match[3].upper().replace("-", "_") if match[3] else "UP_RIGHT"
+            direction = get_named_direction(match[3])
             if self.fits(x, z, "SLOPE", rise=rise, run=run, direction=direction):
-                self.input_mode, self.rise, self.run, self.direction = "SLOPE", rise, run, direction
+                # The eighth first: each value set updates the others, read with the eighth.
+                self.input_mode, self.direction, self.rise, self.run = "SLOPE", direction, rise, run
         elif not y and (match := ANGLE_LOAD_NAME.match(name)):
             angle = float(match[1])
-            direction = match[2].upper().replace("-", "_") if match[2] else "UP_RIGHT"
+            direction = get_named_direction(match[2])
             if self.fits(x, z, "ANGLE", angle=angle, direction=direction):
-                self.input_mode, self.angle, self.direction = "ANGLE", angle, direction
-        self.load_name = name
+                self.input_mode, self.direction, self.angle = "ANGLE", direction, angle
+        # A generated name is generated again, so that it reads as the inputs now do, as from its eighth's axis.
+        self.load_name = get_default_load_name(self, category) if DEFAULT_LOAD_NAME.match(name) else name
         if (activities := self.get_movable_activities()) and (groups := get_activity_load_groups(activities[0])):
             self.load_group = str(groups[0].id())
         # Set last, so that filling in the values above does not start a preview.
@@ -1264,7 +1371,7 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         angle: float = 0.0,
         rise: float = 0.0,
         run: float = 0.0,
-        direction: str = "UP_RIGHT",
+        direction: str = "Q1",
     ) -> bool:
         """Whether an angle or slope gives the direction of the components x and z"""
         fx, fz = tool.Structural.get_in_plane_components(
@@ -1426,17 +1533,15 @@ class ShowStructuralLoadCase(bpy.types.Operator):
 
     def execute(self, context):
         props = tool.Structural.get_structural_props()
-        if LoadsDecorator.is_installed and props.load_group_to_show == str(self.load_case):
-            LoadsDecorator.uninstall()
-            tool.Blender.update_all_viewports(context)
+        if props.show_loads and props.load_group_to_show == str(self.load_case):
+            props.show_loads = False
             return {"FINISHED"}
         try:
             props.load_group_to_show = str(self.load_case)
         except TypeError:
             self.report({"WARNING"}, "This load case is not in the current analysis model.")
             return {"CANCELLED"}
-        if not LoadsDecorator.is_installed:
-            bpy.ops.bim.show_loads("INVOKE_DEFAULT")
+        props.show_loads = True
         return {"FINISHED"}
 
 
@@ -1450,6 +1555,8 @@ class LoadStructuralLoads(bpy.types.Operator):
         props = tool.Structural.get_structural_props()
         props.structural_loads.clear()
         loads = tool.Ifc.get().by_type("IfcStructuralLoad")
+        if props.show_unused_loads_only:
+            loads = [load for load in loads if not self.is_used(load)]
         if props.filtered_structural_loads:
             names = [structural_load.Name or "Unnamed" for structural_load in loads]
             for structural_load in loads:
@@ -1472,6 +1579,20 @@ class LoadStructuralLoads(bpy.types.Operator):
         props.is_editing_loads = True
         bpy.ops.bim.disable_editing_structural_load()
         return {"FINISHED"}
+
+    def is_used(self, load: ifcopenshell.entity_instance) -> bool:
+        """Whether a load is applied in a load case or group, or is part of a load configuration"""
+        for inverse in self.file.get_inverse(load):
+            if inverse.is_a("IfcStructuralLoadConfiguration"):
+                return True
+            if inverse.is_a("IfcStructuralActivity") and any(
+                rel.is_a("IfcRelAssignsToGroup")
+                and rel.RelatingGroup
+                and rel.RelatingGroup.is_a("IfcStructuralLoadGroup")
+                for rel in inverse.HasAssignments
+            ):
+                return True
+        return False
 
 
 class DisableStructuralLoadEditingUI(bpy.types.Operator):
