@@ -20,6 +20,8 @@
 import numpy as np
 
 import ifcopenshell
+import ifcopenshell.api.alignment
+import ifcopenshell.geom
 from ifcopenshell import entity_instance, ifcopenshell_wrapper
 
 
