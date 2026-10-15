@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
+import time
 from collections.abc import Iterable
 from typing import Union
 
@@ -32,18 +33,56 @@ from mathutils import Vector
 import bonsai.tool as tool
 from bonsai.bim.module.structural.load_decoration_data import ShaderInfo, box_crosses_segments, get_plain_symbol
 
+# Structural items moved since kept moments were last solved again, by id, and until when a move is not one, as one
+# undone or redone, or one made by solving again, whose own solve is in the undo step it restores.
+MOVED_ITEMS: set[int] = set()
+IGNORE_MOVES_UNTIL: list[float] = [0.0]
+
 
 def update_loads_after_moves(scene: bpy.types.Scene, depsgraph: bpy.types.Depsgraph) -> None:
-    """Redraw the shown loads when a structural item moves, so that they follow it"""
+    """Redraw the shown loads when a structural item moves, so that they follow it, with kept moments' unknowns
+    solved as it moves, and written once the move is done"""
     if not tool.Ifc.get():
         return
+    moved = []
     for update in depsgraph.updates:
         if update.is_updated_transform and isinstance(update.id, bpy.types.Object):
             element = tool.Ifc.get_entity(update.id.original)
             if element and element.is_a("IfcStructuralItem"):
-                LoadsDecorator.update()
-                tool.Blender.update_all_viewports()
-                return
+                moved.append(element)
+    if not moved:
+        return
+    if time.monotonic() > IGNORE_MOVES_UNTIL[0]:
+        from bonsai.bim.module.structural.operator import get_kept_moment_cases, get_kept_moment_preview
+
+        if get_kept_moment_cases(moved):
+            ShaderInfo.preview = get_kept_moment_preview(moved)
+            MOVED_ITEMS.update(element.id() for element in moved)
+            if not bpy.app.timers.is_registered(keep_moments_after_moves):
+                bpy.app.timers.register(keep_moments_after_moves, first_interval=0.3)
+    LoadsDecorator.update()
+    tool.Blender.update_all_viewports()
+
+
+def keep_moments_after_moves() -> Union[float, None]:
+    """Write kept moments' unknowns solved again for the structural items moved, once no move is under way, as
+    one undo step, as editing a force does"""
+    window_manager = bpy.context.window_manager
+    if any(op.bl_idname.startswith("TRANSFORM_OT") for w in window_manager.windows for op in w.modal_operators):
+        return 0.3  # Still moving.
+    items, window = ",".join(str(i) for i in MOVED_ITEMS), window_manager.windows[0] if window_manager.windows else None
+    MOVED_ITEMS.clear()
+    if items and window and tool.Ifc.get():
+        IGNORE_MOVES_UNTIL[0] = time.monotonic() + 0.5  # A place it moves is part of this solve.
+        with bpy.context.temp_override(window=window):
+            bpy.ops.bim.keep_structural_moments(items=items)
+    return None
+
+
+def ignore_moves_after_undo(*args) -> None:
+    """An undo or redo restores kept moments with what moved, so the moves it makes are not solved again"""
+    IGNORE_MOVES_UNTIL[0] = time.monotonic() + 1.0
+    MOVED_ITEMS.clear()
 
 
 def show_loads(shown: bool) -> None:
@@ -112,12 +151,18 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         cls.is_installed = True
         if update_loads_after_moves not in bpy.app.handlers.depsgraph_update_post:
             bpy.app.handlers.depsgraph_update_post.append(update_loads_after_moves)
+        for handlers in (bpy.app.handlers.undo_post, bpy.app.handlers.redo_post):
+            if ignore_moves_after_undo not in handlers:
+                handlers.append(ignore_moves_after_undo)
         cls.redraw_properties()
 
     @classmethod
     def uninstall(cls) -> None:
         if update_loads_after_moves in bpy.app.handlers.depsgraph_update_post:
             bpy.app.handlers.depsgraph_update_post.remove(update_loads_after_moves)
+        for handlers in (bpy.app.handlers.undo_post, bpy.app.handlers.redo_post):
+            if ignore_moves_after_undo in handlers:
+                handlers.remove(ignore_moves_after_undo)
         super().uninstall()
         cls.pickables = []
         cls.label_boxes = {}

@@ -2930,10 +2930,41 @@ def move_to_place(obj: bpy.types.Object, place: np.ndarray, context: bpy.types.C
     if preview:
         MOMENT_CENTRE_PREVIEW.setdefault(obj.name, obj.matrix_world.translation.copy())
     target = Vector(place) * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    if (target - get_vertex_location(obj)).length < 1e-9:
+        return  # Where it is already: moving it would only set off another solve after moves.
     obj.matrix_world.translation += target - get_vertex_location(obj)
     context.view_layer.update()
     if not preview:
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+
+def get_moved_activities(items: list[ifcopenshell.entity_instance]) -> list[ifcopenshell.entity_instance]:
+    """The applied loads whose kept moments moving these structural items can change: their own, and those of
+    each load case taking moments about one of them"""
+    activities = [r.RelatedStructuralActivity for item in items for r in item.AssignedStructuralActivity or []]
+    for group in tool.Ifc.get().by_type("IfcStructuralLoadGroup"):
+        if tool.Structural.get_moment_centre(group) in items:
+            activities += get_case_moment_forces(group)[0]
+    return [a for a in activities if a]
+
+
+def get_kept_moment_cases(items: list[ifcopenshell.entity_instance]) -> list[ifcopenshell.entity_instance]:
+    """The load cases keeping a sum of moments that moving these structural items changes"""
+    cases = {group for activity in get_moved_activities(items) for group in get_activity_load_groups(activity)}
+    return [case for case in cases if tool.Structural.get_resultant_moment(case) is not None]
+
+
+def get_kept_moment_preview(items: list[ifcopenshell.entity_instance]) -> dict[int, dict]:
+    """The forces kept moments solve to, as these structural items are being moved, to draw before the move is
+    done and they are written; a place found, rather than a force, waits for the move to finish"""
+    preview = {}
+    for case in get_kept_moment_cases(items):
+        if tool.Structural.get_moment_centre_unknown(case)[0]:
+            continue
+        forces, error = solve_case_moment(case, tool.Structural.get_resultant_moment(case))
+        if not error:
+            preview |= {load.id(): get_force_attributes(load, force) for load, force in forces.items()}
+    return preview
 
 
 def keep_resultant_moments(activities: list[ifcopenshell.entity_instance]) -> None:
@@ -3209,6 +3240,27 @@ def restore_moment_centre(context: bpy.types.Context) -> None:
     ShaderInfo.preview = {}  # And the forces a kept moment solved for as it moved.
     context.view_layer.update()
     redraw_loads(context)
+
+
+class KeepStructuralMoments(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.keep_structural_moments"
+    bl_label = "Keep Moments"
+    bl_description = "Solve again the unknowns of kept moments that moving these structural items changes"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    items: bpy.props.StringProperty(description="Ids of the structural items moved", options={"SKIP_SAVE"})
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        items = []
+        for item_id in self.items.split(","):
+            try:
+                items.append(ifc_file.by_id(int(item_id)))
+            except (ValueError, RuntimeError):
+                continue  # Removed since it moved.
+        ShaderInfo.preview = {}  # The forces solved while it moved are written now.
+        keep_resultant_moments(get_moved_activities(items))
+        redraw_loads(context)
+        return {"FINISHED"}
 
 
 class ExportStructuralCalculations(bpy.types.Operator):

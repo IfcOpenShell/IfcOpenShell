@@ -511,6 +511,18 @@ where Bonsai's eighths would measure from the vertical.
   precision can leave two points a hair apart in Y, so r's triangle went missing; lines between
   points are brought into one point's plane first (fixed in section 20's branch, merged up).
 
+## 26. Kept moments as points move
+
+- **Moving a point keeps a kept moment.** Moments are taken from points' places as Blender has them,
+  so moving a point in the viewport changed every moment about it while the unknown solved for it
+  stayed, and the kept sum went stale. Now, as a structural item moves, the overlay draws the
+  unknowns of the load cases it touches solved again (its own loads, and the cases taking moments
+  about it), and once no move is under way `bim.keep_structural_moments` writes them, one undo
+  step, as editing a force does. A place found, rather than a force, waits for the move to end.
+- **Undo and redo are left alone:** they restore kept values with what moved, so for a moment
+  after one, moves are not solved again, nor is a move a solve itself made. Moving a point to
+  where it is already does nothing, so a solve does not set off another.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
