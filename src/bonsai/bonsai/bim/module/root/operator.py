@@ -377,6 +377,9 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 elif obj.data is not None:
                     new_obj = tool.Geometry.recreate_object_with_data(obj, None)
 
+            if is_structural:
+                tool.Structural.assign_to_current_structural_analysis_model(element)
+
             # Accomodate existing importers to Blender from other formats that set custom props
             if self.props_to_pset:
                 custom_props = {}
@@ -574,6 +577,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             should_add_representation=False,
         )
         element.Description = props.description or None
+        if element.is_a("IfcStructuralItem"):
+            tool.Structural.assign_to_current_structural_analysis_model(element)
 
         if representation_template == "EMTPY" or not ifc_context:
             pass

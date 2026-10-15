@@ -55,6 +55,10 @@ def get_applicable_structural_load_types(
 ) -> list[tuple[str, str, str]]:
     if not StructuralLoadCasesData.is_loaded:
         StructuralLoadCasesData.load()
+    # Recomputed on every call so the choices follow the current selection.
+    StructuralLoadCasesData.data["applicable_structural_load_types"] = (
+        StructuralLoadCasesData.applicable_structural_load_types()
+    )
     return StructuralLoadCasesData.data["applicable_structural_load_types"]
 
 
@@ -159,7 +163,7 @@ class BIMStructuralProperties(PropertyGroup):
     structural_analysis_models: CollectionProperty(name="Structural Analysis Models", type=StructuralAnalysisModel)
     active_structural_analysis_model_index: IntProperty(name="Active Structural Analysis Model Index")
     active_structural_analysis_model_id: IntProperty(name="Active Structural Analysis Model Id")
-    load_case_editing_type: StringProperty(name="Load Case Editing Type")
+    current_structural_analysis_model_id: IntProperty(name="Current Structural Analysis Model Id")
     load_case_attributes: CollectionProperty(name="Load Case Attributes", type=Attribute)
     active_load_case_id: IntProperty(name="Active Load Case Id")
     load_group_editing_type: StringProperty(name="Load Group Editing Type")
@@ -209,7 +213,7 @@ class BIMStructuralProperties(PropertyGroup):
         name="Activity Type",
         update=update_activity_type,
     )
-    load_group_to_show: EnumProperty(items=get_load_groups_to_show, name="Load Groups")
+    load_group_to_show: EnumProperty(items=get_load_groups_to_show, name="Load Case")
 
     if TYPE_CHECKING:
         structural_analysis_model_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
@@ -217,7 +221,7 @@ class BIMStructuralProperties(PropertyGroup):
         structural_analysis_models: bpy.types.bpy_prop_collection_idprop[StructuralAnalysisModel]
         active_structural_analysis_model_index: int
         active_structural_analysis_model_id: int
-        load_case_editing_type: str
+        current_structural_analysis_model_id: int
         load_case_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         active_load_case_id: int
         load_group_editing_type: str
