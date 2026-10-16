@@ -64,6 +64,7 @@ classes = (
     operator.EditElementFilter,
     operator.EditSheet,
     operator.EditText,
+    operator.EditTextInViewport,
     operator.EditTextPopup,
     operator.EnableAddAnnotationType,
     operator.EnableEditingAssignedProduct,

@@ -40,6 +40,7 @@ from gpu_extras.batch import batch_for_shader
 from mathutils import Matrix, Vector
 
 import bonsai.bim.module.drawing.helper as helper
+import bonsai.bim.module.drawing.text_editing as text_editing
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
 from bonsai.bim.module.drawing.helper import format_distance
@@ -611,19 +612,19 @@ class BaseDecorator:
 
         line_i = 0
         font_size_mm = text_data["FontSize"] * text_scale
-        for literal_data in literals_data:
+        for literal_index, literal_data in enumerate(literals_data):
             box_alignment = literal_data["BoxAlignment"]
-            text = literal_data["CurrentValue"]
+            text = text_editing.ViewportTextEdit.get_displayed_text(
+                obj.name, literal_index, literal_data["CurrentValue"]
+            )
 
             if newline_at != 0:
                 text = helper.add_newline_between_words(text, newline_at)
 
-            multiple_lines = text.split("\n")
-
-            for line in multiple_lines:
+            for line in text_editing.split_text_lines(text):
                 self.draw_label(
                     context,
-                    line,
+                    text_editing.expand_tabs(line),
                     pos,
                     text_dir,
                     gap=0,

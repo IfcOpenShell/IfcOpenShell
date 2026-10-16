@@ -132,6 +132,7 @@ class AnnotationTool(WorkSpaceTool):
         ("bim.annotation_hotkey", {"type": "D", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_D")]}),
         ("bim.annotation_hotkey", {"type": "E", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_E")]}),
         ("bim.annotation_hotkey", {"type": "O", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_O")]}),
+        ("bim.annotation_hotkey", {"type": "T", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_T")]}),
     )
 
     def draw_settings(context, layout, ws_tool):
@@ -225,6 +226,7 @@ class AnnotationToolUI:
     def draw_edit_object_interface(cls, context):
         if DecoratorData.get_text_data(bpy.context.active_object):
             add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
+            add_layout_hotkey_operator(cls.layout, "Type Text", "A_T", "Type directly into the text in the viewport")
         if bpy.ops.bim.copy_annotation_to_drawing.poll():
             row = cls.layout.row(align=True)
             row.operator("bim.copy_annotation_to_drawing", icon="PASTEDOWN", text="Copy To Drawing")
@@ -343,6 +345,10 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
         if DecoratorData.get_text_data(bpy.context.active_object):
             bpy.ops.bim.edit_text_popup()
+
+    def hotkey_A_T(self):
+        if bpy.ops.bim.edit_text_in_viewport.poll():
+            bpy.ops.bim.edit_text_in_viewport("INVOKE_DEFAULT")
 
     def hotkey_S_G(self):
         for obj in bpy.context.selected_objects:

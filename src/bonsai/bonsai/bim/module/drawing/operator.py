@@ -63,6 +63,7 @@ import bonsai.bim.handler
 import bonsai.bim.import_ifc
 import bonsai.bim.module.drawing.sheeter as sheeter
 import bonsai.bim.module.drawing.svgwriter as svgwriter
+import bonsai.bim.module.drawing.text_editing as text_editing
 import bonsai.core.drawing as core
 import bonsai.core.geometry
 import bonsai.tool as tool
@@ -74,7 +75,7 @@ from bonsai.bim.module.drawing.prop import (
     RasterStyleProperty,
 )
 from bonsai.bim.module.drawing.ui import get_current_product_for_element_values
-from bonsai.bim.prop import StrProperty
+from bonsai.bim.prop import Attribute, StrProperty
 
 if TYPE_CHECKING:
     from bpy.stub_internal import rna_enums
@@ -3469,6 +3470,110 @@ class DisableEditingText(bpy.types.Operator, tool.Ifc.Operator):
         # force update this object's font size for viewport display
         DecoratorData.data.pop(obj.name, None)
         tool.Blender.update_viewport()
+
+
+class EditTextInViewport(bpy.types.Operator):
+    bl_idname = "bim.edit_text_in_viewport"
+    bl_label = "Type Text In Viewport"
+    bl_description = (
+        "Type directly into the text annotation in the viewport.\n"
+        "Enter starts a new line, Tab inserts a tab, Ctrl+B / Ctrl+I toggle bold / italic.\n"
+        "Ctrl+Enter or left click to finish, Esc or right click to cancel"
+    )
+    literal_prop_id: bpy.props.IntProperty(name="Literal Index", default=0)
+
+    @classmethod
+    def poll(cls, context):
+        if text_editing.ViewportTextEdit.is_active() or not (obj := context.active_object):
+            return False
+        element = tool.Ifc.get_entity(obj)
+        return bool(element) and tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"])
+
+    def invoke(self, context, event):
+        obj = context.active_object
+        assert obj
+        props = tool.Drawing.get_text_props(obj)
+        self.was_editing = props.is_editing
+        if not self.was_editing:
+            bpy.ops.bim.enable_editing_text()
+        if not 0 <= self.literal_prop_id < len(props.literals):
+            self.report({"ERROR"}, "The text annotation has no literal to type into.")
+            if not self.was_editing:
+                bpy.ops.bim.disable_editing_text()
+            return {"CANCELLED"}
+
+        self.obj_name = obj.name
+        self.original_value = self.get_literal_attribute(obj).string_value
+        # Show the older \n escapes as the line breaks they print as.
+        self.buffer = text_editing.TextEditBuffer(self.original_value.replace("\\n", "\n"))
+        text_editing.ViewportTextEdit.start(obj.name, self.literal_prop_id, self.buffer)
+        self.sync(context)
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
+    def modal(self, context, event):
+        obj = bpy.data.objects.get(self.obj_name)
+        props = tool.Drawing.get_text_props(obj) if obj else None
+        if not props or not props.is_editing or self.literal_prop_id >= len(props.literals):
+            # The text was deleted or its editing was finished from the properties panel.
+            self.finish(context)
+            return {"CANCELLED"}
+
+        if event.type in text_editing.PASS_THROUGH_EVENTS or event.type.startswith("NDOF_"):
+            return {"PASS_THROUGH"}
+        if event.value != "PRESS" and event.type != "TEXTINPUT":
+            return {"RUNNING_MODAL"}
+
+        result = text_editing.handle_key(
+            self.buffer,
+            event.type,
+            event.unicode,
+            ctrl=event.ctrl or event.oskey,
+            alt=event.alt,
+            clipboard=context.window_manager.clipboard if event.type == "V" else "",
+        )
+        if result == "CONFIRM":
+            self.finish(context)
+            if not self.was_editing:
+                with context.temp_override(active_object=obj):
+                    bpy.ops.bim.edit_text()
+            return {"FINISHED"}
+        elif result == "CANCEL":
+            self.get_literal_attribute(obj).string_value = self.original_value
+            self.finish(context)
+            if not self.was_editing:
+                with context.temp_override(active_object=obj):
+                    bpy.ops.bim.disable_editing_text()
+            return {"CANCELLED"}
+        elif result == "PASS_THROUGH":
+            return {"PASS_THROUGH"}
+        self.sync(context)
+        return {"RUNNING_MODAL"}
+
+    def get_literal_attribute(self, obj: bpy.types.Object) -> Attribute:
+        props = tool.Drawing.get_text_props(obj)
+        return props.literals[self.literal_prop_id].attributes["Literal"]
+
+    def sync(self, context: bpy.types.Context) -> None:
+        obj = bpy.data.objects[self.obj_name]
+        self.get_literal_attribute(obj).string_value = self.buffer.text
+        row, column = self.buffer.get_row_column()
+        context.workspace.status_text_set(
+            f"Typing text: line {row + 1}, column {column + 1}    "
+            "Enter: New Line    Tab: Tab    Ctrl+B / Ctrl+I: Bold / Italic    "
+            "Ctrl+Enter / LMB: Finish    Esc / RMB: Cancel"
+        )
+        tool.Blender.update_all_viewports(context)
+
+    def cancel(self, context):
+        # Blender stops the operator, for example when another file is opened.
+        self.finish(context)
+
+    def finish(self, context: bpy.types.Context) -> None:
+        text_editing.ViewportTextEdit.stop()
+        if context.workspace:
+            context.workspace.status_text_set(None)
+        tool.Blender.update_all_viewports(context)
 
 
 class AddTextLiteral(bpy.types.Operator):

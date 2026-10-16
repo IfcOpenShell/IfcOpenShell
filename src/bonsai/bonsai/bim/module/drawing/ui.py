@@ -698,6 +698,8 @@ class BIM_PT_text(Panel):
             if len(literal_props.attributes):
                 row = box.row(align=True)
                 bonsai.bim.helper.draw_attribute(literal_props.attributes[0], row, enable_search=True)
+                if not popup_mode:
+                    row.operator("bim.edit_text_in_viewport", icon="FONT_DATA", text="").literal_prop_id = i
                 if i > 0:
                     row.operator("bim.order_text_literal_up", icon="TRIA_UP", text="").literal_prop_id = i
                 if i < len(props.literals) - 1:
@@ -817,6 +819,7 @@ class BIM_PT_text(Panel):
 
         row = self.layout.row()
         row.operator("bim.enable_editing_text", icon="GREASEPENCIL")
+        row.operator("bim.edit_text_in_viewport", icon="FONT_DATA")
 
         row = self.layout.row(align=True)
         row.label(text="FontSize")
