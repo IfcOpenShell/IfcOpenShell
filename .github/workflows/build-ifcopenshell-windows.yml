@@ -49,7 +49,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          choco install -y sed 7zip.install
+          choco install -y 7zip.install
 
       - name: Unpack Dependencies
         run: |
