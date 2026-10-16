@@ -17,6 +17,11 @@ jobs:
         # Installs latest Python version so it's preferred by uv over system Python.
         run: uv python install
 
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -87,6 +92,12 @@ jobs:
           uv run ./IfcOpenShell/pyodide/split_pyodide_ifcopenshell_wheel.py dist/ifcopenshell-*.whl ./dist-modular
           cd dist-modular
           zip -r -qq ifcopenshell-modular-${VERSION}-${GITHUB_SHA:0:7}-pyodide.zip *.whl
+
+      - name: Verify create_shape in monolithic and modular wheels
+        run: |
+          source .venv/bin/activate
+          PYODIDE_ROOT=$(pyodide config get pyodide_root)
+          node IfcOpenShell/pyodide/verify_wheels.mjs "$PYODIDE_ROOT/dist" dist dist-modular
 
       - name: Run wheel tests
         run: |
