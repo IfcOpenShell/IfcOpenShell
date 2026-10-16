@@ -1,20 +1,16 @@
 .. This file was generated with the assistance of an AI coding tool.
 
-IfcOpenShell JS/TS
-==================
+JavaScript / TypeScript notes
+=============================
 
 IfcOpenShell JS/TS provides JavaScript and TypeScript bindings to the
 IfcOpenShell C++ core through WebAssembly. The ``ifcopenshell`` package works
 in Node.js and browsers, with modules for reading and editing IFC files,
-processing geometry, and exporting geometry.
+processing geometry, and exporting geometry. Install it as described in
+:doc:`ifcopenshell-js/installation`.
 
-IfcOpenShell is also available in :doc:`Python <ifcopenshell-python>` and
-:doc:`C++ <ifcopenshell-cpp>`, and all three use the same C++ core. The
-:doc:`Hello, world! <ifcopenshell/hello_world>` and :doc:`geometry processing
-<ifcopenshell/geometry_processing>` guides are shared between the three
-languages, with a JavaScript tab on every snippet. The other guides in this
-section cover what is specific to JavaScript, such as installation in Node.js
-and the browser, and the WebAssembly plugins.
+The :doc:`IfcOpenShell guides <ifcopenshell>` are shared between JavaScript,
+Python, and C++. This page covers what only applies to JavaScript.
 
 Examples use JavaScript ES modules and can also be used in TypeScript.
 Only ``File`` and geometry ``Iterator`` implement ``Disposable``: release them
@@ -26,19 +22,10 @@ Other wrappers use GC cleanup, and instance queries return ordinary JS arrays.
    The current version of the JS/TS documentation has been generated with the
    assistance of generative AI.
 
-.. toctree::
-   :hidden:
-   :maxdepth: 1
-   :caption: Contents:
-
-   ifcopenshell-js/installation
-   Hello, world! <ifcopenshell/hello_world>
-   ifcopenshell-js/code_examples
-   Geometry processing <ifcopenshell/geometry_processing>
-   ifcopenshell-js/geometry_creation
-   ifcopenshell-js/geometry_tree
-   ifcopenshell-js/schema_querying
-   ifcopenshell-js/running_tests
+Geometry processing needs plugins in addition to the schema: a mapping, which
+interprets IFC representations, and a geometry kernel. See
+:doc:`ifcopenshell-js/installation` for loading plugins and running in the
+browser.
 
 .. seealso::
 
