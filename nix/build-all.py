@@ -691,7 +691,6 @@ if WASM:
         "rocksdb",
         "opencollada",
         "pcre",
-        "IfcGeom",
         "IfcConvert",
         "IfcGeomServer",
         "BonsaiViewer",
@@ -702,7 +701,6 @@ if WASM:
     if NATIVE_WASM:
         # The standalone WASM targets ship the geometry stack and the generated C API.
         # SWIG, Python and the Python wrapper are only needed by the pyodide-hosted flow.
-        SKIP_TARGETS_FOR_WASM.discard("IfcGeom")
         SKIP_TARGETS_FOR_WASM.update(("swig", "python", "IfcOpenShell-Python"))
     SKIP_TARGETS_FOR_WASM = {t.lower() for t in SKIP_TARGETS_FOR_WASM}
     skip_targets = {t for t in targets if t.lower() in SKIP_TARGETS_FOR_WASM}
@@ -1904,6 +1902,11 @@ if "swig" in targets:
     # because `find_program` in emscripten toolchain don't use `find_root_path`.
     # As a workaround we provide executable path directly on all platforms.
     cmake_args.append(f"-DSWIG_EXECUTABLE={Dependencies.get_install_dir('swig')}/bin/swig")
+    # Dependency caches can be unpacked under a different workspace prefix.
+    # SWIG otherwise searches the absolute library path baked into its binary.
+    swig_lib = Dependencies.get_install_dir("swig") / "share" / "swig" / SWIG_VERSION
+    os.environ["SWIG_LIB"] = str(swig_lib)
+    cmake_args.append(f"-DSWIG_DIR={swig_lib}")
 
 if os.environ.get("QT_DIR"):
     cmake_args_prefix_path.append(os.environ["QT_DIR"])
@@ -2161,7 +2164,7 @@ if NATIVE_WASM:
             # WASM builds always regenerate the C API, which needs the `clang`
             # bindings, so the discovery has to run in this interpreter.
             f"-DPYTHON_EXECUTABLE={sys.executable}",
-            # `WASM_BUILD` defaults these to off because the pyodide flow ships no geometry.
+            # `WASM_BUILD` defaults these to off; the standalone build enables all kernels.
             "-DWITH_OPENCASCADE=ON",
             "-DWITH_CGAL=ON",
             "-DWITH_MANIFOLD=ON",

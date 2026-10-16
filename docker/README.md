@@ -94,9 +94,12 @@ docker build -f docker/native-wasm.Dockerfile -t ifcos-native-wasm .
 
 # or
 docker build -f docker/native-wasm.Dockerfile -t ifcos-native-wasm --build-arg IFCOS_CMAKE_ARGS="-DIFCOPENSHELL_WASM_LINK_OPTIMIZATION=-O0" .
+
+# .github/workflows/build-ifcopenshell-wasm.yml (Pyodide Python wheels)
+docker build -f docker/pyodide.Dockerfile -t ifcos-pyodide .
 ```
 
-Both take the repository root as the build context.
+All take the repository root as the build context.
 
 - `test-lint.Dockerfile` keeps the workflow's `continue-on-error` semantics: those steps record their
   status and the final step aggregates them, exactly like the workflow's "Final check" step.
@@ -106,6 +109,14 @@ Both take the repository root as the build context.
   `IfcOpenShell/build-outputs` - are intentionally not reproduced.
   Compiler results are cached across builds, and the finished WASM artifacts are retained in the image
   at `/opt/ifcopenshell-wasm` (also exposed as `IFCOPENSHELL_WASM_DIR`).
+- `pyodide.Dockerfile` builds the monolithic and modular Python wheels using the
+  workflow's pinned Pyodide build environment. It checks `create_shape` with the
+  Manifold kernel in a fresh Pyodide interpreter for each layout. Dependency and
+  compiler caches survive failed builds; wheels are retained at
+  `/opt/ifcopenshell-pyodide/dist` and `/opt/ifcopenshell-pyodide/dist-modular`.
+  `IFCOS_CMAKE_ARGS` and `IFCOS_NUM_BUILD_PROCS` can be passed as build arguments.
+  CI-only uploads and pushes are omitted; the browser-based wheel tests remain
+  in CI, while Docker runs the geometry verification on Node.
 
 The mirrors normalise the copied tree to the line endings CI checks out, so they measure the sources
 rather than the checkout they were built from.
