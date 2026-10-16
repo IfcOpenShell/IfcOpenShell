@@ -40,6 +40,7 @@
     "docs:sphinx": "typedoc --options typedoc.sphinx.jsonc && node scripts/prepare-sphinx-docs.mjs",
     "docs:check": "typedoc --emit none",
     "lint": "eslint src",
+    "lint:docs": "cd ../../../docs/ifcopenshell/examples && eslint .",
     "prepack": "npm run build",
     "test": "vitest run",
     "test:browser": "vitest run --config vitest.browser.config.ts",
