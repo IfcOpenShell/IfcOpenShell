@@ -196,6 +196,7 @@ def open(
     bypass_types: Optional[Sequence[str]] = None,
     logger: Optional[logger] = None,
     lazy: bool = False,
+    threads: Optional[int] = None,
 ) -> Union[file, sqlite, _stream]:
     """Loads an IFC dataset from a filepath
 
@@ -208,6 +209,10 @@ def open(
         of every instance costs about the same as a normal open, spread over
         the reads. Falls back to a normal open if the file uses syntax the
         index pass does not handle.
+    :param threads: Threads the parser may use. None (the default) parses on
+        the calling thread only, unless the IFCOPENSHELL_PARSE_THREADS
+        environment variable says otherwise; n uses n threads; 0 uses one
+        per core (capped at 16). Files under 2 MB per thread stay serial.
 
     You can specify a file format. If no format is given, it is guessed from
     its extension.
@@ -249,12 +254,16 @@ def open(
         return stream(path)
     if readonly:  # Temporary conditional see #7131. Remove once newer builds don't segfault on Linux.
         f = ifcopenshell_wrapper.open(str(path.absolute()), readonly, *optional_logger_args(logger))
-    elif bypass_types or lazy:
+    elif bypass_types or lazy or threads is not None:
         f = ifcopenshell_wrapper.file.create_uninitialized(*optional_logger_args(logger))
         for ty in bypass_types or ():
             f.bypass_type(ty)
         if lazy:
             f.lazy_loading(True)
+        if threads is not None:
+            if threads < 0:
+                raise ValueError("threads must be 0 (one per core) or a positive count")
+            f.parse_threads(threads)
         if mmap:
             # mmap parameter is only available for builds with USE_MMAP, not used in our main builds
             f.initialize(str(path.absolute()), mmap=mmap)  # ty: ignore[unknown-argument]
