@@ -357,7 +357,7 @@ def main() -> None:
     # Note BUILD_TYPE not passed, Clean e.g. wouldn't delete the installed files.
 
     # Check that required tools are in PATH.
-    REQUIRED_COMMANDS = ("git", "cmake", "7z")
+    REQUIRED_COMMANDS = ("git", "cmake")
     if ARGS.use_ninja:
         REQUIRED_COMMANDS += ("ninja",)
     for command in REQUIRED_COMMANDS:
