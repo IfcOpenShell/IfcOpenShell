@@ -47,10 +47,6 @@ jobs:
           token: ${{ secrets.BUILD_REPO_TOKEN }}
           persist-credentials: true
 
-      - name: Install Dependencies
-        run: |
-          choco install -y 7zip.install
-
       - name: Unpack Dependencies
         run: |
           cd ${{ matrix.deps_dir }}
