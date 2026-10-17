@@ -1124,6 +1124,23 @@ class BIM_PT_tab_spatial(Panel):
         pass
 
 
+class BIM_PT_tab_groups(Panel):
+    bl_idname = "BIM_PT_tab_groups"
+    bl_label = "Groups"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bim_tab_name = "PROJECT"
+
+    @classmethod
+    def poll(cls, context):
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_tab_project_setup(Panel):
     bl_idname = "BIM_PT_tab_project_setup"
     bl_label = "Project Setup"
