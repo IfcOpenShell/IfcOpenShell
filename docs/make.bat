@@ -11,6 +11,8 @@ set SOURCEDIR=.
 set BUILDDIR=_build
 
 if "%1" == "" goto help
+if "%1" == "dev" goto dev
+if "%1" == "server" goto server
 
 %SPHINXBUILD% >NUL 2>NUL
 if errorlevel 9009 (
@@ -30,6 +32,18 @@ goto end
 
 :help
 %SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
+echo.
+echo.You can also do 'make.bat server' to launch html server for previously built html docs.
+echo.Or 'make.bat dev' to rebuild the page you are editing and reload the browser.
+goto end
+
+:dev
+python dev.py
+goto end
+
+:server
+python -m http.server 8080 --directory %BUILDDIR%\html
+goto end
 
 :end
 popd

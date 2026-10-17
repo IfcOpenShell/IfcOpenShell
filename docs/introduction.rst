@@ -3,7 +3,8 @@ Introduction
 
 **IfcOpenShell** is an open source software library for software developers and BIM powerusers working with Industry Foundation Classes (`IFC <https://technical.buildingsmart.org/standards/ifc/>`_).
 
-In addition to a C++ and Python API, **IfcOpenShell** comes with an ecosystem of tools, notably including **IfcConvert** (an application to convert IFC models to other formats), **Bonsai** (an add-on to Blender providing a graphical IFC authoring platform and viewer), and many other libraries, CLI apps, and more. Support is also provided for auxiliary standards such as BCF, bSDD, and IDS.
+**IfcOpenShell** can be used from C++, Python, and JavaScript / TypeScript, and
+the same C++ core powers all three. In addition to these APIs, **IfcOpenShell** comes with an ecosystem of tools, notably including **IfcConvert** (an application to convert IFC models to other formats), **Bonsai** (an add-on to Blender providing a graphical IFC authoring platform and viewer), and many other libraries, CLI apps, and more. Support is also provided for auxiliary standards such as BCF, bSDD, and IDS.
 
 Things you can do
 -----------------
@@ -34,7 +35,7 @@ IfcOpenShell has a huge amount of unique features and capabilities not found in 
 
 - IfcOpenShell is the oldest and most mature open source IFC library available. It's developed since 2011 by a community of hundreds of developers and trusted to deliver many AEC technologies that power our industry. IfcOpenShell is also taught in numerous universities and cited in hundreds of academic publications.
 - Lots of platforms and package management options are available: Windows, Mac Intel, Mac Silicon (M1, M2), Linux, Web Assembly (WASM), Docker, AWS Lambda, Google Colab, and more.
-- Develop in C++, Python, or JavaScript via Pyodide.
+- Develop in C++, Python, or JavaScript / TypeScript. The JavaScript bindings run the C++ core as WebAssembly in Node.js and browsers, and the Python bindings can also run in the browser via Pyodide.
 - All tools can be used either as a developer library, through a command line interface, or using a rich graphical interface. Whether you're deploying headless server tools for your own pipeline, writing your own apps, or an end-user, there's something for you.
 - Supports IFC2X3, IFC4, and IFC4.3. Custom schemas (such as experimental or draft schemas) may be loaded at run-time instead of having to recompile.
 - Built-in IFC validation is possible from basic syntax validation to more detailed "Where Rule" checks. This is the same validation that powers the official buildingSMART validation engine.
@@ -54,8 +55,9 @@ IfcOpenShell is a modular ecosystem of tools that work together, where each tool
 .. csv-table::
    :header: "Name", "Description"
 
-    "`IfcOpenShell <https://docs.ifcopenshell.org/ifcopenshell.html>`_", "The core library for C++ developers. The library includes the ability to parse schemas, tessellate and process implicit geometry."
+    "`IfcOpenShell <https://docs.ifcopenshell.org/ifcopenshell.html>`_", "The core C++ library, used from C++, Python, and JavaScript / TypeScript. The library includes the ability to parse schemas, tessellate and process implicit geometry."
     "`IfcOpenShell-Python <https://docs.ifcopenshell.org/ifcopenshell-python.html>`_", "Python bindings to the core IfcOpenShell C++ system, as well as high level analysis and authoring functions."
+    "`IfcOpenShell JS/TS <https://docs.ifcopenshell.org/ifcopenshell-js.html>`_", "JavaScript and TypeScript bindings to the core IfcOpenShell C++ system through WebAssembly, for Node.js and browsers."
     "`IfcConvert <https://docs.ifcopenshell.org/ifcconvert.html>`_", "A command-line application for converting IFC geometry into file formats such as OBJ, DAE, GLB, STP, IGS, XML, SVG, H5, and IFC itself."
     "`Bonsai <https://docs.ifcopenshell.org/bonsai.html>`_", "A graphical add-on for Blender that lets you analyse, author, and modify IFC with Blender. Graphically create BIM models from scratch!"
     "`Bonsai Viewer <https://docs.ifcopenshell.org/bonsai-viewer.html>`_", "A high performance viewing and coordination tool for opening and inspecting IFC models."

@@ -1,7 +1,7 @@
 .. This file was generated with the assistance of an AI coding tool.
 
-Code examples and mechanisms
-============================
+Parsing in C++
+==============
 
 The snippets on this page form a progression: they open a file, look at its
 schema, read data from it, and then move on to the two mechanisms which are
@@ -15,10 +15,8 @@ obtaining an ``ifcopenshell::file`` object and validating that it is good for
 use. The schema of the file is detected while parsing, and is available as
 ``model.schema()``.
 
-.. literalinclude:: code_examples/01_open_and_check.cpp
-    :language: cpp
-    :start-after: // tag::example
-    :end-before: // end::example
+.. snippet:: code_examples/open_and_check
+    :na: python, js
 
 .. _schema-agnostic-parsing-of-ifcs:
 
@@ -36,18 +34,16 @@ The runtime part of the API is not tied to a schema though. Instances are
 ``instances_by_type()`` also accepts the name of an entity as it appears in the
 IFC schema, so the same code processes IFC2x3, IFC4 and IFC4.3 input.
 
-.. literalinclude:: code_examples/02_schema_agnostic.cpp
-    :language: cpp
-    :start-after: // tag::runtime-example
-    :end-before: // end::runtime-example
+.. snippet:: code_examples/schema_agnostic
+    :tag: runtime-example
+    :na: python, js
 
 If you do want the strongly typed accessors, the shared logic can be templated
 over the schema, and the schema dispatched on once.
 
-.. literalinclude:: code_examples/02_schema_agnostic.cpp
-    :language: cpp
-    :start-after: // tag::typed-example
-    :end-before: // end::typed-example
+.. snippet:: code_examples/schema_agnostic
+    :tag: typed-example
+    :na: python, js
 
 Reading out attributes of an IfcProduct
 ---------------------------------------
@@ -59,19 +55,16 @@ among others, are wrapped in a ``std::optional``, and that properties which
 reference another instance report as empty - their ``operator bool`` returns
 false - when they are not set.
 
-.. literalinclude:: code_examples/03_read_attributes.cpp
-    :language: cpp
-    :start-after: // tag::example
-    :end-before: // end::example
+.. snippet:: code_examples/read_attributes
+    :na: python, js
 
 The same values are available without the generated classes, by index, in the
 order in which the attributes appear in the IFC schema, or by name. This is what
 the schema-agnostic code above is built on.
 
-.. literalinclude:: code_examples/03_read_attributes.cpp
-    :language: cpp
-    :start-after: // tag::agnostic-example
-    :end-before: // end::agnostic-example
+.. snippet:: code_examples/read_attributes
+    :tag: agnostic-example
+    :na: python, js
 
 Navigating relationships in IFC
 -------------------------------
@@ -90,10 +83,8 @@ The following function shows how property sets can be extracted from a given
 relationships, so it is the unwrapping of the relationship, not the filtering,
 which is the part to get right.
 
-.. literalinclude:: code_examples/04_navigate_relationships.cpp
-    :language: cpp
-    :start-after: // tag::example
-    :end-before: // end::example
+.. snippet:: code_examples/navigate_relationships
+    :na: python, js
 
 Reading properties and quantities from an element
 -------------------------------------------------
@@ -113,22 +104,19 @@ set. The value of a property is a select as well, so it is cast to the value typ
 you expect it to hold, which has to be tested with the declaration of the value
 rather than with the value in a condition:
 
-.. literalinclude:: code_examples/05_properties_and_quantities.cpp
-    :language: cpp
-    :start-after: // tag::value-casts
-    :end-before: // end::value-casts
+.. snippet:: code_examples/properties_and_quantities
+    :tag: value-casts
+    :na: python, js
 
 Both definitions are then handled by the same helper:
 
-.. literalinclude:: code_examples/05_properties_and_quantities.cpp
-    :language: cpp
-    :start-after: // tag::print-definitions
-    :end-before: // end::print-definitions
+.. snippet:: code_examples/properties_and_quantities
+    :tag: print-definitions
+    :na: python, js
 
-.. literalinclude:: code_examples/05_properties_and_quantities.cpp
-    :language: cpp
-    :start-after: // tag::element-level
-    :end-before: // end::element-level
+.. snippet:: code_examples/properties_and_quantities
+    :tag: element-level
+    :na: python, js
 
 There is a second, easily-missed source of properties: the element's **type**.
 Properties assigned to a type (e.g. a shared "IfcWallType") apply to every
@@ -136,10 +124,9 @@ element of that type, and are reached completely differently, through
 ``IsTypedBy()`` and then ``RelatingType()->HasPropertySets()`` directly, with no
 relationship to unwrap:
 
-.. literalinclude:: code_examples/05_properties_and_quantities.cpp
-    :language: cpp
-    :start-after: // tag::type-level
-    :end-before: // end::type-level
+.. snippet:: code_examples/properties_and_quantities
+    :tag: type-level
+    :na: python, js
 
 Reading a value without the schema types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -149,17 +136,15 @@ property holds, and the cast has to be tested before it is used. An attribute ca
 also be read in the type it is stored in, with a visitor over the attribute
 value, which needs none of the schema level types:
 
-.. literalinclude:: code_examples/05_properties_and_quantities.cpp
-    :language: cpp
-    :start-after: // tag::value-visitor
-    :end-before: // end::value-visitor
+.. snippet:: code_examples/properties_and_quantities
+    :tag: value-visitor
+    :na: python, js
 
 Which is then used like this:
 
-.. literalinclude:: code_examples/05_properties_and_quantities.cpp
-    :language: cpp
-    :start-after: // tag::value-visitor-use
-    :end-before: // end::value-visitor-use
+.. snippet:: code_examples/properties_and_quantities
+    :tag: value-visitor-use
+    :na: python, js
 
 Defensive programming with IfcOpenShell
 ---------------------------------------
@@ -176,10 +161,8 @@ The existence of optional attributes should also be checked, which is what
 which never resolved, such as a STEP ID pointing at an instance which does not
 exist in the file, is reported the same way rather than throwing.
 
-.. literalinclude:: code_examples/06_defensive_programming.cpp
-    :language: cpp
-    :start-after: // tag::example
-    :end-before: // end::example
+.. snippet:: code_examples/defensive_programming
+    :na: python, js
 
 .. note::
 

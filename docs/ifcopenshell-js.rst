@@ -1,14 +1,17 @@
 .. This file was generated with the assistance of an AI coding tool.
 
-IfcOpenShell JS/TS
-==================
+JavaScript / TypeScript notes
+=============================
 
 IfcOpenShell JS/TS provides JavaScript and TypeScript bindings to the
 IfcOpenShell C++ core through WebAssembly. The ``ifcopenshell`` package works
 in Node.js and browsers, with modules for reading and editing IFC files,
-processing geometry, and exporting geometry.
+processing geometry, and exporting geometry. Install it as described in
+:doc:`ifcopenshell-js/installation`.
 
-The guides below introduce the operations available in the current bindings.
+The :doc:`IfcOpenShell guides <ifcopenshell>` are shared between JavaScript,
+Python, and C++. This page covers what only applies to JavaScript.
+
 Examples use JavaScript ES modules and can also be used in TypeScript.
 Only ``File`` and geometry ``Iterator`` implement ``Disposable``: release them
 with ``dispose()`` or TypeScript ``using`` to invoke their native destructors.
@@ -19,24 +22,13 @@ Other wrappers use GC cleanup, and instance queries return ordinary JS arrays.
    The current version of the JS/TS documentation has been generated with the
    assistance of generative AI.
 
-.. toctree::
-   :hidden:
-   :maxdepth: 1
-   :caption: Contents:
-
-   ifcopenshell-js/installation
-   ifcopenshell-js/hello_world
-   ifcopenshell-js/code_examples
-   ifcopenshell-js/geometry_processing
-   ifcopenshell-js/geometry_creation
-   ifcopenshell-js/geometry_tree
-   ifcopenshell-js/schema_querying
-   ifcopenshell-js/running_tests
+Geometry processing needs plugins in addition to the schema: a mapping, which
+interprets IFC representations, and a geometry kernel. See
+:doc:`ifcopenshell-js/installation` for loading plugins and running in the
+browser.
 
 .. seealso::
 
    :doc:`typescript-api` documents the JavaScript and TypeScript API in detail.
-   The equivalent C++ and Python guides are in :doc:`ifcopenshell-cpp` and
-   :doc:`ifcopenshell-python`. Geometry concepts and settings are shared with
-   :doc:`ifcopenshell/geometry_iterator` and
+   Geometry concepts and settings are shared with the other languages, see
    :doc:`ifcopenshell/geometry_settings`.

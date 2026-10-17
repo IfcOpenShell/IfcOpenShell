@@ -3,6 +3,13 @@ Let's learn IfcOpenShell!
 
 .. image:: ifcopenshell/images/intro.png
 
+IfcOpenShell is an open source library for reading, writing, and processing the
+geometry of IFC models, and it is available in **C++**, **Python**, and
+**JavaScript / TypeScript**. The same C++ core powers all three, so every guide
+explains each step once, with a C++, Python, and JavaScript version of the
+code. Start with :doc:`introduction`, or jump straight to
+:doc:`ifcopenshell/hello_world`.
+
 .. toctree::
    :hidden:
    :maxdepth: 1
@@ -10,13 +17,16 @@ Let's learn IfcOpenShell!
 
    introduction
    ifcopenshell
-   ifcopenshell-cpp
-   ifcopenshell-python
-   ifcopenshell-js
    ifcconvert
-   ifcviewer
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+   :caption: Applications:
+
    bonsai
    bonsai-viewer
+   ifcviewer
 
 .. toctree::
    :hidden:

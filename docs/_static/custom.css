@@ -83,6 +83,132 @@ dl.py.property, dl.py.attribute, dl.py.method, dl.py.function {
     font-style: italic;
 }
 
+/* Code blocks with a tab per language (docs/_ext/snippets.py). The tabs are
+   pills inside the same dark card as the code, matching the one-dark Pygments
+   style, and each card switches language on its own. */
+.ios-snippet {
+    --ios-snippet-background: #282c34;
+    --ios-snippet-foreground: #abb2bf;
+    --ios-snippet-muted: #7f848e;
+    --ios-snippet-rule: rgba(255, 255, 255, 0.07);
+    background: var(--ios-snippet-background);
+    border-radius: 0.6rem;
+    overflow: hidden;
+    margin: 1rem 0 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+.sd-tab-set.ios-snippet {
+    padding-top: 0.5rem;
+    padding-left: 0.5rem;
+}
+.sd-tab-set.ios-snippet > label.sd-tab-label {
+    border: none;
+    border-radius: 999px;
+    margin: 0 0.25rem 0.5rem 0;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ios-snippet-muted);
+    transition: background-color 150ms, color 150ms;
+}
+.sd-tab-set.ios-snippet > input:not(:checked) + label.sd-tab-label:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+.sd-tab-set.ios-snippet > input:checked + label.sd-tab-label {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+}
+.sd-tab-set.ios-snippet > label.ios-lang-missing {
+    opacity: 0.45;
+    font-style: italic;
+}
+.sd-tab-set.ios-snippet > .sd-tab-content {
+    box-shadow: none;
+    padding: 0;
+    margin-left: -0.5rem;
+    width: calc(100% + 0.5rem);
+    border-top: 1px solid var(--ios-snippet-rule);
+}
+.ios-snippet .literal-block-wrapper,
+.ios-snippet div.highlight {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+.ios-snippet .literal-block-wrapper {
+    border: none;
+}
+.ios-snippet .code-block-caption {
+    background: transparent;
+    color: var(--ios-snippet-muted);
+    border-bottom: 1px solid var(--ios-snippet-rule);
+    font-size: 0.75rem;
+    font-family: var(--font-stack--monospace);
+    padding: 0.4rem 1rem;
+    text-align: left;
+}
+.ios-snippet .code-block-caption a.headerlink {
+    display: none;
+}
+.ios-snippet .ios-snippet-missing,
+.ios-snippet .ios-snippet-caption,
+.ios-snippet .ios-lang-note {
+    color: var(--ios-snippet-foreground);
+    font-size: 0.85rem;
+    padding: 0.6rem 1rem;
+    margin: 0;
+    border-top: 1px solid var(--ios-snippet-rule);
+}
+.ios-snippet .ios-snippet-missing {
+    border-top: none;
+    font-style: italic;
+    padding: 1rem;
+}
+.ios-snippet .ios-snippet-caption p,
+.ios-snippet .ios-lang-note p,
+.ios-snippet .ios-snippet-missing p {
+    margin: 0.25rem 0;
+}
+.ios-snippet .ios-lang-note div.highlight {
+    border-radius: 0.3rem;
+    margin: 0.5rem 0;
+    background: rgba(0, 0, 0, 0.2);
+}
+.ios-snippet code.literal {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e5e5e5;
+    border: none;
+}
+.ios-snippet-single .ios-only-badge {
+    display: inline-block;
+    margin: 0.5rem;
+    padding: 0.3rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+}
+.ios-snippet-single .ios-only-badge p {
+    margin: 0;
+}
+.ios-snippet-single > .ios-only-badge + * {
+    border-top: 1px solid var(--ios-snippet-rule);
+}
+
+/* Which snippet exists in which language (ifcopenshell/parity.rst). */
+table.ios-parity td.ios-parity-yes {
+    color: #39b54a;
+    font-weight: 700;
+}
+table.ios-parity td.ios-parity-todo {
+    color: #d98014;
+}
+table.ios-parity td.ios-parity-na {
+    color: var(--color-foreground-muted);
+}
+
 /* Workaround for highlighting issue in Furo */
 [role=main] .highlighted {
     -webkit-text-fill-color: initial !important;

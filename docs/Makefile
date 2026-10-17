@@ -13,12 +13,17 @@ help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 	@echo ""
 	@echo "You can also do 'make server' to launch html server for previously built html docs."
+	@echo "Or 'make dev' to rebuild the page you are editing and reload the browser."
 
 .PHONY: help Makefile
 
 server:
 	python -m http.server 8080 --directory $(BUILDDIR)/html
 .PHONY: server Makefile
+
+dev:
+	python dev.py
+.PHONY: dev Makefile
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).

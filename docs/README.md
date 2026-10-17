@@ -90,3 +90,19 @@ To preview the built documentation, run:
 ```shell
 make server
 ```
+
+`make server` only serves the last build. It does not rebuild when a file
+changes. To work on the guides, run the dev preview instead:
+
+```shell
+make dev
+```
+
+On Windows, use `make.bat dev`, or `python dev.py` from this directory.
+Open <http://127.0.0.1:8080>. Saving a guide, a stylesheet, or an included
+snippet rebuilds that page and reloads the browser.
+
+Dev mode reuses the C++, Python, and TypeScript API references from the last
+full build. AutoAPI is not loaded, and the generated Python API sources are
+not read or rewritten. It also does not run Doxygen, Exhale, or TypeDoc. Run
+`make html` again when those references themselves need to be regenerated.

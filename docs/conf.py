@@ -29,6 +29,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import posixpath
 import re
 import sys
 import warnings
@@ -37,6 +38,7 @@ from pathlib import Path
 from shutil import rmtree
 
 sys.path.insert(0, os.path.join(os.path.abspath(".."), "src", "ifcopenshell-python"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "_ext"))
 
 # Exhale, which generates the C++ API reference, still reaches into deprecated
 # Sphinx internals, which is noisy but harmless.
@@ -46,15 +48,45 @@ warnings.filterwarnings("ignore", module=r"exhale\.configs")
 # Sphinx is running. Remove anything left over from a previous build, and make
 # sure that Doxygen's output directory exists, because Doxygen refuses to
 # create more than the final path component of it.
+#
+# DOCS_DEV=1 (see dev.py) is the local preview. It reuses the API pages from
+# the last full build instead of deleting them and generating them again.
 docs_directory = Path(__file__).parent
+docs_dev = os.environ.get("DOCS_DEV") == "1"
+cpp_api_ready = (docs_directory / "output" / "api" / "library_root.rst").is_file()
 generated_directories = (
     docs_directory / "output" / "api",
     docs_directory / "output" / "doxygen",
 )
-for generated_directory in generated_directories:
-    if generated_directory.is_dir():
-        rmtree(generated_directory)
-os.makedirs(docs_directory / "output" / "doxygen", exist_ok=True)
+if not (docs_dev and cpp_api_ready):
+    for generated_directory in generated_directories:
+        if generated_directory.is_dir():
+            rmtree(generated_directory)
+    os.makedirs(docs_directory / "output" / "doxygen", exist_ok=True)
+
+
+def _reuse_generated_apis_in_dev():
+    """Skip Doxygen and Exhale when a dev preview is already built.
+
+    AutoAPI is removed from the extension list below, and its generated pages
+    are excluded from the build. The HTML from the last full build stays in
+    place.
+    """
+    import exhale
+
+    original_exhale = exhale.environment_ready
+
+    def environment_ready(app):
+        if (docs_directory / "output" / "api" / "library_root.rst").is_file():
+            return None
+        return original_exhale(app)
+
+    exhale.environment_ready = environment_ready
+    print("DOCS_DEV: reusing the generated C++ and Python API references from the last full build.")
+
+
+if docs_dev:
+    _reuse_generated_apis_in_dev()
 
 
 # -- Project information -----------------------------------------------------
@@ -87,13 +119,78 @@ def setup(app):
     app.add_role("ios_python_url", ios_python_url)
     app.add_role("ifcconvert_url", ifcconvert_url)
     app.connect("builder-inited", fix_generated_api_pages, priority=600)
+    app.connect("build-finished", write_redirects)
     if skip_python_api:
         app.connect("source-read", omit_python_api_navigation)
+    elif docs_dev:
+        app.connect("source-read", preserve_python_api_link)
+
+
+# Pages that were merged into the shared guides, which show the same
+# explanation once with a C++, Python, and JavaScript tab for every snippet.
+# The old addresses are linked from outside of these docs, so they redirect, and
+# the "lang" query parameter selects the tab of the section they used to be in.
+redirects = {
+    "ifcopenshell-python/hello_world": "ifcopenshell/hello_world.html?lang=python",
+    "ifcopenshell-cpp/hello_world": "ifcopenshell/hello_world.html?lang=cpp",
+    "ifcopenshell-js/hello_world": "ifcopenshell/hello_world.html?lang=js",
+    "ifcopenshell-python/geometry_processing": "ifcopenshell/geometry_processing.html?lang=python",
+    "ifcopenshell-cpp/geometry_processing": "ifcopenshell/geometry_processing.html?lang=cpp",
+    "ifcopenshell-js/geometry_processing": "ifcopenshell/geometry_processing.html?lang=js",
+    "ifcopenshell/geometry_iterator": "ifcopenshell/geometry_processing.html#geometry-iterator",
+    "ifcopenshell-python/code_examples": "ifcopenshell/code_examples.html?lang=python",
+    "ifcopenshell-js/code_examples": "ifcopenshell/code_examples.html?lang=js",
+    "ifcopenshell-python/geometry_creation": "ifcopenshell/geometry_creation.html?lang=python",
+    "ifcopenshell-js/geometry_creation": "ifcopenshell/geometry_creation.html?lang=js#manual-representations",
+    "ifcopenshell-python/geometry_tree": "ifcopenshell/geometry_tree.html?lang=python",
+    "ifcopenshell-js/geometry_tree": "ifcopenshell/geometry_tree.html?lang=js",
+    "ifcopenshell-python/schema_querying": "ifcopenshell/schema_querying.html?lang=python",
+    "ifcopenshell-js/schema_querying": "ifcopenshell/schema_querying.html?lang=js",
+    "ifcopenshell-python/running_tests": "ifcopenshell/running_tests.html#ifcopenshell-python",
+    "ifcopenshell-js/running_tests": "ifcopenshell/running_tests.html#ifcopenshell-js-ts",
+}
+
+
+def write_redirects(app, exception):
+    if exception is not None or app.builder.name != "html":
+        return
+    for source, target in redirects.items():
+        url = posixpath.relpath(target, posixpath.dirname(source))
+        url, _, fragment = url.partition("#")
+        path = Path(app.outdir) / f"{source}.html"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Redirecting</title>
+<link rel="canonical" href="{url.partition('?')[0]}">
+<meta http-equiv="refresh" content="0; url={url}{'#' + fragment if fragment else ''}">
+<script>location.replace("{url}" + (location.hash || "{'#' + fragment if fragment else ''}"));</script>
+</head>
+<body><a href="{url}">This page has moved.</a></body>
+</html>
+""",
+            encoding="utf-8",
+        )
 
 
 def omit_python_api_navigation(app, docname, source):
     if docname == "index":
         source[0] = source[0].replace("   Python API Reference <autoapi/index>\n", "")
+
+
+def preserve_python_api_link(app, docname, source):
+    """Point the dev preview at the Python API HTML from the last full build."""
+    del app
+    if docname != "index":
+        return
+    base = os.environ.get("DOCS_DEV_BASE", "http://127.0.0.1:8080").rstrip("/")
+    source[0] = source[0].replace(
+        "   Python API Reference <autoapi/index>\n",
+        f"   Python API Reference <{base}/autoapi/index.html>\n",
+    )
 
 
 # -- General configuration ---------------------------------------------------
@@ -113,10 +210,14 @@ extensions = [
     "exhale",
     "sphinx.ext.autosectionlabel",
     "sphinx_copybutton",
+    "sphinx_design",
     "myst_parser",
+    "snippets",
 ]
 skip_python_api = os.environ.get("SKIP_PYTHON_API") == "1"
-if skip_python_api:
+# Dev preview does not regenerate or reread the Python API. Those pages are
+# already in _build/html from the last full build.
+if skip_python_api or docs_dev:
     extensions.remove("autoapi.extension")
 
 # TypeDoc's member anchors are converted to explicit MyST targets.
@@ -178,6 +279,10 @@ autoapi_python_class_content = "both"
 # Group by type (e.g. attribute, class, function, etc) then alphabetically.
 autoapi_member_order = "groupwise"
 
+# Leave the generated Python sources in place. A full build otherwise deletes
+# them, and the dev preview then has nothing to link to.
+autoapi_keep_files = True
+
 # -- C++ API reference -------------------------------------------------------
 
 # Unlike the Python API reference, which autoapi generates from the source
@@ -209,13 +314,17 @@ cpp_id_attributes = [
 
 
 def fix_generated_api_pages(app):
-    for node in app.exhale_root.all_nodes:
+    # Dev previews skip Exhale, so there is no freshly generated tree to patch.
+    exhale_root = getattr(app, "exhale_root", None)
+    if exhale_root is None:
+        return
+    for node in exhale_root.all_nodes:
         nested_type = (
             node.kind in ("class", "struct") and node.parent is not None and node.parent.kind in ("class", "struct")
         )
         if node.kind != "function" and not nested_type:
             continue
-        path = Path(app.exhale_root.root_directory) / node.file_name
+        path = Path(exhale_root.root_directory) / node.file_name
         source = path.read_text(encoding="utf-8")
         if node.kind == "function":
             # Exhale 0.3.7 emits unescaped function names in RST headings.
@@ -239,8 +348,17 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", ".venv", "output/doxygen", "README.md"]
-if skip_python_api:
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    ".venv",
+    "output/doxygen",
+    "README.md",
+    "docs_design.md",
+    "ifcopenshell/examples",
+]
+if skip_python_api or docs_dev:
     exclude_patterns.append("autoapi")
 
 
@@ -256,6 +374,7 @@ html_theme = "furo"
 html_static_path = ["_static"]
 
 html_css_files = ["custom.css"]
+html_js_files = ["code-tabs.js"]
 
 # Code block styles. Dark styling helps important code examples "pop" on the
 # page even on light themes.

@@ -61,7 +61,8 @@ attributes, and explore relationships. Your journey begins here.
 .. seealso::
 
     If you are already familiar with IFC and just want to learn how to use
-    IfcOpenShell, you can jump to the `Core functionality crash course`_.
+    IfcOpenShell, you can jump to the :doc:`../ifcopenshell/hello_world`
+    crash course.
 
 Begin learning IFC
 ------------------

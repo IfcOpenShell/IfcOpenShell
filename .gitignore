@@ -9,7 +9,8 @@
 /src/examples/build/
 # ifctester docs output
 /src/ifctester/test/build/
-
+docs/autoapi/
+/docs/ifcopenshell/examples/build/
 # output directories
 /cmake/out/
 /src/examples/out/
