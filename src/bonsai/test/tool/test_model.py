@@ -73,6 +73,46 @@ class TestGenerateOccurrenceName(NewFile):
             assert subject.generate_occurrence_name(element_type, "IfcWall") == "Foobar"
 
 
+class TestImportProfileTrimmedCurve(NewFile):
+    def test_import_a_trimmed_circle_arc(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        placement = ifc.createIfcAxis2Placement2D(ifc.createIfcCartesianPoint((0.0, 0.0)))
+        circle = ifc.createIfcCircle(placement, 1.0)
+        arc = ifc.createIfcTrimmedCurve(
+            circle, [ifc.createIfcParameterValue(0.0)], [ifc.createIfcParameterValue(np.pi / 2)], True, "PARAMETER"
+        )
+        origin = ifc.createIfcCartesianPoint((0.0, 0.0))
+        polyline = ifc.createIfcPolyline([ifc.createIfcCartesianPoint((0.0, 1.0)), origin])
+        segments = [
+            ifc.createIfcCompositeCurveSegment("CONTINUOUS", True, arc),
+            ifc.createIfcCompositeCurveSegment("CONTINUOUS", True, polyline),
+        ]
+        profile = ifc.createIfcArbitraryClosedProfileDef("AREA", None, ifc.createIfcCompositeCurve(segments, False))
+        obj = subject.import_profile(profile)
+        assert obj
+        coords = [tuple(round(c, 3) for c in v.co) for v in obj.data.vertices[:3]]
+        assert coords == [(1.0, 0.0, 0.0), (0.707, 0.707, 0.0), (0.0, 1.0, 0.0)]
+        assert "IFCARCINDEX" in obj.vertex_groups
+
+    def test_a_trimmed_arc_between_polylines_exports_again(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        placement = ifc.createIfcAxis2Placement2D(ifc.createIfcCartesianPoint((0.0, 0.0)))
+        circle = ifc.createIfcCircle(placement, 1.0)
+        arc = ifc.createIfcTrimmedCurve(
+            circle, [ifc.createIfcParameterValue(0.0)], [ifc.createIfcParameterValue(np.pi / 2)], True, "PARAMETER"
+        )
+        origin = ifc.createIfcCartesianPoint((0.0, 0.0))
+        first = ifc.createIfcPolyline([origin, ifc.createIfcCartesianPoint((1.0, 0.0))])
+        last = ifc.createIfcPolyline([ifc.createIfcCartesianPoint((0.0, 1.0)), origin])
+        segments = [ifc.createIfcCompositeCurveSegment("CONTINUOUS", True, curve) for curve in (first, arc, last)]
+        profile = ifc.createIfcArbitraryClosedProfileDef("AREA", None, ifc.createIfcCompositeCurve(segments, False))
+        exported = subject.export_profile(subject.import_profile(profile))
+        assert exported and exported.is_a("IfcArbitraryClosedProfileDef")
+        assert [segment.is_a() for segment in exported.OuterCurve.Segments].count("IfcArcIndex") == 1
+
+
 class TestGetBooleans(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
