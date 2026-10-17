@@ -20,6 +20,7 @@
 
 import bpy
 import ifcopenshell.api.group
+import ifcopenshell.api.system
 
 import bonsai.tool as tool
 from bonsai.bim.module.group.data import ObjectGroupsData
@@ -39,6 +40,7 @@ class TestObjectGroupsData(NewFile):
         drawing_group.ObjectType = "DRAWING"
         ifcopenshell.api.group.assign_group(ifc, products=[wall], group=user_group)
         ifcopenshell.api.group.assign_group(ifc, products=[wall], group=drawing_group)
+        return wall
 
     def test_hiding_internal_groups(self):
         self.setup_object()
@@ -52,3 +54,25 @@ class TestObjectGroupsData(NewFile):
         ObjectGroupsData.load()
         assert sorted(g["name"] for g in ObjectGroupsData.data["groups"]) == ["Furniture", "Plan"]
         assert ObjectGroupsData.data["total_hidden"] == 0
+
+    def test_listing_systems_after_groups_with_their_icons(self):
+        wall = self.setup_object()
+        ifc = tool.Ifc.get()
+        system = ifcopenshell.api.system.add_system(ifc, ifc_class="IfcBuildingSystem")
+        system.Name = "Structure"
+        ifcopenshell.api.system.assign_system(ifc, products=[wall], system=system)
+        ObjectGroupsData.load()
+        groups = ObjectGroupsData.data["groups"]
+        assert [(g["name"], g["icon"]) for g in groups] == [("Furniture", "OUTLINER"), ("Structure", "MOD_BUILD")]
+
+    def test_picking_from_groups_and_systems_the_object_can_join(self):
+        self.setup_object()
+        ifc = tool.Ifc.get()
+        for ifc_class, name in (
+            ("IfcBuildingSystem", "Structure"),
+            ("IfcZone", "Zone"),
+            ("IfcDistributionSystem", "HVAC"),
+        ):
+            ifcopenshell.api.system.add_system(ifc, ifc_class=ifc_class).Name = name
+        ObjectGroupsData.load()
+        assert [item[1] for item in ObjectGroupsData.data["group_items"]] == ["Furniture", "Structure"]

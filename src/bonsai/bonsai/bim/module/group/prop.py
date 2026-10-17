@@ -29,16 +29,16 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 
 import bonsai.tool as tool
-from bonsai.bim.module.group.data import GroupsData
+from bonsai.bim.module.group.data import ObjectGroupsData
 from bonsai.bim.module.group.data import refresh as refresh_group
 from bonsai.bim.module.pset.data import refresh as refresh_pset
 from bonsai.bim.prop import Attribute
 
 
 def get_object_group(self, context):
-    if not GroupsData.is_loaded:
-        GroupsData.load()
-    return GroupsData.data["group_items"]
+    if not ObjectGroupsData.is_loaded:
+        ObjectGroupsData.load()
+    return ObjectGroupsData.data["group_items"]
 
 
 def update_should_show_internal(self: "BIMGroupProperties", context: object) -> None:

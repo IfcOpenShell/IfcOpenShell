@@ -24,6 +24,7 @@ import ifcopenshell.util.element
 
 import bonsai.bim.helper
 import bonsai.tool as tool
+from bonsai.bim.module.group.data import ObjectGroupsData
 
 
 class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
@@ -137,13 +138,16 @@ class EnableEditingObjectGroups(bpy.types.Operator):
     bl_idname = "bim.enable_editing_object_groups"
     bl_label = "Assign to Existing Group"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Pick an existing IfcGroup to assign the selected objects to"
+    bl_description = (
+        "Pick an existing group, or a system or zone the active object can join, to assign the selected objects to"
+    )
 
     @classmethod
     def poll(cls, context):
-        include_internal = tool.Group.get_group_props().should_show_internal
-        if not tool.Group.get_user_groups(include_internal=include_internal):
-            cls.poll_message_set("No groups in the project. Add one first.")
+        if not ObjectGroupsData.is_loaded:
+            ObjectGroupsData.load()
+        if not ObjectGroupsData.data["group_items"]:
+            cls.poll_message_set("No groups, or systems or zones this object can join. Add a group first.")
             return False
         return True
 

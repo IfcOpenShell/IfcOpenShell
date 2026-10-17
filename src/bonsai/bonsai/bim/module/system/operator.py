@@ -144,6 +144,8 @@ class AssignSystem(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
         core.assign_system(tool.Ifc, system=system, products=assignable_elements)
         tool.Blender.update_all_properties_editors(context)
+        # Close the picker in Object Information > Groups, which can assign through this operator.
+        tool.Group.get_group_props().is_editing_object_groups = False
         self.report({"INFO"}, f"System assigned to {len(assignable_elements)} elements.")
         return {"FINISHED"}
 
