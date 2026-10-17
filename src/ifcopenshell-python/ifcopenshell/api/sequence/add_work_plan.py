@@ -66,6 +66,8 @@ def add_work_plan(
         predefined_type=predefined_type,
         name=name,
     )
+    if file.schema == "IFC2X3":
+        work_plan.Identifier = "X"
     work_plan.CreationDate = ifcopenshell.api.sequence.add_date_time(file, datetime.now())
     user = ifcopenshell.api.owner.settings.get_user(file)
     if user:
