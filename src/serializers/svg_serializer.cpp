@@ -25,6 +25,7 @@
 
 #include <string>
 #include <fstream>
+#include <iostream>
 #include <cstdio>
 #include <limits>
 #include <algorithm>
@@ -717,6 +718,41 @@ namespace {
 }
 
 void svg_serializer::write(const ifcopenshell::geom::native_element* brep_obj) {
+	// Geometry conversion for a single element can fail deep inside OCCT (e.g. a degenerate
+	// surface) without that being representative of the file as a whole. Catch such failures
+	// here, log which element was responsible, and skip just that element so the rest of the
+	// drawing still gets produced.
+	// @todo TEMPORARY: also mirror to stderr, since nothing in Bonsai currently wires up
+	// logger()'s output for this code path (no set_output()/get_log() call), so a warning()
+	// here is otherwise invisible. Remove the std::cerr lines once that's addressed upstream.
+	try {
+		write_(brep_obj);
+	} catch (const Standard_Failure& e) {
+		std::string msg = "SVG serializer OCC exception while writing element #" +
+			boost::lexical_cast<std::string>(brep_obj->id()) + " (" + brep_obj->guid() + "): " +
+			(e.GetMessageString() ? e.GetMessageString() : e.DynamicType()->Name());
+		logger().warning("SER", 32, msg);
+		std::cerr << "[SVG-SKIP] " << msg
+			<< (elevation_ref_guid_ && *elevation_ref_guid_ == brep_obj->guid() ? " [THIS IS THE elevation-ref-guid CAMERA ELEMENT]" : "")
+			<< std::endl;
+	} catch (const std::exception& e) {
+		std::string msg = "SVG serializer exception while writing element #" +
+			boost::lexical_cast<std::string>(brep_obj->id()) + " (" + brep_obj->guid() + "): " + e.what();
+		logger().warning("SER", 33, msg);
+		std::cerr << "[SVG-SKIP] " << msg
+			<< (elevation_ref_guid_ && *elevation_ref_guid_ == brep_obj->guid() ? " [THIS IS THE elevation-ref-guid CAMERA ELEMENT]" : "")
+			<< std::endl;
+	} catch (...) {
+		std::string msg = "SVG serializer encountered an unrecognized exception while writing element #" +
+			boost::lexical_cast<std::string>(brep_obj->id()) + " (" + brep_obj->guid() + ")";
+		logger().warning("SER", 34, msg);
+		std::cerr << "[SVG-SKIP] " << msg
+			<< (elevation_ref_guid_ && *elevation_ref_guid_ == brep_obj->guid() ? " [THIS IS THE elevation-ref-guid CAMERA ELEMENT]" : "")
+			<< std::endl;
+	}
+}
+
+void svg_serializer::write_(const ifcopenshell::geom::native_element* brep_obj) {
 
 	std::optional<std::string> object_type;
 	if (!brep_obj->product().get("ObjectType").isNull()) {
