@@ -588,6 +588,25 @@ class TestGenerateStair2DProfile(NewFile):
         self.compare_data(generated_profile, expected_profile)
 
 
+class TestAutoDetectCurves(NewFile):
+    def add_open_curve(self, arc_vertex_indices):
+        mesh = bpy.data.meshes.new("Curve")
+        mesh.from_pydata([(float(i), 0.0, 0.0) for i in range(4)], [(0, 1), (1, 2), (2, 3)], [])
+        obj = bpy.data.objects.new("Curve", mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        group = obj.vertex_groups.new(name="IFCARCINDEX0")
+        group.add(arc_vertex_indices, 1.0, "REPLACE")
+        return obj
+
+    def test_an_open_curve_with_an_arc_has_no_trailing_line_segment(self):
+        tool.Ifc.set(ifcopenshell.file(schema="IFC4"))
+        obj = self.add_open_curve([0, 1, 2])
+        result = subject.auto_detect_curves(obj, obj.data)
+        curve = result["curves"][0]
+        assert sorted(s.is_a() for s in curve.Segments) == ["IfcArcIndex", "IfcLineIndex"]
+        assert max(index for s in curve.Segments for index in s[0]) <= len(curve.Points.CoordList)
+
+
 class TestUsingArrays(NewFile):
     @staticmethod
     def _array_objects() -> list[bpy.types.Object]:
