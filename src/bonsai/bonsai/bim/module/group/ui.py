@@ -61,18 +61,29 @@ class BIM_PT_groups(Panel):
         if not self.props.is_editing:
             return
 
-        if (group := self.props.active_group) and (group_id := group.ifc_definition_id):
+        group = self.props.active_group
+        group_id = group.ifc_definition_id if group else 0
+
+        row = self.layout.row()
+        row.template_list("BIM_UL_groups", "", self.props, "groups", self.props, "active_group_index")
+        if group_id:
+            col = row.column(align=True)
+            col.operator("bim.add_group", text="", icon="ADD").group = group_id
+            col.operator("bim.remove_group", text="", icon="X").group = group_id
+            col.separator()
+            col.operator("bim.enable_editing_group", text="", icon="GREASEPENCIL").group = group_id
+
             row = self.layout.row(align=True)
-            row.alignment = "RIGHT"
+            row.label(text="Contents")
             row.operator("bim.select_group_elements", text="", icon="RESTRICT_SELECT_OFF").group = group_id
             tool.Group.draw_visibility_buttons(row, group_id)
-            row.operator("bim.assign_group", text="", icon="KEYFRAME_HLT").group = group_id
-            row.operator("bim.unassign_group", text="", icon="KEYFRAME").group = group_id
-            row.operator("bim.enable_editing_group", text="", icon="GREASEPENCIL").group = group_id
-            row.operator("bim.add_group", text="", icon="ADD").group = group_id
-            row.operator("bim.remove_group", text="", icon="X").group = group_id
 
-        self.layout.template_list("BIM_UL_groups", "", self.props, "groups", self.props, "active_group_index")
+            row = self.layout.row(align=True)
+            row.label(text=f"{len(context.selected_objects)} Selected →")
+            sub = row.row(align=True)
+            sub.enabled = bool(context.selected_objects)
+            sub.operator("bim.assign_group", text="", icon="KEYFRAME_HLT").group = group_id
+            sub.operator("bim.unassign_group", text="", icon="KEYFRAME").group = group_id
 
         if self.props.active_group_id:
             draw_attributes(self.props.group_attributes, self.layout)

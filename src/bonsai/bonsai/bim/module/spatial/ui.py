@@ -174,73 +174,49 @@ class BIM_PT_spatial_decomposition(Panel):
         assert ifc_definition_id is not None
 
         container_has_elements = bool(self.props.total_elements)
-        if container_has_elements:
-            row = self.layout.row()
-            row.label(
-                text=f"{self.props.active_container.ifc_class} > {self.props.total_elements} Elements",
-                icon="FILE_3D",
-            )
-        else:
-            row = self.layout.row(align=True)
-            row.label(text=f"{self.props.active_container.ifc_class} > No Elements", icon="FILE_3D")
-            row.operator("bim.assign_container", icon="KEYFRAME_HLT", text="").container = ifc_definition_id
 
-            row = self.layout.row(align=True)
-            row.prop(self.props, "element_mode", text="", icon="FILEBROWSER")
-            row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
-
+        # Move the viewport selection into or out of the highlighted container.
         row = self.layout.row(align=True)
-        row.alignment = "RIGHT"
+        row.label(text=f"{len(context.selected_objects)} Selected →")
+        sub = row.row(align=True)
+        sub.enabled = bool(context.selected_objects)
+        sub.operator("bim.assign_container", icon="KEYFRAME_HLT", text="").container = ifc_definition_id
+        sub.operator("bim.remove_container", icon="KEYFRAME", text="").container = ifc_definition_id
+        sub.operator("bim.reference_from_provided_structure", icon="LINKED", text="").structure = ifc_definition_id
+        sub.operator("bim.copy_to_container", icon="MOD_DISPLACE", text="").container = ifc_definition_id
 
-        col = row.column()
-        row_ = col.row(align=True)
-        row_.enabled = container_has_elements
-        op = row_.operator("bim.set_element_visibility", icon="FULLSCREEN_EXIT", text="")
-        op.mode = "ISOLATE"
-        op.container = ifc_definition_id
-
-        op = row_.operator("bim.set_element_visibility", icon="HIDE_OFF", text="")
-        op.mode = "SHOW"
-        op.container = ifc_definition_id
-
-        op = row_.operator("bim.set_element_visibility", icon="HIDE_ON", text="")
-        op.mode = "HIDE"
-        op.container = ifc_definition_id
-
-        col = row.column()
-        row_ = col.row(align=True)
-        row_.operator("bim.assign_container", icon="KEYFRAME_HLT", text="").container = ifc_definition_id
-        row_.operator("bim.remove_container", icon="KEYFRAME", text="").container = ifc_definition_id
-        row_.operator("bim.reference_from_provided_structure", icon="LINKED", text="").structure = ifc_definition_id
-        row_.operator("bim.copy_to_container", icon="MOD_DISPLACE", text="").container = ifc_definition_id
-
-        col = row.column()
-        row_ = col.row(align=True)
-        row_.enabled = container_has_elements
-        op = row_.operator("bim.select_decomposed_element", icon="OBJECT_DATA", text="")
-        if active_element := self.props.active_element:
-            op.element = active_element.ifc_definition_id
-        else:
-            op.element = 0
-        op = row_.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
-        op.container = ifc_definition_id
-
-        if not container_has_elements:
-            return
-
+        total = f"{self.props.total_elements} Elements" if container_has_elements else "No Elements"
+        self.layout.label(text=f"{self.props.active_container.ifc_class} > {total}", icon="FILE_3D")
         row = self.layout.row(align=True)
         row.prop(self.props, "element_mode", text="", icon="FILEBROWSER")
         row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
+        sub = row.row(align=True)
+        sub.enabled = container_has_elements
+        op = sub.operator("bim.select_decomposed_element", icon="OBJECT_DATA", text="")
+        op.element = active_element.ifc_definition_id if (active_element := self.props.active_element) else 0
 
-        self.layout.template_list(
-            "BIM_UL_elements",
-            "",
-            self.props,
-            "elements",
-            self.props,
-            "active_element_index",
-            sort_lock=True,
-        )
+        if container_has_elements:
+            self.layout.template_list(
+                "BIM_UL_elements",
+                "",
+                self.props,
+                "elements",
+                self.props,
+                "active_element_index",
+                sort_lock=True,
+            )
+
+        # Act on what the highlighted container already holds.
+        row = self.layout.row(align=True)
+        row.label(text="Contents")
+        sub = row.row(align=True)
+        sub.enabled = container_has_elements
+        op = sub.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
+        op.container = ifc_definition_id
+        for mode, icon in (("ISOLATE", "FULLSCREEN_EXIT"), ("SHOW", "HIDE_OFF"), ("HIDE", "HIDE_ON")):
+            op = sub.operator("bim.set_element_visibility", icon=icon, text="")
+            op.mode = mode
+            op.container = ifc_definition_id
 
 
 class BIM_PT_grids(Panel):
