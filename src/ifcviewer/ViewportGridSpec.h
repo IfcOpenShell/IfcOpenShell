@@ -38,7 +38,9 @@ struct ViewportGridSpec {
     }
 
     std::string     id;
-    Eigen::Vector3f origin   = Eigen::Vector3f::Zero();
+    // World coordinates, metres: the frame the axes and the models are in,
+    // not the viewer frame shifted by the false origin.
+    Eigen::Vector3d origin   = Eigen::Vector3d::Zero();
     Plane           plane    = Plane::XY;
     float           spacing  = 1.0f;
     int             divisions = 50;

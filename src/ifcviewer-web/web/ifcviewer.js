@@ -50,7 +50,7 @@
 
   // Metres per federation unit. Matches the units the scripting page offers.
   // Anything else is treated as metres; the composed matrix on the wasm side
-  // is what the survey triad actually uses.
+  // is what the survey marker actually uses.
   function federationUnitToMeters(u) {
     const name = ((u && u.name) || 'METRE').toUpperCase();
     const prefix = ((u && u.prefix) || '').toUpperCase();
@@ -66,11 +66,16 @@
     return 1;
   }
 
-  // False origin, as a point in the viewer, metres from (0, 0, 0).
-  function surveyPointMetres(origin, unit) {
+  // Where world 0, 0, 0 is drawn, in viewer metres: Rz · (0 − xyz), the same
+  // matrix composeFederatedFalseOrigin builds. The false origin itself is
+  // drawn at viewer 0, 0, 0.
+  function worldOriginInViewer(origin, unit) {
     const s = federationUnitToMeters(unit);
     const xyz = (origin && origin.xyz) || [0, 0, 0];
-    return [xyz[0] * s, xyz[1] * s, xyz[2] * s];
+    const a = ((origin && origin.rzDeg) || 0) * Math.PI / 180;
+    const c = Math.cos(a), n = Math.sin(a);
+    const x = -xyz[0] * s, y = -xyz[1] * s;
+    return [c * x - n * y, n * x + c * y, -xyz[2] * s];
   }
 
   function federationUnitLabel(u) {
@@ -1231,8 +1236,8 @@
 
       // CSS pixels of a world point on the canvas, y down from the canvas
       // top-left. Null when the point is behind the camera. World (0,0,0) is
-      // the axes intersection. The survey point is elsewhere: pass
-      // surveyPoint() to pin a tag on the false origin. Uses the renderer's
+      // where the false origin (the survey marker) is drawn. The axes cross
+      // at worldOrigin(). Uses the renderer's
       // own projection when this build exports it, and the same orbit math
       // otherwise.
       projectWorld: function (xyz) {
@@ -1254,15 +1259,41 @@
         return projectWorldFromCamera(this.getCamera(), opts.canvas, xyz);
       },
 
-      // Pin `el` on the survey point (the false origin), not on the axes
-      // crossing. The text is that point's coordinates in the federation
-      // unit. One line. When the point moves, the line leads with how far.
+      // Pin `el` on the survey marker (the false origin, viewer 0, 0, 0). It
+      // stays hidden until the marker is clicked; another click on it, or a
+      // click anywhere else on the canvas, hides it again. The text is the
+      // false origin in the federation unit, grid north, and whether it was
+      // guessed or set. When the point moves, the line leads with how far.
       // Hidden while the axes themselves are hidden. Returns an unbind fn.
       bindOriginReadout: function (el) {
         if (!el) return function () {};
+        const viewerApi = this;
+        const canvas = opts.canvas;
+        const HIT_PX = 18;
+        const CLICK_SLOP_PX = 4;
+        let open = false;
+        let down = null;
         let prev = null;
         let movedUntil = 0;
         let movedNote = '';
+        const onDown = function (ev) {
+          down = ev.button === 0 ? { x: ev.clientX, y: ev.clientY } : null;
+        };
+        const onUp = function (ev) {
+          if (!down || ev.button !== 0) return;
+          const dragged = Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > CLICK_SLOP_PX;
+          down = null;
+          if (dragged || !viewerApi.originAxesVisible()) return;
+          const screen = viewerApi.projectWorld([0, 0, 0]);
+          const rect = canvas.getBoundingClientRect();
+          const hit = !!screen && Math.hypot(ev.clientX - rect.left - screen.x,
+                                             ev.clientY - rect.top - screen.y) <= HIT_PX;
+          open = hit ? !open : false;
+          if (!open) el.hidden = true;
+        };
+        canvas.addEventListener('pointerdown', onDown);
+        canvas.addEventListener('pointerup', onUp);
+        el.hidden = true;
         const tickReadout = function (viewer) {
           if (!viewer.originAxesVisible()) {
             el.hidden = true;
@@ -1279,25 +1310,32 @@
             movedUntil = now + 6000;
           }
           prev = { xyz: origin.xyz.slice(), rzDeg: origin.rzDeg, explicit: origin.explicit };
+          if (!open) {
+            el.hidden = true;
+            return;
+          }
           const moving = now < movedUntil;
           const xyz = fmtCoord(origin.xyz[0]) + ', ' +
             fmtCoord(origin.xyz[1]) + ', ' +
             fmtCoord(origin.xyz[2]) + ' ' + unit;
-          const canvas = opts.canvas;
+          const how = origin.explicit ? 'set' :
+            (originShifted(origin.xyz) || Math.abs(origin.rzDeg) > 1e-3 ? 'guessed' : 'none yet');
           const rect = canvas.getBoundingClientRect();
-          const screen = viewer.projectWorld(surveyPointMetres(origin, federationUnit));
+          const screen = viewer.projectWorld([0, 0, 0]);
           const onScreen = screen &&
             screen.x >= 8 && screen.y >= 8 &&
             screen.x <= rect.width - 8 && screen.y <= rect.height - 8;
-          // One line, beside the survey triad. The axes crossing stays at
-          // viewer 0, 0, 0 and is not labelled. FEDERATION.md says why.
-          el.textContent = (moving ? movedNote + ' · ' : '') + xyz +
+          el.textContent = 'false origin ' + xyz + '\n' +
+            'grid north ' + origin.rzDeg.toFixed(2) + '° · ' + how +
+            (moving ? ' · ' + movedNote : '') +
             (onScreen ? '' : ' · off screen');
           el.classList.toggle('moved', moving);
           el.classList.toggle('docked', !onScreen);
           el.hidden = false;
           if (onScreen) {
-            el.style.left = (rect.left + screen.x + 12) + 'px';
+            const right = screen.x + 22 + el.offsetWidth <= rect.width;
+            el.style.left = (rect.left + (right ? screen.x + 12
+                                                : screen.x - 32 - el.offsetWidth)) + 'px';
             el.style.top = (rect.top + screen.y) + 'px';
           } else {
             el.style.left = (rect.left + 12) + 'px';
@@ -1308,8 +1346,13 @@
         return function () {
           const i = frameListeners.indexOf(tickReadout);
           if (i >= 0) frameListeners.splice(i, 1);
+          canvas.removeEventListener('pointerdown', onDown);
+          canvas.removeEventListener('pointerup', onUp);
+          el.hidden = true;
         };
       },
+      // `origin` is in world metres, like the floor axes and the models, so a
+      // grid stays put when the false origin changes.
       upsertGrid: function (definition) {
         var grid = normalizeGridDefinition(definition || {});
         if (!grid.id) throw new Error('Grid definition requires an id.');
@@ -1456,6 +1499,15 @@
         Module._load_ifcview_from_source_c(sid);
         return sid;
       },
+      // Append the small sample baked into the wasm (a slab, a wall and a
+      // beam). It is read from memory, not a source, so there is no source id
+      // to return. Returns false if this build has no sample to load.
+      loadSample: function () {
+        if (!Module._load_sample_c) return false;
+        objectIndex = null;
+        objectsById = null;
+        return Module._load_sample_c() !== 0;
+      },
 
       // What the OPFS cache holds: [{url, size, cachedBytes, complete}] plus
       // the browser's storage estimate. Entries whose ledger has not caught
@@ -1543,9 +1595,9 @@
       },
 
       // Nominate the survey point, with an optional grid-north heading in
-      // degrees. The floor axes stay at viewer 0, 0, 0. The small triad
-      // moves to this coordinate, and the models shift so that point is
-      // drawn on the crossing. Setting this turns off the automatic guess.
+      // degrees, in world coordinates. The models, grids and axes stay where
+      // they are; the survey marker moves to this point. Setting this turns
+      // off the automatic guess.
       setFalseOrigin: function (o) {
         o = o || {};
         const xyz = o.xyz || [0, 0, 0];
@@ -1570,11 +1622,17 @@
         }
       },
 
-      // Survey point in viewer metres: where the small triad is drawn.
-      // (0, 0, 0) when the false origin is zero and the triad sits on the
-      // axes crossing.
+      // Survey point in viewer metres: where the survey marker is drawn.
+      // Always (0, 0, 0); the false origin is what the scene is drawn
+      // around.
       surveyPoint: function () {
-        return surveyPointMetres(this.getFalseOrigin(), federationUnit);
+        return [0, 0, 0];
+      },
+
+      // World 0, 0, 0 in viewer metres: where the red and green axes cross.
+      // The same point as surveyPoint() until a false origin is set.
+      worldOrigin: function () {
+        return worldOriginInViewer(this.getFalseOrigin(), federationUnit);
       },
 
       // Place a model: rotate it about `pivot`, then translate so that point

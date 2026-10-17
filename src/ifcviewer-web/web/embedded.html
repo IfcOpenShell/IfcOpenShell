@@ -241,6 +241,7 @@
     }
 
     viewer.ready.then(function () {
+      viewer.setOriginAxesVisible(true);
       hintEl.textContent = 'Ready — add a .ifcview (sidecar format v' + SIDECAR_FORMAT_VERSION + ').';
       [browseBtn, clearBtn, urlInput, urlBtn].forEach(function (el) { el.disabled = false; });
     });

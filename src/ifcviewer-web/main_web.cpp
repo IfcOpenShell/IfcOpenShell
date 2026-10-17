@@ -593,6 +593,30 @@ extern "C" EMSCRIPTEN_KEEPALIVE void clear_scene_c() {
     g_app->federation.clear();
 }
 
+// Load the embedded sample .ifcview (mounted into MEMFS via --embed-file in
+// CMakeLists.txt). It stays on the synchronous MEMFS read and bypasses the
+// source registry, so it has no source id.
+static bool loadEmbeddedSample(AppState* app) {
+    const std::uint32_t sample_id = app->core.loadIfcViewFromPath("/sample.ifcview");
+    if (!sample_id) {
+        Log::warn() << "ifcviewer-web: sample .ifcview load failed";
+        return false;
+    }
+    // Tell the federation directly, otherwise the first-model false-origin
+    // guess never runs for a page that only ever shows the sample.
+    app->federation.onModelLoadedWithoutSource(sample_id);
+    return true;
+}
+
+// Append the embedded sample again, for host pages that start empty
+// (clear_scene_c at boot) and offer it on demand.
+extern "C" EMSCRIPTEN_KEEPALIVE int load_sample_c() {
+    if (!g_app || !g_app->ready) return 0;
+    const bool ok = loadEmbeddedSample(g_app);
+    g_app->host.requestFrame();
+    return ok ? 1 : 0;
+}
+
 // Viewport-navigation entry points for the the host page (web/ifcviewer.js) toolbar (buttons that
 // mirror the keyboard hotkeys). Each schedules a frame.
 extern "C" EMSCRIPTEN_KEEPALIVE void view_all_c() {
@@ -692,7 +716,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void get_fog_c(float* out) {
 }
 extern "C" EMSCRIPTEN_KEEPALIVE void grid_upsert_c(
     const char* id_utf8,
-    float ox, float oy, float oz,
+    double ox, double oy, double oz,
     int plane,
     float spacing, int divisions,
     float color_u_r, float color_u_g, float color_u_b,
@@ -703,7 +727,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void grid_upsert_c(
 
     ViewportGridSpec spec;
     spec.id        = id_utf8;
-    spec.origin    = Eigen::Vector3f(ox, oy, oz);
+    spec.origin    = Eigen::Vector3d(ox, oy, oz);
     spec.plane     = static_cast<ViewportGridSpec::Plane>(std::clamp(plane, 0, 2));
     spec.spacing   = spacing;
     spec.divisions = divisions;
@@ -1140,19 +1164,10 @@ int main(int /*argc*/, char** /*argv*/) {
         g_app->core.buildPickPipeline();
         g_app->core.buildSelectionOutlinePipelines();
 
-        // Load the embedded sample .ifcview (mounted into MEMFS via
-        // --embed-file in CMakeLists.txt). The sample stays on the
-        // synchronous MEMFS read; user-picked files go through the
-        // Blob.slice byte-range path (load_ifcview_from_blob_c) so large
-        // .ifcview files never enter the wasm heap.
-        if (const std::uint32_t sample_id = g_app->core.loadIfcViewFromPath("/sample.ifcview")) {
-            // Bypasses the source registry, so tell the federation directly —
-            // otherwise the first-model false-origin guess never runs for a
-            // page that only ever shows the sample.
-            g_app->federation.onModelLoadedWithoutSource(sample_id);
-        } else {
-            Log::warn() << "ifcviewer-web: sample .ifcview load failed";
-        }
+        // User-picked files go through the Blob.slice byte-range path
+        // (load_ifcview_from_blob_c) so large .ifcview files never enter
+        // the wasm heap.
+        loadEmbeddedSample(g_app);
 
         g_app->ready = true;
 

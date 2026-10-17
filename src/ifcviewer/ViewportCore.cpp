@@ -224,8 +224,30 @@ std::uint64_t ViewportCore::modelVramBytes(uint32_t session_model_id) const {
 
 void ViewportCore::setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters) {
     if (federated_false_origin_meters_ == matrix_meters) return;
+    // Everything the user sees lives in world coordinates; only the GPU frame
+    // moves. Carry the camera and the section planes through the change so
+    // nothing jumps on screen except the survey marker.
+    const Eigen::Matrix4d delta = matrix_meters * federated_false_origin_meters_.inverse();
+    const Eigen::Matrix3f delta_r = delta.block<3, 3>(0, 0).cast<float>();
+    auto move_point = [&](const Eigen::Vector3f& q) {
+        return Eigen::Vector3f((delta * q.cast<double>().homogeneous()).head<3>().cast<float>());
+    };
+    for (SectionPlane& p : section_planes_) {
+        const Eigen::Vector3f on_plane = move_point(-p.d * p.n);
+        p.origin = move_point(p.origin);
+        p.n      = (delta_r * p.n).normalized();
+        p.d      = -p.n.dot(on_plane);
+    }
+    grid_helper_.setWorldToViewer(matrix_meters);
+    const Eigen::Vector4d t_old(camera_target_[0], camera_target_[1], camera_target_[2], 1.0);
+    const Eigen::Vector4d t_new = delta * t_old;
+    camera_target_[0] = float(t_new.x());
+    camera_target_[1] = float(t_new.y());
+    camera_target_[2] = float(t_new.z());
+    camera_yaw_deg_ += float(std::atan2(delta(1, 0), delta(0, 0)) * 180.0 / 3.14159265358979323846);
     federated_false_origin_meters_ = matrix_meters;
     for (auto& kv : models_gpu_) recomposeAndUploadModel(kv.first);
+    host_->requestFrame();
 }
 
 void ViewportCore::setModelCoordinateOperation(uint32_t session_model_id,
@@ -8236,22 +8258,26 @@ void ViewportCore::render() {
     axis_indicator_.encodePivot(pass, overlay_frame, pivot_visible);
     if (pivot_visible && pivot_indicator_timer_.isValid()) host_->requestFrame();
 
-    // Floor axes (X and Y) through the viewer origin. The survey point is a
-    // shorter triad at the false origin, in metres from that crossing, so
-    // the two stay distinct when the guess is not zero. Same eye and fade
-    // as the grid for the long lines; the triad is screen-sized like the pivot.
+    // Floor axes (X and Y) through world 0,0,0, along world X and Y. The
+    // false-origin matrix takes world into the viewer frame and draws the
+    // false origin at viewer zero, where the survey marker sits. With no false
+    // origin the two coincide. Same eye and fade as the grid for the long
+    // lines; the survey marker is a fixed size on screen.
     {
         const Eigen::Vector3f axis_eye = orbitEye(camera_target_, camera_distance_,
                                                   camera_yaw_deg_, camera_pitch_deg_);
         const Eigen::Vector3f axis_target(camera_target_[0], camera_target_[1], camera_target_[2]);
         const Eigen::Vector3f axis_forward = (axis_target - axis_eye).normalized();
-        axis_indicator_.encodeOrigin(pass, overlay_frame, Eigen::Vector3f::Zero(),
+        const Eigen::Vector3f world_origin =
+            worldOriginInViewer(federated_false_origin_meters_).cast<float>();
+        const Eigen::Vector3f world_x =
+            federated_false_origin_meters_.block<3, 1>(0, 0).cast<float>().normalized();
+        const Eigen::Vector3f world_y =
+            federated_false_origin_meters_.block<3, 1>(0, 1).cast<float>().normalized();
+        axis_indicator_.encodeOrigin(pass, overlay_frame, world_origin, world_x, world_y,
                                      origin_axes_size_, fog_, axis_eye, axis_forward,
                                      origin_axes_visible_);
-        const Eigen::Vector3f survey =
-            surveyPointMetres(federated_false_origin_meters_).cast<float>();
-        const float survey_dist = std::max((axis_eye - survey).norm(), 1.0e-3f);
-        axis_indicator_.encodeSurveyPoint(pass, overlay_frame, survey, survey_dist,
+        axis_indicator_.encodeSurveyPoint(pass, overlay_frame, Eigen::Vector3f::Zero(),
                                           origin_axes_visible_);
     }
 
