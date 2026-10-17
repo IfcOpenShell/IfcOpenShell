@@ -131,6 +131,12 @@ double federationUnitToMeters(const FederationConfig&);
 Eigen::Matrix4d composeFederatedFalseOrigin(const FederatedFalseOrigin&,
                                             const FederationConfig&);
 
+// The survey point in metres: the false-origin coordinate, measured from
+// viewer (0,0,0). Inverse of the translation baked into
+// composeFederatedFalseOrigin (Rz · T(-xyz)), so a rotated origin still
+// comes back as xyz in metres. Identity maps to the viewer origin.
+Eigen::Vector3d surveyPointMetres(const Eigen::Matrix4d& federated_false_origin);
+
 // Compose ModelTransformation into a 4x4 matrix in metres.
 // `coordinate_operation_meters` is the model's CoordinateOperation matrix
 // (e.g. helmert_meters_from_parameters · inv(wcs_meters)) — needed to lift
