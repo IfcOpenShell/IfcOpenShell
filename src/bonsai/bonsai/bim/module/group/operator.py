@@ -79,6 +79,7 @@ class AddGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add New Group"
     bl_options = {"REGISTER", "UNDO"}
     group: bpy.props.IntProperty()
+    name: bpy.props.StringProperty(name="Name", default="Unnamed", options={"SKIP_SAVE"})
 
     @classmethod
     def description(cls, context, properties) -> str:
@@ -86,8 +87,14 @@ class AddGroup(bpy.types.Operator, tool.Ifc.Operator):
             return "Add new subgroup to the active IfcGroup."
         return "Add new IfcGroup."
 
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.prop(self, "name")
+
     def _execute(self, context):
-        result = ifcopenshell.api.group.add_group(tool.Ifc.get())
+        result = ifcopenshell.api.group.add_group(tool.Ifc.get(), name=self.name)
         if self.group:
             group = tool.Ifc.get().by_id(self.group)
             ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=[result], group=group)
@@ -101,7 +108,7 @@ class AddGroupToSelected(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add Group"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add a new IfcGroup and assign the selected objects to it"
-    name: bpy.props.StringProperty(name="Name", default="Unnamed")
+    name: bpy.props.StringProperty(name="Name", default="Unnamed", options={"SKIP_SAVE"})
     allow_duplicate: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE", "HIDDEN"})
 
     def invoke(self, context, event):

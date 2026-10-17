@@ -18,7 +18,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     import ifcopenshell
@@ -43,8 +43,11 @@ def add_system(
     system: type[tool.System],
     ifc_class: str,
     parent_system: Union[ifcopenshell.entity_instance, None],
+    name: Optional[str] = None,
 ) -> None:
     new_system = ifc.run("system.add_system", ifc_class=ifc_class)
+    if name:
+        ifc.run("system.edit_system", system=new_system, attributes={"Name": name})
     if parent_system:
         ifc.run("group.assign_group", products=[new_system], group=parent_system)
         group.toggle_group(parent_system, "IfcSystem", "EXPAND")
