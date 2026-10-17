@@ -72,6 +72,35 @@ class TestMergeDuplicateTypes(test.bootstrap.IFC4):
         assert ifcopenshell.util.element.get_material(wall1, should_inherit=False) == None
         assert ifcopenshell.util.element.get_material(wall2, should_inherit=False) == None
 
+    def test_not_merging_different_classes(self):
+        # Types of different classes are not duplicates even if they share the
+        # merge attribute (here an empty Tag). Merging them would try to
+        # reassign occurrences to an incompatible type. See the IfcTypeProduct
+        # (annotation) vs IfcBeam case.
+        annotation_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct")
+        annotation = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcAnnotation")
+        ifcopenshell.api.type.assign_type(
+            self.file, related_objects=[annotation], relating_type=annotation_type, should_map_representations=False
+        )
+        beam_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBeamType")
+        beam = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBeam")
+        ifcopenshell.api.type.assign_type(
+            self.file, related_objects=[beam], relating_type=beam_type, should_map_representations=False
+        )
+        output = ifcpatch.execute({"file": self.file, "recipe": "MergeDuplicateTypes", "arguments": ["Tag", True]})
+        assert len(output.by_type("IfcTypeProduct")) == 2
+        assert output.by_type("IfcBeamType")
+
+    def test_empty_attributes_kept_separate_by_default(self):
+        # An empty attribute is an absence of evidence, not proof of
+        # duplication. By default (should_merge_null=False) distinct types that
+        # merely lack a Tag must be preserved, otherwise e.g. differently-named
+        # Bonsai-authored types get silently collapsed into one.
+        for name in ("Wire Ladder", "CMU Core", "Mortar Joint"):
+            ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingElementProxyType", name=name)
+        output = ifcpatch.execute({"file": self.file, "recipe": "MergeDuplicateTypes", "arguments": []})
+        assert len(output.by_type("IfcBuildingElementProxyType")) == 3
+
     def test_not_merging_empty_attributes(self):
         wall_type1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType", name="")
         wall_type2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType", name="")
