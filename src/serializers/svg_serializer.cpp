@@ -543,6 +543,10 @@ namespace {
 	std::optional<std::pair<express::base, double>> storey_elevation_from_element(const ifcopenshell::geom::native_element* o) {
 		for (const auto& p : o->parents()) {
 			if (p->type() == "IfcBuildingStorey") {
+				// Use the storey's global placement Z (same frame as the element geometry); Elevation only without a placement.
+				if (!p->product().get("ObjectPlacement").isNull()) {
+					return std::make_pair(p->product(), p->transformation().data()->ccomponents()(2, 3));
+				}
 				try {
 					double e = p->product().get("Elevation");
 					double storey_elevation = e * o->geometry().settings().get<ifcopenshell::geom::settings::LengthUnit>().get();
