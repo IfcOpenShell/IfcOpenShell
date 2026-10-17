@@ -22,6 +22,7 @@ import pytest
 
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.classification
+import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.group
 import ifcopenshell.api.material
@@ -428,6 +429,26 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, parent=G") == {element, element2, element3}
         assert subject.filter_elements(self.file, "IfcWall, parent=Element2") == {element2, element3}
         assert subject.filter_elements(self.file, "IfcWall, parent=Space") == {element}
+
+    def test_selecting_by_parent_excludes_a_filling_element_hosted_by_a_different_storey(self):
+        storey1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey", name="Storey 1")
+        storey2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey", name="Storey 2")
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall", name="Wall1")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall", name="Wall2")
+        window = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow", name="Window")
+        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+
+        ifcopenshell.api.spatial.assign_container(self.file, products=[wall1], relating_structure=storey1)
+        ifcopenshell.api.spatial.assign_container(self.file, products=[wall2], relating_structure=storey2)
+        ifcopenshell.api.spatial.assign_container(self.file, products=[window], relating_structure=storey1)
+
+        self.file.create_entity("IfcRelVoidsElement", ifcopenshell.guid.new(), None, None, None, wall1, opening)
+        self.file.create_entity("IfcRelVoidsElement", ifcopenshell.guid.new(), None, None, None, wall2, opening)
+        ifcopenshell.api.feature.add_filling(self.file, element=window, opening=opening)
+
+        elements = {wall1, wall2, window}
+        assert subject.filter_elements(self.file, 'parent="Storey 2"', elements) == {wall2}
+        assert elements - subject.filter_elements(self.file, 'parent="Storey 2"', elements) == {wall1, window}
 
     def test_selecting_multiple_filter_groups(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")

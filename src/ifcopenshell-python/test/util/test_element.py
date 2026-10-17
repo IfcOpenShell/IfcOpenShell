@@ -1046,6 +1046,27 @@ class TestGetDecompositionIFC4(test.bootstrap.IFC4):
         assert subelement in results
         assert subsubelement in results
 
+    def test_a_filling_elements_own_container_takes_priority_over_an_opening_voiding_multiple_hosts(self):
+        storey1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        storey2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        window = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+
+        ifcopenshell.api.spatial.assign_container(self.file, products=[wall1], relating_structure=storey1)
+        ifcopenshell.api.spatial.assign_container(self.file, products=[wall2], relating_structure=storey2)
+        ifcopenshell.api.spatial.assign_container(self.file, products=[window], relating_structure=storey1)
+
+        self.file.create_entity("IfcRelVoidsElement", ifcopenshell.guid.new(), None, None, None, wall1, opening)
+        self.file.create_entity("IfcRelVoidsElement", ifcopenshell.guid.new(), None, None, None, wall2, opening)
+        ifcopenshell.api.feature.add_filling(self.file, element=window, opening=opening)
+
+        assert window in subject.get_decomposition(storey1)
+        assert window in subject.get_decomposition(wall1)
+        assert window not in subject.get_decomposition(storey2)
+        assert window not in subject.get_decomposition(wall2)
+
 
 class TestGetGroupsIFC4(test.bootstrap.IFC4):
     def test_run(self):
