@@ -141,6 +141,38 @@ class TestEnableEditing(NewFile):
         assert props.is_editing is True
 
 
+class TestGetBoundaryElements(NewFile):
+    def test_a_standalone_window_is_a_boundary_element_but_a_hosted_window_is_not(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = ifc.createIfcWall()
+        opening = ifc.createIfcOpeningElement()
+        hosted_window = ifc.createIfcWindow()
+        standalone_window = ifc.createIfcWindow()
+        ifcopenshell.api.feature.add_feature(ifc, feature=opening, element=wall)
+        ifcopenshell.api.feature.add_filling(ifc, opening=opening, element=hosted_window)
+        objs = []
+        for element in (wall, hosted_window, standalone_window):
+            obj = bpy.data.objects.new("Object", None)
+            tool.Ifc.link(element, obj)
+            objs.append(obj)
+        assert subject.get_boundary_elements(objs) == [wall, standalone_window]
+
+
+class TestIsBoundingClass(NewFile):
+    def test_a_standalone_window_bounds_but_a_window_filling_a_wall_opening_does_not(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = ifc.createIfcWall()
+        opening = ifc.createIfcOpeningElement()
+        hosted_window = ifc.createIfcWindow()
+        standalone_window = ifc.createIfcWindow()
+        ifcopenshell.api.feature.add_feature(ifc, feature=opening, element=wall)
+        ifcopenshell.api.feature.add_filling(ifc, opening=opening, element=hosted_window)
+        assert subject.is_bounding_class(standalone_window) is True
+        assert subject.is_bounding_class(hosted_window) is False
+
+
 class TestGetContainer(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
