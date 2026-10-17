@@ -415,6 +415,18 @@ class DocProperties(PropertyGroup):
         default=False,
         options=set(),
     )
+    show_selected_drawings_only: BoolProperty(
+        name="Show Only Selected Drawings",
+        description="Only show drawings that are checked",
+        default=False,
+        options=set(),
+    )
+    show_selected_sheets_only: BoolProperty(
+        name="Show Only Selected Sheets",
+        description="Only show sheets that are checked",
+        default=False,
+        options=set(),
+    )
     is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
     is_editing_references: BoolProperty(name="Is Editing References", default=False)
     target_view: EnumProperty(
@@ -446,6 +458,8 @@ class DocProperties(PropertyGroup):
         should_draw_linked_projects: bool
         is_editing_drawings: bool
         show_drawings_on_sheets_only: bool
+        show_selected_drawings_only: bool
+        show_selected_sheets_only: bool
         is_editing_schedules: bool
         is_editing_references: bool
         target_view: Literal["PLAN_VIEW", "ELEVATION_VIEW", "SECTION_VIEW", "REFLECTED_PLAN_VIEW", "MODEL_VIEW"]
