@@ -99,6 +99,7 @@ def push(ifcgit: type[tool.IfcGit], repo: git.Repo, remote_name: str, operator: 
 
 def refresh_revision_list(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc]) -> None:
     ifcgit.clear_merge_conflicts()
+    ifcgit.clear_merge_resolutions()
     if ifcgit.repo_has_commits():
         ifcgit.refresh_revision_list(ifc.get_path())
 
@@ -144,15 +145,17 @@ def merge_branch(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], operator: bpy.t
     mergetool = ifcgit.get_merge_tool(branch_name)
     merge_result = ifcgit.git_merge(branch_name)
 
+    resolutions = []
     if merge_result == "error":
         operator.report({"ERROR"}, "Unknown IFC Merge failure")
         return False
     elif merge_result == "conflict":
-        conflicts = ifcgit.git_mergetool(mergetool, path_ifc)
+        conflicts, resolutions = ifcgit.git_mergetool(mergetool, path_ifc)
         if conflicts is not None:
             ifcgit.git_merge_abort()
             if conflicts:
                 ifcgit.store_merge_conflicts(conflicts)
+                ifcgit.store_merge_resolutions(resolutions)
                 operator.report({"WARNING"}, "Merge failed — see the conflict report in the panel below")
             else:
                 operator.report({"ERROR"}, "Merge tool failed — check that ifcmerge is installed correctly")
@@ -165,6 +168,13 @@ def merge_branch(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], operator: bpy.t
     ifcgit.load_project(path_ifc)
     ifcgit.refresh_revision_list(path_ifc)
     ifcgit.decolourise()
+    # store last: changing the display branch triggers a refresh that clears the report
+    ifcgit.store_merge_resolutions(resolutions)
+    if resolutions:
+        operator.report(
+            {"WARNING"},
+            f"Merge complete: {len(resolutions)} conflict(s) auto-resolved, see the report in the panel below",
+        )
 
 
 def dry_run_merge(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], operator: bpy.types.Operator) -> None:
@@ -187,14 +197,21 @@ def dry_run_merge(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], operator: bpy.
         return
 
     if merge_result == "conflict":
-        conflicts = ifcgit.git_mergetool(mergetool, path_ifc)
+        conflicts, resolutions = ifcgit.git_mergetool(mergetool, path_ifc)
         ifcgit.git_merge_abort()
+        ifcgit.store_merge_resolutions(resolutions)
         if conflicts is not None:
             ifcgit.store_merge_conflicts(conflicts)
             operator.report({"WARNING"}, "Merge preview: conflicts found — see the panel below")
         else:
             ifcgit.clear_merge_conflicts()
-            operator.report({"INFO"}, "Merge preview: no conflicts")
+            if resolutions:
+                operator.report(
+                    {"WARNING"},
+                    f"Merge preview: {len(resolutions)} conflict(s) would be auto-resolved, see the panel below",
+                )
+            else:
+                operator.report({"INFO"}, "Merge preview: no conflicts")
     else:
         # Clean merge or already up to date — abort the pending merge state if any
         try:
@@ -202,6 +219,7 @@ def dry_run_merge(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], operator: bpy.
         except Exception:
             pass
         ifcgit.clear_merge_conflicts()
+        ifcgit.clear_merge_resolutions()
         operator.report({"INFO"}, "Merge preview: no conflicts")
 
 
