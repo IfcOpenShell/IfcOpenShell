@@ -203,15 +203,23 @@ class ActorData:
     def actors(cls) -> list[dict[str, Any]]:
         actors: list[dict[str, Any]] = []
         props = tool.Owner.get_owner_props()
+
+        def get_identification(entity: ifcopenshell.entity_instance) -> str:
+            # 0 IfcPerson/IfcOrganization Id(IFC2X3)/Identification
+            if tool.Ifc.get_schema() == "IFC2X3":
+                return entity.Id or "N/A"
+            return entity.Identification or "N/A"
+
         for actor in tool.Ifc.get().by_type(props.actor_class, include_subtypes=False):
             the_actor: ifcopenshell.entity_instance = actor.TheActor
             if the_actor.is_a("IfcPerson"):
-                the_actor_ = the_actor.Identification or "N/A"
+                the_actor_ = get_identification(the_actor)
             elif the_actor.is_a("IfcOrganization"):
-                the_actor_ = the_actor.Identification or "N/A"
+                the_actor_ = get_identification(the_actor)
             elif the_actor.is_a("IfcPersonAndOrganization"):
-                the_actor_ = the_actor.ThePerson.Identification or "N/A"
-                the_actor_ += "-" + the_actor.TheOrganization.Identification or "N/A"
+                the_actor_ = (
+                    get_identification(the_actor.ThePerson) + "-" + get_identification(the_actor.TheOrganization)
+                )
             else:
                 assert False, the_actor
             actors.append(
