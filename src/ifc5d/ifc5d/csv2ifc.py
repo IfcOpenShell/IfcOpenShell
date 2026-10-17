@@ -450,12 +450,15 @@ class Csv2Ifc:
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
 
 
-def has_property(self, product: ifcopenshell.entity_instance, property_name: str) -> bool:
+def has_property(file: ifcopenshell.file, product: ifcopenshell.entity_instance, property_name: str) -> bool:
+    """Check if the product has a quantity named by one of the comma separated candidates."""
     if not property_name:
+        return True
+    if not (candidates := {name.strip().lower() for name in property_name.split(",") if name.strip()}):
         return True
     qtos = ifcopenshell.util.element.get_psets(product, qtos_only=True)
     for qset, quantities in qtos.items():
-        for quantity, value in quantities.items():
-            if quantity == property_name:
+        for quantity in quantities:
+            if quantity.lower() in candidates:
                 return True
     return False
