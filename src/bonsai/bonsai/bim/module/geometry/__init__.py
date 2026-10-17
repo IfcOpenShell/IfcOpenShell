@@ -69,6 +69,7 @@ classes = (
     operator.RemoveRepresentation,
     operator.RemoveRepresentationItem,
     operator.RemoveRepresentationItemFromShapeAspect,
+    operator.SelectByRepresentationType,
     operator.SelectConnection,
     operator.SelectRepresentationItem,
     operator.SwitchRepresentation,
