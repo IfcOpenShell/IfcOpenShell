@@ -2351,10 +2351,19 @@ class Blender(bonsai.core.tool.Blender):
             bpy.ops.object.hide_view_clear(select=False)
 
         bpy.ops.object.select_all(action="DESELECT")
-        for obj in objs:
-            obj.select_set(True)
-        with bpy.context.temp_override(**override):
-            bpy.ops.object.hide_view_set(unselected=True)
+        # Unselectable objects would be hidden by hide_view_set(unselected=True) (#7681).
+        unselectable = []
+        try:
+            for obj in objs:
+                if obj.hide_select:
+                    obj.hide_select = False
+                    unselectable.append(obj)
+                obj.select_set(True)
+            with bpy.context.temp_override(**override):
+                bpy.ops.object.hide_view_set(unselected=True)
+        finally:
+            for obj in unselectable:
+                obj.hide_select = True
 
         bpy.ops.object.select_all(action="DESELECT")
         for name in previously_selected:
