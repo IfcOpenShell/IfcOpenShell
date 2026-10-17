@@ -38,11 +38,12 @@ class GroupsData:
 
     @classmethod
     def total_groups(cls):
-        return len(tool.Ifc.get().by_type("IfcGroup", include_subtypes=False))
+        return len(tool.Group.get_user_groups(include_internal=tool.Group.get_group_props().should_show_internal))
 
     @classmethod
     def group_items(cls) -> list[tuple[str, str, str, int]]:
-        groups = natsorted(tool.Ifc.get().by_type("IfcGroup", include_subtypes=False), key=lambda g: g.Name or "")
+        include_internal = tool.Group.get_group_props().should_show_internal
+        groups = natsorted(tool.Group.get_user_groups(include_internal=include_internal), key=lambda g: g.Name or "")
         return [(str(g.id()), g.Name or "Unnamed", g.Description or "", g.id()) for g in groups]
 
 
@@ -52,16 +53,24 @@ class ObjectGroupsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"groups": cls.groups()}
+        groups, total_hidden = cls.groups()
+        cls.data = {"groups": groups, "total_hidden": total_hidden}
         cls.is_loaded = True
 
     @classmethod
-    def groups(cls):
+    def groups(cls) -> tuple[list[dict], int]:
+        """Get the groups to list for the active object, and how many Bonsai-managed ones are hidden."""
         element = tool.Ifc.get_entity(bpy.context.active_object)
         if not element:
-            return []
+            return [], 0
+        show_internal = tool.Group.get_group_props().should_show_internal
         results = []
+        total_hidden = 0
         for rel in getattr(element, "HasAssignments", []) or []:
-            if rel.is_a("IfcRelAssignsToGroup"):
-                results.append({"id": rel.RelatingGroup.id(), "name": rel.RelatingGroup.Name or "Unnamed"})
-        return results
+            if not rel.is_a("IfcRelAssignsToGroup"):
+                continue
+            if not show_internal and tool.Group.is_internal(rel.RelatingGroup):
+                total_hidden += 1
+                continue
+            results.append({"id": rel.RelatingGroup.id(), "name": rel.RelatingGroup.Name or "Unnamed"})
+        return results, total_hidden

@@ -52,6 +52,7 @@ class BIM_PT_groups(Panel):
 
         row = self.layout.row(align=True)
         row.label(text=f"{GroupsData.data['total_groups']} Groups Found", icon="OUTLINER")
+        row.prop(self.props, "should_show_internal", text="", icon="FILTER")
         if self.props.is_editing:
             row.operator("bim.add_group", text="", icon="ADD").group = 0
             row.operator("bim.disable_group_editing_ui", text="", icon="CANCEL")
@@ -125,11 +126,15 @@ class BIM_PT_object_groups(Panel):
             row.operator("bim.disable_editing_object_groups", text="", icon="CANCEL")
         else:
             if not groups:
-                row.label(text="No Groups", icon="OUTLINER")
+                text = "No Groups"
             elif len(groups) == 1:
-                row.label(text="1 Group", icon="OUTLINER")
+                text = "1 Group"
             else:
-                row.label(text=f"{len(groups)} Groups", icon="OUTLINER")
+                text = f"{len(groups)} Groups"
+            if total_hidden := ObjectGroupsData.data["total_hidden"]:
+                text += f" ({total_hidden} hidden)"
+            row.label(text=text, icon="OUTLINER")
+            row.prop(self.props, "should_show_internal", text="", icon="FILTER")
             row.operator("bim.enable_editing_object_groups", text="", icon="GREASEPENCIL")
             row.operator("bim.add_group_to_selected", text="", icon="ADD")
 
@@ -142,6 +147,31 @@ class BIM_PT_object_groups(Panel):
 
 
 class BIM_UL_groups(UIList):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.use_filter_show = True
+
+    def draw_filter(self, context, layout):
+        row = layout.row()
+        row.prop(tool.Group.get_group_props(), "group_filter", text="", icon="VIEWZOOM")
+
+    def filter_items(self, context: bpy.types.Context, data: BIMGroupProperties, propname: str):
+        items = getattr(data, propname)
+        filter_name = data.group_filter.strip().lower()
+        if not filter_name:
+            return [], []
+        # Show matching groups along with the groups they are nested in.
+        flags = [0] * len(items)
+        ancestors: list[int] = []
+        for index, item in enumerate(items):
+            del ancestors[item.tree_depth :]
+            if filter_name in item.name.lower():
+                flags[index] = self.bitflag_filter_item
+                for ancestor in ancestors:
+                    flags[ancestor] = self.bitflag_filter_item
+            ancestors.append(index)
+        return flags, []
+
     def draw_item(
         self,
         context: bpy.types.Context,
