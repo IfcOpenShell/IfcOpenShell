@@ -1034,6 +1034,9 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 		}
 	}
 
+	// #5186 all tools, kept for a plain 3D retry when the 2D partition fails
+	NCollection_List<TopoDS_Shape> b_before_2d;
+
 	if (op == BOPAlgo_CUT) {
 		TopoDS_Face a_face;
 		std::pair<double, double> a_interval;
@@ -1108,6 +1111,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 					if (mp.IsDone()) {
 						if (b_remainder_3d.Extent()) {
 							settings.log().notice("GEO", 139, std::to_string(b_remainder_3d.Extent()) + " operands remaining to process in 3D");
+							b_before_2d = b;
 							b = b_remainder_3d;
 							s1s.Clear();
 							s1s.Append(mp.Shape());
@@ -1402,6 +1406,12 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 		}
 	}
 	if (!success) {
+		if (b_before_2d.Extent()) {
+			boolean_settings settings_3d = settings;
+			settings_3d.attempt_2d = false;
+			settings.log().notice("GEO", 404, "Retrying without 2D optimization on all operands");
+			return boolean_operation(settings_3d, a, b_before_2d, op, result, fuzziness);
+		}
 		if (allow_retry) {
 			return boolean_operation(settings, a, b, op, result, new_fuzziness);
 		} else {
