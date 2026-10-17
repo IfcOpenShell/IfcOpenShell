@@ -446,6 +446,11 @@ class BIM_PT_mesh(Panel):
         op = row.operator("bim.update_representation", text="Convert To Arbitrary Extrusion With Voids")
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
+        element = tool.Ifc.get_entity(obj)
+        if element and element.is_a("IfcWall"):
+            row = layout.row()
+            row.operator("bim.convert_to_parametric_wall", text="Convert To Parametric Wall")
+
         if True:
             mprops = tool.Geometry.get_mesh_props(mesh)
             row = layout.row()
