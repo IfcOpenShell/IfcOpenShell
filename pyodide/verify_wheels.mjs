@@ -46,6 +46,19 @@ if (!process.env.IFCOPENSHELL_VERIFY_WHEEL_LAYOUT) {
             });
         }
         await pyodide.runPythonAsync(await readFile(join(dirname(script), "verify_create_shape.py"), "utf8"));
+        // Install the fallback only after the Manifold pass, like the demo app.
+        if (layout === "modular") {
+            const matches = files.filter(name => name.startsWith("ifcopenshell_geometry_kernel_opencascade-") && name.endsWith(".whl"));
+            assert.equal(matches.length, 1, "The modular build must include the OpenCascade fallback wheel");
+            await pyodide.loadPackage(join(directory, matches[0]).split(sep).join("/"), {
+                errorCallback: message => { throw new Error(message); },
+            });
+        }
+        await pyodide.runPythonAsync(`
+fallback = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), solid, geometry_library="opencascade")
+assert fallback.verts and fallback.faces, "OpenCascade fallback returned an empty mesh"
+print("OpenCascade fallback plug-in loaded and create_shape passed")
+`);
     } catch (error) {
         // Avoid Node printing the entire minified Pyodide source for an
         // uncaught exception, which can exhaust CI's log limit before the cause.
