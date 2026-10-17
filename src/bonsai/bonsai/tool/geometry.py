@@ -1175,13 +1175,28 @@ class Geometry(bonsai.core.tool.Geometry):
 
         shape = None
         if elements:
-            iterator = ifcopenshell.geom.iterator(
-                settings,
-                tool.Ifc.get(),
-                multiprocessing.cpu_count(),
-                include=elements,
-                geometry_library=geometry_library,
-            )
+            try:
+                iterator = ifcopenshell.geom.iterator(
+                    settings,
+                    tool.Ifc.get(),
+                    multiprocessing.cpu_count(),
+                    include=elements,
+                    geometry_library=geometry_library,
+                )
+            except Exception as e:
+                if geometry_library != "opencascade":
+                    print(
+                        f"Bonsai Warning: Geometry library '{geometry_library}' failed ({e}). Falling back to 'opencascade'."
+                    )
+                    iterator = ifcopenshell.geom.iterator(
+                        settings,
+                        tool.Ifc.get(),
+                        multiprocessing.cpu_count(),
+                        include=elements,
+                        geometry_library="opencascade",
+                    )
+                else:
+                    raise
         else:
             iterator = None  # For example, when switching representation of a type with no occurrences
         meshes = {}
@@ -1235,9 +1250,17 @@ class Geometry(bonsai.core.tool.Geometry):
         for element in element_types:
             if obj := tool.Ifc.get_object(element):
                 if representation := ifcopenshell.util.representation.get_representation(element, context):
-                    geometry = ifcopenshell.geom.create_shape(
-                        settings, representation, geometry_library=geometry_library
-                    )
+                    try:
+                        geometry = ifcopenshell.geom.create_shape(
+                            settings, representation, geometry_library=geometry_library
+                        )
+                    except Exception as e:
+                        if geometry_library != "opencascade":
+                            geometry = ifcopenshell.geom.create_shape(
+                                settings, representation, geometry_library="opencascade"
+                            )
+                        else:
+                            raise
                     mesh_name = tool.Loader.get_mesh_name_from_shape(geometry)
                     mesh = meshes.get(mesh_name)
                     if mesh is None:

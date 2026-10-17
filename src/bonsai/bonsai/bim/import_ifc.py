@@ -706,18 +706,38 @@ class IfcImporter:
         if not any(product.Representation for product in products):
             return results
 
-        if tool.Loader.settings.should_use_cpu_multiprocessing:
-            iterator = ifcopenshell.geom.iterator(
-                settings,
-                self.file,
-                multiprocessing.cpu_count(),
-                include=products,
-                geometry_library=self.ifc_import_settings.geometry_library,
-            )
-        else:
-            iterator = ifcopenshell.geom.iterator(
-                settings, self.file, include=products, geometry_library=self.ifc_import_settings.geometry_library
-            )
+        try:
+            if tool.Loader.settings.should_use_cpu_multiprocessing:
+                iterator = ifcopenshell.geom.iterator(
+                    settings,
+                    self.file,
+                    multiprocessing.cpu_count(),
+                    include=products,
+                    geometry_library=self.ifc_import_settings.geometry_library,
+                )
+            else:
+                iterator = ifcopenshell.geom.iterator(
+                    settings, self.file, include=products, geometry_library=self.ifc_import_settings.geometry_library
+                )
+        except Exception as e:
+            if self.ifc_import_settings.geometry_library != "opencascade":
+                print(
+                    f"Bonsai Warning: Geometry library '{self.ifc_import_settings.geometry_library}' failed ({e}). Falling back to 'opencascade'."
+                )
+                if tool.Loader.settings.should_use_cpu_multiprocessing:
+                    iterator = ifcopenshell.geom.iterator(
+                        settings,
+                        self.file,
+                        multiprocessing.cpu_count(),
+                        include=products,
+                        geometry_library="opencascade",
+                    )
+                else:
+                    iterator = ifcopenshell.geom.iterator(
+                        settings, self.file, include=products, geometry_library="opencascade"
+                    )
+            else:
+                raise
         valid_file = iterator.initialize()
         if not valid_file:
             return results
