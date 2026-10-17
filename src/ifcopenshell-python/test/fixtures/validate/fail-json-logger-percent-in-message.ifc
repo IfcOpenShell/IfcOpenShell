@@ -1,0 +1,16 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION((''),'2;1');
+FILE_NAME('','',(''),(''),'','','');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPERSON($,$,$,$,$,$,$,$);
+#2=IFCORGANIZATION($,'Org',$,$,$);
+#3=IFCPERSONANDORGANIZATION(#1,#2,$);
+#4=IFCAPPLICATION(#2,'1.0','App','app');
+#5=IFCOWNERHISTORY(#3,#4,$,.ADDED.,$,$,$,0);
+#20=IFCANNOTATION('1000000000000000000009',#5,'Filled region 40%s green',$,$,$,$);
+#21=IFCANNOTATION('1000000000000000000001',#5,'Bad placement ref',$,$,#20,$);
+ENDSEC;
+END-ISO-10303-21;
