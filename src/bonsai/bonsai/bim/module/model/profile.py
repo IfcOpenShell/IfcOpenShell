@@ -482,7 +482,9 @@ class DumbProfileJoiner:
             if clipping["operand_type"] == "IfcHalfSpaceSolid":
                 clipping["matrix"] = new_matrix @ clipping["matrix"]
 
-        self.clippings.extend(tool.Model.get_manual_booleans(element))
+        manual_booleans = tool.Model.get_manual_booleans(element)
+        manual_boolean_ids = [b.id() for b in manual_booleans]
+        self.clippings.extend(manual_booleans)
 
         depth = (self.body[1] - self.body[0]).length
 
@@ -534,6 +536,12 @@ class DumbProfileJoiner:
             bonsai.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_body)
         else:
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), product=element, representation=new_body)
+
+        # Re-adding the manual booleans creates new ids; repoint BBIM_Boolean at them (#7640).
+        if manual_boolean_ids:
+            new_booleans = tool.Model.get_booleans(representation=new_body)
+            tool.Model.unmark_manual_booleans(element, manual_boolean_ids)
+            tool.Model.mark_manual_booleans(element, new_booleans[-len(manual_boolean_ids) :])
 
         previous_matrix = obj.matrix_world.copy()
         previous_origin = obj.location.copy()
