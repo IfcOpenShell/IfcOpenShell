@@ -52,6 +52,7 @@ class Ifc(bonsai.core.tool.Ifc):
         "WorkSchedule",
         "Group",
         "Zone",
+        "System",
     ]
 
     @classmethod
