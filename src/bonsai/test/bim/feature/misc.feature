@@ -30,7 +30,7 @@ Scenario: Resize to storey
     And I select the "My Storey" item in the "BIM_UL_containers_manager" list
     And I click "Set Default"
     # Assign Container.
-    And I click "FOLDER_REDIRECT"
+    And I click "KEYFRAME_HLT"
     And I look at the "Miscellaneous" panel
     When I click "Resize To Storey"
     Then nothing happens

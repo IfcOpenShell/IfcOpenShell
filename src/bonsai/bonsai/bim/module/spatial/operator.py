@@ -174,6 +174,7 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
         core.assign_container(
             tool.Ifc, tool.Collector, tool.Spatial, container=container, objs=tool.Blender.get_selected_objects()
         )
+        tool.Blender.update_all_properties_editors(context)
 
 
 class EnableEditingContainer(bpy.types.Operator):
@@ -200,10 +201,23 @@ class RemoveContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_container"
     bl_label = "Remove Container"
     bl_options = {"REGISTER", "UNDO"}
+    container: bpy.props.IntProperty(options={"SKIP_SAVE"})
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        if properties.container:
+            return "Unassign the selected objects from the container selected in Spatial Manager"
+        return "Unassign the selected objects from their spatial container"
 
     def _execute(self, context):
         for obj in context.selected_objects:
+            if self.container:
+                element = tool.Ifc.get_entity(obj)
+                container = element and ifcopenshell.util.element.get_container(element)
+                if not container or container.id() != self.container:
+                    continue
             core.remove_container(tool.Ifc, tool.Collector, obj=obj)
+        tool.Blender.update_all_properties_editors(context)
 
 
 class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):

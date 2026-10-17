@@ -101,29 +101,31 @@ class BIM_PT_systems(Panel):
 
             row = self.layout.row(align=True)
             prop_with_search(row, self.props, "system_class", text="")
+
+            row = self.layout.row()
+            row.template_list("BIM_UL_systems", "", self.props, "systems", self.props, "active_group_index")
             if active_system_item:
                 system_id = active_system_item.ifc_definition_id
-                op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.system = system_id
-                tool.Group.draw_visibility_buttons(row, system_id)
-                row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = system_id
-                row.operator("bim.unassign_system", text="", icon="KEYFRAME").system = system_id
-                row.operator("bim.enable_editing_system", text="", icon="GREASEPENCIL").system = system_id
-                row.operator("bim.add_system", text="", icon="ADD").parent_system_id = system_id
+                col = row.column(align=True)
+                col.operator("bim.add_system", text="", icon="ADD").parent_system_id = system_id
                 if self.props.edited_system_id != system_id:
-                    row.operator("bim.remove_system", text="", icon="X").system = system_id
+                    col.operator("bim.remove_system", text="", icon="X").system = system_id
+                col.separator()
+                col.operator("bim.enable_editing_system", text="", icon="GREASEPENCIL").system = system_id
+
+                row = self.layout.row(align=True)
+                row.label(text="Contents")
+                row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF").system = system_id
+                tool.Group.draw_visibility_buttons(row, system_id)
+
+                row = self.layout.row(align=True)
+                row.label(text=f"{len(context.selected_objects)} Selected →")
+                sub = row.row(align=True)
+                sub.enabled = bool(context.selected_objects)
+                sub.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = system_id
+                sub.operator("bim.unassign_system", text="", icon="KEYFRAME").system = system_id
         else:
             row.operator("bim.load_systems", text="", icon="IMPORT")
-
-        if self.props.is_editing:
-            self.layout.template_list(
-                "BIM_UL_systems",
-                "",
-                self.props,
-                "systems",
-                self.props,
-                "active_group_index",
-            )
 
         if self.props.edited_system_id:
             self.draw_editable_ui(context)
@@ -430,18 +432,27 @@ class BIM_PT_zones(Panel):
         row.operator("bim.add_zone", text="", icon="ADD")
         row.operator("bim.unload_zones", text="", icon="CANCEL")
 
+        row = self.layout.row()
+        row.template_list("BIM_UL_zones", "", self.props, "zones", self.props, "active_zone_index")
+
         if self.props.zones and self.props.active_zone_index < len(self.props.zones):
             ifc_definition_id = self.props.zones[self.props.active_zone_index].ifc_definition_id
+            col = row.column(align=True)
+            col.operator("bim.remove_zone", text="", icon="X").zone = ifc_definition_id
+            col.separator()
+            col.operator("bim.enable_editing_zone", text="", icon="GREASEPENCIL").zone = ifc_definition_id
+
             row = self.layout.row(align=True)
-            row.alignment = "RIGHT"
+            row.label(text="Contents")
             row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF").system = ifc_definition_id
             tool.Group.draw_visibility_buttons(row, ifc_definition_id)
-            row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = ifc_definition_id
-            row.operator("bim.unassign_system", text="", icon="KEYFRAME").system = ifc_definition_id
-            row.operator("bim.enable_editing_zone", text="", icon="GREASEPENCIL").zone = ifc_definition_id
-            row.operator("bim.remove_zone", text="", icon="X").zone = ifc_definition_id
 
-        self.layout.template_list("BIM_UL_zones", "", self.props, "zones", self.props, "active_zone_index")
+            row = self.layout.row(align=True)
+            row.label(text=f"{len(context.selected_objects)} Selected →")
+            sub = row.row(align=True)
+            sub.enabled = bool(context.selected_objects)
+            sub.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = ifc_definition_id
+            sub.operator("bim.unassign_system", text="", icon="KEYFRAME").system = ifc_definition_id
 
         if self.props.is_editing:
             bonsai.bim.helper.draw_attributes(self.props.attributes, self.layout)
