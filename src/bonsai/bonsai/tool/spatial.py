@@ -224,6 +224,10 @@ class Spatial(bonsai.core.tool.Spatial):
             if obj and view_layer.objects.get(obj.name):
                 if unhide:
                     obj.hide_set(False)
+                    # hide_set() leaves the object's collection hidden (e.g. IfcTypeProduct).
+                    for collection in obj.users_collection:
+                        if layer_collection := tool.Blender.get_layer_collection(collection):
+                            layer_collection.hide_viewport = False
                 obj.select_set(True)
 
     @classmethod

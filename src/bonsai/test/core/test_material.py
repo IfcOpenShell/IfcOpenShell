@@ -125,5 +125,5 @@ class TestDisableEditingMaterials:
 class TestSelectByMaterial:
     def test_run(self, material, spatial):
         material.get_elements_by_material("material").should_be_called().will_return("elements")
-        spatial.select_products("elements").should_be_called()
+        spatial.select_products("elements", unhide=True).should_be_called()
         subject.select_by_material(material, spatial, material="material")
