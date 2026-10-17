@@ -18,6 +18,7 @@
 
 import glob
 import json
+import math
 import os
 import re
 import shutil
@@ -27,8 +28,16 @@ from dataclasses import dataclass, field
 
 import pytest
 
+import ifcopenshell.api.context
+import ifcopenshell.api.feature
+import ifcopenshell.api.geometry
+import ifcopenshell.api.project
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
+import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.template
+import ifcopenshell.util.shape
 
 PERF = False
 
@@ -141,6 +150,130 @@ def create_case(fn, openings):
         f.createIfcRelVoidsElement(ifcopenshell.guid.new(), owner_history, None, None, wall, opening_element)
 
     f.write(fn)
+
+
+def kernel_available(library):
+    f = ifcopenshell.api.project.create_file(version="IFC4")
+    try:
+        ifcopenshell.geom.iterator(ifcopenshell.geom.settings(), f, 1, geometry_library=library)
+    except RuntimeError:
+        return False
+    return True
+
+
+KERNELS = ("cgal-simple", "manifold", "hybrid-cgal-simple-opencascade", "hybrid-manifold-opencascade")
+AVAILABLE_KERNELS = {library for library in KERNELS if kernel_available(library)}
+
+WALL_VOLUME = 5.0 * 0.2 * 2.8
+SLAB_VOLUME = 6.0 * 4.0 * 0.25
+CIRCLE_CUT = math.pi * 0.3**2 * 0.2
+
+
+def build_voided_element(entity, host, opening_body):
+    f = ifcopenshell.api.project.create_file(version="IFC4")
+    ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject")
+    ifcopenshell.api.unit.assign_unit(f, length={"is_metric": True, "raw": "METERS"})
+    model = ifcopenshell.api.context.add_context(f, context_type="Model")
+    body = ifcopenshell.api.context.add_context(
+        f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+    )
+
+    def axis(location=O, z=None, x=None):
+        return f.createIfcAxis2Placement3D(
+            f.createIfcCartesianPoint(location),
+            f.createIfcDirection(z) if z else None,
+            f.createIfcDirection(x) if x else None,
+        )
+
+    def extrusion(profile, depth, position=None):
+        return f.createIfcExtrudedAreaSolid(profile, position or axis(), f.createIfcDirection(Z), depth)
+
+    def box(x_dim, y_dim, depth, centre=(0.0, 0.0), position=None):
+        location = f.createIfcAxis2Placement2D(f.createIfcCartesianPoint(centre), None)
+        return extrusion(f.createIfcRectangleProfileDef("AREA", None, location, x_dim, y_dim), depth, position)
+
+    def circle_body(radius, depth, position):
+        location = f.createIfcAxis2Placement2D(f.createIfcCartesianPoint((0.0, 0.0)), None)
+        return extrusion(f.createIfcCircleProfileDef("AREA", None, location, radius), depth, position)
+
+    def assign(product, item):
+        representation = f.createIfcShapeRepresentation(body, "Body", "SweptSolid", [item])
+        ifcopenshell.api.geometry.assign_representation(f, product=product, representation=representation)
+
+    through_wall = axis((2.5, -0.15, 1.5), Y, X)
+    hosts = {
+        "wall": box(5.0, 0.2, 2.8, (2.5, 0.0)),
+        "slab": box(6.0, 4.0, 0.25, (3.0, 2.0)),
+    }
+    openings = {
+        "through": lambda: box(1.0, 2.0, 0.3, position=through_wall),
+        "slot": lambda: box(1.0, 0.1, 3.0, position=axis((2.5, 0.0, -0.1))),
+        "hole": lambda: box(1.0, 1.0, 0.35, position=axis((2.0, 2.0, -0.05))),
+        "recess": lambda: box(1.0, 1.0, 0.15, position=axis((2.0, 2.0, 0.15))),
+        "circle": lambda: circle_body(0.3, 0.3, through_wall),
+    }
+
+    element = ifcopenshell.api.root.create_entity(f, ifc_class=entity)
+    assign(element, hosts[host])
+    opening = ifcopenshell.api.root.create_entity(f, ifc_class="IfcOpeningElement")
+    assign(opening, openings[opening_body]())
+    ifcopenshell.api.feature.add_feature(f, feature=opening, element=element)
+    return f, element
+
+
+# (IFC class, host body, opening body, volume of the uncut host, volume with the opening subtracted)
+VOIDED_CASES = {
+    "wall-through-opening": ("IfcWall", "wall", "through", WALL_VOLUME, WALL_VOLUME - 1.0 * 2.0 * 0.2),
+    "wall-slot": ("IfcWall", "wall", "slot", WALL_VOLUME, WALL_VOLUME - 1.0 * 0.1 * 2.8),
+    "slab-through-hole": ("IfcSlab", "slab", "hole", SLAB_VOLUME, SLAB_VOLUME - 1.0 * 1.0 * 0.25),
+    "slab-recess": ("IfcSlab", "slab", "recess", SLAB_VOLUME, SLAB_VOLUME - 1.0 * 1.0 * 0.1),
+    "wall-circular-opening": ("IfcWall", "wall", "circle", WALL_VOLUME, WALL_VOLUME - CIRCLE_CUT),
+}
+
+
+# cgal-simple cannot subtract openings, so it keeps the uncut host. manifold cannot convert a circular opening
+# at the default circle-segments, so there the host is kept unless that conversion gets fixed.
+def expected_volumes(library, case):
+    entity, host, opening_body, uncut, cut = VOIDED_CASES[case]
+    if library == "cgal-simple":
+        return (uncut,)
+    if case == "wall-circular-opening" and "manifold" in library:
+        return (uncut, cut)
+    return (cut,)
+
+
+def assert_voided_volume(library, case, volume, log):
+    uncut = VOIDED_CASES[case][3]
+    assert any(volume == pytest.approx(expected, rel=1e-3) for expected in expected_volumes(library, case))
+    if volume == pytest.approx(uncut, rel=1e-3):
+        assert "GEO034" in log
+
+
+class TestVoidedElementFallback:
+    @pytest.mark.parametrize("case", VOIDED_CASES)
+    @pytest.mark.parametrize("library", KERNELS)
+    def test_voided_element_is_never_empty(self, library, case):
+        if library not in AVAILABLE_KERNELS:
+            pytest.skip(f"{library} kernel is not available")
+        f, element = build_voided_element(*VOIDED_CASES[case][:3])
+        ifcopenshell.get_log()
+        shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), element, geometry_library=library)
+        volume = ifcopenshell.util.shape.get_volume(shape.geometry)
+        assert_voided_volume(library, case, volume, ifcopenshell.get_log())
+
+    @pytest.mark.parametrize("case", VOIDED_CASES)
+    @pytest.mark.parametrize("library", KERNELS)
+    def test_iterator_yields_voided_element(self, library, case):
+        if library not in AVAILABLE_KERNELS:
+            pytest.skip(f"{library} kernel is not available")
+        f, element = build_voided_element(*VOIDED_CASES[case][:3])
+        ifcopenshell.get_log()
+        shapes = list(
+            ifcopenshell.geom.iterate(ifcopenshell.geom.settings(), f, 1, include=[element], geometry_library=library)
+        )
+        assert len(shapes) == 1
+        volume = ifcopenshell.util.shape.get_volume(shapes[0].geometry)
+        assert_voided_volume(library, case, volume, ifcopenshell.get_log())
 
 
 class TestWallOpenings:
