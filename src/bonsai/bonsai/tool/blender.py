@@ -871,6 +871,18 @@ class Blender(bonsai.core.tool.Blender):
                 area.tag_redraw()
 
     @classmethod
+    def update_all_properties_editors(cls, context: bpy.types.Context | None = None) -> None:
+        """Tag every visible Properties editor for redraw, so panels in other
+        areas (e.g. Object Information) show IFC changes made from this one."""
+        context = context or bpy.context
+        screen = getattr(context, "screen", None)
+        if screen is None:
+            return
+        for area in screen.areas:
+            if area.type == "PROPERTIES":
+                area.tag_redraw()
+
+    @classmethod
     def force_depsgraph_update(cls) -> None:
         """useful if you need to trigger callbacks like `depsgraph_update_pre`"""
         # blender is requiring some ID to be changed
