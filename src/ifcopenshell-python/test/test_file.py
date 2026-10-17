@@ -205,6 +205,57 @@ class TestFile(test.bootstrap.IFC4):
         result = self.file.add(element)
         assert result.is_a() == element.is_a()
 
+    def test_assigning_an_instance_of_another_file_adds_it_to_the_file(self):
+        g = ifcopenshell.file(schema="IFC4")
+        g.createIfcPerson()
+        person = g.createIfcPerson(Identification="P")
+        user = g.createIfcPersonAndOrganization(person, g.createIfcOrganization(Name="O"))
+        owner = self.file.createIfcOwnerHistory()
+        owner.OwningUser = user
+        added = owner.OwningUser
+        assert added.file_pointer() == owner.file_pointer()
+        assert self.file.by_id(added.id()) == added
+        assert added.ThePerson.Identification == "P"
+        assert self.file.get_inverse(added) == {owner}
+        assert len(list(g)) == 4
+        reopened = ifcopenshell.file.from_string(self.file.to_string())
+        assert reopened.by_type("IfcOwnerHistory")[0].OwningUser.ThePerson.Identification == "P"
+
+    def test_assigning_an_instance_of_the_global_file_adds_it_to_the_file(self):
+        user = ifcopenshell.create_entity("IfcPersonAndOrganization", schema="IFC4")
+        owner = self.file.createIfcOwnerHistory()
+        owner.OwningUser = user
+        assert owner.OwningUser.file_pointer() == owner.file_pointer()
+        assert self.file.by_type("IfcPersonAndOrganization") == (owner.OwningUser,)
+
+    def test_assigning_instances_of_another_file_in_an_aggregate_adds_them_to_the_file(self):
+        g = ifcopenshell.file(schema="IFC4")
+        g.createIfcPerson()
+        local = self.file.createIfcActorRole("ENGINEER")
+        person = self.file.createIfcPerson()
+        person.Roles = [local, g.createIfcActorRole("ARCHITECT")]
+        assert person.Roles[0] == local
+        assert [role.file_pointer() for role in person.Roles] == [person.file_pointer()] * 2
+        reopened = ifcopenshell.file.from_string(self.file.to_string())
+        assert [role.Role for role in reopened.by_type("IfcPerson")[0].Roles] == ["ENGINEER", "ARCHITECT"]
+
+    def test_assigning_instances_of_another_file_in_a_nested_aggregate_adds_them_to_the_file(self):
+        g = ifcopenshell.file(schema="IFC4")
+        g.createIfcPerson()
+        points = [[g.createIfcCartesianPoint((float(i), float(j), 0.0)) for j in range(2)] for i in range(2)]
+        surface = self.file.createIfcBSplineSurfaceWithKnots(1, 1)
+        surface.ControlPointsList = points
+        assert len(self.file.by_type("IfcCartesianPoint")) == 4
+        reopened = ifcopenshell.file.from_string(self.file.to_string())
+        assert reopened.by_type("IfcBSplineSurfaceWithKnots")[0].ControlPointsList[1][0].Coordinates == (1.0, 0.0, 0.0)
+
+    def test_assigning_an_instance_of_another_schema_raises(self):
+        g = ifcopenshell.file(schema="IFC2X3")
+        owner = self.file.createIfcOwnerHistory()
+        with pytest.raises(RuntimeError):
+            owner.OwningUser = g.createIfcPersonAndOrganization()
+        assert owner.OwningUser is None
+
     def test_getting_elements_by_type(self):
         wall = self.file.createIfcWall()
         slab = self.file.createIfcSlab()
