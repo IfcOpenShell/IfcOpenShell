@@ -50,7 +50,6 @@
 #include "AxisIndicatorRenderer.h"
 #include "BufferPool.h"
 #include "GridHelperRenderer.h"
-#include "ViewportFog.h"
 #include "GpuBudget.h"
 #include "GpuMemory.h"
 #include "ModelLookup.h"
@@ -203,6 +202,12 @@ public:
     // VP into 2D pixels — the streaming loader's priority signal.
     void buildViewProj(Eigen::Matrix4f& view_out,
                        Eigen::Matrix4f& proj_out) const;
+    // Project a world-space point to CSS pixels of the canvas (y down).
+    // World (0,0,0) is the axes intersection. The survey point (the false
+    // origin, in metres) is a different point and can move. Returns false
+    // when the point is behind the camera or the surface has not been sized.
+    bool projectWorldToCss(float x, float y, float z,
+                           float& css_x, float& css_y) const;
     bool computeSceneAabb(float mn[3], float mx[3]) const;
     // The same union restricted to `session_model_ids`. Unknown ids contribute
     // nothing; false means none of them resolved to any geometry. Unlike
@@ -323,6 +328,17 @@ public:
     // keeps requesting frames until an armed afterglow expires.
     void setPivotIndicatorVisible(bool visible, int hide_after_ms = 0);
     bool pivotIndicatorVisible() const;
+
+    // Blender floor axes through the viewer origin (world 0, 0, 0). X and Y
+    // only, `size` metres either side. They share the grid's distance fade.
+    // The survey point is a separate, shorter triad at the false origin and
+    // is drawn with these axes. Default size 1000. Off until a host turns
+    // it on.
+    void setOriginAxesVisible(bool visible);
+    bool originAxesVisible() const { return origin_axes_visible_; }
+    void toggleOriginAxes();
+    void setOriginAxesSize(float size_metres);
+    float originAxesSize() const { return origin_axes_size_; }
 
     // Floor fade for the grid and the X/Y axes. `near_factor` and `far_factor`
     // are multiples of the camera distance (0.35 starts the fade at 35% of
@@ -1265,6 +1281,8 @@ private:
     float                 fog_far_factor_   = 2.2f;
     float                 fog_density_      = 0.002f;
     bool                  pivot_indicator_visible_ = false;
+    bool                  origin_axes_visible_     = false;
+    float                 origin_axes_size_        = 1000.0f;
     // Only running while an afterglow is armed; a drag-held indicator leaves it
     // invalid so the triad stays up until the host clears it.
     Stopwatch             pivot_indicator_timer_;

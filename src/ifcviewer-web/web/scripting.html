@@ -15,6 +15,13 @@
   #viewer-box { position: relative; width: 640px; height: 460px; max-width: 100%;
     border: 1px solid #232833; border-radius: 6px; overflow: hidden; background: #1a1d24; }
   #viewer-canvas { display: block; width: 100%; height: 100%; outline: none; }
+  #origin-readout { position: fixed; z-index: 12; pointer-events: none;
+    transform: translate(10px, -50%);
+    font: 11px/1.2 ui-monospace, Menlo, Consolas, monospace;
+    color: #d7dbe3; background: rgba(15, 17, 23, .72);
+    border-radius: 3px; padding: 2px 6px; white-space: nowrap; }
+  #origin-readout.moved { color: #f6e05e; }
+  #origin-readout.docked { transform: none; }
   #marquee { position: absolute; display: none; z-index: 5; pointer-events: none;
     border: 1px solid #4a9eff; background: rgba(74, 158, 255, 0.15); }
   .sidebar { flex: 1 1 340px; min-width: 320px; display: flex; flex-direction: column; gap: 14px; }
@@ -32,6 +39,7 @@
   button:disabled { opacity: .5; cursor: default; filter: none; }
   input[type=number] { background: #0f1117; color: #c8ccd6; border: 1px solid #2b3244;
     border-radius: 4px; padding: 5px 6px; font-size: 12px; width: 66px; }
+  input[type=number].wide { width: 108px; }
   select { background: #0f1117; color: #c8ccd6; border: 1px solid #2b3244;
     border-radius: 4px; padding: 5px 6px; font-size: 12px; }
   input[type=color] { width: 34px; height: 27px; padding: 0; background: #0f1117;
@@ -52,6 +60,7 @@
   .empty { color: #6f7988; font-size: 12px; padding: 10px 12px; }
   .pill { font-size: 11px; color: #6f7988; font-weight: 400; text-transform: none;
     letter-spacing: 0; }
+  .hint a, .card h2 a { color: #7f9bd6; }
 </style>
 </head>
 <body>
@@ -60,7 +69,8 @@
   <p>Every control below is plain DOM driving the <code>viewer</code> object from
      <code>ifcviewer.js</code> — read this page's source, each button is one call.
      It is also on <code>window.viewer</code>, so you can drive it from the devtools console.
-     &nbsp;<a href="index.html">↩ all examples</a></p>
+     &nbsp;<a href="index.html">↩ all examples</a>
+     &nbsp;<a href="FEDERATION.md">federation</a></p>
 </header>
 
 <div class="layout">
@@ -68,6 +78,7 @@
     <div id="viewer-box">
       <canvas id="viewer-canvas" width="1280" height="920"></canvas>
       <div id="marquee"></div>
+      <div id="origin-readout" hidden></div>
     </div>
     <div class="hint">Drag to orbit · scroll to zoom · <b>right-click to select</b>
       (drag right-click to box-select several, shift+right-click to add)</div>
@@ -180,6 +191,92 @@
             <input type="number" id="fog-density" min="0" step="0.001" value="0.002"></label>
         </div>
         <div class="hint" id="fog-hint">Near and far are multiples of the camera distance. The floor fades into the background.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Origin axes <span class="pill">setOriginAxes</span></h2>
+      <div class="body">
+        <div class="row">
+          <label class="field"><input type="checkbox" id="origin-axes" checked> X and Y through the origin</label>
+          <label class="field">size (m)
+            <input type="number" id="origin-size" min="1" step="100" value="1000"></label>
+        </div>
+        <div class="hint">Metres either side of viewer 0, 0, 0, on X (red) and Y (green). The small triad is the survey point. The one-line tag follows that triad and shows the false origin, in the federation unit. The card below edits it.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Federation <span class="pill">setFederationUnit · setFalseOrigin · setModelTransform</span></h2>
+      <div class="body">
+        <div class="readout mono" id="fed-readout">—</div>
+        <div class="hint">The red and green lines cross at viewer 0, 0, 0 and stay there.
+          The false origin is the survey point: a smaller triad, and it can move.
+          <a href="FEDERATION.md">How federation works.</a></div>
+
+        <div class="row">
+          <label class="field">unit
+            <select id="fed-unit">
+              <option value="METRE|">metre</option>
+              <option value="METRE|MILLI">millimetre</option>
+              <option value="METRE|CENTI">centimetre</option>
+              <option value="foot|">foot</option>
+              <option value="inch|">inch</option>
+            </select>
+          </label>
+          <button class="secondary" id="fed-unit-apply" type="button">Set unit</button>
+        </div>
+
+        <div class="row">
+          <label class="field">false origin x <input class="wide" type="number" id="fo-x" step="any" value="0"></label>
+          <label class="field">y <input class="wide" type="number" id="fo-y" step="any" value="0"></label>
+          <label class="field">z <input class="wide" type="number" id="fo-z" step="any" value="0"></label>
+          <label class="field">grid north ° <input type="number" id="fo-rz" step="any" value="0"></label>
+        </div>
+        <div class="row">
+          <button id="fo-apply" type="button">Set false origin</button>
+          <button class="secondary" id="fo-zero" type="button">False origin 0, 0, 0</button>
+          <button class="secondary" id="fo-read" type="button">Read current</button>
+        </div>
+        <div class="hint">Set false origin turns off the automatic guess. The lines stay at 0, 0, 0. The small triad moves to the survey point, and the models shift so that coordinate is drawn on the crossing. Changing the unit does not convert the numbers; it changes what a number means.</div>
+
+        <div class="row">
+          <label class="field">model
+            <select id="xf-source"><option value="">no source yet</option></select>
+          </label>
+          <label class="field">point a is
+            <select id="xf-frame">
+              <option value="global">global (map unit)</option>
+              <option value="local">local (project unit)</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label class="field">a x <input class="wide" type="number" id="xf-ax" step="any" value="0"></label>
+          <label class="field">y <input class="wide" type="number" id="xf-ay" step="any" value="0"></label>
+          <label class="field">z <input class="wide" type="number" id="xf-az" step="any" value="0"></label>
+        </div>
+        <div class="row">
+          <label class="field">b x <input class="wide" type="number" id="xf-bx" step="any" value="0"></label>
+          <label class="field">y <input class="wide" type="number" id="xf-by" step="any" value="0"></label>
+          <label class="field">z <input class="wide" type="number" id="xf-bz" step="any" value="0"></label>
+        </div>
+        <div class="row">
+          <label class="field">rx ° <input type="number" id="xf-rx" step="any" value="0"></label>
+          <label class="field">ry ° <input type="number" id="xf-ry" step="any" value="0"></label>
+          <label class="field">rz ° <input type="number" id="xf-rz" step="any" value="0"></label>
+        </div>
+        <div class="row">
+          <label class="field">pivot x <input class="wide" type="number" id="xf-px" step="any" value="0"></label>
+          <label class="field">y <input class="wide" type="number" id="xf-py" step="any" value="0"></label>
+          <label class="field">z <input class="wide" type="number" id="xf-pz" step="any" value="0"></label>
+        </div>
+        <div class="row">
+          <button id="xf-apply" type="button">Place model</button>
+          <button class="secondary" id="xf-clear" type="button">Clear placement</button>
+        </div>
+        <div class="readout mono" id="georef-readout">Add a .ifcview to place it. The embedded sample has no source id.</div>
+        <div class="hint">Place model rotates it about the pivot, then slides it so point a lands on point b. b and the pivot are in the federation unit. You can set this before the file finishes loading.</div>
       </div>
     </div>
 
@@ -310,6 +407,40 @@
     }
   }
 
+  let fedInputsTouched = false;
+  let fedSeed = '';
+
+  function fmtFed(n) {
+    if (!Number.isFinite(n)) return '—';
+    const abs = Math.abs(n);
+    const digits = abs >= 1000 ? 2 : abs >= 10 ? 3 : 4;
+    return n.toFixed(digits);
+  }
+  function fillFalseOrigin(o) {
+    $('fo-x').value = o.xyz[0];
+    $('fo-y').value = o.xyz[1];
+    $('fo-z').value = o.xyz[2];
+    $('fo-rz').value = o.rzDeg;
+  }
+  function renderFederation(v) {
+    const api = v || viewer;
+    if (!api) return;
+    const o = api.getFalseOrigin();
+    const mag = Math.hypot(o.xyz[0], o.xyz[1], o.xyz[2]);
+    const how = o.explicit ? 'set by you' :
+      (mag > 1e-4 || Math.abs(o.rzDeg) > 1e-3 ? 'guessed from the first model' : 'no shift yet');
+    $('fed-readout').textContent =
+      `axes origin     0, 0, 0     where X and Y cross\n` +
+      `survey point    ${o.xyz.map(fmtFed).join(', ')} ${o.unit}\n` +
+      `                ${how}\n` +
+      `grid north      ${o.rzDeg.toFixed(2)}°`;
+    const seed = `${o.xyz.join(',')}|${o.rzDeg}|${o.explicit}`;
+    if (!fedInputsTouched && seed !== fedSeed) {
+      fedSeed = seed;
+      fillFalseOrigin(o);
+    }
+  }
+
   async function refreshObjects() {
     objects = await viewer.getObjects();
     $('object-count').textContent = `${objects.length} objects · ${models.length} model(s)`;
@@ -332,9 +463,13 @@
     sidecarFormatVersion: SIDECAR_FORMAT_VERSION,
     // The camera has no change event — it moves on every frame you drag — so
     // the readout is the one thing worth polling. Everything else is event-driven.
-    onFrame: (v) => renderCamera(v.getCamera()),
+    onFrame: (v) => {
+      renderCamera(v.getCamera());
+      renderFederation(v);
+    },
   }).then(async (v) => {
     viewer = window.viewer = v;
+    viewer.bindOriginReadout($('origin-readout'));
     await viewer.ready;
 
     // The wasm ships with a small sample model (a slab, a wall and a beam), so
@@ -450,18 +585,113 @@
     $('fog-far').value = fog0.far;
     $('fog-density').value = fog0.density;
 
+    // ---- Origin axes: X/Y through viewer 0. The survey triad is drawn with them.
+
+    const applyOriginAxes = () => {
+      const size = Number($('origin-size').value);
+      if (!(size > 0)) return;
+      viewer.setOriginAxes({ size, visible: $('origin-axes').checked });
+    };
+    $('origin-axes').onchange = applyOriginAxes;
+    $('origin-size').oninput = applyOriginAxes;
+    $('origin-size').onchange = applyOriginAxes;
+    viewer.setOriginAxes({ size: 1000, visible: true });
+    $('origin-axes').checked = viewer.originAxesVisible();
+    $('origin-size').value = viewer.originAxesSize();
+
+    // ---- Federation: unit, false origin, per-model placement ------------------
+
+    const sources = [];
+
+    function applyFalseOrigin(xyz, rzDeg) {
+      viewer.setFalseOrigin({ xyz, rzDeg });
+      fedInputsTouched = false;
+      fedSeed = '';
+      renderFederation(viewer);
+    }
+    for (const id of ['fo-x', 'fo-y', 'fo-z', 'fo-rz']) {
+      $(id).oninput = () => { fedInputsTouched = true; };
+    }
+    $('fed-unit-apply').onclick = () => {
+      const parts = $('fed-unit').value.split('|');
+      viewer.setFederationUnit({ name: parts[0], prefix: parts[1] || '' });
+      renderFederation(viewer);
+    };
+    $('fo-apply').onclick = () => applyFalseOrigin(
+      [Number($('fo-x').value), Number($('fo-y').value), Number($('fo-z').value)],
+      Number($('fo-rz').value) || 0);
+    $('fo-zero').onclick = () => applyFalseOrigin([0, 0, 0], 0);
+    $('fo-read').onclick = () => {
+      fedInputsTouched = false;
+      fedSeed = '';
+      renderFederation(viewer);
+    };
+
+    const num = (id) => Number($(id).value) || 0;
+    function rememberSource(id, name) {
+      if (sources.some((s) => s.id === id)) return;
+      sources.push({ id, name });
+      const sel = $('xf-source');
+      if (sel.options.length === 1 && sel.options[0].value === '') sel.remove(0);
+      const opt = document.createElement('option');
+      opt.value = String(id);
+      opt.textContent = `${name} · source ${id}`;
+      sel.appendChild(opt);
+      refreshGeoref();
+    }
+    function refreshGeoref() {
+      const raw = $('xf-source').value;
+      if (raw === '') {
+        $('georef-readout').textContent =
+          'Add a .ifcview to place it. The embedded sample has no source id.';
+        return;
+      }
+      const g = viewer.getModelGeoref(Number(raw));
+      if (!g) {
+        $('georef-readout').textContent =
+          'Still loading. A placement set now is applied when the model arrives.';
+        return;
+      }
+      $('georef-readout').textContent =
+        (g.hasCoordinateOperation ? 'map conversion: yes' : 'map conversion: no') +
+        `\nproject length → m   ${g.projectLengthToMeters}` +
+        `\nmap unit → m         ${g.mapUnitToMeters}`;
+    }
+    $('xf-source').onchange = refreshGeoref;
+    $('xf-apply').onclick = () => {
+      if ($('xf-source').value === '') return;
+      viewer.setModelTransform(Number($('xf-source').value), {
+        aFrame: $('xf-frame').value,
+        a: [num('xf-ax'), num('xf-ay'), num('xf-az')],
+        b: [num('xf-bx'), num('xf-by'), num('xf-bz')],
+        rotationDeg: [num('xf-rx'), num('xf-ry'), num('xf-rz')],
+        pivot: [num('xf-px'), num('xf-py'), num('xf-pz')],
+      });
+    };
+    $('xf-clear').onclick = () => {
+      if ($('xf-source').value === '') return;
+      viewer.clearModelTransform(Number($('xf-source').value));
+    };
+    viewer.onModelLoaded((d) => {
+      if (!sources.some((s) => s.id === d.sourceId)) rememberSource(d.sourceId, 'source ' + d.sourceId);
+      refreshGeoref();
+      renderFederation(viewer);
+    });
+
     // ---- Objects (5): the table above, and federating in more models ----------
 
     $('browse-btn').onclick = () => $('file-input').click();
     $('file-input').onchange = async (ev) => {
       for (const file of ev.target.files) {
+        let sid;
         try {
-          await viewer.addFile(file);
+          sid = await viewer.addFile(file, { name: file.name });
         } catch (err) {
           $('scene-hint').textContent = `${file.name}: ${err.message}`;
           continue;
         }
         models.push(file.name);
+        rememberSource(sid, file.name);
       }
       ev.target.value = '';
       // The new model's metadata has to land before its objects can be listed;

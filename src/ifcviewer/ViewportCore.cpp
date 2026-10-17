@@ -28,6 +28,7 @@
 #endif
 
 #include "CameraMath.h"
+#include "FederationMath.h"
 #include "GpuAllocScope.h"
 #include "InstanceCompose.h"
 #include "ModelLookup.h"
@@ -277,6 +278,25 @@ void ViewportCore::buildViewProj(Eigen::Matrix4f& view_out,
     z_remap(2, 2) = 0.5f;
     z_remap(2, 3) = 0.5f;
     proj_out = z_remap * p;
+}
+
+bool ViewportCore::projectWorldToCss(float x, float y, float z,
+                                     float& css_x, float& css_y) const {
+    if (configured_w_ <= 0 || configured_h_ <= 0 || !host_) return false;
+    Eigen::Matrix4f view, proj;
+    buildViewProj(view, proj);
+    const Eigen::Vector4f clip = (proj * view) * Eigen::Vector4f(x, y, z, 1.0f);
+    // Right-handed look-at puts the scene at negative view Z, so clip.w()
+    // is positive in front of the camera and ~0 on the camera plane.
+    if (clip.w() <= 1e-4f) return false;
+    const float ndc_x = clip.x() / clip.w();
+    const float ndc_y = clip.y() / clip.w();
+    const float dpr = host_->dpr() > 0.0f ? host_->dpr() : 1.0f;
+    const float px_x = (ndc_x * 0.5f + 0.5f) * float(configured_w_);
+    const float px_y_up = (ndc_y * 0.5f + 0.5f) * float(configured_h_);
+    css_x = px_x / dpr;
+    css_y = (float(configured_h_) - px_y_up) / dpr;
+    return true;
 }
 
 bool ViewportCore::computeSceneAabb(float mn[3], float mx[3]) const {
@@ -690,6 +710,23 @@ bool ViewportCore::pivotIndicatorVisible() const {
     // No armed afterglow means a drag is holding it up.
     if (!pivot_indicator_timer_.isValid()) return true;
     return pivot_indicator_timer_.elapsed() < pivot_indicator_hide_ms_;
+}
+
+void ViewportCore::setOriginAxesVisible(bool visible) {
+    if (origin_axes_visible_ == visible) return;
+    origin_axes_visible_ = visible;
+    host_->requestFrame();
+}
+
+void ViewportCore::toggleOriginAxes() {
+    setOriginAxesVisible(!origin_axes_visible_);
+}
+
+void ViewportCore::setOriginAxesSize(float size_metres) {
+    if (!(size_metres > 0.0f)) return;
+    if (origin_axes_size_ == size_metres) return;
+    origin_axes_size_ = size_metres;
+    host_->requestFrame();
 }
 
 void ViewportCore::setFog(bool enabled, int mode, float near_factor, float far_factor,
@@ -1415,6 +1452,7 @@ bool ViewportCore::buildPipelines() {
     // Corner axis gizmo + orbit pivot indicator (shared desktop + web).
     // Also optional: a failure costs the indicator, not the viewport.
     axis_indicator_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
+
     // Ground grid (shared desktop + web). Optional — a failure just means no
     // grid, not a dead viewport. init installs the default base grid.
     grid_helper_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
@@ -8197,6 +8235,25 @@ void ViewportCore::render() {
     const bool pivot_visible = pivotIndicatorVisible();
     axis_indicator_.encodePivot(pass, overlay_frame, pivot_visible);
     if (pivot_visible && pivot_indicator_timer_.isValid()) host_->requestFrame();
+
+    // Floor axes (X and Y) through the viewer origin. The survey point is a
+    // shorter triad at the false origin, in metres from that crossing, so
+    // the two stay distinct when the guess is not zero. Same eye and fade
+    // as the grid for the long lines; the triad is screen-sized like the pivot.
+    {
+        const Eigen::Vector3f axis_eye = orbitEye(camera_target_, camera_distance_,
+                                                  camera_yaw_deg_, camera_pitch_deg_);
+        const Eigen::Vector3f axis_target(camera_target_[0], camera_target_[1], camera_target_[2]);
+        const Eigen::Vector3f axis_forward = (axis_target - axis_eye).normalized();
+        axis_indicator_.encodeOrigin(pass, overlay_frame, Eigen::Vector3f::Zero(),
+                                     origin_axes_size_, fog_, axis_eye, axis_forward,
+                                     origin_axes_visible_);
+        const Eigen::Vector3f survey =
+            surveyPointMetres(federated_false_origin_meters_).cast<float>();
+        const float survey_dist = std::max((axis_eye - survey).norm(), 1.0e-3f);
+        axis_indicator_.encodeSurveyPoint(pass, overlay_frame, survey, survey_dist,
+                                          origin_axes_visible_);
+    }
 
     // Remaining in-pass overlays (highlight triangles, overlay lines/points).
     // QtViewportHost forwards to overlays_.X(); the web host no-ops.

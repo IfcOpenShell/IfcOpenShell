@@ -33,9 +33,14 @@ constexpr uint32_t kAxisUniformSlot = 256;  // dynamic-offset slot stride
 constexpr uint32_t kAxisVertexCount = 18;   // 3 arms x 2 triangles x 3 verts
 
 // Uniform slots in the shared buffer.
-constexpr uint32_t kSlotCorner    = 0;
-constexpr uint32_t kSlotPivot     = 1;
-constexpr uint32_t kSlotPivotXray = 2;
+constexpr uint32_t kSlotCorner     = 0;
+constexpr uint32_t kSlotPivot      = 1;
+constexpr uint32_t kSlotPivotXray  = 2;
+constexpr uint32_t kSlotOrigin     = 3;
+constexpr uint32_t kSlotOriginXray = 4;
+constexpr uint32_t kSlotSurvey     = 5;
+constexpr uint32_t kSlotSurveyXray = 6;
+constexpr uint32_t kSlotCount      = 7;
 
 WGPUStringView svFromCStr(const char* s) {
     WGPUStringView v;
@@ -173,7 +178,7 @@ bool AxisIndicatorRenderer::init(WGPUDevice device, WGPUQueue queue,
 
     WGPUBufferDescriptor ub = {};
     ub.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
-    ub.size  = 3u * kAxisUniformSlot;
+    ub.size  = kSlotCount * kAxisUniformSlot;
     ub.label = svFromCStr("ifcviewer-wgpu.axis_uniforms");
     uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &ub);
 
@@ -182,7 +187,7 @@ bool AxisIndicatorRenderer::init(WGPUDevice device, WGPUQueue queue,
     ble.visibility              = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
     ble.buffer.type             = WGPUBufferBindingType_Uniform;
     ble.buffer.hasDynamicOffset = 1;
-    ble.buffer.minBindingSize   = 96;
+    ble.buffer.minBindingSize   = 160;
     WGPUBindGroupLayoutDescriptor bgl_desc = {};
     bgl_desc.entryCount = 1;
     bgl_desc.entries    = &ble;
@@ -307,34 +312,185 @@ bool AxisIndicatorRenderer::init(WGPUDevice device, WGPUQueue queue,
         corner_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp);
     }
 
-    return pivot_pipeline_ && pivot_xray_pipeline_ && corner_pipeline_;
+    // Blender floor axes: X and Y only, one colour along each line. Z is not
+    // part of the floor. Unit segments, scaled by the uniform arm (metres).
+    static const float origin_line_verts[] = {
+        //  pos (unit)          rgba   — Blender theme axis X / Y
+        -1.f, 0.f, 0.f,        0.902f, 0.271f, 0.322f, 1.f,
+         1.f, 0.f, 0.f,        0.902f, 0.271f, 0.322f, 1.f,
+         0.f,-1.f, 0.f,        0.545f, 0.863f, 0.000f, 1.f,
+         0.f, 1.f, 0.f,        0.545f, 0.863f, 0.000f, 1.f,
+    };
+    WGPUBufferDescriptor olb = {};
+    olb.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+    olb.size  = sizeof(origin_line_verts);
+    olb.label = svFromCStr("ifcviewer-wgpu.origin_axis_vbo");
+    origin_line_buffer_ = wgpuDeviceCreateBuffer(device_, &olb);
+    wgpuQueueWriteBuffer(queue_, origin_line_buffer_, 0,
+                         origin_line_verts, sizeof(origin_line_verts));
+
+    static const std::string ORIGIN_LINE_WGSL = std::string(R"AXIS(
+struct AxisUniforms {
+    mvp:           mat4x4<f32>,
+    origin:        vec3<f32>,
+    arm:           f32,
+    alpha:         f32,
+    line_width_px: f32,
+    viewport_size: vec2<f32>,
+    camera_pos:    vec4<f32>,
+    view_forward:  vec4<f32>,
+    fog_color:     vec4<f32>,
+    fog_params:    vec4<f32>,
+};
+@group(0) @binding(0) var<uniform> u: AxisUniforms;
+
+struct VsOut {
+    @builtin(position) clip_pos: vec4<f32>,
+    @location(0) color: vec4<f32>,
+    @location(1) world_pos: vec3<f32>,
+};
+
+@vertex
+fn vs_line(@location(0) pos: vec3<f32>,
+           @location(1) color: vec4<f32>) -> VsOut {
+    var out: VsOut;
+    let world = u.origin + pos * u.arm;
+    out.clip_pos = u.mvp * vec4<f32>(world, 1.0);
+    out.color = vec4<f32>(color.rgb, color.a * u.alpha);
+    out.world_pos = world;
+    return out;
 }
 
-void AxisIndicatorRenderer::encodePivot(WGPURenderPassEncoder pass,
-                                        const OverlayFrame& f, bool visible) {
+fn srgbToLinear(s: vec3<f32>) -> vec3<f32> {
+    let lo = s / 12.92;
+    let hi = pow((s + 0.055) / 1.055, vec3<f32>(2.4));
+    return select(hi, lo, s <= vec3<f32>(0.04045));
+}
+
+fn viewport_fog_factor(world_pos: vec3<f32>, camera_pos: vec3<f32>,
+                       view_forward: vec3<f32>, fog_params: vec4<f32>) -> f32 {
+    let fog_mode = fog_params.w;
+    if (fog_mode <= 0.5) { return 0.0; }
+    let fog_depth = max(dot(world_pos - camera_pos, view_forward), 0.0);
+    if (fog_mode < 1.5) {
+        return smoothstep(fog_params.x, fog_params.y, fog_depth);
+    }
+    let d = fog_params.z * fog_depth;
+    return 1.0 - exp(-d * d);
+}
+
+@fragment
+fn fs_line(in: VsOut) -> @location(0) vec4<f32> {
+    var rgb = in.color.xyz;
+    if (u.fog_params.w > 0.5) {
+        let fog_factor = viewport_fog_factor(
+            in.world_pos, u.camera_pos.xyz, u.view_forward.xyz, u.fog_params);
+        if (fog_factor > 0.0) {
+            rgb = mix(rgb, u.fog_color.xyz, fog_factor);
+        }
+    }
+    return vec4<f32>(srgbToLinear(rgb), in.color.a);
+}
+)AXIS");
+
+    WGPUShaderSourceWGSL line_wgsl = {};
+    line_wgsl.chain.sType = WGPUSType_ShaderSourceWGSL;
+    line_wgsl.code        = svFromCStr(ORIGIN_LINE_WGSL.c_str());
+    WGPUShaderModuleDescriptor line_sm = {};
+    line_sm.nextInChain = &line_wgsl.chain;
+    line_sm.label       = svFromCStr("ifcviewer-wgpu.origin_axis_wgsl");
+    origin_line_shader_ = wgpuDeviceCreateShaderModule(device_, &line_sm);
+
+    WGPUVertexAttribute line_attribs[2] = {};
+    line_attribs[0].format = WGPUVertexFormat_Float32x3;
+    line_attribs[0].offset = 0;
+    line_attribs[0].shaderLocation = 0;
+    line_attribs[1].format = WGPUVertexFormat_Float32x4;
+    line_attribs[1].offset = 12;
+    line_attribs[1].shaderLocation = 1;
+    WGPUVertexBufferLayout line_vbl = {};
+    line_vbl.arrayStride    = 28;
+    line_vbl.stepMode       = WGPUVertexStepMode_Vertex;
+    line_vbl.attributeCount = 2;
+    line_vbl.attributes     = line_attribs;
+
+    auto build_origin_line = [&](WGPUCompareFunction cmp, const char* label,
+                                 WGPURenderPipeline& out) {
+        WGPUColorTargetState ct = {};
+        ct.format    = color_format;
+        ct.blend     = &blend;
+        ct.writeMask = WGPUColorWriteMask_All;
+
+        WGPUFragmentState frag = {};
+        frag.module      = origin_line_shader_;
+        frag.entryPoint  = svFromCStr("fs_line");
+        frag.targetCount = 1;
+        frag.targets     = &ct;
+
+        WGPUDepthStencilState depth = {};
+        depth.format               = WGPUTextureFormat_Depth32Float;
+        depth.depthWriteEnabled    = WGPUOptionalBool_False;
+        depth.depthCompare         = cmp;
+        depth.stencilFront.compare = WGPUCompareFunction_Always;
+        depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+        WGPURenderPipelineDescriptor rp = {};
+        rp.layout              = layout_;
+        rp.label               = svFromCStr(label);
+        rp.vertex.module       = origin_line_shader_;
+        rp.vertex.entryPoint   = svFromCStr("vs_line");
+        rp.vertex.bufferCount  = 1;
+        rp.vertex.buffers      = &line_vbl;
+        rp.fragment            = &frag;
+        rp.depthStencil        = &depth;
+        rp.primitive.topology  = WGPUPrimitiveTopology_LineList;
+        rp.primitive.cullMode  = WGPUCullMode_None;
+        rp.multisample.count   = uint32_t(sample_count);
+        rp.multisample.mask    = 0xFFFFFFFFu;
+        out = wgpuDeviceCreateRenderPipeline(device_, &rp);
+    };
+    build_origin_line(WGPUCompareFunction_LessEqual,
+                      "ifcviewer-wgpu.origin_axis_pipeline", origin_line_pipeline_);
+    build_origin_line(WGPUCompareFunction_GreaterEqual,
+                      "ifcviewer-wgpu.origin_axis_xray_pipeline", origin_line_xray_pipeline_);
+
+    return pivot_pipeline_ && pivot_xray_pipeline_ && corner_pipeline_
+        && origin_line_pipeline_ && origin_line_xray_pipeline_;
+}
+
+void AxisIndicatorRenderer::encodeWorldTriad(WGPURenderPassEncoder pass,
+                                             const OverlayFrame& f,
+                                             const Eigen::Vector3f& origin,
+                                             float scale_distance,
+                                             bool visible,
+                                             float arm_css_px,
+                                             uint32_t slot_visible_index,
+                                             uint32_t slot_xray_index) {
     if (!visible || !pivot_pipeline_ || !pivot_xray_pipeline_) return;
     if (f.viewport_h_px <= 0) return;
+    if (!(scale_distance > 0.0f) || !(arm_css_px > 0.0f)) return;
 
-    // Arm length = 30 logical px projected into world at the pivot's distance.
+    // Arm length = `arm_css_px` logical px projected into world at
+    // `scale_distance`. Line thickness scales with the arm so a shorter
+    // triad (the survey point) stays lighter than the orbit pivot.
     const float fovy_rad        = f.camera_fov_y_deg * kPiF / 180.0f;
-    const float world_per_pixel = f.camera_distance * std::tan(fovy_rad * 0.5f)
+    const float world_per_pixel = scale_distance * std::tan(fovy_rad * 0.5f)
                                   * 2.0f / float(f.viewport_h_px);
-    const float arm_pixels = 30.0f * float(f.device_pixel_ratio);
+    const float dpr        = float(f.device_pixel_ratio);
+    const float arm_pixels = arm_css_px * dpr;
     const float arm_world  = arm_pixels * world_per_pixel;
-
-    const float dpr    = float(f.device_pixel_ratio);
-    const float line_w = 2.5f * dpr;
+    const float line_w     = (arm_css_px / 30.0f) * 2.5f * dpr;
     const float vw     = float(f.viewport_w_px);
     const float vh     = float(f.viewport_h_px);
 
     uint8_t slot_visible[kAxisUniformSlot];
     uint8_t slot_xray[kAxisUniformSlot];
-    packAxisUniform(slot_visible, f.view_proj, f.camera_target, arm_world,
+    packAxisUniform(slot_visible, f.view_proj, origin, arm_world,
                     1.00f, line_w, vw, vh);
-    packAxisUniform(slot_xray,    f.view_proj, f.camera_target, arm_world,
+    packAxisUniform(slot_xray,    f.view_proj, origin, arm_world,
                     0.30f, line_w, vw, vh);
-    const uint32_t visible_off = kSlotPivot     * kAxisUniformSlot;
-    const uint32_t xray_off    = kSlotPivotXray * kAxisUniformSlot;
+    const uint32_t visible_off = slot_visible_index * kAxisUniformSlot;
+    const uint32_t xray_off    = slot_xray_index    * kAxisUniformSlot;
     wgpuQueueWriteBuffer(queue_, uniform_buffer_, visible_off,
                          slot_visible, sizeof(slot_visible));
     wgpuQueueWriteBuffer(queue_, uniform_buffer_, xray_off,
@@ -347,6 +503,55 @@ void AxisIndicatorRenderer::encodePivot(WGPURenderPassEncoder pass,
     wgpuRenderPassEncoderSetPipeline(pass, pivot_pipeline_);
     ifcviewer::setBindGroupDynamic(pass, 0, bind_group_, 1, &visible_off);
     wgpuRenderPassEncoderDraw(pass, kAxisVertexCount, 1, 0, 0);
+}
+
+void AxisIndicatorRenderer::encodePivot(WGPURenderPassEncoder pass,
+                                        const OverlayFrame& f, bool visible) {
+    encodeWorldTriad(pass, f, f.camera_target, f.camera_distance, visible,
+                     30.0f, kSlotPivot, kSlotPivotXray);
+}
+
+void AxisIndicatorRenderer::encodeSurveyPoint(WGPURenderPassEncoder pass,
+                                              const OverlayFrame& f,
+                                              const Eigen::Vector3f& origin,
+                                              float eye_distance,
+                                              bool visible) {
+    // Shorter than the orbit pivot (30 px) so it reads as a point, not as
+    // the thing the camera is turning around.
+    encodeWorldTriad(pass, f, origin, eye_distance, visible,
+                     16.0f, kSlotSurvey, kSlotSurveyXray);
+}
+
+void AxisIndicatorRenderer::encodeOrigin(WGPURenderPassEncoder pass,
+                                         const OverlayFrame& f,
+                                         const Eigen::Vector3f& origin,
+                                         float size_metres,
+                                         const ViewportFog& fog,
+                                         const Eigen::Vector3f& eye,
+                                         const Eigen::Vector3f& forward,
+                                         bool visible) {
+    if (!visible || !origin_line_pipeline_) return;
+    if (!(size_metres > 0.0f)) return;
+
+    // `arm` is metres either side. Fog tail matches the grid uniform so the
+    // floor axes dissolve into the background with the grid lines.
+    uint8_t slot_visible[kAxisUniformSlot];
+    packAxisUniform(slot_visible, f.view_proj, origin, size_metres,
+                    1.00f, 1.0f, float(f.viewport_w_px), float(f.viewport_h_px));
+    float camera_pos[4], view_forward[4], fog_color[4], fog_params[4];
+    fog.writeUniformTail(camera_pos, view_forward, fog_color, fog_params, eye, forward);
+    std::memcpy(slot_visible + 96, camera_pos, 16);
+    std::memcpy(slot_visible + 112, view_forward, 16);
+    std::memcpy(slot_visible + 128, fog_color, 16);
+    std::memcpy(slot_visible + 144, fog_params, 16);
+    const uint32_t visible_off = kSlotOrigin * kAxisUniformSlot;
+    wgpuQueueWriteBuffer(queue_, uniform_buffer_, visible_off,
+                         slot_visible, sizeof(slot_visible));
+
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, origin_line_buffer_, 0, WGPU_WHOLE_SIZE);
+    wgpuRenderPassEncoderSetPipeline(pass, origin_line_pipeline_);
+    ifcviewer::setBindGroupDynamic(pass, 0, bind_group_, 1, &visible_off);
+    wgpuRenderPassEncoderDraw(pass, 4, 1, 0, 0);
 }
 
 void AxisIndicatorRenderer::encodeCornerAxis(WGPUCommandEncoder enc,
@@ -415,6 +620,10 @@ void AxisIndicatorRenderer::destroy() {
     if (pivot_pipeline_)      { wgpuRenderPipelineRelease(pivot_pipeline_);      pivot_pipeline_ = nullptr; }
     if (pivot_xray_pipeline_) { wgpuRenderPipelineRelease(pivot_xray_pipeline_); pivot_xray_pipeline_ = nullptr; }
     if (corner_pipeline_)     { wgpuRenderPipelineRelease(corner_pipeline_);     corner_pipeline_ = nullptr; }
+    if (origin_line_pipeline_)      { wgpuRenderPipelineRelease(origin_line_pipeline_);      origin_line_pipeline_ = nullptr; }
+    if (origin_line_xray_pipeline_) { wgpuRenderPipelineRelease(origin_line_xray_pipeline_); origin_line_xray_pipeline_ = nullptr; }
+    if (origin_line_buffer_)  { wgpuBufferRelease(origin_line_buffer_);          origin_line_buffer_ = nullptr; }
+    if (origin_line_shader_)  { wgpuShaderModuleRelease(origin_line_shader_);    origin_line_shader_ = nullptr; }
     if (layout_)              { wgpuPipelineLayoutRelease(layout_);              layout_ = nullptr; }
     if (bgl_)                 { wgpuBindGroupLayoutRelease(bgl_);                bgl_ = nullptr; }
     if (bind_group_)          { wgpuBindGroupRelease(bind_group_);               bind_group_ = nullptr; }
