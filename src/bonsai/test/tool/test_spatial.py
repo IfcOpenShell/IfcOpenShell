@@ -245,6 +245,64 @@ class TestSetRelativeObjectMatrix(NewFile):
         assert obj.matrix_world[0][3] == 2
 
 
+class TestToggleSpacesVisibilityWiredAndTextured(NewFile):
+    def test_skipping_spaces_without_a_blender_object(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        orphaned = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace")
+        space = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace")
+        obj = bpy.data.objects.new("Space", None)
+        obj.display_type = "TEXTURED"
+        tool.Ifc.link(space, obj)
+        subject.toggle_spaces_visibility_wired_and_textured([orphaned, space])
+        assert obj.display_type == "WIRE"
+        assert obj.show_wire
+        subject.toggle_spaces_visibility_wired_and_textured([orphaned, space])
+        assert obj.display_type == "TEXTURED"
+        assert not obj.show_wire
+
+    def test_doing_nothing_when_no_space_has_a_blender_object(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        orphaned = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace")
+        subject.toggle_spaces_visibility_wired_and_textured([orphaned])
+
+
+class TestToggleHideSpaces(NewFile):
+    def add_space(self, ifc, in_view_layer=True):
+        space = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace")
+        obj = bpy.data.objects.new("Space", None)
+        if in_view_layer:
+            bpy.context.scene.collection.objects.link(obj)
+            bpy.context.view_layer.update()
+        tool.Ifc.link(space, obj)
+        return space, obj
+
+    def test_skipping_spaces_whose_object_is_not_in_the_view_layer(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        missing, _ = self.add_space(ifc, in_view_layer=False)
+        space, obj = self.add_space(ifc)
+        subject.toggle_hide_spaces([missing, space])
+        assert obj.hide_get()
+        subject.toggle_hide_spaces([missing, space])
+        assert not obj.hide_get()
+
+    def test_skipping_spaces_without_a_blender_object(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        orphaned = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace")
+        space, obj = self.add_space(ifc)
+        subject.toggle_hide_spaces([orphaned, space])
+        assert obj.hide_get()
+
+    def test_doing_nothing_when_no_space_object_is_in_the_view_layer(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        missing, _ = self.add_space(ifc, in_view_layer=False)
+        subject.toggle_hide_spaces([missing])
+
+
 class TestSelectProducts(NewFile):
     def test_select_products(self):
         ifc = ifcopenshell.file()
