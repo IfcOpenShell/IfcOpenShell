@@ -7,7 +7,9 @@
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
+#include <map>
 #include <sstream>
+#include <tuple>
 #include <unordered_map>
 
 using ifcopenshell::geom::conversion_result_shape;
@@ -184,6 +186,62 @@ namespace {
 		return normals;
 	}
 
+    std::vector<std::pair<uint32_t, uint32_t>> boundary_edges(const mesh_type& mesh) {
+        // MeshGL vertices may be split to store different normal properties.
+        // Determine adjacency by position, independently of those properties.
+        std::map<std::tuple<double, double, double>, uint32_t> positions;
+        std::vector<uint32_t> vertices(mesh.NumVert());
+        auto point = [&](uint32_t i) {
+            return Eigen::Vector3d(
+                mesh.vertProperties[i * mesh.numProp + 0],
+                mesh.vertProperties[i * mesh.numProp + 1],
+                mesh.vertProperties[i * mesh.numProp + 2]);
+        };
+        for (size_t i = 0; i < mesh.NumVert(); ++i) {
+            const auto p = point((uint32_t)i);
+            vertices[i] = positions.emplace(std::make_tuple(p(0), p(1), p(2)), (uint32_t)i).first->second;
+        }
+
+        struct edge_info {
+            Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+            int count = 0;
+            bool coplanar = true;
+        };
+        std::unordered_map<std::pair<uint32_t, uint32_t>, edge_info, edge_hash> edges;
+        for (size_t i = 0; i < mesh.NumTri(); ++i) {
+            uint32_t tri[3] = {
+                vertices[mesh.triVerts[i * 3 + 0]],
+                vertices[mesh.triVerts[i * 3 + 1]],
+                vertices[mesh.triVerts[i * 3 + 2]]};
+            Eigen::Vector3d normal = (point(tri[1]) - point(tri[0])).cross(point(tri[2]) - point(tri[0]));
+            if (normal.squaredNorm() > 0.) {
+                normal.normalize();
+            }
+            for (int j = 0; j < 3; ++j) {
+                auto a = tri[j];
+                auto b = tri[(j + 1) % 3];
+                if (a > b) {
+                    std::swap(a, b);
+                }
+                auto& edge = edges[{a, b}];
+                if (edge.count++ == 0) {
+                    edge.normal = normal;
+                } else {
+                    // Like CGAL, compare parallel normals of adjacent triangles.
+                    // Allow for roundoff in the floating-point cross products.
+                    edge.coplanar = edge.coplanar && edge.normal.cross(normal).squaredNorm() <= 1.e-24;
+                }
+            }
+        }
+        std::vector<std::pair<uint32_t, uint32_t>> result;
+        for (const auto& edge : edges) {
+            if (edge.second.count != 2 || !edge.second.coplanar) {
+                result.push_back(edge.first);
+            }
+        }
+        return result;
+    }
+
 	double mesh_length(const mesh_type& mesh) {
 		double length = 0.;
 		auto edges = count_edges(mesh);
@@ -281,7 +339,6 @@ void ifcopenshell::geom::manifold_shape::triangulate(ifcopenshell::geom::setting
 				t->addNormal(fallback_normals[i](0), fallback_normals[i](1), fallback_normals[i](2));
 			}
 		}
-		auto edges = count_edges(mesh);
 		for (size_t i = 0; i < mesh.NumTri(); ++i) {
 			t->addFace(
 				item_id,
@@ -290,10 +347,8 @@ void ifcopenshell::geom::manifold_shape::triangulate(ifcopenshell::geom::setting
 				indices[mesh.triVerts[i * 3 + 1]],
 				indices[mesh.triVerts[i * 3 + 2]]);
 		}
-		for (const auto& edge : edges) {
-			if (edge.second == 1) {
-				t->registerEdge(item_id, indices[edge.first.first], indices[edge.first.second]);
-			}
+		for (const auto& edge : boundary_edges(mesh)) {
+			t->registerEdge(item_id, indices[edge.first], indices[edge.second]);
 		}
 	}
 }
