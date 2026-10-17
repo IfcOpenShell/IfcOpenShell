@@ -23,7 +23,7 @@ from pathlib import Path
 import bpy
 import pyradiance
 
-from . import list, operator, prop, ui
+from . import export, ies, list, material, prepare, prop, render, solar, ui
 
 
 def get_pyradiance_path():
@@ -31,31 +31,43 @@ def get_pyradiance_path():
 
 
 classes = (
-    operator.ExportOBJ,
-    operator.ImportLatLong,
-    operator.ImportTrueNorth,
-    operator.MoveSunPathTo3DCursor,
-    operator.RadianceRender,
-    operator.ViewFromSun,
-    operator.LightPickCoordinates,
-    operator.LightSetTimeToNow,
-    operator.RefreshIFCMaterials,
-    operator.UnmapMaterial,
-    operator.RADIANCE_OT_select_camera,
-    operator.RADIANCE_OT_export_material_mappings,
-    operator.RADIANCE_OT_import_material_mappings,
-    operator.RADIANCE_OT_open_spectraldb,
+    export.ExportOBJ,
+    solar.ImportLatLong,
+    solar.ImportTrueNorth,
+    solar.MoveSunPathTo3DCursor,
+    render.RadianceRender,
+    render.FalseColorRadiance,
+    render.RADIANCE_OT_select_camera,
+    solar.ViewFromSun,
+    solar.LightPickCoordinates,
+    solar.LightSetTimeToNow,
+    material.RefreshIFCMaterials,
+    material.UnmapMaterial,
+    material.RADIANCE_OT_export_material_mappings,
+    material.RADIANCE_OT_import_material_mappings,
+    material.RADIANCE_OT_open_spectraldb,
+    prepare.PrepareRadianceScene,
+    ies.AddIESLight,
+    ies.RemoveIESLight,
+    export.CleanupRadianceFiles,
     prop.RadianceMaterial,
+    prop.IESLight,
     prop.BIMSolarProperties,
     prop.RadianceExporterProperties,
     ui.BIM_PT_radiance_exporter,
+    ui.BIM_PT_radiance_scene_setup,
+    ui.BIM_PT_radiance_materials,
+    ui.BIM_PT_radiance_lighting,
+    ui.BIM_PT_radiance_render_settings,
+    ui.BIM_PT_radiance_pipeline,
     ui.BIM_PT_solar,
     list.MATERIAL_UL_radiance_materials,
+    list.MATERIAL_UL_ies_lights,
 )
 
 
 def register():
-    bpy.types.Scene.BIMRadianceExporeterProperies = bpy.props.PointerProperty(type=prop.RadianceExporterProperties)
+    bpy.types.Scene.BIMRadianceExporterProperties = bpy.props.PointerProperty(type=prop.RadianceExporterProperties)
     bpy.types.Scene.BIMSolarProperties = bpy.props.PointerProperty(type=prop.BIMSolarProperties)
 
     if pyradiance:
@@ -68,5 +80,5 @@ def register():
 
 
 def unregister():
-    del bpy.types.Scene.BIMRadianceExporeterProperies
+    del bpy.types.Scene.BIMRadianceExporterProperties
     del bpy.types.Scene.BIMSolarProperties
