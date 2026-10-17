@@ -18,6 +18,7 @@
 //     viewer.setCamera({ yaw: 45, pitch: 30 });
 //     viewer.setNavPreset('rhino');             // or switch schemes later
 //     viewer.upsertGrid({ id: 'base', plane: 'xy', spacing: 1, divisions: 50 });
+//     viewer.setOriginAxes(1000);               // metres either side of the origin
 //   </script>
 //
 // The canvas element MUST have id="viewer-canvas" — the wasm side hard-codes
@@ -46,6 +47,110 @@
   // build and the baker are both little-endian. Must match IfcViewFormat.h.
   const IFCVIEW_MAGIC  = 0x49465657;  // "IFVW"
   const IFCVIEW_ENDIAN = 0x01020304;
+
+  // Metres per federation unit. Matches the units the scripting page offers.
+  // Anything else is treated as metres; the composed matrix on the wasm side
+  // is what the survey triad actually uses.
+  function federationUnitToMeters(u) {
+    const name = ((u && u.name) || 'METRE').toUpperCase();
+    const prefix = ((u && u.prefix) || '').toUpperCase();
+    if (name === 'FOOT' || name === 'FEET') return 0.3048;
+    if (name === 'INCH' || name === 'INCHES') return 0.0254;
+    if (name === 'METRE' || name === 'METER') {
+      if (prefix === 'MILLI') return 0.001;
+      if (prefix === 'CENTI') return 0.01;
+      if (prefix === 'DECI') return 0.1;
+      if (prefix === 'KILO') return 1000;
+      return 1;
+    }
+    return 1;
+  }
+
+  // False origin, as a point in the viewer, metres from (0, 0, 0).
+  function surveyPointMetres(origin, unit) {
+    const s = federationUnitToMeters(unit);
+    const xyz = (origin && origin.xyz) || [0, 0, 0];
+    return [xyz[0] * s, xyz[1] * s, xyz[2] * s];
+  }
+
+  function federationUnitLabel(u) {
+    const name = (u && u.name) || 'METRE';
+    const prefix = (u && u.prefix) || '';
+    if (name === 'METRE' && prefix === '') return 'm';
+    if (name === 'METRE' && prefix === 'MILLI') return 'mm';
+    if (name === 'METRE' && prefix === 'CENTI') return 'cm';
+    if (name === 'METRE' && prefix === 'KILO') return 'km';
+    if (name === 'foot' || name === 'FEET') return 'ft';
+    if (name === 'inch') return 'in';
+    return (prefix ? prefix + ' ' : '') + name;
+  }
+
+  function fmtCoord(v) {
+    if (!isFinite(v)) return '—';
+    const abs = Math.abs(v);
+    const digits = abs >= 1000 ? 2 : abs >= 1 ? 3 : 4;
+    const negative = v < 0;
+    const parts = Math.abs(v).toFixed(digits).split('.');
+    const grouped = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return (negative ? '−' : '') + grouped + (parts[1] ? '.' + parts[1] : '');
+  }
+
+  function originShifted(xyz) {
+    return Math.hypot(xyz[0], xyz[1], xyz[2]) > 1e-3;
+  }
+
+  function originMoved(a, b) {
+    return Math.hypot(b.xyz[0] - a.xyz[0], b.xyz[1] - a.xyz[1], b.xyz[2] - a.xyz[2]) > 1e-3
+      || Math.abs(b.rzDeg - a.rzDeg) > 1e-3
+      || b.explicit !== a.explicit;
+  }
+
+  // Same orbit projection as ViewportCore::buildViewProj, for builds that
+  // do not yet export ifcv_project_world_c. FOV / clip planes match the
+  // core defaults (45°, 0.1…10000).
+  function projectWorldFromCamera(cam, canvas, xyz) {
+    if (!cam || !canvas) return null;
+    const eye = cam.eye, target = cam.target;
+    let fx = target[0] - eye[0], fy = target[1] - eye[1], fz = target[2] - eye[2];
+    const fl = Math.hypot(fx, fy, fz) || 1;
+    fx /= fl; fy /= fl; fz /= fl;
+    const up = Math.abs(cam.pitch) >= 89 ? [0, 1, 0] : [0, 0, 1];
+    let sx = fy * up[2] - fz * up[1];
+    let sy = fz * up[0] - fx * up[2];
+    let sz = fx * up[1] - fy * up[0];
+    const sl = Math.hypot(sx, sy, sz) || 1;
+    sx /= sl; sy /= sl; sz /= sl;
+    const ux = sy * fz - sz * fy;
+    const uy = sz * fx - sx * fz;
+    const uz = sx * fy - sy * fx;
+    const vx = sx * xyz[0] + sy * xyz[1] + sz * xyz[2] - (sx * eye[0] + sy * eye[1] + sz * eye[2]);
+    const vy = ux * xyz[0] + uy * xyz[1] + uz * xyz[2] - (ux * eye[0] + uy * eye[1] + uz * eye[2]);
+    const vz = -fx * xyz[0] - fy * xyz[1] - fz * xyz[2] + (fx * eye[0] + fy * eye[1] + fz * eye[2]);
+    const rect = canvas.getBoundingClientRect();
+    const cssW = rect.width || canvas.clientWidth || 1;
+    const cssH = rect.height || canvas.clientHeight || 1;
+    const aspect = cssW / cssH;
+    const t = Math.tan(45 * Math.PI / 360);
+    let cx, cy, cw;
+    if (cam.ortho) {
+      const halfH = cam.distance * t;
+      const halfW = halfH * aspect;
+      cx = vx / halfW;
+      cy = vy / halfH;
+      cw = 1;
+    } else {
+      cx = vx / (aspect * t);
+      cy = vy / t;
+      cw = -vz;
+    }
+    if (cw <= 1e-4) return null;
+    const ndcX = cx / cw;
+    const ndcY = cy / cw;
+    return {
+      x: (ndcX * 0.5 + 0.5) * cssW,
+      y: (1 - (ndcY * 0.5 + 0.5)) * cssH,
+    };
+  }
 
   // First 12 bytes of a File/Blob or a URL (ranged). Network failure throws
   // a plain Error; a header that is present but not the expected sidecar
@@ -581,6 +686,13 @@
     const selectListeners = [];
     const selectionListeners = [];
     const modelLoadedListeners = [];
+    const frameListeners = [];
+    // Value space for the false origin and for a transform's b/pivot. The
+    // wasm default is metres; setFederationUnit is the only writer.
+    let federationUnit = { name: 'METRE', prefix: '' };
+    // null until the first projectWorld: true once ifcv_project_world_c
+    // answers, false when this wasm build does not export it.
+    let projectWorldNative = null;
     let api = null;   // built below; the RAF loop only reads it after that
     let live = false;
     let resolveReady;
@@ -608,6 +720,9 @@
             if (opts.onReady) opts.onReady(api);
           }
           Module._raf_tick_c(Module._app_ptr);
+          for (let i = 0; i < frameListeners.length; i++) {
+            try { frameListeners[i](api); } catch (e) { console.error(e); }
+          }
           if (opts.onFrame) opts.onFrame(api);
         }
         requestAnimationFrame(tick);
@@ -1037,6 +1152,34 @@
         if (Module._toggle_grid_c) Module._toggle_grid_c();
       },
 
+      // Blender floor axes through the scene origin. `size` is metres either
+      // side along X (red) and Y (green). There is no Z line. They fade into
+      // the background with the grid. A number is that size; an object may
+      // also set `visible`. Default size is 1000.
+      //   viewer.setOriginAxes(1000);
+      //   viewer.setOriginAxes({ size: 2500, visible: true });
+      setOriginAxes: function (opts) {
+        if (typeof opts === 'number') opts = { size: opts };
+        opts = opts || {};
+        if (opts.size != null && Module._set_origin_axes_size_c) {
+          Module._set_origin_axes_size_c(Number(opts.size));
+        }
+        if (opts.visible != null) this.setOriginAxesVisible(!!opts.visible);
+        return { size: this.originAxesSize(), visible: this.originAxesVisible() };
+      },
+      originAxesSize: function () {
+        return Module._origin_axes_size_c ? Module._origin_axes_size_c() : 1000;
+      },
+      setOriginAxesVisible: function (visible) {
+        if (Module._set_origin_axes_visible_c) Module._set_origin_axes_visible_c(visible ? 1 : 0);
+      },
+      originAxesVisible: function () {
+        return Module._origin_axes_visible_c ? Module._origin_axes_visible_c() !== 0 : false;
+      },
+      toggleOriginAxes: function () {
+        if (Module._toggle_origin_axes_c) Module._toggle_origin_axes_c();
+      },
+
       // Floor fade for the grid and the X/Y axes. `near` and `far` are
       // multiples of the camera distance: 0.35 starts the fade at 35% of
       // the view distance, 2.2 finishes it at 2.2× that distance. `mode` is
@@ -1086,8 +1229,87 @@
         if (Module._toggle_fog_c) Module._toggle_fog_c();
       },
 
-      // Model bookkeeping      xrayActive:   function () { return Module._xray_is_active_c() !== 0; },
+      // CSS pixels of a world point on the canvas, y down from the canvas
+      // top-left. Null when the point is behind the camera. World (0,0,0) is
+      // the axes intersection. The survey point is elsewhere: pass
+      // surveyPoint() to pin a tag on the false origin. Uses the renderer's
+      // own projection when this build exports it, and the same orbit math
+      // otherwise.
+      projectWorld: function (xyz) {
+        xyz = xyz || [0, 0, 0];
+        if (projectWorldNative !== false && typeof Module._ifcv_project_world_c === 'function') {
+          const ptr = Module._malloc(2 * 4);
+          try {
+            const ok = Module._ifcv_project_world_c(xyz[0], xyz[1], xyz[2], ptr);
+            projectWorldNative = true;
+            if (!ok) return null;
+            const f = Module.HEAPF32.subarray(ptr >>> 2, (ptr >>> 2) + 2);
+            return { x: f[0], y: f[1] };
+          } catch (err) {
+            projectWorldNative = false;
+          } finally {
+            Module._free(ptr);
+          }
+        }
+        return projectWorldFromCamera(this.getCamera(), opts.canvas, xyz);
+      },
 
+      // Pin `el` on the survey point (the false origin), not on the axes
+      // crossing. The text is that point's coordinates in the federation
+      // unit. One line. When the point moves, the line leads with how far.
+      // Hidden while the axes themselves are hidden. Returns an unbind fn.
+      bindOriginReadout: function (el) {
+        if (!el) return function () {};
+        let prev = null;
+        let movedUntil = 0;
+        let movedNote = '';
+        const tickReadout = function (viewer) {
+          if (!viewer.originAxesVisible()) {
+            el.hidden = true;
+            return;
+          }
+          const origin = viewer.getFalseOrigin();
+          const unit = origin.unit || 'm';
+          const now = performance.now();
+          if (prev && originMoved(prev, origin)) {
+            const dx = origin.xyz[0] - prev.xyz[0];
+            const dy = origin.xyz[1] - prev.xyz[1];
+            const dz = origin.xyz[2] - prev.xyz[2];
+            movedNote = 'moved ' + fmtCoord(Math.hypot(dx, dy, dz)) + ' ' + unit;
+            movedUntil = now + 6000;
+          }
+          prev = { xyz: origin.xyz.slice(), rzDeg: origin.rzDeg, explicit: origin.explicit };
+          const moving = now < movedUntil;
+          const xyz = fmtCoord(origin.xyz[0]) + ', ' +
+            fmtCoord(origin.xyz[1]) + ', ' +
+            fmtCoord(origin.xyz[2]) + ' ' + unit;
+          const canvas = opts.canvas;
+          const rect = canvas.getBoundingClientRect();
+          const screen = viewer.projectWorld(surveyPointMetres(origin, federationUnit));
+          const onScreen = screen &&
+            screen.x >= 8 && screen.y >= 8 &&
+            screen.x <= rect.width - 8 && screen.y <= rect.height - 8;
+          // One line, beside the survey triad. The axes crossing stays at
+          // viewer 0, 0, 0 and is not labelled. FEDERATION.md says why.
+          el.textContent = (moving ? movedNote + ' · ' : '') + xyz +
+            (onScreen ? '' : ' · off screen');
+          el.classList.toggle('moved', moving);
+          el.classList.toggle('docked', !onScreen);
+          el.hidden = false;
+          if (onScreen) {
+            el.style.left = (rect.left + screen.x + 12) + 'px';
+            el.style.top = (rect.top + screen.y) + 'px';
+          } else {
+            el.style.left = (rect.left + 12) + 'px';
+            el.style.top = (rect.top + 36) + 'px';
+          }
+        };
+        frameListeners.push(tickReadout);
+        return function () {
+          const i = frameListeners.indexOf(tickReadout);
+          if (i >= 0) frameListeners.splice(i, 1);
+        };
+      },
       upsertGrid: function (definition) {
         var grid = normalizeGridDefinition(definition || {});
         if (!grid.id) throw new Error('Grid definition requires an id.');
@@ -1315,12 +1537,15 @@
       // a transform's b/pivot.
       setFederationUnit: function (u) {
         u = u || {};
+        federationUnit = { name: u.name || 'METRE', prefix: u.prefix || '' };
         Module.ccall('ifcv_set_federation_unit_c', null, ['string', 'string'],
-                     [u.name || 'METRE', u.prefix || '']);
+                     [federationUnit.name, federationUnit.prefix]);
       },
 
-      // Nominate a point as the scene origin, with an optional grid-north
-      // heading in degrees. Setting this turns off the automatic guess.
+      // Nominate the survey point, with an optional grid-north heading in
+      // degrees. The floor axes stay at viewer 0, 0, 0. The small triad
+      // moves to this coordinate, and the models shift so that point is
+      // drawn on the crossing. Setting this turns off the automatic guess.
       setFalseOrigin: function (o) {
         o = o || {};
         const xyz = o.xyz || [0, 0, 0];
@@ -1334,10 +1559,22 @@
         try {
           Module._ifcv_get_false_origin_c(ptr);
           const d = Module.HEAPF64.subarray(ptr >>> 3, (ptr >>> 3) + 5);
-          return { xyz: [d[0], d[1], d[2]], rzDeg: d[3], explicit: d[4] !== 0 };
+          return {
+            xyz: [d[0], d[1], d[2]],
+            rzDeg: d[3],
+            explicit: d[4] !== 0,
+            unit: federationUnitLabel(federationUnit),
+          };
         } finally {
           Module._free(ptr);
         }
+      },
+
+      // Survey point in viewer metres: where the small triad is drawn.
+      // (0, 0, 0) when the false origin is zero and the triad sits on the
+      // axes crossing.
+      surveyPoint: function () {
+        return surveyPointMetres(this.getFalseOrigin(), federationUnit);
       },
 
       // Place a model: rotate it about `pivot`, then translate so that point

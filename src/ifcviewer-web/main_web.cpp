@@ -33,10 +33,10 @@
 #include "WebFederation.h"
 #include "Log.h"
 
-#include "ViewportGridSpec.h"
-
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+
+#include "ViewportGridSpec.h"
 
 #include <algorithm>
 #include <cmath>
@@ -630,6 +630,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void show_all_c()         { if (g_app && g_app->
 extern "C" EMSCRIPTEN_KEEPALIVE void hide_all_c()         { if (g_app && g_app->ready) g_app->core.hideAll(); }
 extern "C" EMSCRIPTEN_KEEPALIVE void toggle_xray_c()      { if (g_app && g_app->ready) g_app->core.toggleXray(); }
 extern "C" EMSCRIPTEN_KEEPALIVE int  xray_is_active_c()   { return (g_app && g_app->ready && g_app->core.xrayActive()) ? 1 : 0; }
+
 // Ground grid visibility, plus sparse RGB line grids (plane 0=XY, 1=XZ, 2=YZ).
 // Pass a negative colour component to keep the plane-default axis colour.
 extern "C" EMSCRIPTEN_KEEPALIVE void set_grid_visible_c(int visible) {
@@ -640,6 +641,24 @@ extern "C" EMSCRIPTEN_KEEPALIVE int grid_is_visible_c() {
 }
 extern "C" EMSCRIPTEN_KEEPALIVE void toggle_grid_c() {
     if (g_app && g_app->ready) g_app->core.toggleGrid();
+}
+
+// World-space axes through the scene origin. `size` is metres either side
+// (bidirectional AxesHelper). Default 1000.
+extern "C" EMSCRIPTEN_KEEPALIVE void set_origin_axes_visible_c(int visible) {
+    if (g_app && g_app->ready) g_app->core.setOriginAxesVisible(visible != 0);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int origin_axes_visible_c() {
+    return (g_app && g_app->ready && g_app->core.originAxesVisible()) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void toggle_origin_axes_c() {
+    if (g_app && g_app->ready) g_app->core.toggleOriginAxes();
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void set_origin_axes_size_c(float size_metres) {
+    if (g_app && g_app->ready) g_app->core.setOriginAxesSize(size_metres);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE float origin_axes_size_c() {
+    return (g_app && g_app->ready) ? g_app->core.originAxesSize() : 1000.0f;
 }
 
 // Floor fade. near/far factors are multiples of the camera distance.
@@ -736,6 +755,18 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_get_camera_c(float* out) {
     out[0] = s.target.x(); out[1] = s.target.y(); out[2] = s.target.z();
     out[3] = s.distance;   out[4] = s.yaw;        out[5] = s.pitch;
     out[6] = eye.x();      out[7] = eye.y();      out[8] = eye.z();
+}
+// CSS pixels of a world point on the canvas, y down. Returns 0 when the point
+// is behind the camera. World (0,0,0) is the axes intersection. The survey
+// point is the false origin in metres, so a host pins its readout there.
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_project_world_c(float x, float y, float z,
+                                                         float* out) {
+    if (!g_app || !g_app->ready || !out) return 0;
+    float css_x = 0.0f, css_y = 0.0f;
+    if (!g_app->core.projectWorldToCss(x, y, z, css_x, css_y)) return 0;
+    out[0] = css_x;
+    out[1] = css_y;
+    return 1;
 }
 extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_camera_c(float tx, float ty, float tz,
                                                        float dist, float yaw, float pitch) {
