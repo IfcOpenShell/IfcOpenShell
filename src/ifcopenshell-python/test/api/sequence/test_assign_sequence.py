@@ -57,6 +57,19 @@ class TestAssignSequence(test.bootstrap.IFC4):
         assert rel1 == rel2
         assert len(self.file.by_type("IfcRelSequence")) == 1
 
+    def test_not_recalculating_the_dates_of_the_predecessor(self):
+        predecessor = ifcopenshell.api.sequence.add_task(self.file)
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=predecessor)
+        task_time.ScheduleStart = "2000-01-03T08:00:00"
+        task_time.ScheduleFinish = "2000-01-04T12:00:00"
+        task_time.ScheduleDuration = "P1DT12H"
+        successor = ifcopenshell.api.sequence.add_task(self.file)
+        ifcopenshell.api.sequence.add_task_time(self.file, task=successor)
+
+        ifcopenshell.api.sequence.assign_sequence(self.file, relating_process=predecessor, related_process=successor)
+        assert predecessor.TaskTime.ScheduleStart == "2000-01-03T08:00:00"
+        assert predecessor.TaskTime.ScheduleFinish == "2000-01-04T12:00:00"
+
     def test_assigning_two_sequences_of_different_types_to_the_same_pair(self):
         # A "ladder": the follower may start once the leader has started, and
         # may not finish before the leader finishes. Both constraints are real
