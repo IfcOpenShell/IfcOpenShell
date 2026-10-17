@@ -49,6 +49,7 @@
 
 #include "AxisIndicatorRenderer.h"
 #include "BufferPool.h"
+#include "ViewportFog.h"
 #include "GpuBudget.h"
 #include "GpuMemory.h"
 #include "ModelLookup.h"
@@ -321,6 +322,19 @@ public:
     // keeps requesting frames until an armed afterglow expires.
     void setPivotIndicatorVisible(bool visible, int hide_after_ms = 0);
     bool pivotIndicatorVisible() const;
+
+    // Floor fade for the grid and the X/Y axes. `near_factor` and `far_factor`
+    // are multiples of the camera distance (0.35 starts the fade at 35% of
+    // the view distance). Colour is the background, so the floor dissolves
+    // into it. `mode` is 1 linear or 2 exp2; `enabled` false turns the fade off.
+    void setFog(bool enabled, int mode, float near_factor, float far_factor, float density);
+    void setFogEnabled(bool enabled);
+    bool fogEnabled() const { return fog_enabled_; }
+    void toggleFog();
+    int fogMode() const { return fog_mode_; }
+    float fogNearFactor() const { return fog_near_factor_; }
+    float fogFarFactor() const { return fog_far_factor_; }
+    float fogDensity() const { return fog_density_; }
 
     // ---- First-person / fly navigation --------------------------------------
     //
@@ -1231,6 +1245,12 @@ private:
     // Corner axis gizmo + orbit pivot indicator, likewise shared by desktop +
     // web. Same lift out of the Qt-coupled OverlayRenderer.
     AxisIndicatorRenderer axis_indicator_;
+    ViewportFog           fog_;
+    bool                  fog_enabled_      = true;
+    int                   fog_mode_         = 1;      // 1 linear, 2 exp2
+    float                 fog_near_factor_  = 0.35f;  // × camera distance
+    float                 fog_far_factor_   = 2.2f;
+    float                 fog_density_      = 0.002f;
     bool                  pivot_indicator_visible_ = false;
     // Only running while an afterglow is armed; a drag-held indicator leaves it
     // invalid so the triad stays up until the host clears it.

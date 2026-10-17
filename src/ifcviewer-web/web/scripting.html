@@ -32,6 +32,8 @@
   button:disabled { opacity: .5; cursor: default; filter: none; }
   input[type=number] { background: #0f1117; color: #c8ccd6; border: 1px solid #2b3244;
     border-radius: 4px; padding: 5px 6px; font-size: 12px; width: 66px; }
+  select { background: #0f1117; color: #c8ccd6; border: 1px solid #2b3244;
+    border-radius: 4px; padding: 5px 6px; font-size: 12px; }
   input[type=color] { width: 34px; height: 27px; padding: 0; background: #0f1117;
     border: 1px solid #2b3244; border-radius: 4px; cursor: pointer; }
   label.field { display: flex; gap: 5px; align-items: center; font-size: 12px; color: #8a93a6; }
@@ -133,6 +135,30 @@
     </div>
 
     <div class="card">
+      <h2>Fog <span class="pill">setFog</span></h2>
+      <div class="body">
+        <div class="row">
+          <label class="field"><input type="checkbox" id="fog-enabled" checked> Fade the floor</label>
+          <label class="field">mode
+            <select id="fog-mode">
+              <option value="linear" selected>Linear</option>
+              <option value="exp2">Exp2</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label class="field">near × dist
+            <input type="number" id="fog-near" min="0.05" step="0.05" value="0.35"></label>
+          <label class="field">far × dist
+            <input type="number" id="fog-far" min="0.1" step="0.1" value="2.2"></label>
+          <label class="field">density
+            <input type="number" id="fog-density" min="0" step="0.001" value="0.002"></label>
+        </div>
+        <div class="hint" id="fog-hint">Near and far are multiples of the camera distance. The floor fades into the background.</div>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>Objects <span class="pill" id="object-count">getObjects</span></h2>
       <table id="object-table">
         <thead><tr><th>GlobalId</th><th>Name</th><th>Type</th><th>Model</th>
@@ -188,6 +214,15 @@
       `target ${c.target.map(f).join(', ')}\n` +
       `eye    ${c.eye.map(f).join(', ')}\n` +
       `dist   ${f(c.distance)}  (${c.ortho ? 'orthographic' : 'perspective'})`;
+    const fogHint = $('fog-hint');
+    if (fogHint && viewer) {
+      const fog = viewer.fog();
+      const start = c.distance * fog.near;
+      const end = c.distance * fog.far;
+      fogHint.textContent = fog.enabled
+        ? `Relative to the camera. At this view the fade runs from ${start.toFixed(0)} m to ${end.toFixed(0)} m, into the background. Density is for Exp2.`
+        : 'Fog is off. The floor stays at full strength out to the grid edge.';
+    }
     if (!cameraInputsSeeded) {
       cameraInputsSeeded = true;
       $('cam-yaw').value      = c.yaw.toFixed(0);
@@ -336,6 +371,33 @@
       renderTable();
     };
     $('colour-clear').onclick = () => { viewer.clearColors(); renderTable(); };
+
+    // ---- Fog: near/far are multiples of the camera distance -------------------
+
+    const applyFog = () => {
+      const near = Number($('fog-near').value);
+      const far = Number($('fog-far').value);
+      const density = Number($('fog-density').value);
+      if (!(near > 0) || !(far > near) || !(density >= 0)) return;
+      viewer.setFog({
+        enabled: $('fog-enabled').checked,
+        mode: $('fog-mode').value,
+        near,
+        far,
+        density,
+      });
+    };
+    $('fog-enabled').onchange = applyFog;
+    for (const id of ['fog-mode', 'fog-near', 'fog-far', 'fog-density']) {
+      $(id).oninput = applyFog;
+      $(id).onchange = applyFog;
+    }
+    const fog0 = viewer.fog();
+    $('fog-enabled').checked = fog0.enabled;
+    $('fog-mode').value = fog0.mode === 2 ? 'exp2' : 'linear';
+    $('fog-near').value = fog0.near;
+    $('fog-far').value = fog0.far;
+    $('fog-density').value = fog0.density;
 
     // ---- Objects (5): the table above, and federating in more models ----------
 
