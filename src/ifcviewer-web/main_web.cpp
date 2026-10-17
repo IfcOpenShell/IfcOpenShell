@@ -628,6 +628,35 @@ extern "C" EMSCRIPTEN_KEEPALIVE void show_all_c()         { if (g_app && g_app->
 extern "C" EMSCRIPTEN_KEEPALIVE void hide_all_c()         { if (g_app && g_app->ready) g_app->core.hideAll(); }
 extern "C" EMSCRIPTEN_KEEPALIVE void toggle_xray_c()      { if (g_app && g_app->ready) g_app->core.toggleXray(); }
 extern "C" EMSCRIPTEN_KEEPALIVE int  xray_is_active_c()   { return (g_app && g_app->ready && g_app->core.xrayActive()) ? 1 : 0; }
+// Floor fade. near/far factors are multiples of the camera distance.
+// mode 1 = linear, 2 = exp2. Colour follows the background.
+extern "C" EMSCRIPTEN_KEEPALIVE void set_fog_c(int enabled, int mode,
+                                               float near_factor, float far_factor,
+                                               float density) {
+    if (g_app && g_app->ready) g_app->core.setFog(enabled != 0, mode, near_factor, far_factor, density);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void set_fog_enabled_c(int enabled) {
+    if (g_app && g_app->ready) g_app->core.setFogEnabled(enabled != 0);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int fog_is_enabled_c() {
+    return (g_app && g_app->ready && g_app->core.fogEnabled()) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void toggle_fog_c() {
+    if (g_app && g_app->ready) g_app->core.toggleFog();
+}
+// out: enabled, mode, nearFactor, farFactor, density
+extern "C" EMSCRIPTEN_KEEPALIVE void get_fog_c(float* out) {
+    if (!out) return;
+    if (!g_app || !g_app->ready) {
+        out[0] = 1.0f; out[1] = 1.0f; out[2] = 0.35f; out[3] = 2.2f; out[4] = 0.002f;
+        return;
+    }
+    out[0] = g_app->core.fogEnabled() ? 1.0f : 0.0f;
+    out[1] = float(g_app->core.fogMode());
+    out[2] = g_app->core.fogNearFactor();
+    out[3] = g_app->core.fogFarFactor();
+    out[4] = g_app->core.fogDensity();
+}
 extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_selection_outline_c(int on) {
     if (!g_app || !g_app->ready) return;
     g_app->core.setSelectionOutlineEnabled(on != 0);

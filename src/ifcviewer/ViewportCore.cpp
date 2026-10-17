@@ -692,6 +692,30 @@ bool ViewportCore::pivotIndicatorVisible() const {
     return pivot_indicator_timer_.elapsed() < pivot_indicator_hide_ms_;
 }
 
+void ViewportCore::setFog(bool enabled, int mode, float near_factor, float far_factor,
+                          float density) {
+    mode = std::clamp(mode, 1, 2);
+    if (!(near_factor > 0.0f)) near_factor = fog_near_factor_;
+    if (!(far_factor > near_factor)) far_factor = near_factor * 1.5f;
+    if (!(density >= 0.0f)) density = fog_density_;
+    fog_enabled_     = enabled;
+    fog_mode_        = mode;
+    fog_near_factor_ = near_factor;
+    fog_far_factor_  = far_factor;
+    fog_density_     = density;
+    host_->requestFrame();
+}
+
+void ViewportCore::setFogEnabled(bool enabled) {
+    if (fog_enabled_ == enabled) return;
+    fog_enabled_ = enabled;
+    host_->requestFrame();
+}
+
+void ViewportCore::toggleFog() {
+    setFogEnabled(!fog_enabled_);
+}
+
 void ViewportCore::flyMove(bool fwd, bool back, bool right, bool left,
                            bool up, bool down, bool boost, float dt_seconds) {
     if (dt_seconds <= 0.0f) return;

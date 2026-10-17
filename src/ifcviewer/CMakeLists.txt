@@ -141,6 +141,7 @@ endif()
 set(IFCVIEWER_CORE_SOURCES
     AxisIndicatorRenderer.cpp
     BufferPool.cpp
+    ViewportFog.cpp
     ChunkPlanner.cpp
     InstanceCompose.cpp
     ModelLookup.cpp
@@ -193,6 +194,8 @@ endif()
 set(IFCVIEWER_CORE_HEADERS
     AxisIndicatorRenderer.h
     BufferPool.h
+    ViewportFog.h
+    ViewportFogWgsl.h
     CameraMath.h
     ChunkPlanner.h
     InstanceCompose.h

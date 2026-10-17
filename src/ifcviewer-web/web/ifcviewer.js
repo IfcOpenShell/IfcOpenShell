@@ -955,6 +955,57 @@
       toggleXray:   function () { Module._toggle_xray_c(); },
       xrayActive:   function () { return Module._xray_is_active_c() !== 0; },
 
+      // Floor fade for the grid and the X/Y axes. `near` and `far` are
+      // multiples of the camera distance: 0.35 starts the fade at 35% of
+      // the view distance, 2.2 finishes it at 2.2× that distance. `mode` is
+      // 'linear' or 'exp2'. The colour is the background. Off leaves the
+      // floor at full strength out to the grid edge.
+      //   viewer.setFog({ near: 0.35, far: 2.2 });
+      //   viewer.setFog(false);
+      setFog: function (opts) {
+        if (typeof opts === 'boolean') opts = { enabled: opts };
+        opts = opts || {};
+        const cur = this.fog();
+        const enabled = opts.enabled != null ? !!opts.enabled : cur.enabled;
+        let mode = cur.mode;
+        if (opts.mode === 'exp2' || opts.mode === 2) mode = 2;
+        else if (opts.mode === 'linear' || opts.mode === 1) mode = 1;
+        const near = opts.near != null ? Number(opts.near) : cur.near;
+        const far = opts.far != null ? Number(opts.far) : cur.far;
+        const density = opts.density != null ? Number(opts.density) : cur.density;
+        if (Module._set_fog_c) Module._set_fog_c(enabled ? 1 : 0, mode, near, far, density);
+        return this.fog();
+      },
+      fog: function () {
+        const fallback = { enabled: true, mode: 1, near: 0.35, far: 2.2, density: 0.002 };
+        if (!Module._get_fog_c) return fallback;
+        const ptr = Module._malloc(5 * 4);
+        try {
+          Module._get_fog_c(ptr);
+          const d = Module.HEAPF32.subarray(ptr >>> 2, (ptr >>> 2) + 5);
+          return {
+            enabled: d[0] !== 0,
+            mode: d[1] >= 1.5 ? 2 : 1,
+            near: d[2],
+            far: d[3],
+            density: d[4],
+          };
+        } finally {
+          Module._free(ptr);
+        }
+      },
+      setFogVisible: function (visible) {
+        if (Module._set_fog_enabled_c) Module._set_fog_enabled_c(visible ? 1 : 0);
+      },
+      fogVisible: function () {
+        return Module._fog_is_enabled_c ? Module._fog_is_enabled_c() !== 0 : true;
+      },
+      toggleFog: function () {
+        if (Module._toggle_fog_c) Module._toggle_fog_c();
+      },
+
+      // Model bookkeeping      xrayActive:   function () { return Module._xray_is_active_c() !== 0; },
+
       // Model bookkeeping (ordered by load). Progress is per-model chunk counts.
       modelCount: function () { return Module._ifcv_model_count_c ? Module._ifcv_model_count_c() : 0; },
       modelProgress: function (i) {

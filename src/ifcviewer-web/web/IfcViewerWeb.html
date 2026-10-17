@@ -91,6 +91,7 @@
   <button data-act="isolate" title="Isolate selected (Shift+H)">Isolate</button>
   <button data-act="showall" title="Show all (Alt+H)">Show all</button>
   <button data-act="xray"    id="xray-btn" title="X-ray — translucent everything (Alt+X)">X-ray</button>
+  <button data-act="fog"     id="fog-btn" title="Fade the grid and axes into the background">Fog</button>
   <span class="sep"></span>
   <button data-act="section" id="section-btn" title="Section tool — click a surface to cut (K)">Section</button>
   <button data-act="clearcut" title="Clear all section cuts (Shift+K)">Clear cuts</button>
@@ -209,6 +210,7 @@
       var M = viewer.module;
       syncButton('fly-btn', M._fly_is_active_c && M._fly_is_active_c());
       syncButton('xray-btn', M._xray_is_active_c && M._xray_is_active_c());
+      syncButton('fog-btn', viewer.fogVisible());
       syncButton('section-btn', M._section_is_active_c && M._section_is_active_c());
     },
   }).then(function (viewer) {
@@ -245,6 +247,7 @@
         else if (act === 'isolate') M._isolate_selected_c();
         else if (act === 'showall') M._show_all_c();
         else if (act === 'xray')    M._toggle_xray_c();
+        else if (act === 'fog')     viewer.toggleFog();
         else if (act === 'section') M._toggle_section_c();
         else if (act === 'clearcut') M._clear_section_c();
         else if (view !== null)     M._standard_view_c(parseInt(view, 10));
