@@ -420,7 +420,8 @@ class BaseDecorator:
 
         prefs = tool.Blender.get_addon_preferences()
         magic_font_scale = prefs.doc.magic_font_scale
-        font_size_px = int(magic_font_scale * mm_to_px) * font_size_mm / 2.5
+        # Keep mm_to_px a float: int() quantised the text size against zoom and resolution (#3353, #3683).
+        font_size_px = magic_font_scale * mm_to_px * font_size_mm / 2.5
         pos = pos - line_no * font_size_px * rotation_matrix[1]
 
         blf.size(font_id, font_size_px)
