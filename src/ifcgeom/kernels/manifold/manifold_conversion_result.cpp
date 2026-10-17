@@ -161,30 +161,89 @@ namespace {
 		return edges;
 	}
 
-	std::vector<Eigen::Vector3d> calculate_vertex_normals(const mesh_type& mesh) {
-		std::vector<Eigen::Vector3d> normals(mesh.NumVert(), Eigen::Vector3d::Zero());
-		auto point = [&](uint32_t i) {
-			return Eigen::Vector3d(
-				mesh.vertProperties[i * mesh.numProp + 0],
-				mesh.vertProperties[i * mesh.numProp + 1],
-				mesh.vertProperties[i * mesh.numProp + 2]);
-		};
-		for (size_t i = 0; i < mesh.NumTri(); ++i) {
-			const uint32_t a = (uint32_t)mesh.triVerts[i * 3 + 0];
-			const uint32_t b = (uint32_t)mesh.triVerts[i * 3 + 1];
-			const uint32_t c = (uint32_t)mesh.triVerts[i * 3 + 2];
-			const auto normal = (point(b) - point(a)).cross(point(c) - point(a));
-			for (const auto vertex : { a, b, c }) {
-				normals[vertex] += normal;
-			}
-		}
-		for (size_t i = 0; i < normals.size(); ++i) {
-			if (normals[i].squaredNorm() > 0.) {
-				normals[i].normalize();
-			}
-		}
-		return normals;
-	}
+    mesh_type split_edges_and_calculate_normals(const mesh_type& mesh) {
+        auto point = [&](uint32_t i) {
+            return Eigen::Vector3d(
+                mesh.vertProperties[i * mesh.numProp + 0],
+                mesh.vertProperties[i * mesh.numProp + 1],
+                mesh.vertProperties[i * mesh.numProp + 2]);
+        };
+        std::vector<Eigen::Vector3d> triangle_normals(mesh.NumTri(), Eigen::Vector3d::Zero());
+        std::unordered_map<std::pair<uint32_t, uint32_t>, std::vector<size_t>, edge_hash> edge_faces;
+        for (size_t i = 0; i < mesh.NumTri(); ++i) {
+            const uint32_t a = (uint32_t)mesh.triVerts[i * 3 + 0];
+            const uint32_t b = (uint32_t)mesh.triVerts[i * 3 + 1];
+            const uint32_t c = (uint32_t)mesh.triVerts[i * 3 + 2];
+            Eigen::Vector3d normal = (point(b) - point(a)).cross(point(c) - point(a));
+            if (normal.squaredNorm() > 0.) {
+                normal.normalize();
+            }
+            triangle_normals[i] = normal;
+            for (int j = 0; j < 3; ++j) {
+                auto u = (uint32_t)mesh.triVerts[i * 3 + j];
+                auto v = (uint32_t)mesh.triVerts[i * 3 + (j + 1) % 3];
+                if (u > v) {
+                    std::swap(u, v);
+                }
+                edge_faces[{u, v}].push_back(i);
+            }
+        }
+
+        const double cos_angle = std::cos(10. * std::acos(-1.) / 180.);
+        std::vector<std::vector<size_t>> adjacent_faces(mesh.NumTri());
+        for (const auto& entry : edge_faces) {
+            const auto& faces = entry.second;
+            if (faces.size() == 2 && triangle_normals[faces[0]].dot(triangle_normals[faces[1]]) >= cos_angle) {
+                adjacent_faces[faces[0]].push_back(faces[1]);
+                adjacent_faces[faces[1]].push_back(faces[0]);
+            }
+        }
+
+        // Only positions, normals and triangle indices are needed by triangulate().
+        mesh_type result;
+        result.numProp = 6;
+        result.triVerts.resize(mesh.triVerts.size());
+        std::vector<bool> visited(mesh.NumTri(), false);
+        std::vector<size_t> pending;
+        for (size_t seed = 0; seed < mesh.NumTri(); ++seed) {
+            if (visited[seed]) {
+                continue;
+            }
+            std::unordered_map<uint32_t, uint32_t> vertices;
+            visited[seed] = true;
+            pending.push_back(seed);
+            while (!pending.empty()) {
+                const auto face = pending.back();
+                pending.pop_back();
+                for (int j = 0; j < 3; ++j) {
+                    const auto original = (uint32_t)mesh.triVerts[face * 3 + j];
+                    const auto vertex = vertices.emplace(original, (uint32_t)result.NumVert());
+                    if (vertex.second) {
+                        const auto p = point(original);
+                        result.vertProperties.insert(result.vertProperties.end(), {p(0), p(1), p(2), 0., 0., 0.});
+                    }
+                    const auto index = vertex.first->second;
+                    result.triVerts[face * 3 + j] = index;
+                    for (int k = 0; k < 3; ++k) {
+                        result.vertProperties[index * result.numProp + 3 + k] += triangle_normals[face](k);
+                    }
+                }
+                for (const auto next : adjacent_faces[face]) {
+                    if (!visited[next]) {
+                        visited[next] = true;
+                        pending.push_back(next);
+                    }
+                }
+            }
+        }
+        for (size_t i = 0; i < result.NumVert(); ++i) {
+            Eigen::Map<Eigen::Vector3d> normal(&result.vertProperties[i * result.numProp + 3]);
+            if (normal.squaredNorm() > 0.) {
+                normal.normalize();
+            }
+        }
+        return result;
+    }
 
     std::vector<std::pair<uint32_t, uint32_t>> boundary_edges(const mesh_type& mesh) {
         // MeshGL vertices may be split to store different normal properties.
@@ -314,43 +373,50 @@ void ifcopenshell::geom::manifold_shape::triangulate(ifcopenshell::geom::setting
     const bool emit_normals = !settings.get<settings::WeldVertices>().get() &&
                               !settings.get<settings::DontEmitNormals>().get();
 
-	for (const auto& part : parts_) {
-		auto mesh = transform_mesh(part.mesh, place);
+    for (const auto& part : parts_) {
+        auto mesh = transform_mesh(part.mesh, place);
 
-		// For non-manifold cases where we have only the IO layer we need to calculate ourselves.
-		const auto fallback_normals = emit_normals && mesh.numProp == 3
-			? calculate_vertex_normals(mesh)
-			: std::vector<Eigen::Vector3d>();
+        // For non-manifold cases where we have only the IO layer we need to calculate ourselves.
+        const bool split_edges = mesh.numProp == 3;
+        if (split_edges) {
+            mesh = split_edges_and_calculate_normals(mesh);
+        }
 
-		std::vector<int> indices(mesh.NumVert());
-		for (size_t i = 0; i < mesh.NumVert(); ++i) {
-			indices[i] = t->addVertex(
-				item_id,
-				surface_style_id,
-				mesh.vertProperties[i * mesh.numProp + 0],
-				mesh.vertProperties[i * mesh.numProp + 1],
-				mesh.vertProperties[i * mesh.numProp + 2]);
-			if (mesh.numProp == 6 && emit_normals) {
-				t->addNormal(
-					mesh.vertProperties[i * mesh.numProp + 3],
-					mesh.vertProperties[i * mesh.numProp + 4],
-					mesh.vertProperties[i * mesh.numProp + 5]);
-			} else if (!fallback_normals.empty()) {
-				t->addNormal(fallback_normals[i](0), fallback_normals[i](1), fallback_normals[i](2));
-			}
-		}
-		for (size_t i = 0; i < mesh.NumTri(); ++i) {
-			t->addFace(
-				item_id,
-				surface_style_id,
-				indices[mesh.triVerts[i * 3 + 0]],
-				indices[mesh.triVerts[i * 3 + 1]],
-				indices[mesh.triVerts[i * 3 + 2]]);
-		}
-		for (const auto& edge : boundary_edges(mesh)) {
-			t->registerEdge(item_id, indices[edge.first], indices[edge.second]);
-		}
-	}
+        std::vector<int> indices(mesh.NumVert());
+        for (size_t i = 0; i < mesh.NumVert(); ++i) {
+            indices[i] = t->addVertex(
+                item_id,
+                surface_style_id,
+                mesh.vertProperties[i * mesh.numProp + 0],
+                mesh.vertProperties[i * mesh.numProp + 1],
+                mesh.vertProperties[i * mesh.numProp + 2]);
+            if (mesh.numProp == 6 && emit_normals) {
+                t->addNormal(
+                    mesh.vertProperties[i * mesh.numProp + 3],
+                    mesh.vertProperties[i * mesh.numProp + 4],
+                    mesh.vertProperties[i * mesh.numProp + 5]);
+            }
+        }
+        for (size_t i = 0; i < mesh.NumTri(); ++i) {
+            t->addFace(
+                item_id,
+                surface_style_id,
+                indices[mesh.triVerts[i * 3 + 0]],
+                indices[mesh.triVerts[i * 3 + 1]],
+                indices[mesh.triVerts[i * 3 + 2]]);
+        }
+        if (split_edges) {
+            for (const auto& edge : count_edges(mesh)) {
+                if (edge.second != 2) {
+                    t->registerEdge(item_id, indices[edge.first.first], indices[edge.first.second]);
+                }
+            }
+        } else {
+            for (const auto& edge : boundary_edges(mesh)) {
+                t->registerEdge(item_id, indices[edge.first], indices[edge.second]);
+            }
+        }
+    }
 }
 
 void ifcopenshell::geom::manifold_shape::serialize(const ifcopenshell::geom::taxonomy::matrix4& place, std::string& result) const {
