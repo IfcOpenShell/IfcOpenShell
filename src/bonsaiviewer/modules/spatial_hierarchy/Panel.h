@@ -37,6 +37,7 @@ public:
     explicit SpatialHierarchyPanel(QWidget* parent = nullptr);
 
     void setNodes(const QList<TreeNode>& nodes);
+    void setNodeVisibility(const NodePath& path, bool visible);
 
 signals:
     void visibilityToggleRequested(const NodePath& path);
@@ -46,6 +47,7 @@ protected:
 
 private:
     void addNode(QTreeWidgetItem* parent, const TreeNode& node);
+    QTreeWidgetItem* findItem(const NodePath& path) const;
     NodePath itemPath(QTreeWidgetItem* item) const;
     QString iconPath(ItemKind kind) const;
 
