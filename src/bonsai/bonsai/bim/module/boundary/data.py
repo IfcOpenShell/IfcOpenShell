@@ -39,6 +39,10 @@ class SpaceBoundariesData:
         results = []
         element = tool.Ifc.get_entity(bpy.context.active_object)
         for rel in element.BoundedBy or []:
-            description = f"{rel.id()} > {rel.RelatedBuildingElement.is_a()}/{rel.RelatedBuildingElement.Name}"
+            related_element = rel.RelatedBuildingElement
+            if related_element:
+                description = f"{rel.id()} > {related_element.is_a()}/{related_element.Name}"
+            else:
+                description = f"{rel.id()} > Virtual"
             results.append({"id": rel.id(), "description": description})
         return results
