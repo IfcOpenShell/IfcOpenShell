@@ -49,6 +49,12 @@ class TestAddSystem:
         system.import_systems().should_be_called()
         subject.add_system(ifc, group, system, ifc_class="ifc_class", parent_system="parent_system")
 
+    def test_run_with_name(self, ifc, group, system):
+        ifc.run("system.add_system", ifc_class="ifc_class").should_be_called().will_return("new_system")
+        ifc.run("system.edit_system", system="new_system", attributes={"Name": "name"}).should_be_called()
+        system.import_systems().should_be_called()
+        subject.add_system(ifc, group, system, ifc_class="ifc_class", parent_system=None, name="name")
+
 
 class TestEditSystem:
     def test_run(self, ifc, system):

@@ -55,9 +55,11 @@ class AddSystem(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     parent_system_id: bpy.props.IntProperty()
+    name: bpy.props.StringProperty(name="Name", default="Unnamed", options={"SKIP_SAVE"})
 
     if TYPE_CHECKING:
         parent_system_id: int
+        name: str
 
     @classmethod
     def description(cls, context, properties) -> str:
@@ -65,11 +67,20 @@ class AddSystem(bpy.types.Operator, tool.Ifc.Operator):
             return "Add new subsystem to the active system."
         return "Add new IfcSystem."
 
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.prop(tool.System.get_system_props(), "system_class", text="Class")
+        self.layout.prop(self, "name")
+
     def _execute(self, context):
         props = tool.System.get_system_props()
         ifc_file = tool.Ifc.get()
         parent_system = None if self.parent_system_id == 0 else ifc_file.by_id(self.parent_system_id)
-        core.add_system(tool.Ifc, tool.Group, tool.System, ifc_class=props.system_class, parent_system=parent_system)
+        core.add_system(
+            tool.Ifc, tool.Group, tool.System, ifc_class=props.system_class, parent_system=parent_system, name=self.name
+        )
 
 
 class EditSystem(bpy.types.Operator, tool.Ifc.Operator):
@@ -144,6 +155,8 @@ class AssignSystem(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
         core.assign_system(tool.Ifc, system=system, products=assignable_elements)
         tool.Blender.update_all_properties_editors(context)
+        # Close the picker in Object Information > Groups, which can assign through this operator.
+        tool.Group.get_group_props().is_editing_object_groups = False
         self.report({"INFO"}, f"System assigned to {len(assignable_elements)} elements.")
         return {"FINISHED"}
 

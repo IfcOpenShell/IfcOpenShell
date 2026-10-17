@@ -118,11 +118,15 @@ class BIM_PT_object_groups(Panel):
 
         row = self.layout.row(align=True)
         if self.props.is_editing_object_groups:
-            prop_with_search(row, self.props, "object_group", text="", icon="OUTLINER")
+            prop_with_search(row, self.props, "object_group", text="")
             col = row.column(align=True)
-            col.enabled = bool(self.props.object_group)
-            op = col.operator("bim.assign_group", text="", icon="CHECKMARK")
-            op.group = int(self.props.object_group or 0)
+            group = tool.Ifc.get_entity_by_id(int(self.props.object_group or 0))
+            col.enabled = bool(group)
+            if group and group.is_a("IfcSystem"):
+                # Systems and zones only accept certain classes, which bim.assign_system checks.
+                col.operator("bim.assign_system", text="", icon="CHECKMARK").system = group.id()
+            else:
+                col.operator("bim.assign_group", text="", icon="CHECKMARK").group = group.id() if group else 0
             row.operator("bim.disable_editing_object_groups", text="", icon="CANCEL")
         else:
             if not groups:
@@ -140,7 +144,7 @@ class BIM_PT_object_groups(Panel):
 
         for group in groups:
             row = self.layout.row(align=True)
-            row.label(text=group["name"])
+            row.label(text=group["name"], icon=group["icon"])
             row.operator("bim.select_group_elements", text="", icon="RESTRICT_SELECT_OFF").group = group["id"]
             op = row.operator("bim.unassign_group", text="", icon="X")
             op.group = group["id"]

@@ -872,15 +872,16 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def update_all_properties_editors(cls, context: bpy.types.Context | None = None) -> None:
-        """Tag every visible Properties editor for redraw, so panels in other
-        areas (e.g. Object Information) show IFC changes made from this one."""
+        """Tag every visible Properties editor, in every window, for redraw, so panels in
+        other areas or windows (e.g. Object Information) show IFC changes made from this one."""
         context = context or bpy.context
-        screen = getattr(context, "screen", None)
-        if screen is None:
+        window_manager = getattr(context, "window_manager", None)
+        if window_manager is None:
             return
-        for area in screen.areas:
-            if area.type == "PROPERTIES":
-                area.tag_redraw()
+        for window in window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == "PROPERTIES":
+                    area.tag_redraw()
 
     @classmethod
     def force_depsgraph_update(cls) -> None:
