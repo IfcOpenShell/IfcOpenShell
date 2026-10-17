@@ -44,7 +44,7 @@ def assign_to_building(
 
     .. code:: python
 
-        building = ifcopenshell.util.selector.filter_elements(model, "IfcBuilding")[0]
+        building = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuilding")
         model_ = ifcopenshell.api.structural.add_structural_analysis_model(model)
         ifcopenshell.api.structural.assign_to_building(model,
             structural_analysis_model=model_, building=building)
