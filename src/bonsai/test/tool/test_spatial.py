@@ -225,6 +225,36 @@ class TestSelectObject(NewFile):
         assert obj in bpy.context.selected_objects
 
 
+class TestGetBoundaryElements(NewFile):
+    def add_element(self, ifc, ifc_class):
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class=ifc_class)
+        obj = bpy.data.objects.new(ifc_class, None)
+        tool.Ifc.link(element, obj)
+        return element, obj
+
+    def test_standalone_curtain_walls_are_boundary_elements(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        curtain_wall, curtain_wall_obj = self.add_element(ifc, "IfcCurtainWall")
+        assert subject.get_boundary_elements([curtain_wall_obj]) == [curtain_wall]
+
+    def test_curtain_wall_members_and_plates_are_boundary_elements(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall, wall_obj = self.add_element(ifc, "IfcWall")
+        member, member_obj = self.add_element(ifc, "IfcMember")
+        plate, plate_obj = self.add_element(ifc, "IfcPlate")
+        _, slab_obj = self.add_element(ifc, "IfcSlab")
+        objs = [wall_obj, member_obj, plate_obj, slab_obj]
+        assert subject.get_boundary_elements(objs) == [wall, member, plate]
+
+    def test_objects_without_an_ifc_element_are_skipped(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall, wall_obj = self.add_element(ifc, "IfcWall")
+        assert subject.get_boundary_elements([bpy.data.objects.new("Empty", None), wall_obj]) == [wall]
+
+
 class TestSetActiveObject(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
