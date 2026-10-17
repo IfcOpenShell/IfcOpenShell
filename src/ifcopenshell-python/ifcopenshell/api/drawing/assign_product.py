@@ -79,10 +79,24 @@ def assign_product(
             RelatingProduct=grid,
         )
 
-    if related_object.HasAssignments:
-        for rel in related_object.HasAssignments:
-            if rel.is_a("IfcRelAssignsToProduct") and rel.RelatingProduct == relating_product:
-                return
+    import bonsai.tool as tool
+
+    def warn(msg: str) -> None:
+        print(msg)
+        tool.Blender.show_info_message(msg, "ERROR")
+
+    has_assignments = [r.RelatingProduct for r in related_object.HasAssignments if r.is_a("IfcRelAssignsToProduct")]
+
+    if has_assignments:
+        if relating_product in has_assignments:
+            if len(has_assignments) > 1:
+                warn(
+                    f"Was trying to assign a product {relating_product} and found multiple assignments!! {has_assignments}"
+                )
+            return
+        warn(
+            f"WARNING. assign_product - trying to assign product {relating_product}, but other products already assigned: {has_assignments}"
+        )
 
     referenced_by = None
     if relating_product.ReferencedBy:
