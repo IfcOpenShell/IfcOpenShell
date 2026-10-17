@@ -1844,6 +1844,7 @@ else:
     cmake_args.append("-DBUILD_ONLY_COMMON_SCHEMAS=ON")
 
 if "cgal" in targets:
+    cmake_args.append("-DWITH_CGAL=On")
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("cgal")))
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("gmp")))
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("mpfr")))
@@ -1851,6 +1852,7 @@ if "cgal" in targets:
 
 if "occ" in targets:
     cmake_args_prefix_path.append(str(OCCT_INSTALL_PATH))
+    cmake_args.append("-DWITH_OPENCASCADE=On")
 
 if "manifold" in targets:
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("manifold")))
