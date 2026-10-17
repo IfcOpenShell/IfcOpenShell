@@ -37,7 +37,9 @@ class LoadClassificationLibrary(bpy.types.Operator, tool.Ifc.Operator, ImportHel
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
 
     def _execute(self, context):
-        IfcStore.classification_file = ifcopenshell.open(self.filepath)
+        file = ifcopenshell.open(self.filepath)
+        IfcStore.classification_files[self.filepath] = file
+        IfcStore.classification_file = file
 
 
 class AddClassification(bpy.types.Operator, tool.Ifc.Operator):
