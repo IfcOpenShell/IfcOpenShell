@@ -91,6 +91,10 @@ def toggle_decorations(self: "BIMSystemProperties", context: bpy.types.Context) 
         decorator.SystemDecorator.uninstall()
 
 
+def redraw_decorations(self: "BIMSystemProperties", context: bpy.types.Context) -> None:
+    tool.Blender.update_all_viewports(context)
+
+
 def get_available_ports_for_connection(
     self: "BIMSystemProperties", context: bpy.types.Context
 ) -> list[tuple[str, str, str]]:
@@ -123,12 +127,26 @@ class BIMSystemProperties(PropertyGroup):
     # Named not as `active_system_index` to match `BIMGroupProperties`.
     active_group_index: IntProperty(name="Active System Index")
     active_system_id: IntProperty(name="Active System Id")
+    active_system_element_id: IntProperty(name="Active System Element Id")
+    """The element that was active when the active system was set, or 0."""
     edited_system_id: IntProperty(name="Edited System Id")
     system_class: EnumProperty(items=get_system_class, name="Class")
     should_draw_decorations: BoolProperty(
         name="Should Draw Decorations",
-        description="Draw the ports and flow direction of ducts, pipes and fittings in the highlighted systems",
+        description="Draw decorations for the ducts, pipes and fittings of systems and connected runs",
         update=toggle_decorations,
+    )
+    should_draw_system_decorations: BoolProperty(
+        name="Draw System",
+        description="Draw a halo along the ducts, pipes and fittings of the highlighted systems",
+        default=True,
+        update=redraw_decorations,
+    )
+    should_draw_run_decorations: BoolProperty(
+        name="Draw Connected Run",
+        description="Draw the ports and flow direction of the ducts, pipes and fittings connected to the active object",
+        default=True,
+        update=redraw_decorations,
     )
     related_port: EnumProperty(
         name="Connect To Port",
@@ -144,9 +162,12 @@ class BIMSystemProperties(PropertyGroup):
         expanded_groups_json: str
         active_group_index: int
         active_system_id: int
+        active_system_element_id: int
         edited_system_id: int
         system_class: str
         should_draw_decorations: bool
+        should_draw_system_decorations: bool
+        should_draw_run_decorations: bool
         related_port: str
 
     @property

@@ -103,12 +103,14 @@ class SystemDecorator:
         # NOTE: using live update because Data wouldn't allow
         # live time update of objects positions
         decoration_data = tool.System.get_decoration_data()
+        props = tool.System.get_system_props()
 
         all_vertices = decoration_data["all_vertices"]
-        preview_edges = decoration_data["preview_edges"]
-        special_vertices = decoration_data["special_vertices"]
-        selected_edges = decoration_data["selected_edges"]
-        selected_vertices = decoration_data["selected_vertices"]
+        if props.should_draw_run_decorations:
+            selected_edges = decoration_data["run_edges"]
+            selected_vertices = decoration_data["run_vertices"]
+        if props.should_draw_system_decorations:
+            special_vertices = decoration_data["system_vertices"]
 
         ### Actually drawing
         # POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
@@ -117,6 +119,13 @@ class SystemDecorator:
         # POLYLINE_UNIFORM_COLOR specific uniforms
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
         self.line_shader.uniform_float("lineWidth", 2.0)
+
+        # The system halo goes first and wide, so the connected run drawn on top stays readable.
+        if props.should_draw_system_decorations:
+            self.line_shader.uniform_float("lineWidth", 10.0)
+            halo_color = tool.Blender.transparent_color(special_elements_color, 0.35)
+            self.draw_batch("LINES", all_vertices, halo_color, decoration_data["halo_edges"])
+            self.line_shader.uniform_float("lineWidth", 2.0)
 
         # general shader
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
