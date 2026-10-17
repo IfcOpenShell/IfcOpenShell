@@ -49,7 +49,7 @@ def edit_resource_time(
             parent_resource=crew, ifc_class="IfcLaborResource")
 
         # Labour resource is quantified in terms of time.
-        ifcopenshell.api.resource.add_resource_quantity(model,
+        time = ifcopenshell.api.resource.add_resource_quantity(model,
             resource=labour, ifc_class="IfcQuantityTime")
 
         # Store the unit time used in hours
@@ -57,9 +57,9 @@ def edit_resource_time(
             physical_quantity=time, attributes={"TimeValue": 8.0})
 
         # Let's imagine we've used the resource for 2 days.
-        time = ifcopenshell.api.resource.add_resource_time(model, resource=labour)
+        resource_time = ifcopenshell.api.resource.add_resource_time(model, resource=labour)
         ifcopenshell.api.resource.edit_resource_time(model,
-            resource_time=time, attributes={"ScheduleWork": "P16H"})
+            resource_time=resource_time, attributes={"ScheduleWork": "P16H"})
     """
     usecase = Usecase()
     usecase.file = file

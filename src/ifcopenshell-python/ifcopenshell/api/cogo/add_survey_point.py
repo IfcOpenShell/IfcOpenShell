@@ -38,7 +38,14 @@ def add_survey_point(
 
     .. code:: python
 
-        annotation = ifcopenshell.api.cogo.add_survey_point(file,file.createIfcCartesianPoint(4000.0,3500.0)))
+        model = ifcopenshell.file(schema="IFC4X3")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        model_context = ifcopenshell.api.context.add_context(model, context_type="Model")
+        ifcopenshell.api.context.add_context(model, context_type="Model",
+            context_identifier="Annotation", target_view="MODEL_VIEW", parent=model_context)
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcSite")
+        point = model.createIfcCartesianPoint((4000.0, 3500.0))
+        annotation = ifcopenshell.api.cogo.add_survey_point(model, survey_point=point)
     """
     context = ifcopenshell.util.representation.get_context(file, "Model", "Annotation", "MODEL_VIEW")
     shape_representation = file.createIfcShapeRepresentation(
