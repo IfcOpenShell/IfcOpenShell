@@ -169,6 +169,8 @@ class AssignSystem(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
         core.assign_system(tool.Ifc, system=system, products=assignable_elements)
         tool.Blender.update_all_properties_editors(context)
+        # The system decorations in the viewport depend on system membership too.
+        tool.Blender.update_all_viewports(context)
         # Close the picker in Object Information > Groups, which can assign through this operator.
         tool.Group.get_group_props().is_editing_object_groups = False
         self.report({"INFO"}, f"System assigned to {len(assignable_elements)} elements.")
@@ -197,6 +199,8 @@ class UnassignSystem(bpy.types.Operator, tool.Ifc.Operator):
         system = tool.Ifc.get().by_id(self.system)
         core.unassign_system(tool.Ifc, system=system, products=elements)
         tool.Blender.update_all_properties_editors(context)
+        # The system decorations in the viewport depend on system membership too.
+        tool.Blender.update_all_viewports(context)
         self.report({"INFO"}, f"System unassigned from {len(elements)} elements.")
         return {"FINISHED"}
 

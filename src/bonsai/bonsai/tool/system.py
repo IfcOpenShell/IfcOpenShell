@@ -299,7 +299,8 @@ class System(bonsai.core.tool.System):
         system_props = cls.get_system_props()
         return tool.Ifc.get_entity_by_id(system_props.active_system_id)
 
-    # Decoration-data cache, keyed on (decorator_cache_token, id(decorated_elements_set)).
+    # Decoration-data cache, keyed on (decorator_cache_token, decorated_elements_set). The key holds the
+    # set itself (compared by identity) rather than its id(), which a newly loaded set could reuse.
     _decoration_data_cache_key: tuple | None = None
     _decoration_data_cache: dict[str, Any] | None = None
 
@@ -314,8 +315,14 @@ class System(bonsai.core.tool.System):
             SystemDecorationData.load()
 
         token = get_decorator_cache_token()
-        key = (token, id(SystemDecorationData.data["decorated_elements"]))
-        if key == cls._decoration_data_cache_key and cls._decoration_data_cache is not None:
+        key = (token, SystemDecorationData.data["decorated_elements"])
+        cached_key = cls._decoration_data_cache_key
+        if (
+            cached_key is not None
+            and cached_key[0] == key[0]
+            and cached_key[1] is key[1]
+            and cls._decoration_data_cache is not None
+        ):
             return cls._decoration_data_cache
 
         result = cls._build_decoration_data()

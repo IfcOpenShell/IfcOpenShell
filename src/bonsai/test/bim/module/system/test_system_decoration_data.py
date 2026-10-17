@@ -90,3 +90,15 @@ class TestDecorationSource(NewFile):
         SystemData.load()
         assert SystemData.data["decoration"]["source"] == "OBJECT_SYSTEMS"
         assert SystemData.data["decoration"]["total_drawable"] == 1
+
+    def test_rebuilding_decorations_after_unassigning(self):
+        bpy.ops.bim.create_project()
+        duct = self.add_wall(ifc_class="IfcDuctSegment")
+        system = self.add_system([duct], ifc_class="IfcDistributionSystem", name="HVAC")
+        refresh()
+        before = tool.System.get_decoration_data()
+        assert tool.System.get_decoration_data() is before
+        ifcopenshell.api.system.unassign_system(tool.Ifc.get(), products=[duct], system=system)
+        refresh()
+        assert tool.System.get_decoration_data() is not before
+        assert SystemDecorationData.decoration_source() == ("CONNECTED", [])

@@ -138,6 +138,8 @@ class AddGroupToSelected(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.group.assign_group(ifc_file, products=products, group=group)
         tool.Group.import_groups("IfcGroup")
         tool.Blender.update_all_properties_editors(context)
+        # Groups include systems, whose membership the viewport decorations depend on.
+        tool.Blender.update_all_viewports(context)
         self.report({"INFO"}, f"Added group with {len(products)} objects.")
 
 
@@ -253,6 +255,8 @@ class AssignGroup(bpy.types.Operator, tool.Ifc.Operator):
         self.relocate_annotations_to_drawing(relocated_annotations, group)
         tool.Group.get_group_props().is_editing_object_groups = False
         tool.Blender.update_all_properties_editors(context)
+        # Groups include systems, whose membership the viewport decorations depend on.
+        tool.Blender.update_all_viewports(context)
         self.report({"INFO"}, f"Assigned {len(products)} objects to group.")
 
     def unassign_from_previous_drawing(self, ifc_file, group, products) -> list[ifcopenshell.entity_instance]:
@@ -307,6 +311,8 @@ class UnassignGroup(bpy.types.Operator, tool.Ifc.Operator):
             return
         ifcopenshell.api.group.unassign_group(tool.Ifc.get(), products=products, group=tool.Ifc.get().by_id(self.group))
         tool.Blender.update_all_properties_editors(context)
+        # Groups include systems, whose membership the viewport decorations depend on.
+        tool.Blender.update_all_viewports(context)
         self.report({"INFO"}, f"Unassigned {len(products)} objects from group.")
 
 
