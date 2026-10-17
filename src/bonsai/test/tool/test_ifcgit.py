@@ -632,3 +632,26 @@ class TestConfigIfcmerge:
             assert "--prioritise-local" in cmd
             assert "> $MERGED.ifcmerge" in cmd
             IfcGitRepo.repo = None
+
+
+class TestGetRepoDescription(NewFile):
+    @requires_git
+    def test_returns_the_tag_on_a_tagged_commit(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = _make_repo(tmpdir)
+            _commit_ifc(repo, tmpdir, "#1=IFCPROJECT('abc',$,$,$,$,$,$,$,$);\n", "init")
+            repo.create_tag("v1.0", message="Release 1.0")
+            assert IfcGit.get_repo_description(os.path.join(tmpdir, "model.ifc")) == "v1.0"
+
+    @requires_git
+    def test_counts_commits_since_the_tag(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = _make_repo(tmpdir)
+            _commit_ifc(repo, tmpdir, "#1=IFCPROJECT('abc',$,$,$,$,$,$,$,$);\n", "init")
+            repo.create_tag("v1.0", message="Release 1.0")
+            sha = _commit_ifc(repo, tmpdir, "#1=IFCPROJECT('def',$,$,$,$,$,$,$,$);\n", "second")
+            assert IfcGit.get_repo_description(os.path.join(tmpdir, "model.ifc")) == f"v1.0-1-g{sha[:7]}"
+
+    def test_returns_none_outside_a_repository(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            assert IfcGit.get_repo_description(os.path.join(tmpdir, "model.ifc")) is None
