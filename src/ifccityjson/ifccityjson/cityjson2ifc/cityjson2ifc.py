@@ -306,7 +306,7 @@ class Cityjson2ifc:
             IFC_semantic_surface_children = []
             IFC_shape_representations = []
             for geometry in obj.geometry:
-                lod = geometry.lod
+                lod = str(geometry.lod)
                 if self.properties["lod"] is not None and lod != self.properties["lod"]:
                     continue
                 if lod not in self.IFC_representation_sub_contexts:
