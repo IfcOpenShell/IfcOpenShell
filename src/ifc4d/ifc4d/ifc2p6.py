@@ -25,6 +25,25 @@ import ifcopenshell.util.date
 import ifcopenshell.util.sequence
 
 
+def duration_to_hours(duration, hours_per_day):
+    """Convert an ifcopenshell.util.date.ifc2datetime() result to a float number of hours.
+
+    ``duration`` is either an isodate.Duration or a datetime.timedelta (both
+    ifc2datetime() return types), which both expose ``.days``, ``.seconds``
+    and ``.microseconds``. Reading only ``.days`` silently drops any lag or
+    task duration below 24 hours, since ISO durations like "PT12H0M0S" carry
+    that 12 hours in ``.seconds``, not ``.days``.
+
+    p62ifc.py's importer (see ``ScheduleIfcGenerator.create_task_from_activity``
+    and ``create_rel_sequences`` in common.py) always treats P6's Duration and
+    Lag fields as calendar hours-per-day scaled, i.e.
+    ``timedelta(days=hours_value / hours_per_day)``. This is the matching
+    export-side inverse.
+    """
+    total_days = duration.days + (duration.seconds + duration.microseconds / 1_000_000) / 86400
+    return total_days * hours_per_day
+
+
 class Ifc2P6:
     def __init__(self):
         self.xml = None
@@ -219,8 +238,9 @@ class Ifc2P6:
             ET.SubElement(activity, "WBSObjectId").text = self.id_map[parent]
         if task.TaskTime.ScheduleDuration:
             duration = ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleDuration)
-            ET.SubElement(activity, "PlannedDuration").text = str(duration.days * self.hours_per_day)
-            ET.SubElement(activity, "RemainingDuration").text = str(duration.days * self.hours_per_day)
+            hours = f"{duration_to_hours(duration, self.hours_per_day):.10g}"
+            ET.SubElement(activity, "PlannedDuration").text = hours
+            ET.SubElement(activity, "RemainingDuration").text = hours
         if task.TaskTime.ScheduleStart:
             ET.SubElement(activity, "PlannedStartDate").text = task.TaskTime.ScheduleStart
             ET.SubElement(activity, "StartDate").text = task.TaskTime.ScheduleStart
@@ -258,7 +278,7 @@ class Ifc2P6:
                 self.link_element(rel, relationship)
                 if rel.TimeLag and rel.TimeLag.LagValue:
                     duration = ifcopenshell.util.date.ifc2datetime(rel.TimeLag.LagValue.wrappedValue)
-                    ET.SubElement(relationship, "Lag").text = str(duration.days * self.hours_per_day)
+                    ET.SubElement(relationship, "Lag").text = f"{duration_to_hours(duration, self.hours_per_day):.10g}"
                 else:
                     ET.SubElement(relationship, "Lag").text = "0"
                 ET.SubElement(relationship, "PredecessorProjectObjectId").text = self.id_map[work_schedule]
