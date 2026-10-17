@@ -51,6 +51,23 @@ class TestGetElementStatus(NewFile):
         assert subject.get_element_status(element) == {"EXISTING", "TEMPORARY"}
 
 
+class TestGetElementsByStatus(NewFile):
+    @pytest.mark.parametrize("schema", ["IFC2X3", "IFC4"])
+    @pytest.mark.parametrize("pset_name", ["EPset_Status", "Pset_WallCommon"])
+    @pytest.mark.parametrize("status", ["My Custom", 'My "X"'])
+    def test_user_defined_status(self, schema, pset_name, status):
+        tool.Project.get_project_props().export_schema = schema
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        element = ifcopenshell.api.root.create_entity(ifc, "IfcWall")
+        other = ifcopenshell.api.root.create_entity(ifc, "IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(ifc, element, pset_name)
+        value = ifc.create_entity("IfcLabel", status)
+        pset.HasProperties = [ifc.create_entity("IfcPropertySingleValue", Name="UserDefinedStatus", NominalValue=value)]
+        assert subject.get_elements_by_status(status) == {element}
+        assert other not in subject.get_elements_by_status(status)
+
+
 class TestEnableStatusFiltersOperator(NewFile):
     @pytest.mark.parametrize("schema", ["IFC2X3", "IFC4", "IFC4X3_ADD2"])
     def test_enumerated_status_property(self, schema):
@@ -67,6 +84,41 @@ class TestEnableStatusFiltersOperator(NewFile):
         props = tool.Sequence.get_status_props()
         assert props.is_enabled
         assert {s.name for s in props.statuses} >= {"No Status", "EXISTING", "TEMPORARY"}
+
+    @pytest.mark.parametrize("schema", ["IFC2X3", "IFC4"])
+    @pytest.mark.parametrize("pset_name", ["EPset_Status", "Pset_WallCommon"])
+    @pytest.mark.parametrize("value_type", ["IfcPropertySingleValue", "IfcPropertyEnumeratedValue"])
+    @pytest.mark.parametrize("status", ["My Custom", 'My "X"'])
+    def test_user_defined_status_property(self, schema, pset_name, value_type, status):
+        tool.Project.get_project_props().export_schema = schema
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        element = ifcopenshell.api.root.create_entity(ifc, "IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(ifc, element, pset_name)
+        value = ifc.create_entity("IfcLabel", status)
+        if value_type == "IfcPropertySingleValue":
+            user_defined = ifc.create_entity(value_type, Name="UserDefinedStatus", NominalValue=value)
+        else:
+            user_defined = ifc.create_entity(value_type, Name="UserDefinedStatus", EnumerationValues=[value])
+        pset.HasProperties = [user_defined]
+
+        assert bpy.ops.bim.enable_status_filters() == {"FINISHED"}
+
+        props = tool.Sequence.get_status_props()
+        assert {s.name for s in props.statuses} >= {"No Status", "NEW", status}
+
+    @pytest.mark.parametrize("value_type", ["IfcPropertySingleValue", "IfcPropertyEnumeratedValue"])
+    def test_user_defined_status_without_value(self, value_type):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        element = ifcopenshell.api.root.create_entity(ifc, "IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(ifc, element, "EPset_Status")
+        pset.HasProperties = [ifc.create_entity(value_type, Name="UserDefinedStatus")]
+
+        assert bpy.ops.bim.enable_status_filters() == {"FINISHED"}
+
+        props = tool.Sequence.get_status_props()
+        assert {s.name for s in props.statuses} == {"No Status", *tool.Sequence.ELEMENT_STATUSES}
 
 
 class TestAssignStatus(NewFile):

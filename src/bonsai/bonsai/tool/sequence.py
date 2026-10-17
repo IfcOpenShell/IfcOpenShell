@@ -1849,6 +1849,9 @@ class Sequence(bonsai.core.tool.Sequence):
     def get_status_query(cls, status: ElementStatusUI) -> str:
         if status == "No Status":
             return f"IfcProduct, /Pset_.*Common/.Status=NULL, EPset_Status.Status=NULL"
+        if status not in cls.ELEMENT_STATUSES:
+            escaped = status.replace('"', '\\"')
+            return f'IfcProduct, /.*/.UserDefinedStatus="{escaped}"'
         return f"IfcProduct, /Pset_.*Common/.Status={status} + IfcProduct, EPset_Status.Status={status}"
 
     @classmethod
