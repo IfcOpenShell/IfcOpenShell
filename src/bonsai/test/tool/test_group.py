@@ -102,3 +102,14 @@ class TestImportGroups(NewFile):
         subject.get_group_props().should_show_internal = True
         subject.import_groups("IfcGroup")
         assert [g.name for g in subject.get_group_props().groups] == ["DRAWINGS", "Furniture"]
+
+    def test_loading_collapsed_nested_groups_while_filtering(self):
+        bpy.ops.bim.create_project()
+        parent = add_group(name="Phase 1")
+        child = add_group(name="Kitchen")
+        ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=[child], group=parent)
+        subject.import_groups("IfcGroup")
+        assert [g.name for g in subject.get_group_props().groups] == ["Phase 1"]
+        subject.get_group_props().group_filter = "kitchen"
+        subject.import_groups("IfcGroup")
+        assert [g.name for g in subject.get_group_props().groups] == ["Phase 1", "Kitchen"]

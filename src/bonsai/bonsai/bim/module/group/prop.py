@@ -49,6 +49,16 @@ def update_should_show_internal(self: "BIMGroupProperties", context: object) -> 
     tool.Blender.update_all_properties_editors()
 
 
+def update_group_filter(self: "BIMGroupProperties", context: object) -> None:
+    # Reload only when the filter switches on or off: while it's on, every group is loaded, expanded or not.
+    is_filter_active = bool(self.group_filter.strip())
+    if is_filter_active == self.is_group_filter_active:
+        return
+    self.is_group_filter_active = is_filter_active
+    if self.is_editing:
+        tool.Group.import_groups("IfcGroup")
+
+
 def update_active_group_index(self, context):
     refresh_pset()
 
@@ -95,6 +105,8 @@ class BIMGroupProperties(PropertyGroup):
         default=False,
         update=update_should_show_internal,
     )
+    group_filter: StringProperty(name="Group Filter", update=update_group_filter, options={"TEXTEDIT_UPDATE"})
+    is_group_filter_active: BoolProperty(name="Is Group Filter Active", default=False)
 
     if TYPE_CHECKING:
         group_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
@@ -106,6 +118,8 @@ class BIMGroupProperties(PropertyGroup):
         is_editing_object_groups: bool
         object_group: str
         should_show_internal: bool
+        group_filter: str
+        is_group_filter_active: bool
 
     @property
     def active_group(self) -> Union[Group, None]:

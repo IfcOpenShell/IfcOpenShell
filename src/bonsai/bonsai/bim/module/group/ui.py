@@ -147,6 +147,31 @@ class BIM_PT_object_groups(Panel):
 
 
 class BIM_UL_groups(UIList):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.use_filter_show = True
+
+    def draw_filter(self, context, layout):
+        row = layout.row()
+        row.prop(tool.Group.get_group_props(), "group_filter", text="", icon="VIEWZOOM")
+
+    def filter_items(self, context: bpy.types.Context, data: BIMGroupProperties, propname: str):
+        items = getattr(data, propname)
+        filter_name = data.group_filter.strip().lower()
+        if not filter_name:
+            return [], []
+        # Show matching groups along with the groups they are nested in.
+        flags = [0] * len(items)
+        ancestors: list[int] = []
+        for index, item in enumerate(items):
+            del ancestors[item.tree_depth :]
+            if filter_name in item.name.lower():
+                flags[index] = self.bitflag_filter_item
+                for ancestor in ancestors:
+                    flags[ancestor] = self.bitflag_filter_item
+            ancestors.append(index)
+        return flags, []
+
     def draw_item(
         self,
         context: bpy.types.Context,

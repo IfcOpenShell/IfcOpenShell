@@ -66,8 +66,11 @@ class Group(bonsai.core.tool.System):
 
         props, blender_groups = cls.get_groups_data(group_type)
         show_internal = True
+        # While the Groups list is filtered, load nested groups too so the filter can find them.
+        load_all = False
         if group_type == "IfcGroup":
             show_internal = props.should_show_internal
+            load_all = bool(props.group_filter.strip())
             base_groups = cls.get_user_groups(include_internal=show_internal)
         elif group_type == "IfcSystem":
             base_groups = [g for g in tool.System.get_systems() if not g.is_a("IfcStructuralAnalysisModel")]
@@ -87,7 +90,7 @@ class Group(bonsai.core.tool.System):
             new["name"] = group.Name or "Unnamed"
             new.tree_depth = tree_depth
             new.has_children = False
-            new.is_expanded = group.id() in expanded_groups
+            new.is_expanded = load_all or group.id() in expanded_groups
             if isinstance(new, System):
                 new.ifc_class = group.is_a()
 
