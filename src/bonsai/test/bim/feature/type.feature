@@ -152,6 +152,35 @@ Scenario: Assign type - assign to a different type with a LAYER2 material layer 
     Then the object "IfcWall/Cube" has a "200" thick layered material containing the material "Default"
     And the object "IfcWall/Cube" dimensions are "1,.2,1"
 
+Scenario: Assign type - assign to a different type without a material in IFC2X3
+    Given an empty IFC2X3 project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And the variable "type" is "{ifc}.by_type('IfcWallType')[-1].id()"
+    And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
+    And I press "bim.assign_material"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And the variable "type2" is "[w for w in {ifc}.by_type('IfcWallType') if w.id() != {type}][0].id()"
+    And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
+    When I press "bim.assign_type(relating_type={type2}, related_object='IfcWall/Cube')"
+    Then the object "IfcWall/Cube" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
+    And the object "IfcWall/Cube" dimensions are "1,.1,1"
+
 Scenario: Assign type - assign to a different type with a LAYER3 material layer set
     Given an empty IFC project
     And I load the demo construction library

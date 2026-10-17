@@ -36,7 +36,8 @@ def assign_type(
     usage_attributes = type_tool.record_material_usage_attributes(element)
     ifc.run("type.assign_type", related_objects=[element], relating_type=type)
     obj = ifc.get_object(element)
-    if (usage := model.get_usage_type(type)) and usage_attributes:
+    # Reassigning the type resets the material usage direction; restore the recorded one.
+    if usage_attributes:
         type_tool.restore_material_usage_attributes(element, usage_attributes)
     if (usage := model.get_usage_type(type)) == "PROFILE":
         model.regenerate_profile(obj)
