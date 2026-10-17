@@ -109,7 +109,11 @@ class IfcCsv:
             result = []
 
             for attribute in attributes:
-                value = ifcopenshell.util.selector.get_element_value(element, attribute)
+                if attribute == "GlobalId" and not hasattr(element, "GlobalId"):
+                    # Entities without a GlobalId (e.g. IfcMaterial) fall back to the STEP id.
+                    value = element.id()
+                else:
+                    value = ifcopenshell.util.selector.get_element_value(element, attribute)
                 if value is None:
                     value = null
                 elif value == "":
@@ -486,14 +490,22 @@ class IfcCsv:
         bool_false: str,
         concat: str,
     ) -> None:
-        # Patterns to skip during import (substrings)
-        SKIP_PATTERNS = {"count", "material"}
+        # Read-only selector pseudo-attributes, matched as whole path segments.
+        SKIP_SEGMENTS = {"count", "material", "materials", "mat", "mats"}
 
         try:
             element = ifc_file.by_guid(row[0])
-        except:
-            print("The element with GUID {} was not found".format(row[0]))
-            return
+        except Exception:
+            element = None
+
+        if element is None:
+            # Export writes the STEP id for entities without a GlobalId.
+            try:
+                element = ifc_file.by_id(int(row[0]))
+            except Exception:
+                print("The element with GUID {} was not found".format(row[0]))
+                return
+
         for i, value in enumerate(row):
             if i == 0:
                 continue  # Skip GlobalId
@@ -507,8 +519,7 @@ class IfcCsv:
                 value = False
             key = attributes[i] or headers[i]
 
-            # Skip keys containing certain patterns
-            if any(pattern in key.lower() for pattern in SKIP_PATTERNS):
+            if any(segment in SKIP_SEGMENTS for segment in key.lower().split(".")):
                 continue
 
             ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value, concat=concat)
