@@ -22,11 +22,14 @@ from . import operator, prop, ui
 
 classes = (
     operator.AddGroup,
+    operator.AddGroupToSelected,
     operator.AssignGroup,
     operator.DisableEditingGroup,
+    operator.DisableEditingObjectGroups,
     operator.DisableGroupEditingUI,
     operator.EditGroup,
     operator.EnableEditingGroup,
+    operator.EnableEditingObjectGroups,
     operator.LoadGroups,
     operator.RemoveGroup,
     operator.SelectGroupElements,

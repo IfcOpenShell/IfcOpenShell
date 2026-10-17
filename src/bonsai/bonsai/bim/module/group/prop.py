@@ -22,14 +22,22 @@ import bpy
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
+    EnumProperty,
     IntProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
 
 import bonsai.tool as tool
+from bonsai.bim.module.group.data import GroupsData
 from bonsai.bim.module.pset.data import refresh as refresh_pset
 from bonsai.bim.prop import Attribute
+
+
+def get_object_group(self, context):
+    if not GroupsData.is_loaded:
+        GroupsData.load()
+    return GroupsData.data["group_items"]
 
 
 def update_active_group_index(self, context):
@@ -69,6 +77,8 @@ class BIMGroupProperties(PropertyGroup):
     active_group_id: IntProperty(name="Active Group Id")
     expanded_groups_json: StringProperty(name="JSON String", default="[]")
     """JSON serialized list[group_id]."""
+    is_editing_object_groups: BoolProperty(name="Is Editing Object Groups", default=False)
+    object_group: EnumProperty(name="Group", items=get_object_group)
 
     if TYPE_CHECKING:
         group_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
@@ -77,6 +87,8 @@ class BIMGroupProperties(PropertyGroup):
         active_group_index: int
         active_group_id: int
         expanded_groups_json: str
+        is_editing_object_groups: bool
+        object_group: str
 
     @property
     def active_group(self) -> Union[Group, None]:
