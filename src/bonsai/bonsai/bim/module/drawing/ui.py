@@ -73,6 +73,8 @@ class BIM_PT_camera(Panel):
         row = col.row(align=True)
         row.prop(props, "has_annotation", icon="MOD_EDGESPLIT")
         row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
+        row = col.row(align=True)
+        row.prop(props, "has_axis_linework", icon="MOD_SIMPLIFY")
 
         # Drawing linked projects.
         row = col.row(align=True)
