@@ -1191,10 +1191,17 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
         props = tool.Search.get_search_props()
         query = props.colourscheme_query
 
-        group = [g for g in tool.Ifc.get().by_type("IfcGroup") if g.Name == self.name]
+        # Only reuse a group that already holds Bonsai search data, never a user's group of the same name.
+        group = next(
+            (
+                g
+                for g in tool.Ifc.get().by_type("IfcGroup")
+                if g.Name == self.name and tool.Group.get_description_type(g) == "BBIM_Search"
+            ),
+            None,
+        )
         colourscheme = {cs.name: {"colour": cs.colour[0:3], "total": cs.total} for cs in props.colourscheme}
         if group:
-            group = group[0]
             description = json.loads(group.Description)
             description["colourscheme"] = colourscheme
             description["colourscheme_query"] = query
