@@ -58,6 +58,25 @@ def get_classification_source(
     return ClassificationsData.data["classification_source"]
 
 
+def get_builtin_classification_libraries(
+    self: "BIMClassificationProperties", context: bpy.types.Context
+) -> tool.Blender.BLENDER_ENUM_ITEMS:
+    if not ClassificationsData.is_loaded:
+        ClassificationsData.load()
+    return ClassificationsData.data["builtin_classification_libraries"]
+
+
+def update_builtin_classification_library(self: "BIMClassificationProperties", context: bpy.types.Context) -> None:
+    if self.builtin_classification_library == "0":
+        return
+    filepath = next(
+        p
+        for p in tool.Blender.get_data_dir_paths("classifications", "*.ifc*")
+        if p.name == self.builtin_classification_library
+    )
+    bpy.ops.bim.load_classification_library(filepath=str(filepath))
+
+
 class ClassificationReference(PropertyGroup):
     identification: StringProperty(name="Identification")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
@@ -75,6 +94,11 @@ class BIMClassificationProperties(PropertyGroup):
     is_adding: BoolProperty(name="Is Adding", default=False)
     classification_source: EnumProperty(items=get_classification_source, name="Classification Source")
     available_classifications: EnumProperty(items=get_available_classifications, name="Available Classifications")
+    builtin_classification_library: EnumProperty(
+        items=get_builtin_classification_libraries,
+        name="Built-in Classification Library",
+        update=update_builtin_classification_library,
+    )
     classification_attributes: CollectionProperty(name="Classification Attributes", type=Attribute)
     active_classification_id: IntProperty(name="Active Classification Id")
     available_library_references: CollectionProperty(name="Available Library References", type=ClassificationReference)
@@ -85,6 +109,7 @@ class BIMClassificationProperties(PropertyGroup):
         is_adding: bool
         classification_source: str
         available_classifications: str
+        builtin_classification_library: str
         classification_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         active_classification_id: int
         available_library_references: bpy.types.bpy_prop_collection_idprop[ClassificationReference]
