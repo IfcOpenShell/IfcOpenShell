@@ -1624,7 +1624,7 @@ void svg_serializer::write(const geometry_data& data) {
 					if (storey) {
 						auto it = storey_hlr.find(storey);
 						if (it == storey_hlr.end()) {
-							it = storey_hlr.insert({ storey, hlr_engine(logger(), use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane) }).first;
+							it = storey_hlr.insert({ storey, hlr_engine(logger(), use_prefiltering_, use_hlr_poly_, segment_projection_, settings().get<ifcopenshell::geom::settings::MesherLinearDeflection>().get(), projection_plane) }).first;
 						}
 						it->second.add(*compound_to_hlr, data.product);
 						for (auto& kv : classified_edge_buckets) {
@@ -2515,7 +2515,7 @@ void svg_serializer::finalize() {
 
 			// @todo do we have always have pln here?
 			if (use_hlr && pln) {
-				hlr = new hlr_engine(logger(), use_prefiltering_, use_hlr_poly_, segment_projection_, *pln);
+				hlr = new hlr_engine(logger(), use_prefiltering_, use_hlr_poly_, segment_projection_, settings().get<ifcopenshell::geom::settings::MesherLinearDeflection>().get(), *pln);
 			}
 
 			section_data_ = std::vector<section_data>{ sd };
