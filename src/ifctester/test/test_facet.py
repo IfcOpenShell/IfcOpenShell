@@ -204,6 +204,30 @@ class TestEntity:
         facet = Entity(name="IFCWALL", predefinedType="X")
         run("Overridden predefined types should pass", facet=facet, inst=wall, expected=True)
 
+        restriction = Restriction(options={"enumeration": ["SOLIDWALL", "USERDEFINED"]})
+        facet = Entity(name="IFCWALL", predefinedType=restriction)
+        ifc = ifcopenshell.file()
+        run(
+            "A predefined type enumeration including USERDEFINED still matches a listed value",
+            facet=facet,
+            inst=ifc.createIfcWall(PredefinedType="SOLIDWALL"),
+            expected=True,
+        )
+        ifc = ifcopenshell.file()
+        run(
+            "A predefined type enumeration including USERDEFINED matches a USERDEFINED element",
+            facet=facet,
+            inst=ifc.createIfcWall(PredefinedType="USERDEFINED", ObjectType="WALDO"),
+            expected=True,
+        )
+        ifc = ifcopenshell.file()
+        run(
+            "A predefined type enumeration does not match an unlisted value",
+            facet=facet,
+            inst=ifc.createIfcWall(PredefinedType="PARTITIONING"),
+            expected=False,
+        )
+
         restriction = Restriction(options={"enumeration": ["IFCWALL", "IFCSLAB"]})
         facet = Entity(name=restriction)
         ifc = ifcopenshell.file()
