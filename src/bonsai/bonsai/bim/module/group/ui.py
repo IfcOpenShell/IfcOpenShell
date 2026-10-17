@@ -21,6 +21,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import bpy
+import ifcopenshell
 from bpy.types import Panel, UIList
 
 import bonsai.tool as tool
@@ -52,7 +53,6 @@ class BIM_PT_groups(Panel):
 
         row = self.layout.row(align=True)
         row.label(text=f"{GroupsData.data['total_groups']} Groups Found", icon="OUTLINER")
-        row.prop(self.props, "should_show_internal", text="", icon="FILTER")
         if self.props.is_editing:
             row.operator("bim.add_group", text="", icon="ADD").group = 0
             row.operator("bim.disable_group_editing_ui", text="", icon="CANCEL")
@@ -62,35 +62,60 @@ class BIM_PT_groups(Panel):
         if not self.props.is_editing:
             return
 
+        # What the list shows: kinds of group, and whether Bonsai's own groups are included.
+        row = self.layout.row(align=True)
+        row.prop(self.props, "group_kinds", expand=True, icon_only=True)
+        row.separator()
+        row.prop(self.props, "should_show_internal", text="", icon="FILTER")
+
         group = self.props.active_group
         group_id = group.ifc_definition_id if group else 0
+
+        # Every kind of group gets the same buttons; the operators route systems, zones and structural groups.
+        actions = tool.Group.get_group_actions(tool.Ifc.get().by_id(group_id)) if group_id else set()
 
         row = self.layout.row()
         row.template_list("BIM_UL_groups", "", self.props, "groups", self.props, "active_group_index")
         if group_id:
             col = row.column(align=True)
-            col.operator("bim.add_group", text="", icon="ADD").group = group_id
-            col.operator("bim.remove_group", text="", icon="X").group = group_id
+            if "ADD_CHILD" in actions:
+                col.operator("bim.add_group", text="", icon="ADD").group = group_id
+            if "REMOVE" in actions:
+                col.operator("bim.remove_group", text="", icon="X").group = group_id
             col.separator()
             col.operator("bim.enable_editing_group", text="", icon="GREASEPENCIL").group = group_id
 
+        if group_id:
             row = self.layout.row(align=True)
             row.label(text="Contents")
             row.operator("bim.select_group_elements", text="", icon="RESTRICT_SELECT_OFF").group = group_id
             tool.Group.draw_visibility_buttons(row, group_id)
 
-            row = self.layout.row(align=True)
-            row.label(text=f"{len(context.selected_objects)} Selected →")
-            sub = row.row(align=True)
-            sub.enabled = bool(context.selected_objects)
-            sub.operator("bim.assign_group", text="", icon="KEYFRAME_HLT").group = group_id
-            sub.operator("bim.unassign_group", text="", icon="KEYFRAME").group = group_id
+        if "ASSIGN" in actions:
+            self.draw_selection_row(context, tool.Ifc.get().by_id(group_id))
 
         if self.props.active_group_id:
             draw_attributes(self.props.group_attributes, self.layout)
             row = self.layout.row(align=True)
             row.operator("bim.edit_group", text="Save Group", icon="CHECKMARK")
             row.operator("bim.disable_editing_group", text="", icon="CANCEL")
+
+    def draw_selection_row(self, context: bpy.types.Context, group: ifcopenshell.entity_instance) -> None:
+        # Gray out what wouldn't do anything: systems and zones only take some classes.
+        selected = [e for o in context.selected_objects if (e := tool.Ifc.get_entity(o))]
+        assignable = tool.Group.get_assignable(group, selected)
+        members = {o for rel in group.IsGroupedBy or [] for o in rel.RelatedObjects}
+        text = f"{len(context.selected_objects)} Selected"
+        if len(assignable) < len(selected):
+            text += f" ({len(assignable)} can join)"
+        row = self.layout.row(align=True)
+        row.label(text=f"{text} →")
+        sub = row.row(align=True)
+        sub.enabled = bool(assignable)
+        sub.operator("bim.assign_group", text="", icon="KEYFRAME_HLT").group = group.id()
+        sub = row.row(align=True)
+        sub.enabled = any(e in members for e in selected)
+        sub.operator("bim.unassign_group", text="", icon="KEYFRAME").group = group.id()
 
 
 class BIM_PT_object_groups(Panel):
@@ -198,4 +223,4 @@ class BIM_UL_groups(UIList):
                 op.group_type = "IfcGroup"
                 op.ifc_definition_id = item.ifc_definition_id
                 op.option = "COLLAPSE" if item.is_expanded else "EXPAND"
-            row.prop(item, "name", text="", emboss=False)
+            row.prop(item, "name", text="", emboss=False, icon=item.icon)

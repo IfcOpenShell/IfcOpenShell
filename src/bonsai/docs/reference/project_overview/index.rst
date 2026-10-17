@@ -57,8 +57,9 @@ The Stakeholders panel enables users to manage project stakeholders, including p
 Groups
 ^^^^^^
 
-The Groups panel lists the project's groups, and lets users create, edit, nest and remove them, assign
-objects to them, and manage their property and quantity sets.
+The Groups panel lists every kind of group in the project: plain groups, systems, zones, structural groups
+and others like assets, filtered by kind. It lets users create, edit, nest and remove them, assign objects
+to them, and manage their property and quantity sets.
 
 Grouping and Filtering
 ^^^^^^^^^^^^^^^^^^^^^^

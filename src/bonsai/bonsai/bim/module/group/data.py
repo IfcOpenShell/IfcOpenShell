@@ -42,7 +42,8 @@ class GroupsData:
 
     @classmethod
     def total_groups(cls):
-        return len(tool.Group.get_user_groups(include_internal=tool.Group.get_group_props().should_show_internal))
+        props = tool.Group.get_group_props()
+        return len(tool.Group.get_all_groups(props.group_kinds, include_internal=props.should_show_internal))
 
 
 class ObjectGroupsData:
@@ -59,11 +60,7 @@ class ObjectGroupsData:
 
     @classmethod
     def get_icon(cls, group: ifcopenshell.entity_instance) -> str:
-        if group.is_a("IfcStructuralAnalysisModel"):
-            return "EDITMODE_HLT"
-        if group.is_a("IfcSystem"):
-            return tool.System.SYSTEM_ICONS.get(group.is_a(), tool.System.SYSTEM_ICONS["IfcSystem"])
-        return "OUTLINER"
+        return tool.Group.get_icon(group)
 
     @classmethod
     def get_sort_key(cls, group: ifcopenshell.entity_instance) -> tuple[int, str]:

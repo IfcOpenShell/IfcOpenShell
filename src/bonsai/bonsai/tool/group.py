@@ -19,10 +19,12 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Literal, Union, assert_never
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.system
 from natsort import natsorted
 
 import bonsai.core.tool
@@ -65,23 +67,32 @@ class Group(bonsai.core.tool.System):
         from bonsai.bim.module.system.prop import System
 
         props, blender_groups = cls.get_groups_data(group_type)
-        show_internal = True
         # While the Groups list is filtered, load nested groups too so the filter can find them.
         load_all = False
+        # The Groups list shows every kind of group the kind filter allows; None keeps the Systems list as it was.
+        visible: Union[set[ifcopenshell.entity_instance], None] = None
         if group_type == "IfcGroup":
-            show_internal = props.should_show_internal
             load_all = bool(props.group_filter.strip())
-            base_groups = cls.get_user_groups(include_internal=show_internal)
+            base_groups = cls.get_all_groups(props.group_kinds, include_internal=props.should_show_internal)
+            visible = set(base_groups)
         elif group_type == "IfcSystem":
             base_groups = [g for g in tool.System.get_systems() if not g.is_a("IfcStructuralAnalysisModel")]
         else:
             assert_never(group_type)
 
+        def is_top_level(group: ifcopenshell.entity_instance) -> bool:
+            if visible is None:
+                return not group.HasAssignments
+            # A group nested in a group that isn't shown is listed at the top level instead.
+            return not any(
+                rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup in visible for rel in group.HasAssignments or []
+            )
+
         expanded_groups_json = props.expanded_groups_json
         expanded_groups: list[int] = json.loads(expanded_groups_json)
         blender_groups.clear()
 
-        groups = [g for g in base_groups if not g.HasAssignments]
+        groups = [g for g in base_groups if is_top_level(g)]
         sorted_groups = natsorted(groups, key=lambda group: group.Name or "Unnamed")
 
         def load_group(group: ifcopenshell.entity_instance, tree_depth: int = 0) -> None:
@@ -93,13 +104,15 @@ class Group(bonsai.core.tool.System):
             new.is_expanded = load_all or group.id() in expanded_groups
             if isinstance(new, System):
                 new.ifc_class = group.is_a()
+            else:
+                new.icon = cls.get_icon(group)
 
             related_groups: list[ifcopenshell.entity_instance]
             related_groups = [
                 related_object
                 for rel in group.IsGroupedBy or []
                 for related_object in rel.RelatedObjects
-                if related_object.is_a(group_type) and (show_internal or not cls.is_internal(related_object))
+                if (related_object in visible if visible is not None else related_object.is_a(group_type))
             ]
             sorted_related_groups = natsorted(related_groups, key=lambda group: group.Name or "Unnamed")
 
@@ -187,6 +200,62 @@ class Group(bonsai.core.tool.System):
         if "BBIM_Linked_Aggregate" in (group.Name or ""):
             return True
         return cls.get_description_type(group) in cls.INTERNAL_DESCRIPTION_TYPES
+
+    GroupKind = Literal["GROUP", "SYSTEM", "ZONE", "STRUCTURAL", "OTHER"]
+
+    @classmethod
+    def get_kind(cls, group: ifcopenshell.entity_instance) -> GroupKind:
+        """Sort any IfcGroup into the kinds the Groups list can filter by."""
+        if any(
+            group.is_a(c) for c in ("IfcStructuralAnalysisModel", "IfcStructuralLoadGroup", "IfcStructuralResultGroup")
+        ):
+            return "STRUCTURAL"
+        if group.is_a("IfcZone"):
+            return "ZONE"
+        if group.is_a("IfcSystem"):
+            return "SYSTEM"
+        if group.is_a() == "IfcGroup":
+            return "GROUP"
+        return "OTHER"  # E.g. IfcAsset, IfcInventory.
+
+    @classmethod
+    def get_icon(cls, group: ifcopenshell.entity_instance) -> str:
+        kind = cls.get_kind(group)
+        if kind == "SYSTEM":
+            return tool.System.SYSTEM_ICONS.get(group.is_a(), tool.System.SYSTEM_ICONS["IfcSystem"])
+        return {"GROUP": "OUTLINER", "ZONE": "CUBE", "STRUCTURAL": "EDITMODE_HLT", "OTHER": "PACKAGE"}[kind]
+
+    GroupAction = Literal["ASSIGN", "ADD_CHILD", "REMOVE"]
+
+    @classmethod
+    def get_group_actions(cls, group: ifcopenshell.entity_instance) -> set[GroupAction]:
+        """Which Groups list actions apply to a group, besides selecting, showing and editing attributes."""
+        if group.is_a("IfcStructuralAnalysisModel") or group.is_a("IfcZone"):
+            return {"ASSIGN", "REMOVE"}
+        if group.is_a("IfcStructuralLoadGroup"):
+            return {"REMOVE"}  # Holds structural activities, not products; its children are made in Structural.
+        if group.is_a("IfcStructuralResultGroup"):
+            return set()
+        return {"ASSIGN", "ADD_CHILD", "REMOVE"}
+
+    @classmethod
+    def get_assignable(
+        cls, group: ifcopenshell.entity_instance, elements: Iterable[ifcopenshell.entity_instance]
+    ) -> list[ifcopenshell.entity_instance]:
+        """Get the elements that can be assigned to a group: systems and zones only take some classes."""
+        if group.is_a("IfcSystem") and not group.is_a("IfcStructuralAnalysisModel"):
+            return [e for e in elements if ifcopenshell.util.system.is_assignable(e, group)]
+        return list(elements)
+
+    @classmethod
+    def get_all_groups(cls, kinds: Iterable[str], include_internal: bool = False) -> list[ifcopenshell.entity_instance]:
+        """Get every IfcGroup, of any subtype, whose kind is in ``kinds``."""
+        kinds = set(kinds)
+        return [
+            g
+            for g in tool.Ifc.get().by_type("IfcGroup")
+            if cls.get_kind(g) in kinds and (include_internal or not cls.is_internal(g))
+        ]
 
     @classmethod
     def get_user_groups(cls, include_internal: bool = False) -> list[ifcopenshell.entity_instance]:

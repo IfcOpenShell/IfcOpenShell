@@ -59,6 +59,21 @@ def update_group_filter(self: "BIMGroupProperties", context: object) -> None:
         tool.Group.import_groups("IfcGroup")
 
 
+GROUP_KIND_ITEMS = [
+    ("GROUP", "Groups", "Show plain IfcGroups", "OUTLINER", 1),
+    ("SYSTEM", "Systems", "Show systems, like distribution and building systems", "NETWORK_DRIVE", 2),
+    ("ZONE", "Zones", "Show zones", "CUBE", 4),
+    ("STRUCTURAL", "Structural", "Show structural analysis models, load groups and result groups", "EDITMODE_HLT", 8),
+    ("OTHER", "Other", "Show other kinds of group, like assets and inventories", "PACKAGE", 16),
+]
+
+
+def update_group_kinds(self: "BIMGroupProperties", context: object) -> None:
+    refresh_group()
+    if self.is_editing:
+        tool.Group.import_groups("IfcGroup")
+
+
 def update_active_group_index(self, context):
     refresh_pset()
 
@@ -79,6 +94,7 @@ class Group(PropertyGroup):
     is_expanded: BoolProperty(name="Is Expanded", default=False)
     has_children: BoolProperty(name="Has Children", default=False)
     tree_depth: IntProperty(name="Tree Depth")
+    icon: StringProperty(name="Icon", default="OUTLINER")
 
     if TYPE_CHECKING:
         name: str
@@ -86,6 +102,7 @@ class Group(PropertyGroup):
         is_expanded: bool
         has_children: bool
         tree_depth: int
+        icon: str
 
 
 class BIMGroupProperties(PropertyGroup):
@@ -105,6 +122,14 @@ class BIMGroupProperties(PropertyGroup):
         default=False,
         update=update_should_show_internal,
     )
+    group_kinds: EnumProperty(
+        name="Group Kinds",
+        description="Which kinds of group the Groups list shows",
+        items=GROUP_KIND_ITEMS,
+        options={"ENUM_FLAG"},
+        default={"GROUP", "SYSTEM", "ZONE", "STRUCTURAL", "OTHER"},
+        update=update_group_kinds,
+    )
     group_filter: StringProperty(name="Group Filter", update=update_group_filter, options={"TEXTEDIT_UPDATE"})
     is_group_filter_active: BoolProperty(name="Is Group Filter Active", default=False)
 
@@ -118,6 +143,7 @@ class BIMGroupProperties(PropertyGroup):
         is_editing_object_groups: bool
         object_group: str
         should_show_internal: bool
+        group_kinds: set[str]
         group_filter: str
         is_group_filter_active: bool
 
