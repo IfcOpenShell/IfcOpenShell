@@ -832,6 +832,27 @@ bool ifcopenshell::geom::util::points_on_planar_face_generator::operator()(gp_Pn
 }
 
 
+namespace {
+	// #5779 an empty cut result is only plausible when the tools cover the first operand
+	bool empty_cut_result_plausible(double tolerance, const TopoDS_Shape& a, const NCollection_List<TopoDS_Shape>& b) {
+		Bnd_Box A, B;
+		BRepBndLib::Add(a, A);
+		double volume_b = 0.;
+		for (NCollection_List<TopoDS_Shape>::Iterator it(b); it.More(); it.Next()) {
+			BRepBndLib::Add(it.Value(), B);
+			volume_b += std::abs(ifcopenshell::geom::util::shape_volume(it.Value()));
+		}
+		if (A.IsVoid() || B.IsVoid()) {
+			return false;
+		}
+		B.Enlarge(tolerance);
+		if (B.IsOut(A.CornerMin()) || B.IsOut(A.CornerMax())) {
+			return false;
+		}
+		return volume_b >= ifcopenshell::geom::util::shape_volume(a) * (1. - 1.e-6);
+	}
+}
+
 bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	using namespace std::string_literals;
 
@@ -1318,7 +1339,10 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 					int result_n_faces = count(r, TopAbs_FACE);
 					int first_op_n_faces = count(a, TopAbs_FACE);
 
-					if (op == BOPAlgo_CUT && has_open_shells && all_faces_included_in_result && result_n_faces > first_op_n_faces) {
+					if (op == BOPAlgo_CUT && result_n_faces == 0 && first_op_n_faces > 0 && !empty_cut_result_plausible(settings.precision + fuzziness, a, b)) {
+						success = false;
+						settings.log().notice("GEO", 407, "Empty subtraction result discarded because second operands do not enclose first operand");
+					} else if (op == BOPAlgo_CUT && has_open_shells && all_faces_included_in_result && result_n_faces > first_op_n_faces) {
 						success = false;
 						settings.log().notice("GEO", 149, "Boolean result discarded because subtractions results in only the addition of faces");
 					} else {
