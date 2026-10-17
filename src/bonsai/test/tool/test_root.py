@@ -127,6 +127,16 @@ class TestGetObjectRepresentation(NewFile):
         tool.Geometry.get_mesh_props(mesh).ifc_definition_id = representation.id()
         assert subject.get_object_representation(obj) == representation
 
+    def test_returns_none_instead_of_raising_for_a_stale_ifc_definition_id(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        representation = ifc.createIfcShapeRepresentation()
+        obj = bpy.data.objects.new("Object", (mesh := bpy.data.meshes.new("Mesh")))
+        stale_id = representation.id()
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = stale_id
+        ifc.remove(representation)
+        assert subject.get_object_representation(obj) is None
+
 
 class TestGetRepresentationContext(NewFile):
     def test_run(self):
