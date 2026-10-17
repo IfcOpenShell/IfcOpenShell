@@ -528,6 +528,21 @@ class BIM_PT_sheets(Panel):
             row3.operator("bim.create_sheets", icon="OUTPUT", text="")
             row3.operator("bim.open_sheet", icon="HIDE_OFF", text="")
 
+            if active_sheet.is_sheet:
+                # Which site and building the titleblock's {{Site...}} and
+                # {{Building...}} fields show.
+                links = SheetsData.spatial_links(active_sheet.ifc_definition_id)
+                col = self.layout.column(align=True)
+                for prefix, operator, icon in (
+                    ("Site", "bim.link_sheet_site", "WORLD"),
+                    ("Building", "bim.link_sheet_building", "HOME"),
+                ):
+                    field = links[prefix]
+                    current = next((o["label"] for o in field["options"] if o["value"] == field["value"]), "")
+                    split = col.split(factor=0.25, align=True)
+                    split.label(text=prefix, icon=icon)
+                    split.operator_menu_enum(operator, "element", text=current)
+
         self.layout.template_list("BIM_UL_sheets", "", self.props, "sheets", self.props, "active_sheet_index")
 
 
