@@ -268,6 +268,11 @@ class AnnotationToolUI:
             props = tool.Drawing.get_document_props()
             row.operator("bim.filter_selected_objects_if_intersected_by_camera", text="Filter by Camera")
 
+        if object_type == "TEXT" and tool.Terrain.get_selected_terrain(bpy.context.active_object):
+            row = cls.layout.row(align=True)
+            row.prop(tool.Terrain.get_terrain_props(), "label_spacing", text="Spacing")
+            row.operator("bim.label_contours", icon="FONT_DATA", text="Label Contours")
+
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.annotation_hotkey"
