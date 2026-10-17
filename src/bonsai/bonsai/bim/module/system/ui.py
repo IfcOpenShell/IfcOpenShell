@@ -73,7 +73,7 @@ class BIM_PT_systems(Panel):
         self.props = tool.System.get_system_props()
         active_system_item = self.props.active_system_ui_item
         row = self.layout.row(align=True)
-        row.prop(self.props, "should_draw_decorations", text="Draw Flow Decorations")
+        row.prop(self.props, "should_draw_decorations", text="Draw Decorations")
         if self.props.should_draw_decorations:
             self.draw_decoration_legend()
 
@@ -115,31 +115,38 @@ class BIM_PT_systems(Panel):
             self.draw_editable_ui(context)
 
     def draw_decoration_legend(self) -> None:
-        # Say what the decorations highlight, in the order SystemDecorationData picks it.
+        # Two independent decorations: the highlighted systems (a halo) and the active object's connected run.
         decoration = SystemData.data["decoration"]
-        total = decoration["total_drawable"]
-        drawn = f"{total} ducts, pipes and fittings" if total != 1 else "1 duct, pipe or fitting"
         col = self.layout.box().column(align=True)
-        if decoration["source"] in ("OBJECT_SYSTEMS", "ACTIVE_SYSTEM"):
-            if decoration["source"] == "ACTIVE_SYSTEM":
-                whose, verb = "the last selected system", "has"
-            elif len(decoration["systems"]) == 1:
-                whose, verb = "the active object's system", "has"
-            else:
-                whose, verb = "the active object's systems", "have"
-            if total:
-                col.label(text=f"Highlighting {drawn} in {whose}:")
-            else:
-                col.label(text=f"Nothing to draw: {whose} {verb} no ducts, pipes or fittings:")
+
+        col.prop(self.props, "should_draw_system_decorations", text="System")
+        total = decoration["total_system_drawable"]
+        if decoration["source"] == "NONE":
+            col.label(text="The active object is not in a system.", icon="BLANK1")
+        else:
+            whose = "Last selected system" if decoration["source"] == "ACTIVE_SYSTEM" else "Active object's system"
+            if len(decoration["systems"]) > 1:
+                whose += "s"
+            drawn = f"{total} ducts, pipes and fittings" if total else "no ducts, pipes or fittings to draw"
+            col.label(text=f"{whose}: {drawn}", icon="BLANK1")
             for system in decoration["systems"]:
                 row = col.row(align=True)
+                row.label(text="", icon="BLANK1")
                 row.label(text=system["name"], icon=tool.System.SYSTEM_ICONS.get(system["ifc_class"], "NETWORK_DRIVE"))
                 if decoration["source"] == "ACTIVE_SYSTEM":
                     row.operator("bim.clear_active_system", text="", icon="X")
-        elif total:
-            col.label(text=f"Highlighting {drawn} connected to the active object")
+
+        col.separator()
+        col.prop(self.props, "should_draw_run_decorations", text="Connected Run")
+        if total := decoration["total_run_drawable"]:
+            text = (
+                f"{total} connected ducts, pipes and fittings, with flow"
+                if total != 1
+                else "1 connected duct, pipe or fitting, with flow"
+            )
         else:
-            col.label(text="Nothing to draw. Select a duct, pipe or fitting, or an element in such a system.")
+            text = "The active object has no connected ducts, pipes or fittings."
+        col.label(text=text, icon="BLANK1")
 
     def draw_editable_ui(self, context: bpy.types.Context) -> None:
         draw_attributes(self.props.system_attributes, self.layout)

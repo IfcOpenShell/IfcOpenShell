@@ -64,7 +64,7 @@ class TestDecorationSource(NewFile):
         bpy.ops.bim.create_project()
         self.add_wall()
         refresh()
-        assert SystemDecorationData.decoration_source() == ("CONNECTED", [])
+        assert SystemDecorationData.decoration_source() == ("NONE", [])
 
     def test_clearing_the_active_system(self):
         bpy.ops.bim.create_project()
@@ -74,7 +74,7 @@ class TestDecorationSource(NewFile):
         tool.System.set_active_system(system)
         bpy.ops.bim.clear_active_system()
         assert tool.System.get_active_system() is None
-        assert SystemDecorationData.decoration_source() == ("CONNECTED", [])
+        assert SystemDecorationData.decoration_source() == ("NONE", [])
 
     def test_counting_only_elements_the_decorations_can_draw(self):
         bpy.ops.bim.create_project()
@@ -82,14 +82,14 @@ class TestDecorationSource(NewFile):
         self.add_system([wall])
         refresh()
         SystemData.load()
-        assert SystemData.data["decoration"]["total_drawable"] == 0
+        assert SystemData.data["decoration"]["total_system_drawable"] == 0
 
         duct = self.add_wall(ifc_class="IfcDuctSegment")
         self.add_system([duct], ifc_class="IfcDistributionSystem", name="HVAC")
         refresh()
         SystemData.load()
         assert SystemData.data["decoration"]["source"] == "OBJECT_SYSTEMS"
-        assert SystemData.data["decoration"]["total_drawable"] == 1
+        assert SystemData.data["decoration"]["total_system_drawable"] == 1
 
     def test_rebuilding_decorations_after_unassigning(self):
         bpy.ops.bim.create_project()
@@ -101,4 +101,22 @@ class TestDecorationSource(NewFile):
         ifcopenshell.api.system.unassign_system(tool.Ifc.get(), products=[duct], system=system)
         refresh()
         assert tool.System.get_decoration_data() is not before
-        assert SystemDecorationData.decoration_source() == ("CONNECTED", [])
+        assert SystemDecorationData.decoration_source() == ("NONE", [])
+
+    def test_unassigning_removes_the_system_but_keeps_the_run(self):
+        bpy.ops.bim.create_project()
+        duct = self.add_wall(ifc_class="IfcDuctSegment")
+        system = self.add_system([duct], ifc_class="IfcDistributionSystem", name="HVAC")
+        refresh()
+        SystemDecorationData.load()
+        assert SystemDecorationData.data["system_elements"] == {duct}
+        assert SystemDecorationData.data["run_elements"] == {duct}
+
+        ifcopenshell.api.system.unassign_system(tool.Ifc.get(), products=[duct], system=system)
+        refresh()
+        SystemDecorationData.load()
+        assert SystemDecorationData.data["system_elements"] == set()
+        assert SystemDecorationData.data["run_elements"] == {duct}
+        SystemData.load()
+        assert SystemData.data["decoration"]["total_system_drawable"] == 0
+        assert SystemData.data["decoration"]["total_run_drawable"] == 1

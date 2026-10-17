@@ -299,8 +299,8 @@ class System(bonsai.core.tool.System):
         system_props = cls.get_system_props()
         return tool.Ifc.get_entity_by_id(system_props.active_system_id)
 
-    # Decoration-data cache, keyed on (decorator_cache_token, decorated_elements_set). The key holds the
-    # set itself (compared by identity) rather than its id(), which a newly loaded set could reuse.
+    # Decoration-data cache, keyed on (decorator_cache_token, SystemDecorationData.data). The key holds the
+    # data itself (compared by identity) rather than its id(), which newly loaded data could reuse.
     _decoration_data_cache_key: tuple | None = None
     _decoration_data_cache: dict[str, Any] | None = None
 
@@ -315,7 +315,7 @@ class System(bonsai.core.tool.System):
             SystemDecorationData.load()
 
         token = get_decorator_cache_token()
-        key = (token, SystemDecorationData.data["decorated_elements"])
+        key = (token, SystemDecorationData.data)
         cached_key = cls._decoration_data_cache_key
         if (
             cached_key is not None
@@ -332,13 +332,15 @@ class System(bonsai.core.tool.System):
 
     @classmethod
     def _build_decoration_data(cls) -> dict[str, Any]:
-        from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
+        from bonsai.bim.module.system.data import SystemDecorationData
 
         all_vertices = []
-        preview_edges = []
-        special_vertices = []
-        selected_edges = []
-        selected_vertices = []
+        # The system decoration: a halo along the elements of the highlighted systems.
+        halo_edges = []
+        system_vertices = []
+        # The connected-run decoration: the active element's port-connected run, with flow direction.
+        run_edges = []
+        run_vertices = []
 
         start_vert_i = 0
 
@@ -348,9 +350,10 @@ class System(bonsai.core.tool.System):
             BOTH = 2
             AMBIGUOUS = 0
 
-        connected_elements = ObjectSystemData.data["connected_elements"]
+        system_elements = SystemDecorationData.data["system_elements"]
+        run_elements = SystemDecorationData.data["run_elements"]
 
-        for element in SystemDecorationData.data["decorated_elements"]:
+        for element in system_elements | run_elements:
             start_vert_i = len(all_vertices)
             obj = tool.Ifc.get_object(element)
 
@@ -371,7 +374,7 @@ class System(bonsai.core.tool.System):
             if tool.Array.is_array_child(element):
                 continue
 
-            selected_element = element in connected_elements
+            selected_element = element in run_elements
             verts_pos = []
 
             port_data = SystemDecorationData.get_element_ports_data(element)
@@ -458,19 +461,20 @@ class System(bonsai.core.tool.System):
 
             all_vertices.extend(verts_pos)
 
+            if element in system_elements:
+                # Only the port-to-port line, not the flow arrows, so the halo stays a plain band.
+                halo_edges.extend((i, i + 1) for i in range(start_vert_i, start_vert_i + len(port_data) - 1))
+                system_vertices.extend(verts)
             if selected_element:
-                selected_vertices.extend(verts)
-                selected_edges.extend(edges)
-            else:
-                special_vertices.extend(verts)
-                preview_edges.extend(edges)
+                run_vertices.extend(verts)
+                run_edges.extend(edges)
 
         decoration_data = {
             "all_vertices": all_vertices,
-            "preview_edges": preview_edges,
-            "special_vertices": [all_vertices[i] for i in special_vertices],
-            "selected_edges": selected_edges,
-            "selected_vertices": [all_vertices[i] for i in selected_vertices],
+            "halo_edges": halo_edges,
+            "system_vertices": [all_vertices[i] for i in system_vertices],
+            "run_edges": run_edges,
+            "run_vertices": [all_vertices[i] for i in run_vertices],
         }
         return decoration_data
 

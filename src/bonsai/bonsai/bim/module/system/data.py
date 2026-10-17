@@ -70,15 +70,14 @@ class SystemData:
     def decoration(cls) -> dict[str, Any]:
         """What the system decorations highlight, for the legend in the Systems panel."""
         source, systems = SystemDecorationData.decoration_source()
-        if systems:
-            elements = set().union(*(ifcopenshell.util.system.get_system_elements(s) for s in systems))
-        else:
-            elements = set(ObjectSystemData.data["connected_elements"])
+        system_elements = set().union(*(ifcopenshell.util.system.get_system_elements(s) for s in systems))
+        run_elements = ObjectSystemData.data["connected_elements"]
+        # The decorations only draw ducts, pipes and fittings (their ports and flow).
         return {
             "source": source,
             "systems": [{"id": s.id(), "name": s.Name or "Unnamed", "ifc_class": s.is_a()} for s in systems],
-            # The decorations only draw ducts, pipes and fittings (their ports and flow).
-            "total_drawable": len([e for e in elements if tool.System.is_mep_element(e)]),
+            "total_system_drawable": len([e for e in system_elements if tool.System.is_mep_element(e)]),
+            "total_run_drawable": len([e for e in run_elements if tool.System.is_mep_element(e)]),
         }
 
 
@@ -215,8 +214,10 @@ class SystemDecorationData:
 
     @classmethod
     def load(cls):
+        source, systems = cls.decoration_source()
         cls.data = {
-            "decorated_elements": cls.decorated_elements(),
+            "system_elements": set().union(*(ifcopenshell.util.system.get_system_elements(s) for s in systems)),
+            "run_elements": set(ObjectSystemData.data["connected_elements"]),
         }
         cls.is_loaded = True
         cls.elements_ports_positions = {}
@@ -246,11 +247,11 @@ class SystemDecorationData:
 
     @classmethod
     def decoration_source(cls) -> tuple[str, list[ifcopenshell.entity_instance]]:
-        """Get what to decorate, in priority order, with the systems involved.
+        """Get which systems the system decoration highlights.
 
         1. "OBJECT_SYSTEMS": the systems of the active object.
-        2. "ACTIVE_SYSTEM": the active system (the one last selected), if it has elements.
-        3. "CONNECTED": otherwise, the elements connected to the active object.
+        2. "ACTIVE_SYSTEM": otherwise, the active system (the one last selected), if it has elements.
+        3. "NONE": otherwise, no system. The connected-run decoration is separate and doesn't depend on this.
         """
         if not ObjectSystemData.is_loaded:
             ObjectSystemData.load()
@@ -259,17 +260,7 @@ class SystemDecorationData:
         active_system = tool.System.get_active_system()
         if active_system and ifcopenshell.util.system.get_system_elements(active_system):
             return "ACTIVE_SYSTEM", [active_system]
-        return "CONNECTED", []
-
-    @classmethod
-    def decorated_elements(cls):
-        source, systems = cls.decoration_source()
-        decorated_elements = set()
-        for system in systems:
-            decorated_elements.update(ifcopenshell.util.system.get_system_elements(system))
-        if not decorated_elements:
-            decorated_elements.update(ObjectSystemData.data["connected_elements"])
-        return decorated_elements
+        return "NONE", []
 
 
 class ZonesData:
