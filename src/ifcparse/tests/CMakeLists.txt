@@ -7,7 +7,7 @@ if("4" IN_LIST SCHEMA_VERSIONS) # @todo allow tests to run on other schemas as w
     target_compile_definitions(test_ifcopenshell_parse PRIVATE
         IFCOPENSHELL_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/../../ifcopenshell-python/test/fixtures"
     )
-    target_link_libraries(test_ifcopenshell_parse PRIVATE Catch2::Catch2WithMain IfcParse)
+    target_link_libraries(test_ifcopenshell_parse PRIVATE Catch2::Catch2WithMain IfcParse parse_schema_ifc4)
     add_dependencies(test_ifcopenshell_parse parse_schema_ifc4)
     catch_discover_tests(test_ifcopenshell_parse
         DL_PATHS
