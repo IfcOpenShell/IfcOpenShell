@@ -52,6 +52,7 @@ class BIM_PT_groups(Panel):
 
         row = self.layout.row(align=True)
         row.label(text=f"{GroupsData.data['total_groups']} Groups Found", icon="OUTLINER")
+        row.prop(self.props, "should_show_internal", text="", icon="FILTER")
         if self.props.is_editing:
             row.operator("bim.add_group", text="", icon="ADD").group = 0
             row.operator("bim.disable_group_editing_ui", text="", icon="CANCEL")
@@ -125,11 +126,15 @@ class BIM_PT_object_groups(Panel):
             row.operator("bim.disable_editing_object_groups", text="", icon="CANCEL")
         else:
             if not groups:
-                row.label(text="No Groups", icon="OUTLINER")
+                text = "No Groups"
             elif len(groups) == 1:
-                row.label(text="1 Group", icon="OUTLINER")
+                text = "1 Group"
             else:
-                row.label(text=f"{len(groups)} Groups", icon="OUTLINER")
+                text = f"{len(groups)} Groups"
+            if total_hidden := ObjectGroupsData.data["total_hidden"]:
+                text += f" ({total_hidden} hidden)"
+            row.label(text=text, icon="OUTLINER")
+            row.prop(self.props, "should_show_internal", text="", icon="FILTER")
             row.operator("bim.enable_editing_object_groups", text="", icon="GREASEPENCIL")
             row.operator("bim.add_group_to_selected", text="", icon="ADD")
 

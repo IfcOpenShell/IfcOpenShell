@@ -64,10 +64,11 @@ class Group(bonsai.core.tool.System):
     def import_groups(cls, group_type: GroupType) -> None:
         from bonsai.bim.module.system.prop import System
 
-        ifc_file = tool.Ifc.get()
         props, blender_groups = cls.get_groups_data(group_type)
+        show_internal = True
         if group_type == "IfcGroup":
-            base_groups = ifc_file.by_type("IfcGroup", include_subtypes=False)
+            show_internal = props.should_show_internal
+            base_groups = cls.get_user_groups(include_internal=show_internal)
         elif group_type == "IfcSystem":
             base_groups = [g for g in tool.System.get_systems() if not g.is_a("IfcStructuralAnalysisModel")]
         else:
@@ -95,7 +96,7 @@ class Group(bonsai.core.tool.System):
                 related_object
                 for rel in group.IsGroupedBy or []
                 for related_object in rel.RelatedObjects
-                if related_object.is_a(group_type)
+                if related_object.is_a(group_type) and (show_internal or not cls.is_internal(related_object))
             ]
             sorted_related_groups = natsorted(related_groups, key=lambda group: group.Name or "Unnamed")
 
@@ -166,3 +167,28 @@ class Group(bonsai.core.tool.System):
         except ValueError:
             return None
         return data.get("type") if isinstance(data, dict) else None
+
+    INTERNAL_OBJECT_TYPES = ("DRAWING", "DRAWINGS", "SEARCH")
+    INTERNAL_DESCRIPTION_TYPES = ("BBIM_Search", "BBIM_AnimationColorScheme")
+
+    @classmethod
+    def is_internal(cls, group: ifcopenshell.entity_instance) -> bool:
+        """Whether a plain IfcGroup stores Bonsai's own data rather than being a user's group.
+
+        That is drawings, saved searches and colour schemes, and linked aggregates.
+        """
+        if group.is_a() != "IfcGroup":
+            return False
+        if group.ObjectType in cls.INTERNAL_OBJECT_TYPES:
+            return True
+        if "BBIM_Linked_Aggregate" in (group.Name or ""):
+            return True
+        return cls.get_description_type(group) in cls.INTERNAL_DESCRIPTION_TYPES
+
+    @classmethod
+    def get_user_groups(cls, include_internal: bool = False) -> list[ifcopenshell.entity_instance]:
+        """Get plain IfcGroups (no systems or zones), leaving out Bonsai's internal ones unless asked."""
+        groups = tool.Ifc.get().by_type("IfcGroup", include_subtypes=False)
+        if include_internal:
+            return groups
+        return [g for g in groups if not cls.is_internal(g)]

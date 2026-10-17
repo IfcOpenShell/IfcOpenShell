@@ -200,7 +200,11 @@ def group_items(self, context) -> EnumItems:
     return _build_items(
         "GROUP",
         "No groups defined",
-        lambda ifc: [(str(e.id()), _label(e), "") for e in ifc.by_type("IfcGroup", include_subtypes=False)],
+        lambda ifc: [
+            (str(e.id()), _label(e), "")
+            for e in ifc.by_type("IfcGroup", include_subtypes=False)
+            if not tool.Group.is_internal(e)
+        ],
     )
 
 

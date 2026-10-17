@@ -116,9 +116,7 @@ class AddGroupToSelected(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         ifc_file = tool.Ifc.get()
-        if not self.allow_duplicate and any(
-            g.Name == self.name for g in ifc_file.by_type("IfcGroup", include_subtypes=False)
-        ):
+        if not self.allow_duplicate and any(g.Name == self.name for g in tool.Group.get_user_groups()):
             # Ask again from a confirmation popup, which runs this operator anew.
             bpy.ops.bim.add_group_to_selected("INVOKE_DEFAULT", name=self.name, allow_duplicate=True)
             return
@@ -143,7 +141,8 @@ class EnableEditingObjectGroups(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not tool.Ifc.get().by_type("IfcGroup", include_subtypes=False):
+        include_internal = tool.Group.get_group_props().should_show_internal
+        if not tool.Group.get_user_groups(include_internal=include_internal):
             cls.poll_message_set("No groups in the project. Add one first.")
             return False
         return True

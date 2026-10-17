@@ -332,7 +332,7 @@ class FilterValueSuggestions(Operator):
     def get_group_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
         suggestions: set[str] = set()
         for group in ifc_file.by_type("IfcGroup"):
-            if group.Name:
+            if group.Name and not tool.Group.is_internal(group):
                 hierarchy_path = self.build_hierarchy_path(group)
                 if len(hierarchy_path) > 1:
                     suggestions.add(" < ".join(hierarchy_path))
