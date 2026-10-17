@@ -1415,6 +1415,9 @@ bool ViewportCore::buildPipelines() {
     // Corner axis gizmo + orbit pivot indicator (shared desktop + web).
     // Also optional: a failure costs the indicator, not the viewport.
     axis_indicator_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
+    // Ground grid (shared desktop + web). Optional — a failure just means no
+    // grid, not a dead viewport. init installs the default base grid.
+    grid_helper_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
     return true;
 }
 
@@ -2205,6 +2208,7 @@ void ViewportCore::shutdown() {
     if (main_pipeline_transparent_)  { wgpuRenderPipelineRelease(main_pipeline_transparent_); main_pipeline_transparent_ = nullptr; }
     section_gizmo_.destroy();
     axis_indicator_.destroy();
+    grid_helper_.destroy();
     if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
     if (pipeline_layout_)      { wgpuPipelineLayoutRelease(pipeline_layout_);     pipeline_layout_ = nullptr; }
     if (model_bgl_)            { wgpuBindGroupLayoutRelease(model_bgl_);          model_bgl_ = nullptr; }
@@ -6598,6 +6602,39 @@ void ViewportCore::toggleXray() {
     host_->requestFrame();
 }
 
+void ViewportCore::setGridVisible(bool visible) {
+    grid_helper_.setVisible(visible);
+    host_->requestFrame();
+}
+
+bool ViewportCore::gridVisible() const {
+    return grid_helper_.visible();
+}
+
+void ViewportCore::toggleGrid() {
+    setGridVisible(!gridVisible());
+}
+
+void ViewportCore::upsertViewportGrid(const ViewportGridSpec& spec) {
+    grid_helper_.upsertGrid(spec);
+    host_->requestFrame();
+}
+
+bool ViewportCore::removeViewportGrid(const std::string& id) {
+    const bool removed = grid_helper_.removeGrid(id);
+    if (removed) host_->requestFrame();
+    return removed;
+}
+
+void ViewportCore::clearViewportGrids() {
+    grid_helper_.clearGrids();
+    host_->requestFrame();
+}
+
+const std::vector<ViewportGridSpec>& ViewportCore::viewportGrids() const {
+    return grid_helper_.grids();
+}
+
 #if defined(__EMSCRIPTEN__)
 void ViewportCore::pickObjectAtAsync(int x_pixels, int y_pixels,
                                      std::function<void(std::uint32_t)> cb) {
@@ -8068,6 +8105,35 @@ void ViewportCore::render() {
     pass_desc.depthStencilAttachment = depth_view_ ? &depth : nullptr;
 
     WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+
+    // Ground grid under scene geometry (depth-tested, no depth write).
+    {
+        int viewport_w_px = 0, viewport_h_px = 0;
+        host_->framebufferSize(viewport_w_px, viewport_h_px);
+        const int dpr_int = std::max(1, int(host_->dpr()));
+        const Eigen::Vector3f grid_eye = orbitEye(camera_target_, camera_distance_,
+                                                    camera_yaw_deg_, camera_pitch_deg_);
+        const Eigen::Vector3f grid_target(camera_target_[0], camera_target_[1], camera_target_[2]);
+        const Eigen::Vector3f grid_forward = (grid_target - grid_eye).normalized();
+        // Blender floor: the grid dissolves into the background with view
+        // distance, and the fade finishes before the finite grid's edge.
+        {
+            float grid_extent = 1.0f;
+            for (const auto& g : grid_helper_.grids()) {
+                if (!g.visible || g.spacing <= 0.0f || g.divisions <= 0) continue;
+                grid_extent = std::max(grid_extent, g.spacing * float(g.divisions));
+            }
+            const float dist = std::max(camera_distance_, 1.0f);
+            float far  = std::min(dist * fog_far_factor_, grid_extent * 0.9f);
+            float near = dist * fog_near_factor_;
+            if (!(near < far)) near = far * 0.5f;
+            const int mode = fog_enabled_ ? fog_mode_ : 0;
+            fog_.set(mode, near, far, fog_density_,
+                     background_color_.x(), background_color_.y(), background_color_.z());
+        }
+        grid_helper_.encode(pass, vp_this_frame, fog_, grid_eye, grid_forward,
+                            viewport_w_px, viewport_h_px, dpr_int);
+    }
 
     // Two-pass main render: opaque first, then transparent.
     if (main_pipeline_ && main_pipeline_no_cull_ && main_pipeline_transparent_

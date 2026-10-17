@@ -135,6 +135,31 @@
     </div>
 
     <div class="card">
+      <h2>Grid <span class="pill">setGridVisible · upsertGrid</span></h2>
+      <div class="body">
+        <div class="row">
+          <label class="field"><input type="checkbox" id="grid-enabled" checked> Show grid</label>
+        </div>
+        <div class="row">
+          <label class="field">plane
+            <select id="grid-plane">
+              <option value="xy" selected>XY</option>
+              <option value="xz">XZ</option>
+              <option value="yz">YZ</option>
+            </select>
+          </label>
+          <label class="field">spacing
+            <input type="number" id="grid-spacing" min="0.001" step="0.1" value="1"></label>
+          <label class="field">divisions
+            <input type="number" id="grid-divisions" min="1" step="1" value="50"></label>
+          <label class="field">opacity
+            <input type="number" id="grid-opacity" min="0.05" max="1" step="0.05" value="0.7"></label>
+        </div>
+        <div class="hint" id="grid-size">Size 100 × 100. A stronger line every 10.</div>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>Fog <span class="pill">setFog</span></h2>
       <div class="body">
         <div class="row">
@@ -371,6 +396,32 @@
       renderTable();
     };
     $('colour-clear').onclick = () => { viewer.clearColors(); renderTable(); };
+
+    // ---- Grid: master switch, then upsert the base grid ------------------------
+
+    const applyGrid = () => {
+      const spacing = Number($('grid-spacing').value);
+      const divisions = Number($('grid-divisions').value);
+      const opacity = Number($('grid-opacity').value);
+      if (!(spacing > 0) || !(divisions >= 1) || !(opacity >= 0)) return;
+      const size = Math.round(2 * spacing * divisions * 1000) / 1000;
+      $('grid-size').textContent = `Size ${size} × ${size}. A stronger line every 10.`;
+      viewer.upsertGrid({
+        id: 'base',
+        plane: $('grid-plane').value,
+        spacing,
+        divisions,
+        opacity,
+        visible: true,
+      });
+      viewer.setGridVisible($('grid-enabled').checked);
+    };
+    $('grid-enabled').onchange = () => viewer.setGridVisible($('grid-enabled').checked);
+    for (const id of ['grid-plane', 'grid-spacing', 'grid-divisions', 'grid-opacity']) {
+      $(id).oninput = applyGrid;
+      $(id).onchange = applyGrid;
+    }
+    $('grid-enabled').checked = viewer.gridVisible();
 
     // ---- Fog: near/far are multiples of the camera distance -------------------
 

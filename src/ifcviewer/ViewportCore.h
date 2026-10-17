@@ -49,6 +49,7 @@
 
 #include "AxisIndicatorRenderer.h"
 #include "BufferPool.h"
+#include "GridHelperRenderer.h"
 #include "ViewportFog.h"
 #include "GpuBudget.h"
 #include "GpuMemory.h"
@@ -971,6 +972,17 @@ public:
     void toggleXray();
     bool xrayActive() const { return xray_alpha_cap_ < 1.0f; }
 
+    // Sparse RGB axis-aligned line grids (XY / XZ / YZ). A default "base" grid
+    // is created at init. setGridVisible is the master switch; upsert replaces
+    // a grid with the same id or adds a new one.
+    void setGridVisible(bool visible);
+    bool gridVisible() const;
+    void toggleGrid();
+    void upsertViewportGrid(const ViewportGridSpec& spec);
+    bool removeViewportGrid(const std::string& id);
+    void clearViewportGrids();
+    const std::vector<ViewportGridSpec>& viewportGrids() const;
+
 #if defined(__EMSCRIPTEN__)
     // Async object pick for the web build: encodes the same pick pass as
     // pickObjectAt but reads the staging buffer back via a spontaneous map
@@ -1245,6 +1257,7 @@ private:
     // Corner axis gizmo + orbit pivot indicator, likewise shared by desktop +
     // web. Same lift out of the Qt-coupled OverlayRenderer.
     AxisIndicatorRenderer axis_indicator_;
+    GridHelperRenderer    grid_helper_;
     ViewportFog           fog_;
     bool                  fog_enabled_      = true;
     int                   fog_mode_         = 1;      // 1 linear, 2 exp2

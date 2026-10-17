@@ -33,6 +33,8 @@
 #include "WebFederation.h"
 #include "Log.h"
 
+#include "ViewportGridSpec.h"
+
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
 
@@ -628,6 +630,18 @@ extern "C" EMSCRIPTEN_KEEPALIVE void show_all_c()         { if (g_app && g_app->
 extern "C" EMSCRIPTEN_KEEPALIVE void hide_all_c()         { if (g_app && g_app->ready) g_app->core.hideAll(); }
 extern "C" EMSCRIPTEN_KEEPALIVE void toggle_xray_c()      { if (g_app && g_app->ready) g_app->core.toggleXray(); }
 extern "C" EMSCRIPTEN_KEEPALIVE int  xray_is_active_c()   { return (g_app && g_app->ready && g_app->core.xrayActive()) ? 1 : 0; }
+// Ground grid visibility, plus sparse RGB line grids (plane 0=XY, 1=XZ, 2=YZ).
+// Pass a negative colour component to keep the plane-default axis colour.
+extern "C" EMSCRIPTEN_KEEPALIVE void set_grid_visible_c(int visible) {
+    if (g_app && g_app->ready) g_app->core.setGridVisible(visible != 0);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int grid_is_visible_c() {
+    return (g_app && g_app->ready && g_app->core.gridVisible()) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void toggle_grid_c() {
+    if (g_app && g_app->ready) g_app->core.toggleGrid();
+}
+
 // Floor fade. near/far factors are multiples of the camera distance.
 // mode 1 = linear, 2 = exp2. Colour follows the background.
 extern "C" EMSCRIPTEN_KEEPALIVE void set_fog_c(int enabled, int mode,
@@ -656,6 +670,41 @@ extern "C" EMSCRIPTEN_KEEPALIVE void get_fog_c(float* out) {
     out[2] = g_app->core.fogNearFactor();
     out[3] = g_app->core.fogFarFactor();
     out[4] = g_app->core.fogDensity();
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void grid_upsert_c(
+    const char* id_utf8,
+    float ox, float oy, float oz,
+    int plane,
+    float spacing, int divisions,
+    float color_u_r, float color_u_g, float color_u_b,
+    float color_v_r, float color_v_g, float color_v_b,
+    float opacity,
+    int visible) {
+    if (!g_app || !g_app->ready || !id_utf8 || !*id_utf8) return;
+
+    ViewportGridSpec spec;
+    spec.id        = id_utf8;
+    spec.origin    = Eigen::Vector3f(ox, oy, oz);
+    spec.plane     = static_cast<ViewportGridSpec::Plane>(std::clamp(plane, 0, 2));
+    spec.spacing   = spacing;
+    spec.divisions = divisions;
+    spec.opacity   = opacity < 0.0f ? 1.0f : std::clamp(opacity, 0.0f, 1.0f);
+    spec.visible   = visible != 0;
+
+    const bool custom_u = color_u_r >= 0.0f && color_u_g >= 0.0f && color_u_b >= 0.0f;
+    const bool custom_v = color_v_r >= 0.0f && color_v_g >= 0.0f && color_v_b >= 0.0f;
+    if (!custom_u || !custom_v) spec.applyDefaultAxisColors();
+    if (custom_u) spec.color_u = Eigen::Vector3f(color_u_r, color_u_g, color_u_b);
+    if (custom_v) spec.color_v = Eigen::Vector3f(color_v_r, color_v_g, color_v_b);
+
+    g_app->core.upsertViewportGrid(spec);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int grid_remove_c(const char* id_utf8) {
+    if (!g_app || !g_app->ready || !id_utf8 || !*id_utf8) return 0;
+    return g_app->core.removeViewportGrid(id_utf8) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void grid_clear_c() {
+    if (g_app && g_app->ready) g_app->core.clearViewportGrids();
 }
 extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_selection_outline_c(int on) {
     if (!g_app || !g_app->ready) return;

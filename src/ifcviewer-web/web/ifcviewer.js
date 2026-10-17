@@ -17,6 +17,7 @@
 //     viewer.setColor(objects.filter(o => o.type === 'IfcWall'), '#ff8800');
 //     viewer.setCamera({ yaw: 45, pitch: 30 });
 //     viewer.setNavPreset('rhino');             // or switch schemes later
+//     viewer.upsertGrid({ id: 'base', plane: 'xy', spacing: 1, divisions: 50 });
 //   </script>
 //
 // The canvas element MUST have id="viewer-canvas" — the wasm side hard-codes
@@ -496,6 +497,72 @@
     return ((clamp(a) << 24) | (clamp(b) << 16) | (clamp(g) << 8) | clamp(r)) >>> 0;
   }
 
+  // Line grids. plane: 'xy' | 'xz' | 'yz'. Colors are sRGB [0..1].
+  // Both directions default to the same light grey. The renderer draws every
+  // 10th line at this colour and the lines between them lighter.
+  var GRID_PLANE_IDS = { xy: 0, xz: 1, yz: 2 };
+  var GRID_COLOR = [0.42, 0.42, 0.42];
+  var GRID_PLANE_AXIS_COLORS = {
+    xy: { u: GRID_COLOR, v: GRID_COLOR },
+    xz: { u: GRID_COLOR, v: GRID_COLOR },
+    yz: { u: GRID_COLOR, v: GRID_COLOR },
+  };
+  var GRID_DEFAULT_COLOR = -1;
+  var GRID_MAJOR_OPACITY = 0.55;
+  var GRID_UPSERT_ARG_TYPES = [
+    'string', 'number', 'number', 'number', 'number', 'number', 'number',
+    'number', 'number', 'number', 'number', 'number', 'number', 'number', 'number',
+  ];
+
+  function normalizeGridDefinition(definition) {
+    var plane = definition.plane || 'xy';
+    var defaults = GRID_PLANE_AXIS_COLORS[plane] || GRID_PLANE_AXIS_COLORS.xy;
+    var origin = definition.origin || [0, 0, 0];
+    return {
+      id: definition.id,
+      plane: plane,
+      origin: [origin[0] || 0, origin[1] || 0, origin[2] || 0],
+      spacing: Math.max(0.001, definition.spacing || 1),
+      divisions: Math.max(1, definition.divisions | 0 || 50),
+      colorU: definition.colorU || defaults.u,
+      colorV: definition.colorV || defaults.v,
+      opacity: definition.opacity != null ? definition.opacity : GRID_MAJOR_OPACITY,
+      visible: definition.visible !== false,
+    };
+  }
+
+  function upsertGridWasm(Module, grid) {
+    if (!Module._grid_upsert_c && typeof Module.ccall !== 'function') return;
+    var u = grid.colorU || [GRID_DEFAULT_COLOR, GRID_DEFAULT_COLOR, GRID_DEFAULT_COLOR];
+    var v = grid.colorV || [GRID_DEFAULT_COLOR, GRID_DEFAULT_COLOR, GRID_DEFAULT_COLOR];
+    var args = [
+      grid.id,
+      grid.origin[0], grid.origin[1], grid.origin[2],
+      GRID_PLANE_IDS[grid.plane] || 0,
+      grid.spacing,
+      grid.divisions,
+      u[0], u[1], u[2],
+      v[0], v[1], v[2],
+      grid.opacity != null ? grid.opacity : GRID_MAJOR_OPACITY,
+      grid.visible ? 1 : 0,
+    ];
+    // Direct wasm exports do not UTF-8 marshal JS strings — ccall is required for ids.
+    if (typeof Module.ccall === 'function') {
+      Module.ccall('grid_upsert_c', null, GRID_UPSERT_ARG_TYPES, args);
+    } else {
+      Module._grid_upsert_c.apply(Module, args);
+    }
+    if (Module._viewer_request_frame) Module._viewer_request_frame();
+  }
+
+  function removeGridWasm(Module, id) {
+    if (typeof Module.ccall === 'function') {
+      return Module.ccall('grid_remove_c', 'number', ['string'], [id]) !== 0;
+    }
+    if (!Module._grid_remove_c) return false;
+    return Module._grid_remove_c(id) !== 0;
+  }
+
   // Boot a viewer bound to `opts.canvas`. Resolves to the API object once the
   // wasm runtime is initialised; `api.ready` resolves once the GPU app is live.
   async function create(opts) {
@@ -509,6 +576,7 @@
     if (typeof factory !== 'function') {
       throw new Error('createIfcViewer not found — load IfcViewerWeb.js first');
     }
+    var gridRegistry = Object.create(null);
 
     const selectListeners = [];
     const selectionListeners = [];
@@ -955,6 +1023,20 @@
       toggleXray:   function () { Module._toggle_xray_c(); },
       xrayActive:   function () { return Module._xray_is_active_c() !== 0; },
 
+      // Sparse RGB line grids. A default "base" grid is created with the GPU
+      // app. upsertGrid replaces a grid with the same id.
+      //   viewer.upsertGrid({ id: 'floor', plane: 'xy', origin: [0, 0, 0],
+      //                       spacing: 5, divisions: 20, opacity: 0.55 });
+      setGridVisible: function (visible) {
+        if (Module._set_grid_visible_c) Module._set_grid_visible_c(visible ? 1 : 0);
+      },
+      gridVisible: function () {
+        return Module._grid_is_visible_c ? Module._grid_is_visible_c() !== 0 : true;
+      },
+      toggleGrid: function () {
+        if (Module._toggle_grid_c) Module._toggle_grid_c();
+      },
+
       // Floor fade for the grid and the X/Y axes. `near` and `far` are
       // multiples of the camera distance: 0.35 starts the fade at 35% of
       // the view distance, 2.2 finishes it at 2.2× that distance. `mode` is
@@ -1005,6 +1087,45 @@
       },
 
       // Model bookkeeping      xrayActive:   function () { return Module._xray_is_active_c() !== 0; },
+
+      upsertGrid: function (definition) {
+        var grid = normalizeGridDefinition(definition || {});
+        if (!grid.id) throw new Error('Grid definition requires an id.');
+        gridRegistry[grid.id] = grid;
+        upsertGridWasm(Module, grid);
+        return Object.assign({}, grid);
+      },
+      removeGrid: function (id) {
+        if (!id || !gridRegistry[id]) return false;
+        delete gridRegistry[id];
+        removeGridWasm(Module, id);
+        if (Module._viewer_request_frame) Module._viewer_request_frame();
+        return true;
+      },
+      clearGrids: function () {
+        gridRegistry = Object.create(null);
+        if (Module._grid_clear_c) Module._grid_clear_c();
+        if (Module._viewer_request_frame) Module._viewer_request_frame();
+      },
+      listGrids: function () {
+        return Object.keys(gridRegistry).map(function (id) {
+          return Object.assign({}, gridRegistry[id]);
+        });
+      },
+      applyGrids: function (definitions) {
+        gridRegistry = Object.create(null);
+        if (Module._grid_clear_c) Module._grid_clear_c();
+        var applied = [];
+        for (var i = 0; i < (definitions || []).length; i++) {
+          var grid = normalizeGridDefinition(definitions[i] || {});
+          if (!grid.id) continue;
+          gridRegistry[grid.id] = grid;
+          upsertGridWasm(Module, grid);
+          applied.push(Object.assign({}, grid));
+        }
+        if (Module._viewer_request_frame) Module._viewer_request_frame();
+        return applied;
+      },
 
       // Model bookkeeping (ordered by load). Progress is per-model chunk counts.
       modelCount: function () { return Module._ifcv_model_count_c ? Module._ifcv_model_count_c() : 0; },
