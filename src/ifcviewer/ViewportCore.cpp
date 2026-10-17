@@ -28,6 +28,7 @@
 #endif
 
 #include "CameraMath.h"
+#include "FederationMath.h"
 #include "GpuAllocScope.h"
 #include "InstanceCompose.h"
 #include "ModelLookup.h"
@@ -223,8 +224,30 @@ std::uint64_t ViewportCore::modelVramBytes(uint32_t session_model_id) const {
 
 void ViewportCore::setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters) {
     if (federated_false_origin_meters_ == matrix_meters) return;
+    // Everything the user sees lives in world coordinates; only the GPU frame
+    // moves. Carry the camera and the section planes through the change so
+    // nothing jumps on screen except the survey marker.
+    const Eigen::Matrix4d delta = matrix_meters * federated_false_origin_meters_.inverse();
+    const Eigen::Matrix3f delta_r = delta.block<3, 3>(0, 0).cast<float>();
+    auto move_point = [&](const Eigen::Vector3f& q) {
+        return Eigen::Vector3f((delta * q.cast<double>().homogeneous()).head<3>().cast<float>());
+    };
+    for (SectionPlane& p : section_planes_) {
+        const Eigen::Vector3f on_plane = move_point(-p.d * p.n);
+        p.origin = move_point(p.origin);
+        p.n      = (delta_r * p.n).normalized();
+        p.d      = -p.n.dot(on_plane);
+    }
+    grid_helper_.setWorldToViewer(matrix_meters);
+    const Eigen::Vector4d t_old(camera_target_[0], camera_target_[1], camera_target_[2], 1.0);
+    const Eigen::Vector4d t_new = delta * t_old;
+    camera_target_[0] = float(t_new.x());
+    camera_target_[1] = float(t_new.y());
+    camera_target_[2] = float(t_new.z());
+    camera_yaw_deg_ += float(std::atan2(delta(1, 0), delta(0, 0)) * 180.0 / 3.14159265358979323846);
     federated_false_origin_meters_ = matrix_meters;
     for (auto& kv : models_gpu_) recomposeAndUploadModel(kv.first);
+    host_->requestFrame();
 }
 
 void ViewportCore::setModelCoordinateOperation(uint32_t session_model_id,
@@ -277,6 +300,25 @@ void ViewportCore::buildViewProj(Eigen::Matrix4f& view_out,
     z_remap(2, 2) = 0.5f;
     z_remap(2, 3) = 0.5f;
     proj_out = z_remap * p;
+}
+
+bool ViewportCore::projectWorldToCss(float x, float y, float z,
+                                     float& css_x, float& css_y) const {
+    if (configured_w_ <= 0 || configured_h_ <= 0 || !host_) return false;
+    Eigen::Matrix4f view, proj;
+    buildViewProj(view, proj);
+    const Eigen::Vector4f clip = (proj * view) * Eigen::Vector4f(x, y, z, 1.0f);
+    // Right-handed look-at puts the scene at negative view Z, so clip.w()
+    // is positive in front of the camera and ~0 on the camera plane.
+    if (clip.w() <= 1e-4f) return false;
+    const float ndc_x = clip.x() / clip.w();
+    const float ndc_y = clip.y() / clip.w();
+    const float dpr = host_->dpr() > 0.0f ? host_->dpr() : 1.0f;
+    const float px_x = (ndc_x * 0.5f + 0.5f) * float(configured_w_);
+    const float px_y_up = (ndc_y * 0.5f + 0.5f) * float(configured_h_);
+    css_x = px_x / dpr;
+    css_y = (float(configured_h_) - px_y_up) / dpr;
+    return true;
 }
 
 bool ViewportCore::computeSceneAabb(float mn[3], float mx[3]) const {
@@ -690,6 +732,47 @@ bool ViewportCore::pivotIndicatorVisible() const {
     // No armed afterglow means a drag is holding it up.
     if (!pivot_indicator_timer_.isValid()) return true;
     return pivot_indicator_timer_.elapsed() < pivot_indicator_hide_ms_;
+}
+
+void ViewportCore::setOriginAxesVisible(bool visible) {
+    if (origin_axes_visible_ == visible) return;
+    origin_axes_visible_ = visible;
+    host_->requestFrame();
+}
+
+void ViewportCore::toggleOriginAxes() {
+    setOriginAxesVisible(!origin_axes_visible_);
+}
+
+void ViewportCore::setOriginAxesSize(float size_metres) {
+    if (!(size_metres > 0.0f)) return;
+    if (origin_axes_size_ == size_metres) return;
+    origin_axes_size_ = size_metres;
+    host_->requestFrame();
+}
+
+void ViewportCore::setFog(bool enabled, int mode, float near_factor, float far_factor,
+                          float density) {
+    mode = std::clamp(mode, 1, 2);
+    if (!(near_factor > 0.0f)) near_factor = fog_near_factor_;
+    if (!(far_factor > near_factor)) far_factor = near_factor * 1.5f;
+    if (!(density >= 0.0f)) density = fog_density_;
+    fog_enabled_     = enabled;
+    fog_mode_        = mode;
+    fog_near_factor_ = near_factor;
+    fog_far_factor_  = far_factor;
+    fog_density_     = density;
+    host_->requestFrame();
+}
+
+void ViewportCore::setFogEnabled(bool enabled) {
+    if (fog_enabled_ == enabled) return;
+    fog_enabled_ = enabled;
+    host_->requestFrame();
+}
+
+void ViewportCore::toggleFog() {
+    setFogEnabled(!fog_enabled_);
 }
 
 void ViewportCore::flyMove(bool fwd, bool back, bool right, bool left,
@@ -1391,6 +1474,10 @@ bool ViewportCore::buildPipelines() {
     // Corner axis gizmo + orbit pivot indicator (shared desktop + web).
     // Also optional: a failure costs the indicator, not the viewport.
     axis_indicator_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
+
+    // Ground grid (shared desktop + web). Optional — a failure just means no
+    // grid, not a dead viewport. init installs the default base grid.
+    grid_helper_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
     return true;
 }
 
@@ -2181,6 +2268,7 @@ void ViewportCore::shutdown() {
     if (main_pipeline_transparent_)  { wgpuRenderPipelineRelease(main_pipeline_transparent_); main_pipeline_transparent_ = nullptr; }
     section_gizmo_.destroy();
     axis_indicator_.destroy();
+    grid_helper_.destroy();
     if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
     if (pipeline_layout_)      { wgpuPipelineLayoutRelease(pipeline_layout_);     pipeline_layout_ = nullptr; }
     if (model_bgl_)            { wgpuBindGroupLayoutRelease(model_bgl_);          model_bgl_ = nullptr; }
@@ -6574,6 +6662,39 @@ void ViewportCore::toggleXray() {
     host_->requestFrame();
 }
 
+void ViewportCore::setGridVisible(bool visible) {
+    grid_helper_.setVisible(visible);
+    host_->requestFrame();
+}
+
+bool ViewportCore::gridVisible() const {
+    return grid_helper_.visible();
+}
+
+void ViewportCore::toggleGrid() {
+    setGridVisible(!gridVisible());
+}
+
+void ViewportCore::upsertViewportGrid(const ViewportGridSpec& spec) {
+    grid_helper_.upsertGrid(spec);
+    host_->requestFrame();
+}
+
+bool ViewportCore::removeViewportGrid(const std::string& id) {
+    const bool removed = grid_helper_.removeGrid(id);
+    if (removed) host_->requestFrame();
+    return removed;
+}
+
+void ViewportCore::clearViewportGrids() {
+    grid_helper_.clearGrids();
+    host_->requestFrame();
+}
+
+const std::vector<ViewportGridSpec>& ViewportCore::viewportGrids() const {
+    return grid_helper_.grids();
+}
+
 #if defined(__EMSCRIPTEN__)
 void ViewportCore::pickObjectAtAsync(int x_pixels, int y_pixels,
                                      std::function<void(std::uint32_t)> cb) {
@@ -8045,6 +8166,35 @@ void ViewportCore::render() {
 
     WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
 
+    // Ground grid under scene geometry (depth-tested, no depth write).
+    {
+        int viewport_w_px = 0, viewport_h_px = 0;
+        host_->framebufferSize(viewport_w_px, viewport_h_px);
+        const int dpr_int = std::max(1, int(host_->dpr()));
+        const Eigen::Vector3f grid_eye = orbitEye(camera_target_, camera_distance_,
+                                                    camera_yaw_deg_, camera_pitch_deg_);
+        const Eigen::Vector3f grid_target(camera_target_[0], camera_target_[1], camera_target_[2]);
+        const Eigen::Vector3f grid_forward = (grid_target - grid_eye).normalized();
+        // Blender floor: the grid dissolves into the background with view
+        // distance, and the fade finishes before the finite grid's edge.
+        {
+            float grid_extent = 1.0f;
+            for (const auto& g : grid_helper_.grids()) {
+                if (!g.visible || g.spacing <= 0.0f || g.divisions <= 0) continue;
+                grid_extent = std::max(grid_extent, g.spacing * float(g.divisions));
+            }
+            const float dist = std::max(camera_distance_, 1.0f);
+            float far  = std::min(dist * fog_far_factor_, grid_extent * 0.9f);
+            float near = dist * fog_near_factor_;
+            if (!(near < far)) near = far * 0.5f;
+            const int mode = fog_enabled_ ? fog_mode_ : 0;
+            fog_.set(mode, near, far, fog_density_,
+                     background_color_.x(), background_color_.y(), background_color_.z());
+        }
+        grid_helper_.encode(pass, vp_this_frame, fog_, grid_eye, grid_forward,
+                            viewport_w_px, viewport_h_px, dpr_int);
+    }
+
     // Two-pass main render: opaque first, then transparent.
     if (main_pipeline_ && main_pipeline_no_cull_ && main_pipeline_transparent_
         && frame_bind_group_ && !models_gpu_.empty()) {
@@ -8107,6 +8257,29 @@ void ViewportCore::render() {
     const bool pivot_visible = pivotIndicatorVisible();
     axis_indicator_.encodePivot(pass, overlay_frame, pivot_visible);
     if (pivot_visible && pivot_indicator_timer_.isValid()) host_->requestFrame();
+
+    // Floor axes (X and Y) through world 0,0,0, along world X and Y. The
+    // false-origin matrix takes world into the viewer frame and draws the
+    // false origin at viewer zero, where the survey marker sits. With no false
+    // origin the two coincide. Same eye and fade as the grid for the long
+    // lines; the survey marker is a fixed size on screen.
+    {
+        const Eigen::Vector3f axis_eye = orbitEye(camera_target_, camera_distance_,
+                                                  camera_yaw_deg_, camera_pitch_deg_);
+        const Eigen::Vector3f axis_target(camera_target_[0], camera_target_[1], camera_target_[2]);
+        const Eigen::Vector3f axis_forward = (axis_target - axis_eye).normalized();
+        const Eigen::Vector3f world_origin =
+            worldOriginInViewer(federated_false_origin_meters_).cast<float>();
+        const Eigen::Vector3f world_x =
+            federated_false_origin_meters_.block<3, 1>(0, 0).cast<float>().normalized();
+        const Eigen::Vector3f world_y =
+            federated_false_origin_meters_.block<3, 1>(0, 1).cast<float>().normalized();
+        axis_indicator_.encodeOrigin(pass, overlay_frame, world_origin, world_x, world_y,
+                                     origin_axes_size_, fog_, axis_eye, axis_forward,
+                                     origin_axes_visible_);
+        axis_indicator_.encodeSurveyPoint(pass, overlay_frame, Eigen::Vector3f::Zero(),
+                                          origin_axes_visible_);
+    }
 
     // Remaining in-pass overlays (highlight triangles, overlay lines/points).
     // QtViewportHost forwards to overlays_.X(); the web host no-ops.
