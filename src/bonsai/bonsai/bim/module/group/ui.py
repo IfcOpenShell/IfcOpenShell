@@ -95,8 +95,7 @@ class BIM_PT_object_groups(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    bl_order = 1
-    bl_parent_id = "BIM_PT_tab_misc"
+    bl_parent_id = "BIM_PT_tab_object_metadata"
 
     @classmethod
     def poll(cls, context):
