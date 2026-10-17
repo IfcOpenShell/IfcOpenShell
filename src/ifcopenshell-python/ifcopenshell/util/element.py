@@ -370,7 +370,7 @@ def get_quantities(
             if verbose:
                 results[quantity_name] = {
                     "id": data["id"],
-                    "class": data["class"],
+                    "class": data["type"],
                     "value": results[quantity_name],
                 }
     return results
