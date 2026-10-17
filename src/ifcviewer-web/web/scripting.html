@@ -390,28 +390,68 @@
     const digits = abs >= 1000 ? 2 : abs >= 10 ? 3 : 4;
     return n.toFixed(digits);
   }
-  // Keep the boxes in step with the live camera, but leave the one being typed.
+  function fmtAngle(n) { return Number.isFinite(n) ? n.toFixed(1) : ''; }
+
+  const camIds = ['cam-tx', 'cam-ty', 'cam-tz', 'cam-yaw', 'cam-pitch', 'cam-distance'];
+  // True while a box is being edited. The frame loop must not write the live
+  // camera back over those boxes: blur happens before the Set click, and one
+  // frame in between puts the old numbers back, so Set appears to do nothing
+  // and the value jumps.
+  let camHold = false;
+  let camExact = null;   // camera the boxes were last filled from, unrounded
+
+  function camFocused() {
+    return camIds.some((id) => document.activeElement === $(id));
+  }
   function fillCameraInputs(c, force) {
+    if (!force && (camHold || camFocused())) return;
     const set = (id, text) => {
       const el = $(id);
-      if (!force && document.activeElement === el) return;
       if (el.value !== text) el.value = text;
     };
     set('cam-tx', fmtCam(c.target[0]));
     set('cam-ty', fmtCam(c.target[1]));
     set('cam-tz', fmtCam(c.target[2]));
-    set('cam-yaw', c.yaw.toFixed(1));
-    set('cam-pitch', c.pitch.toFixed(1));
+    set('cam-yaw', fmtAngle(c.yaw));
+    set('cam-pitch', fmtAngle(c.pitch));
     set('cam-distance', fmtCam(c.distance));
+    camExact = c;
+  }
+  // A box still showing the formatted camera keeps the exact value. Sending
+  // the rounded text back would nudge the view. An empty or half-typed box
+  // is not a number yet.
+  function readEdited(id, exact, format) {
+    const raw = $(id).value.trim();
+    if (raw === '' || raw === '-' || raw === '.' || raw === '-.') return null;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return null;
+    if (camExact && format(exact) === format(n)) return exact;
+    return n;
+  }
+  function applyCameraForm() {
+    const base = camExact || viewer.getCamera();
+    const tx = readEdited('cam-tx', base.target[0], fmtCam);
+    const ty = readEdited('cam-ty', base.target[1], fmtCam);
+    const tz = readEdited('cam-tz', base.target[2], fmtCam);
+    const yaw = readEdited('cam-yaw', base.yaw, fmtAngle);
+    const pitch = readEdited('cam-pitch', base.pitch, fmtAngle);
+    const distance = readEdited('cam-distance', base.distance, fmtCam);
+    if ([tx, ty, tz, yaw, pitch, distance].some((n) => n == null)) return false;
+    viewer.setCamera({ target: [tx, ty, tz], yaw, pitch, distance });
+    camExact = viewer.getCamera();
+    return true;
+  }
+  function releaseCamHold() {
+    setTimeout(() => { if (!camFocused()) camHold = false; }, 0);
   }
 
   function renderCamera(c) {
-    const f = (n) => n.toFixed(1);
+    const ang = (n) => n.toFixed(1);
     $('camera-readout').textContent =
-      `yaw    ${f(c.yaw)}°\npitch  ${f(c.pitch)}°\n` +
-      `target ${c.target.map(f).join(', ')}\n` +
-      `eye    ${c.eye.map(f).join(', ')}\n` +
-      `dist   ${f(c.distance)}  (${c.ortho ? 'orthographic' : 'perspective'})`;
+      `yaw    ${ang(c.yaw)}°\npitch  ${ang(c.pitch)}°\n` +
+      `target ${c.target.map(fmtCam).join(', ')}\n` +
+      `eye    ${c.eye.map(fmtCam).join(', ')}\n` +
+      `dist   ${fmtCam(c.distance)}  (${c.ortho ? 'orthographic' : 'perspective'})`;
     const fogHint = $('fog-hint');
     if (fogHint && viewer) {
       const fog = viewer.fog();
@@ -553,13 +593,22 @@
 
     // setCamera takes any subset of what getCamera returns; omitted fields hold.
     // target is the orbit pivot: the RGB triad drawn while you drag.
-    $('cam-apply').onclick = () => viewer.setCamera({
-      target:   [Number($('cam-tx').value), Number($('cam-ty').value), Number($('cam-tz').value)],
-      yaw:      Number($('cam-yaw').value),
-      pitch:    Number($('cam-pitch').value),
-      distance: Number($('cam-distance').value),
-    });
-    $('cam-read').onclick = () => fillCameraInputs(viewer.getCamera(), true);
+    for (const id of camIds) {
+      $(id).addEventListener('focus', () => { camHold = true; });
+      $(id).addEventListener('input', () => { camHold = true; });
+      // Spinner clicks and leaving the box both fire change, before the next
+      // frame can restore the previous text.
+      $(id).addEventListener('change', () => { applyCameraForm(); releaseCamHold(); });
+      $(id).addEventListener('blur', releaseCamHold);
+    }
+    // mousedown runs before the box blurs, so the typed value is still there
+    // even if a frame lands between mouseup and click.
+    $('cam-apply').onmousedown = (ev) => {
+      ev.preventDefault();
+      if (applyCameraForm()) camHold = false;
+    };
+    $('cam-apply').onclick = () => { if (applyCameraForm()) camHold = false; };
+    $('cam-read').onclick = () => { camHold = false; fillCameraInputs(viewer.getCamera(), true); };
     // id: 0 Front, 1 Back, 2 Left, 3 Right, 4 Top, 5 Bottom. These keep the
     // current target and only change the direction you look from.
     const standardViews = [
