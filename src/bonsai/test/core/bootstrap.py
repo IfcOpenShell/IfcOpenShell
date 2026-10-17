@@ -97,6 +97,13 @@ def demo():
 
 
 @pytest.fixture
+def covering():
+    prophet = Prophecy(bonsai.core.tool.Covering)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def document():
     prophet = Prophecy(bonsai.core.tool.Document)
     yield prophet
