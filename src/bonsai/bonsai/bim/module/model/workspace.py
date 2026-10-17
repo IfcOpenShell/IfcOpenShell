@@ -1410,7 +1410,11 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
         if self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
-            bpy.ops.bim.fit_flow_segments()
+            # Blender re-raises an ERROR reported by a nested operator as RuntimeError. See #5450.
+            try:
+                bpy.ops.bim.fit_flow_segments()
+            except RuntimeError as e:
+                self.report({"ERROR"}, str(e).removeprefix("Error: ").strip())
         elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.extend_profile(join_type="V")
 
