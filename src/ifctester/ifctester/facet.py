@@ -925,6 +925,9 @@ class Property(Facet):
             return pset.HasProperties
         elif pset.is_a("IfcElementQuantity"):
             return pset.Quantities
+        elif pset.is_a("IfcExtendedMaterialProperties"):
+            # Checked before its supertype IfcMaterialProperties, as it only has ExtendedProperties.
+            return pset.ExtendedProperties
         elif pset.is_a("IfcMaterialProperties") or pset.is_a("IfcProfileProperties"):
             return pset.Properties
         elif pset.is_a("IfcPreDefinedPropertySet"):
