@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import ifcopenshell
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
@@ -58,6 +59,15 @@ class TestGetActiveMaterialType(NewFile):
         assert subject.get_active_material_type() == "IfcMaterial"
         props.material_type = "IfcMaterialLayerSet"
         assert subject.get_active_material_type() == "IfcMaterialLayerSet"
+
+
+class TestSelectMaterialInMaterialsUI(NewFile):
+    def test_material_type_follows_the_selected_material_set(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        layer_set = ifcopenshell.api.material.add_material_set(ifc, name="Set", set_type="IfcMaterialLayerSet")
+        bpy.ops.bim.material_ui_select(material_id=layer_set.id())
+        assert tool.Material.get_material_props().material_type == "IfcMaterialLayerSet"
 
 
 class TestGetElementsByMaterial(NewFile):
