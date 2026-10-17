@@ -126,7 +126,9 @@ class BIMSystemProperties(PropertyGroup):
     edited_system_id: IntProperty(name="Edited System Id")
     system_class: EnumProperty(items=get_system_class, name="Class")
     should_draw_decorations: BoolProperty(
-        name="Should Draw Decorations", description="Toggle system decorations", update=toggle_decorations
+        name="Should Draw Decorations",
+        description="Draw the ports and flow direction of ducts, pipes and fittings in the highlighted systems",
+        update=toggle_decorations,
     )
     related_port: EnumProperty(
         name="Connect To Port",

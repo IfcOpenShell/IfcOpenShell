@@ -26,7 +26,8 @@ import ifcopenshell.util.system
 import bonsai.bim.helper
 import bonsai.core.system as core
 import bonsai.tool as tool
-from bonsai.bim.module.system.data import PortData, SystemData
+from bonsai.bim.module.system.data import PortData
+from bonsai.bim.module.system.data import refresh as refresh_system_data
 
 
 class LoadSystems(bpy.types.Operator):
@@ -124,6 +125,19 @@ class DisableEditingSystem(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ClearActiveSystem(bpy.types.Operator):
+    bl_idname = "bim.clear_active_system"
+    bl_label = "Clear Active System"
+    bl_description = "Stop highlighting the last selected system"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        tool.System.get_system_props().active_system_id = 0
+        refresh_system_data()
+        tool.Blender.update_all_viewports(context)
+        return {"FINISHED"}
+
+
 class AssignSystem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_system"
     bl_label = "Assign System"
@@ -195,7 +209,7 @@ class SelectSystemProducts(bpy.types.Operator):
 
     def execute(self, context):
         core.select_system_products(tool.System, system=tool.Ifc.get().by_id(self.system))
-        SystemData.data["active_system"] = SystemData.active_system()
+        refresh_system_data()
         return {"FINISHED"}
 
 
