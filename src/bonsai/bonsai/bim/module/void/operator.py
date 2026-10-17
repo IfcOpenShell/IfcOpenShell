@@ -95,12 +95,13 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                             f"Cannot apply {element2.is_a()} as an opening — Bonsai currently supports only IfcDoor and IfcWindow as parametric fillings.",
                         )
                         continue
-                    FilledOpeningGenerator().generate(
+                    if error := FilledOpeningGenerator().generate(
                         obj2,
                         obj1,
                         target=obj2.matrix_world.translation,
                         preserve_placement=self.preserve_placement,
-                    )
+                    ):
+                        self.report({"ERROR"}, f"Could not host {obj2.name} in {obj1.name}: {error}")
                     continue
                 elif element1.is_a("IfcOpeningElement") or element2.is_a("IfcOpeningElement"):
                     if element1.is_a("IfcOpeningElement"):  # Reassign an opening to another element.
