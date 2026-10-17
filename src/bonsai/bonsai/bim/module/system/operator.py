@@ -26,7 +26,8 @@ import ifcopenshell.util.system
 import bonsai.bim.helper
 import bonsai.core.system as core
 import bonsai.tool as tool
-from bonsai.bim.module.system.data import PortData, SystemData
+from bonsai.bim.module.system.data import PortData
+from bonsai.bim.module.system.data import refresh as refresh_system_data
 
 
 class LoadSystems(bpy.types.Operator):
@@ -124,6 +125,19 @@ class DisableEditingSystem(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ClearActiveSystem(bpy.types.Operator):
+    bl_idname = "bim.clear_active_system"
+    bl_label = "Clear Active System"
+    bl_description = "Stop highlighting the last selected system"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        tool.System.get_system_props().active_system_id = 0
+        refresh_system_data()
+        tool.Blender.update_all_viewports(context)
+        return {"FINISHED"}
+
+
 class AssignSystem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_system"
     bl_label = "Assign System"
@@ -155,6 +169,8 @@ class AssignSystem(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
         core.assign_system(tool.Ifc, system=system, products=assignable_elements)
         tool.Blender.update_all_properties_editors(context)
+        # The system decorations in the viewport depend on system membership too.
+        tool.Blender.update_all_viewports(context)
         # Close the picker in Object Information > Groups, which can assign through this operator.
         tool.Group.get_group_props().is_editing_object_groups = False
         self.report({"INFO"}, f"System assigned to {len(assignable_elements)} elements.")
@@ -183,6 +199,8 @@ class UnassignSystem(bpy.types.Operator, tool.Ifc.Operator):
         system = tool.Ifc.get().by_id(self.system)
         core.unassign_system(tool.Ifc, system=system, products=elements)
         tool.Blender.update_all_properties_editors(context)
+        # The system decorations in the viewport depend on system membership too.
+        tool.Blender.update_all_viewports(context)
         self.report({"INFO"}, f"System unassigned from {len(elements)} elements.")
         return {"FINISHED"}
 
@@ -195,7 +213,7 @@ class SelectSystemProducts(bpy.types.Operator):
 
     def execute(self, context):
         core.select_system_products(tool.System, system=tool.Ifc.get().by_id(self.system))
-        SystemData.data["active_system"] = SystemData.active_system()
+        refresh_system_data()
         return {"FINISHED"}
 
 

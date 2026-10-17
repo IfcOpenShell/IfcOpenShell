@@ -30,7 +30,6 @@ import bonsai.tool as tool
 def refresh():
     SystemData.is_loaded = False
     ZonesData.is_loaded = False
-    ActiveObjectZonesData.is_loaded = False
     ObjectSystemData.is_loaded = False
     PortData.is_loaded = False
     SystemDecorationData.is_loaded = False
@@ -45,7 +44,7 @@ class SystemData:
         cls.data = {
             "system_class": cls.system_class(),
             "total_systems": cls.total_systems(),
-            "active_system": cls.active_system(),
+            "decoration": cls.decoration(),
         }
         cls.is_loaded = True
 
@@ -68,11 +67,19 @@ class SystemData:
         return len(tool.System.get_systems())
 
     @classmethod
-    def active_system(cls) -> Union[dict[str, Any], None]:
-        active_system = tool.System.get_active_system()
-        if not active_system:
-            return None
-        return {"id": active_system.id(), "Name": active_system.Name, "ifc_class": active_system.is_a()}
+    def decoration(cls) -> dict[str, Any]:
+        """What the system decorations highlight, for the legend in the Systems panel."""
+        source, systems = SystemDecorationData.decoration_source()
+        if systems:
+            elements = set().union(*(ifcopenshell.util.system.get_system_elements(s) for s in systems))
+        else:
+            elements = set(ObjectSystemData.data["connected_elements"])
+        return {
+            "source": source,
+            "systems": [{"id": s.id(), "name": s.Name or "Unnamed", "ifc_class": s.is_a()} for s in systems],
+            # The decorations only draw ducts, pipes and fittings (their ports and flow).
+            "total_drawable": len([e for e in elements if tool.System.is_mep_element(e)]),
+        }
 
 
 class ObjectSystemData:
@@ -238,26 +245,30 @@ class SystemDecorationData:
         return cls.elements_ports_positions[element]
 
     @classmethod
-    def decorated_elements(cls):
+    def decoration_source(cls) -> tuple[str, list[ifcopenshell.entity_instance]]:
+        """Get what to decorate, in priority order, with the systems involved.
+
+        1. "OBJECT_SYSTEMS": the systems of the active object.
+        2. "ACTIVE_SYSTEM": the active system (the one last selected), if it has elements.
+        3. "CONNECTED": otherwise, the elements connected to the active object.
+        """
         if not ObjectSystemData.is_loaded:
             ObjectSystemData.load()
-
-        # Priority:
-        # 1. currently selected systems
-        # 2. active system
-        # 3. if previous steps didn't worked - decorate connected elements
-
-        decorated_elements = set()
         if ObjectSystemData.data["systems"]:
-            for system in ObjectSystemData.data["systems"]:
-                system = tool.Ifc.get().by_id(system["id"])
-                decorated_elements.update(ifcopenshell.util.system.get_system_elements(system))
-        elif active_system := tool.System.get_active_system():
-            decorated_elements = set(ifcopenshell.util.system.get_system_elements(active_system))
+            return "OBJECT_SYSTEMS", [tool.Ifc.get().by_id(s["id"]) for s in ObjectSystemData.data["systems"]]
+        active_system = tool.System.get_active_system()
+        if active_system and ifcopenshell.util.system.get_system_elements(active_system):
+            return "ACTIVE_SYSTEM", [active_system]
+        return "CONNECTED", []
 
+    @classmethod
+    def decorated_elements(cls):
+        source, systems = cls.decoration_source()
+        decorated_elements = set()
+        for system in systems:
+            decorated_elements.update(ifcopenshell.util.system.get_system_elements(system))
         if not decorated_elements:
             decorated_elements.update(ObjectSystemData.data["connected_elements"])
-
         return decorated_elements
 
 
@@ -273,27 +284,3 @@ class ZonesData:
     @classmethod
     def total_zones(cls):
         return len(tool.Ifc.get().by_type("IfcZone"))
-
-
-class ActiveObjectZonesData:
-    data = {}
-    is_loaded = False
-
-    @classmethod
-    def load(cls):
-        cls.data = {"zones": cls.zones()}
-        cls.is_loaded = True
-
-    @classmethod
-    def zones(cls) -> list[dict[str, Any]]:
-        obj = bpy.context.active_object
-        assert obj
-        element = tool.Ifc.get_entity(obj)
-        assert element
-        return [
-            {
-                "id": z.id(),
-                "Name": (z.Name or "Unnamed"),
-            }
-            for z in ifcopenshell.util.system.get_element_zones(element)
-        ]

@@ -27,7 +27,6 @@ import bonsai.bim.helper
 import bonsai.tool as tool
 from bonsai.bim.helper import draw_attributes, prop_with_search
 from bonsai.bim.module.system.data import (
-    ActiveObjectZonesData,
     ObjectSystemData,
     PortData,
     SystemData,
@@ -74,24 +73,9 @@ class BIM_PT_systems(Panel):
         self.props = tool.System.get_system_props()
         active_system_item = self.props.active_system_ui_item
         row = self.layout.row(align=True)
-        row.prop(self.props, "should_draw_decorations")
-
-        row = self.layout.row()
-        if active_system := SystemData.data["active_system"]:
-            row.label(text=f"Active system:")
-            tool.System.draw_system_ui(
-                self.layout, active_system["id"], active_system["Name"], active_system["ifc_class"]
-            )
-        else:
-            row.label(text="No active system is selected")
-
-        if ObjectSystemData.data["systems"]:
-            row = self.layout.row()
-            row.label(text="Active object systems:")
-            for system in ObjectSystemData.data["systems"]:
-                tool.System.draw_system_ui(self.layout, system["id"], system["name"], system["ifc_class"])
-        else:
-            self.layout.label(text="No System associated with active object")
+        row.prop(self.props, "should_draw_decorations", text="Draw Flow Decorations")
+        if self.props.should_draw_decorations:
+            self.draw_decoration_legend()
 
         row = self.layout.row(align=True)
         row.label(text="{} Systems Found in Project".format(SystemData.data["total_systems"]), icon="OUTLINER")
@@ -129,6 +113,33 @@ class BIM_PT_systems(Panel):
 
         if self.props.edited_system_id:
             self.draw_editable_ui(context)
+
+    def draw_decoration_legend(self) -> None:
+        # Say what the decorations highlight, in the order SystemDecorationData picks it.
+        decoration = SystemData.data["decoration"]
+        total = decoration["total_drawable"]
+        drawn = f"{total} ducts, pipes and fittings" if total != 1 else "1 duct, pipe or fitting"
+        col = self.layout.box().column(align=True)
+        if decoration["source"] in ("OBJECT_SYSTEMS", "ACTIVE_SYSTEM"):
+            if decoration["source"] == "ACTIVE_SYSTEM":
+                whose, verb = "the last selected system", "has"
+            elif len(decoration["systems"]) == 1:
+                whose, verb = "the active object's system", "has"
+            else:
+                whose, verb = "the active object's systems", "have"
+            if total:
+                col.label(text=f"Highlighting {drawn} in {whose}:")
+            else:
+                col.label(text=f"Nothing to draw: {whose} {verb} no ducts, pipes or fittings:")
+            for system in decoration["systems"]:
+                row = col.row(align=True)
+                row.label(text=system["name"], icon=tool.System.SYSTEM_ICONS.get(system["ifc_class"], "NETWORK_DRIVE"))
+                if decoration["source"] == "ACTIVE_SYSTEM":
+                    row.operator("bim.clear_active_system", text="", icon="X")
+        elif total:
+            col.label(text=f"Highlighting {drawn} connected to the active object")
+        else:
+            col.label(text="Nothing to draw. Select a duct, pipe or fitting, or an element in such a system.")
 
     def draw_editable_ui(self, context: bpy.types.Context) -> None:
         draw_attributes(self.props.system_attributes, self.layout)
@@ -459,31 +470,6 @@ class BIM_PT_zones(Panel):
             row = self.layout.row(align=True)
             row.operator("bim.edit_zone", text="Save Zone", icon="CHECKMARK")
             row.operator("bim.disable_editing_zone", icon="CANCEL", text="")
-
-
-class BIM_PT_active_object_zones(Panel):
-    bl_label = "Active Object Zones"
-    bl_idname = "BIM_PT_active_object_zones"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_zones"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Ifc.get() and context.active_object and tool.Ifc.get_entity(context.active_object)
-
-    def draw(self, context):
-        if not ActiveObjectZonesData.is_loaded:
-            ActiveObjectZonesData.load()
-        self.props = tool.System.get_zone_props()
-
-        for zone in ActiveObjectZonesData.data["zones"]:
-            tool.System.draw_system_ui(self.layout, zone["id"], zone["Name"], "IfcZone")
-
-        if not ActiveObjectZonesData.data["zones"]:
-            row = self.layout.row()
-            row.label(text="Active Object Has No Zones")
 
 
 class BIM_UL_systems(UIList):
