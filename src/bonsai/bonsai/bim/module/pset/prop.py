@@ -268,18 +268,39 @@ class IfcPropertyEnumeratedValue(PropertyGroup):
         enumerated_values: bpy.types.bpy_prop_collection_idprop[Attribute]
 
 
-IfcPropertyValueType = Literal["IfcPropertySingleValue", "IfcPropertyEnumeratedValue"]
+class IfcPropertyBoundedValue(PropertyGroup):
+    lower_bound_value: PointerProperty(type=Attribute)
+    upper_bound_value: PointerProperty(type=Attribute)
+    set_point_value: PointerProperty(type=Attribute)
+
+    if TYPE_CHECKING:
+        lower_bound_value: Attribute
+        upper_bound_value: Attribute
+        set_point_value: Attribute
+
+
+#: Maps IfcPropertyBoundedValue Blender attribute names to the IFC attribute they represent.
+BOUNDED_VALUE_ATTRS: tuple[tuple[str, str], ...] = (
+    ("lower_bound_value", "LowerBoundValue"),
+    ("upper_bound_value", "UpperBoundValue"),
+    ("set_point_value", "SetPointValue"),
+)
+
+
+IfcPropertyValueType = Literal["IfcPropertySingleValue", "IfcPropertyEnumeratedValue", "IfcPropertyBoundedValue"]
 
 
 class IfcProperty(PropertyGroup):
     metadata: PointerProperty(type=Attribute)
     value_type: EnumProperty(items=[(v, v, v) for v in get_args(IfcPropertyValueType)], name="Value Type")
     enumerated_value: PointerProperty(type=IfcPropertyEnumeratedValue)
+    bounded_value: PointerProperty(type=IfcPropertyBoundedValue)
 
     if TYPE_CHECKING:
         metadata: Attribute
         value_type: IfcPropertyValueType
         enumerated_value: IfcPropertyEnumeratedValue
+        bounded_value: IfcPropertyBoundedValue
 
 
 class PsetProperties(PropertyGroup):
