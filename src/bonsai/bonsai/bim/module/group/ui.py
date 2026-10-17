@@ -24,7 +24,7 @@ import bpy
 from bpy.types import Panel, UIList
 
 import bonsai.tool as tool
-from bonsai.bim.helper import draw_attributes
+from bonsai.bim.helper import draw_attributes, prop_with_search
 from bonsai.bim.module.group.data import GroupsData, ObjectGroupsData
 
 if TYPE_CHECKING:
@@ -102,16 +102,32 @@ class BIM_PT_object_groups(Panel):
             ObjectGroupsData.load()
         assert self.layout
         self.props = tool.Group.get_group_props()
+        groups = ObjectGroupsData.data["groups"]
 
-        for group in ObjectGroupsData.data["groups"]:
+        row = self.layout.row(align=True)
+        if self.props.is_editing_object_groups:
+            prop_with_search(row, self.props, "object_group", text="", icon="OUTLINER")
+            col = row.column(align=True)
+            col.enabled = bool(self.props.object_group)
+            op = col.operator("bim.assign_group", text="", icon="CHECKMARK")
+            op.group = int(self.props.object_group or 0)
+            row.operator("bim.disable_editing_object_groups", text="", icon="CANCEL")
+        else:
+            if not groups:
+                row.label(text="No Groups", icon="OUTLINER")
+            elif len(groups) == 1:
+                row.label(text="1 Group", icon="OUTLINER")
+            else:
+                row.label(text=f"{len(groups)} Groups", icon="OUTLINER")
+            row.operator("bim.enable_editing_object_groups", text="", icon="GREASEPENCIL")
+            row.operator("bim.add_group_to_selected", text="", icon="ADD")
+
+        for group in groups:
             row = self.layout.row(align=True)
             row.label(text=group["name"])
             row.operator("bim.select_group_elements", text="", icon="RESTRICT_SELECT_OFF").group = group["id"]
             op = row.operator("bim.unassign_group", text="", icon="X")
             op.group = group["id"]
-
-        if not ObjectGroupsData.data["groups"]:
-            self.layout.label(text="No Associated Groups")
 
 
 class BIM_UL_groups(UIList):
