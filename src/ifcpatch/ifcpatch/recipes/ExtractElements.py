@@ -90,7 +90,10 @@ class Patcher(ifcpatch.BasePatcher):
         for owner_history in self.file.by_type("IfcOwnerHistory"):
             self.owner_history = self.new.add(owner_history)
             break
-        self.add_element(self.file.by_type("IfcProject")[0])
+        projects = self.file.by_type("IfcProject")
+        if not projects:
+            raise ValueError("The file has no IfcProject, so there is nothing to process.")
+        self.add_element(projects[0])
         for element in ifcopenshell.util.selector.filter_elements(self.file, self.query):
             self.add_element(element)
         self.create_spatial_tree()
