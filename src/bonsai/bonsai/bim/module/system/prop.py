@@ -127,6 +127,8 @@ class BIMSystemProperties(PropertyGroup):
     # Named not as `active_system_index` to match `BIMGroupProperties`.
     active_group_index: IntProperty(name="Active System Index")
     active_system_id: IntProperty(name="Active System Id")
+    active_system_element_id: IntProperty(name="Active System Element Id")
+    """The element that was active when the active system was set, or 0."""
     edited_system_id: IntProperty(name="Edited System Id")
     system_class: EnumProperty(items=get_system_class, name="Class")
     should_draw_decorations: BoolProperty(
@@ -160,6 +162,7 @@ class BIMSystemProperties(PropertyGroup):
         expanded_groups_json: str
         active_group_index: int
         active_system_id: int
+        active_system_element_id: int
         edited_system_id: int
         system_class: str
         should_draw_decorations: bool

@@ -250,7 +250,8 @@ class SystemDecorationData:
         """Get which systems the system decoration highlights.
 
         1. "OBJECT_SYSTEMS": the systems of the active object.
-        2. "ACTIVE_SYSTEM": otherwise, the active system (the one last selected), if it has elements.
+        2. "ACTIVE_SYSTEM": otherwise, the active system (the one last selected), if it has elements and the
+           object that was active when it was selected still is.
         3. "NONE": otherwise, no system. The connected-run decoration is separate and doesn't depend on this.
         """
         if not ObjectSystemData.is_loaded:
@@ -258,7 +259,11 @@ class SystemDecorationData:
         if ObjectSystemData.data["systems"]:
             return "OBJECT_SYSTEMS", [tool.Ifc.get().by_id(s["id"]) for s in ObjectSystemData.data["systems"]]
         active_system = tool.System.get_active_system()
-        if active_system and ifcopenshell.util.system.get_system_elements(active_system):
+        if (
+            active_system
+            and tool.System.is_active_system_current()
+            and ifcopenshell.util.system.get_system_elements(active_system)
+        ):
             return "ACTIVE_SYSTEM", [active_system]
         return "NONE", []
 

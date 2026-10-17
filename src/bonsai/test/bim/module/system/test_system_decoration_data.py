@@ -120,3 +120,16 @@ class TestDecorationSource(NewFile):
         SystemData.load()
         assert SystemData.data["decoration"]["total_system_drawable"] == 0
         assert SystemData.data["decoration"]["total_run_drawable"] == 1
+
+    def test_forgetting_the_active_system_once_another_object_is_active(self):
+        bpy.ops.bim.create_project()
+        other_wall = self.add_wall()
+        system = self.add_system([other_wall])
+        self.add_wall()
+        tool.System.set_active_system(system)
+        refresh()
+        assert SystemDecorationData.decoration_source() == ("ACTIVE_SYSTEM", [system])
+
+        self.add_wall()  # Another wall in no system becomes the active object.
+        refresh()
+        assert SystemDecorationData.decoration_source() == ("NONE", [])

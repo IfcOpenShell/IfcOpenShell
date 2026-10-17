@@ -292,12 +292,25 @@ class System(bonsai.core.tool.System):
 
     @classmethod
     def set_active_system(cls, system: ifcopenshell.entity_instance) -> None:
-        cls.get_system_props().active_system_id = system.id()
+        props = cls.get_system_props()
+        props.active_system_id = system.id()
+        props.active_system_element_id = cls.get_active_element_id()
 
     @classmethod
     def get_active_system(cls) -> Union[ifcopenshell.entity_instance, None]:
         system_props = cls.get_system_props()
         return tool.Ifc.get_entity_by_id(system_props.active_system_id)
+
+    @classmethod
+    def get_active_element_id(cls) -> int:
+        obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(obj) if obj else None
+        return element.id() if element else 0
+
+    @classmethod
+    def is_active_system_current(cls) -> bool:
+        """Whether the active system still applies: it does only until another object is made active."""
+        return cls.get_system_props().active_system_element_id == cls.get_active_element_id()
 
     # Decoration-data cache, keyed on (decorator_cache_token, SystemDecorationData.data). The key holds the
     # data itself (compared by identity) rather than its id(), which newly loaded data could reuse.
