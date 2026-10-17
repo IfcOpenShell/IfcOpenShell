@@ -72,11 +72,13 @@ class PsetTemplate(bonsai.core.tool.PsetTemplate):
                 if prop.Name in added_prop_names:
                     continue
                 added_prop_names.add(prop.Name)
+                # IFC4X3 renamed IfcProperty.Description to Specification; index 1 is both.
+                description = prop[1]
                 ifcopenshell.api.pset_template.add_prop_template(
                     template_file,
                     pset_template,
                     name=prop.Name,
-                    description=prop.Description,
+                    description=description,
                     primary_measure_type=prop.NominalValue.is_a(),
                 )
         return pset_template
