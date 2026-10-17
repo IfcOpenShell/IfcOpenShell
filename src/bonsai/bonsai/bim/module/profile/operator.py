@@ -171,15 +171,15 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
                     return
                 helper = Helper(tool.Ifc.get())
                 indices = helper.auto_detect_arbitrary_profile_with_voids_extruded_area_solid(obj.data)
-                if not indices["inner_curves"]:
+                if not indices or not indices.get("inner_curves"):
                     indices = helper.auto_detect_arbitrary_closed_profile_extruded_area_solid(obj.data)
             props.object_to_profile = None
-            if not indices:
+            if not indices or not indices.get("profile"):
                 points = [(0, 0), (0.1, 0), (0.1, 0.1), (0, 0.1), (0, 0)]
                 profile = ifcopenshell.api.profile.add_arbitrary_profile(tool.Ifc.get(), profile=points)
             else:
                 assert obj and isinstance(obj.data, bpy.types.Mesh)
-                if "inner_curves" not in indices:
+                if not indices.get("inner_curves"):
                     points = [(obj.data.vertices[i].co.x, obj.data.vertices[i].co.y) for i in indices["profile"]]
                     points.append(points[0])
                     profile = ifcopenshell.api.profile.add_arbitrary_profile(tool.Ifc.get(), profile=points)
@@ -188,7 +188,7 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
                     outer_points.append(outer_points[0])
                     inner_points = [
                         [(obj.data.vertices[i].co.x, obj.data.vertices[i].co.y) for i in curve]
-                        for curve in indices["inner_curves"]
+                        for curve in indices.get("inner_curves", [])
                     ]
                     for curve in inner_points:
                         curve.append(curve[0])
