@@ -65,8 +65,11 @@ def coerce_value(
                 return None
         if value_str is None and type(None) in args:
             return None
-        # Try each non-None type in order
-        for t in non_none_types:
+        # Try each non-None type in order, with `str` last since it never raises.
+        ordered_types = [t for t in non_none_types if t is not str]
+        if str in non_none_types:
+            ordered_types.append(str)
+        for t in ordered_types:
             try:
                 return coerce_value(value_str, t, model, lookup_file)
             except (ValueError, TypeError):

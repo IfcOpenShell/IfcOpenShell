@@ -77,6 +77,20 @@ class TestUnionCoercion:
         result = coerce_value("42", Union[int, None])
         assert result == 42
 
+    def test_union_str_int_prefers_int_for_numeric_string(self):
+        result = coerce_value("42", Union[str, int])
+        assert result == 42
+        assert isinstance(result, int)
+
+    def test_union_str_entity_resolves_entity_by_id(self, model):
+        wall = model.by_type("IfcWall")[0]
+        result = coerce_value(str(wall.id()), Union[str, ifcopenshell.entity_instance], model)
+        assert result == wall
+
+    def test_union_str_entity_falls_back_to_str_when_not_an_id(self, model):
+        result = coerce_value("MyCustomClassification", Union[str, ifcopenshell.entity_instance], model)
+        assert result == "MyCustomClassification"
+
 
 class TestLiteralCoercion:
     def test_valid_literal(self):
