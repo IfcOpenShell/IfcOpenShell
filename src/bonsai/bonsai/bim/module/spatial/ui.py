@@ -183,7 +183,7 @@ class BIM_PT_spatial_decomposition(Panel):
         else:
             row = self.layout.row(align=True)
             row.label(text=f"{self.props.active_container.ifc_class} > No Elements", icon="FILE_3D")
-            row.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
+            row.operator("bim.assign_container", icon="KEYFRAME_HLT", text="").container = ifc_definition_id
 
             row = self.layout.row(align=True)
             row.prop(self.props, "element_mode", text="", icon="FILEBROWSER")
@@ -209,7 +209,8 @@ class BIM_PT_spatial_decomposition(Panel):
 
         col = row.column()
         row_ = col.row(align=True)
-        row_.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
+        row_.operator("bim.assign_container", icon="KEYFRAME_HLT", text="").container = ifc_definition_id
+        row_.operator("bim.remove_container", icon="KEYFRAME", text="").container = ifc_definition_id
         row_.operator("bim.reference_from_provided_structure", icon="LINKED", text="").structure = ifc_definition_id
         row_.operator("bim.copy_to_container", icon="MOD_DISPLACE", text="").container = ifc_definition_id
 
