@@ -249,7 +249,7 @@ void gltf_serializer::write(const ifcopenshell::geom::triangulation_element* o) 
             size_t new_node_index = json_["nodes"].size();
             node_indices_[(*it)->product()] = new_node_index;
             node_array_.push_back(new_node_index);
-            parent_node["name"] = object_id(o);
+            parent_node["name"] = object_id(*it);
             parent_node["children"] = json::array({current_node_index});
             json_["nodes"].push_back(parent_node);
 
