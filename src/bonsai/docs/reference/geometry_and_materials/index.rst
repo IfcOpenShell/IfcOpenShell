@@ -243,6 +243,42 @@ The Styles panel is used to manage presentation styles for elements, including s
 curve styles (line color, thickness, etc.), and fill area styles. These styles control how elements are visually represented in various contexts,
 such as in 2D drawings or 3D views.
 
+Textures
+--------
+
+Bonsai loads textures defined with ``IfcSurfaceStyleWithTextures``, as long as the surface style also
+contains an ``IfcSurfaceStyleRendering``. All three texture sources defined by the IFC schema are supported,
+and all of them are verified against the official buildingSMART
+`tessellated shape with style <https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/annex_e/tessellated-shape-with-style/content.html>`__
+examples:
+
+- ``IfcImageTexture``: the image is loaded from ``URLReference``. Relative URLs are resolved
+  against the location of the IFC file.
+- ``IfcBlobTexture``: the raster data embedded in the IFC file is decoded into an image.
+- ``IfcPixelTexture``: the pixel array (1 to 4 colour components) is converted into an image.
+
+Texture coordinates are applied as follows:
+
+- ``IfcIndexedTriangleTextureMap`` and ``IfcIndexedPolygonalTextureMap`` are loaded into the mesh UV layer
+  automatically. Elements with openings are an exception: their triangulation no longer matches the
+  original faceset, so indexed UVs are skipped for them.
+- ``IfcTextureCoordinateGenerator`` with ``COORD`` and ``COORD-EYE`` modes maps to Blender's generated
+  and camera texture coordinates respectively.
+- ``IfcTextureMap`` is not supported.
+
+Which texture ``Mode`` is honoured depends on the ``ReflectanceMethod`` of the rendering style:
+
+- ``PHYSICAL`` and ``NOTDEFINED``: ``DIFFUSE``, ``NORMAL``, ``EMISSIVE``, ``METALLICROUGHNESS`` and
+  ``OCCLUSION``.
+- ``FLAT``: ``EMISSIVE`` only.
+
+``TextureTransform`` (texture scale and rotation) is not supported yet. Indexed colour maps
+(``IfcIndexedColourMap``, vertex colours without a texture) are only loaded when the
+"Load Indexed Colour Maps" advanced project load setting is enabled.
+
+Note that the viewport must use Material Preview or Rendered shading (or Solid shading with the color
+set to Texture) for textures to be visible.
+
 Profiles
 --------
 
