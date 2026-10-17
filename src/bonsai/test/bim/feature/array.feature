@@ -274,3 +274,108 @@ Scenario: Select all array objects
     And I click "RESTRICT_SELECT_OFF"
     Then the object "IfcColumn/Column" is selected
     And the object "IfcColumn/Column.001" is selected
+
+Scenario: Add a radial array
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
+    And I add the construction type
+    And the object "IfcColumn/Column" is selected
+    And I look at the "Array" panel
+    And I click "ADD"
+    And I click "GREASEPENCIL"
+    When I set the "array_type" property to "Radial"
+    And I set the "Count" property to "4"
+    And I set the "angle" property to "1.5707963"
+    And the cursor is at "2,0,0"
+    And I click "CURSOR"
+    And I click "CHECKMARK"
+    Then the object "IfcColumn/Column" is at "0,0,0"
+    And the object "IfcColumn/Column.001" is at "2,-2,0"
+    And the object "IfcColumn/Column.002" is at "4,0,0"
+    And the object "IfcColumn/Column.003" is at "2,2,0"
+
+Scenario: Add a helical array that sweeps past a full turn
+    # End-to-end wiring for the spiral-stair case: 5 copies at 100 degrees is a
+    # 400 degree sweep, and each copy climbs 0.5m. The no-wrap contract itself
+    # is pinned numerically in test/tool/test_array_child_matrix.py — this
+    # scenario exists to prove the parameters survive the panel round-trip.
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
+    And I add the construction type
+    And the object "IfcColumn/Column" is selected
+    And I look at the "Array" panel
+    And I click "ADD"
+    And I click "GREASEPENCIL"
+    When I set the "array_type" property to "Radial"
+    And I set the "Count" property to "5"
+    And I set the "angle" property to "1.7453293"
+    And I set the "rise" property to "0.5"
+    And the cursor is at "2,0,0"
+    And I click "CURSOR"
+    And I click "CHECKMARK"
+    Then the object "IfcColumn/Column" is at "0,0,0"
+    And the object "IfcColumn/Column.004" is at "0.468,-1.286,2"
+
+Scenario: Radial array keeps copies upright when rotation is disabled
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
+    And I add the construction type
+    And the object "IfcColumn/Column" is selected
+    And I look at the "Array" panel
+    And I click "ADD"
+    And I click "GREASEPENCIL"
+    When I set the "array_type" property to "Radial"
+    And I set the "Count" property to "4"
+    And I set the "angle" property to "1.5707963"
+    And I set the "rotate_children" property to "FALSE"
+    And the cursor is at "2,0,0"
+    And I click "CURSOR"
+    And I click "CHECKMARK"
+    Then the object "IfcColumn/Column.001" is at "2,-2,0"
+    And the object "IfcColumn/Column.002" is at "4,0,0"
+
+Scenario: Existing linear arrays are unaffected by the radial option
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
+    And I add the construction type
+    And the object "IfcColumn/Column" is selected
+    And I look at the "Array" panel
+    And I click "ADD"
+    And I click "GREASEPENCIL"
+    When I set the "Count" property to "3"
+    And I set the "x" property to "1.5"
+    And I click "CHECKMARK"
+    Then I see "3 Items (Offset)"
+    And the object "IfcColumn/Column.001" is at "1.5,0,0"
+    And the object "IfcColumn/Column.002" is at "3,0,0"
+
+Scenario: Radial array with a per-copy angle and a total rise
+    # The ordinary spiral-stair spec: the tread angle is a design choice while
+    # the floor-to-floor height is fixed by the building, so the two quantities
+    # need opposite modes. 5 copies at 90 degrees each, climbing to exactly 2m.
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
+    And I add the construction type
+    And the object "IfcColumn/Column" is selected
+    And I look at the "Array" panel
+    And I click "ADD"
+    And I click "GREASEPENCIL"
+    When I set the "array_type" property to "Radial"
+    And I set the "Count" property to "5"
+    And I set the "angle" property to "1.5707963"
+    And I set the "rise" property to "2.0"
+    And I set the "rise_method" property to "Total"
+    And the cursor is at "2,0,0"
+    And I click "CURSOR"
+    And I click "CHECKMARK"
+    Then the object "IfcColumn/Column.001" is at "2,-2,0.5"
+    And the object "IfcColumn/Column.002" is at "4,0,1"
+    # A full 360 degrees brings the last copy back over the original, but two
+    # metres up — the clearest possible demonstration that the climb is a
+    # total while the angle is per copy.
+    And the object "IfcColumn/Column.004" is at "0,0,2"
