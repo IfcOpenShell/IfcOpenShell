@@ -23,6 +23,7 @@ import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.element
@@ -115,6 +116,67 @@ class TestExtractElements(test.bootstrap.IFC4):
         # placements of the extracted elements.
         wall_new = output.by_type("IfcWall")[0]
         assert wall_new.ObjectPlacement.RelativePlacement.Location.Coordinates == (5.0, 10.0, 2.0)
+
+    def test_preserving_georeferencing_ifc2x3(self):
+        if self.file.schema != "IFC2X3":
+            pytest.skip("ePSet_MapConversion is an IFC2X3-only convention")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.georeference.add_georeferencing(self.file)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            self.file,
+            coordinate_operation={
+                "Eastings": 500000.0,
+                "Northings": 6000000.0,
+                "XAxisAbscissa": 0.6,
+                "XAxisOrdinate": 0.8,
+            },
+        )
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        matrix = numpy.eye(4)
+        matrix[:3, 3] = [5.0, 10.0, 2.0]
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=wall, matrix=matrix)
+
+        other_names = ("ePSet_GeographicCRS", "ePSet_MapConversionScaled", "ePSet_RigidOperation")
+        for name in other_names:
+            pset = ifcopenshell.api.pset.add_pset(self.file, self.file.by_type("IfcProject")[0], name)
+            ifcopenshell.api.pset.edit_pset(self.file, pset, properties={"Name": name})
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
+        project_new = output.by_type("IfcProject")[0]
+        conversion = ifcopenshell.util.element.get_pset(project_new, "ePSet_MapConversion")
+        assert conversion is not None
+        assert conversion["Eastings"] == 500000.0
+        assert conversion["Northings"] == 6000000.0
+        for name in other_names:
+            pset_new = ifcopenshell.util.element.get_pset(project_new, name)
+            assert pset_new is not None, f"{name} was dropped"
+            assert pset_new["Name"] == name
+        wall_new = output.by_type("IfcWall")[0]
+        coords = wall_new.ObjectPlacement.RelativePlacement.Location.Coordinates
+        assert coords == pytest.approx((5.0, 10.0, 2.0))
+
+    def test_preserving_georeferencing_ifc2x3_on_site(self):
+        if self.file.schema != "IFC2X3":
+            pytest.skip("ePSet_MapConversion is an IFC2X3-only convention")
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        site = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSite")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[site], relating_object=project)
+        pset = ifcopenshell.api.pset.add_pset(self.file, site, "ePSet_MapConversion")
+        ifcopenshell.api.pset.edit_pset(
+            self.file, pset, properties={"Eastings": self.file.createIfcLengthMeasure(500000.0)}
+        )
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[wall], relating_structure=site)
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
+        site_new = output.by_type("IfcSite")[0]
+        conversion = ifcopenshell.util.element.get_pset(site_new, "ePSet_MapConversion")
+        assert conversion is not None
+        assert conversion["Eastings"] == 500000.0
+        rels = [r for r in output.by_type("IfcRelDefinesByProperties") if site_new in r.RelatedObjects]
+        assert len(rels) == 1, "georeferencing pset must not be linked twice"
 
     @pytest.mark.skipif(
         "IFC4X3" not in ifcopenshell.ifcopenshell_wrapper.schema_names(),
