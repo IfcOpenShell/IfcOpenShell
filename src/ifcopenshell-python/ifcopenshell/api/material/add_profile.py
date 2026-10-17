@@ -76,7 +76,7 @@ def add_profile(
 
         # Create an I-beam profile curve. Notice how we name our profiles
         # based on standardised steel profile names.
-        hea100 = file.create_entity(
+        hea100 = model.create_entity(
             "IfcIShapeProfileDef", ProfileName="HEA100", ProfileType="AREA",
             OverallWidth=100, OverallDepth=96, WebThickness=5, FlangeThickness=8, FilletRadius=12,
         )

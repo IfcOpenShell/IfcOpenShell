@@ -61,15 +61,16 @@ def assign_actor(
         # To help our facility manager, it's nice to provide contact details
         # of the manufacturer so they know how to call when the pump breaks.
         telecom = ifcopenshell.api.owner.add_address(model,
-            assigned_object=organisation, ifc_class="IfcTelecomAddress")
+            assigned_object=manufacturer, ifc_class="IfcTelecomAddress")
         ifcopenshell.api.owner.edit_address(model, address=telecom,
             attributes={"Purpose": "OFFICE", "TelephoneNumbers": ["+61432466949"],
             "ElectronicMailAddresses": ["contact@example.com"],
             "WWWHomePageURL": "https://example.com"})
 
         # Make the manufacturer responsible for that pump type.
+        actor = ifcopenshell.api.owner.add_actor(model, actor=manufacturer)
         ifcopenshell.api.owner.assign_actor(model,
-            relating_actor=manufacturer, related_object=pump_type)
+            relating_actor=actor, related_object=pump_type)
     """
     if related_object.HasAssignments:
         for rel in related_object.HasAssignments:
