@@ -791,11 +791,17 @@ Scenario: Splitting a wall with another wall mid-edit commits the pending edit f
 Scenario: Create a door, undo and create a new door
     Given an empty IFC project
     And I prepare to undo
-    And I press "mesh.add_door()"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcDoor"
+    And I set "scene.BIMRootProperties.representation_template" to "DOOR"
+    And I press "bim.add_element"
     And I undo
-    And I press "mesh.add_door()"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcDoor"
+    And I set "scene.BIMRootProperties.representation_template" to "DOOR"
+    And I press "bim.add_element"
     Then nothing happens
-    And the object "IfcDoor/IfcDoor" exists
+    And the object "IfcDoor/Unnamed" exists
 
 Scenario: Create a MEP transition
     Given an empty IFC project

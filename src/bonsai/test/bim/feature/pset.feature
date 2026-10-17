@@ -359,9 +359,12 @@ Scenario: Remove pset - multiple objects
 
 Scenario: Edit pset length property
     Given an empty IFC project
-    And I press "mesh.add_stair"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcStairFlight"
+    And I set "scene.BIMRootProperties.representation_template" to "STAIR"
+    And I press "bim.add_element"
     And the variable "pset" is "tool.Pset.get_element_pset(tool.Ifc.get_entity(bpy.context.active_object), 'Pset_StairFlightCommon').id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='IfcStairFlight/StairFlight', obj_type='Object')"
+    And I press "bim.enable_pset_editing(pset_id={pset}, obj='IfcStairFlight/Unnamed', obj_type='Object')"
 
     # Testing IfcPositiveLengthMeasure type of prop
     Then "active_object.PsetProperties.properties['TreadLength'].metadata.special_type" is "LENGTH"
@@ -377,15 +380,18 @@ Scenario: Edit pset length property
     When I set "active_object.PsetProperties.properties['NosingLength'].metadata.float_value" to "350"
     Then "active_object.PsetProperties.properties['NosingLength'].metadata.float_value" is roughly "350"
 
-    When I press "bim.edit_pset(obj='IfcStairFlight/StairFlight', obj_type='Object')"
+    When I press "bim.edit_pset(obj='IfcStairFlight/Unnamed', obj_type='Object')"
     Then nothing happens
 
 Scenario: Edit qset length property
     Given an empty IFC project
-    And I press "mesh.add_stair"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcStairFlight"
+    And I set "scene.BIMRootProperties.representation_template" to "STAIR"
+    And I press "bim.add_element"
     And I press "bim.perform_quantity_take_off"
     And the variable "pset" is "tool.Pset.get_element_pset(tool.Ifc.get_entity(bpy.context.active_object), 'Qto_StairFlightBaseQuantities').id()"
-    And I press "bim.enable_pset_editing(pset_id={pset}, obj='IfcStairFlight/StairFlight', obj_type='Object')"
+    And I press "bim.enable_pset_editing(pset_id={pset}, obj='IfcStairFlight/Unnamed', obj_type='Object')"
 
     # Testing Q_LENGTH type of prop
     Then "active_object.PsetProperties.properties['Length'].metadata.special_type" is "LENGTH"
@@ -394,5 +400,5 @@ Scenario: Edit qset length property
     When I set "active_object.PsetProperties.properties['Length'].metadata.float_value" to "350"
     Then "active_object.PsetProperties.properties['Length'].metadata.float_value" is roughly "350"
 
-    When I press "bim.edit_pset(obj='IfcStairFlight/StairFlight', obj_type='Object')"
+    When I press "bim.edit_pset(obj='IfcStairFlight/Unnamed', obj_type='Object')"
     Then nothing happens
