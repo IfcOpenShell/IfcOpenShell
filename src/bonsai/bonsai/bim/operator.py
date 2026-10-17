@@ -219,7 +219,7 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = f"Select a different IFC file.\n{tool.Blender.operator_invoke_filepath_hotkeys_description}"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
-    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
     filename_ext = ".ifc"
 
     def execute(self, context):
