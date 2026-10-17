@@ -140,17 +140,6 @@ class BIM_PT_spatial_decomposition(Panel):
             op = col.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
             op.container = ifc_definition_id
 
-            if tool.Blender.get_addon_preferences().container_hide_show_isolate:
-                op = row.operator("bim.set_container_visibility", icon="FULLSCREEN_EXIT", text="")
-                op.mode = "ISOLATE"
-                op.container = ifc_definition_id
-                op = row.operator("bim.set_container_visibility", icon="HIDE_OFF", text="")
-                op.mode = "SHOW"
-                op.container = ifc_definition_id
-                op = row.operator("bim.set_container_visibility", icon="HIDE_ON", text="")
-                op.mode = "HIDE"
-                op.container = ifc_definition_id
-
             # The only operator that's enabled for IfcProject.
             col = row.column(align=True)
             col.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
@@ -174,6 +163,14 @@ class BIM_PT_spatial_decomposition(Panel):
         assert ifc_definition_id is not None
 
         container_has_elements = bool(self.props.total_elements)
+
+        # Show or hide the highlighted container's collection and its child containers.
+        row = self.layout.row(align=True)
+        row.label(text="Container")
+        for mode, icon in (("ISOLATE", "FULLSCREEN_EXIT"), ("SHOW", "HIDE_OFF"), ("HIDE", "HIDE_ON")):
+            op = row.operator("bim.set_container_visibility", icon=icon, text="")
+            op.mode = mode
+            op.container = ifc_definition_id
 
         # Move the viewport selection into or out of the highlighted container.
         row = self.layout.row(align=True)
