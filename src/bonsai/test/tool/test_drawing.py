@@ -545,6 +545,28 @@ class TestGetGroupElements(NewFile):
         assert subject.get_group_elements(group) == (element,)
 
 
+class TestGetSheetReferences(NewFile):
+    def test_return_nothing_if_the_drawing_has_no_document(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(GlobalId=ifcopenshell.guid.new(), ObjectType="DRAWING")
+        sheet = ifc.createIfcDocumentInformation(Identification="X", Name="Sheet", Scope="SHEET")
+        ifc.createIfcDocumentReference(Location="drawing.svg", ReferencedDocument=sheet)
+        assert subject.get_sheet_references(drawing) == []
+
+    def test_return_the_sheet_reference_of_a_drawing(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(GlobalId=ifcopenshell.guid.new(), ObjectType="DRAWING")
+        document = ifc.createIfcDocumentReference(Location="drawing.svg")
+        ifc.createIfcRelAssociatesDocument(
+            GlobalId=ifcopenshell.guid.new(), RelatedObjects=[drawing], RelatingDocument=document
+        )
+        sheet = ifc.createIfcDocumentInformation(Identification="X", Name="Sheet", Scope="SHEET")
+        reference = ifc.createIfcDocumentReference(Location="drawing.svg", ReferencedDocument=sheet)
+        assert subject.get_sheet_references(drawing) == [reference]
+
+
 class TestGetIfcRepresentationClass(NewFile):
     def test_run(self):
         assert subject.get_ifc_representation_class("TEXT") == "IfcTextLiteral"
