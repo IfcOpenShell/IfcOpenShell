@@ -48,6 +48,10 @@ public:
                 const Eigen::Vector3f& forward,
                 int viewport_w_px, int viewport_h_px, int device_pixel_ratio);
 
+    // Grid specs are in world coordinates. This is the false-origin matrix
+    // that takes them into the viewer frame the GPU draws in.
+    void setWorldToViewer(const Eigen::Matrix4d& world_to_viewer);
+
     void upsertGrid(const ViewportGridSpec& spec);
     bool removeGrid(const std::string& id);
     void clearGrids();
@@ -77,6 +81,7 @@ private:
     int                 vertex_count_    = 0;
     bool                master_visible_  = true;
     std::vector<ViewportGridSpec> grids_;
+    Eigen::Matrix4d     world_to_viewer_ = Eigen::Matrix4d::Identity();
 };
 
 #endif  // GRIDHELPERRENDERER_H

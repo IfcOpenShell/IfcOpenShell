@@ -5,26 +5,42 @@
 <title>IfcViewer (web) — JavaScript API</title>
 <style>
   :root { color-scheme: dark; }
-  html, body { margin: 0; min-height: 100%; background: #0f1117; color: #c8ccd6;
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0f1117; color: #c8ccd6;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  header { padding: 12px 16px; border-bottom: 1px solid #232833; }
+  body { display: flex; flex-direction: column; }
+  header { flex: 0 0 auto; padding: 12px 16px; border-bottom: 1px solid #232833; }
   header h1 { margin: 0; font-size: 15px; font-weight: 600; }
   header p  { margin: 4px 0 0; font-size: 12px; color: #8a93a6; }
   header a  { color: #7f9bd6; }
-  .layout { display: flex; gap: 16px; padding: 16px; align-items: flex-start; flex-wrap: wrap; }
-  #viewer-box { position: relative; width: 640px; height: 460px; max-width: 100%;
+  .layout { flex: 1 1 auto; min-height: 0; display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .viewer-pane { display: flex; flex-direction: column; min-height: 0; padding: 16px;
+    border-right: 1px solid #232833; }
+  #viewer-box { position: relative; flex: 1 1 auto; min-height: 0;
     border: 1px solid #232833; border-radius: 6px; overflow: hidden; background: #1a1d24; }
   #viewer-canvas { display: block; width: 100%; height: 100%; outline: none; }
   #origin-readout { position: fixed; z-index: 12; pointer-events: none;
     transform: translate(10px, -50%);
     font: 11px/1.2 ui-monospace, Menlo, Consolas, monospace;
     color: #d7dbe3; background: rgba(15, 17, 23, .72);
-    border-radius: 3px; padding: 2px 6px; white-space: nowrap; }
+    border-radius: 3px; padding: 2px 6px; white-space: pre; }
   #origin-readout.moved { color: #f6e05e; }
   #origin-readout.docked { transform: none; }
   #marquee { position: absolute; display: none; z-index: 5; pointer-events: none;
     border: 1px solid #4a9eff; background: rgba(74, 158, 255, 0.15); }
-  .sidebar { flex: 1 1 340px; min-width: 320px; display: flex; flex-direction: column; gap: 14px; }
+  .sidebar { min-height: 0; display: flex; flex-direction: column; }
+  .tab-bar { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 2px; padding: 10px 16px 0;
+    border-bottom: 1px solid #232833; }
+  .tab-bar button { background: none; color: #8a93a6; border-radius: 4px 4px 0 0;
+    padding: 7px 12px; border-bottom: 2px solid transparent; }
+  .tab-bar button:hover { color: #c8ccd6; filter: none; }
+  .tab-bar button[aria-selected=true] { color: #c8ccd6; border-bottom-color: #4a9eff; }
+  .tab-panels { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 16px; }
+  #object-table thead th { position: sticky; top: 0; background: #151821; }
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: none; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+    .viewer-pane { border-right: none; border-bottom: 1px solid #232833; }
+  }
   .card { border: 1px solid #232833; border-radius: 6px; background: #151821; }
   .card h2 { margin: 0; padding: 9px 12px; font-size: 12px; font-weight: 600;
     letter-spacing: .04em; text-transform: uppercase; color: #8a93a6;
@@ -74,43 +90,60 @@
 </header>
 
 <div class="layout">
-  <div>
+  <div class="viewer-pane">
     <div id="viewer-box">
       <canvas id="viewer-canvas" width="1280" height="920"></canvas>
       <div id="marquee"></div>
       <div id="origin-readout" hidden></div>
     </div>
     <div class="hint">Drag to orbit · scroll to zoom · <b>right-click to select</b>
-      (drag right-click to box-select several, shift+right-click to add)</div>
+      (drag right-click to box-select several, shift+right-click to add) · click the amber survey marker for the false origin</div>
     <div class="row" style="margin-top:10px">
       <button id="browse-btn" class="secondary">Add .ifcview…</button>
+      <button id="sample-btn" class="secondary">Load sample</button>
       <input id="file-input" type="file" accept=".ifcview" multiple style="display:none">
       <span class="pill" id="scene-hint">Starting WebGPU…</span>
     </div>
   </div>
 
   <div class="sidebar">
-    <div class="card">
-      <h2>Camera <span class="pill">getCamera · setCamera</span></h2>
+    <nav class="tab-bar" id="tab-bar" role="tablist"></nav>
+    <div class="tab-panels">
+    <div class="card" data-tab="Camera">
+      <h2>Camera <span class="pill">getCamera · setCamera · setStandardView · viewAll</span></h2>
       <div class="body">
         <div class="readout mono" id="camera-readout">—</div>
         <div class="row" style="margin-top:10px">
+          <label class="field">target x <input class="wide" type="number" id="cam-tx" step="any"></label>
+          <label class="field">y <input class="wide" type="number" id="cam-ty" step="any"></label>
+          <label class="field">z <input class="wide" type="number" id="cam-tz" step="any"></label>
+        </div>
+        <div class="row">
           <label class="field">yaw <input type="number" id="cam-yaw" step="15"></label>
           <label class="field">pitch <input type="number" id="cam-pitch" step="15"></label>
           <label class="field">dist <input type="number" id="cam-distance" step="1"></label>
           <button id="cam-apply">Set</button>
+          <button class="secondary" id="cam-read" type="button">Read</button>
         </div>
         <div class="row">
-          <button class="secondary" id="cam-top">Top</button>
-          <button class="secondary" id="cam-front">Front</button>
+          <button class="secondary" id="cam-front" type="button">Front</button>
+          <button class="secondary" id="cam-back" type="button">Back</button>
+          <button class="secondary" id="cam-left" type="button">Left</button>
+          <button class="secondary" id="cam-right" type="button">Right</button>
+          <button class="secondary" id="cam-top" type="button">Top</button>
+          <button class="secondary" id="cam-bottom" type="button">Bottom</button>
+        </div>
+        <div class="row">
+          <button class="secondary" id="cam-all" type="button">View all</button>
           <button class="secondary" id="cam-ortho">Toggle ortho</button>
           <button class="secondary" id="cam-save">Save view</button>
           <button class="secondary" id="cam-restore" disabled>Restore</button>
         </div>
+        <div class="hint">The sample load guesses a false origin and moves the amber survey marker off world 0, 0, 0. Target x, y, z are metres in the drawing frame that shifts with that marker. The Federation tab shows where the marker sits in the world. The long red and green lines stay on world 0, 0, 0. The RGB triad while you drag sits on the target.</div>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-tab="Selection">
       <h2>Selection <span class="pill">getSelection · setSelection</span></h2>
       <div class="body">
         <div class="readout mono" id="selection-readout">nothing selected</div>
@@ -124,7 +157,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-tab="Visibility">
       <h2>Visibility &amp; colour <span class="pill">setVisible · setColor</span></h2>
       <div class="body">
         <div class="row">
@@ -145,7 +178,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-tab="Grid">
       <h2>Grid <span class="pill">setGridVisible · upsertGrid</span></h2>
       <div class="body">
         <div class="row">
@@ -170,7 +203,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-tab="Fog">
       <h2>Fog <span class="pill">setFog</span></h2>
       <div class="body">
         <div class="row">
@@ -194,7 +227,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-tab="Axes">
       <h2>Origin axes <span class="pill">setOriginAxes</span></h2>
       <div class="body">
         <div class="row">
@@ -202,16 +235,16 @@
           <label class="field">size (m)
             <input type="number" id="origin-size" min="1" step="100" value="1000"></label>
         </div>
-        <div class="hint">Metres either side of viewer 0, 0, 0, on X (red) and Y (green). The small triad is the survey point. The one-line tag follows that triad and shows the false origin, in the federation unit. The card below edits it.</div>
+        <div class="hint">Metres either side of world 0, 0, 0, on X (red) and Y (green). The amber survey marker is the false origin. Click it for its coordinates, in the federation unit. The Federation tab edits it.</div>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-tab="Federation">
       <h2>Federation <span class="pill">setFederationUnit · setFalseOrigin · setModelTransform</span></h2>
       <div class="body">
         <div class="readout mono" id="fed-readout">—</div>
-        <div class="hint">The red and green lines cross at viewer 0, 0, 0 and stay there.
-          The false origin is the survey point: a smaller triad, and it can move.
+        <div class="hint">The red and green lines cross at world 0, 0, 0 and stay there.
+          Each model is placed in that world at its own coordinates. The false origin is the amber survey marker, and it can move.
           <a href="FEDERATION.md">How federation works.</a></div>
 
         <div class="row">
@@ -238,7 +271,7 @@
           <button class="secondary" id="fo-zero" type="button">False origin 0, 0, 0</button>
           <button class="secondary" id="fo-read" type="button">Read current</button>
         </div>
-        <div class="hint">Set false origin turns off the automatic guess. The lines stay at 0, 0, 0. The small triad moves to the survey point, and the models shift so that coordinate is drawn on the crossing. Changing the unit does not convert the numbers; it changes what a number means.</div>
+        <div class="hint">Set false origin turns off the automatic guess. The axes, the grid and the models stay where they are. The survey marker moves to the new point. Changing the unit does not convert the numbers; it changes what a number means.</div>
 
         <div class="row">
           <label class="field">model
@@ -280,7 +313,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-tab="Objects">
       <h2>Objects <span class="pill" id="object-count">getObjects</span></h2>
       <table id="object-table">
         <thead><tr><th>GlobalId</th><th>Name</th><th>Type</th><th>Model</th>
@@ -288,6 +321,7 @@
         <tbody></tbody>
       </table>
       <div class="empty" id="object-empty">Loading the element table…</div>
+    </div>
     </div>
   </div>
 </div>
@@ -301,11 +335,32 @@
   // ---------------------------------------------------------------------------
   const $ = (id) => document.getElementById(id);
 
+  // ---- Tabs: one per card, the open one is kept in the URL hash.
+  const tabCards = [...document.querySelectorAll('.card[data-tab]')];
+  const tabButtons = tabCards.map((card) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('role', 'tab');
+    btn.textContent = card.dataset.tab;
+    btn.onclick = () => { history.replaceState(null, '', '#' + card.dataset.tab.toLowerCase()); showTab(card.dataset.tab); };
+    $('tab-bar').appendChild(btn);
+    return btn;
+  });
+  function showTab(name) {
+    const want = tabCards.find((c) => c.dataset.tab.toLowerCase() === String(name).toLowerCase()) || tabCards[0];
+    tabCards.forEach((c, i) => {
+      c.hidden = c !== want;
+      tabButtons[i].setAttribute('aria-selected', String(c === want));
+    });
+    document.querySelector('.tab-panels').scrollTop = 0;
+  }
+  showTab(location.hash.slice(1));
+  window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
+
   let viewer  = null;
   let objects = [];       // the whole element table, from viewer.getObjects()
   let models  = [];       // one name per loaded model, in load order
   let savedView = null;   // a getCamera() snapshot, for the Restore button
-  let cameraInputsSeeded = false;
 
   // Resolve any CSS colour (including the hsl() below) to {r, g, b} channels —
   // which is one of the shapes viewer.setColor() accepts.
@@ -329,6 +384,27 @@
 
   // ---- Rendering the page from viewer state ---------------------------------
 
+  function fmtCam(n) {
+    if (!Number.isFinite(n)) return '';
+    const abs = Math.abs(n);
+    const digits = abs >= 1000 ? 2 : abs >= 10 ? 3 : 4;
+    return n.toFixed(digits);
+  }
+  // Keep the boxes in step with the live camera, but leave the one being typed.
+  function fillCameraInputs(c, force) {
+    const set = (id, text) => {
+      const el = $(id);
+      if (!force && document.activeElement === el) return;
+      if (el.value !== text) el.value = text;
+    };
+    set('cam-tx', fmtCam(c.target[0]));
+    set('cam-ty', fmtCam(c.target[1]));
+    set('cam-tz', fmtCam(c.target[2]));
+    set('cam-yaw', c.yaw.toFixed(1));
+    set('cam-pitch', c.pitch.toFixed(1));
+    set('cam-distance', fmtCam(c.distance));
+  }
+
   function renderCamera(c) {
     const f = (n) => n.toFixed(1);
     $('camera-readout').textContent =
@@ -345,12 +421,7 @@
         ? `Relative to the camera. At this view the fade runs from ${start.toFixed(0)} m to ${end.toFixed(0)} m, into the background. Density is for Exp2.`
         : 'Fog is off. The floor stays at full strength out to the grid edge.';
     }
-    if (!cameraInputsSeeded) {
-      cameraInputsSeeded = true;
-      $('cam-yaw').value      = c.yaw.toFixed(0);
-      $('cam-pitch').value    = c.pitch.toFixed(0);
-      $('cam-distance').value = c.distance.toFixed(0);
-    }
+    fillCameraInputs(c);
   }
 
   function renderSelection(ids) {
@@ -430,8 +501,8 @@
     const how = o.explicit ? 'set by you' :
       (mag > 1e-4 || Math.abs(o.rzDeg) > 1e-3 ? 'guessed from the first model' : 'no shift yet');
     $('fed-readout').textContent =
-      `axes origin     0, 0, 0     where X and Y cross\n` +
-      `survey point    ${o.xyz.map(fmtFed).join(', ')} ${o.unit}\n` +
+      `world origin    0, 0, 0     where X and Y cross\n` +
+      `false origin    ${o.xyz.map(fmtFed).join(', ')} ${o.unit}   the survey marker\n` +
       `                ${how}\n` +
       `grid north      ${o.rzDeg.toFixed(2)}°`;
     const seed = `${o.xyz.join(',')}|${o.rzDeg}|${o.explicit}`;
@@ -444,7 +515,8 @@
   async function refreshObjects() {
     objects = await viewer.getObjects();
     $('object-count').textContent = `${objects.length} objects · ${models.length} model(s)`;
-    $('scene-hint').textContent = models.join(', ');
+    $('scene-hint').textContent = models.length ? models.join(', ') : 'No models loaded';
+    $('object-empty').textContent = 'No objects. Load the sample or add a .ifcview.';
     renderTable();
     renderSelection(viewer.getSelection());
   }
@@ -472,21 +544,32 @@
     viewer.bindOriginReadout($('origin-readout'));
     await viewer.ready;
 
-    // The wasm ships with a small sample model (a slab, a wall and a beam), so
-    // there is something to drive before you add a file of your own.
-    models = ['sample.ifcview'];
+    // The wasm boots with a small sample model (a slab, a wall and a beam).
+    // Start empty instead; the Load sample button brings it back.
+    viewer.clearScene();
     await refreshObjects();
 
     // ---- Camera: read (1) and set (2) ---------------------------------------
 
     // setCamera takes any subset of what getCamera returns; omitted fields hold.
+    // target is the orbit pivot: the RGB triad drawn while you drag.
     $('cam-apply').onclick = () => viewer.setCamera({
+      target:   [Number($('cam-tx').value), Number($('cam-ty').value), Number($('cam-tz').value)],
       yaw:      Number($('cam-yaw').value),
       pitch:    Number($('cam-pitch').value),
       distance: Number($('cam-distance').value),
     });
-    $('cam-top').onclick     = () => viewer.setStandardView(4);
-    $('cam-front').onclick   = () => viewer.setStandardView(0);
+    $('cam-read').onclick = () => fillCameraInputs(viewer.getCamera(), true);
+    // id: 0 Front, 1 Back, 2 Left, 3 Right, 4 Top, 5 Bottom. These keep the
+    // current target and only change the direction you look from.
+    const standardViews = [
+      ['cam-front', 0], ['cam-back', 1], ['cam-left', 2],
+      ['cam-right', 3], ['cam-top', 4], ['cam-bottom', 5],
+    ];
+    for (const [id, view] of standardViews) {
+      $(id).onclick = () => viewer.setStandardView(view);
+    }
+    $('cam-all').onclick     = () => viewer.viewAll();
     $('cam-ortho').onclick   = () => viewer.setCamera({ ortho: !viewer.getCamera().ortho });
     $('cam-save').onclick    = () => {
       savedView = viewer.getCamera();
@@ -585,7 +668,7 @@
     $('fog-far').value = fog0.far;
     $('fog-density').value = fog0.density;
 
-    // ---- Origin axes: X/Y through viewer 0. The survey triad is drawn with them.
+    // ---- Origin axes: X/Y through world 0. The survey marker is drawn with them.
 
     const applyOriginAxes = () => {
       const size = Number($('origin-size').value);
@@ -681,6 +764,14 @@
     // ---- Objects (5): the table above, and federating in more models ----------
 
     $('browse-btn').onclick = () => $('file-input').click();
+    $('sample-btn').onclick = async () => {
+      if (!viewer.loadSample()) {
+        $('scene-hint').textContent = 'This build has no embedded sample.';
+        return;
+      }
+      models.push('sample.ifcview');
+      await refreshObjects();
+    };
     $('file-input').onchange = async (ev) => {
       for (const file of ev.target.files) {
         let sid;

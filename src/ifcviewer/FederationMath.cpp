@@ -72,6 +72,10 @@ Eigen::Vector3d surveyPointMetres(const Eigen::Matrix4d& federated_false_origin)
     return -R.transpose() * t;
 }
 
+Eigen::Vector3d worldOriginInViewer(const Eigen::Matrix4d& federated_false_origin) {
+    return federated_false_origin.block<3, 1>(0, 3);
+}
+
 FederatedFalseOrigin
 guessFederatedFalseOrigin(const Eigen::Vector3d& first_geometry_point_m,
                           const ModelGeoref& georef,

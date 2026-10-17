@@ -36,11 +36,11 @@
 //     target while the user is navigating, depth-tested against the scene
 //     with a dim x-ray pass behind it;
 //   - the origin axes: Blender's floor axes. X (red) and Y (green) only,
-//     through viewer (0,0,0), fading into the background with the grid.
-//     No Z line — Blender's floor does not draw one;
-//   - the survey point: a shorter copy of the pivot triad at the false
-//     origin, in metres from the viewer origin. It moves when that origin
-//     changes. The floor axes do not.
+//     through world 0,0,0 along world X and Y, fading into the background
+//     with the grid. No Z line — Blender's floor does not draw one;
+//   - the survey point: not a triad but an amber survey marker (triangle
+//     and centre cross) facing the screen, on the false origin. The false
+//     origin is drawn at viewer (0,0,0), so that is where this sits.
 //
 // Lifted out of the Qt-coupled OverlayRenderer so BOTH the desktop and web
 // builds draw one identical indicator from a single place (ViewportCore::render
@@ -70,19 +70,20 @@ public:
     void encodePivot(WGPURenderPassEncoder pass, const OverlayFrame& f,
                      bool visible);
 
-    // Survey point: the pivot triad, shorter, parked at the false origin.
-    // `eye_distance` is metres from the camera to `origin`, so the arms stay
-    // a fixed size on screen as the point moves. `visible` false is a no-op.
+    // Survey marker at `origin`: a fixed-size screen-facing triangle with a
+    // centre cross, depth-tested with a strong x-ray pass behind geometry.
+    // `visible` false is a no-op.
     void encodeSurveyPoint(WGPURenderPassEncoder pass, const OverlayFrame& f,
-                           const Eigen::Vector3f& origin, float eye_distance,
-                           bool visible);
+                           const Eigen::Vector3f& origin, bool visible);
 
-    // Floor axes through `origin`: X and Y only, from -size to +size metres.
-    // Depth-tested 1 px lines. `fog` is the same distance fade the grid uses,
-    // so the axes dissolve into the background with the floor. `visible`
-    // false is a cheap no-op.
+    // Floor axes through `origin`, red along `x_dir` and green along `y_dir`
+    // (unit vectors), from -size to +size metres. Depth-tested 1 px lines.
+    // `fog` is the same distance fade the grid uses, so the axes dissolve
+    // into the background with the floor. `visible` false is a cheap no-op.
     void encodeOrigin(WGPURenderPassEncoder pass, const OverlayFrame& f,
-                      const Eigen::Vector3f& origin, float size_metres,
+                      const Eigen::Vector3f& origin,
+                      const Eigen::Vector3f& x_dir, const Eigen::Vector3f& y_dir,
+                      float size_metres,
                       const ViewportFog& fog,
                       const Eigen::Vector3f& eye, const Eigen::Vector3f& forward,
                       bool visible);
@@ -111,6 +112,11 @@ private:
     WGPUBuffer          origin_line_buffer_       = nullptr;
     WGPURenderPipeline  origin_line_pipeline_     = nullptr;
     WGPURenderPipeline  origin_line_xray_pipeline_ = nullptr;
+    WGPUShaderModule    survey_shader_        = nullptr;
+    WGPUBuffer          survey_buffer_        = nullptr;
+    uint32_t            survey_vertex_count_  = 0;
+    WGPURenderPipeline  survey_pipeline_      = nullptr;
+    WGPURenderPipeline  survey_xray_pipeline_ = nullptr;
 
     // Shared screen-sized triad (orbit pivot). `scale_distance` sizes the
     // arms to ~30 logical px at that distance from the eye.

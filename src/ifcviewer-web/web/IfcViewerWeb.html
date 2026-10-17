@@ -57,12 +57,12 @@
   #progress-loaded { background: #3182ce; }
   #example-link { position: fixed; top: 8px; left: 12px; z-index: 10;
     font-size: 12px; color: #7f9bd6; text-decoration: none; }
-  /* Pinned on the survey triad. position is written each frame. */
+  /* Pinned on the survey marker once it is clicked. position is written each frame. */
   #origin-readout { position: fixed; z-index: 12; pointer-events: none;
     transform: translate(10px, -50%);
     font: 11px/1.2 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
     color: #d7dbe3; background: rgba(15, 17, 23, .72);
-    border-radius: 3px; padding: 2px 6px; white-space: nowrap; }
+    border-radius: 3px; padding: 2px 6px; white-space: pre; }
   #origin-readout.moved { color: #f6e05e; }
   #origin-readout.docked { transform: none; }
 </style>
@@ -101,7 +101,7 @@
   <button data-act="showall" title="Show all (Alt+H)">Show all</button>
   <button data-act="xray"    id="xray-btn" title="X-ray — translucent everything (Alt+X)">X-ray</button>
   <button data-act="grid"    id="grid-btn" title="Toggle ground grid">Grid</button>
-  <button data-act="origin"  id="origin-btn" title="X and Y through viewer 0, 0, 0. The small triad is the survey point.">Axes</button>
+  <button data-act="origin"  id="origin-btn" title="X and Y through world 0, 0, 0. The amber survey marker is the false origin: click it for its coordinates.">Axes</button>
   <button data-act="fog"     id="fog-btn" title="Fade the grid and axes into the background">Fog</button>
   <span class="sep"></span>
   <button data-act="section" id="section-btn" title="Section tool — click a surface to cut (K)">Section</button>

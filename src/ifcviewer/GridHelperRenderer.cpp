@@ -84,16 +84,21 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
 
 constexpr int kFloatsPerVertex = 7;  // xyz + rgba
 
+// `a` and `b` are world coordinates. They go through `world_to_viewer` in
+// double, so a grid far out at survey coordinates is still exact near the
+// false origin, where it is drawn.
 void pushLine(std::vector<float>& verts,
-              const Eigen::Vector3f& a,
-              const Eigen::Vector3f& b,
+              const Eigen::Matrix4d& world_to_viewer,
+              const Eigen::Vector3d& a,
+              const Eigen::Vector3d& b,
               const Eigen::Vector3f& color,
               float opacity) {
     const float alpha = std::clamp(opacity, 0.0f, 1.0f);
-    auto push_v = [&](const Eigen::Vector3f& p) {
-        verts.push_back(p.x());
-        verts.push_back(p.y());
-        verts.push_back(p.z());
+    auto push_v = [&](const Eigen::Vector3d& w) {
+        const Eigen::Vector3d p = (world_to_viewer * w.homogeneous()).head<3>();
+        verts.push_back(float(p.x()));
+        verts.push_back(float(p.y()));
+        verts.push_back(float(p.z()));
         verts.push_back(color.x());
         verts.push_back(color.y());
         verts.push_back(color.z());
@@ -103,13 +108,14 @@ void pushLine(std::vector<float>& verts,
     push_v(b);
 }
 
-void appendGridLines(std::vector<float>& verts, const ViewportGridSpec& spec) {
+void appendGridLines(std::vector<float>& verts, const ViewportGridSpec& spec,
+                     const Eigen::Matrix4d& M) {
     if (!spec.visible || spec.divisions <= 0 || spec.spacing <= 0.0f) {
         return;
     }
 
-    const float extent = spec.spacing * float(spec.divisions);
-    const Eigen::Vector3f& o = spec.origin;
+    const double extent = double(spec.spacing) * double(spec.divisions);
+    const Eigen::Vector3d o = spec.origin;
     const float opacity = std::clamp(spec.opacity, 0.0f, 1.0f);
     // Every 10th step is the primary grid. The lines between are secondary:
     // the same grey pulled toward white, at a lower opacity, so they read lighter.
@@ -125,44 +131,44 @@ void appendGridLines(std::vector<float>& verts, const ViewportGridSpec& spec) {
         const Eigen::Vector3f color_v = major
             ? spec.color_v
             : spec.color_v * 0.45f + Eigen::Vector3f(0.55f, 0.55f, 0.55f);
-        const float offset = float(i) * spec.spacing;
+        const double offset = double(i) * double(spec.spacing);
         switch (spec.plane) {
             case ViewportGridSpec::Plane::XY: {
-                const float y = o.y() + offset;
-                pushLine(verts,
-                         Eigen::Vector3f(o.x() - extent, y, o.z()),
-                         Eigen::Vector3f(o.x() + extent, y, o.z()),
+                const double y = o.y() + offset;
+                pushLine(verts, M,
+                         Eigen::Vector3d(o.x() - extent, y, o.z()),
+                         Eigen::Vector3d(o.x() + extent, y, o.z()),
                          color_u, line_opacity);
-                const float x = o.x() + offset;
-                pushLine(verts,
-                         Eigen::Vector3f(x, o.y() - extent, o.z()),
-                         Eigen::Vector3f(x, o.y() + extent, o.z()),
+                const double x = o.x() + offset;
+                pushLine(verts, M,
+                         Eigen::Vector3d(x, o.y() - extent, o.z()),
+                         Eigen::Vector3d(x, o.y() + extent, o.z()),
                          color_v, line_opacity);
                 break;
             }
             case ViewportGridSpec::Plane::XZ: {
-                const float z = o.z() + offset;
-                pushLine(verts,
-                         Eigen::Vector3f(o.x() - extent, o.y(), z),
-                         Eigen::Vector3f(o.x() + extent, o.y(), z),
+                const double z = o.z() + offset;
+                pushLine(verts, M,
+                         Eigen::Vector3d(o.x() - extent, o.y(), z),
+                         Eigen::Vector3d(o.x() + extent, o.y(), z),
                          color_u, line_opacity);
-                const float x = o.x() + offset;
-                pushLine(verts,
-                         Eigen::Vector3f(x, o.y(), o.z() - extent),
-                         Eigen::Vector3f(x, o.y(), o.z() + extent),
+                const double x = o.x() + offset;
+                pushLine(verts, M,
+                         Eigen::Vector3d(x, o.y(), o.z() - extent),
+                         Eigen::Vector3d(x, o.y(), o.z() + extent),
                          color_v, line_opacity);
                 break;
             }
             case ViewportGridSpec::Plane::YZ: {
-                const float z = o.z() + offset;
-                pushLine(verts,
-                         Eigen::Vector3f(o.x(), o.y() - extent, z),
-                         Eigen::Vector3f(o.x(), o.y() + extent, z),
+                const double z = o.z() + offset;
+                pushLine(verts, M,
+                         Eigen::Vector3d(o.x(), o.y() - extent, z),
+                         Eigen::Vector3d(o.x(), o.y() + extent, z),
                          color_u, line_opacity);
-                const float y = o.y() + offset;
-                pushLine(verts,
-                         Eigen::Vector3f(o.x(), y, o.z() - extent),
-                         Eigen::Vector3f(o.x(), y, o.z() + extent),
+                const double y = o.y() + offset;
+                pushLine(verts, M,
+                         Eigen::Vector3d(o.x(), y, o.z() - extent),
+                         Eigen::Vector3d(o.x(), y, o.z() + extent),
                          color_v, line_opacity);
                 break;
             }
@@ -325,7 +331,7 @@ void GridHelperRenderer::rebuildVertices() {
     std::vector<float> verts;
     verts.reserve(8192);
     for (const ViewportGridSpec& spec : grids_) {
-        appendGridLines(verts, spec);
+        appendGridLines(verts, spec, world_to_viewer_);
     }
 
     vertex_count_ = int(verts.size() / kFloatsPerVertex);
@@ -347,6 +353,12 @@ void GridHelperRenderer::rebuildVertices() {
     }
 
     wgpuQueueWriteBuffer(queue_, vertex_buffer_, 0, verts.data(), byte_size);
+}
+
+void GridHelperRenderer::setWorldToViewer(const Eigen::Matrix4d& world_to_viewer) {
+    if (world_to_viewer_ == world_to_viewer) return;
+    world_to_viewer_ = world_to_viewer;
+    rebuildVertices();
 }
 
 void GridHelperRenderer::upsertGrid(const ViewportGridSpec& spec) {

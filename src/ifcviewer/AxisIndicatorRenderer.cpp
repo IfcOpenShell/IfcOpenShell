@@ -24,6 +24,7 @@
 #include <cmath>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include "CameraMath.h"
 
@@ -187,7 +188,7 @@ bool AxisIndicatorRenderer::init(WGPUDevice device, WGPUQueue queue,
     ble.visibility              = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
     ble.buffer.type             = WGPUBufferBindingType_Uniform;
     ble.buffer.hasDynamicOffset = 1;
-    ble.buffer.minBindingSize   = 160;
+    ble.buffer.minBindingSize   = 192;
     WGPUBindGroupLayoutDescriptor bgl_desc = {};
     bgl_desc.entryCount = 1;
     bgl_desc.entries    = &ble;
@@ -341,6 +342,8 @@ struct AxisUniforms {
     view_forward:  vec4<f32>,
     fog_color:     vec4<f32>,
     fog_params:    vec4<f32>,
+    axis_x:        vec4<f32>,
+    axis_y:        vec4<f32>,
 };
 @group(0) @binding(0) var<uniform> u: AxisUniforms;
 
@@ -354,7 +357,7 @@ struct VsOut {
 fn vs_line(@location(0) pos: vec3<f32>,
            @location(1) color: vec4<f32>) -> VsOut {
     var out: VsOut;
-    let world = u.origin + pos * u.arm;
+    let world = u.origin + (pos.x * u.axis_x.xyz + pos.y * u.axis_y.xyz) * u.arm;
     out.clip_pos = u.mvp * vec4<f32>(world, 1.0);
     out.color = vec4<f32>(color.rgb, color.a * u.alpha);
     out.world_pos = world;
@@ -454,8 +457,157 @@ fn fs_line(in: VsOut) -> @location(0) vec4<f32> {
     build_origin_line(WGPUCompareFunction_GreaterEqual,
                       "ifcviewer-wgpu.origin_axis_xray_pipeline", origin_line_xray_pipeline_);
 
+    // Survey marker: a screen-facing triangle with a centre cross, the usual
+    // survey-point symbol, so it cannot be mistaken for the orbit pivot's
+    // RGB triad. Built once in CSS px around the point; each stroke is a
+    // quad, drawn first as a dark halo and then in amber so it reads on
+    // light and dark surfaces alike.
+    {
+        struct Seg { float ax, ay, bx, by; };
+        constexpr float R = 11.0f;   // triangle circumradius, px
+        constexpr float C = 4.0f;    // half-length of the centre cross, px
+        const float s3 = std::sqrt(3.0f) * 0.5f;
+        const Seg segs[] = {
+            { 0.0f,    R,        -R * s3, -R * 0.5f },
+            { -R * s3, -R * 0.5f, R * s3, -R * 0.5f },
+            { R * s3,  -R * 0.5f, 0.0f,    R        },
+            { -C, 0.0f, C, 0.0f },
+            { 0.0f, -C, 0.0f, C },
+        };
+        std::vector<float> verts;
+        auto push_layer = [&](float width, float r, float g, float b) {
+            for (const Seg& s : segs) {
+                float dx = s.bx - s.ax, dy = s.by - s.ay;
+                const float len = std::sqrt(dx * dx + dy * dy);
+                dx /= len; dy /= len;
+                const float h = width * 0.5f;
+                const float ax = s.ax - dx * h, ay = s.ay - dy * h;
+                const float bx = s.bx + dx * h, by = s.by + dy * h;
+                const float nx = -dy * h, ny = dx * h;
+                const float quad[6][3] = {
+                    { ax - nx, ay - ny, -1.f }, { ax + nx, ay + ny, +1.f },
+                    { bx - nx, by - ny, -1.f }, { bx - nx, by - ny, -1.f },
+                    { ax + nx, ay + ny, +1.f }, { bx + nx, by + ny, +1.f },
+                };
+                for (const auto& q : quad) {
+                    verts.insert(verts.end(), { q[0], q[1], r, g, b, q[2] });
+                }
+            }
+        };
+        push_layer(4.5f, 0.06f, 0.07f, 0.09f);
+        push_layer(2.0f, 1.00f, 0.72f, 0.16f);
+        survey_vertex_count_ = uint32_t(verts.size() / 6);
+
+        WGPUBufferDescriptor sb = {};
+        sb.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        sb.size  = verts.size() * sizeof(float);
+        sb.label = svFromCStr("ifcviewer-wgpu.survey_marker_vbo");
+        survey_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
+        wgpuQueueWriteBuffer(queue_, survey_buffer_, 0, verts.data(), sb.size);
+    }
+
+    static const std::string SURVEY_WGSL = std::string(R"WGSL(
+struct AxisUniforms {
+    mvp:           mat4x4<f32>,
+    origin:        vec3<f32>,
+    arm:           f32,
+    alpha:         f32,
+    line_width_px: f32,
+    viewport_size: vec2<f32>,
+};
+@group(0) @binding(0) var<uniform> u: AxisUniforms;
+
+struct VsOut {
+    @builtin(position) clip_pos: vec4<f32>,
+    @location(0) color:  vec4<f32>,
+    @location(1) side_t: f32,
+};
+
+// `offset` is CSS px around the point, y up; `u.arm` is the device pixel
+// ratio. The marker keeps the point's depth so the x-ray split still works.
+@vertex
+fn vs_survey(@location(0) offset: vec2<f32>,
+             @location(1) col:    vec3<f32>,
+             @location(2) side:   f32) -> VsOut {
+    let c = u.mvp * vec4<f32>(u.origin, 1.0);
+    let off_ndc = offset * u.arm * 2.0 / u.viewport_size;
+    var out: VsOut;
+    out.clip_pos = vec4<f32>(c.xy + off_ndc * c.w, c.zw);
+    out.color  = vec4<f32>(col, u.alpha);
+    out.side_t = side;
+    return out;
+}
+
+@fragment
+fn fs_survey(in: VsOut) -> @location(0) vec4<f32> {
+    let d  = abs(in.side_t);
+    let aa = fwidth(in.side_t);
+    let coverage = 1.0 - smoothstep(1.0 - aa, 1.0, d);
+    return vec4<f32>(in.color.xyz, in.color.w * coverage);
+}
+)WGSL");
+
+    WGPUShaderSourceWGSL survey_wgsl = {};
+    survey_wgsl.chain.sType = WGPUSType_ShaderSourceWGSL;
+    survey_wgsl.code        = svFromCStr(SURVEY_WGSL.c_str());
+    WGPUShaderModuleDescriptor survey_sm = {};
+    survey_sm.nextInChain = &survey_wgsl.chain;
+    survey_sm.label       = svFromCStr("ifcviewer-wgpu.survey_marker_wgsl");
+    survey_shader_ = wgpuDeviceCreateShaderModule(device_, &survey_sm);
+
+    WGPUVertexAttribute survey_attribs[3] = {};
+    survey_attribs[0].format = WGPUVertexFormat_Float32x2; survey_attribs[0].offset = 0;  survey_attribs[0].shaderLocation = 0;
+    survey_attribs[1].format = WGPUVertexFormat_Float32x3; survey_attribs[1].offset = 8;  survey_attribs[1].shaderLocation = 1;
+    survey_attribs[2].format = WGPUVertexFormat_Float32;   survey_attribs[2].offset = 20; survey_attribs[2].shaderLocation = 2;
+    WGPUVertexBufferLayout survey_vbl = {};
+    survey_vbl.arrayStride    = 24;
+    survey_vbl.stepMode       = WGPUVertexStepMode_Vertex;
+    survey_vbl.attributeCount = 3;
+    survey_vbl.attributes     = survey_attribs;
+
+    auto build_survey = [&](WGPUCompareFunction cmp, const char* label,
+                            WGPURenderPipeline& out) {
+        WGPUColorTargetState ct = {};
+        ct.format    = color_format;
+        ct.blend     = &blend;
+        ct.writeMask = WGPUColorWriteMask_All;
+
+        WGPUFragmentState frag = {};
+        frag.module      = survey_shader_;
+        frag.entryPoint  = svFromCStr("fs_survey");
+        frag.targetCount = 1;
+        frag.targets     = &ct;
+
+        WGPUDepthStencilState depth = {};
+        depth.format               = WGPUTextureFormat_Depth32Float;
+        depth.depthWriteEnabled    = WGPUOptionalBool_False;
+        depth.depthCompare         = cmp;
+        depth.stencilFront.compare = WGPUCompareFunction_Always;
+        depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+        WGPURenderPipelineDescriptor rp = {};
+        rp.layout              = layout_;
+        rp.label               = svFromCStr(label);
+        rp.vertex.module       = survey_shader_;
+        rp.vertex.entryPoint   = svFromCStr("vs_survey");
+        rp.vertex.bufferCount  = 1;
+        rp.vertex.buffers      = &survey_vbl;
+        rp.fragment            = &frag;
+        rp.depthStencil        = &depth;
+        rp.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+        rp.primitive.cullMode  = WGPUCullMode_None;
+        rp.multisample.count   = uint32_t(sample_count);
+        rp.multisample.mask    = 0xFFFFFFFFu;
+        out = wgpuDeviceCreateRenderPipeline(device_, &rp);
+    };
+    build_survey(WGPUCompareFunction_LessEqual,
+                 "ifcviewer-wgpu.survey_marker_pipeline", survey_pipeline_);
+    build_survey(WGPUCompareFunction_GreaterEqual,
+                 "ifcviewer-wgpu.survey_marker_xray_pipeline", survey_xray_pipeline_);
+
     return pivot_pipeline_ && pivot_xray_pipeline_ && corner_pipeline_
-        && origin_line_pipeline_ && origin_line_xray_pipeline_;
+        && origin_line_pipeline_ && origin_line_xray_pipeline_
+        && survey_pipeline_ && survey_xray_pipeline_;
 }
 
 void AxisIndicatorRenderer::encodeWorldTriad(WGPURenderPassEncoder pass,
@@ -471,8 +623,7 @@ void AxisIndicatorRenderer::encodeWorldTriad(WGPURenderPassEncoder pass,
     if (!(scale_distance > 0.0f) || !(arm_css_px > 0.0f)) return;
 
     // Arm length = `arm_css_px` logical px projected into world at
-    // `scale_distance`. Line thickness scales with the arm so a shorter
-    // triad (the survey point) stays lighter than the orbit pivot.
+    // `scale_distance`. Line thickness scales with the arm.
     const float fovy_rad        = f.camera_fov_y_deg * kPiF / 180.0f;
     const float world_per_pixel = scale_distance * std::tan(fovy_rad * 0.5f)
                                   * 2.0f / float(f.viewport_h_px);
@@ -514,17 +665,38 @@ void AxisIndicatorRenderer::encodePivot(WGPURenderPassEncoder pass,
 void AxisIndicatorRenderer::encodeSurveyPoint(WGPURenderPassEncoder pass,
                                               const OverlayFrame& f,
                                               const Eigen::Vector3f& origin,
-                                              float eye_distance,
                                               bool visible) {
-    // Shorter than the orbit pivot (30 px) so it reads as a point, not as
-    // the thing the camera is turning around.
-    encodeWorldTriad(pass, f, origin, eye_distance, visible,
-                     16.0f, kSlotSurvey, kSlotSurveyXray);
+    if (!visible || !survey_pipeline_ || !survey_xray_pipeline_ || !survey_buffer_) return;
+    if (f.viewport_w_px <= 0 || f.viewport_h_px <= 0) return;
+
+    // The guessed false origin is the centre of a mesh, so it is usually
+    // inside geometry: the x-ray pass stays strong enough to find and click.
+    const float dpr = float(std::max(1, f.device_pixel_ratio));
+    const float vw  = float(f.viewport_w_px);
+    const float vh  = float(f.viewport_h_px);
+    uint8_t slot_visible[kAxisUniformSlot];
+    uint8_t slot_xray[kAxisUniformSlot];
+    packAxisUniform(slot_visible, f.view_proj, origin, dpr, 1.00f, 0.0f, vw, vh);
+    packAxisUniform(slot_xray,    f.view_proj, origin, dpr, 0.85f, 0.0f, vw, vh);
+    const uint32_t visible_off = kSlotSurvey     * kAxisUniformSlot;
+    const uint32_t xray_off    = kSlotSurveyXray * kAxisUniformSlot;
+    wgpuQueueWriteBuffer(queue_, uniform_buffer_, visible_off, slot_visible, sizeof(slot_visible));
+    wgpuQueueWriteBuffer(queue_, uniform_buffer_, xray_off,    slot_xray,    sizeof(slot_xray));
+
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, survey_buffer_, 0, WGPU_WHOLE_SIZE);
+    wgpuRenderPassEncoderSetPipeline(pass, survey_xray_pipeline_);
+    ifcviewer::setBindGroupDynamic(pass, 0, bind_group_, 1, &xray_off);
+    wgpuRenderPassEncoderDraw(pass, survey_vertex_count_, 1, 0, 0);
+    wgpuRenderPassEncoderSetPipeline(pass, survey_pipeline_);
+    ifcviewer::setBindGroupDynamic(pass, 0, bind_group_, 1, &visible_off);
+    wgpuRenderPassEncoderDraw(pass, survey_vertex_count_, 1, 0, 0);
 }
 
 void AxisIndicatorRenderer::encodeOrigin(WGPURenderPassEncoder pass,
                                          const OverlayFrame& f,
                                          const Eigen::Vector3f& origin,
+                                         const Eigen::Vector3f& x_dir,
+                                         const Eigen::Vector3f& y_dir,
                                          float size_metres,
                                          const ViewportFog& fog,
                                          const Eigen::Vector3f& eye,
@@ -544,6 +716,10 @@ void AxisIndicatorRenderer::encodeOrigin(WGPURenderPassEncoder pass,
     std::memcpy(slot_visible + 112, view_forward, 16);
     std::memcpy(slot_visible + 128, fog_color, 16);
     std::memcpy(slot_visible + 144, fog_params, 16);
+    const float axis_x[4] = { x_dir.x(), x_dir.y(), x_dir.z(), 0.0f };
+    const float axis_y[4] = { y_dir.x(), y_dir.y(), y_dir.z(), 0.0f };
+    std::memcpy(slot_visible + 160, axis_x, 16);
+    std::memcpy(slot_visible + 176, axis_y, 16);
     const uint32_t visible_off = kSlotOrigin * kAxisUniformSlot;
     wgpuQueueWriteBuffer(queue_, uniform_buffer_, visible_off,
                          slot_visible, sizeof(slot_visible));
@@ -624,6 +800,10 @@ void AxisIndicatorRenderer::destroy() {
     if (origin_line_xray_pipeline_) { wgpuRenderPipelineRelease(origin_line_xray_pipeline_); origin_line_xray_pipeline_ = nullptr; }
     if (origin_line_buffer_)  { wgpuBufferRelease(origin_line_buffer_);          origin_line_buffer_ = nullptr; }
     if (origin_line_shader_)  { wgpuShaderModuleRelease(origin_line_shader_);    origin_line_shader_ = nullptr; }
+    if (survey_pipeline_)      { wgpuRenderPipelineRelease(survey_pipeline_);      survey_pipeline_ = nullptr; }
+    if (survey_xray_pipeline_) { wgpuRenderPipelineRelease(survey_xray_pipeline_); survey_xray_pipeline_ = nullptr; }
+    if (survey_buffer_)        { wgpuBufferRelease(survey_buffer_);                survey_buffer_ = nullptr; }
+    if (survey_shader_)        { wgpuShaderModuleRelease(survey_shader_);          survey_shader_ = nullptr; }
     if (layout_)              { wgpuPipelineLayoutRelease(layout_);              layout_ = nullptr; }
     if (bgl_)                 { wgpuBindGroupLayoutRelease(bgl_);                bgl_ = nullptr; }
     if (bind_group_)          { wgpuBindGroupRelease(bind_group_);               bind_group_ = nullptr; }

@@ -476,6 +476,21 @@ TEST_CASE("surveyPointMetres recovers the false origin through grid north",
     REQUIRE(surveyPointMetres(Eigen::Matrix4d::Identity()).isApprox(Eigen::Vector3d::Zero(), 1e-12));
 }
 
+TEST_CASE("worldOriginInViewer is world 0,0,0 through the false origin",
+          "[federation][compose]") {
+    FederationConfig cfg;
+    FederatedFalseOrigin org;
+    org.xyz    = Eigen::Vector3d(10.0, 20.0, 5.0);
+    org.rz_deg = 30.0;
+    const Eigen::Matrix4d M = composeFederatedFalseOrigin(org, cfg);
+    const Eigen::Vector3d expected = (M * Eigen::Vector4d(0.0, 0.0, 0.0, 1.0)).head<3>();
+    REQUIRE(worldOriginInViewer(M).isApprox(expected, 1e-9));
+    // The false origin itself is the one drawn at viewer zero.
+    const Eigen::Vector3d fo = (M * Eigen::Vector4d(10.0, 20.0, 5.0, 1.0)).head<3>();
+    REQUIRE(fo.norm() < 1e-9);
+    REQUIRE(worldOriginInViewer(Eigen::Matrix4d::Identity()).isApprox(Eigen::Vector3d::Zero(), 1e-12));
+}
+
 TEST_CASE("helmert metres transform consumes Scale through map unit scale",
           "[federation][georef]") {
     HelmertTransformation params;

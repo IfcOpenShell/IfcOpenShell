@@ -203,8 +203,9 @@ public:
     void buildViewProj(Eigen::Matrix4f& view_out,
                        Eigen::Matrix4f& proj_out) const;
     // Project a world-space point to CSS pixels of the canvas (y down).
-    // World (0,0,0) is the axes intersection. The survey point (the false
-    // origin, in metres) is a different point and can move. Returns false
+    // World (0,0,0) is where the false origin is drawn (the survey marker).
+    // The floor axes cross at world 0,0,0, which is elsewhere once a false
+    // origin is set. Returns false
     // when the point is behind the camera or the surface has not been sized.
     bool projectWorldToCss(float x, float y, float z,
                            float& css_x, float& css_y) const;
@@ -329,11 +330,12 @@ public:
     void setPivotIndicatorVisible(bool visible, int hide_after_ms = 0);
     bool pivotIndicatorVisible() const;
 
-    // Blender floor axes through the viewer origin (world 0, 0, 0). X and Y
-    // only, `size` metres either side. They share the grid's distance fade.
-    // The survey point is a separate, shorter triad at the false origin and
-    // is drawn with these axes. Default size 1000. Off until a host turns
-    // it on.
+    // Blender floor axes through world 0,0,0 along world X and Y, i.e.
+    // before the false-origin shift. X and Y only, `size` metres either
+    // side. They share the grid's distance fade. The survey point is a
+    // separate amber survey marker at viewer (0,0,0), where the false origin
+    // is drawn, and is shown with these axes. Default size 1000. Off until a
+    // host turns it on.
     void setOriginAxesVisible(bool visible);
     bool originAxesVisible() const { return origin_axes_visible_; }
     void toggleOriginAxes();
