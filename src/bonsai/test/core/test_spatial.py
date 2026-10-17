@@ -150,3 +150,24 @@ class TestSelectSimilarContainer:
         spatial.get_decomposed_elements("container", True).should_be_called().will_return(["contained_element"])
         spatial.select_products(["contained_element"]).should_be_called()
         subject.select_similar_container(ifc, spatial, obj="obj")
+
+
+class TestGenerateSpacesFromWalls:
+    def test_unhides_each_generated_space(self, ifc, collector, spatial):
+        class Union:
+            interiors = ["ring"]
+
+        spatial.get_active_obj_z().should_be_called().will_return(1.0)
+        spatial.get_active_obj_height().should_be_called().will_return(2.0)
+        spatial.get_union_shape_from_selected_objects().should_be_called().will_return(Union)
+        spatial.get_buffered_poly_from_linear_ring("ring").should_be_called().will_return("poly")
+        spatial.create_object("Space0").should_be_called().will_return("obj")
+        spatial.set_obj_origin_to_polygon_center("obj", "poly", polygon_is_si=False).should_be_called()
+        spatial.translate_obj_to_z_location("obj", 1.0).should_be_called()
+        spatial.assign_ifcspace_class_to_obj("obj").should_be_called()
+        ifc.get_entity("obj").should_be_called().will_return("element")
+        spatial.set_space_representation_from_polygon(
+            "obj", "element", "poly", 2.0, polygon_is_si=False
+        ).should_be_called()
+        spatial.unhide_viewport("obj").should_be_called()
+        subject.generate_spaces_from_walls(ifc, spatial, collector)
