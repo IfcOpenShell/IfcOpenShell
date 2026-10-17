@@ -506,17 +506,13 @@ class BIM_PT_links(Panel):
 
         row = self.layout.row(align=True)
         row.operator("bim.link_ifc")
+        row.operator("bim.reload_all_links", text="", icon="FILE_REFRESH")
         if self.props.links:
             if self.props.active_link:
                 row = self.layout.row(align=True)
                 row.alignment = "RIGHT"
                 index = self.props.active_link_index
                 if self.props.active_link.is_loaded:
-                    if self.props.active_link.is_editing:
-                        row.operator("bim.edit_link", text="", icon="CHECKMARK")
-                        row.operator("bim.disable_editing_link", text="", icon="CANCEL")
-                    else:
-                        row.operator("bim.enable_editing_link", text="", icon="GREASEPENCIL")
                     row.operator("bim.select_linked_model_element", icon="VIEWZOOM", text="")
                     row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA").link_index = index
                     row.operator("bim.unload_link", text="", icon="UNLINKED").link_index = index
@@ -657,7 +653,12 @@ class BIM_UL_links(UIList):
             if item.has_transformation:
                 row.label(text="", icon="OBJECT_ORIGIN")
 
-            row.label(text=item.filepath)
+            # Double-click to rename; shows the file path while unset.
+            row.prop(item, "display_name", text="", emboss=False, placeholder=item.filepath)
+            if item.is_editing:
+                row.operator("bim.disable_editing_link", text="", icon="UNLOCKED", emboss=False).link_index = index
+            else:
+                row.operator("bim.enable_editing_link", text="", icon="LOCKED", emboss=False).link_index = index
             icon = "RESTRICT_SELECT_OFF" if item.is_selectable else "RESTRICT_SELECT_ON"
             row.operator("bim.toggle_link_selectability", text="", icon=icon, emboss=False).link_index = index
             icon = "CUBE" if item.is_wireframe else "MESH_CUBE"
@@ -669,7 +670,7 @@ class BIM_UL_links(UIList):
             op.link_index = index
             op.mode = "VISIBLE"
         else:
-            row.label(text=item.filepath)
+            row.prop(item, "display_name", text="", emboss=False, placeholder=item.filepath)
 
 
 class BIM_PT_purge(Panel):
