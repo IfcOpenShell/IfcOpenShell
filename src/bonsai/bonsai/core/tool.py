@@ -1086,6 +1086,7 @@ class Spatial:
     def get_boundary_elements(cls, selected_objects): pass
     def get_polygons(cls, boundary_elements): pass
     def get_obj_base_points(cls, obj): pass
+    def get_obj_footprint(cls, obj): pass
     def get_converted_tolerance(cls, tolerance): pass
     def get_purged_inner_holes_poly(cls, union_geom, min_area): pass
     def get_poly_valid_interior_list(cls, poly, min_area, interiors_list): pass

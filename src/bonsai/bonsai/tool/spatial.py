@@ -962,6 +962,9 @@ class Spatial(bonsai.core.tool.Spatial):
             obj = tool.Ifc.get_object(boundary_element)
             if not obj:
                 continue
+            if (footprint := cls.get_obj_footprint(obj)) is not None:
+                polys.append(footprint)
+                continue
             points = []
             base = cls.get_obj_base_points(obj)
             for index in ["low_left", "low_right", "high_right", "high_left"]:
@@ -970,6 +973,32 @@ class Spatial(bonsai.core.tool.Spatial):
 
             polys.append(Polygon(points))
         return polys
+
+    @classmethod
+    def get_obj_footprint(cls, obj: bpy.types.Object) -> Optional[shapely.Geometry]:
+        """Plan footprint of the object's mesh in IFC file units, or None if the mesh has no area."""
+        if not isinstance(obj.data, bpy.types.Mesh):
+            return None
+        element = tool.Ifc.get_entity(obj)
+        is_gross = bool(element and element.HasOpenings)
+        mesh = cls.get_gross_mesh_from_element(element) if is_gross else obj.data
+        mesh.calc_loop_triangles()
+        triangle_count = len(mesh.loop_triangles)
+        verts = np.empty(len(mesh.vertices) * 3)
+        mesh.vertices.foreach_get("co", verts)
+        triangles = np.empty(triangle_count * 3, dtype=np.int32)
+        mesh.loop_triangles.foreach_get("vertices", triangles)
+        matrix = np.array(obj.matrix_world)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        xy = (verts.reshape(-1, 3) @ matrix[:3, :3].T + matrix[:3, 3])[:, :2] / unit_scale
+        if is_gross:
+            bpy.data.meshes.remove(mesh)
+        if not triangle_count:
+            return None
+        shapes = shapely.polygons(xy[triangles.reshape(-1, 3)])
+        if not (areas := shapely.area(shapes) > 1e-9).any():
+            return None
+        return shapely.union_all(shapes[areas])
 
     @classmethod
     def get_obj_base_points(cls, obj: bpy.types.Object) -> dict[str, tuple[float, float]]:
