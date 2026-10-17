@@ -80,17 +80,46 @@
 
             const IFOPSH_VERSION = "0.9.1+0f15b2c";
             const PYODIDE_ARCHITECTURE = "pyemscripten_2025_0_wasm32";
+            const GEOMETRY_LIBRARY = "manifold";
 
-            await micropip.install(`wheels/modular/${IFOPSH_VERSION}/ifcopenshell-${IFOPSH_VERSION}-cp313-cp313-${PYODIDE_ARCHITECTURE}.whl`);
-            await micropip.install(`wheels/modular/${IFOPSH_VERSION}/ifcopenshell_parse_schema_ifc4-${IFOPSH_VERSION}-cp313-cp313-${PYODIDE_ARCHITECTURE}.whl`);
-            await micropip.install(`wheels/modular/${IFOPSH_VERSION}/ifcopenshell_geometry_mapping_ifc4-${IFOPSH_VERSION}-cp313-cp313-${PYODIDE_ARCHITECTURE}.whl`);
-            await micropip.install(`wheels/modular/${IFOPSH_VERSION}/ifcopenshell_pure_python-${IFOPSH_VERSION}-py3-none-any.whl`);
-            await micropip.install(`wheels/modular/${IFOPSH_VERSION}/ifcopenshell_geometry_kernel_manifold-${IFOPSH_VERSION}-cp313-cp313-${PYODIDE_ARCHITECTURE}.whl`);
+            const installedWheels = new Map();
+            async function installWheel(name, pure = false) {
+                if (!installedWheels.has(name)) {
+                    const tag = pure ? 'py3-none-any' : `cp313-cp313-${PYODIDE_ARCHITECTURE}`;
+                    const installation = (async () => {
+                        await micropip.install(`wheels/modular/${IFOPSH_VERSION}/${name}-${IFOPSH_VERSION}-${tag}.whl`);
+                    })();
+                    installedWheels.set(name, installation);
+                    try {
+                        await installation;
+                    } catch (error) {
+                        installedWheels.delete(name);
+                        throw error;
+                    }
+                }
+                await installedWheels.get(name);
+            }
+
+            async function loadSchema(schema) {
+                const name = schema.toLowerCase();
+                if (!/^ifc[a-z0-9_]+$/.test(name)) {
+                    throw new Error(`Invalid IFC schema: ${schema}`);
+                }
+                document.querySelector('#status2').textContent = `Loading ${schema} plug-ins`;
+                await installWheel(`ifcopenshell_parse_schema_${name}`);
+                await installWheel(`ifcopenshell_geometry_mapping_${name}`);
+            }
+
+            await installWheel('ifcopenshell');
+            await loadSchema('IFC4');
+            await installWheel('ifcopenshell_pure_python', true);
+            await installWheel(`ifcopenshell_geometry_kernel_${GEOMETRY_LIBRARY}`);
 
             document.body.className = '';
 
             let ifcopenshell = pyodide.pyimport('ifcopenshell');
             let ifcopenshell_geom = pyodide.pyimport('ifcopenshell.geom');
+            const wrapper = ifcopenshell.ifcopenshell_wrapper;
             let s = ifcopenshell_geom.settings();
             s.set(s.WELD_VERTICES, false);
 
@@ -106,8 +135,33 @@
             pyodide.runPython(`
             from context import Context
             import numpy as np
-            modelObject = Context()`);
+            modelObject = Context(geometry_library="${GEOMETRY_LIBRARY}")`);
             let modelObject = pyodide.globals.get('modelObject').toJs();
+
+            function peekSchema(contents) {
+                const stream = wrapper.stream_from_string(contents);
+                let header, declaration, identifiers;
+                try {
+                    header = stream.header();
+                    declaration = header.file_schema;
+                    identifiers = declaration.get_argument(0);
+                    const schemas = identifiers.toJs();
+                    if (!schemas.length) throw new Error('The IFC header has no FILE_SCHEMA identifier');
+                    return schemas[0];
+                } finally {
+                    identifiers?.destroy();
+                    declaration?.destroy();
+                    header?.destroy();
+                    stream.destroy();
+                }
+            }
+
+            function reportError(error) {
+                console.error(error);
+                document.body.className = 'loading';
+                document.querySelector('#status1').textContent = 'Unable to load model';
+                document.querySelector('#status2').textContent = String(error);
+            }
 
             // Menu and toolbar init
             let mouseMode = 0;
@@ -124,18 +178,27 @@
             let newfile = () => {
                 modelObject.clear();
                 clearScene();
+                document.body.className = '';
             };
             let open = async () => {
                 let uploadField = document.querySelector('#modelupload');
                 let input = document.createElement('input');
                 input.type = 'file';
                 input.onchange = async () => {
-                    clearScene();
                     let file = input.files[0];
-                    let contents = await file.text();
-                    modelObject.open(contents);
-                    loadScene();
-                    initCamera();
+                    if (!file) return;
+                    document.body.className = 'loading';
+                    document.querySelector('#status1').textContent = `Loading ${file.name}`;
+                    try {
+                        let contents = await file.text();
+                        await loadSchema(peekSchema(contents));
+                        modelObject.open(contents);
+                        clearScene();
+                        await loadScene();
+                        initCamera();
+                    } catch (error) {
+                        reportError(error);
+                    }
                 };
                 input.click();
             };
@@ -155,6 +218,8 @@
                     }
                 });
                 scene.children = lights;
+                objectMapping = {};
+                last_geometries = null;
             }
 
             // Init ThreeJS
@@ -286,34 +351,102 @@
 
             initCamera();
 
-            function loadScene() {
+            function failedGuidsFromLog(log) {
+                const guids = new Set();
+                for (const line of log.split('\n').filter(line => line.trim())) {
+                    const entry = JSON.parse(line);
+                    if (entry.level !== 'error') continue;
+                    console.warn('Manifold conversion failed:', entry);
+                    // JSON logs contain the STEP product, whose first argument is GlobalId.
+                    const product = entry.product || entry.instance || '';
+                    const match = /^#\d+\s*=\s*IFC\w+\s*\(\s*'([0-9A-Za-z_$]{22})'/i.exec(product);
+                    if (match) guids.add(match[1]);
+                }
+                return guids;
+            }
+
+            function removeGuidFromScene(guid) {
+                const objects = [];
+                scene.traverse(obj => {
+                    if (objectMapping[obj.uuid] === guid) objects.push(obj);
+                });
+                for (const object of objects) {
+                    object.removeFromParent();
+                    delete objectMapping[object.uuid];
+                }
+            }
+
+            async function loadScene() {
                 document.body.className = 'loading';
                 document.querySelector("#status2").innerHTML = "Generating geometry";
 
                 let ifc = modelObject.get_model();
-                let it = ifcopenshell_geom.iterator.callKwargs({
-                    'settings': s,
-                    'file_or_filename': ifc,
-                    'exclude': ['IfcSpace', 'IfcOpeningElement'],
-                    'geometry_library': 'manifold'
-                });
-
-                let last_mesh_id = null;
-
-                if (it.initialize()) {
-                    while (true) {
-                        let obj = it.get();
-
-                        // obj.type appears to be overwritten by pyodide, returning the typename of the C++ class?
-                        let ty = ifc.by_id(obj.id).is_a()
-                        generateMesh(last_mesh_id, obj);
-
-                        if (!it.next()) {
-                            break;
+                const emptyGuids = new Set();
+                async function generate(library, filter, replace = false) {
+                    const it = ifcopenshell_geom.iterator.callKwargs({
+                        settings: s,
+                        file_or_filename: ifc,
+                        geometry_library: library,
+                        ...filter,
+                    });
+                    try {
+                        let nextYield = performance.now() + 30;
+                        let more = it.initialize();
+                        while (more) {
+                            const obj = it.get();
+                            try {
+                                if (!obj.geometry.faces.length && !obj.geometry.edges.length) {
+                                    emptyGuids.add(obj.guid);
+                                } else {
+                                    if (replace) removeGuidFromScene(obj.guid);
+                                    generateMesh(null, obj);
+                                }
+                            } finally {
+                                obj.destroy();
+                            }
+                            if (performance.now() >= nextYield) {
+                                await new Promise(requestAnimationFrame);
+                                nextYield = performance.now() + 30;
+                            }
+                            // next() returns an IFC instance, including a false Python
+                            // instance at exhaustion; a JS proxy itself is always truthy.
+                            const product = it.next();
+                            try {
+                                more = product?.__bool__() ?? false;
+                            } finally {
+                                product?.destroy();
+                            }
                         }
+                    } finally {
+                        it.destroy();
                     }
                 }
-                document.body.className = '';
+
+                try {
+                    wrapper.set_log_format_json();
+                    await generate(GEOMETRY_LIBRARY, { exclude: ['IfcSpace', 'IfcOpeningElement'] });
+                    const failedGuids = failedGuidsFromLog(wrapper.get_log());
+                    for (const guid of emptyGuids) failedGuids.add(guid);
+                    if (GEOMETRY_LIBRARY === 'manifold' && failedGuids.size) {
+                        document.querySelector('#status2').textContent = `Retrying ${failedGuids.size} elements with OpenCascade`;
+                        await installWheel('ifcopenshell_geometry_kernel_opencascade');
+                        // String filters select entity types; resolve GUIDs to product instances.
+                        const products = [...failedGuids].map(guid => ifc.by_guid(guid));
+                        const includedProducts = pyodide.toPy(products);
+                        try {
+                            await generate('opencascade', { include: includedProducts }, true);
+                        } finally {
+                            includedProducts.destroy();
+                            products.forEach(product => product.destroy());
+                        }
+                        const fallbackLog = wrapper.get_log();
+                        if (fallbackLog.trim()) console.warn('OpenCascade conversion log:', fallbackLog);
+                    }
+                } finally {
+                    wrapper.set_log_format_text();
+                    ifc.destroy();
+                    document.body.className = '';
+                }
             }
 
             function render() {
@@ -368,39 +501,76 @@
                 generateMesh(last_mesh_id, obj);
             }
 
-            function createShape(el) {
-                addObjToScene(ifcopenshell_geom.create_shape.callKwargs({
-                    'settings': s,
-                    'inst': el,
-                    'geometry_library': 'manifold'
-                }));
+            async function createShape(el) {
+                let obj;
+                try {
+                    wrapper.set_log_format_json();
+                    try {
+                        obj = ifcopenshell_geom.create_shape.callKwargs({
+                            settings: s, inst: el, geometry_library: GEOMETRY_LIBRARY,
+                        });
+                    } catch (error) {
+                        if (GEOMETRY_LIBRARY !== 'manifold') throw error;
+                        console.warn('Manifold conversion failed:', error);
+                    }
+                    const failedGuids = failedGuidsFromLog(wrapper.get_log());
+                    if (GEOMETRY_LIBRARY === 'manifold' && (!obj
+                        || (!obj.geometry.faces.length && !obj.geometry.edges.length)
+                        || failedGuids.has(el.GlobalId))) {
+                        obj?.destroy();
+                        obj = null;
+                        await installWheel('ifcopenshell_geometry_kernel_opencascade');
+                        obj = ifcopenshell_geom.create_shape.callKwargs({
+                            settings: s, inst: el, geometry_library: 'opencascade',
+                        });
+                    }
+                    if (!obj.geometry.faces.length && !obj.geometry.edges.length) {
+                        throw new Error(`No geometry generated for ${el.GlobalId}`);
+                    }
+                    addObjToScene(obj);
+                } finally {
+                    obj?.destroy();
+                    wrapper.set_log_format_text();
+                }
             }
 
-            function onMouseClick(event) {
-                let newPoint = getPoint(event);
-                if (mouseMode == 1) {
-                    if (previousPoint != null) {
-                        createShape(modelObject.create_2pt_wall([previousPoint.x, previousPoint.y], [newPoint.x, newPoint.y], 0, 3., 0.2, modelObject.storey));
+            let editing = false;
+            async function onMouseClick(event) {
+                if (editing) return;
+                editing = true;
+                try {
+                    let newPoint = getPoint(event);
+                    if (mouseMode == 1) {
+                        if (previousPoint != null) {
+                            await createShape(modelObject.create_2pt_wall([previousPoint.x, previousPoint.y], [newPoint.x, newPoint.y], 0, 3., 0.2, modelObject.storey));
+                        }
+                        previousPoint = newPoint;
                     }
-                    previousPoint = newPoint;
-                }
-                if (mouseMode == 2 || mouseMode == 3) {
-                    if (newPoint !== null) {
-                        let {
-                            point,
-                            object
-                        } = newPoint;
-                        const guid = objectMapping[object.uuid];
-                        const toRemove = [];
-                        scene.traverse((obj) => {
-                            if (objectMapping[obj.uuid] == guid) {
-                                toRemove.push(obj);
-                            }
-                        });
-                        toRemove.forEach(obj => obj.removeFromParent());
-                        createShape(modelObject.create_fill(mouseMode == 2 ? 'door' : 'window', [point.x, point.y, point.z], guid));
-                        createShape(modelObject.get_element(guid));
+                    if (mouseMode == 2 || mouseMode == 3) {
+                        if (newPoint !== null) {
+                            let {
+                                point,
+                                object
+                            } = newPoint;
+                            const guid = objectMapping[object.uuid];
+                            const toRemove = [];
+                            scene.traverse((obj) => {
+                                if (objectMapping[obj.uuid] == guid) {
+                                    toRemove.push(obj);
+                                }
+                            });
+                            await createShape(modelObject.create_fill(mouseMode == 2 ? 'door' : 'window', [point.x, point.y, point.z], guid));
+                            await createShape(modelObject.get_element(guid));
+                            toRemove.forEach(obj => {
+                                obj.removeFromParent();
+                                delete objectMapping[obj.uuid];
+                            });
+                        }
                     }
+                } catch (error) {
+                    console.error('Unable to edit model:', error);
+                } finally {
+                    editing = false;
                 }
             }
 
