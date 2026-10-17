@@ -102,22 +102,16 @@ class BIM_PT_systems(Panel):
             row = self.layout.row(align=True)
             prop_with_search(row, self.props, "system_class", text="")
             if active_system_item:
-                op = row.operator("bim.add_system", text="", icon="ADD")
-                op.parent_system_id = active_system_item.ifc_definition_id
-
                 system_id = active_system_item.ifc_definition_id
                 op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
                 op.system = system_id
+                tool.Group.draw_visibility_buttons(row, system_id)
                 row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = system_id
                 row.operator("bim.unassign_system", text="", icon="KEYFRAME").system = system_id
-                if self.props.edited_system_id == system_id:
-                    row.operator("bim.edit_system", text="", icon="CHECKMARK")
-                    row.operator("bim.disable_editing_system", text="", icon="CANCEL")
-                else:
-                    op = row.operator("bim.enable_editing_system", text="", icon="GREASEPENCIL")
-                    op.system = system_id
-                    op = row.operator("bim.remove_system", text="", icon="X")
-                    op.system = system_id
+                row.operator("bim.enable_editing_system", text="", icon="GREASEPENCIL").system = system_id
+                row.operator("bim.add_system", text="", icon="ADD").parent_system_id = system_id
+                if self.props.edited_system_id != system_id:
+                    row.operator("bim.remove_system", text="", icon="X").system = system_id
         else:
             row.operator("bim.load_systems", text="", icon="IMPORT")
 
@@ -136,6 +130,9 @@ class BIM_PT_systems(Panel):
 
     def draw_editable_ui(self, context: bpy.types.Context) -> None:
         draw_attributes(self.props.system_attributes, self.layout)
+        row = self.layout.row(align=True)
+        row.operator("bim.edit_system", text="Save System", icon="CHECKMARK")
+        row.operator("bim.disable_editing_system", text="", icon="CANCEL")
 
 
 class BIM_PT_ports(Panel):
@@ -430,14 +427,15 @@ class BIM_PT_zones(Panel):
             row.operator("bim.load_zones", text="", icon="IMPORT")
             return
 
+        row.operator("bim.add_zone", text="", icon="ADD")
         row.operator("bim.unload_zones", text="", icon="CANCEL")
 
-        row = self.layout.row(align=True)
-        row.alignment = "RIGHT"
-        row.operator("bim.add_zone", text="", icon="ADD")
         if self.props.zones and self.props.active_zone_index < len(self.props.zones):
             ifc_definition_id = self.props.zones[self.props.active_zone_index].ifc_definition_id
+            row = self.layout.row(align=True)
+            row.alignment = "RIGHT"
             row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF").system = ifc_definition_id
+            tool.Group.draw_visibility_buttons(row, ifc_definition_id)
             row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = ifc_definition_id
             row.operator("bim.unassign_system", text="", icon="KEYFRAME").system = ifc_definition_id
             row.operator("bim.enable_editing_zone", text="", icon="GREASEPENCIL").zone = ifc_definition_id
@@ -448,7 +446,7 @@ class BIM_PT_zones(Panel):
         if self.props.is_editing:
             bonsai.bim.helper.draw_attributes(self.props.attributes, self.layout)
             row = self.layout.row(align=True)
-            row.operator("bim.edit_zone", icon="CHECKMARK")
+            row.operator("bim.edit_zone", text="Save Zone", icon="CHECKMARK")
             row.operator("bim.disable_editing_zone", icon="CANCEL", text="")
 
 

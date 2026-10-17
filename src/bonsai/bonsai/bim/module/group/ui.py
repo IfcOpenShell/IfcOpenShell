@@ -56,7 +56,7 @@ class BIM_PT_groups(Panel):
             row.operator("bim.add_group", text="", icon="ADD").group = 0
             row.operator("bim.disable_group_editing_ui", text="", icon="CANCEL")
         else:
-            row.operator("bim.load_groups", text="", icon="GREASEPENCIL")
+            row.operator("bim.load_groups", text="", icon="IMPORT")
 
         if not self.props.is_editing:
             return
@@ -65,27 +65,20 @@ class BIM_PT_groups(Panel):
             row = self.layout.row(align=True)
             row.alignment = "RIGHT"
             row.operator("bim.select_group_elements", text="", icon="RESTRICT_SELECT_OFF").group = group_id
-            op = row.operator("bim.set_group_visibility", icon="FULLSCREEN_EXIT", text="")
-            op.mode = "ISOLATE"
-            op.group = group_id
-            op = row.operator("bim.set_group_visibility", icon="HIDE_OFF", text="")
-            op.mode = "SHOW"
-            op.group = group_id
-            op = row.operator("bim.set_group_visibility", icon="HIDE_ON", text="")
-            op.mode = "HIDE"
-            op.group = group_id
-            row.operator("bim.assign_group", text="", icon="FOLDER_REDIRECT").group = group_id
+            tool.Group.draw_visibility_buttons(row, group_id)
+            row.operator("bim.assign_group", text="", icon="KEYFRAME_HLT").group = group_id
+            row.operator("bim.unassign_group", text="", icon="KEYFRAME").group = group_id
             row.operator("bim.enable_editing_group", text="", icon="GREASEPENCIL").group = group_id
             row.operator("bim.add_group", text="", icon="ADD").group = group_id
             row.operator("bim.remove_group", text="", icon="X").group = group_id
+
+        self.layout.template_list("BIM_UL_groups", "", self.props, "groups", self.props, "active_group_index")
 
         if self.props.active_group_id:
             draw_attributes(self.props.group_attributes, self.layout)
             row = self.layout.row(align=True)
             row.operator("bim.edit_group", text="Save Group", icon="CHECKMARK")
             row.operator("bim.disable_editing_group", text="", icon="CANCEL")
-
-        self.layout.template_list("BIM_UL_groups", "", self.props, "groups", self.props, "active_group_index")
 
 
 class BIM_PT_object_groups(Panel):

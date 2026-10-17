@@ -143,6 +143,7 @@ class AssignSystem(bpy.types.Operator, tool.Ifc.Operator):
             )
             return {"CANCELLED"}
         core.assign_system(tool.Ifc, system=system, products=assignable_elements)
+        tool.Blender.update_all_properties_editors(context)
         self.report({"INFO"}, f"System assigned to {len(assignable_elements)} elements.")
         return {"FINISHED"}
 
@@ -168,6 +169,7 @@ class UnassignSystem(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
         system = tool.Ifc.get().by_id(self.system)
         core.unassign_system(tool.Ifc, system=system, products=elements)
+        tool.Blender.update_all_properties_editors(context)
         self.report({"INFO"}, f"System unassigned from {len(elements)} elements.")
         return {"FINISHED"}
 

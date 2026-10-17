@@ -173,6 +173,7 @@ class AssignGroup(bpy.types.Operator, tool.Ifc.Operator):
         relocated_annotations = self.unassign_from_previous_drawing(ifc_file, group, products)
         ifcopenshell.api.group.assign_group(ifc_file, products=products, group=group)
         self.relocate_annotations_to_drawing(relocated_annotations, group)
+        tool.Blender.update_all_properties_editors(context)
         self.report({"INFO"}, f"Assigned {len(products)} objects to group.")
 
     def unassign_from_previous_drawing(self, ifc_file, group, products) -> list[ifcopenshell.entity_instance]:
@@ -226,6 +227,7 @@ class UnassignGroup(bpy.types.Operator, tool.Ifc.Operator):
         if not products:
             return
         ifcopenshell.api.group.unassign_group(tool.Ifc.get(), products=products, group=tool.Ifc.get().by_id(self.group))
+        tool.Blender.update_all_properties_editors(context)
         self.report({"INFO"}, f"Unassigned {len(products)} objects from group.")
 
 

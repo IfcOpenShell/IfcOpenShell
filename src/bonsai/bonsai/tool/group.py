@@ -149,6 +149,13 @@ class Group(bonsai.core.tool.System):
         props.active_group_index = tool.Blender.get_valid_uilist_index(props.active_group_index, blender_groups)
 
     @classmethod
+    def draw_visibility_buttons(cls, layout: bpy.types.UILayout, group_id: int) -> None:
+        for mode, icon in (("ISOLATE", "FULLSCREEN_EXIT"), ("SHOW", "HIDE_OFF"), ("HIDE", "HIDE_ON")):
+            op = layout.operator("bim.set_group_visibility", icon=icon, text="")
+            op.mode = mode
+            op.group = group_id
+
+    @classmethod
     def get_description_type(cls, group: ifcopenshell.entity_instance) -> Union[str, None]:
         """Get the "type" Bonsai stores in a group's JSON Description (e.g. "BBIM_Search").
 
