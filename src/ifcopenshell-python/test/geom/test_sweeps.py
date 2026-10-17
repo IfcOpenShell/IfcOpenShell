@@ -4,6 +4,9 @@ from collections.abc import Sequence
 import pytest
 
 import ifcopenshell
+import ifcopenshell.geom
+import ifcopenshell.guid
+import ifcopenshell.util.shape
 
 
 def _bbox_from_vertices(verts: list[tuple[float, float, float]]):
@@ -76,6 +79,71 @@ def test_simple_sweep_2(geom_dir):
     assert ifc_mn == pytest.approx((50.0, 100.0, 200.0))
     assert ifc_mx == pytest.approx((50.89584911299009, 101.70000025609394, 202.0000003710634))
     assert ifc_sz == pytest.approx((0.8958491129900921, 1.7000002560939436, 2.0000003710634076))
+
+
+@pytest.mark.skipif(
+    not ifcopenshell.geom.has_geometry_library("opencascade"),
+    reason="opencascade geometry kernel is unavailable",
+)
+def test_surface_curve_sweep_collinear_directrix_vertex_1541():
+    directrix_points = [
+        (8.19487670630046, -6.54296830665428),
+        (12.0425252914429, -5.55305480957031),
+        (11.4155521392822, -3.72125840187073),
+        (9.96333026885986, 0.521623253822327),
+        (6.36955847339154, -0.399036757644713),
+    ]
+    profile_points = [
+        (-0.1, 0.25),
+        (-0.1, 0.265),
+        (-0.085, 0.265),
+        (-0.084, 0.278),
+        (-0.081, 0.289),
+        (-0.074, 0.301),
+        (-0.065, 0.309),
+        (-0.055, 0.315),
+        (-0.044, 0.324),
+        (-0.038, 0.334),
+        (-0.035, 0.345),
+        (-0.015, 0.345),
+        (0.0, 0.25),
+        (-0.1, 0.25),
+    ]
+    model = ifcopenshell.file(schema="IFC4")
+    placement = model.createIfcAxis2Placement3D(model.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+    context = model.createIfcGeometricRepresentationContext(None, "Model", 3, 1e-5, placement, None)
+    units = model.createIfcUnitAssignment([model.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")])
+    model.createIfcProject(ifcopenshell.guid.new(), None, "Test", None, None, None, None, [context], units)
+    profile = model.createIfcArbitraryClosedProfileDef(
+        "AREA", None, model.createIfcPolyline([model.createIfcCartesianPoint(p) for p in profile_points])
+    )
+    directrix = model.createIfcPolyline([model.createIfcCartesianPoint(p) for p in directrix_points])
+    solid = model.createIfcSurfaceCurveSweptAreaSolid(
+        profile, placement, directrix, 0.0, 1.0, model.createIfcPlane(placement)
+    )
+    representation = model.createIfcShapeRepresentation(context, "Body", "AdvancedSweptSolid", [solid])
+    product = model.createIfcBuildingElementProxy(
+        ifcopenshell.guid.new(),
+        None,
+        "Cornice",
+        None,
+        None,
+        None,
+        model.createIfcProductDefinitionShape(None, None, [representation]),
+        None,
+        None,
+    )
+    settings = ifcopenshell.geom.settings()
+    settings.set("weld-vertices", True)
+    shape = ifcopenshell.geom.create_shape(settings, product, geometry_library="opencascade")
+    faces = shape.geometry.faces
+    edge_counts: dict[tuple[int, int], int] = {}
+    for i in range(0, len(faces), 3):
+        for a, b in ((0, 1), (1, 2), (2, 0)):
+            edge = tuple(sorted((faces[i + a], faces[i + b])))
+            edge_counts[edge] = edge_counts.get(edge, 0) + 1
+    assert sum(1 for count in edge_counts.values() if count != 2) == 0
+    assert abs(ifcopenshell.util.shape.get_volume(shape.geometry)) == pytest.approx(0.08993, rel=1e-3)
 
 
 def test_pipe_12d(geom_dir):
