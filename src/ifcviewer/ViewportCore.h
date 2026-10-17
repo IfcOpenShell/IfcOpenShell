@@ -264,6 +264,11 @@ public:
     //            orbit-drag; RMB click-selects / drag-marquees, no ambiguity)
     void setNavPreset(const char* name);
     const NavBindings& navBindings() const { return nav_bindings_; }
+    // Start an orbit gesture. Revit uses the centre of the union of all
+    // selected objects' world AABBs as an off-axis pivot while preserving the
+    // current view. Other presets leave the current pivot unchanged.
+    // Returns true when a selected-elements pivot was activated.
+    bool beginOrbit();
 
     // Toggle backface culling of opaque geometry. Off draws back faces too
     // (useful for single-sided IFC meshes). Switches the opaque pipeline at
@@ -1090,7 +1095,10 @@ public:
     mutable std::uint64_t lod1_dbg_tris_saved_      = 0;
 
 private:
+    friend struct ViewportCoreTestAccess;
+
     bool createPool();
+    bool computeSelectionAabb(float mn[3], float mx[3]) const;
 
     // ---- Memory tiers (see GpuBudget.h) ------------------------------------
     //
@@ -1744,6 +1752,13 @@ private:
     NavBindings nav_bindings_ = { MouseBtn::Middle, NavMod::Plain,
                                   MouseBtn::Middle, NavMod::Shift,
                                   MouseBtn::Left,   NavMod::Plain };
+    // Revit-style orbit uses the selected objects' combined AABB centre as an
+    // off-axis pivot. Keeping it separate from camera_target_ prevents orbit
+    // start from recentering the viewport.
+    bool orbit_around_selection_ = false;
+    bool orbit_selection_pivot_active_ = false;
+    Eigen::Vector3f orbit_pivot_ = Eigen::Vector3f::Zero();
+    float orbit_pivot_scale_distance_ = 1.0f;
     // Perspective by default; toggleProjection (P key) flips this. When
     // true, buildViewProj uses an orthographic matrix sized by
     // camera_distance_ × tan(fov/2) so toggling looks like a smooth
