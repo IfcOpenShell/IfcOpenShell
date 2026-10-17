@@ -32,6 +32,7 @@ def timedelta2duration(timedelta):
         "hours": 0,
         "minutes": 0,
         "seconds": getattr(timedelta, "seconds", 0),
+        "microseconds": getattr(timedelta, "microseconds", 0),
     }
     if components["seconds"]:
         components["hours"], components["minutes"], components["seconds"] = [
