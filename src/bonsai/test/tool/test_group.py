@@ -23,6 +23,7 @@ import json
 import bpy
 import ifcopenshell.api.group
 import ifcopenshell.api.system
+import ifcopenshell.util.system
 import pytest
 
 import bonsai.tool as tool
@@ -113,3 +114,111 @@ class TestImportGroups(NewFile):
         subject.get_group_props().group_filter = "kitchen"
         subject.import_groups("IfcGroup")
         assert [g.name for g in subject.get_group_props().groups] == ["Phase 1", "Kitchen"]
+
+
+class TestGetKind(NewFile):
+    @pytest.mark.parametrize(
+        "ifc_class, kind",
+        [
+            ("IfcGroup", "GROUP"),
+            ("IfcBuildingSystem", "SYSTEM"),
+            ("IfcDistributionSystem", "SYSTEM"),
+            ("IfcZone", "ZONE"),
+            ("IfcStructuralAnalysisModel", "STRUCTURAL"),
+            ("IfcStructuralLoadGroup", "STRUCTURAL"),
+            ("IfcAsset", "OTHER"),
+        ],
+    )
+    def test_run(self, ifc_class, kind):
+        bpy.ops.bim.create_project()
+        assert subject.get_kind(tool.Ifc.get().create_entity(ifc_class)) == kind
+
+
+class TestImportAllGroupKinds(NewFile):
+    def setup_groups(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        furniture = add_group(name="Furniture")
+        system = ifcopenshell.api.system.add_system(ifc, ifc_class="IfcDistributionSystem")
+        system.Name = "HVAC"
+        zone = ifcopenshell.api.system.add_system(ifc, ifc_class="IfcZone")
+        zone.Name = "Zone A"
+        ifcopenshell.api.group.assign_group(ifc, products=[system], group=furniture)
+
+    def names(self):
+        return [(g.name, g.icon) for g in subject.get_group_props().groups]
+
+    def test_listing_every_kind(self):
+        self.setup_groups()
+        subject.import_groups("IfcGroup")
+        assert self.names() == [("Furniture", "OUTLINER"), ("Zone A", "CUBE")]
+
+    def test_filtering_by_kind(self):
+        self.setup_groups()
+        subject.get_group_props().group_kinds = {"ZONE"}
+        subject.import_groups("IfcGroup")
+        assert self.names() == [("Zone A", "CUBE")]
+
+    def test_listing_a_group_at_the_top_when_its_parent_is_hidden(self):
+        self.setup_groups()
+        subject.get_group_props().group_kinds = {"SYSTEM"}
+        subject.import_groups("IfcGroup")
+        assert self.names() == [("HVAC", "NETWORK_DRIVE")]
+
+
+class TestGetGroupActions(NewFile):
+    @pytest.mark.parametrize(
+        "ifc_class, actions",
+        [
+            ("IfcGroup", {"ASSIGN", "ADD_CHILD", "REMOVE"}),
+            ("IfcDistributionSystem", {"ASSIGN", "ADD_CHILD", "REMOVE"}),
+            ("IfcZone", {"ASSIGN", "REMOVE"}),
+            ("IfcStructuralAnalysisModel", {"ASSIGN", "REMOVE"}),
+            ("IfcStructuralLoadGroup", {"REMOVE"}),
+            ("IfcStructuralResultGroup", set()),
+        ],
+    )
+    def test_run(self, ifc_class, actions):
+        bpy.ops.bim.create_project()
+        assert subject.get_group_actions(tool.Ifc.get().create_entity(ifc_class)) == actions
+
+
+class TestRoutingGroupOperators(NewFile):
+    def test_assigning_to_a_system(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.primitive_cube_add()
+        duct = tool.Ifc.get().create_entity("IfcDuctSegment")
+        tool.Ifc.link(duct, bpy.context.active_object)
+        system = ifcopenshell.api.system.add_system(tool.Ifc.get(), ifc_class="IfcDistributionSystem")
+        bpy.ops.bim.assign_group(group=system.id())
+        assert ifcopenshell.util.system.get_system_elements(system) == [duct]
+
+    def test_removing_a_system(self):
+        bpy.ops.bim.create_project()
+        system = ifcopenshell.api.system.add_system(tool.Ifc.get(), ifc_class="IfcDistributionSystem")
+        bpy.ops.bim.remove_group(group=system.id())
+        assert not tool.Ifc.get().by_type("IfcDistributionSystem")
+
+    def test_refusing_what_a_system_does_not_accept(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.primitive_cube_add()
+        wall = tool.Ifc.get().create_entity("IfcWall")
+        tool.Ifc.link(wall, bpy.context.active_object)
+        system = ifcopenshell.api.system.add_system(tool.Ifc.get(), ifc_class="IfcDistributionSystem")
+        # Blender raises a reported error as a RuntimeError here; in the UI it's the usual error message.
+        with pytest.raises(RuntimeError) as error:
+            bpy.ops.bim.assign_group(group=system.id())
+        assert "No elements assignable" in str(error.value)
+        assert "Traceback" not in str(error.value)
+        assert ifcopenshell.util.system.get_system_elements(system) == []
+
+
+class TestGetAssignable(NewFile):
+    def test_run(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        wall = ifc.create_entity("IfcWall")
+        duct = ifc.create_entity("IfcDuctSegment")
+        system = ifcopenshell.api.system.add_system(ifc, ifc_class="IfcDistributionSystem")
+        assert subject.get_assignable(system, [wall, duct]) == [duct]
+        assert subject.get_assignable(add_group(), [wall, duct]) == [wall, duct]

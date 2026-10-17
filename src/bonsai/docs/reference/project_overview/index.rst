@@ -30,7 +30,7 @@ In addition to **Project Info**, the Project Overview sub-tab includes several o
 - Geometry
 - Stakeholders
 - Groups
-- Grouping and Filtering
+- Search and Selection
 
 
 Project Info
@@ -57,13 +57,14 @@ The Stakeholders panel enables users to manage project stakeholders, including p
 Groups
 ^^^^^^
 
-The Groups panel lists the project's groups, and lets users create, edit, nest and remove them, assign
-objects to them, and manage their property and quantity sets.
+The Groups panel lists every kind of group in the project: plain groups, systems, zones, structural groups
+and others like assets, filtered by kind. It lets users create, edit, nest and remove them, assign objects
+to them, and manage their property and quantity sets.
 
-Grouping and Filtering
-^^^^^^^^^^^^^^^^^^^^^^
+Search and Selection
+^^^^^^^^^^^^^^^^^^^^
 
-Grouping and Filtering panel offers tools for organizing and filtering project data based on specific criteria.
+The Search and Selection panel offers tools that find elements by their properties, to select, filter or colour them.
 
 .. toctree::
    :hidden:
