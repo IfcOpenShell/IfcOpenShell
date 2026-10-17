@@ -2337,9 +2337,14 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def reset_object_visibility(cls):
+        hidden_blender_only = [
+            obj for obj in bpy.context.view_layer.objects if obj.hide_get() and not tool.Ifc.get_entity(obj)
+        ]
         override = cls.get_viewport_context()
         with bpy.context.temp_override(**override):
             bpy.ops.object.hide_view_clear(select=False)
+        for obj in hidden_blender_only:
+            obj.hide_set(True)
 
     @classmethod
     def isolate_objects(cls, objs):
