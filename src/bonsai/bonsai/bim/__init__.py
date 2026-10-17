@@ -168,6 +168,7 @@ classes = [
     ui.BIM_PT_tab_new_project_wizard,
     ui.BIM_PT_tab_project_info,
     ui.BIM_PT_tab_spatial,
+    ui.BIM_PT_tab_groups,
     ui.BIM_PT_tab_grouping_and_filtering,
     ui.BIM_PT_tab_project_setup,
     ui.BIM_PT_tab_geometry,

@@ -29,6 +29,7 @@ In addition to **Project Info**, the Project Overview sub-tab includes several o
 - Project Setup
 - Geometry
 - Stakeholders
+- Groups
 - Grouping and Filtering
 
 
@@ -52,6 +53,12 @@ Stakeholders
 ^^^^^^^^^^^^
 
 The Stakeholders panel enables users to manage project stakeholders, including people, organizations, and roles.
+
+Groups
+^^^^^^
+
+The Groups panel lists the project's groups, and lets users create, edit, nest and remove them, assign
+objects to them, and manage their property and quantity sets.
 
 Grouping and Filtering
 ^^^^^^^^^^^^^^^^^^^^^^
