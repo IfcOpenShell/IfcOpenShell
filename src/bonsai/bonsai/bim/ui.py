@@ -1187,7 +1187,7 @@ class BIM_PT_tab_collaboration(Panel):
 
 class BIM_PT_tab_grouping_and_filtering(Panel):
     bl_idname = "BIM_PT_tab_grouping_and_filtering"
-    bl_label = "Grouping and Filtering"
+    bl_label = "Search and Selection"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
