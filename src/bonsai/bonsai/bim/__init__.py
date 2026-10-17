@@ -47,6 +47,7 @@ modules = {
     "georeference": None,
     "context": None,
     "drawing": None,
+    "status_render": None,
     "misc": None,
     "attribute": None,
     "type": None,
