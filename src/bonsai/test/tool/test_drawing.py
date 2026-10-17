@@ -450,6 +450,15 @@ class TestGetBodyContext(NewFile):
         tool.Ifc.set(ifc)
         assert subject.get_body_context() == context
 
+    def test_creating_the_context_when_the_file_has_none(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        context = subject.get_body_context()
+        assert context.is_a("IfcGeometricRepresentationSubContext")
+        assert (context.ContextType, context.ContextIdentifier, context.TargetView) == ("Model", "Body", "MODEL_VIEW")
+        assert subject.get_body_context() == context
+
 
 class TestGetDocumentUri(NewFile):
     def test_run(self):
