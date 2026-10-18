@@ -27,16 +27,19 @@ class TestAssignSceneUnits:
         unit.get_scene_unit_name("VOLUMEUNIT").should_be_called().will_return("volume_name")
         unit.get_scene_unit_name("MASSUNIT").should_be_called().will_return("mass_name")
         unit.get_scene_unit_name("TIMEUNIT").should_be_called().will_return("time_name")
+        unit.get_scene_unit_name("PLANEANGLEUNIT").should_be_called().will_return("angle_name")
         unit.is_si_unit("length_name").should_be_called().will_return(True)
         unit.is_si_unit("area_name").should_be_called().will_return(True)
         unit.is_si_unit("volume_name").should_be_called().will_return(True)
         unit.is_si_unit("mass_name").should_be_called().will_return(True)
         unit.is_si_unit("time_name").should_be_called().will_return(True)
+        unit.is_si_unit("angle_name").should_be_called().will_return(True)
         unit.get_scene_unit_si_prefix("length_name").should_be_called().will_return("length_prefix")
         unit.get_scene_unit_si_prefix("area_name").should_be_called().will_return("area_prefix")
         unit.get_scene_unit_si_prefix("volume_name").should_be_called().will_return("volume_prefix")
         unit.get_scene_unit_si_prefix("mass_name").should_be_called().will_return("mass_prefix")
         unit.get_scene_unit_si_prefix("time_name").should_be_called().will_return("time_prefix")
+        unit.get_scene_unit_si_prefix("angle_name").should_be_called().will_return(None)
         ifc.run("unit.add_si_unit", unit_type="LENGTHUNIT", prefix="length_prefix").should_be_called().will_return(
             "lengthunit"
         )
@@ -52,8 +55,11 @@ class TestAssignSceneUnits:
         ifc.run("unit.add_si_unit", unit_type="TIMEUNIT", prefix="time_prefix").should_be_called().will_return(
             "timeunit"
         )
+        ifc.run("unit.add_si_unit", unit_type="PLANEANGLEUNIT", prefix=None).should_be_called().will_return(
+            "planeangleunit"
+        )
         ifc.run(
-            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "massunit", "timeunit"]
+            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "massunit", "timeunit", "planeangleunit"]
         ).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
@@ -63,6 +69,7 @@ class TestAssignSceneUnits:
         unit.get_scene_unit_name("VOLUMEUNIT").should_be_called().will_return(None)
         unit.get_scene_unit_name("MASSUNIT").should_be_called().will_return(None)
         unit.get_scene_unit_name("TIMEUNIT").should_be_called().will_return(None)
+        unit.get_scene_unit_name("PLANEANGLEUNIT").should_be_called().will_return(None)
         unit.is_si_unit("length_name").should_be_called().will_return(True)
         unit.get_scene_unit_si_prefix("length_name").should_be_called().will_return("length_prefix")
         ifc.run("unit.add_si_unit", unit_type="LENGTHUNIT", prefix="length_prefix").should_be_called().will_return(
@@ -77,18 +84,21 @@ class TestAssignSceneUnits:
         unit.get_scene_unit_name("VOLUMEUNIT").should_be_called().will_return("volume_name")
         unit.get_scene_unit_name("MASSUNIT").should_be_called().will_return("mass_name")
         unit.get_scene_unit_name("TIMEUNIT").should_be_called().will_return("time_name")
+        unit.get_scene_unit_name("PLANEANGLEUNIT").should_be_called().will_return("angle_name")
         unit.is_si_unit("length_name").should_be_called().will_return(False)
         unit.is_si_unit("area_name").should_be_called().will_return(False)
         unit.is_si_unit("volume_name").should_be_called().will_return(False)
         unit.is_si_unit("mass_name").should_be_called().will_return(False)
         unit.is_si_unit("time_name").should_be_called().will_return(False)
+        unit.is_si_unit("angle_name").should_be_called().will_return(False)
         ifc.run("unit.add_conversion_based_unit", name="length_name").should_be_called().will_return("lengthunit")
         ifc.run("unit.add_conversion_based_unit", name="area_name").should_be_called().will_return("areaunit")
         ifc.run("unit.add_conversion_based_unit", name="volume_name").should_be_called().will_return("volumeunit")
         ifc.run("unit.add_conversion_based_unit", name="mass_name").should_be_called().will_return("massunit")
         ifc.run("unit.add_conversion_based_unit", name="time_name").should_be_called().will_return("timeunit")
+        ifc.run("unit.add_conversion_based_unit", name="angle_name").should_be_called().will_return("planeangleunit")
         ifc.run(
-            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "massunit", "timeunit"]
+            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "massunit", "timeunit", "planeangleunit"]
         ).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
@@ -99,6 +109,7 @@ class TestAssignSceneUnits:
         unit.get_scene_unit_name("VOLUMEUNIT").should_be_called().will_return(None)
         unit.get_scene_unit_name("MASSUNIT").should_be_called().will_return(None)
         unit.get_scene_unit_name("TIMEUNIT").should_be_called().will_return(None)
+        unit.get_scene_unit_name("PLANEANGLEUNIT").should_be_called().will_return(None)
         unit.is_si_unit("length_name").should_be_called().will_return(True)
         unit.is_si_unit("area_name").should_be_called().will_return(False)
         unit.get_scene_unit_si_prefix("length_name").should_be_called().will_return("length_prefix")

@@ -43,7 +43,7 @@ def _get_distance_parser(grammar: str) -> Lark:
 
 
 class Unit(bonsai.core.tool.Unit):
-    UNIT_TYPE = Literal["LENGTHUNIT", "AREAUNIT", "VOLUMEUNIT", "MASSUNIT", "TIMEUNIT"]
+    UNIT_TYPE = Literal["LENGTHUNIT", "AREAUNIT", "VOLUMEUNIT", "MASSUNIT", "TIMEUNIT", "PLANEANGLEUNIT"]
 
     @staticmethod
     def format_distance(meters: float, use_imperial: bool = None, **kwargs) -> str:
@@ -355,6 +355,8 @@ class Unit(bonsai.core.tool.Unit):
             if len(name) > len("METRE") and name.endswith("METRE"):
                 return f"{name[:-5]}/METRE"
             return name
+        if unit_type == "PLANEANGLEUNIT":
+            return "degree" if bpy.context.scene.unit_settings.system_rotation == "DEGREES" else "RADIAN"
         bim_props = tool.Blender.get_bim_props()
         if (name := getattr(bim_props, f"{unit_type[:-4].lower()}_unit")) != "NONE":
             return name
