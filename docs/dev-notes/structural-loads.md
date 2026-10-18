@@ -523,6 +523,25 @@ where Bonsai's eighths would measure from the vertical.
   after one, moves are not solved again, nor is a move a solve itself made. Moving a point to
   where it is already does nothing, so a solve does not set off another.
 
+## 27. Reference topology and an angle unit
+
+Found when a model was imported into RFEM 6.16, whose import report gave an error and a warning.
+
+- **Topology labelled `'Reference'`.** `IfcStructuralItem`'s topology use definitions (IFC4 and
+  4.3) label a structural item's vertex, edge or face `'Reference'`, with type `'Vertex'`, `'Edge'`
+  or `'Face'`. Add Element put them in the context chosen in its dialog, Model/Body by default,
+  so points were written `'Body'`/`'Vertex'` and RFEM did not know what to do with the vertex.
+  The Vertex, Edge and Face templates now always use Model/Reference/GRAPH_VIEW (GRAPH_VIEW being
+  IFC's view for structural analysis models), made by `ensure_representation_contexts` if
+  missing. Existing files are left as they are; ifc_structural_mechanics looks for `'Reference'`
+  first but accepts any representation of the right type.
+- **A plane angle unit.** New projects were given length, area, volume, mass and time units but
+  no angle unit, so a reader had to guess degrees or radians. Scene units now include one, from
+  Blender's Rotation setting: `degree`, or SI `RADIAN`.
+- **Not Bonsai's:** RFEM also noted the three point loads as a type it does not implement; they
+  are ordinary `IfcStructuralLoadSingleForce`s, so RFEM probably does not import point loads on
+  nodes.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through

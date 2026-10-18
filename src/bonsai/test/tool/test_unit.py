@@ -192,6 +192,12 @@ class TestGetSceneUnitName(NewFile):
         props.time_unit = "NONE"
         assert not subject.get_scene_unit_name("TIMEUNIT")
 
+    def test_getting_a_plane_angle_name_from_the_rotation_units(self):
+        bpy.context.scene.unit_settings.system_rotation = "DEGREES"
+        assert subject.get_scene_unit_name("PLANEANGLEUNIT") == "degree"
+        bpy.context.scene.unit_settings.system_rotation = "RADIANS"
+        assert subject.get_scene_unit_name("PLANEANGLEUNIT") == "RADIAN"
+
 
 class TestGetSceneUnitSIPrefix:
     def test_run(self):

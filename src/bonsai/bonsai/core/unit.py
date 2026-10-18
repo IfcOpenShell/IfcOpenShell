@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 def assign_scene_units(ifc: type[tool.Ifc], unit: type[tool.Unit]) -> None:
     units = []
-    for unit_type in ["LENGTHUNIT", "AREAUNIT", "VOLUMEUNIT", "MASSUNIT", "TIMEUNIT"]:
+    for unit_type in ["LENGTHUNIT", "AREAUNIT", "VOLUMEUNIT", "MASSUNIT", "TIMEUNIT", "PLANEANGLEUNIT"]:
         if name := unit.get_scene_unit_name(unit_type):
             if unit.is_si_unit(name):
                 units.append(
