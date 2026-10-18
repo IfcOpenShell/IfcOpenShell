@@ -1,7 +1,7 @@
 # IfcOpenShell C++ SDK for Linux
 
 Extract the complete zip. You need a C++17 compiler compatible with GCC 11's
-libstdc++ ABI, CMake >= 3.21, and Make or Ninja. The host must provide glibc >=
+libstdc++ ABI, CMake >= 3.24, and Make or Ninja. The host must provide glibc >=
 2.34 and libstdc++ >= the build compiler's version (see `build-info.json`).
 Separate archives are built for x86-64 and AArch64. Python is not needed.
 
