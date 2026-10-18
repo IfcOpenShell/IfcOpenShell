@@ -3,7 +3,7 @@
 set -euo pipefail
 
 archive_dir="$(cd "$1" && pwd)"
-mapfile -t archives < <(find "$archive_dir" -name '*.zip' -type f)
+mapfile -t archives < <(find "$archive_dir" -maxdepth 1 -name '*.zip' -type f)
 if [ "${#archives[@]}" -ne 1 ]; then
   echo "Expected one SDK archive in $archive_dir" >&2
   exit 1

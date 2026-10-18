@@ -173,13 +173,13 @@ jobs:
           mkdir -p /opt/cmake
           tar -xzf /tmp/cmake.tar.gz --strip-components=1 -C /opt/cmake
           echo /opt/cmake/bin >> "$GITHUB_PATH"
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ifcopenshell-cpp-${{ matrix.arch }}
           path: package
       - name: Verify SDK in clean Ubuntu container
         shell: bash
-        run: bash nix/test-cpp-sdk.sh package
+        run: |
+          unzip -p package/*.zip '*/share/ifcopenshell/build-recipe/test-cpp-sdk.sh' > /tmp/test-cpp-sdk.sh
+          test -s /tmp/test-cpp-sdk.sh
+          bash /tmp/test-cpp-sdk.sh package
