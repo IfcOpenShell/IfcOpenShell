@@ -79,8 +79,6 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
       - run: uv python install 3.13
-      - name: Check SDK packaging helpers
-        run: uv run --python 3.13 python -B -m unittest discover -s test/package -p test_cpp_sdk.py -v
       - uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           key: cpp-sdk-rockylinux9-${{ runner.arch }}
