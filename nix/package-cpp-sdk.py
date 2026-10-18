@@ -49,6 +49,28 @@ def relocate_cmake(root, prefixes):
         path.write_text(content)
 
 
+def normalize_boost(prefix):
+    # build-all.py uses b2 stage and copies headers next to lib/. Its generated
+    # boost_headers config still points back into the Boost source tree.
+    # Give the SDK a conventional include/boost tree and repair that config.
+    staged_headers = prefix / "boost"
+    if staged_headers.is_dir():
+        (prefix / "include").mkdir(exist_ok=True)
+        shutil.move(staged_headers, prefix / "include" / "boost")
+    for config in prefix.rglob("*-config.cmake"):
+        original = config.read_text()
+        if "get_filename_component(_BOOST_INCLUDEDIR" not in original:
+            continue
+        content, count = re.subn(
+            r'get_filename_component\(_BOOST_INCLUDEDIR\s+"[^"]*"\s+ABSOLUTE\)',
+            'get_filename_component(_BOOST_INCLUDEDIR "${CMAKE_CURRENT_LIST_DIR}/../../../include" ABSOLUTE)',
+            original,
+        )
+        if count != 1:
+            raise RuntimeError(f"Cannot relocate Boost headers in {config}")
+        config.write_text(content)
+
+
 def configure_package(root, dependencies):
     configs = list(root.glob("lib*/cmake/IfcOpenShell/IfcOpenShellConfig.cmake"))
     if len(configs) != 1:
@@ -187,6 +209,8 @@ def main():
         source = Path(location).resolve()
         target = root / "third-party" / source.name
         shutil.copytree(source, target, symlinks=False)
+        if dependency == "boost":
+            normalize_boost(target)
         prefixes[source] = target
         dependencies.append(target)
     relocate_cmake(root, prefixes)
