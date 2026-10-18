@@ -560,6 +560,26 @@ nothing.
   model's (its `SharedPlacement`), so its 25 kN load, +25000 in Z, acts downwards. Bonsai reads global
   as Blender's world axes and draws it upwards. That is the next change.
 
+## 29. The analysis model's axes
+
+- **Global means the model's axes.** `IfcStructuralActivity` gives global load components in the
+  coordinate system shared by the analysis model's items, its `SharedPlacement`. RFEM places its models
+  with Z down, so its +25000 N in Z is a load downwards; Bonsai drew it upwards, reading global as
+  Blender's world axes.
+- **Turned at the edge.** Everything Bonsai does with a point force, drawing it, Edit Load, Edit
+  Resultant, kept moments, an item's Applied Loads and reports, works in Blender's axes, as the user
+  sees them (X right, Z up), and the components are turned to and from the model's axes only where they
+  are read from or written to the file: `tool.Structural.get_force`, `to_blender_axes`, `to_model_axes`,
+  with `get_model_rotation` finding the model through the item the load acts on. A force typed in Edit
+  Load means what it shows. Previews hold attributes as the file would, so they are turned the same way.
+- **Bonsai's own models are left alone:** they have no `SharedPlacement`, or one along the world axes,
+  so nothing turns. Apply Load now writes a new force once it acts on its items, whose model gives its axes.
+- **Not yet:** linear and planar loads on curve and surface members, and point axes
+  (`ConditionCoordinateSystem`) in a turned model, which are also given in the model's axes, still read
+  them as Blender's. And Bonsai still gives each structural item its own placement, where IFC expects all
+  of a model's items to share its `SharedPlacement`, with points placed by their vertices; that needs a
+  design before it changes.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
