@@ -57,7 +57,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
 	if (inst.as<IfcSchema::IfcSweptDiskSolidPolygonal>()) {
 		auto fr = inst.as<IfcSchema::IfcSweptDiskSolidPolygonal>().FilletRadius();
 		if (fr && *fr > tol) {
-			fillet_loop(loop, *fr);
+			fillet_loop(loop, *fr, tol);
 		}
 	}
 #endif
