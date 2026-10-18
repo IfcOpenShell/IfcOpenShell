@@ -115,35 +115,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          (cd dist && sha256sum --check ./*.zip.sha256)
-          test_root="$(mktemp -d)/relocated sdk"
-          mkdir -p "$test_root"
-          unzip -q dist/*.zip -d "$test_root"
-          sdk_root="$(find "$test_root" -mindepth 1 -maxdepth 1 -type d)"
           install_root="$GITHUB_WORKSPACE/build/Linux/${{ matrix.machine }}/install"
           mv "$install_root" "${install_root}.hidden"
           trap 'mv "${install_root}.hidden" "$install_root"' EXIT
-          unset LD_LIBRARY_PATH CMAKE_PREFIX_PATH
-          cmake -S "$sdk_root/examples" -B "$test_root/examples-build" -G Ninja \
-            -DCMAKE_PREFIX_PATH="$sdk_root" -DCMAKE_BUILD_TYPE=Release
-          cmake --build "$test_root/examples-build" --parallel 2
-          mkdir "$test_root/run"
-          cd "$test_root/run"
-          for binary_dir in "$sdk_root/bin" "$test_root/examples-build"; do
-            "$binary_dir/IfcOpenHouse"
-            test -s IfcOpenHouse.ifc
-            "$binary_dir/IfcParseExamples" IfcOpenHouse.ifc
-            "$binary_dir/IfcAdvancedHouse"
-            test -s IfcAdvancedHouse.ifc
-            "$binary_dir/IfcAlignment"
-            test -s FHWA_Bridge_Geometry_Alignment_Example.ifc
-            "$binary_dir/IfcSimplifiedAlignment"
-            test -s FHWA_Bridge_Geometry_Alignment_Example_Simplified.ifc
-            rm -f ./*.ifc
-          done
-          "$sdk_root/bin/IfcOpenHouse"
-          "$sdk_root/bin/IfcConvert" --yes IfcOpenHouse.ifc model.obj
-          test -s model.obj
+          bash nix/test-cpp-sdk.sh dist
       - name: Upload SDK
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -163,3 +138,48 @@ jobs:
             cpp-sdk-build.log
             build/Linux/*/logs/latest.log
           retention-days: 7
+
+  consumer:
+    needs: sdk
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: linux64
+            machine: x86_64
+            runner: ubuntu-22.04
+            cmake_sha256: 2dd48ccd3e3d872ee4cc916f3f4e24812612421007e895f82bf9fc7e49831d62
+          - arch: linuxarm64
+            machine: aarch64
+            runner: ubuntu-22.04-arm
+            cmake_sha256: 7b91a212b9e8ca38c1482ae40ff2d3e33e9d1c7b337b39f74bd4f34fd070bb1d
+    runs-on: ${{ matrix.runner }}
+    # This image has no project dependencies or graphics development packages.
+    # Native runners also avoid relying on emulation for ARM verification.
+    container: ubuntu:22.04
+    steps:
+      - name: Install consumer tools
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          CMAKE_SHA256: ${{ matrix.cmake_sha256 }}
+          CMAKE_MACHINE: ${{ matrix.machine }}
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends g++ ninja-build unzip curl ca-certificates
+          curl --fail --location --retry 3 \
+            "https://github.com/Kitware/CMake/releases/download/v3.26.6/cmake-3.26.6-linux-${CMAKE_MACHINE}.tar.gz" \
+            --output /tmp/cmake.tar.gz
+          echo "$CMAKE_SHA256  /tmp/cmake.tar.gz" | sha256sum --check
+          mkdir -p /opt/cmake
+          tar -xzf /tmp/cmake.tar.gz --strip-components=1 -C /opt/cmake
+          echo /opt/cmake/bin >> "$GITHUB_PATH"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ifcopenshell-cpp-${{ matrix.arch }}
+          path: package
+      - name: Verify SDK in clean Ubuntu container
+        shell: bash
+        run: bash nix/test-cpp-sdk.sh package

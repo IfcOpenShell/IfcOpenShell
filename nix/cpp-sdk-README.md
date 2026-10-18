@@ -54,3 +54,6 @@ Maintainer: run **Build IfcOpenShell C++ SDK (Linux)** in GitHub Actions. It bui
 both architectures and uploads a zip plus SHA-256 checksum for each. CI extracts
 each archive under a new path, hides the original installation, rebuilds all
 examples, and runs them before publishing the artifact.
+Separate consumer jobs repeat these checks on native x86-64 and AArch64 runners
+in clean Ubuntu containers without project dependencies or graphics development
+packages.

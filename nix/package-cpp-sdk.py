@@ -263,7 +263,11 @@ def main():
     shutil.copy2(REPO / "nix" / "cpp-sdk-README.md", root / "README.md")
     recipe = root / "share" / "ifcopenshell" / "build-recipe"
     recipe.mkdir(parents=True)
-    for path in (REPO / "nix" / "build-all.py", REPO / ".github" / "workflows" / "build-ifcopenshell-cpp-linux.yml"):
+    for path in (
+        REPO / "nix" / "build-all.py",
+        REPO / "nix" / "test-cpp-sdk.sh",
+        REPO / ".github" / "workflows" / "build-ifcopenshell-cpp-linux.yml",
+    ):
         shutil.copy2(path, recipe)
     metadata = {
         "version": version,
