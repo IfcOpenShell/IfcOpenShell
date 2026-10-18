@@ -1,8 +1,10 @@
 #include "profile_helper.h"
 
+#include <algorithm>
+
 using namespace ifcopenshell::geom;
 
-taxonomy::loop::ptr ifcopenshell::geom::fillet_loop(taxonomy::loop::ptr loop, double radius) {
+taxonomy::loop::ptr ifcopenshell::geom::fillet_loop(taxonomy::loop::ptr loop, double radius, double tolerance) {
 	const bool closed = loop->closed.value_or(
 		std::get<taxonomy::point3::ptr>(loop->children.front()->start) == std::get<taxonomy::point3::ptr>(loop->children.back()->end));
 	// polygon_from_points() shares a point between the end of one edge and the start
@@ -33,11 +35,20 @@ taxonomy::loop::ptr ifcopenshell::geom::fillet_loop(taxonomy::loop::ptr loop, do
 			auto ba_ = p0 - p1a;
 			auto bc_ = p2 - p1b;
 
+			if (ba_.norm() < tolerance || bc_.norm() < tolerance) {
+				continue;
+			}
+
 			auto ba = ba_.normalized();
 			auto bc = bc_.normalized();
 
-			const double angle = std::acos(ba.dot(bc));
+			const double angle = std::acos(std::clamp(ba.dot(bc), -1., 1.));
 			const double inset = *p.radius / std::tan(angle / 2.);
+
+			// A straight corner yields an arc shorter than the tolerance
+			if ((ba - bc).norm() * inset < tolerance) {
+				continue;
+			}
 
 			std::get<taxonomy::point3::ptr>(p.previous->end)->components() += ba * inset;
 			std::get<taxonomy::point3::ptr>(p.next->start)->components() += bc * inset;
