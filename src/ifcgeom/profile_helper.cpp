@@ -3,6 +3,11 @@
 using namespace ifcopenshell::geom;
 
 taxonomy::loop::ptr ifcopenshell::geom::fillet_loop(taxonomy::loop::ptr loop, double radius) {
+	// polygon_from_points() shares a point between the end of one edge and the start
+	// of the next. The fillet splits that point into two tangent points.
+	for (auto& e : loop->children) {
+		e->end = taxonomy::make<taxonomy::point3>(*std::get<taxonomy::point3::ptr>(e->end)->components_);
+	}
 	std::vector<profile_point_with_edges_3d> pps(loop->children.size());
 	const auto child_count = static_cast<int>(loop->children.size());
 	for (int b = 0; b < child_count; ++b) {
