@@ -1585,7 +1585,7 @@ apply_load_group_items: list[tuple[str, str, str]] = []
 def get_apply_load_groups(self, context: bpy.types.Context) -> list[tuple[str, str, str]]:
     global apply_load_group_items
     model = tool.Structural.get_current_structural_analysis_model()
-    groups = list(model.LoadedBy or []) if model else list(tool.Ifc.get().by_type("IfcStructuralLoadCase"))
+    groups = tool.Structural.get_load_cases(model)
     apply_load_group_items = []
     for group in groups:
         apply_load_group_items.append((str(group.id()), group.Name or "Unnamed", group.is_a()))
@@ -1667,7 +1667,7 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
             )
         else:
             group = ifc_file.by_id(int(self.load_group))
-        if group.is_a("IfcStructuralLoadCase") and not group.LoadGroupFor:
+        if tool.Structural.is_load_case(group) and not group.LoadGroupFor:
             tool.Structural.assign_to_current_structural_analysis_model(group)
 
         load_class, activity_class, _, _ = APPLY_LOAD_CLASSES[category]
@@ -1745,7 +1745,7 @@ def get_edit_load_groups(self, context: bpy.types.Context) -> list[tuple[str, st
     global edit_load_group_items
     edit_load_group_items = []
     listed = set()
-    for load_case in tool.Ifc.get().by_type("IfcStructuralLoadCase"):
+    for load_case in tool.Structural.get_load_cases():
         edit_load_group_items.append((str(load_case.id()), load_case.Name or "Unnamed", load_case.is_a()))
         listed.add(load_case)
         for rel in load_case.IsGroupedBy:

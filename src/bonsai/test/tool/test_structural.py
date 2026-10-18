@@ -21,6 +21,7 @@
 import math
 
 import ifcopenshell
+import ifcopenshell.api.group
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
 import numpy as np
@@ -495,6 +496,56 @@ class TestMomentCentre(NewFile):
         assert subject.get_moment_centre(case) == point
         subject.set_moment_centre(case, None)
         assert subject.get_moment_centre(case) is None
+
+
+class TestLoadCases(NewFile):
+    def make_loaded_model(self, ifc_file, case_class, predefined_type):
+        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc_file)
+        point = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralPointConnection")
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc_file, products=[point], structural_analysis_model=model
+        )
+        case = ifcopenshell.api.root.create_entity(ifc_file, ifc_class=case_class, predefined_type=predefined_type)
+        load = ifcopenshell.api.structural.add_structural_load(ifc_file, ifc_class="IfcStructuralLoadSingleForce")
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            ifc_file, applied_load=load, structural_member=point, ifc_class="IfcStructuralPointAction"
+        )
+        ifcopenshell.api.group.assign_group(ifc_file, products=[activity], group=case)
+        return model, point, case, activity
+
+    def test_a_load_group_typed_load_case_is_one(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        group = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralLoadGroup")
+        group.PredefinedType = "LOAD_CASE"
+        other = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralLoadGroup")
+        other.PredefinedType = "LOAD_GROUP"
+        case = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralLoadCase")
+        assert subject.is_load_case(group) and subject.is_load_case(case) and not subject.is_load_case(other)
+        assert set(subject.get_load_cases()) == {group, case}
+
+    def test_cases_loading_a_model_it_does_not_list(self):
+        # As RFEM writes them: a load group typed LOAD_CASE, and the model's LoadedBy left empty.
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        model, point, case, activity = self.make_loaded_model(ifc_file, "IfcStructuralLoadGroup", "LOAD_CASE")
+        assert not model.LoadedBy
+        assert subject.get_load_cases(model) == [case]
+        assert subject.get_loaded_items(case) == {point}
+        assert subject.get_activity_load_case(activity) == case
+
+    def test_listed_groups_come_first_and_unrelated_cases_are_left_out(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        model, _, case, _ = self.make_loaded_model(ifc_file, "IfcStructuralLoadCase", "LOAD_CASE")
+        combination = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralLoadGroup")
+        combination.PredefinedType = "LOAD_COMBINATION"
+        ifcopenshell.api.structural.assign_structural_load_group(
+            ifc_file, load_groups=[combination], structural_analysis_model=model
+        )
+        elsewhere = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralLoadCase")
+        assert subject.get_load_cases(model) == [combination, case]
+        assert elsewhere not in subject.get_load_cases(model)
 
 
 class TestSolveMomentUnknown(NewFile):

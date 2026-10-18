@@ -67,7 +67,7 @@ class LoadGroupDecorationData:
         props = tool.Structural.get_structural_props()
         if props.activity_type == "Action":
             # Without an analysis model, loads can still be shown by load case.
-            groups = (m.LoadedBy or []) if m else tool.Ifc.get().by_type("IfcStructuralLoadCase")
+            groups = tool.Structural.get_load_cases(m)
             for g in groups:
                 ret.append((str(g.id()), (g.Name or "Unnamed") + kinds.get(g.PredefinedType, ""), ""))
                 related_objects = [rel.RelatedObjects for rel in g.IsGroupedBy]
@@ -213,12 +213,12 @@ class StructuralItemLoadsData:
         cls, group: ifcopenshell.entity_instance
     ) -> tuple[ifcopenshell.entity_instance, Union[ifcopenshell.entity_instance, None]]:
         """The load case a load group belongs to, and the group itself if it is a group within the case"""
-        if not group.is_a("IfcStructuralLoadCase"):
+        if not tool.Structural.is_load_case(group):
             for rel in group.HasAssignments:
                 if (
                     rel.is_a("IfcRelAssignsToGroup")
                     and rel.RelatingGroup
-                    and rel.RelatingGroup.is_a("IfcStructuralLoadCase")
+                    and tool.Structural.is_load_case(rel.RelatingGroup)
                 ):
                     return rel.RelatingGroup, group
         return group, None
@@ -320,8 +320,8 @@ class StructuralItemLoadsData:
         loaded = {entry["id"] for entry in cls.load_cases()}
         return [
             g.Name or "Unnamed"
-            for g in model.LoadedBy or []
-            if g.is_a("IfcStructuralLoadCase") and g.id() not in loaded
+            for g in tool.Structural.get_load_cases(model)
+            if tool.Structural.is_load_case(g) and g.id() not in loaded
         ]
 
 
@@ -396,7 +396,7 @@ class StructuralLoadCasesData:
     @classmethod
     def load_cases(cls):
         results = []
-        for load_case in tool.Ifc.get().by_type("IfcStructuralLoadCase"):
+        for load_case in tool.Structural.get_load_cases():
             load_groups = []
             activities = []
             for rel in load_case.IsGroupedBy or []:
