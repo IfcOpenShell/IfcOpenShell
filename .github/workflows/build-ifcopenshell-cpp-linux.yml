@@ -70,10 +70,11 @@ jobs:
     steps:
       - name: Install build tools
         run: |
+          echo "fastestmirror=True" >> /etc/dnf/dnf.conf
           dnf install -y epel-release
           dnf install -y --enablerepo=crb gcc gcc-c++ git autoconf automake bison byacc \
             make cmake ninja-build patch bzip2 xz zip unzip findutils binutils patchelf \
-            zlib-devel libxml2-devel openssl-devel libffi-devel
+            zlib-devel libxml2-devel openssl-devel libffi-devel mesa-libGL-devel mesa-libEGL-devel
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
