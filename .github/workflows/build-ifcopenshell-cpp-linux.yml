@@ -94,6 +94,15 @@ jobs:
       # Build dependencies from source: binary caches omit source license
       # notices. Keep the sources until packaging has collected those notices.
       # An explicit target excludes Python, SWIG, Qt, and BonsaiViewer.
+      - name: Build C++ dependencies
+        shell: bash
+        run: |
+          set -o pipefail
+          trap 'result=$?; if [ "$result" -ne 0 ]; then tail -n 120 build/Linux/*/logs/latest.log; fi' EXIT
+          CFLAGS="-O3" CXXFLAGS="-O3" uv run --python 3.13 nix/build-all.py \
+            occ boost eigen json libxml2 rocksdb manifold cgal OpenCOLLADA \
+            --shared --use-ninja --build-cfg Release \
+            2>&1 | tee cpp-sdk-dependencies.log
       - name: Build C++ libraries, dependencies, tools, and examples
         shell: bash
         run: |
@@ -135,6 +144,7 @@ jobs:
         with:
           name: cpp-sdk-build-log-${{ matrix.arch }}
           path: |
+            cpp-sdk-dependencies.log
             cpp-sdk-build.log
             build/Linux/*/logs/latest.log
           retention-days: 7
