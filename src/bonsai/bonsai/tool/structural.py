@@ -389,6 +389,44 @@ class Structural(bonsai.core.tool.Structural):
         return x * c - z * s, x * s + z * c
 
     @classmethod
+    def is_load_case(cls, group: ifcopenshell.entity_instance) -> bool:
+        """Whether a load group is a load case: an IfcStructuralLoadCase, or a load group typed LOAD_CASE, as
+        some programs, such as RFEM, write them"""
+        return group.is_a("IfcStructuralLoadCase") or (
+            group.is_a("IfcStructuralLoadGroup") and group.PredefinedType == "LOAD_CASE"
+        )
+
+    @classmethod
+    def get_load_cases(
+        cls, model: Union[ifcopenshell.entity_instance, None] = None
+    ) -> list[ifcopenshell.entity_instance]:
+        """The load groups loading an analysis model: those it is loaded by, then load cases with loads on its
+        items that it does not list, as some programs leave LoadedBy empty. Without a model, every load case."""
+        cases = [g for g in tool.Ifc.get().by_type("IfcStructuralLoadGroup") if cls.is_load_case(g)]
+        if model is None:
+            return cases
+        loaded_by = list(model.LoadedBy or [])
+        items = {obj for rel in model.IsGroupedBy or [] for obj in rel.RelatedObjects}
+        return loaded_by + [c for c in cases if c not in loaded_by and items & cls.get_loaded_items(c)]
+
+    @classmethod
+    def get_loaded_items(cls, group: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+        """The structural items with loads in a load group, directly or in the groups within it"""
+        items, groups, seen = set(), [group], set()
+        while groups:
+            group = groups.pop()
+            if group.id() in seen:
+                continue
+            seen.add(group.id())
+            for rel in group.IsGroupedBy or []:
+                for obj in rel.RelatedObjects:
+                    if obj.is_a("IfcStructuralLoadGroup"):
+                        groups.append(obj)
+                    elif obj.is_a("IfcStructuralActivity") and (connects := obj.AssignedToStructuralItem):
+                        items.add(connects[0].RelatingElement)
+        return items
+
+    @classmethod
     def get_activity_load_case(
         cls, activity: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
@@ -396,10 +434,10 @@ class Structural(bonsai.core.tool.Structural):
         for rel in activity.HasAssignments:
             if not (rel.is_a("IfcRelAssignsToGroup") and (group := rel.RelatingGroup)):
                 continue
-            if group.is_a("IfcStructuralLoadCase"):
+            if cls.is_load_case(group):
                 return group
             for parent in group.HasAssignments if group.is_a("IfcStructuralLoadGroup") else []:
-                if parent.is_a("IfcRelAssignsToGroup") and parent.RelatingGroup.is_a("IfcStructuralLoadCase"):
+                if parent.is_a("IfcRelAssignsToGroup") and cls.is_load_case(parent.RelatingGroup):
                     return parent.RelatingGroup
         return None
 
@@ -488,7 +526,7 @@ class Structural(bonsai.core.tool.Structural):
             seen.add(group.id())
             for rel in group.IsGroupedBy or []:
                 for obj in rel.RelatedObjects:
-                    if obj.is_a("IfcStructuralLoadGroup") and not obj.is_a("IfcStructuralLoadCase"):
+                    if obj.is_a("IfcStructuralLoadGroup") and not cls.is_load_case(obj):
                         groups.append(obj)
                     elif obj.is_a("IfcStructuralActivity") and (connects := obj.AssignedToStructuralItem):
                         if (item := connects[0].RelatingElement) and item.is_a("IfcStructuralPointConnection"):

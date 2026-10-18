@@ -90,7 +90,7 @@ def get_report_data(
     ifc_file = tool.Ifc.get()
     unit = get_force_unit_symbol()
     cases = []
-    for case in [g for g in model.LoadedBy or [] if g.is_a("IfcStructuralLoadCase")]:
+    for case in [g for g in tool.Structural.get_load_cases(model) if tool.Structural.is_load_case(g)]:
         points = []
         drawing = None
         for item in tool.Structural.get_point_items(case):
