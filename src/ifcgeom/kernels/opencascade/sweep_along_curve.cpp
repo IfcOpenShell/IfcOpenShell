@@ -30,6 +30,7 @@
 #include <TopExp.hxx>
 #include <Geom_Circle.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
+#include <BRepBuilderAPI_MakePolygon.hxx>
 
 using namespace ifcopenshell::geom;
 using namespace ifcopenshell::geom::kernels;
@@ -80,6 +81,7 @@ namespace {
 		}
 		return false;
 	}
+
 }
 
 bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, TopoDS_Shape& result) {
@@ -163,6 +165,33 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 
 	gp_Trsf directrix;
 	TopoDS_Wire wire = std::get<TopoDS_Wire>(w);
+	const bool has_circular_segments = contains_circular_segments(wire);
+	const bool is_c1_continuous = wire_is_c1_continuous(wire, 1.e-2);
+	// BRepOffsetAPI_MakePipeShell in RightCorner mode mitres two cylinders
+	// exactly, but trimming a torus against a cylinder goes through a numeric
+	// surface intersection that can fail silently, leaving the swept faces
+	// extended past the corner and untrimmed. Sweeping the tessellated
+	// directrix instead turns every corner into a cylinder-cylinder corner.
+	if (has_circular_segments && !is_c1_continuous) {
+		if (auto l = std::dynamic_pointer_cast<taxonomy::loop>(curve)) {
+			auto polygon = l->to_polygon(settings_);
+			const bool closed = polygon.size() > 2 && (polygon.front().ccomponents() - polygon.back().ccomponents()).norm() < settings_.get<settings::Precision>().get();
+			if (closed) {
+				polygon.pop_back();
+			}
+			BRepBuilderAPI_MakePolygon mp;
+			for (const auto& p : polygon) {
+				mp.Add(convert_xyz<gp_Pnt>(p));
+			}
+			if (closed) {
+				mp.Close();
+			}
+			if (mp.IsDone()) {
+				wire = mp.Wire();
+				logger_.message(ifcopenshell::logger::LOG_NOTICE, "GEO", 328, "Directrix with circular segments is not tangent continuous, circular segments approximated by chords", scs->instance);
+			}
+		}
+	}
     TopoDS_Vertex first_vertex, last_vertex;
     TopExp::Vertices(wire, first_vertex, last_vertex);
     const bool closed_directrix = !first_vertex.IsNull() && first_vertex.IsSame(last_vertex);
@@ -264,7 +293,7 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 
 			BRepOffsetAPI_MakePipeShell builder(wire);
 			builder.Add(section);
-            builder.SetTransitionMode(contains_circular_segments(wire) && wire_is_c1_continuous(wire, 1.e-2) ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
+            builder.SetTransitionMode(has_circular_segments && is_c1_continuous ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
 			if (directrix_on_plane) {
 				builder.SetMode(pln.Axis().Direction());
 			} else if (!is_plane) {
