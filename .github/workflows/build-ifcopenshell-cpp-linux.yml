@@ -116,6 +116,7 @@ jobs:
           name: cpp-sdk-documentation
           path: cpp-documentation
       - name: Package SDK zip and checksum
+        id: package
         run: |
           uv run --python 3.13 nix/package-cpp-sdk.py \
             --install-dir "build/Linux/${{ matrix.machine }}/install" \
@@ -147,6 +148,16 @@ jobs:
             cpp-sdk-dependencies.log
             cpp-sdk-build.log
             build/Linux/*/logs/latest.log
+          retention-days: 7
+      - name: Upload SDK for failure investigation
+        if: failure() && steps.package.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cpp-sdk-debug-${{ matrix.arch }}
+          path: |
+            dist/*.zip
+            dist/*.zip.sha256
+          compression-level: 0
           retention-days: 7
 
   consumer:
