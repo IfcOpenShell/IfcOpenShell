@@ -351,9 +351,8 @@ class BIM_PT_project(Panel):
         col = row.column()
         col.enabled = False
         col.prop(props, "ifc_file", text="")
-        if ifc_path := tool.Ifc.get_path():
-            op = row.operator("wm.path_open", icon="FOLDER_REDIRECT", text="")
-            op.filepath = os.path.dirname(ifc_path)
+        if tool.Ifc.get_path():
+            row.operator("bim.open_ifc_file_folder", icon="FOLDER_REDIRECT", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
         if tool.Blender.get_addon_preferences().save_metadata_blend_file:
