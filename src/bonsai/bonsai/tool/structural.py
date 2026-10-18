@@ -427,6 +427,54 @@ class Structural(bonsai.core.tool.Structural):
         return items
 
     @classmethod
+    def get_model_rotation(cls, load: ifcopenshell.entity_instance) -> Union[np.ndarray, None]:
+        """The rotation from the axes of the analysis model a load acts in to Blender's, where they differ. IFC gives
+        global load components in the model's axes, set by its SharedPlacement; RFEM, for one, points Z down."""
+        for activity in tool.Ifc.get().get_inverse(load):
+            if not activity.is_a("IfcStructuralActivity") or activity.GlobalOrLocal == "LOCAL_COORDS":
+                continue
+            item = connects[0].RelatingElement if (connects := activity.AssignedToStructuralItem) else None
+            for rel in getattr(item, "HasAssignments", None) or []:
+                model = rel.RelatingGroup if rel.is_a("IfcRelAssignsToGroup") else None
+                if model and model.is_a("IfcStructuralAnalysisModel") and model.SharedPlacement:
+                    rotation = ifcopenshell.util.placement.get_placement(model.SharedPlacement)[:3, :3]
+                    return None if np.allclose(rotation, np.eye(3)) else rotation
+        return None
+
+    @classmethod
+    def to_blender_axes(cls, load: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> dict[str, Any]:
+        """Load attributes with their X, Y and Z components turned from the axes of the load's model to Blender's"""
+        return cls.turn_load_attributes(load, attributes, to_model=False)
+
+    @classmethod
+    def to_model_axes(cls, load: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> dict[str, Any]:
+        """Load attributes with their X, Y and Z components turned from Blender's axes to those of the load's model"""
+        return cls.turn_load_attributes(load, attributes, to_model=True)
+
+    @classmethod
+    def turn_load_attributes(
+        cls, load: ifcopenshell.entity_instance, attributes: dict[str, Any], to_model: bool
+    ) -> dict[str, Any]:
+        attributes = dict(attributes)
+        if (rotation := cls.get_model_rotation(load)) is None:
+            return attributes
+        for prefix in ("Force", "Moment"):
+            keys = [f"{prefix}{axis}" for axis in "XYZ"]
+            if any(k in attributes for k in keys):
+                vector = np.array([attributes.get(k) or 0.0 for k in keys])
+                vector = (rotation.T if to_model else rotation) @ vector
+                # A zero the file gave stays one; one it left unset stays unset.
+                given = [attributes.get(k) is not None for k in keys]
+                attributes.update({k: float(v) if (v or g) else None for k, v, g in zip(keys, vector, given)})
+        return attributes
+
+    @classmethod
+    def get_force(cls, load: ifcopenshell.entity_instance) -> tuple[float, float, float]:
+        """A single force load's force, in Blender's axes"""
+        attributes = cls.to_blender_axes(load, {a: getattr(load, a) for a in ("ForceX", "ForceY", "ForceZ")})
+        return tuple(attributes[a] or 0.0 for a in ("ForceX", "ForceY", "ForceZ"))
+
+    @classmethod
     def get_activity_load_case(
         cls, activity: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
@@ -554,7 +602,7 @@ class Structural(bonsai.core.tool.Structural):
                 load = activity.AppliedLoad
                 if not load or not load.is_a("IfcStructuralLoadSingleForce"):
                     continue
-                force = np.array([getattr(load, a) or 0.0 for a in ("ForceX", "ForceY", "ForceZ")])
+                force = np.array(cls.get_force(load))
                 total += cls.get_moment(at, location(obj), force)[0] / length_scale
                 found = True
         return total if found else None

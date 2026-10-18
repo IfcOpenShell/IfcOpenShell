@@ -1128,14 +1128,18 @@ def get_default_load_name(props: "StructuralForceInput", category: str) -> str:
     return f"{', '.join(values) or '0'} {unit}"
 
 
-def get_load_attributes(props: "StructuralForceInput", category: str) -> dict[str, Union[float, None]]:
+def get_load_attributes(
+    props: "StructuralForceInput", category: str, load: Union[ifcopenshell.entity_instance, None] = None
+) -> dict[str, Union[float, None]]:
+    """The attributes of the force in a dialog, entered in Blender's axes, given in those of the load's model"""
     _, _, force_attributes, moment_attributes = APPLY_LOAD_CLASSES[category]
     values = get_force_components(props)
     if props.input_mode == "COMPONENTS":
         values += (props.moment_x, props.moment_y, props.moment_z)
     else:
         values += (0.0, 0.0, 0.0)
-    return {name: value or None for name, value in zip(force_attributes + moment_attributes, values)}
+    attributes = {name: value or None for name, value in zip(force_attributes + moment_attributes, values)}
+    return tool.Structural.to_model_axes(load, attributes) if load else attributes
 
 
 is_normalising_angle = False
@@ -1234,7 +1238,7 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
         self.load_name = get_default_load_name(self, self.load_category)
     # Show the load being edited with the values in the dialog until it is confirmed or cancelled.
     if self.preview_load and self.load_category and LoadsDecorator.is_installed:
-        attributes = get_load_attributes(self, self.load_category)
+        attributes = get_load_attributes(self, self.load_category, tool.Ifc.get().by_id(self.preview_load))
         ShaderInfo.preview = {self.preview_load: attributes}
         # Where a resultant is locked, the unknowns move to keep it, so show them moving too.
         if (activity := get_lock_activity(self)) and self.load_category == "IfcStructuralPointConnection":
@@ -1342,14 +1346,14 @@ def get_resultant_activities(props: "EditStructuralResultant") -> list[ifcopensh
 
 
 def get_force(load: ifcopenshell.entity_instance) -> tuple[float, float, float]:
-    return tuple(getattr(load, a) or 0.0 for a in ("ForceX", "ForceY", "ForceZ"))
+    return tool.Structural.get_force(load)
 
 
 def get_force_attributes(load: ifcopenshell.entity_instance, force: tuple) -> dict[str, Union[float, None]]:
-    """The attributes of a single force load with new force components and its own moments"""
-    attributes = {a: getattr(load, a) for a in ("MomentX", "MomentY", "MomentZ")}
+    """The attributes of a single force load with new force components, in Blender's axes, and its own moments"""
+    attributes = tool.Structural.to_blender_axes(load, {a: getattr(load, a) for a in ("MomentX", "MomentY", "MomentZ")})
     attributes.update({a: value or None for a, value in zip(("ForceX", "ForceY", "ForceZ"), force)})
-    return attributes
+    return tool.Structural.to_model_axes(load, attributes)
 
 
 def solve_resultant(
@@ -1510,8 +1514,10 @@ class StructuralForceInput(get_direction_input("the force", update_force_inputs,
     def get_components(self) -> tuple[float, float, float]:
         return get_force_components(self)
 
-    def get_load_attributes(self, category: str) -> dict[str, Union[float, None]]:
-        return get_load_attributes(self, category)
+    def get_load_attributes(
+        self, category: str, load: Union[ifcopenshell.entity_instance, None] = None
+    ) -> dict[str, Union[float, None]]:
+        return get_load_attributes(self, category, load)
 
     def set_in_plane_inputs(self, x: float, z: float) -> None:
         """Fill the angle and slope inputs from in-plane components, measured from the nearest axis"""
@@ -1674,15 +1680,16 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
         load = ifcopenshell.api.structural.add_structural_load(
             ifc_file, name=self.get_load_name(category), ifc_class=load_class
         )
-        ifcopenshell.api.structural.edit_structural_load(
-            ifc_file, structural_load=load, attributes=self.get_load_attributes(category)
-        )
         activities = [
             ifcopenshell.api.structural.add_structural_activity(
                 ifc_file, ifc_class=activity_class, applied_load=load, structural_member=element
             )
             for element in elements
         ]
+        # Once it acts on its items, whose model gives the axes its values are written in.
+        ifcopenshell.api.structural.edit_structural_load(
+            ifc_file, structural_load=load, attributes=self.get_load_attributes(category, load)
+        )
         ifcopenshell.api.group.assign_group(ifc_file, products=activities, group=group)
         for activity in activities:  # Only an unlocked value is recorded; loads are known unless said.
             tool.Structural.set_locks(activity, self.magnitude_locked, self.direction_locked)
@@ -1981,12 +1988,16 @@ class EditStructuralLoadValues(
             return bpy.ops.bim.enable_editing_structural_load(structural_load=load.id())
         self.load_category = category
         _, _, force_attributes, moment_attributes = APPLY_LOAD_CLASSES[category]
-        self.x, self.y, self.z = (getattr(load, a) or 0.0 for a in force_attributes)
+        # In Blender's axes, as the force is drawn, whatever axes its model gives it in.
+        values = tool.Structural.to_blender_axes(
+            load, {a: getattr(load, a) for a in force_attributes + moment_attributes}
+        )
+        self.x, self.y, self.z = (values[a] or 0.0 for a in force_attributes)
         self.moment_x, self.moment_y, self.moment_z = (
-            (getattr(load, a) or 0.0 for a in moment_attributes) if moment_attributes else (0.0, 0.0, 0.0)
+            (values[a] or 0.0 for a in moment_attributes) if moment_attributes else (0.0, 0.0, 0.0)
         )
         # IFC only stores components, so derive the in-plane inputs from them, from the nearest axis...
-        x, y, z = (getattr(load, a) or 0.0 for a in force_attributes)
+        x, y, z = self.x, self.y, self.z
         self.set_in_plane_inputs(x, z)
         self.input_mode = "COMPONENTS"
         users = [i for i in tool.Ifc.get().get_inverse(load) if i.is_a("IfcStructuralActivity")]
@@ -2129,7 +2140,7 @@ class EditStructuralLoadValues(
         ShaderInfo.preview = {}  # The edit below refreshes the shown loads.
         load = self.get_load()
         category = get_load_category(load)
-        attributes = self.get_load_attributes(category)
+        attributes = self.get_load_attributes(category, load)
         attributes["Name"] = self.get_load_name(category)
         ifc_file = tool.Ifc.get()
         ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
@@ -2234,11 +2245,11 @@ class AddStructuralLoadAtPoint(bpy.types.Operator, tool.Ifc.Operator):
             ifc_file, name=f"{magnitude:g} {unit} at 45 deg", ifc_class="IfcStructuralLoadSingleForce"
         )
         x, z = tool.Structural.get_in_plane_components("ANGLE", magnitude=magnitude, angle=45, direction="Q1")
-        ifcopenshell.api.structural.edit_structural_load(
-            ifc_file, structural_load=load, attributes={"ForceX": x, "ForceY": None, "ForceZ": z}
-        )
         activity = ifcopenshell.api.structural.add_structural_activity(
             ifc_file, ifc_class="IfcStructuralPointAction", applied_load=load, structural_member=item
+        )
+        ifcopenshell.api.structural.edit_structural_load(
+            ifc_file, structural_load=load, attributes=get_force_attributes(load, (x, 0.0, z))
         )
         # In the same load case and group as the loads beside it, drawn after them, tip to tail.
         if activities and (groups := get_activity_load_groups(activities[0])):
@@ -2489,7 +2500,8 @@ def get_moment_arm_force_of(
     if not load or not load.is_a("IfcStructuralLoadSingleForce") or not connects:
         return None, None
     obj = tool.Ifc.get_object(connects[0].RelatingElement)
-    force = Vector((load.ForceX or 0.0, 0.0, load.ForceZ or 0.0))
+    x, _, z = get_force(load)
+    force = Vector((x, 0.0, z))
     if not obj or obj.type != "MESH" or not obj.data.vertices or not force.length:
         return None, None
     return force, get_vertex_location(obj)

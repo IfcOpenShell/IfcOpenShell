@@ -548,6 +548,46 @@ class TestLoadCases(NewFile):
         assert elsewhere not in subject.get_load_cases(model)
 
 
+class TestModelAxes(NewFile):
+    def make_load(self, z_down):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc_file)
+        if z_down:
+            # As RFEM places its models: Z down, X along X, so Y points the other way too.
+            axes = ifc_file.createIfcAxis2Placement3D(
+                ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+                ifc_file.createIfcDirection((0.0, 0.0, -1.0)),
+                ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
+            )
+            model.SharedPlacement = ifc_file.createIfcLocalPlacement(None, axes)
+        point = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralPointConnection")
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc_file, products=[point], structural_analysis_model=model
+        )
+        load = ifcopenshell.api.structural.add_structural_load(ifc_file, ifc_class="IfcStructuralLoadSingleForce")
+        load.ForceX, load.ForceZ, load.MomentY = 3.0, 25000.0, 7.0
+        ifcopenshell.api.structural.add_structural_activity(
+            ifc_file, applied_load=load, structural_member=point, ifc_class="IfcStructuralPointAction"
+        )
+        return load
+
+    def test_a_model_pointing_z_down(self):
+        load = self.make_load(z_down=True)
+        # +25000 in the model's Z acts downwards.
+        assert np.allclose(subject.get_force(load), (3.0, 0.0, -25000.0))
+        turned = subject.to_blender_axes(load, {"MomentY": 7.0})
+        assert np.isclose(turned["MomentY"], -7.0)
+        written = subject.to_model_axes(load, {"ForceX": 3.0, "ForceY": None, "ForceZ": -10.0})
+        assert np.allclose([written["ForceX"], written["ForceZ"]], (3.0, 10.0)) and not written["ForceY"]
+
+    def test_models_bonsai_writes_are_left_alone(self):
+        load = self.make_load(z_down=False)
+        assert subject.get_model_rotation(load) is None
+        assert subject.get_force(load) == (3.0, 0.0, 25000.0)
+        assert subject.to_model_axes(load, {"ForceZ": 5.0}) == {"ForceZ": 5.0}
+
+
 class TestSolveMomentUnknown(NewFile):
     def test_a_magnitude_for_the_moment(self):
         # A known 10 down at 2 to the right, and an upward force at 4 found to balance it.

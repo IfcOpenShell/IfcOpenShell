@@ -262,7 +262,7 @@ class StructuralItemLoadsData:
                     }
                 )
                 if is_force:
-                    entry["forces"].append(tuple(getattr(load, a) or 0.0 for a in ("ForceX", "ForceY", "ForceZ")))
+                    entry["forces"].append(tool.Structural.get_force(load))
         for entry in cases.values():
             entry["resultant"] = cls.get_resultant_label(entry.pop("forces"))
             # As they are drawn tip to tail.

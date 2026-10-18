@@ -742,7 +742,7 @@ def get_colored_symbols(
 def get_force_terms(activity: ifcopenshell.entity_instance, i: int) -> dict[str, Any]:
     """A force's values, and how its components are written from its magnitude and angle"""
     load = activity.AppliedLoad
-    x, y, z = (getattr(load, a) or 0.0 for a in ("ForceX", "ForceY", "ForceZ"))
+    x, y, z = tool.Structural.get_force(load)
     force = {
         "symbol": f"F_{{{i}}}",
         "name": load.Name or "Unnamed",

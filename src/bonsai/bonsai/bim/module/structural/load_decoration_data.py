@@ -1922,10 +1922,12 @@ class ShaderInfo:
             factor = item[1]
             load = activity.AppliedLoad
             preview = self.preview.get(load.id()) if load else None
+            values = {attr: preview.get(attr) if preview is not None else getattr(load, attr, 0) for attr in attr_list}
+            if load and activity.GlobalOrLocal != "LOCAL_COORDS":
+                values = tool.Structural.to_blender_axes(load, values)  # Given in its model's axes.
             temp = np.zeros(6)
             for i, attr in enumerate(attr_list):
-                value = preview.get(attr) if preview is not None else getattr(load, attr, 0)
-                temp[i] += (value or 0) * factor
+                temp[i] += (values[attr] or 0) * factor
             transform_3 = self.get_activity_transform_matrix(activity, element_rotation_matrix)
             transform_6 = np.zeros((6, 6))
             transform_6[0:3, 0:3] = transform_3
