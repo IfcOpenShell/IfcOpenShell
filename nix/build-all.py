@@ -1315,6 +1315,10 @@ class Dependencies:
         install_dirs_path = INSTALL_DIR / "install_dirs.json"
         install_dirs_path.write_text(json.dumps(install_dirs, indent=2))
         logger.info(f"Wrote {install_dirs_path}")
+        # Development distributions also need header-only dependencies (Eigen,
+        # CGAL, JSON), which deliberately do not appear in the runtime manifest.
+        development_dirs = {dependency: str(cls.get_install_dir(dependency)) for dependency in cls.names}
+        (INSTALL_DIR / "development_install_dirs.json").write_text(json.dumps(development_dirs, indent=2))
 
 
 if "json" in targets:
