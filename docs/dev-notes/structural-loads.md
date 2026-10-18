@@ -542,6 +542,24 @@ Found when a model was imported into RFEM 6.16, whose import report gave an erro
   are ordinary `IfcStructuralLoadSingleForce`s, so RFEM probably does not import point loads on
   nodes.
 
+## 28. Load cases as other programs write them
+
+Found with a cantilever exported from RFEM 6.15: its load showed in no panel, and Show Loads drew
+nothing.
+
+- **A load group typed `LOAD_CASE` is a load case.** IFC4 allows a load case as either an
+  `IfcStructuralLoadCase` (which only adds self-weight coefficients) or an `IfcStructuralLoadGroup`
+  with `PredefinedType = LOAD_CASE`, which RFEM writes. Bonsai only knew the first. `is_load_case`
+  now accepts both, wherever a load case was looked for: the Load Cases panel, the Show Loads choice,
+  Apply Load and Edit Load, an item's Applied Loads, a load's case, and reports.
+- **Cases the model does not list.** RFEM also leaves the analysis model's `LoadedBy` empty, so the
+  case was not offered even once recognised. `get_load_cases(model)` gives the model's `LoadedBy`
+  first, then any load case with loads on the model's items that it does not list; without a model,
+  every load case. Nothing is written to the file: such a model is read as it is.
+- **Not yet:** RFEM's model points Z down, and IFC takes a load's global coordinates as the analysis
+  model's (its `SharedPlacement`), so its 25 kN load, +25000 in Z, acts downwards. Bonsai reads global
+  as Blender's world axes and draws it upwards. That is the next change.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
