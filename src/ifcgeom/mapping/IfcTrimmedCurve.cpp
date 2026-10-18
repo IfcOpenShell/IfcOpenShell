@@ -122,6 +122,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 			}
 		}
 
+		const double length = isConic ? radius * std::fabs(flts[1] - flts[0]) : std::fabs(flts[1] - flts[0]);
+		if (num_segments && *num_segments > 1 && length < tol) {
+			logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 295, "Skipping segment with length below tolerance level:", inst);
+			return nullptr;
+		}
+
 		// @todo is 100. not too much? Check with the original issue.
 		const double precision_markup = settings_.get<settings::PrecisionFactor>().get() == 1. ? 1. : 100.;
 
@@ -132,18 +138,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 
 		tc->start = flts[0];
 		tc->end = flts[1];
-
-		/*
-		// @todo
-		if (num_segments && *num_segments > 1) {
-			TopoDS_Vertex v0, v1;
-			TopExp::Vertices(e, v0, v1);
-			if (v0.IsSame(v1)) {
-				ifcopenshell::logger::root().warning("Skipping degenerate segment", l);
-				return false;
-			}
-		}
-		*/
 	}
 
 	return tc;
