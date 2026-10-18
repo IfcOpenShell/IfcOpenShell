@@ -43,14 +43,11 @@ taxonomy::loop::ptr ifcopenshell::geom::fillet_loop(taxonomy::loop::ptr loop, do
 			e->start = p.previous->end;
 			e->end = p.next->start;
 
-			// @todo untested from here.
-
-			auto ab = ba.cross(bc);
-
-			auto O = std::get<taxonomy::point3::ptr>(p.previous->end)->ccomponents().head<3>() + ab * *p.radius;
+			const Eigen::Vector3d normal = bc.cross(ba).normalized();
+			const Eigen::Vector3d O = p1a + (ba + bc).normalized() * (*p.radius / std::sin(angle / 2.));
 
 			auto c = taxonomy::make<taxonomy::circle>();
-			c->matrix = taxonomy::make<taxonomy::matrix4>(O, ab);
+			c->matrix = taxonomy::make<taxonomy::matrix4>(O, normal);
 			c->radius = *p.radius;
 			e->basis = c;
 
