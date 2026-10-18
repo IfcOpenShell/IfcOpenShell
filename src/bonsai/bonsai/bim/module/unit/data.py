@@ -35,9 +35,7 @@ class UnitsData:
     @classmethod
     def load(cls):
         cls.data = {
-            "length_unit": cls.length_unit(),
-            "area_unit": cls.area_unit(),
-            "volume_unit": cls.volume_unit(),
+            "assigned_units": cls.assigned_units(),
             "unit_classes": cls.unit_classes(),
             "named_unit_types": cls.named_unit_types(),
             "conversion_unit_types": cls.conversion_unit_types(),
@@ -46,19 +44,27 @@ class UnitsData:
         cls.is_loaded = True
 
     @classmethod
-    def length_unit(cls):
-        if unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT"):
-            return ifcopenshell.util.unit.get_full_unit_name(unit)
-
-    @classmethod
-    def area_unit(cls):
-        if unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT"):
-            return ifcopenshell.util.unit.get_full_unit_name(unit)
-
-    @classmethod
-    def volume_unit(cls):
-        if unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "VOLUMEUNIT"):
-            return ifcopenshell.util.unit.get_full_unit_name(unit)
+    def assigned_units(cls) -> list[tuple[str, str, str]]:
+        unit_assignment = ifcopenshell.util.unit.get_unit_assignment(tool.Ifc.get())
+        if not unit_assignment:
+            return []
+        priority = ("LENGTHUNIT", "AREAUNIT", "VOLUMEUNIT")
+        results = []
+        for unit in unit_assignment.Units or []:
+            if unit.is_a("IfcMonetaryUnit"):
+                unit_type, name = "MONETARYUNIT", unit.Currency
+            elif unit.is_a("IfcDerivedUnit"):
+                unit_type = unit.UnitType
+                if unit_type == "USERDEFINED" and unit.UserDefinedType:
+                    unit_type = unit.UserDefinedType
+                name = " ".join(
+                    f"{ifcopenshell.util.unit.get_full_unit_name(e.Unit)}^{e.Exponent}" for e in unit.Elements
+                )
+            else:
+                unit_type, name = unit.UnitType, ifcopenshell.util.unit.get_full_unit_name(unit)
+            results.append((unit_type, name, unit.is_a()))
+        results.sort(key=lambda r: (priority.index(r[0]) if r[0] in priority else len(priority), r[0]))
+        return results
 
     @classmethod
     def unit_classes(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
