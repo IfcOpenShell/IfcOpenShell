@@ -65,6 +65,8 @@ jobs:
       IFCOS_NUM_BUILD_PROCS: '2'
       # Debian-family consumers do not search lib64 for package configs.
       IFCOS_CMAKE_ARGS: '-DCMAKE_INSTALL_LIBDIR=lib'
+      CMAKE_C_COMPILER_LAUNCHER: ccache
+      CMAKE_CXX_COMPILER_LAUNCHER: ccache
     steps:
       - name: Install build tools
         run: |
@@ -79,9 +81,14 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
       - run: uv python install 3.13
+      - name: Check packaging inputs
+        run: |
+          test -s nix/cpp-sdk-README.md
+          uv run --python 3.13 nix/package-cpp-sdk.py --help > /dev/null
       - uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           key: cpp-sdk-rockylinux9-${{ runner.arch }}
+          max-size: 2G
           install: ${{ matrix.arch == 'linuxarm64' && 'detect' || 'binary' }}
       # Build dependencies from source: binary caches omit source license
       # notices. Keep the sources until packaging has collected those notices.
