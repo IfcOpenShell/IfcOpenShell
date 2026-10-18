@@ -90,6 +90,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          trap 'result=$?; if [ "$result" -ne 0 ]; then tail -n 120 build/Linux/*/logs/latest.log; fi' EXIT
           CFLAGS="-O3" CXXFLAGS="-O3" uv run --python 3.13 nix/build-all.py \
             IfcConvert --shared --build-examples --use-ninja --build-cfg Release \
             2>&1 | tee cpp-sdk-build.log
@@ -150,5 +151,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cpp-sdk-build-log-${{ matrix.arch }}
-          path: cpp-sdk-build.log
+          path: |
+            cpp-sdk-build.log
+            build/Linux/*/logs/latest.log
           retention-days: 7
