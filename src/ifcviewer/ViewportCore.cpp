@@ -1507,8 +1507,12 @@ void ViewportCore::updateFrameUniforms() {
 
     // Pack active section planes. `is_section_clipped` (WGSL) reads
     // u.clip_count and u.clip_planes[0..clip_count) and discards
-    // fragments on the positive side.
-    const int n = std::min<int>(int(section_planes_.size()), kMaxSectionPlanes);
+    // fragments on the positive side. While cuts are suspended
+    // ("Suspend Sections") clip_count is forced to 0 so the planes
+    // stay stored but have no effect.
+    const int n = section_cuts_enabled_
+        ? std::min<int>(int(section_planes_.size()), kMaxSectionPlanes)
+        : 0;
     u.clip_count = n;
     for (int i = 0; i < n; ++i) {
         const SectionPlane& p = section_planes_[i];
@@ -8098,8 +8102,12 @@ void ViewportCore::render() {
 
     // Section-plane gizmo — shared renderer, drawn for desktop + web from here.
     // (The desktop's OverlayRenderer no longer draws it, to avoid doubling.)
-    section_gizmo_.encode(pass, vp_this_frame, section_planes_,
-                          viewport_w_px, viewport_h_px, dpr_int, section_selected_index_);
+    // Hidden while "Hide Planes / Suspend Sections" is active: the gizmo draw
+    // gate is (gizmos_visible && cuts_enabled).
+    if (section_gizmos_visible_ && section_cuts_enabled_) {
+        section_gizmo_.encode(pass, vp_this_frame, section_planes_,
+                              viewport_w_px, viewport_h_px, dpr_int, section_selected_index_);
+    }
 
     // Orbit pivot indicator — same shared-renderer story. Drawn while the host
     // has it gated on (drag) or an afterglow is still running; in the latter
@@ -8452,6 +8460,21 @@ void ViewportCore::setSelectedSectionPlane(int index) {
     const int clamped = (index >= 0 && index < int(section_planes_.size())) ? index : -1;
     if (clamped == section_selected_index_) return;
     section_selected_index_ = clamped;
+    host_->requestFrame();
+}
+
+void ViewportCore::setSectionGizmosVisible(bool visible) {
+    if (section_gizmos_visible_ == visible) return;
+    section_gizmos_visible_ = visible;
+    host_->requestFrame();
+}
+
+void ViewportCore::setSectionCutsEnabled(bool enabled) {
+    if (section_cuts_enabled_ == enabled) return;
+    section_cuts_enabled_ = enabled;
+    // Spec for "Suspend Sections": resuming re-shows the plane gizmos and
+    // reactivates the cuts, even if the planes had been hidden before.
+    if (enabled) section_gizmos_visible_ = true;
     host_->requestFrame();
 }
 

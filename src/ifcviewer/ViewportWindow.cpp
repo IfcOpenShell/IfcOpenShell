@@ -972,7 +972,30 @@ void ViewportWindow::toggleSectionTool() {
     section_tool_active_ = !section_tool_active_;
     Log::info().noquote() << "[wgpu section] tool"
                       << (section_tool_active_ ? "active" : "off");
+    emit sectionToolChanged(section_tool_active_);
     if (isExposed()) requestUpdate();
+}
+
+void ViewportWindow::setSectionToolSingleShot(bool single_shot) {
+    section_tool_single_shot_ = single_shot;
+}
+
+void ViewportWindow::setSectionGizmosVisible(bool visible) {
+    core_.setSectionGizmosVisible(visible);
+    emit sectionStateChanged(core_.sectionGizmosVisible(), core_.sectionCutsEnabled());
+}
+
+bool ViewportWindow::sectionGizmosVisible() const {
+    return core_.sectionGizmosVisible();
+}
+
+void ViewportWindow::setSectionCutsEnabled(bool enabled) {
+    core_.setSectionCutsEnabled(enabled);
+    emit sectionStateChanged(core_.sectionGizmosVisible(), core_.sectionCutsEnabled());
+}
+
+bool ViewportWindow::sectionCutsEnabled() const {
+    return core_.sectionCutsEnabled();
 }
 
 bool ViewportWindow::addSectionPlaneAtSurface(const Eigen::Vector3f& point, const Eigen::Vector3f& normal, float visual_radius) {
@@ -1546,12 +1569,17 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
     nav_press_pos_     = nav_last_pos_;
     nav_dragged_       = false;
 
-    // Section tool: claim a plain-LMB press if it lands on one of the
-    // plane gizmos' arrows. Suppresses nav classification so the drag
-    // doesn't also rotate the camera.
-    if (section_tool_active_
-        && event->button() == Qt::LeftButton
-        && event->modifiers() == Qt::NoModifier) {
+    // Section gizmo drag: claim a plain-LMB press if it lands on one of the
+    // plane gizmos' arrows. Works whenever the gizmos are on screen — not
+    // only while the section tool is armed, so a plane placed with the
+    // single-shot "Add Section" flow can be dragged right away. Suppresses
+    // nav classification so the drag doesn't also rotate the camera; a miss
+    // falls through to normal selection.
+    if (event->button() == Qt::LeftButton
+        && event->modifiers() == Qt::NoModifier
+        && core_.sectionPlaneCount() > 0
+        && core_.sectionGizmosVisible()
+        && core_.sectionCutsEnabled()) {
         const Eigen::Vector2i lp = toV2i(event->position().toPoint());
         const int hit = core_.hitTestSectionGizmo(lp.x(), lp.y());
         if (hit >= 0 && core_.beginSectionDrag(hit, lp.x(), lp.y())) {
@@ -1560,6 +1588,26 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
             Log::info().noquote().nospace()
                 << "[wgpu section] drag start: plane=" << hit;
             return;
+        }
+    }
+
+    // Right-click on a section-plane gizmo: remember the plane; the release
+    // emits sectionPlaneContextMenuRequested so the host (with Widgets) can
+    // show a context menu. Claiming the press keeps the nav from also
+    // orbiting; a miss falls through to normal nav.
+    if (event->button() == Qt::RightButton) {
+        section_context_plane_ = -1;
+        if (core_.sectionPlaneCount() > 0
+            && core_.sectionGizmosVisible()
+            && core_.sectionCutsEnabled()) {
+            const Eigen::Vector2i lp = toV2i(event->position().toPoint());
+            const int hit = core_.hitTestSectionGizmo(lp.x(), lp.y());
+            if (hit >= 0) {
+                core_.setSelectedSectionPlane(hit);
+                section_context_plane_ = hit;
+                nav_drag_kind_ = NavDrag::Inactive;
+                return;
+            }
         }
     }
 
@@ -1598,6 +1646,17 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
     if (core_.sectionDragActive() && event->button() == Qt::LeftButton) {
         core_.endSectionDrag();
         nav_active_button_   = Qt::NoButton;
+        return;
+    }
+    // Right-click over a section-plane gizmo (press hit a gizmo): hand the
+    // plane index to the host, which shows the context menu (e.g. Delete
+    // plane). The viewport itself has no Widgets dependency.
+    if (event->button() == Qt::RightButton && section_context_plane_ >= 0) {
+        const int plane_index = section_context_plane_;
+        section_context_plane_ = -1;
+        nav_active_button_ = Qt::NoButton;
+        emit sectionPlaneContextMenuRequested(
+            plane_index, event->globalPosition().toPoint());
         return;
     }
     // Marquee finalisation: only commit when the drag actually became
@@ -1667,6 +1726,12 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                                              hit_radius * 1.5f);
                 } else {
                     Log::info().noquote() << "[wgpu section] click missed (no surface)";
+                }
+                // Single-shot flow (bonsai's "Add Section" button): one
+                // plane, then back to selection.
+                if (section_tool_single_shot_ && section_tool_active_) {
+                    section_tool_active_ = false;
+                    emit sectionToolChanged(false);
                 }
                 nav_active_button_ = Qt::NoButton;
                 nav_drag_kind_     = NavDrag::Inactive;
