@@ -657,3 +657,101 @@ class TestConvertFileLengthUnitsIFC4(test.bootstrap.IFC4, TestConvertFileLengthU
 
 class TestConvertFileLengthUnitsIFC4X3(test.bootstrap.IFC4X3, TestConvertFileLengthUnits):
     pass
+
+
+class TestConvertFileUnits(test.bootstrap.IFC4):
+    def setup_project(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        volume = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="VOLUMEUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[area, volume])
+        product = ifcopenshell.api.root.create_entity(self.file, "IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product, "TestPset")
+        own_unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT", prefix="MILLI")
+        explicit = self.file.create_entity(
+            "IfcPropertySingleValue",
+            Name="Explicit",
+            NominalValue=self.file.create_entity("IfcAreaMeasure", 5.0),
+            Unit=own_unit,
+        )
+        ifcopenshell.api.pset.edit_pset(
+            self.file,
+            pset,
+            properties={
+                "Area": self.file.create_entity("IfcAreaMeasure", 2.0),
+                "Volume": self.file.create_entity("IfcVolumeMeasure", 3.0),
+                "Explicit": explicit,
+            },
+        )
+        qto = ifcopenshell.api.pset.add_qto(self.file, product, "Qto_WallBaseQuantities")
+        ifcopenshell.api.pset.edit_qto(self.file, qto, properties={"NetSideArea": 10.0, "NetVolume": 1.0})
+
+    def test_converting_area_to_an_imperial_unit(self):
+        self.setup_project()
+        output = subject.convert_file_units(self.file, "AREAUNIT", "square foot")
+        assert subject.get_project_unit(output, "AREAUNIT").Name == "square foot"
+        assert subject.get_full_unit_name(subject.get_project_unit(output, "VOLUMEUNIT")) == "CUBIC_METRE"
+        product = output.by_type("IfcWall")[0]
+        pset = ifcopenshell.util.element.get_pset(product, "TestPset")
+        assert pset["Area"] == pytest.approx(2.0 / 0.09290304)
+        assert pset["Volume"] == pytest.approx(3.0)
+        assert pset["Explicit"] == pytest.approx(5.0)
+        qto = ifcopenshell.util.element.get_pset(product, "Qto_WallBaseQuantities")
+        assert qto["NetSideArea"] == pytest.approx(10.0 / 0.09290304)
+        assert qto["NetVolume"] == pytest.approx(1.0)
+        assert len(subject.get_unit_assignment(output).Units) == 2
+        explicit = next(p for p in output.by_type("IfcPropertySingleValue") if p.Name == "Explicit")
+        assert explicit.Unit.Prefix == "MILLI"
+
+    def test_converting_volume_to_a_prefixed_si_unit(self):
+        self.setup_project()
+        output = subject.convert_file_units(self.file, "VOLUMEUNIT", "CUBIC_METRE", prefix="CENTI")
+        assert subject.get_full_unit_name(subject.get_project_unit(output, "VOLUMEUNIT")) == "CENTICUBIC_METRE"
+        product = output.by_type("IfcWall")[0]
+        assert ifcopenshell.util.element.get_pset(product, "TestPset")["Volume"] == pytest.approx(3.0e6)
+        assert ifcopenshell.util.element.get_pset(product, "Qto_WallBaseQuantities")["NetVolume"] == pytest.approx(
+            1.0e6
+        )
+
+    def test_converting_without_an_assigned_unit(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        product = ifcopenshell.api.root.create_entity(self.file, "IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product, "TestPset")
+        ifcopenshell.api.pset.edit_pset(
+            self.file, pset, properties={"Area": self.file.create_entity("IfcAreaMeasure", 1.0)}
+        )
+        output = subject.convert_file_units(self.file, "AREAUNIT", "SQUARE_METRE", prefix="MILLI")
+        assert subject.get_full_unit_name(subject.get_project_unit(output, "AREAUNIT")) == "MILLISQUARE_METRE"
+        assert ifcopenshell.util.element.get_pset(output.by_type("IfcWall")[0], "TestPset")["Area"] == pytest.approx(
+            1e6
+        )
+
+    def test_converting_force_to_an_imperial_unit(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        newton = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT", prefix="KILO")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[newton])
+        product = ifcopenshell.api.root.create_entity(self.file, "IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product, "TestPset")
+        ifcopenshell.api.pset.edit_pset(
+            self.file, pset, properties={"Force": self.file.create_entity("IfcForceMeasure", 4.4482216153)}
+        )
+        output = subject.convert_file_units(self.file, "FORCEUNIT", "kip")
+        assert subject.get_project_unit(output, "FORCEUNIT").Name == "kip"
+        pset = ifcopenshell.util.element.get_pset(output.by_type("IfcWall")[0], "TestPset")
+        assert pset["Force"] == pytest.approx(1.0)
+
+    def test_converting_mass_without_an_assigned_unit_from_kilograms(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        product = ifcopenshell.api.root.create_entity(self.file, "IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product, "TestPset")
+        ifcopenshell.api.pset.edit_pset(
+            self.file, pset, properties={"Mass": self.file.create_entity("IfcMassMeasure", 2.0)}
+        )
+        output = subject.convert_file_units(self.file, "MASSUNIT", "GRAM")
+        assert subject.get_full_unit_name(subject.get_project_unit(output, "MASSUNIT")) == "GRAM"
+        pset = ifcopenshell.util.element.get_pset(output.by_type("IfcWall")[0], "TestPset")
+        assert pset["Mass"] == pytest.approx(2000.0)
+
+    def test_rejecting_other_unit_types(self):
+        with pytest.raises(ValueError):
+            subject.convert_file_units(self.file, "LENGTHUNIT", "METRE")
