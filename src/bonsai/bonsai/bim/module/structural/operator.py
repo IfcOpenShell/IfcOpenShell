@@ -1068,6 +1068,8 @@ def get_force_components(props: "StructuralForceInput") -> tuple[float, float, f
     )
     if is_on_axes(props):
         x, z = tool.Structural.from_axes(x, z, props.axes_tilt)  # Entered along x' and z'.
+    if getattr(props, "acts_as", "PULL") == "PUSH":
+        x, z = -x, -z  # A push is entered by the side it arrives from, so it acts the other way.
     return x, 0.0, z
 
 
@@ -1102,6 +1104,17 @@ def get_common_tilt(items: list[ifcopenshell.entity_instance]) -> Union[float, N
         return None
     tilt = tilts.pop()
     return tilt if tilt else None
+
+
+is_loading_acts_as = False
+
+
+def update_acts_as(self: "StructuralForceInput", context: bpy.types.Context) -> None:
+    # Switching between pull and push keeps the force's line where it is and turns its arrow round. By angle or slope,
+    # a push's give the side it arrives from, so the force reverses with them; as components, they reverse here.
+    if self.input_mode == "COMPONENTS" and not is_loading_acts_as:
+        self.x, self.y, self.z = -self.x, -self.y, -self.z
+    update_force_inputs(self, context)
 
 
 def get_load_unit_symbol(category: str) -> str:
@@ -1240,6 +1253,9 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
     if self.preview_load and self.load_category and LoadsDecorator.is_installed:
         attributes = get_load_attributes(self, self.load_category, tool.Ifc.get().by_id(self.preview_load))
         ShaderInfo.preview = {self.preview_load: attributes}
+        # Drawn pulling or pushing as the dialog has it, before it is saved.
+        lock = get_lock_activity(self)
+        ShaderInfo.preview_push = {lock.id(): self.acts_as == "PUSH"} if lock else {}
         # Where a resultant is locked, the unknowns move to keep it, so show them moving too.
         if (activity := get_lock_activity(self)) and self.load_category == "IfcStructuralPointConnection":
             force = get_force_components(self)
@@ -1321,12 +1337,13 @@ def write_forces(forces: dict[ifcopenshell.entity_instance, tuple]) -> None:
         if DEFAULT_LOAD_NAME.match(load.Name or ""):
             # Entered against the point's own axes, as a primed eighth records, it is named against them still.
             tilt = None
+            users = [i for i in ifc_file.get_inverse(load) if i.is_a("IfcStructuralActivity")]
             if re.search(r" Q[1-8]′$", load.Name or ""):
-                users = [i for i in ifc_file.get_inverse(load) if i.is_a("IfcStructuralActivity")]
                 tilt = get_common_tilt([c[0].RelatingElement for u in users if (c := u.AssignedToStructuralItem)])
             # On the boundary of two eighths, as at 45 degrees, it keeps the one it was named in.
             named = re.search(r" (Q[1-8])′?$", load.Name or "")
-            attributes["Name"] = get_force_name(force, unit, tilt, named[1] if named else None)
+            push = any(tool.Structural.get_push(u) for u in users)
+            attributes["Name"] = get_force_name(force, unit, tilt, named[1] if named else None, push)
         ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
 
 
@@ -1412,17 +1429,24 @@ def get_chosen_eighth(props: "EditStructuralResultant", resultant: Union[tuple, 
 
 
 def get_force_name(
-    force: tuple[float, float, float], unit: str, tilt: Union[float, None] = None, eighth: Union[str, None] = None
+    force: tuple[float, float, float],
+    unit: str,
+    tilt: Union[float, None] = None,
+    eighth: Union[str, None] = None,
+    push: bool = False,
 ) -> str:
     """A generated name for a force, by its angle from the nearest axis if it lies in the X-Z plane.
 
     :param tilt: The tilt of the point's own axes, to name it against them, its eighth primed, as entered so.
     :param eighth: The eighth to name it in if it lies on that eighth's boundary, as it was named before.
+    :param push: Whether it pushes, to name it by the side it arrives from.
     """
     x, y, z = force
     if y:
         values = [f"{axis} {value:g}" for axis, value in zip("XYZ", force) if value]
         return f"{', '.join(values) or '0'} {unit}"
+    if push:
+        x, z = -x, -z
     if tilt:
         x, z = tool.Structural.to_axes(x, z, tilt)
     eighth, angle, _, _ = tool.Structural.get_eighth(x, z, eighth)
@@ -1433,6 +1457,7 @@ def clear_previews(context: bpy.types.Context) -> None:
     """Stop showing a dialog's values in the loads drawing, as when it is confirmed or cancelled"""
     if ShaderInfo.preview or ShaderInfo.preview_axes or ShaderInfo.preview_resultant_eighths:
         ShaderInfo.preview, ShaderInfo.preview_axes, ShaderInfo.preview_resultant_eighths = {}, {}, {}
+        ShaderInfo.preview_push = {}
         redraw_loads(context)
 
 
@@ -1481,12 +1506,16 @@ class StructuralForceInput(get_direction_input("the force", update_force_inputs,
     )
     acts_as: bpy.props.EnumProperty(
         name="Acts As",
-        description="Whether the force pulls on its item or pushes on it, which only changes how it is drawn",
+        description=(
+            "Whether the force pulls on its item or pushes on it. Switching keeps its line where it is and turns "
+            "its arrow round: a push's angle, slope and eighth give the side it arrives from"
+        ),
         items=[
             ("PULL", "Pull", "Drawn from its point, as a cable pulls"),
             ("PUSH", "Push", "Drawn arriving at its point, as a strut pushes"),
         ],
         options={"SKIP_SAVE"},
+        update=update_acts_as,
     )
     direction_locked: bpy.props.BoolProperty(
         name="Direction Known",
@@ -1998,8 +2027,12 @@ class EditStructuralLoadValues(
         self.moment_x, self.moment_y, self.moment_z = (
             (values[a] or 0.0 for a in moment_attributes) if moment_attributes else (0.0, 0.0, 0.0)
         )
-        # IFC only stores components, so derive the in-plane inputs from them, from the nearest axis...
+        # IFC only stores components, so derive the in-plane inputs from them, from the nearest axis, a push's
+        # from the side it arrives from...
         x, y, z = self.x, self.y, self.z
+        pushing = bool((lock_activity := self.get_lock_activity()) and tool.Structural.get_push(lock_activity))
+        if pushing:
+            x, z = -x, -z
         self.set_in_plane_inputs(x, z)
         self.input_mode = "COMPONENTS"
         users = [i for i in tool.Ifc.get().get_inverse(load) if i.is_a("IfcStructuralActivity")]
@@ -2016,12 +2049,16 @@ class EditStructuralLoadValues(
         if not y and (match := SLOPE_LOAD_NAME.match(name)):
             rise, run = float(match[1]), float(match[2])
             direction = get_named_direction(match[3])
+            if pushing and self.fits(-x, -z, "SLOPE", rise=rise, run=run, direction=direction):
+                direction = tool.Structural.get_opposite_eighth(direction)  # Named by where it points, as before.
             if self.fits(x, z, "SLOPE", rise=rise, run=run, direction=direction):
                 # The eighth first: each value set updates the others, read with the eighth.
                 self.input_mode, self.direction, self.rise, self.run = "SLOPE", direction, rise, run
         elif not y and (match := ANGLE_LOAD_NAME.match(name)):
             angle = float(match[1])
             direction = get_named_direction(match[2])
+            if pushing and self.fits(-x, -z, "ANGLE", angle=angle, direction=direction):
+                direction = tool.Structural.get_opposite_eighth(direction)  # Named by where it points, as before.
             if self.fits(x, z, "ANGLE", angle=angle, direction=direction):
                 self.input_mode, self.direction, self.angle = "ANGLE", direction, angle
         if self.focus in ("x", "y", "z"):
@@ -2032,7 +2069,12 @@ class EditStructuralLoadValues(
         self.load_name = get_default_load_name(self, category) if DEFAULT_LOAD_NAME.match(name) else name
         if lock_activity := self.get_lock_activity():
             self.magnitude_locked, self.direction_locked = tool.Structural.get_locks(lock_activity)
-            self.acts_as = "PUSH" if tool.Structural.get_push(lock_activity) else "PULL"
+            global is_loading_acts_as
+            is_loading_acts_as = True  # As it is, not switched, so its components stay as they are.
+            try:
+                self.acts_as = "PUSH" if tool.Structural.get_push(lock_activity) else "PULL"
+            finally:
+                is_loading_acts_as = False
             if self.input_mode != "COMPONENTS" and (component := tool.Structural.get_known_component(lock_activity)):
                 self.given_value = abs(x if component == "X" else z)
                 self.given = component
@@ -3211,7 +3253,9 @@ class EditStructuralResultantMoment(bpy.types.Operator, tool.Ifc.Operator):
         for load, force in forces.items():
             old = get_force(load)
             new = math.copysign(math.hypot(*force), sum(a * b for a, b in zip(force, old)))
-            box.label(text=f"{load.Name or 'Unnamed'}: {get_force_name(force, force_unit)}")
+            users = [i for i in tool.Ifc.get().get_inverse(load) if i.is_a("IfcStructuralActivity")]
+            push = any(tool.Structural.get_push(u) for u in users)
+            box.label(text=f"{load.Name or 'Unnamed'}: {get_force_name(force, force_unit, push=push)}")
             if new < 0:
                 box.label(text="  reverses its direction (a pull becomes a push)", icon="ERROR")
         if not forces and self.moment_locked:

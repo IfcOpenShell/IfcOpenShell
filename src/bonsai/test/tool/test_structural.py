@@ -19,6 +19,7 @@
 # This file was generated with the assistance of an AI coding tool.
 
 import math
+from types import SimpleNamespace
 
 import ifcopenshell
 import ifcopenshell.api.group
@@ -29,6 +30,7 @@ import numpy as np
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.structural.load_decoration_data import box_crosses_segments
+from bonsai.bim.module.structural.operator import get_force_components, get_force_name
 from bonsai.tool.structural import Structural as subject
 from test.bim.bootstrap import NewFile
 
@@ -586,6 +588,37 @@ class TestModelAxes(NewFile):
         assert subject.get_model_rotation(load) is None
         assert subject.get_force(load) == (3.0, 0.0, 25000.0)
         assert subject.to_model_axes(load, {"ForceZ": 5.0}) == {"ForceZ": 5.0}
+
+
+class TestPushDirection(NewFile):
+    def test_opposite_eighths(self):
+        assert [subject.get_opposite_eighth(f"Q{i}") for i in range(1, 9)] == [
+            "Q5",
+            "Q6",
+            "Q7",
+            "Q8",
+            "Q1",
+            "Q2",
+            "Q3",
+            "Q4",
+        ]
+
+    def test_a_push_is_entered_by_the_side_it_arrives_from(self):
+        props = SimpleNamespace(
+            input_mode="ANGLE", magnitude=1.5, angle=30, rise=0, run=0, direction="Q1", has_axes=False, on_axes=False
+        )
+        props.acts_as = "PULL"
+        assert np.allclose(get_force_components(props), (1.5 * math.cos(math.radians(30)), 0, 0.75))
+        # Arriving from up and to the right, it acts down and to the left.
+        props.acts_as = "PUSH"
+        assert np.allclose(get_force_components(props), (-1.5 * math.cos(math.radians(30)), 0, -0.75))
+
+    def test_a_push_is_named_by_the_side_it_arrives_from(self):
+        force = (-1.5 * math.cos(math.radians(30)), 0.0, -0.75)
+        assert get_force_name(force, "kN") == "1.5 kN at 30 deg Q5"
+        assert get_force_name(force, "kN", push=True) == "1.5 kN at 30 deg"  # Q1 is left out of names.
+        # Example 2.16's piston on a lever at 50 degrees: 20 degrees below x' it arrives from.
+        assert get_force_name(force, "kN", tilt=50, push=True) == "1.5 kN at 20 deg Q8′"
 
 
 class TestSolveMomentUnknown(NewFile):

@@ -240,6 +240,11 @@ class Structural(bonsai.core.tool.Structural):
         return bool(ifcopenshell.util.element.get_pset(activity, "BBIM_Structural", "Push"))
 
     @classmethod
+    def get_opposite_eighth(cls, eighth: str) -> str:
+        """The eighth opposite another, as Q8 is to Q4, for the side a push arrives from"""
+        return f"Q{(int(eighth[1]) + 3) % 8 + 1}"
+
+    @classmethod
     def set_push(cls, activity: ifcopenshell.entity_instance, push: bool) -> None:
         if push != cls.get_push(activity):
             cls.edit_bbim_structural(activity, {"Push": push})
