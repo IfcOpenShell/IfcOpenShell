@@ -75,6 +75,7 @@ private:
         QList<QToolButton*> zoom;
     };
     DisplayToolButtons makeDisplayToolButtons();
+    QWidget* buildDisplayToolsPanelContent();
     void updateWindowTitle();
     QToolButton* makePanelToggle(const QString& text, QDockWidget* dock);
     // Rebuilds `menu` from the persisted recent-projects list. Wired to the
@@ -99,6 +100,7 @@ private:
     bonsaiviewer::modules::spatial_hierarchy::SpatialHierarchyPanel* spatial_panel_ = nullptr;
     QDockWidget* layers_panel_ = nullptr;
     bonsaiviewer::modules::properties::PropertiesPanel* properties_panel_ = nullptr;
+    QDockWidget* display_tools_panel_ = nullptr;
     QDockWidget* stored_views_panel_ = nullptr;
     QDockWidget* search_panel_ = nullptr;
     QDockWidget* spreadsheet_panel_ = nullptr;

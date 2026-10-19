@@ -376,7 +376,8 @@ QWidget* MainWindow::buildPanelsRibbonPage() {
             makePanelToggle("Models", models_panel_),
             makePanelToggle("Spatial", spatial_panel_),
             makePanelToggle("Layers", layers_panel_),
-            makePanelToggle("Properties", properties_panel_)
+            makePanelToggle("Properties", properties_panel_),
+            makePanelToggle("Display Tools", display_tools_panel_)
         }, this),
         components::buttons::makeButtonGroup("QUERY", {
             makePanelToggle("Views", stored_views_panel_),
@@ -703,6 +704,41 @@ QWidget* MainWindow::buildSearchBar() {
     return frame;
 }
 
+QWidget* MainWindow::buildDisplayToolsPanelContent() {
+    const DisplayToolButtons tools = makeDisplayToolButtons();
+
+    auto* content = new QWidget(this);
+    content->setObjectName("displayToolsPanel");
+    auto* layout = new QVBoxLayout(content);
+    layout->setContentsMargins(8, 8, 8, 8);
+    layout->setSpacing(6);
+
+    // One titled section per group; buttons flow in rows so a narrow dock
+    // stays compact.
+    auto add_section = [&layout](const QString& title, const QList<QToolButton*>& buttons) {
+        auto* label = new QLabel(title, nullptr);
+        label->setObjectName("ribbonGroupLabel");
+        label->setProperty("textRole", "secondary");
+        layout->addWidget(label);
+        auto* row = new QHBoxLayout();
+        row->setContentsMargins(0, 0, 0, 0);
+        row->setSpacing(4);
+        for (auto* button : buttons) {
+            row->addWidget(button);
+        }
+        row->addStretch(1);
+        layout->addLayout(row);
+    };
+
+    add_section("Section", tools.section);
+    add_section("Color", tools.color);
+    add_section("Box", tools.box);
+    add_section("Display", tools.display);
+    add_section("Zoom", tools.zoom);
+    layout->addStretch(1);
+    return content;
+}
+
 void MainWindow::setupRibbon() {
     auto* shell = new QFrame(this);
 
@@ -775,6 +811,10 @@ void MainWindow::setupPanels() {
     audit_panel_ = new components::Panel("Audit", new modules::todo::TodoPanel("Audit", this), this);
     clash_panel_ = new components::Panel("Clash", new modules::todo::TodoPanel("Clash", this), this);
     issues_panel_ = new components::Panel("Issues", new modules::todo::TodoPanel("Issues", this), this);
+    // Display Tools: the same commands as the Display ribbon tab, as a dock
+    // under the Properties panel.
+    display_tools_panel_ = new components::Panel(
+        "Display Tools", buildDisplayToolsPanelContent(), this);
 
     addDockWidget(Qt::LeftDockWidgetArea, models_panel_);
     addDockWidget(Qt::LeftDockWidgetArea, spatial_panel_);
@@ -796,6 +836,10 @@ void MainWindow::setupPanels() {
     tabifyDockWidget(spreadsheet_panel_, audit_panel_);
     tabifyDockWidget(audit_panel_, clash_panel_);
     tabifyDockWidget(clash_panel_, issues_panel_);
+    // Stack the Display Tools dock under the Properties stack (not tabbed
+    // with it): the two stay visible side by side vertically.
+    addDockWidget(Qt::RightDockWidgetArea, display_tools_panel_);
+    splitDockWidget(properties_panel_, display_tools_panel_, Qt::Vertical);
     properties_panel_->raise();
 
     layers_panel_->hide();
