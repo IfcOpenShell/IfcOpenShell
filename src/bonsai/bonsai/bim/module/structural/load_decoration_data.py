@@ -138,6 +138,8 @@ class ShaderInfo:
     preview_axes: dict[int, tuple[np.ndarray, Union[tuple[float, float], None]]] = {}
     # The eighth Edit Resultant measures a resultant's angle in, by its item's id, shown in place of the chosen one.
     preview_resultant_eighths: dict[int, Union[str, None]] = {}
+    # Whether applied loads push, as Edit Load has them while it previews their loads, by applied load id.
+    preview_push: dict[int, bool] = {}
 
     def __init__(self, load_group: Union[ifcopenshell.entity_instance, None] = None) -> None:
         """
@@ -759,7 +761,7 @@ class ShaderInfo:
         ifc_file = tool.Ifc.get()
         for i, (_, activity, location, force) in enumerate(forces, 1):
             arrow = force * scale
-            push = tool.Structural.get_push(ifc_file.by_id(activity))
+            push = self.is_push(activity)
             tail, tip = (location - arrow, location) if push else (location, location + arrow)
             color = colors.get(activity, (1, 1, 1, 2))
             unit = self.force_unit
@@ -1111,7 +1113,7 @@ class ShaderInfo:
         # A push arrives at its point. Drawn alone, its picture is mirrored through the point, arrows
         # reversed; added to others, it is slid along its line to pull, by the principle of transmissibility.
         ifc_file = tool.Ifc.get()
-        pushes = {a for a in activities if a and tool.Structural.get_push(ifc_file.by_id(a))}
+        pushes = {a for a in activities if a and self.is_push(a)}
         arriving = len(activities) == 1 and activities[0] in pushes
         flip = lambda point: 2 * location - point if arriving else point
         for i, (vector, color, has_angle, activity) in enumerate(vectors):
@@ -1165,7 +1167,11 @@ class ShaderInfo:
                     # Z, not x' and z'.
                     self.text_info[-1]["focus"] = self.pickables[picked]["focus"] = "xyz"[k]
             if props.show_force_angles and has_angle:
-                self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes, activity, pickable=picked)
+                # A push drawn arriving is measured on the side it arrives from, as it is named.
+                measured = -vector if arriving else vector
+                self.add_force_angle(
+                    tail, measured, size, color, arcs_at_tail, reference_axes, activity, pickable=picked
+                )
             if props.show_force_slopes and has_angle:
                 arrow = (flip(tip), flip(tail)) if arriving else (tail, tip)
                 avoid = None if centre is None else side
@@ -1203,7 +1209,7 @@ class ShaderInfo:
                 local = props.reference_frame == "LOCAL_COORDS" and not np.allclose(rotation, np.eye(3))
                 self.add_force_angle(
                     location,
-                    resultant,
+                    -resultant if arriving else resultant,
                     size,
                     (1, 1, 1, 1),
                     arcs_at_tail,
@@ -1252,7 +1258,7 @@ class ShaderInfo:
         scale, size = 2 / longest, 2.0
         start = len(self.info), len(self.text_info)
         drawn = []
-        pushes = {a for a in activities if a and tool.Structural.get_push(tool.Ifc.get().by_id(a))}
+        pushes = {a for a in activities if a and self.is_push(a)}
         axes = ((0, "x′", (1, 0, 0, 1)), (2, "z′", (0, 0, 1, 1)))
         for force, color, activity in zip(forces, colors, activities):
             tip = location + force * scale
@@ -1483,6 +1489,14 @@ class ShaderInfo:
         locks = [tool.Structural.get_locks(element) for element in elements]
         found = tool.Structural.get_resultant_found(locks, tool.Structural.get_magnitude_groups(elements))
         return (" 🔓" if "magnitude" in found else ""), (" 🔓" if "direction" in found else "")
+
+    def is_push(self, activity: int) -> bool:
+        """Whether an applied load pushes: as Edit Load has it while previewing its load, else as saved"""
+        element = tool.Ifc.get().by_id(activity)
+        load = element.AppliedLoad
+        if load and load.id() in self.preview and activity in self.preview_push:
+            return self.preview_push[activity]
+        return tool.Structural.get_push(element)
 
     def add_force_angle(
         self,

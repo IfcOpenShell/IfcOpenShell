@@ -752,10 +752,14 @@ def get_force_terms(activity: ifcopenshell.entity_instance, i: int) -> dict[str,
         "in_plane": not y and bool(x or z),
         "direction": "components given",
     }
+    # A push is described by the side it arrives from; its components are still those of the force.
+    push = tool.Structural.get_push(activity)
+    dx, dz = (-x, -z) if push else (x, z)
     if force["in_plane"]:
         named = re.search(r" (Q[1-8])$", load.Name or "")
-        eighth, angle, _, _ = tool.Structural.get_eighth(x, z, named[1] if named else None)
-        force["direction"] = f"{angle:.1f}° {eighth}, {EIGHTH_AXES[eighth]}"
+        described, angle, _, _ = tool.Structural.get_eighth(dx, dz, named[1] if named else None)
+        eighth = tool.Structural.get_opposite_eighth(described) if push else described
+        force["direction"] = f"{angle:.1f}° {described}, {EIGHTH_AXES[described]}"
         force["terms"] = get_component_terms(x, z, eighth, angle)
         # Entered as a slope, its components follow by similar triangles, as ratios of the slope's sides.
         if (slope := get_named_slope(load.Name or "", x, z)) is not None:
@@ -768,7 +772,7 @@ def get_force_terms(activity: ifcopenshell.entity_instance, i: int) -> dict[str,
         primed = re.search(r"(?: at (-?[\d.]+):(-?[\d.]+))? (Q[1-8])′$", load.Name or "")
         connects = activity.AssignedToStructuralItem
         if primed and connects and (tilt := tool.Structural.get_axes_tilt(connects[0].RelatingElement)):
-            local, local_angle, _, _ = tool.Structural.get_eighth(*tool.Structural.to_axes(x, z, tilt), primed[3])
+            local, local_angle, _, _ = tool.Structural.get_eighth(*tool.Structural.to_axes(dx, dz, tilt), primed[3])
             words = EIGHTH_AXES[local].replace("X", "x′").replace("Z", "z′")
             force["direction"] = f"{local_angle:.1f}° {local}′, {words}"
             if primed[1]:

@@ -580,6 +580,23 @@ nothing.
   of a model's items to share its `SharedPlacement`, with points placed by their vertices; that needs a
   design before it changes.
 
+## 30. A push named by the side it arrives from
+
+From Example 2.16, a piston pushing on the end of a lever: its force was named 20° Q4′, the way it
+points, where the piston, and the arrow's shaft, are on the Q8′ side.
+
+- **A push is described by the side it arrives from.** Its angle, slope and eighth, in Apply Load and
+  Edit Load, its generated name, its arc and θ in the viewport, and its direction in reports, give the
+  side its shaft is on: 1.5 kN at 20 deg Q8′. The stored force is unchanged, acting the other way, and
+  components are still its own X and Z. A push drawn in a chain with other forces is still slid along
+  its line to pull, and measured so.
+- **Pull and Push keep the shaft and turn the arrow round.** Switching keeps the angle, slope and eighth
+  and reverses the force; as components, it reverses them. The preview draws it pulling or pushing as the
+  dialog has it, before it is saved (`ShaderInfo.preview_push`, used only while its load is previewed).
+- **Old names still open.** A push named the old way, by where it points, opens in Edit Load in the
+  opposite eighth, and is named again by the side it arrives from when confirmed.
+- **Point Axes** in the load dialogs is now a checkbox, as Place From A is, and beside it in Edit Load.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
