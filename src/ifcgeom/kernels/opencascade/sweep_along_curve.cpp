@@ -21,7 +21,10 @@
 #include "base_utils.h"
 #include "wire_utils.h"
 
-#include <BRepOffsetAPI_MakePipeShell.hxx>
+#include <BRepFill_PipeShell.hxx>
+#include <boost/math/constants/constants.hpp>
+#include <TopTools_IndexedMapOfShape.hxx>
+#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <Geom_Plane.hxx>
 #include <ShapeAnalysis_Surface.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
@@ -30,6 +33,7 @@
 #include <TopExp.hxx>
 #include <Geom_Circle.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
+#include <BRepBuilderAPI_MakePolygon.hxx>
 
 using namespace ifcopenshell::geom;
 using namespace ifcopenshell::geom::kernels;
@@ -61,7 +65,7 @@ namespace {
 				c0->D1(u0, p, v0);
 				c1->D1(u1, p, v1);
 
-				if (1. - std::abs(v0.Normalized().Dot(v1.Normalized())) > tol) {
+				if (std::acos(std::min(1., std::abs(v0.Normalized().Dot(v1.Normalized())))) > tol) {
 					return false;
 				}
 			}
@@ -80,6 +84,7 @@ namespace {
 		}
 		return false;
 	}
+
 }
 
 bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, TopoDS_Shape& result) {
@@ -163,6 +168,33 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 
 	gp_Trsf directrix;
 	TopoDS_Wire wire = std::get<TopoDS_Wire>(w);
+	const bool has_circular_segments = contains_circular_segments(wire);
+	const bool is_c1_continuous = wire_is_c1_continuous(wire, 1.e-2);
+	// BRepOffsetAPI_MakePipeShell in RightCorner mode mitres two cylinders
+	// exactly, but trimming a torus against a cylinder goes through a numeric
+	// surface intersection that can fail silently, leaving the swept faces
+	// extended past the corner and untrimmed. Sweeping the tessellated
+	// directrix instead turns every corner into a cylinder-cylinder corner.
+	if (has_circular_segments && !is_c1_continuous) {
+		if (auto l = std::dynamic_pointer_cast<taxonomy::loop>(curve)) {
+			auto polygon = l->to_polygon(settings_);
+			const bool closed = polygon.size() > 2 && (polygon.front().ccomponents() - polygon.back().ccomponents()).norm() < settings_.get<settings::Precision>().get();
+			if (closed) {
+				polygon.pop_back();
+			}
+			BRepBuilderAPI_MakePolygon mp;
+			for (const auto& p : polygon) {
+				mp.Add(convert_xyz<gp_Pnt>(p));
+			}
+			if (closed) {
+				mp.Close();
+			}
+			if (mp.IsDone()) {
+				wire = mp.Wire();
+				logger_.message(ifcopenshell::logger::LOG_NOTICE, "GEO", 328, "Directrix with circular segments is not tangent continuous, circular segments approximated by chords", scs->instance);
+			}
+		}
+	}
     TopoDS_Vertex first_vertex, last_vertex;
     TopExp::Vertices(wire, first_vertex, last_vertex);
     const bool closed_directrix = !first_vertex.IsNull() && first_vertex.IsSame(last_vertex);
@@ -224,7 +256,29 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 	} else {
 		directrix.SetTransformation(gp_Ax3(directrix_origin, directrix_tangent), gp::XOY());
 	}
-	face = TopoDS::Face(BRepBuilderAPI_Transform(face, directrix));
+	const TopoDS_Face section_face = face;
+	// The X direction of the section placement becomes the seam of the swept
+	// faces and is arbitrary when no reference surface fixes it. OpenCASCADE's
+	// corner trimming (BRepFill_TrimShellCorner) intersects the two faces of a
+	// mitre with each other. When the seam runs close to where two nearly
+	// coaxial cylinders touch, the mitre vertex is given a tolerance so large
+	// that the next corner's seam intersection is discarded as a duplicate and
+	// the faces are left unstitched. Such a sweep is retried with the section
+	// rotated about the directrix tangent, which moves the seam away from that zone.
+	const bool arbitrary_seam = !(is_plane && directrix_on_plane) && !surface;
+	auto has_unstitched_edges = [](const TopoDS_Shape& shell, const TopoDS_Shape& first, const TopoDS_Shape& last) {
+		TopTools_IndexedDataMapOfShapeListOfShape edge_faces;
+		TopExp::MapShapesAndAncestors(shell, TopAbs_EDGE, TopAbs_FACE, edge_faces);
+		TopTools_IndexedMapOfShape ends;
+		TopExp::MapShapes(first, TopAbs_EDGE, ends);
+		TopExp::MapShapes(last, TopAbs_EDGE, ends);
+		for (int i = 1; i <= edge_faces.Extent(); ++i) {
+			if (edge_faces(i).Extent() == 1 && !ends.Contains(edge_faces.FindKey(i))) {
+				return true;
+			}
+		}
+		return false;
+	};
 
 	TopoDS_Face surface_face;
 	if (surface) {
@@ -239,77 +293,99 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 		}
 	}
 
-	BRep_Builder BB;
-	TopoDS_Shell comp;
-	BB.MakeShell(comp);
+	bool unstitched = false;
+	for (int attempt = 0; attempt < 2; ++attempt) {
+		gp_Trsf placement = directrix;
+		if (attempt > 0) {
+			gp_Trsf rotation;
+			rotation.SetRotation(gp_Ax1(directrix_origin, gp_Dir(directrix_tangent)), 17. * boost::math::constants::pi<double>() / 180.);
+			placement = rotation * directrix;
+		}
+		face = TopoDS::Face(BRepBuilderAPI_Transform(section_face, placement));
 
-	// NB: Note that StartParam and EndParam param are ignored and the assumption is
-	// made that the parametric range over which to be swept matches the IfcCurve in
-	// its entirety.
+		BRep_Builder BB;
+		TopoDS_Shell comp;
+		BB.MakeShell(comp);
+		unstitched = false;
 
-	// BRepOffsetAPI_MakePipeShell does not support FACE, so we need to manually iterate
-	// over the wires, first processing the outer, then inner. Where the cap face is
-	// constructed using MakeFace.
+		// NB: Note that StartParam and EndParam param are ignored and the assumption is
+		// made that the parametric range over which to be swept matches the IfcCurve in
+		// its entirety.
 
-	auto outer = BRepTools::OuterWire(face);
-	std::unique_ptr<BRepBuilderAPI_MakeFace> mf0, mf1;
-	TopoDS_Face f0, f1;
+		// BRepOffsetAPI_MakePipeShell does not support FACE, so we need to manually iterate
+		// over the wires, first processing the outer, then inner. Where the cap face is
+		// constructed using MakeFace.
 
-	for (int i = 0; i < 2; ++i) {
-		for (TopExp_Explorer exp(face, TopAbs_WIRE); exp.More(); exp.Next()) {
-			const auto& section = TopoDS::Wire(exp.Current());
-			if (section.IsSame(outer) != (i == 0)) {
-				continue;
-			}
+		auto outer = BRepTools::OuterWire(face);
+		std::unique_ptr<BRepBuilderAPI_MakeFace> mf0, mf1;
+		TopoDS_Face f0, f1;
 
-			BRepOffsetAPI_MakePipeShell builder(wire);
-			builder.Add(section);
-            builder.SetTransitionMode(contains_circular_segments(wire) && wire_is_c1_continuous(wire, 1.e-2) ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
-			if (directrix_on_plane) {
-				builder.SetMode(pln.Axis().Direction());
-			} else if (!is_plane) {
-				builder.SetMode(surface_face);
-			}
-			builder.Build();
-			if (!builder.IsDone()) {
-				return false;
-			}
-            // A closed directrix has no end boundary. Adding caps here creates
-            // coincident internal faces at the seam of the swept shell.
-            if (!closed_directrix) {
-                auto w0 = TopoDS::Wire(builder.FirstShape());
-                auto w1 = TopoDS::Wire(builder.LastShape());
-                if (mf0) {
-                    mf0->Add(w0);
-                    mf1->Add(w1);
-                } else {
-                    f0 = BRepBuilderAPI_MakeFace(w0).Face();
-                    f1 = BRepBuilderAPI_MakeFace(w1).Face();
-                    if (f0.IsNull() || f1.IsNull()) {
-                        return false;
-                    }
-                    mf0.reset(new BRepBuilderAPI_MakeFace(f0));
-                    mf1.reset(new BRepBuilderAPI_MakeFace(f1));
-                }
-            }
+		for (int i = 0; i < 2; ++i) {
+			for (TopExp_Explorer exp(face, TopAbs_WIRE); exp.More(); exp.Next()) {
+				const auto& section = TopoDS::Wire(exp.Current());
+				if (section.IsSame(outer) != (i == 0)) {
+					continue;
+				}
 
-			for (TopExp_Explorer exp2(builder.Shape(), TopAbs_FACE); exp2.More(); exp2.Next()) {
-				BB.Add(comp, exp2.Current());
+				BRepFill_PipeShell builder(wire);
+				builder.Add(section);
+				// BRepOffsetAPI_MakePipeShell leaves BRepFill_PipeShell's corner gate at its
+				// default of 1e-2 rad. Corners turning less than that get no mitre and the
+				// rings of short following segments are joined wrongly, so lower the gate.
+				builder.SetTransition(has_circular_segments && is_c1_continuous ? BRepFill_Modified : BRepFill_Right, 1.e-3, 6.0);
+				if (directrix_on_plane) {
+					builder.Set(pln.Axis().Direction());
+				} else if (!is_plane && !surface_face.IsNull()) {
+					builder.Set(surface_face);
+				}
+				if (!builder.Build()) {
+					return false;
+				}
+				if (has_unstitched_edges(builder.Shape(), builder.FirstShape(), builder.LastShape())) {
+					unstitched = true;
+				}
+				// A closed directrix has no end boundary. Adding caps here creates
+				// coincident internal faces at the seam of the swept shell.
+				if (!closed_directrix) {
+					auto w0 = TopoDS::Wire(builder.FirstShape());
+					auto w1 = TopoDS::Wire(builder.LastShape());
+					if (mf0) {
+						mf0->Add(w0);
+						mf1->Add(w1);
+					} else {
+						f0 = BRepBuilderAPI_MakeFace(w0).Face();
+						f1 = BRepBuilderAPI_MakeFace(w1).Face();
+						if (f0.IsNull() || f1.IsNull()) {
+							return false;
+						}
+						mf0.reset(new BRepBuilderAPI_MakeFace(f0));
+						mf1.reset(new BRepBuilderAPI_MakeFace(f1));
+					}
+				}
+
+				for (TopExp_Explorer exp2(builder.Shape(), TopAbs_FACE); exp2.More(); exp2.Next()) {
+					BB.Add(comp, exp2.Current());
+				}
 			}
 		}
+
+		if (!closed_directrix) {
+			if (mf0->IsDone() && mf1->IsDone()) {
+				BB.Add(comp, TopoDS::Face(mf0->Face().Reversed()));
+				BB.Add(comp, mf1->Face());
+			} else {
+				BB.Add(comp, TopoDS::Face(f0.Reversed()));
+				BB.Add(comp, f1);
+			}
+		}
+
+		result = BRepBuilderAPI_MakeSolid(comp).Solid();
+
+		if (!(unstitched && arbitrary_seam)) {
+			break;
+		}
+		logger_.message(ifcopenshell::logger::LOG_NOTICE, "GEO", 331, "Swept faces left unstitched at a corner, retrying with a rotated section", scs->instance);
 	}
-
-    if (!closed_directrix) {
-        if (mf0->IsDone() && mf1->IsDone()) {
-            BB.Add(comp, TopoDS::Face(mf0->Face().Reversed()));
-            BB.Add(comp, mf1->Face());
-        } else {
-            BB.Add(comp, TopoDS::Face(f0.Reversed()));
-            BB.Add(comp, f1);
-        }
-    }
-
-	result = BRepBuilderAPI_MakeSolid(comp).Solid();
 
 	if (applied_temporary_offset) {
         gp_Trsf trsf;
