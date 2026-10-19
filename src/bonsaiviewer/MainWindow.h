@@ -42,6 +42,8 @@ namespace bonsaiviewer::modules::properties { class PropertiesPanel; }
 namespace bonsaiviewer::modules::properties { class PropertiesPanelView; }
 namespace bonsaiviewer::modules::viewport { class ViewportView; }
 namespace bonsaiviewer::modules::viewport { class ViewportPanel; }
+namespace bonsaiviewer::modules::display { class DisplayState; }
+class QLineEdit;
 
 namespace bonsaiviewer::shell {
 
@@ -60,7 +62,19 @@ private:
     QWidget* buildHomeRibbonPage();
     QWidget* buildNavigateRibbonPage();
     QWidget* buildInspectRibbonPage();
+    QWidget* buildDisplayRibbonPage();
     QWidget* buildPanelsRibbonPage();
+    QWidget* buildSearchBar();
+    // Display tool buttons shared by the ribbon page and the "Display Tools"
+    // dock panel: both surfaces drive the same commands through one factory.
+    struct DisplayToolButtons {
+        QList<QToolButton*> section;
+        QList<QToolButton*> color;
+        QList<QToolButton*> box;
+        QList<QToolButton*> display;
+        QList<QToolButton*> zoom;
+    };
+    DisplayToolButtons makeDisplayToolButtons();
     void updateWindowTitle();
     QToolButton* makePanelToggle(const QString& text, QDockWidget* dock);
     // Rebuilds `menu` from the persisted recent-projects list. Wired to the
@@ -94,6 +108,10 @@ private:
     bonsaiviewer::modules::models::ModelsPanelView* models_view_ = nullptr;
     bonsaiviewer::modules::spatial_hierarchy::SpatialHierarchyPanelView* spatial_view_ = nullptr;
     bonsaiviewer::modules::properties::PropertiesPanelView* properties_view_ = nullptr;
+    // "Display" tab state: Box, category filters, manual colour/transparency.
+    bonsaiviewer::modules::display::DisplayState* display_state_ = nullptr;
+    // Search bar in the left corner of the ribbon band (all tabs).
+    QLineEdit* search_edit_ = nullptr;
 };
 
 } // namespace bonsaiviewer::shell
