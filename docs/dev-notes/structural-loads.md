@@ -614,6 +614,12 @@ points, where the piston, and the arrow's shaft, are on the Q8′ side.
 - **Components along the point's axes.** With Point Axes ticked, Components takes x′ and z′ in place of X
   and Z, written back as X and Z; switching measures them again the other way, keeping the force. Clicking
   Fx′1 or Fz′1 opens Edit Load so, the value clicked ready to type.
+- **Δx′ and Δz′ in Edit Moment Centre.** With the point A is measured from on tilted axes, Components also
+  takes Δx′ and Δz′ to A, along those axes, moving A as Δx and Δz do. Clicking Δx′₁ or Δz′₁ in the
+  drawing opens the dialog with it ready to type; like Δx and Δz, the dialog measures from the point to A.
+- **s.** The moment triangle's third side, along the line of action from the force's point to the foot of
+  its arm, is now an input in the Moment Arm section, and clicking s₁ opens it. Typing it slides A
+  parallel to the line of action, keeping d; a kept moment never finds it, so it has no lock.
 
 ## Next
 
