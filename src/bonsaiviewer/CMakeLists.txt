@@ -65,6 +65,8 @@ set(BONSAIVIEWER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/display/Commands.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/display/DisplayState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/display/DisplayState.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/display/Search.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/display/Search.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/PickerDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/PickerDialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/Process.cpp
