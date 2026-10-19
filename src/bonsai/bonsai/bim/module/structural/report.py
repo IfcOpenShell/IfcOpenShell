@@ -769,12 +769,12 @@ def get_force_terms(activity: ifcopenshell.entity_instance, i: int) -> dict[str,
             force["terms"] = get_slope_terms(x, z, rise, run)
         # Entered against the point's own axes, as a primed eighth in its name records, it is described so; its
         # components are still added along X and Z.
-        primed = re.search(r"(?: at (-?[\d.]+):(-?[\d.]+))? (Q[1-8])′$", load.Name or "")
+        primed = re.search(r"(?: at (-?[\d.]+):(-?[\d.]+))? (Q[1-8])(?:′| \(x′z′\))$", load.Name or "")
         connects = activity.AssignedToStructuralItem
         if primed and connects and (tilt := tool.Structural.get_axes_tilt(connects[0].RelatingElement)):
             local, local_angle, _, _ = tool.Structural.get_eighth(*tool.Structural.to_axes(dx, dz, tilt), primed[3])
             words = EIGHTH_AXES[local].replace("X", "x′").replace("Z", "z′")
-            force["direction"] = f"{local_angle:.1f}° {local}′, {words}"
+            force["direction"] = f"{local_angle:.1f}° {local}{tool.Structural.ON_AXES}, {words}"
             if primed[1]:
                 force["direction"] = f"{float(primed[1]):g}:{float(primed[2]):g} slope, {force['direction']}"
     force["given"] = tool.Structural.get_known_component(activity) if force["in_plane"] else None
@@ -786,7 +786,7 @@ def get_force_terms(activity: ifcopenshell.entity_instance, i: int) -> dict[str,
 
 def get_named_slope(name: str, x: float, z: float) -> Union[tuple[float, float], None]:
     """The rise and run a generated load name records, if they are the slope of the components x and z"""
-    if not (match := re.search(r" at (-?[\d.]+):(-?[\d.]+)(?: \S+)?$", name)):
+    if not (match := re.search(r" at (-?[\d.]+):(-?[\d.]+)(?: \S+(?: \(x′z′\))?)?$", name)):
         return None
     rise, run = abs(float(match[1])), abs(float(match[2]))
     if not (rise or run) or not math.isclose(abs(x) * rise, abs(z) * run, rel_tol=1e-6, abs_tol=1e-9):

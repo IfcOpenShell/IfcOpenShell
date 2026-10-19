@@ -1597,13 +1597,13 @@ class ShaderInfo:
             # From the axis of the eighth Edit Load enters it in, which its generated name records: one of the
             # point's own axes if the eighth is primed, as the force was entered against them.
             load = tool.Ifc.get().by_id(activity).AppliedLoad if activity else None
-            named = re.search(r" (Q[1-8])′?$", (load.Name or "") if load else "")
+            named = re.search(r" (Q[1-8])(?:′| \(x′z′\))?$", (load.Name or "") if load else "")
             tilt = self.get_entry_tilt(activity)
             x, z = tool.Structural.to_axes(vector[0], vector[2], tilt) if tilt else (vector[0], vector[2])
             eighth, angle, _, _ = tool.Structural.get_eighth(x, z, named[1] if named else None)
             start = tilt + 90.0 * (int(eighth[1]) // 2)
             end = start + (angle if int(eighth[1]) % 2 else -angle)
-            eighth += "′" if tilt else ""
+            eighth += tool.Structural.ON_AXES if tilt else ""
         elif reference == "HORIZONTAL" and vector[0] < -1e-9 * np.linalg.norm(vector):
             # Measured from -X, so that the angle is the acute one statics texts draw.
             start = 180.0
@@ -1628,7 +1628,7 @@ class ShaderInfo:
         if not activity or tool.Structural.get_structural_props().reference_frame == "LOCAL_COORDS":
             return 0.0
         element = tool.Ifc.get().by_id(activity)
-        if not element.AppliedLoad or not re.search(r" Q[1-8]′$", element.AppliedLoad.Name or ""):
+        if not element.AppliedLoad or not tool.Structural.get_eighth_on_axes(element.AppliedLoad.Name):
             return 0.0
         connects = element.AssignedToStructuralItem
         return (tool.Structural.get_axes_tilt(connects[0].RelatingElement) if connects else None) or 0.0
