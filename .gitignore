@@ -141,3 +141,4 @@ CLAUDE.local.md
 # bonsaiviewer-autodesk connector build artifacts
 /src/bonsaiviewer-autodesk/build/
 /src/bonsaiviewer-autodesk/dist/
+/build-qt612

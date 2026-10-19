@@ -216,6 +216,23 @@ public:
     void showAllElements();
     void invertElementVisibility();
 
+    // Explicit per-id visibility + colour overrides for bonsai's display
+    // tools (box isolation, category filters, search results, manual
+    // paint / transparency). rgba8 is packed 0xAABBGGRR; 0 clears the
+    // override. Thin wrappers around the ViewportCore verbs.
+    void setObjectsVisible(const std::vector<uint32_t>& object_ids, bool visible);
+    void setObjectsColor(const std::vector<uint32_t>& object_ids, uint32_t rgba8);
+    void clearObjectColors();
+    void hideAllElements();
+    bool isElementHidden(uint32_t object_id) const;
+
+    // Zoom-support queries ("Ajuster sur la vue active"). The fit and the
+    // empty-view check count VISIBLE elements only, so the command zooms in
+    // on whatever is currently on screen (isolation, hidden categories…).
+    bool hasVisibleElements() const;
+    bool viewVisibleElements();
+    bool anyDrawableElementWithinCameraPlane(float max_distance_m) const;
+
     // Replace the selection with {id} (or clear if id == 0). Used by
     // SessionState mirroring and by project commands that drop selection
     // on model removal. Wrapper around selection_.replace / clear.
@@ -361,12 +378,32 @@ public:
     //   Esc         deactivate tool
     bool  sectionToolActive() const { return section_tool_active_; }
     void  toggleSectionTool();
+    // Single-shot mode for bonsai's "Ajouter un plan de coupe" button: the
+    // tool deactivates itself after one plane is placed, and the cursor
+    // returns to selection (the spec's knife-cursor one-click flow).
+    void  setSectionToolSingleShot(bool single_shot);
+    bool  sectionToolSingleShot() const { return section_tool_single_shot_; }
     bool  addSectionPlaneAtSurface(const Eigen::Vector3f& point,
                                    const Eigen::Vector3f& normal,
                                    float visual_radius = 0.0f);
     void  removeSectionPlane(int index);
     void  clearSectionPlanes();
     int   sectionPlaneCount() const { return int(section_planes_.size()); }
+    // "Masquer le plan de coupe" / "Suspendre la coupe" state.
+    void  setSectionGizmosVisible(bool visible);
+    bool  sectionGizmosVisible() const;
+    void  setSectionCutsEnabled(bool enabled);
+    bool  sectionCutsEnabled() const;
+
+    // One-shot "Vue perpendiculaire" tool: on the next plain LMB on a
+    // surface, the camera turns to look along -normal toward the clicked
+    // point and zooms to fit the visible elements (distance from
+    // fitDistanceForVisibleElements, target kept at the picked point). The
+    // tool then deactivates itself.
+    void  activatePerpendicularViewTool();
+    void  cancelPerpendicularViewTool();
+    bool  perpendicularViewToolActive() const { return perpendicular_tool_active_; }
+
     // Overlay primitives. Mirror GL ViewportWindow so the Measurement +
     // dimension tools can target either backend through one API.
     // Empty inputs clears the corresponding set.
@@ -504,6 +541,20 @@ signals:
     // Backspace/Delete pressed while a tool is active. Length tool's
     // remove-last-point; other tools may ignore.
     void toolBackspacePressed();
+    // Section tool on→off / off→on transitions (toggle, Esc, single-shot
+    // auto-off). Bonsai uses this to swap the knife cursor in and out.
+    void sectionToolChanged(bool active);
+    // "Masquer / Suspendre la coupe" state changed — lets every UI surface
+    // (ribbon + dock panel) keep its toggle buttons in sync with the viewport.
+    void sectionStateChanged(bool gizmos_visible, bool cuts_enabled);
+    // Perpendicular-view tool transitions (activated / click applied / Esc
+    // cancelled). Bonsai uses this to swap the set-square cursor.
+    void perpendicularViewToolChanged(bool active);
+    // Right-click over a section-plane gizmo (press+release without drag).
+    // The viewport has no Widgets dependency, so the host shows the actual
+    // context menu (e.g. "Delete plane") at `global_pos` and calls
+    // removeSectionPlane(plane_index) if the user confirms.
+    void sectionPlaneContextMenuRequested(int plane_index, const QPoint& global_pos);
 
 public:
 
@@ -719,6 +770,11 @@ private:
     // for the WGSL fragment-side clip gate.
     std::vector<SectionPlane>& section_planes_;
     bool                          section_tool_active_  = false;
+    bool                          section_tool_single_shot_ = false;
+    bool                          perpendicular_tool_active_ = false;
+    // Section-plane index under the right-button press (-1 = none). Consumed
+    // at release time by sectionPlaneContextMenuRequested.
+    int section_context_plane_ = -1;
 
     // X-ray cap alias (storage in core_). Default 1.0 = no effect
     // (fragment shader clamps alpha = min(in.color.a, xray_alpha_cap_),
