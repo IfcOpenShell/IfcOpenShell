@@ -1059,7 +1059,16 @@ fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
         let cg = f32((inst.color_override >>  8u) & 0xFFu) / 255.0;
         let cb = f32((inst.color_override >> 16u) & 0xFFu) / 255.0;
         let ca = f32((inst.color_override >> 24u) & 0xFFu) / 255.0;
-        if (ca > 0.0) { color = vec4<f32>(cr, cg, cb, ca); }
+        if (ca > 0.0) {
+            // Sentinel R=G=B=1 (value & 0x00FFFFFFu == 0x00010101u):
+            // alpha-only override (bonsai's transparency tool) — keep the
+            // baked colour, replace just the alpha.
+            if ((inst.color_override & 0x00FFFFFFu) == 0x00010101u) {
+                color = vec4<f32>(color.rgb, ca);
+            } else {
+                color = vec4<f32>(cr, cg, cb, ca);
+            }
+        }
     }
 
     var out: VsOut;

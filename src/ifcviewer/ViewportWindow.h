@@ -216,6 +216,17 @@ public:
     void showAllElements();
     void invertElementVisibility();
 
+    // Explicit per-id visibility + colour overrides for bonsai's display
+    // tools (box isolation, category filters, search results, manual
+    // paint / transparency). `rgba8` is packed 0xAABBGGRR (the byte order
+    // the WGSL unpacks); 0 clears the override. Thin wrappers around the
+    // ViewportCore verbs.
+    void setObjectsVisible(const std::vector<uint32_t>& object_ids, bool visible);
+    void setObjectsColor(const std::vector<uint32_t>& object_ids, uint32_t rgba8);
+    void clearObjectColors();
+    void hideAllElements();
+    bool isElementHidden(uint32_t object_id) const;
+
     // Replace the selection with {id} (or clear if id == 0). Used by
     // SessionState mirroring and by project commands that drop selection
     // on model removal. Wrapper around selection_.replace / clear.

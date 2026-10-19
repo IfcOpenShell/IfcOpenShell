@@ -1163,6 +1163,18 @@ void ViewportWindow::hideSelectedElements()    { core_.hideSelected(); }
 void ViewportWindow::isolateSelectedElements() { core_.isolateSelected(); }
 void ViewportWindow::showAllElements()         { core_.showAll(); }
 
+void ViewportWindow::setObjectsVisible(const std::vector<uint32_t>& object_ids, bool visible) {
+    core_.setObjectsVisible(object_ids, visible);
+}
+void ViewportWindow::setObjectsColor(const std::vector<uint32_t>& object_ids, uint32_t rgba8) {
+    core_.setObjectsColor(object_ids, rgba8);
+}
+void ViewportWindow::clearObjectColors() { core_.clearObjectColors(); }
+void ViewportWindow::hideAllElements()   { core_.hideAll(); }
+bool ViewportWindow::isElementHidden(uint32_t object_id) const {
+    return core_.isObjectHidden(object_id);
+}
+
 void ViewportWindow::invertElementVisibility() {
     // Compute the new hidden set: every live object_id in a visible model
     // that ISN'T currently hidden. Then swap. Done in two passes so we
