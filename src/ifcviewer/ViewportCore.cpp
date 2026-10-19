@@ -548,6 +548,91 @@ bool ViewportCore::viewModels(const std::vector<uint32_t>& session_model_ids) {
     return true;
 }
 
+bool ViewportCore::hasVisibleElements() const {
+    for (const auto& [session_model_id, m] : models_gpu_) {
+        if (!m.drawable()) continue;
+        for (const InstanceInfo& inst : m.instances) {
+            if (!visibility_.isHidden(inst.object_id)) return true;
+        }
+    }
+    return false;
+}
+
+// Union of the world AABBs of every visible element (drawable model,
+// not element-hidden). Shared by the fit, the perpendicular-view zoom,
+// and the empty-view check.
+bool ViewportCore::computeVisibleElementsAabb(float mn[3], float mx[3]) const {
+    bool any = false;
+    for (int i = 0; i < 3; ++i) {
+        mn[i] =  std::numeric_limits<float>::infinity();
+        mx[i] = -std::numeric_limits<float>::infinity();
+    }
+    for (const auto& [session_model_id, m] : models_gpu_) {
+        if (!m.drawable()) continue;
+        for (const InstanceInfo& inst : m.instances) {
+            if (visibility_.isHidden(inst.object_id)) continue;
+            for (int i = 0; i < 3; ++i) {
+                mn[i] = std::min(mn[i], inst.world_aabb_min[i]);
+                mx[i] = std::max(mx[i], inst.world_aabb_max[i]);
+            }
+            any = true;
+        }
+    }
+    return any;
+}
+
+bool ViewportCore::viewVisibleElements() {
+    float mn[3], mx[3];
+    if (!computeVisibleElementsAabb(mn, mx)) return false;
+    // Same padding as viewAll(); the box is just restricted to what is on
+    // screen, so isolated objects fill the view instead of shrinking into
+    // the whole-scene frame.
+    frameAabb(mn, mx, 1.10f);
+    return true;
+}
+
+bool ViewportCore::anyDrawableElementWithinCameraPlane(float max_distance_m) const {
+    const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
+    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
+                                         camera_yaw_deg_, camera_pitch_deg_);
+    Eigen::Vector3f look = target - eye;
+    const float len = look.norm();
+    if (len < 1e-6f) return true;   // degenerate camera — treat as near
+    look /= len;
+
+    for (const auto& [session_model_id, m] : models_gpu_) {
+        if (!m.drawable()) continue;
+        for (const InstanceInfo& inst : m.instances) {
+            if (visibility_.isHidden(inst.object_id)) continue;
+            // Nearest point of the world AABB to the camera plane along the
+            // look axis: the corner that maximizes dot(look, p).
+            Eigen::Vector3f p;
+            for (int i = 0; i < 3; ++i) {
+                p[i] = look[i] >= 0.0f ? inst.world_aabb_max[i]
+                                       : inst.world_aabb_min[i];
+            }
+            if (std::abs(look.dot(eye - p)) <= max_distance_m) return true;
+        }
+    }
+    return false;
+}
+
+float ViewportCore::fitDistanceForVisibleElements() const {
+    float mn[3], mx[3];
+    if (!computeVisibleElementsAabb(mn, mx)) return camera_distance_;
+    constexpr float kDeg2Rad = kPiF / 180.0f;
+    const float dx = mx[0] - mn[0];
+    const float dy = mx[1] - mn[1];
+    const float dz = mx[2] - mn[2];
+    const float radius = 0.5f * std::sqrt(dx * dx + dy * dy + dz * dz);
+    if (radius <= 1e-4f) return camera_distance_;
+    const float tan_half = std::tan(camera_fov_y_deg_ * 0.5f * kDeg2Rad);
+    if (tan_half <= 1e-6f) return camera_distance_;
+    const float aspect     = float(std::max(configured_w_, 1)) / float(std::max(configured_h_, 1));
+    const float min_aspect = aspect < 1.0f ? aspect : 1.0f;
+    return std::max(0.1f, (radius / (tan_half * min_aspect)) * 1.10f);
+}
+
 void ViewportCore::setCamera(float tx, float ty, float tz,
                              float dist, float yaw_deg, float pitch_deg) {
     camera_target_[0]   = tx;

@@ -998,6 +998,20 @@ bool ViewportWindow::sectionCutsEnabled() const {
     return core_.sectionCutsEnabled();
 }
 
+void ViewportWindow::activatePerpendicularViewTool() {
+    if (perpendicular_tool_active_) return;
+    perpendicular_tool_active_ = true;
+    requestActivate();
+    Log::info() << "[wgpu] perpendicular view tool active — click a surface";
+    emit perpendicularViewToolChanged(true);
+}
+
+void ViewportWindow::cancelPerpendicularViewTool() {
+    if (!perpendicular_tool_active_) return;
+    perpendicular_tool_active_ = false;
+    emit perpendicularViewToolChanged(false);
+}
+
 bool ViewportWindow::addSectionPlaneAtSurface(const Eigen::Vector3f& point, const Eigen::Vector3f& normal, float visual_radius) {
     return core_.addSectionPlaneAtSurface(point, normal, visual_radius);
 }
@@ -1173,6 +1187,15 @@ void ViewportWindow::clearObjectColors() { core_.clearObjectColors(); }
 void ViewportWindow::hideAllElements()   { core_.hideAll(); }
 bool ViewportWindow::isElementHidden(uint32_t object_id) const {
     return core_.isObjectHidden(object_id);
+}
+bool ViewportWindow::hasVisibleElements() const {
+    return core_.hasVisibleElements();
+}
+bool ViewportWindow::viewVisibleElements() {
+    return core_.viewVisibleElements();
+}
+bool ViewportWindow::anyDrawableElementWithinCameraPlane(float max_distance_m) const {
+    return core_.anyDrawableElementWithinCameraPlane(max_distance_m);
 }
 
 void ViewportWindow::invertElementVisibility() {
@@ -1639,6 +1662,7 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
         core_.setPivotIndicatorVisible(true);
     } else if (event->button() == select_button_
             && !section_tool_active_
+            && !perpendicular_tool_active_
             && tool_mode_ != ToolMode::Area
             && tool_mode_ != ToolMode::Length
             && nav_drag_kind_ == NavDrag::Inactive) {
@@ -1745,6 +1769,33 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                     section_tool_active_ = false;
                     emit sectionToolChanged(false);
                 }
+                nav_active_button_ = Qt::NoButton;
+                nav_drag_kind_     = NavDrag::Inactive;
+                core_.setPivotIndicatorVisible(false);
+                return;
+            }
+
+            // Perpendicular-view tool: one plain-LMB click turns the camera
+            // to look along -normal at the picked point, zooms to fit the
+            // visible elements, then deactivates itself.
+            if (perpendicular_tool_active_
+                && event->modifiers() == Qt::NoModifier) {
+                uint32_t hit_id = 0;
+                Eigen::Vector3f hit_pos, hit_normal;
+                if (pickSurfaceAt(px, py, hit_id, hit_pos, hit_normal)) {
+                    Eigen::Vector3f n = hit_normal.normalized();
+                    const float nz_clamped = std::clamp(n.z(), -1.0f, 1.0f);
+                    constexpr float kRad2Deg = 57.29577951308232f;
+                    const float yaw_deg   = std::atan2(n.y(), n.x()) * kRad2Deg;
+                    const float pitch_deg = std::asin(nz_clamped) * kRad2Deg;
+                    setCamera(hit_pos.x(), hit_pos.y(), hit_pos.z(),
+                              core_.fitDistanceForVisibleElements(), yaw_deg, pitch_deg);
+                } else {
+                    Log::info().noquote()
+                        << "[wgpu] perpendicular view: click missed (no surface)";
+                }
+                perpendicular_tool_active_ = false;
+                emit perpendicularViewToolChanged(false);
                 nav_active_button_ = Qt::NoButton;
                 nav_drag_kind_     = NavDrag::Inactive;
                 core_.setPivotIndicatorVisible(false);
@@ -2023,6 +2074,11 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
                                              : int(section_planes_.size()) - 1);
             return;
         }
+    }
+    if (perpendicular_tool_active_ && key == Qt::Key_Escape
+        && !event->isAutoRepeat()) {
+        cancelPerpendicularViewTool();
+        return;
     }
 
     // Measurement tools. V toggles Volume, A toggles Area; Esc exits
