@@ -835,6 +835,7 @@ class ShaderInfo:
                     f"{self.length_unit}",
                     "color": color,
                     "away": outside / (np.linalg.norm(outside) or 1),
+                    "focus": "s",  # Clicked, Edit Moment Centre opens with it ready to type.
                 }
             )
         if tool.Structural.get_structural_props().show_force_angles:
@@ -945,9 +946,9 @@ class ShaderInfo:
         beside = min(u for u, _ in coordinates) - clear  # Behind all of it along x′, for the one along z′.
         u, w = np.dot(location - at, ex), np.dot(location - at, ez)
         slash = (ex + ez) * tick
-        for delta, axis, a, b, away in (
-            (u, "x′", at + ez * beyond, at + ex * u + ez * beyond, ez),
-            (w, "z′", at + ex * beside, at + ex * beside + ez * w, -ex),
+        for delta, axis, a, b, away, focus in (
+            (u, "x′", at + ez * beyond, at + ex * u + ez * beyond, ez, "dx′"),
+            (w, "z′", at + ex * beside, at + ex * beside + ez * w, -ex, "dz′"),
         ):
             if abs(delta) < 1e-3 * max(size, 1e-9):
                 continue  # Square to that axis, as near as a point placed by hand is: nothing to dimension.
@@ -963,6 +964,7 @@ class ShaderInfo:
                     "text": f"Δ{get_plain_symbol(f'{axis}_{{{i}}}')} = {abs(delta) / length_scale:.2f} {self.length_unit}",
                     "color": color,
                     "away": away,
+                    "focus": focus,  # Clicked, Edit Moment Centre opens with it ready to type.
                 }
             )
 

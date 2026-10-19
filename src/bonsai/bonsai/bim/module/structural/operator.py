@@ -2620,6 +2620,47 @@ def move_moment_centre(props: "EditStructuralMomentCentre", context: bpy.types.C
     fill_moment_inputs(props, context, MOMENT_MODE_INPUTS[props.input_mode])
 
 
+def get_moment_tilt(props: "EditStructuralMomentCentre") -> Union[float, None]:
+    """The tilt of the own axes of the point A is measured from, if they are tilted"""
+    try:
+        point = tool.Ifc.get().by_id(int(props.point))
+    except (ValueError, RuntimeError):
+        return None
+    return tool.Structural.get_axes_tilt(point) or None
+
+
+def move_moment_centre_on_axes(props: "EditStructuralMomentCentre", context: bpy.types.Context) -> None:
+    """Move the moment centre to where it is entered from the point along the point's own tilted axes"""
+    if MOMENT_CENTRE_FILLING[0] or not (tilt := get_moment_tilt(props)):
+        return
+    _, point_obj = get_moment_centre_objects(props)
+    if not point_obj:
+        return
+    dx, dz = tool.Structural.from_axes(props.dx_axes, props.dz_axes, tilt)
+    point = get_vertex_location(point_obj)
+    place_moment_centre(props, context, point.x + dx, point.z + dz)
+    fill_moment_inputs(props, context, ("dx_axes", "dz_axes"))
+
+
+def move_moment_along(props: "EditStructuralMomentCentre", context: bpy.types.Context) -> None:
+    """Slide the moment centre parallel to a force's line of action, so that the foot of its moment arm is s along
+    the line from the force's point, keeping the arm d"""
+    centre_obj, _ = get_moment_centre_objects(props)
+    force, point = get_moment_arm_force(props)
+    if MOMENT_CENTRE_FILLING[0] or not centre_obj or not force:
+        return
+    at = get_vertex_location(centre_obj)
+    _, _, foot = tool.Structural.get_moment(np.array(at), np.array(point), np.array(force))
+    along = Vector((foot[0] - point.x, 0.0, foot[2] - point.z))
+    if not along.length:
+        along = Vector((force.x, 0.0, force.z)) * 1e-9  # The foot at the point: out along the force's own way.
+        if not along.length:
+            return
+    target = at + along.normalized() * (props.s - along.length)
+    place_moment_centre(props, context, target.x, target.z)
+    fill_moment_inputs(props, context, ("s",))
+
+
 def move_moment_arm(props: "EditStructuralMomentCentre", context: bpy.types.Context) -> None:
     """Slide the moment centre along a force's moment arm to the arm's length entered, keeping the arm's foot on
     the line of action"""
@@ -2682,6 +2723,8 @@ def fill_moment_inputs(
     at, point = get_vertex_location(centre_obj), get_vertex_location(point_obj)
     dx, dz = at.x - point.x, at.z - point.z
     values = {"dx": dx, "dz": dz, "distance": math.hypot(dx, dz)}
+    if tilt := get_moment_tilt(props):
+        values["dx_axes"], values["dz_axes"] = tool.Structural.to_axes(dx, dz, tilt)
     if dx or dz:
         values["direction"], values["angle"], _, _ = tool.Structural.get_eighth(dx, dz)
         values["rise"], values["run"] = tool.Structural.get_simple_slope(abs(dx), abs(dz))
@@ -2692,6 +2735,7 @@ def fill_moment_inputs(
         r, to_foot = at - force_point, Vector(foot) - force_point
         r.y = to_foot.y = 0.0
         values["phi"] = 90.0 if not to_foot.length or not r.length else math.degrees(r.angle(to_foot))
+        values["s"] = to_foot.length
         values["alpha"] = 90.0 - values["phi"]
     MOMENT_CENTRE_FILLING[0] = True
     try:
@@ -2757,12 +2801,34 @@ class EditStructuralMomentCentre(
         subtype="DISTANCE",
         update=move_moment_centre,
     )
+    dx_axes: bpy.props.FloatProperty(
+        name="Δx′ to A",
+        description="From the point to A, along the point's own tilted axis x'",
+        subtype="DISTANCE",
+        update=move_moment_centre_on_axes,
+    )
+    dz_axes: bpy.props.FloatProperty(
+        name="Δz′ to A",
+        description="From the point to A, along the point's own tilted axis z'",
+        subtype="DISTANCE",
+        update=move_moment_centre_on_axes,
+    )
     arm: bpy.props.FloatProperty(
         name="d",
         description="The moment arm: from A square to the force's line of action. A slides along it",
         subtype="DISTANCE",
         min=0.0,
         update=move_moment_arm,
+    )
+    s: bpy.props.FloatProperty(
+        name="s",
+        description=(
+            "Along the force's line of action, from its point to the foot of the moment arm. A slides parallel to "
+            "the line of action, keeping d"
+        ),
+        subtype="DISTANCE",
+        min=0.0,
+        update=move_moment_along,
     )
     phi: bpy.props.FloatProperty(
         name="φ",
@@ -2804,7 +2870,8 @@ class EditStructuralMomentCentre(
             forces = [a for a in tool.Structural.get_chain_activities(point, case) if get_moment_arm_force_of(a)[0]]
             self.activity = forces[0].id() if len(forces) == 1 else 0
         # A value clicked opens in the input mode that enters it, ready to type over.
-        modes = {"dx": "COMPONENTS", "dz": "COMPONENTS", "angle": "ANGLE", "rise": "SLOPE", "run": "SLOPE"}
+        modes = {"dx": "COMPONENTS", "dz": "COMPONENTS", "dx′": "COMPONENTS", "dz′": "COMPONENTS"}
+        modes |= {"angle": "ANGLE", "rise": "SLOPE", "run": "SLOPE"}
         if mode := modes.get(self.focus):
             self.input_mode = mode
         elif self.focus == "distance" and self.input_mode == "COMPONENTS":
@@ -2828,8 +2895,11 @@ class EditStructuralMomentCentre(
             layout.prop(self, "point")
         layout.row().prop(self, "input_mode", expand=True)
         if self.input_mode == "COMPONENTS":
-            draw_with_lock(layout, self, ("dx",), focus=self.focus)
-            draw_with_lock(layout, self, ("dz",), focus=self.focus)
+            # Along the point's own axes too, if they are tilted; Δx′ or Δz′ clicked is ready to type.
+            focus = {"dx′": "dx_axes", "dz′": "dz_axes"}.get(self.focus, self.focus)
+            names = ("dx", "dz", "dx_axes", "dz_axes") if get_moment_tilt(self) else ("dx", "dz")
+            for name in names:
+                draw_with_lock(layout, self, (name,), focus=focus)
         else:
             self.draw_direction_inputs(layout)
             draw_with_lock(layout, self, ("distance",), focus=self.focus)
@@ -2843,6 +2913,7 @@ class EditStructuralMomentCentre(
             load = tool.Ifc.get().by_id(self.activity).AppliedLoad
             box.label(text=f"Moment Arm of {load.Name or 'Unnamed'}")
             draw_with_lock(box, self, ("arm",), "arm_locked", focus=self.focus)
+            draw_with_lock(box, self, ("s",), focus=self.focus)
             draw_with_lock(box, self, ("phi",), "angle_locked", focus=self.focus)
             draw_with_lock(box, self, ("alpha",), "angle_locked", focus=self.focus)
             row = box.row(align=True)
