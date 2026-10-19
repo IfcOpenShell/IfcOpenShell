@@ -701,6 +701,12 @@ class ShaderInfo:
             point_obj = tool.Ifc.get_object(point)
             drawn = self.get_drawn_points(starts[-1][0], starts[-1][1], point_obj.name if point_obj else None)
             self.add_moment_dimensions(i, at, location, size, color, length_scale, drawn)
+            if props.show_axes_components and props.reference_frame == "GLOBAL_COORDS":
+                rotation = self.get_point_connection_rotation(point)
+                if not np.allclose(rotation, np.eye(3)):
+                    # Clear of Δx and Δz too, now drawn.
+                    drawn = self.get_drawn_points(starts[-1][0], starts[-1][1], point_obj.name if point_obj else None)
+                    self.add_axes_moment_dimensions(i, at, location, size, color, length_scale, rotation, drawn)
         # Each force's moment hides with its point as its force does, and all of them with the centre.
         ends = [(info, text) for info, text, _, _ in starts[1:]] + [(len(self.info), len(self.text_info))]
         for (info, text, point, activity), (info_end, text_end) in zip(starts, ends):
@@ -910,6 +916,53 @@ class ShaderInfo:
                     "color": color,
                     "away": away,
                     "focus": focus,
+                }
+            )
+
+    def add_axes_moment_dimensions(
+        self,
+        i: int,
+        at: np.ndarray,
+        location: np.ndarray,
+        size: float,
+        color: tuple,
+        length_scale: float,
+        rotation: np.ndarray,
+        drawn: Union[list[np.ndarray], None] = None,
+    ) -> None:
+        """Dimension r along the point's own tilted axes, Δx′ and Δz′, the arms of the force's components along
+        them as Δx and Δz are of its X and Z ones: one along x′ beyond all that is drawn, one along z′ beside it.
+
+        :param rotation: The point's axes, as columns, in global coordinates.
+        :param drawn: Points of what is drawn, which they keep clear of, with room for its labels.
+        """
+        ex, ez = rotation[:, 0], rotation[:, 2]
+        clear, tick = 0.3 * size, 0.03 * size
+        y = location[1]
+        flat = lambda p: np.array((p[0], y, p[2]))  # In the point's X-Z plane.
+        coordinates = [(np.dot(p - at, ex), np.dot(p - at, ez)) for p in (drawn or []) + [location, at]]
+        beyond = max(w for _, w in coordinates) + clear  # Past all of it along z′, for the one along x′.
+        beside = min(u for u, _ in coordinates) - clear  # Behind all of it along x′, for the one along z′.
+        u, w = np.dot(location - at, ex), np.dot(location - at, ez)
+        slash = (ex + ez) * tick
+        for delta, axis, a, b, away in (
+            (u, "x′", at + ez * beyond, at + ex * u + ez * beyond, ez),
+            (w, "z′", at + ex * beside, at + ex * beside + ez * w, -ex),
+        ):
+            if abs(delta) < 1e-3 * max(size, 1e-9):
+                continue  # Square to that axis, as near as a point placed by hand is: nothing to dimension.
+            a, b = flat(a), flat(b)
+            for p, q in ((flat(at), a), (flat(location), b)):
+                self.add_dashed_line(p, q, size, color)
+            self.add_dashed_line(a, b, size, color, dashed=False)
+            for end_point in (a, b):
+                self.add_dashed_line(end_point - slash, end_point + slash, size, color, dashed=False)
+            self.text_info.append(
+                {
+                    "position": (a + b) / 2,
+                    "text": f"Δ{get_plain_symbol(f'{axis}_{{{i}}}')} = {abs(delta) / length_scale:.2f} {self.length_unit}",
+                    "color": color,
+                    "away": away,
                 }
             )
 
@@ -1225,11 +1278,33 @@ class ShaderInfo:
         if show_resultant and in_equilibrium and len(forces) > 1:
             self.add_equilibrium_marker(location, size, activities)
         self.add_reference_axes(reference_axes, size)
+        tilted = not np.allclose(rotation, np.eye(3))
+        resolved = []
+        if props.show_axes_components and tilted and props.reference_frame == "GLOBAL_COORDS":
+            # Each force's components along the point's own axes too, as along an incline, in the axes' colours; a
+            # push drawn arriving has them arriving with it.
+            for force, activity in zip(forces, activities):
+                arrives = arriving and activity in pushes
+                for k, name, axis_color in ((0, "x′", (1, 0.35, 0.35, 1)), (2, "z′", (0.4, 0.55, 1, 1))):
+                    value = float(rotation[:, k] @ force)
+                    if abs(value) < 1e-9 * longest:
+                        continue
+                    component = rotation[:, k] * value * scale
+                    tail, tip = (location - component, location) if arrives else (location, location + component)
+                    label = f"{abs(value):.{props.force_decimals}f} {self.force_unit}"
+                    picked = self.add_force_arrow(
+                        tail, tip, axis_color, label, size, activity=activity, label_at_tail=arrives
+                    )
+                    self.text_info[-1] |= {"component": name, "component_of": activity}
+                    if picked is not None:
+                        # Clicked, its force opens on the point's axes, as Edit Load takes X, Y and Z, not x' and z'.
+                        self.text_info[-1]["focus"] = self.pickables[picked]["focus"] = name
+                    resolved.append(-component if arrives else component)
         point = self.get_activities_item(activities)
         self.add_global_axes(location, size, first, point.id() if point else 0, activities)
-        if not np.allclose(rotation, np.eye(3)):
+        if tilted:
             drawn = [vector * scale for vector, *_ in vectors] + ([resultant * scale] if show_resultant else [])
-            self.add_point_axes(location, rotation, size, slope, drawn, point.id() if point else 0)
+            self.add_point_axes(location, rotation, size, slope, drawn + resolved, point.id() if point else 0)
         self.add_symbols(self.text_info[first_text:], numbers)
 
     def draw_resolved_point_forces(

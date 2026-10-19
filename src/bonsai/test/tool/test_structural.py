@@ -626,6 +626,14 @@ class TestPushDirection(NewFile):
         # Example 2.16's piston on a lever at 50 degrees: 20 degrees below x' it arrives from.
         assert get_force_name(force, "kN", tilt=50, push=True) == "1.5 kN at 20 deg Q8 (x′z′)"
 
+    def test_components_entered_along_the_point_axes(self):
+        # Example 2.16's piston force, as its components along a lever tilted 50 degrees.
+        props = SimpleNamespace(input_mode="COMPONENTS", x=-1.4095, y=0.0, z=0.5130, has_axes=True, axes_tilt=50)
+        props.on_axes = True
+        assert np.allclose(get_force_components(props), (-1.299, 0.0, -0.75), atol=1e-3)
+        props.on_axes = False
+        assert get_force_components(props) == (-1.4095, 0.0, 0.5130)
+
     def test_names_against_the_point_axes_name_them(self):
         assert subject.get_eighth_on_axes("1.5 kN at 20 deg Q8 (x′z′)") == "Q8"
         assert subject.get_eighth_on_axes("1.5 kN at 3:4 Q2 (x′z′)") == "Q2"

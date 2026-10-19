@@ -81,11 +81,13 @@ def draw_with_lock(
     lock: Union[str, None] = None,
     grey_unknowns: bool = False,
     focus: str = "",
+    texts: Union[dict[str, str], None] = None,
 ) -> None:
     """Draw values in a row, with a lock beside them if given, greyed out while it shows them unknown.
 
     :param focus: A value to start editing as the dialog opens, its value selected to type over, as the label
         clicked to open it stands for.
+    :param texts: Labels to draw values with, by name, in place of their own.
     """
     row = layout.row(align=True)
     values = row.row(align=True)
@@ -93,7 +95,10 @@ def draw_with_lock(
     for name in names:
         cell = values.row(align=True) if name == focus else values
         cell.activate_init = name == focus
-        cell.prop(props, name)
+        if texts and name in texts:
+            cell.prop(props, name, text=texts[name])
+        else:
+            cell.prop(props, name)
     if lock:
         row.prop(props, lock, text="", icon="LOCKED" if getattr(props, lock) else "UNLOCKED")
 
@@ -1058,7 +1063,10 @@ def get_load_category(load: ifcopenshell.entity_instance) -> Union[str, None]:
 # Property update callbacks get the operator's properties, not the operator, so the name helpers are functions.
 def get_force_components(props: "StructuralForceInput") -> tuple[float, float, float]:
     if props.input_mode == "COMPONENTS":
-        return props.x, props.y, props.z
+        x, z = props.x, props.z
+        if getattr(props, "has_axes", False) and props.on_axes:
+            x, z = tool.Structural.from_axes(x, z, props.axes_tilt)  # Entered along x' and z'.
+        return x, props.y, z
     x, z = tool.Structural.get_in_plane_components(
         props.input_mode,
         magnitude=props.magnitude,
@@ -1180,6 +1188,13 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
                 x, z = tool.Structural.from_axes(x, z, self.axes_tilt)
             if self.on_axes:
                 x, z = tool.Structural.to_axes(x, z, self.axes_tilt)
+            # Components are measured again the same way, as x' and z' or as X and Z.
+            cx, cz = self.x, self.z
+            if self.was_on_axes:
+                cx, cz = tool.Structural.from_axes(cx, cz, self.axes_tilt)
+            if self.on_axes:
+                cx, cz = tool.Structural.to_axes(cx, cz, self.axes_tilt)
+            self.x, self.z = cx, cz
             self.was_on_axes = self.on_axes
             if self.input_mode != "COMPONENTS" and (x or z):
                 self.direction, angle, _, _ = tool.Structural.get_eighth(x, z)
@@ -1528,8 +1543,8 @@ class StructuralForceInput(get_direction_input("the force", update_force_inputs,
     on_axes: bpy.props.BoolProperty(
         name="Point Axes",
         description=(
-            "Enter the angle or slope against the point's own tilted axes, x' and z', as along an incline, rather "
-            "than X and Z. Switching keeps the force, measured the other way"
+            "Enter the angle, slope or components against the point's own tilted axes, x' and z', as along an "
+            "incline, rather than X and Z. Switching keeps the force, measured the other way"
         ),
         options={"SKIP_SAVE"},
         update=update_force_inputs,
@@ -1583,8 +1598,14 @@ class StructuralForceInput(get_direction_input("the force", update_force_inputs,
                 row = layout.row(align=True)
                 for lock, text in (("magnitude_locked", "Magnitude"), ("direction_locked", "Direction")):
                     row.prop(self, lock, text=text, icon="LOCKED" if getattr(self, lock) else "UNLOCKED")
+            if self.has_axes and show_axes:
+                layout.prop(self, "on_axes")
+            # Along the point's own axes, x and z are x' and z'; a component clicked there is ready to type.
+            on_axes = self.has_axes and self.on_axes
+            texts = {"x": "x′", "z": "z′"} if on_axes else None
+            focus = {"x′": "x", "z′": "z"}.get(self.focus, self.focus)
             for prop in ("x", "y", "z"):
-                draw_with_lock(layout, self, (prop,), focus=self.focus)
+                draw_with_lock(layout, self, (prop,), focus=focus, texts=texts)
             if category in ("IfcStructuralPointConnection", "IfcStructuralCurveMember"):
                 for prop in ("moment_x", "moment_y", "moment_z"):
                     layout.prop(self, prop)
@@ -2045,8 +2066,9 @@ class EditStructuralLoadValues(
         name = load.Name or ""
         match = (SLOPE_LOAD_NAME.match(name) or ANGLE_LOAD_NAME.match(name)) if not y else None
         if match and self.has_axes and tool.Structural.get_eighth_on_axes(name):
-            self.was_on_axes = self.on_axes = True  # Both, so that nothing is measured again.
+            self.was_on_axes = self.on_axes = True  # Both, so that nothing is measured again...
             x, z = tool.Structural.to_axes(x, z, self.axes_tilt)
+            self.x, self.z = tool.Structural.to_axes(self.x, self.z, self.axes_tilt)  # ... but the components.
         if not y and (match := SLOPE_LOAD_NAME.match(name)):
             rise, run = float(match[1]), float(match[2])
             direction = get_named_direction(match[3])
@@ -2064,8 +2086,13 @@ class EditStructuralLoadValues(
                 self.input_mode, self.direction, self.angle = "ANGLE", direction, angle
         if self.focus in ("x", "y", "z"):
             self.input_mode = "COMPONENTS"  # A component clicked opens with it ready to type.
-        if self.on_axes and self.input_mode == "COMPONENTS":
-            self.was_on_axes = self.on_axes = False  # The name no longer fits, so reopen in X and Z.
+        elif self.focus in ("x′", "z′") and self.has_axes:
+            # A component along the point's own axes clicked opens with them, as x' and z', ready to type.
+            self.input_mode = "COMPONENTS"
+            self.on_axes = True  # Measuring the inputs again on the point's axes, as switching does.
+        if self.on_axes and self.input_mode == "COMPONENTS" and self.focus not in ("x′", "z′"):
+            self.was_on_axes = self.on_axes = False  # The name no longer fits, so reopen in X and Z...
+            self.x, self.z = tool.Structural.from_axes(self.x, self.z, self.axes_tilt)  # ... its components too.
         # A generated name is generated again, so that it reads as the inputs now do, as from its eighth's axis.
         self.load_name = get_default_load_name(self, category) if DEFAULT_LOAD_NAME.match(name) else name
         if lock_activity := self.get_lock_activity():
@@ -2135,7 +2162,7 @@ class EditStructuralLoadValues(
             if self.place_from_a:
                 self.draw_location_inputs(layout)
                 return
-            if self.has_axes and self.input_mode != "COMPONENTS":
+            if self.has_axes:
                 row.prop(self, "on_axes")  # Beside Place From A, as both change what the inputs are measured from.
         lock_activity = self.get_lock_activity()
         if not lock_activity:

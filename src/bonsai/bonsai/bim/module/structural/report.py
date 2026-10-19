@@ -167,9 +167,12 @@ def get_moment_calculation(
     length_text = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", length_unit) + "}"
     rows, steps, palette, values, unknowns = [], [], [], [], []
     place_kind, place_activity = tool.Structural.get_moment_centre_unknown(case)
+    on_axes = tool.Structural.get_structural_props().show_axes_components
     for item in tool.Structural.get_point_items(case):
         if not (obj := tool.Ifc.get_object(item)) or obj.type != "MESH" or not obj.data.vertices:
             continue
+        # With Point Axes Components shown, a tilted point's forces are worked along its axes, as the viewport shows.
+        tilt = tool.Structural.get_axes_tilt(item) if on_axes else None
         colors = get_force_colors(drawing, item)
         for activity in [a for a in tool.Structural.get_chain_activities(item, case) if is_point_force(a)]:
             x, _, z = get_force_terms(activity, 1)["vector"]
@@ -204,11 +207,19 @@ def get_moment_calculation(
                 f"M_{{{i}}} = {sign}F_{{{i}}}\\, d_{{{i}}} = {sign}({math.hypot(x, z):.2f})({arm:.2f}{length_text})"
                 f" = {moment:.2f}{text_unit}"
             )
-            # By Varignon's theorem: each component times its distance from A, turning the way it does.
-            steps.append(
-                f"M_{{{i}}} = F_{{z{i}}}\\, \\Delta x_{{{i}}} - F_{{x{i}}}\\, \\Delta z_{{{i}}} = ({z:.2f})({dx:.2f})"
-                f" - ({x:.2f})({dz:.2f}) = {moment:.2f}{text_unit}"
-            )
+            # By Varignon's theorem: each component times its distance from A, turning the way it does; along the
+            # point's own axes, x' and z', if it is worked along them, as its moment is the same along any.
+            if tilt:
+                (cx, cz), (ax, az) = tool.Structural.to_axes(x, z, tilt), tool.Structural.to_axes(dx, dz, tilt)
+                steps.append(
+                    f"M_{{{i}}} = F_{{z'{i}}}\\, \\Delta x'_{{{i}}} - F_{{x'{i}}}\\, \\Delta z'_{{{i}}}"
+                    f" = ({cz:.2f})({ax:.2f}) - ({cx:.2f})({az:.2f}) = {moment:.2f}{text_unit}"
+                )
+            else:
+                steps.append(
+                    f"M_{{{i}}} = F_{{z{i}}}\\, \\Delta x_{{{i}}} - F_{{x{i}}}\\, \\Delta z_{{{i}}} = ({z:.2f})({dx:.2f})"
+                    f" - ({x:.2f})({dz:.2f}) = {moment:.2f}{text_unit}"
+                )
     if not values:
         return None
     total = sum(values)
