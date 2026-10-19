@@ -597,6 +597,30 @@ points, where the piston, and the arrow's shaft, are on the Q8′ side.
   opposite eighth, and is named again by the side it arrives from when confirmed.
 - **Point Axes** in the load dialogs is now a checkbox, as Place From A is, and beside it in Edit Load.
 
+## 31. The point's axes, named and drawn
+
+- **Names say which axes.** An eighth measured against the point's own tilted axes was marked with a
+  prime, Q8′, which was easy to miss. Generated names now name the axes, "1.5 kN at 20 deg Q8 (x′z′)",
+  and so do the θ label and reports; an eighth from X and Z stays plain. `get_eighth_on_axes` reads
+  both forms, so names made before still reopen Edit Load on the point's axes, and are made again in
+  the new form.
+- **Point Axes Components.** A display option, off by default, also draws each point force's components
+  along its point's tilted axes, x′ and z′, beside its X and Z ones, as Fx′1 and Fz′1 in the axes'
+  colours; a push drawn arriving has them arriving with it. Reports already resolved forces so. A force's
+  moment drawing then also dimensions Δx′ and Δz′ along the axes, the arms of those components, as Δx and
+  Δz are of its X and Z ones: in Example 2.16, Δx′ is the lever's 300 mm and Δz′ is none, so M = 0.3 F_x1,
+  as the book works it. Reports then work a tilted point's moments along its axes too: Varignon's step
+  is F_z′ Δx′ − F_x′ Δz′, the moment the same along any axes.
+- **Components along the point's axes.** With Point Axes ticked, Components takes x′ and z′ in place of X
+  and Z, written back as X and Z; switching measures them again the other way, keeping the force. Clicking
+  Fx′1 or Fz′1 opens Edit Load so, the value clicked ready to type.
+- **Δx′ and Δz′ in Edit Moment Centre.** With the point A is measured from on tilted axes, Components also
+  takes Δx′ and Δz′ to A, along those axes, moving A as Δx and Δz do. Clicking Δx′₁ or Δz′₁ in the
+  drawing opens the dialog with it ready to type; like Δx and Δz, the dialog measures from the point to A.
+- **s.** The moment triangle's third side, along the line of action from the force's point to the foot of
+  its arm, is now an input in the Moment Arm section, and clicking s₁ opens it. Typing it slides A
+  parallel to the line of action, keeping d; a kept moment never finds it, so it has no lock.
+
 ## Next
 
 Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through

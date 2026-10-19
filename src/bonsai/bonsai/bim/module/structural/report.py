@@ -167,9 +167,12 @@ def get_moment_calculation(
     length_text = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", length_unit) + "}"
     rows, steps, palette, values, unknowns = [], [], [], [], []
     place_kind, place_activity = tool.Structural.get_moment_centre_unknown(case)
+    on_axes = tool.Structural.get_structural_props().show_axes_components
     for item in tool.Structural.get_point_items(case):
         if not (obj := tool.Ifc.get_object(item)) or obj.type != "MESH" or not obj.data.vertices:
             continue
+        # With Point Axes Components shown, a tilted point's forces are worked along its axes, as the viewport shows.
+        tilt = tool.Structural.get_axes_tilt(item) if on_axes else None
         colors = get_force_colors(drawing, item)
         for activity in [a for a in tool.Structural.get_chain_activities(item, case) if is_point_force(a)]:
             x, _, z = get_force_terms(activity, 1)["vector"]
@@ -204,11 +207,19 @@ def get_moment_calculation(
                 f"M_{{{i}}} = {sign}F_{{{i}}}\\, d_{{{i}}} = {sign}({math.hypot(x, z):.2f})({arm:.2f}{length_text})"
                 f" = {moment:.2f}{text_unit}"
             )
-            # By Varignon's theorem: each component times its distance from A, turning the way it does.
-            steps.append(
-                f"M_{{{i}}} = F_{{z{i}}}\\, \\Delta x_{{{i}}} - F_{{x{i}}}\\, \\Delta z_{{{i}}} = ({z:.2f})({dx:.2f})"
-                f" - ({x:.2f})({dz:.2f}) = {moment:.2f}{text_unit}"
-            )
+            # By Varignon's theorem: each component times its distance from A, turning the way it does; along the
+            # point's own axes, x' and z', if it is worked along them, as its moment is the same along any.
+            if tilt:
+                (cx, cz), (ax, az) = tool.Structural.to_axes(x, z, tilt), tool.Structural.to_axes(dx, dz, tilt)
+                steps.append(
+                    f"M_{{{i}}} = F_{{z'{i}}}\\, \\Delta x'_{{{i}}} - F_{{x'{i}}}\\, \\Delta z'_{{{i}}}"
+                    f" = ({cz:.2f})({ax:.2f}) - ({cx:.2f})({az:.2f}) = {moment:.2f}{text_unit}"
+                )
+            else:
+                steps.append(
+                    f"M_{{{i}}} = F_{{z{i}}}\\, \\Delta x_{{{i}}} - F_{{x{i}}}\\, \\Delta z_{{{i}}} = ({z:.2f})({dx:.2f})"
+                    f" - ({x:.2f})({dz:.2f}) = {moment:.2f}{text_unit}"
+                )
     if not values:
         return None
     total = sum(values)
@@ -769,12 +780,12 @@ def get_force_terms(activity: ifcopenshell.entity_instance, i: int) -> dict[str,
             force["terms"] = get_slope_terms(x, z, rise, run)
         # Entered against the point's own axes, as a primed eighth in its name records, it is described so; its
         # components are still added along X and Z.
-        primed = re.search(r"(?: at (-?[\d.]+):(-?[\d.]+))? (Q[1-8])′$", load.Name or "")
+        primed = re.search(r"(?: at (-?[\d.]+):(-?[\d.]+))? (Q[1-8])(?:′| \(x′z′\))$", load.Name or "")
         connects = activity.AssignedToStructuralItem
         if primed and connects and (tilt := tool.Structural.get_axes_tilt(connects[0].RelatingElement)):
             local, local_angle, _, _ = tool.Structural.get_eighth(*tool.Structural.to_axes(dx, dz, tilt), primed[3])
             words = EIGHTH_AXES[local].replace("X", "x′").replace("Z", "z′")
-            force["direction"] = f"{local_angle:.1f}° {local}′, {words}"
+            force["direction"] = f"{local_angle:.1f}° {local}{tool.Structural.ON_AXES}, {words}"
             if primed[1]:
                 force["direction"] = f"{float(primed[1]):g}:{float(primed[2]):g} slope, {force['direction']}"
     force["given"] = tool.Structural.get_known_component(activity) if force["in_plane"] else None
@@ -786,7 +797,7 @@ def get_force_terms(activity: ifcopenshell.entity_instance, i: int) -> dict[str,
 
 def get_named_slope(name: str, x: float, z: float) -> Union[tuple[float, float], None]:
     """The rise and run a generated load name records, if they are the slope of the components x and z"""
-    if not (match := re.search(r" at (-?[\d.]+):(-?[\d.]+)(?: \S+)?$", name)):
+    if not (match := re.search(r" at (-?[\d.]+):(-?[\d.]+)(?: \S+(?: \(x′z′\))?)?$", name)):
         return None
     rise, run = abs(float(match[1])), abs(float(match[2]))
     if not (rise or run) or not math.isclose(abs(x) * rise, abs(z) * run, rel_tol=1e-6, abs_tol=1e-9):

@@ -303,6 +303,15 @@ class BIMStructuralProperties(PropertyGroup):
         default=False,
         update=update_loads_display,
     )
+    show_axes_components: BoolProperty(
+        name="Point Axes Components",
+        description=(
+            "Also show each point force's components along its point's own tilted axes, x' and z', as along an "
+            "incline, beside its X and Z ones"
+        ),
+        default=False,
+        update=update_loads_display,
+    )
     angle_reference: EnumProperty(
         items=[
             (
@@ -371,6 +380,7 @@ class BIMStructuralProperties(PropertyGroup):
         force_scale: float
         show_force_angles: bool
         show_force_slopes: bool
+        show_axes_components: bool
         report_detailed_steps: bool
         angle_reference: str
         force_decimals: int

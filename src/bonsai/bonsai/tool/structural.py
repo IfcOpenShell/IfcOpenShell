@@ -21,6 +21,7 @@ from __future__ import annotations
 import fractions
 import json
 import math
+import re
 from typing import TYPE_CHECKING, Any, Union
 
 import bpy
@@ -238,6 +239,16 @@ class Structural(bonsai.core.tool.Structural):
     def get_push(cls, activity: ifcopenshell.entity_instance) -> bool:
         """Whether an applied load pushes on its item rather than pulls, which IFC's force vector cannot say"""
         return bool(ifcopenshell.util.element.get_pset(activity, "BBIM_Structural", "Push"))
+
+    # Marks an eighth measured against a point's own axes in generated names, as in "Q8 (x′z′)".
+    ON_AXES = " (x′z′)"
+
+    @classmethod
+    def get_eighth_on_axes(cls, name: Union[str, None]) -> Union[str, None]:
+        """The eighth a generated load name gives against the point's own axes, as Q8 (x′z′), or Q8′ as names made
+        before gave it, if it gives one"""
+        match = re.search(r" (Q[1-8])(?:′| \(x′z′\))$", name or "")
+        return match[1] if match else None
 
     @classmethod
     def get_opposite_eighth(cls, eighth: str) -> str:
