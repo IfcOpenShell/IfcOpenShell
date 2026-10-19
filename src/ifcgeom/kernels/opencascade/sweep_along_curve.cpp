@@ -21,7 +21,7 @@
 #include "base_utils.h"
 #include "wire_utils.h"
 
-#include <BRepOffsetAPI_MakePipeShell.hxx>
+#include <BRepFill_PipeShell.hxx>
 #include <Geom_Plane.hxx>
 #include <ShapeAnalysis_Surface.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
@@ -262,16 +262,18 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 				continue;
 			}
 
-			BRepOffsetAPI_MakePipeShell builder(wire);
+			BRepFill_PipeShell builder(wire);
 			builder.Add(section);
-            builder.SetTransitionMode(contains_circular_segments(wire) && wire_is_c1_continuous(wire, 1.e-2) ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
+			// BRepOffsetAPI_MakePipeShell leaves BRepFill_PipeShell's corner gate at its
+			// default of 1e-2 rad. Corners turning less than that get no mitre and the
+			// rings of short following segments are joined wrongly, so lower the gate.
+			builder.SetTransition(contains_circular_segments(wire) && wire_is_c1_continuous(wire, 1.e-2) ? BRepFill_Modified : BRepFill_Right, 1.e-3, 6.0);
 			if (directrix_on_plane) {
-				builder.SetMode(pln.Axis().Direction());
-			} else if (!is_plane) {
-				builder.SetMode(surface_face);
+				builder.Set(pln.Axis().Direction());
+			} else if (!is_plane && !surface_face.IsNull()) {
+				builder.Set(surface_face);
 			}
-			builder.Build();
-			if (!builder.IsDone()) {
+			if (!builder.Build()) {
 				return false;
 			}
             // A closed directrix has no end boundary. Adding caps here creates
