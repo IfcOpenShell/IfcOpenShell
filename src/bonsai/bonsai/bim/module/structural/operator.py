@@ -1538,11 +1538,13 @@ class StructuralForceInput(get_direction_input("the force", update_force_inputs,
         show_locks: bool = False,
         grey_unknowns: bool = False,
         show_given: bool = False,
+        show_axes: bool = True,
     ) -> None:
         """Draw the force inputs.
 
         :param show_locks: Show whether the magnitude and direction are known, beside them.
         :param grey_unknowns: Grey out values that are not known, as they are found rather than entered.
+        :param show_axes: Offer the point's own axes here, unless the dialog offers them elsewhere.
         """
 
         layout.row().prop(self, "input_mode", expand=True)
@@ -1557,8 +1559,8 @@ class StructuralForceInput(get_direction_input("the force", update_force_inputs,
                 for prop in ("moment_x", "moment_y", "moment_z"):
                     layout.prop(self, prop)
         else:
-            if self.has_axes:
-                layout.prop(self, "on_axes", icon="ORIENTATION_LOCAL", toggle=True)
+            if self.has_axes and show_axes:
+                layout.prop(self, "on_axes")
             self.draw_direction_inputs(layout, "direction_locked" if show_locks else None, grey_unknowns)
             # A known component is an X or Z one, so not offered against the point's axes.
             show_given = show_given and not is_on_axes(self)
@@ -2083,15 +2085,25 @@ class EditStructuralLoadValues(
         load_cases = {g for user in users for g in get_activity_load_groups(user)}
         if len(load_cases) > 1 and not self.get_movable_activities():
             layout.label(text=f"Used in {len(load_cases)} load cases: move one from its applied load", icon="INFO")
-        if get_load_location_objects(self)[0]:
-            layout.prop(self, "place_from_a")
+        has_place = bool(get_load_location_objects(self)[0])
+        if has_place:
+            row = layout.row()
+            row.prop(self, "place_from_a")
             if self.place_from_a:
                 self.draw_location_inputs(layout)
                 return
+            if self.has_axes and self.input_mode != "COMPONENTS":
+                row.prop(self, "on_axes")  # Beside Place From A, as both change what the inputs are measured from.
         lock_activity = self.get_lock_activity()
         if not lock_activity:
             layout.label(text="Open it from an applied load to lock its values", icon="INFO")
-        self.draw_force_inputs(layout, category, show_locks=bool(lock_activity), show_given=bool(lock_activity))
+        self.draw_force_inputs(
+            layout,
+            category,
+            show_locks=bool(lock_activity),
+            show_given=bool(lock_activity),
+            show_axes=not has_place,
+        )
         if lock_activity and category == "IfcStructuralPointConnection":
             row = layout.row(align=True)
             row.prop(self, "same_magnitude_as")
