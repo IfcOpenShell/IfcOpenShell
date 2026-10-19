@@ -27,6 +27,7 @@ classes = (
     operator.AddSIUnit,
     operator.AssignSceneUnits,
     operator.AssignUnit,
+    operator.ConvertUnits,
     operator.DisableEditingUnit,
     operator.DisableUnitEditingUI,
     operator.EditUnit,

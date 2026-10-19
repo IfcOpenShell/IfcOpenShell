@@ -59,6 +59,7 @@ class BIM_PT_units(Panel):
             row.operator("bim.assign_scene_units", text="", icon="TOOL_SETTINGS")
             row.operator("bim.disable_unit_editing_ui", text="", icon="CANCEL")
         else:
+            row.operator("bim.convert_units", text="", icon="FILE_REFRESH")
             row.operator("bim.load_units", text="", icon="GREASEPENCIL")
 
         if not self.props.is_editing:
