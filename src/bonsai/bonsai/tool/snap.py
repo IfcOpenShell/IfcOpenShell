@@ -33,7 +33,7 @@ from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.model.decorator import GpuSnapDecorator, PolylineDecorator
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import BIMSnapGroups, BIMSnapProperties
+    from bonsai.bim.prop import BIMSnapGroups, BIMSnapTarget
 
 
 def _process_gpu_object_snaps(
@@ -207,7 +207,7 @@ class Snap(bonsai.core.tool.Snap):
     snap_plane_method = None
 
     @classmethod
-    def get_snap_props(cls) -> BIMSnapProperties:
+    def get_snap_props(cls) -> BIMSnapTarget:
         assert (scene := bpy.context.scene)
         return scene.BIMSnapProperties  # pyright: ignore[reportAttributeAccessIssue]
 
@@ -560,7 +560,7 @@ class Snap(bonsai.core.tool.Snap):
             space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe
         )
         objs_to_raycast = tool.Raycast.filter_objects_to_raycast(context, event, objs_2d_bbox)
-        props = cls.get_snap_props()
+        props = cls.get_snap_groups()
 
         if props.use_gpu_snapping:
             GpuSnapDecorator.set_request(event, objs_to_raycast)

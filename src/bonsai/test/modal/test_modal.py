@@ -19,6 +19,7 @@
 
 import inspect
 import os
+import time
 
 import bpy
 import ifcopenshell.util.element
@@ -127,9 +128,19 @@ def region_point(window, fx, fy):
 def test_snap_object_detection(window):
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
     area, region = get_area_and_region(window)
-    x, y = region_point(window, 0.5, 0.54)
+    x, y = region_point(window, 0.5, 0.64)
 
     yield from preset_event_simulate(window, "ESC", "TAP", x, y)
+
+    bpy.context.view_layer.objects.active = None
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.data.objects["IfcWall/Wall_01"].select_set(True)
+    bpy.data.objects["IfcWall/Wall_02"].select_set(True)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+    with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
+        bpy.ops.view3d.view_selected()
+        
+    bpy.ops.object.select_all(action="DESELECT")
 
     measure_settings = tool.Project.get_measure_tool_settings()
     measure_settings.measurement_type = "POLYLINE"
@@ -138,6 +149,9 @@ def test_snap_object_detection(window):
     with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
         bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type="POLYLINE")
 
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
     yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x, y)
     snap_point = tool.Model.get_polyline_props().snap_mouse_point[0]
@@ -151,11 +165,11 @@ def test_snap_object_detection(window):
     assert snap_point.snap_object.split("/")[0] == "IfcWall", assert_msg
     _assert_pass(assert_msg)
 
-    offset = round(region.width * 0.16)
-    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x - offset, y)
-    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x - offset, y)
-    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x - offset, y)
-    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x - offset, y)
+    offset = round(region.width * 0.40)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset, y)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset, y)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset, y)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset, y)
     yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x - offset, y)
     snap_point = tool.Model.get_polyline_props().snap_mouse_point[0]
     assert_msg = "Second click should not have a snap_object"
@@ -169,7 +183,7 @@ def test_snap_object_detection(window):
 def test_snap_partially_behind_camera(window):
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
     area, region = get_area_and_region(window)
-    x, y = region_point(window, 0.20, 0.15)
+    x, y = region_point(window, 0.90, 0.36)
 
     yield from preset_event_simulate(window, "ESC", "TAP", x, y)
 
@@ -196,11 +210,11 @@ def test_snap_partially_behind_camera(window):
     assert snap_point.snap_object.split("/")[0] == "IfcSlab", assert_msg
     _assert_pass(assert_msg)
 
-    offset = round(region.width * 0.16)
-    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset, y)
-    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset, y)
-    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset, y)
-    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset, y)
+    offset = round(region.width * 0.10)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y - offset)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y - offset)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y - offset)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y - offset)
     yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x - offset, y)
     snap_point = tool.Model.get_polyline_props().snap_mouse_point[0]
     assert_msg = "Second click should have a snap_object"
@@ -223,7 +237,7 @@ def test_snap_partially_behind_camera(window):
 def test_snap_in_xray_mode(window):
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
     area, region = get_area_and_region(window)
-    x, y = region_point(window, 0.68, 0.54)
+    x, y = region_point(window, 0.75, 0.61)
 
     area.spaces[0].shading.show_xray = True
 
@@ -258,7 +272,7 @@ def test_snap_far_from_origin(window):
     bpy.ops.object.select_all(action="DESELECT")
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
     area, region = get_area_and_region(window)
-    x, y = region_point(window, 0.155, 0.18)
+    x, y = region_point(window, 0.18, 0.18)
 
     yield from preset_event_simulate(window, "ESC", "TAP", x, y)
 
@@ -302,8 +316,11 @@ def test_snap_far_from_origin(window):
 
 def test_snap_targets(window):
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
     area, region = get_area_and_region(window)
-    x, y = region_point(window, 0.44, 0.73)
+    x, y = region_point(window, 0.445, 0.69)
 
     yield from preset_event_simulate(window, "ESC", "TAP", x, y)
 
@@ -326,12 +343,17 @@ def test_snap_targets(window):
         with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
             bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type="POLYLINE")
         snap_types = []
+        # Vertex
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
         yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
         yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x, y)
         snap_type = tool.Model.get_polyline_props().snap_mouse_point[0].snap_type
         snap_types.append(snap_type)
 
-        new_x = x + round(region.width * 0.16)
+        # Edge and Edge Center
+        new_x = x + round(region.width * 0.17)
         new_y = y - round(region.height * 0.06)
         yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
         yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
@@ -341,8 +363,20 @@ def test_snap_targets(window):
         snap_type = tool.Model.get_polyline_props().snap_mouse_point[0].snap_type
         snap_types.append(snap_type)
 
-        new_x = x + round(region.width * 0.10)
-        new_y = y - round(region.height * 0.39)
+        # Intesection
+        new_x = x + round(region.width * 0.085)
+        new_y = y - round(region.height * 0.30)
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
+        yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x, y)
+        snap_type = tool.Model.get_polyline_props().snap_mouse_point[0].snap_type
+        snap_types.append(snap_type)
+
+        # Face
+        new_x = x + round(region.width * 0.085)
+        new_y = y - round(region.height * 0.40)
         yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
         yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
         yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
