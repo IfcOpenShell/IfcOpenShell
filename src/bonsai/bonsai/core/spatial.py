@@ -20,11 +20,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Union
 
-import ifcopenshell
-import ifcopenshell.util.element
-
 if TYPE_CHECKING:
     import bpy
+    import ifcopenshell
 
     import bonsai.tool as tool
 
@@ -188,6 +186,8 @@ def generate_space(
     """
     :return: None if successful, error message string if not.
     """
+    import ifcopenshell.util.element
+
     active_obj = spatial.get_active_obj()
     selected_objects = spatial.get_selected_objects()
     element = None
