@@ -1473,7 +1473,7 @@ class Raycast(bonsai.core.tool.Raycast):
                         break
                 mouse_pos = original_mouse_pos
             if hit:
-                hit_world = obj.original.matrix_world @ hit
+                hit_world = obj.matrix_world @ hit
                 return obj, hit_world, face_index
             else:
                 return None, None, None
