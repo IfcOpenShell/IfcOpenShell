@@ -49,6 +49,7 @@ _triangle_batch_cache: dict[tuple[int, int], tuple[GPUBatch, int]] = {}
 _triangle_vert_fmt: GPUVertFormat | None = None
 _encoding_shader: gpu.types.GPUShader | None = None
 _offscreen: GPUOffScreen | None = None
+_offscreen_size: tuple[int, int] | None = None
 _obj_list: list[[bpy.types.Object, bool]] = []
 
 _SNAP_RADIUS_PX = 10  # half-size of the readback region around the cursor
@@ -1068,7 +1069,7 @@ class Raycast(bonsai.core.tool.Raycast):
             snap dicts (same format as the raycast-based version) and
             *closest_obj* is the single closest object (or None).
         """
-        global _encoding_shader, _offscreen, _obj_list
+        global _encoding_shader, _offscreen, _offscreen_size, _obj_list
 
         if bpy.app.background:
             return [], None
@@ -1105,8 +1106,11 @@ class Raycast(bonsai.core.tool.Raycast):
         if _encoding_shader is None:
             _encoding_shader = _create_encoding_shader()  # same shader works for TRIS
 
-        if _offscreen is None:
+        # The offscreen buffer must match the current region size to detect if
+        # region size has changed
+        if _offscreen is None or _offscreen_size != (w, h):
             _offscreen = GPUOffScreen(max(w, 1), max(h, 1), format="RGBA8")
+            _offscreen_size = (w, h)
 
         # Save GPU state so it can be restored even if readback fails.
         prev_depth_mask = gpu.state.depth_mask_get()
@@ -1206,6 +1210,7 @@ class Raycast(bonsai.core.tool.Raycast):
             _triangle_vert_fmt, \
             _encoding_shader, \
             _offscreen, \
+            _offscreen_size, \
             _obj_list
         _wireframe_batch_cache = {}
         _wireframe_vert_fmt = None
@@ -1213,6 +1218,7 @@ class Raycast(bonsai.core.tool.Raycast):
         _triangle_vert_fmt = None
         _encoding_shader = None
         _offscreen = None
+        _offscreen_size = None
         _obj_list = []
 
     @classmethod
