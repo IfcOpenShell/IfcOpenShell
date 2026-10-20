@@ -1182,6 +1182,34 @@ class Spatial(bonsai.core.tool.Spatial):
         return x, y, z, h, mat
 
     @classmethod
+    def get_space_reference_point(cls, obj: bpy.types.Object) -> tuple[float, float]:
+        """Return a point inside the space's current footprint, in world XY.
+
+        The bounding box centre does not necessarily lie inside a concave
+        footprint (e.g. an L-shaped room), which would make the polygon lookup
+        pick an unrelated region such as a wall cross-section. The lowest faces
+        of the current mesh form the footprint, so use the largest one and a
+        representative point that is guaranteed to lie inside it.
+        """
+        bpy.context.view_layer.update()
+        if obj.data is not None and len(obj.data.vertices):
+            world_verts = [obj.matrix_world @ v.co for v in obj.data.vertices]
+            min_z = min(v.z for v in world_verts)
+            footprints = []
+            for polygon in obj.data.polygons:
+                points = [world_verts[i] for i in polygon.vertices]
+                if max(p.z for p in points) > min_z + 1e-4:
+                    continue
+                footprint = shapely.Polygon([(p.x, p.y) for p in points])
+                if footprint.area > 0:
+                    footprints.append(footprint)
+            if footprints:
+                point = max(footprints, key=lambda footprint: footprint.area).representative_point()
+                return point.x, point.y
+        x, y, _, _, _ = cls.get_x_y_z_h_mat_from_obj(obj)
+        return x, y
+
+    @classmethod
     def get_union_shape_from_selected_objects(cls) -> Polygon:
         selected_objects = bpy.context.selected_objects
         boundary_elements = cls.get_boundary_elements(selected_objects)
