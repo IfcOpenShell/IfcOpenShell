@@ -91,7 +91,9 @@ def get_space_polygon(
         :func:`get_boundary_lines`).
     """
     unioned = shapely.union_all(shapely.GeometryCollection(boundary_lines))
-    closed_polygons = shapely.polygonize(unioned.geoms)
+    # union_all() returns a scalar LineString for a single connected ring
+    # (GEOS >= 3.14), so polygonize the parts instead of using .geoms (#9230).
+    closed_polygons = shapely.polygonize(shapely.get_parts(unioned))
     if not closed_polygons:
         return "NO POLYGONS FOUND", []
     for polygon in closed_polygons.geoms:
