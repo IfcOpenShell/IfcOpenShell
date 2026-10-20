@@ -923,13 +923,13 @@ class TestRegenerateSpaceFromRealIfc2x3(NewFile):
 
         ref_origin, ref_bounds = snapshots[0]
         for i, (origin, bounds) in enumerate(snapshots[1:], start=1):
-            assert (
-                origin - ref_origin
-            ).length < 0.02, f"Iteration {i}: Z drifted from {list(ref_origin)} to {list(origin)}"
+            assert (origin - ref_origin).length < 0.02, (
+                f"Iteration {i}: Z drifted from {list(ref_origin)} to {list(origin)}"
+            )
             for j, (o, r) in enumerate(zip(ref_bounds, bounds)):
-                assert r == pytest.approx(
-                    o, abs=0.02
-                ), f"Iteration {i} axis {j}: {o} != {r}  full ref={ref_bounds} cur={bounds}"
+                assert r == pytest.approx(o, abs=0.02), (
+                    f"Iteration {i} axis {j}: {o} != {r}  full ref={ref_bounds} cur={bounds}"
+                )
 
 
 class TestGenerateSpaceLocation(NewFile):
