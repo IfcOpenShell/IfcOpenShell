@@ -499,6 +499,10 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 				}
 
 				ShapeFix_Shape sfs(mf.Face());
+				// The wires were already checked for self-intersections with a BVH
+				// (util::wire_intersections). OpenCASCADE's fixer is cubic in the
+				// number of edges and never finishes on loops of ten thousand edges (#337).
+				sfs.FixFaceTool()->FixWireTool()->FixSelfIntersectionMode() = Standard_False;
 				Handle(ShapeExtend_MsgRegistrator) msg;
 				msg = new ShapeExtend_MsgRegistrator;
 				sfs.SetMsgRegistrator(msg);
