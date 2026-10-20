@@ -33,7 +33,7 @@ import numpy as np
 import shapely
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.util.boundary
