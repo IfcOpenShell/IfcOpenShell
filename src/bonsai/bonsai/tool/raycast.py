@@ -47,7 +47,6 @@ _wireframe_batch_cache: dict[tuple[int, int], dict[str, tuple[GPUBatch, int, lis
 _wireframe_vert_fmt: GPUVertFormat | None = None
 _triangle_batch_cache: dict[tuple[int, int], tuple[GPUBatch, int]] = {}
 _triangle_vert_fmt: GPUVertFormat | None = None
-_last_decorator_cache_token: int | None = None
 _encoding_shader: gpu.types.GPUShader | None = None
 _offscreen: GPUOffScreen | None = None
 _obj_list: list[[bpy.types.Object, bool]] = []
@@ -99,16 +98,6 @@ def _create_vert_format() -> GPUVertFormat:
     fmt.attr_add(id="pos", comp_type="F32", len=3, fetch_mode="FLOAT")
     fmt.attr_add(id="vert_slot", comp_type="F32", len=1, fetch_mode="FLOAT")
     return fmt
-
-
-def _discard_stale_batches_if_token_changed() -> None:
-    """Clear GPU batches when the decorator cache token is bumped on file load, undo, redo, or depsgraph changes."""
-    global _last_decorator_cache_token
-    token = get_decorator_cache_token()
-    if token != _last_decorator_cache_token:
-        _triangle_batch_cache.clear()
-        _wireframe_batch_cache.clear()
-        _last_decorator_cache_token = token
 
 
 def _find_closest_wireframe_pixel(buffer_data, cx, cy):
@@ -213,8 +202,7 @@ def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch | None, bo
     if _triangle_vert_fmt is None:
         _triangle_vert_fmt = _create_vert_format()
 
-    _discard_stale_batches_if_token_changed()
-    cache_key = (obj.session_uid, get_decorator_cache_token())
+    cache_key = (get_decorator_cache_token(), obj.as_pointer())
     if cache_key in _triangle_batch_cache:
         return _triangle_batch_cache[cache_key]
 
@@ -366,8 +354,7 @@ def _ensure_wireframe_batches(obj: bpy.types.Object) -> dict[str, tuple[GPUBatch
     if _wireframe_vert_fmt is None:
         _wireframe_vert_fmt = _create_vert_format()
 
-    _discard_stale_batches_if_token_changed()
-    cache_key = (obj.session_uid, get_decorator_cache_token())
+    cache_key = (get_decorator_cache_token(), obj.as_pointer())
 
     # Cache hit
     if cache_key in _wireframe_batch_cache:
@@ -534,6 +521,7 @@ def _create_tris_snaps(
     closest_obj = None
     closest_dist = float("inf")
     ray_origin, _, _ = tool.Raycast.get_viewport_ray_data(context, event)
+    print("HITS", hits)
     for obj_index in hits:
         obj, is_cut_face = _obj_list[obj_index]
         hit_obj, hit, face_index = tool.Raycast.cast_rays_to_single_object(context, event, obj)
@@ -659,7 +647,7 @@ def _create_wireframe_snaps(
     for snap_obj, pts_start, n_pts, lines_start, n_lines in obj_slots:
         if n_pts > 0 and pts_start <= encoded < pts_start + n_pts:
             vi = encoded - pts_start
-            batches = _wireframe_batch_cache.get(id(snap_obj))
+            batches = _wireframe_batch_cache.get((get_decorator_cache_token(), snap_obj.as_pointer()))
             if batches:
                 pts_data = batches.get("POINTS")
                 if pts_data:
@@ -683,7 +671,7 @@ def _create_wireframe_snaps(
 
         if n_lines > 0 and lines_start <= encoded < lines_start + n_lines:
             ei = encoded - lines_start
-            batches = _wireframe_batch_cache.get(id(snap_obj))
+            batches = _wireframe_batch_cache.get((get_decorator_cache_token(), snap_obj.as_pointer()))
             if batches:
                 lines_data = batches.get("LINES")
                 if lines_data:
@@ -1218,8 +1206,7 @@ class Raycast(bonsai.core.tool.Raycast):
             _triangle_vert_fmt, \
             _encoding_shader, \
             _offscreen, \
-            _obj_list, \
-            _last_decorator_cache_token
+            _obj_list
         _wireframe_batch_cache = {}
         _wireframe_vert_fmt = None
         _triangle_batch_cache = {}
@@ -1227,7 +1214,6 @@ class Raycast(bonsai.core.tool.Raycast):
         _encoding_shader = None
         _offscreen = None
         _obj_list = []
-        _last_decorator_cache_token = None
 
     @classmethod
     def ray_cast_by_proximity(
