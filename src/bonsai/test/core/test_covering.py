@@ -20,10 +20,9 @@
 
 import pytest
 
-import bonsai
 import bonsai.core.covering as subject
 import bonsai.core.tool
-from test.core.bootstrap import Prophecy, ifc, root, spatial
+from test.core.bootstrap import Prophecy, ifc, root, spatial  # ruff: ignore[unused-import]
 
 # NOTE: The Prophecy mocking framework serialises call arguments as JSON,
 # which means shapely geometry objects cannot be passed through mocked
