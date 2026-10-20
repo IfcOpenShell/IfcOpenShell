@@ -21,6 +21,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Union
 
 import ifcopenshell
+import ifcopenshell.util.element
 
 if TYPE_CHECKING:
     import bpy
