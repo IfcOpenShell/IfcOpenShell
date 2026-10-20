@@ -282,6 +282,22 @@ class _BlockHelper:
         return wall, extrusion
 
     @staticmethod
+    def create_l_shaped_wall(ifc, height=10.0):
+        """Create an IFC wall with an L-shaped block representation from z=0."""
+        ctx = ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW")
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        points = [(0.0, 0.0), (10.0, 0.0), (10.0, 2.0), (2.0, 2.0), (2.0, 10.0), (0.0, 10.0)]
+        polyline = ifc.createIfcPolyline([ifc.createIfcCartesianPoint(point) for point in points])
+        profile = ifc.createIfcArbitraryClosedProfileDef("AREA", None, polyline)
+        placement_3d = ifc.createIfcAxis2Placement3D(ifc.createIfcCartesianPoint([0.0, 0.0, 0.0]))
+        extrusion = ifc.createIfcExtrudedAreaSolid(
+            profile, placement_3d, ifc.createIfcDirection([0.0, 0.0, 1.0]), height
+        )
+        shape_rep = ifc.createIfcShapeRepresentation(ctx, "Body", "SweptSolid", [extrusion])
+        wall.Representation = ifc.createIfcProductDefinitionShape(None, None, [shape_rep])
+        return wall, extrusion
+
+    @staticmethod
     def create_thin_wall(ifc, cx, cy, width, depth, height=10.0):
         """Create an IFC wall with a thin block representation centered at (cx, cy)."""
         ctx = ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW")
@@ -504,6 +520,62 @@ class TestGenerateSpace(NewFile):
         assert min(world_zs) >= -0.1, f"Expected space world bottom near z>=0, got {min(world_zs)}"
         assert max(world_zs) > 0, f"Expected space to have positive height, got {max(world_zs)}"
         assert np.isclose(obj.location.z, 5.0, atol=0.01), f"Expected location.z=5.0, got {obj.location.z}"
+
+
+class TestGetSpaceReferencePoint(NewFile):
+    def test_point_is_inside_a_concave_footprint(self):
+        mesh = bpy.data.meshes.new("L")
+        points = [(0.0, 0.0), (10.0, 0.0), (10.0, 2.0), (2.0, 2.0), (2.0, 10.0), (0.0, 10.0)]
+        mesh.from_pydata([(x, y, 0.0) for x, y in points], [], [tuple(range(len(points)))])
+        mesh.update()
+        obj = bpy.data.objects.new("L", mesh)
+        bpy.context.collection.objects.link(obj)
+        bpy.context.view_layer.update()
+
+        x, y = subject.get_space_reference_point(obj)
+
+        footprint = shapely.Polygon(points)
+        assert footprint.contains(shapely.Point(x, y))
+        # The bounding box centre falls in the missing quadrant.
+        assert not footprint.contains(shapely.Point(5.0, 5.0))
+
+    def test_falls_back_to_bounding_box_centre(self):
+        obj = subject.create_object("Empty")
+        bpy.context.collection.objects.link(obj)
+        obj.location = (1.0, 2.0, 3.0)
+        bpy.context.view_layer.update()
+
+        assert subject.get_space_reference_point(obj) == pytest.approx((1.0, 2.0))
+
+
+class TestRegenerateConcaveSpace(NewFile):
+    def test_regeneration_keeps_concave_footprint(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        _BlockHelper.create_l_shaped_wall(ifc, height=10.0)
+        bpy.context.scene.cursor.location = (1.0, 1.0, 0.0)
+
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+
+        # Regenerate with the space active. Its bounding box centre (5, 5) is
+        # outside the L, so a bounding-box based lookup cannot find a polygon.
+        for obj in list(bpy.context.selected_objects):
+            obj.select_set(False)
+        bpy.context.view_layer.objects.active = space
+        space.select_set(True)
+        bpy.ops.bim.generate_space()
+
+        world_verts = [space.matrix_world @ v.co for v in space.data.vertices]
+        min_z = min(v.z for v in world_verts)
+        area = 0.0
+        for polygon in space.data.polygons:
+            points = [world_verts[i] for i in polygon.vertices]
+            if max(p.z for p in points) <= min_z + 1e-4:
+                area += shapely.Polygon([(p.x, p.y) for p in points]).area
+
+        # L footprint: 10x2 + 2x8 = 36 m2, not its 10x10 bounding box.
+        assert area == pytest.approx(36.0, abs=0.01)
 
 
 class TestSetSpaceRepresentationFromPolygon(NewFile):

@@ -200,8 +200,16 @@ def generate_space(
             relating_type = None
 
     if selected_objects and active_obj:
-        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_obj(active_obj)
         element = ifc.get_entity(active_obj)
+        if element is not None and element.is_a("IfcSpace"):
+            # A bounding box centre can fall outside a concave footprint, so use
+            # a point from the space's existing geometry instead.
+            x, y = spatial.get_space_reference_point(active_obj)
+            z = active_obj.location.z
+            h = active_obj.dimensions.z
+            mat = active_obj.matrix_world
+        else:
+            x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_obj(active_obj)
     else:
         x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()
 
