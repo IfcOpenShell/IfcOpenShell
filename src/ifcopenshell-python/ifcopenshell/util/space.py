@@ -650,7 +650,7 @@ def build_brep_space(
         outer = surface.OuterBoundary
         if outer is None or not outer.is_a("IfcPolyline"):
             continue
-        matrix = ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position)
+        matrix = ifcopenshell.util.placement.get_placement(surface.BasisSurface.Position)
         poly_points = []
         for loop_point in outer.Points:
             local = np.array([float(c) for c in loop_point.Coordinates])
