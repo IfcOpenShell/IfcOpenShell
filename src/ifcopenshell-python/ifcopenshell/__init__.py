@@ -88,6 +88,10 @@ try:
 except Exception as e:
     raise ImportError("IfcOpenShell not built for '%s' (%s)" % (python_distribution, e)) from e
 
+if sys.platform == "emscripten" and not ifcopenshell_wrapper.get_plugin_search_paths():
+    # Pyodide installs optional plugin wheels alongside the Python package.
+    ifcopenshell_wrapper.set_plugin_search_paths([os.path.dirname(os.path.abspath(__file__))])
+
 from . import file as file_module
 from . import guid
 from .ifcopenshell_wrapper import entity_instance, file
