@@ -28,10 +28,11 @@ from __future__ import annotations
 
 from typing import Optional, Union
 
+import shapely
+
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.shape
-import shapely
 
 BOUNDING_CLASSES = ("IfcWall", "IfcColumn", "IfcMember", "IfcVirtualElement", "IfcPlate")
 HEIGHT_DETECTION_CLASSES = ("IfcSlab", "IfcRoof")
