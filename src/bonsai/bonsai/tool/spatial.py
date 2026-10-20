@@ -28,6 +28,7 @@ import bmesh
 import bpy
 import ifcopenshell
 import ifcopenshell.api.attribute
+import ifcopenshell.api.boundary
 import ifcopenshell.api.geometry
 import ifcopenshell.api.type
 import ifcopenshell.geom

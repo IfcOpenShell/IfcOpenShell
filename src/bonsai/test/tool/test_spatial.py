@@ -21,7 +21,9 @@ from pathlib import Path
 import bpy
 import ifcopenshell
 import ifcopenshell.api.aggregate
+import ifcopenshell.api.boundary
 import ifcopenshell.api.feature
+import ifcopenshell.api.geometry
 import ifcopenshell.api.nest
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
