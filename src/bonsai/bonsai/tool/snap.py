@@ -61,7 +61,7 @@ def _process_gpu_object_snaps(
                         detected_snaps.append(point)
 
                 # Get wireframe snaps that are not occluded by face snap
-                ray_origin = tool.Raycast.get_viewport_ray_data(context, event)[0]
+                ray_origin = tool.Raycast.get_viewport_ray_data(context, (event.mouse_region_x, event.mouse_region_y))[0]
                 occl_dist = (snap["point"] - ray_origin).length + 1e-4
                 visible_wireframe_snaps = [w for w in wireframe_snaps if (w["point"] - ray_origin).length <= occl_dist]
                 detected_snaps.extend(visible_wireframe_snaps)
@@ -91,8 +91,9 @@ def _get_gpu_object_snaps(
     objs_to_raycast: list[bpy.types.Object],
     xray_mode: bool,
 ) -> list[dict[str, Any]]:
-    snap_faces, closest_obj = tool.Raycast.get_gpu_solid_snaps(context, event, objs_to_raycast)
-    wireframe_snaps, _ = tool.Raycast.get_gpu_wireframe_snaps(context, event, objs_to_raycast)
+    mouse_pos = (int(event.mouse_region_x), int(event.mouse_region_y))
+    snap_faces, closest_obj = tool.Raycast.get_gpu_solid_snaps(context, mouse_pos, objs_to_raycast)
+    wireframe_snaps, _ = tool.Raycast.get_gpu_wireframe_snaps(context, mouse_pos, objs_to_raycast)
     return _process_gpu_object_snaps(context, event, snap_faces, closest_obj, wireframe_snaps, xray_mode)
 
 
@@ -127,7 +128,7 @@ def _get_cpu_object_snaps(
                 detected_snaps.append(point)
 
             # Get wireframe snaps that are not occluded by face snap
-            ray_origin = tool.Raycast.get_viewport_ray_data(context, event)[0]
+            ray_origin = tool.Raycast.get_viewport_ray_data(context, (event.mouse_region_x, event.mouse_region_y))[0]
             occl_dist = (closest_face_snap["point"] - ray_origin).length + 1e-4
             visible_wireframe_snaps = [w for w in wireframe_snaps if (w["point"] - ray_origin).length <= occl_dist]
             detected_snaps.extend(visible_wireframe_snaps)
@@ -563,7 +564,7 @@ class Snap(bonsai.core.tool.Snap):
 
         if props.use_gpu_snapping:
             GpuSnapDecorator.set_request(event, objs_to_raycast)
-            cached = GpuSnapDecorator.get_cache()
+            cached = GpuSnapDecorator.get_cache(event)
             if cached is None:
                 detected_snaps.extend(_get_gpu_object_snaps(context, event, objs_to_raycast, xray_mode))
             else:
