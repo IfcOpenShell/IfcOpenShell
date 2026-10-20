@@ -25,7 +25,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.representation
 import numpy as np
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool
