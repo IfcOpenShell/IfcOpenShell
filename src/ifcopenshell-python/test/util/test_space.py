@@ -16,14 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
+import shapely
+
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.shape
 import ifcopenshell.util.space as subject
-import pytest
-import shapely
 import test.bootstrap
 
 
