@@ -28,6 +28,10 @@ import logging
 from math import acos, degrees
 from typing import Optional, Union
 
+import numpy as np
+import shapely
+import shapely.ops
+
 import ifcopenshell
 import ifcopenshell.api.boundary
 import ifcopenshell.api.root
@@ -37,9 +41,6 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder as sb
 import ifcopenshell.util.unit
-import numpy as np
-import shapely
-import shapely.ops
 
 logger = logging.getLogger("ImportIFC")
 
