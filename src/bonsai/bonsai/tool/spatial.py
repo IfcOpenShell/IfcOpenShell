@@ -887,7 +887,9 @@ class Spatial(bonsai.core.tool.Spatial):
         return ifcopenshell.util.space.get_boundary_lines(tool.Ifc.get(), cache["shapes"], cut_z)
 
     @classmethod
-    def get_space_polygon_from_context_visible_objects(cls, x: float, y: float) -> tuple[
+    def get_space_polygon_from_context_visible_objects(
+        cls, x: float, y: float
+    ) -> tuple[
         Union[shapely.Polygon, Literal["NO POLYGONS FOUND", "NO POLYGON FOR POINT"]],
         list[ifcopenshell.entity_instance],
     ]:

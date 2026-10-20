@@ -114,6 +114,7 @@ class TestGetElementTopElevationIFC4(test.bootstrap.IFC4):
         shape = create_file_unit_shape(wall)
         assert subject.get_element_top_elevation(wall, shape.geometry, is_si=False) == pytest.approx(6000.0)
 
+
 def _cube_verts_faces(size=2.0, z_offset=0.0):
     """Build a triangulated cube as (verts, faces) numpy arrays."""
     s = size / 2
