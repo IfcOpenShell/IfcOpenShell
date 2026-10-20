@@ -5,7 +5,7 @@ from pathlib import Path
 import ifcopenshell
 import ifcopenshell.geom
 
-ifcopenshell.set_plugin_search_paths([str(Path(ifcopenshell.__file__).parent)])
+assert str(Path(ifcopenshell.__file__).parent) in ifcopenshell.get_plugin_search_paths()
 
 # Exercise schema-dependent mapping as well as the geometry kernel. Entity
 # creation alone does not call the schema functions imported by the mapping DSO.
