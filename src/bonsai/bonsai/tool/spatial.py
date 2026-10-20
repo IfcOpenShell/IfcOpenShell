@@ -1383,15 +1383,18 @@ class Spatial(bonsai.core.tool.Spatial):
         poly = poly.simplify(0, preserve_topology=True)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         ifc_file = tool.Ifc.get()
-        x, y, z = obj.matrix_world.translation
-        origin = obj.matrix_world.translation  # Blender SI
-        # The space builders expect base_z and polygon in SI (world) units.
-        base_z = z
         poly_si = poly if polygon_is_si else shapely.affinity.scale(poly, unit_scale, unit_scale, origin=(0, 0))
 
         # Ensure the IFC entity has an ObjectPlacement matching the Blender object,
         # so the generated representation is in the correct local coordinate system.
         bpy.context.view_layer.update()
+        # Read the placement after the depsgraph update: objects created earlier in
+        # the same operator (e.g. a new space) have a stale matrix_world until then.
+        # matrix_world.translation is a live view into the matrix, so copy it once
+        # the matrix has been evaluated.
+        origin = obj.matrix_world.translation.copy()
+        # The space builders expect base_z and polygon in SI (world) units.
+        base_z = origin.z
         matrix = np.array(obj.matrix_world)
         ifcopenshell.api.geometry.edit_object_placement(
             ifc_file,

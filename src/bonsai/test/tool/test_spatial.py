@@ -506,6 +506,42 @@ class TestGenerateSpace(NewFile):
         assert np.isclose(obj.location.z, 5.0, atol=0.01), f"Expected location.z=5.0, got {obj.location.z}"
 
 
+class TestSetSpaceRepresentationFromPolygon(NewFile):
+    def test_reads_object_origin_after_evaluation(self, monkeypatch):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace")
+        obj = subject.create_object("TestSpace")
+        bpy.context.collection.objects.link(obj)
+        obj.location = (0.0, 0.0, 5.0)
+        tool.Ifc.link(element, obj)
+
+        # Keep the test focused on placement handling: no ray casting needed.
+        def fake_strategy(cls, space_polygon, base_z, bounding_walls, container=None):
+            return "EXTRUDE_CLIP", [((0.0, 0.0, 10.0), (0.0, 0.0, 1.0))], []
+
+        monkeypatch.setattr(subject, "get_space_volume_strategy", classmethod(fake_strategy))
+
+        subject.set_space_representation_from_polygon(
+            obj,
+            element,
+            shapely.box(-5.0, -5.0, 5.0, 5.0),
+            5.0,
+            polygon_is_si=True,
+            bounding_walls=[],
+            container=tool.Root.get_default_container(),
+        )
+
+        item = element.Representation.Representations[0].Items[0]
+        while item.is_a("IfcBooleanClippingResult"):
+            item = item.FirstOperand
+        assert item.is_a("IfcExtrudedAreaSolid")
+        # The extrusion is in the object's local frame, so its base must be the
+        # evaluated object origin (z=0 local), not the stale matrix_world origin.
+        assert item.Position.Location.Coordinates[2] == pytest.approx(0.0)
+        assert item.Depth == pytest.approx(5.0)
+
+
 class TestGenerateSpaceSlopedRoof(NewFile):
     def _create_shed_roof(self, ifc, z=4.0, rise=3.0):
         """Create an IfcRoof whose underside is a sloped plane across the footprint.
