@@ -1077,6 +1077,7 @@ class TestConvertCurveToMesh(NewFile):
 
         # Every vertex must appear in exactly 2 edges (closed loop)
         from collections import defaultdict
+
         counts = defaultdict(int)
         for e in subject.edges:
             counts[e[0]] += 1
