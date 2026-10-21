@@ -22,7 +22,6 @@ import tempfile
 from pathlib import Path
 
 import bpy
-import ifcopenshell
 import ifcopenshell.api.document
 import pytest
 
