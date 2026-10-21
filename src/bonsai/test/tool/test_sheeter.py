@@ -26,7 +26,6 @@ import pytest
 
 try:
     import git
-    import git.exc
 
     HAS_GIT = True
 except ImportError:
