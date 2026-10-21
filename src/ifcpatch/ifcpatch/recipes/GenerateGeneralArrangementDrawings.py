@@ -248,7 +248,7 @@ class GeometryUtils:
             3x3 matrix whose columns are the element's x, y and z axes in
             world coordinates, or None if it isn't rotated
         """
-        matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        matrix = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
         angle = np.arctan2(matrix[1][0], matrix[0][0])
         if abs(angle) < 1e-9:
             return None
@@ -339,7 +339,7 @@ class GeometryUtils:
                 maxs.append(element_max)
                 continue
 
-            local_placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            local_placement = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
             origin = local_placement[:3, 3]
 
             # Skip only elements sitting at the true world origin, which
@@ -856,7 +856,7 @@ class DrawingGenerator:
         dim_y = bbox_max[1] - bbox_min[1] + 2.0 / self.unit_scale
 
         # Get elevation from storey placement
-        local_placement = ifcopenshell.util.placement.get_local_placement(storey.ObjectPlacement)
+        local_placement = ifcopenshell.util.placement.get_placement(storey.ObjectPlacement)
         elevation = local_placement[2][3]
 
         # Camera 1.8 meters above floor in project units, looking down
@@ -1296,7 +1296,7 @@ class DrawingGenerator:
         for ifc_storey in ifcopenshell.util.element.get_decomposition(building):
             if not ifc_storey.is_a("IfcBuildingStorey"):
                 continue
-            local_placement = ifcopenshell.util.placement.get_local_placement(ifc_storey.ObjectPlacement)
+            local_placement = ifcopenshell.util.placement.get_placement(ifc_storey.ObjectPlacement)
             storeys.append((local_placement[2][3], ifc_storey))
         return sorted(storeys, key=lambda s: s[0])
 

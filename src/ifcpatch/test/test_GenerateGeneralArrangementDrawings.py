@@ -894,7 +894,7 @@ class TestOrientation(test.bootstrap.IFC4):
         assert axis == pytest.approx([0.0, 0.0, 1.0])
         assert ref_direction == pytest.approx(get_axes(rotation)[0])
         assert dims == pytest.approx((12.0, 8.0, 10.0))
-        matrix = ifcopenshell.util.placement.get_local_placement(building.ObjectPlacement)
+        matrix = ifcopenshell.util.placement.get_placement(building.ObjectPlacement)
         assert location == pytest.approx(matrix[:3, :3] @ [5.0, 3.0, 1.8] + matrix[:3, 3])
 
     @pytest.mark.parametrize(
