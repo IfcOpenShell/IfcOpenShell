@@ -552,13 +552,20 @@ bool ifcopenshell::geom::util::wire_intersections(const TopoDS_Wire& wire, NColl
 
 						ShapeFix_Wire sfw;
 						sfw.Load(mw.Wire());
+						sfw.SetPrecision(eps_real);
 						sfw.Perform();
 
 						// Recursively process both cuts
 
 						// @todo this is a change in behaviour with eps precomputed from the kernel
 						// instead of adaptively calculated for the successive iterations.
-						wire_intersections(sfw.Wire(), wires, settings);
+						// A cycle cut from a closed wire is closed by construction. Its two new
+						// edges meet at the cut through separate vertices, so neither the flag
+						// nor BRep_Tool::IsClosed() says so, and without the flag the recursive
+						// call returns at once and leaves any further crossing in place.
+						TopoDS_Wire cycle = sfw.Wire();
+						cycle.Closed(true);
+						wire_intersections(cycle, wires, settings);
 					}
 
 					return true;
