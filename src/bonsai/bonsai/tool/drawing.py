@@ -2436,7 +2436,20 @@ class Drawing(bonsai.core.tool.Drawing):
         elements = cls.get_elements_in_camera_view(
             tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")]
         )
-        # NOTE: EPset_Drawing.Include is not used to avoid adding other elements besides spaces
+        # Apply the Include filter to spaces too (#4785).
+        include = pset.get("Include", None)
+        if include:
+            try:
+                data = json.loads(include)
+                if isinstance(data, dict) and "filter_structure" in data:
+                    include_elements = tool.Search.execute_filter_groups_from_json(data, ifc_file)
+                elif isinstance(data, dict) and "query" in data:
+                    include_elements = ifcopenshell.util.selector.filter_elements(ifc_file, data["query"])
+                else:
+                    include_elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
+            except (json.JSONDecodeError, ValueError):
+                include_elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
+            elements &= include_elements
         exclude = pset.get("Exclude", None)
         if exclude:
             try:
