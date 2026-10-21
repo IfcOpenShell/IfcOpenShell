@@ -19,7 +19,6 @@
 # AI-assisted development tool was used in writing this file.
 
 import ifcopenshell
-import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import pytest
 

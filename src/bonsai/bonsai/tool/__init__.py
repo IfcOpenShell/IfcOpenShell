@@ -48,8 +48,8 @@ from bonsai.tool.group import Group
 from bonsai.tool.ifc import Ifc
 from bonsai.tool.ifcgit import IfcGit, IfcGitRepo
 from bonsai.tool.layer import Layer
-from bonsai.tool.license import License
 from bonsai.tool.library import Library
+from bonsai.tool.license import License
 from bonsai.tool.loader import Loader
 from bonsai.tool.material import Material
 from bonsai.tool.misc import Misc
