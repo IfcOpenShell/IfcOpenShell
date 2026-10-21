@@ -587,6 +587,15 @@ class Polyline(bonsai.core.tool.Polyline):
         polyline_points.remove(len(polyline_points) - 1)
 
     @classmethod
+    def remove_intermediate_polyline_points(cls) -> None:
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
+        if len(polyline_points) >= 3:
+            for i in range(len(polyline_points)-2):
+                polyline_points.remove(1)
+
+    @classmethod
     def move_polyline_to_measure(cls, context: bpy.types.Context, input_ui: PolylineUI) -> None:
         polyline_props = tool.Model.get_polyline_props()
         polyline_data = polyline_props.insertion_polyline

@@ -976,20 +976,42 @@ class PolylineDecorator(tool.Blender.ViewportDecorator):
         if snap_prop.snap_type in ["Plane", "Axis", "Mix"]:
             self.draw_batch("POINTS", mouse_point, decorator_color_unselected)
 
-        # Line between last polyline point and mouse
-        self.line_shader.uniform_float("lineWidth", 2.0)
-        edges = [[0, 1]]
-        if polyline_verts:
-            if snap_prop.snap_type != "Plane" and projection_point:
-                self.draw_batch("LINES", [polyline_verts[-1]] + projection_point, decorator_color_selected, edges)
-            else:
-                self.draw_batch("LINES", [polyline_verts[-1]] + mouse_point, decorator_color_selected, edges)
 
-        # Draw polyline with selected points
-        self.line_shader.uniform_float("lineWidth", 2.0)
-        self.draw_batch("POINTS", polyline_verts, decorator_color_unselected)
-        if len(polyline_verts) > 1:
-            self.draw_batch("LINES", polyline_verts, decorator_color_unselected, polyline_edges)
+
+        if tool.Model.get_polyline_settings().drawing_type == "RECTANGLE":
+            # Draw rectangle with selected points if in rectangle mode
+            rectangle_verts = [polyline_verts[0],
+                Vector((polyline_verts[0].x, polyline_verts[-1].y, polyline_verts[0].z)),
+                polyline_verts[-1],
+                Vector((polyline_verts[-1].x, polyline_verts[0].y, polyline_verts[0].z)),
+            ]
+            self.draw_batch("POINTS", rectangle_verts, decorator_color_unselected)
+            if len(rectangle_verts) > 1:
+                self.draw_batch("LINES", rectangle_verts, decorator_color_unselected, ((0, 1), (1, 2), (2, 3), (3,0)))
+         
+            # Line between last polyline point and mouse in rectangle mode
+            self.line_shader.uniform_float("lineWidth", 2.0)
+            edges = [[0, 1]]
+            if polyline_verts:
+                if snap_prop.snap_type != "Plane" and projection_point:
+                    self.draw_batch("LINES", [polyline_verts[0]] + projection_point, decorator_color_selected, edges)
+                else:
+                    self.draw_batch("LINES", [polyline_verts[0]] + mouse_point, decorator_color_selected, edges)
+        else:
+            # Line between last polyline point and mouse
+            self.line_shader.uniform_float("lineWidth", 2.0)
+            edges = [[0, 1]]
+            if polyline_verts:
+                if snap_prop.snap_type != "Plane" and projection_point:
+                    self.draw_batch("LINES", [polyline_verts[-1]] + projection_point, decorator_color_selected, edges)
+                else:
+                    self.draw_batch("LINES", [polyline_verts[-1]] + mouse_point, decorator_color_selected, edges)
+
+            # Draw polyline with selected points
+            self.line_shader.uniform_float("lineWidth", 2.0)
+            self.draw_batch("POINTS", polyline_verts, decorator_color_unselected)
+            if len(polyline_verts) > 1:
+                self.draw_batch("LINES", polyline_verts, decorator_color_unselected, polyline_edges)
 
 
 class ProductDecorator(tool.Blender.ViewportDecorator):
@@ -1110,6 +1132,15 @@ class ProductDecorator(tool.Blender.ViewportDecorator):
             return
         for point in polyline_points:
             polyline_vertices.append(Vector((point.x, point.y, point.z)))
+
+        if tool.Model.get_polyline_settings().drawing_type == "RECTANGLE":
+            rectangle_verts = [polyline_vertices[0],
+                Vector((polyline_vertices[0].x, polyline_vertices[-1].y, polyline_vertices[0].z)),
+                polyline_vertices[-1],
+                Vector((polyline_vertices[-1].x, polyline_vertices[0].y, polyline_vertices[0].z)),
+                polyline_vertices[0]
+            ]
+            polyline_vertices = rectangle_verts
 
         is_closed = False
         if (

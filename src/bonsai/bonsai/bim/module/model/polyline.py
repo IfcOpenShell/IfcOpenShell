@@ -173,6 +173,19 @@ class PolylineOperator:
                 tool.Blender.update_viewport()
                 get_plane_origin()
 
+    def choose_drawing_mode(self, event: bpy.types.Event) -> None:
+        polyline_settings = tool.Model.get_polyline_settings()
+        if event.value == "PRESS" and event.type == "R":
+            print("FOI")
+            if polyline_settings.drawing_type== "POLYLINE":
+                setattr(polyline_settings, "drawing_type", "RECTANGLE")
+                tool.Polyline.remove_in_between_polyline_points()
+            elif polyline_settings.drawing_type== "RECTANGLE":
+                print("2")
+                setattr(polyline_settings, "drawing_type", "POLYLINE")
+            PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+            tool.Blender.update_viewport()
+
     def handle_instructions(
         self, context: bpy.types.Context, custom_instructions: dict = {}, custom_info: str = "", overwrite: bool = False
     ) -> None:
@@ -310,17 +323,23 @@ class PolylineOperator:
                 tool.Blender.update_viewport()
 
     def handle_inserting_polyline(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
+
         if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type == "LEFTMOUSE":
-            result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
-            if result:
-                self.report({"WARNING"}, result)
-            tool.Blender.update_viewport()
+            if tool.Model.get_polyline_settings().drawing_type == "RECTANGLE" and len(polyline_points) >= 2:
+                tool.Polyline.remove_last_polyline_point()
+                result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
+                tool.Blender.update_viewport()
+            else:
+                result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
+                if result:
+                    self.report({"WARNING"}, result)
+                tool.Blender.update_viewport()
 
         if event.value == "PRESS" and event.type == "C":
             # Get the first point coordinates to close the polyline
-            polyline_props = tool.Model.get_polyline_props()
-            polyline_data = polyline_props.insertion_polyline
-            polyline_points = polyline_data[0].polyline_points if polyline_data else []
             if len(polyline_points) > 2:
                 first_point = polyline_points[0]
                 last_point = polyline_points[-1]
