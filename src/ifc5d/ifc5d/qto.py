@@ -524,6 +524,10 @@ class IfcOpenShell(QtoCalculator):
                                 value = cls.get_covering_area(element, geometry)
                                 value = cls.unit_converter.convert(value, "IfcAreaMeasure")
                             else:
+                                # Empty geometry has no bounding box or elevation; skip it
+                                # rather than emit a fabricated value such as 0.0.
+                                if len(geometry.verts) == 0:
+                                    continue
                                 value = formula_functions[formula](geometry)
                                 assert isinstance(value, (float, int))
                                 value = cls.unit_converter.convert(value, IfcOpenShell.raw_functions[formula].measure)
