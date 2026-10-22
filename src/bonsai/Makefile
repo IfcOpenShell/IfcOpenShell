@@ -161,7 +161,10 @@ endif
 	cp -r bonsai build/
 
 	# To scope any build-time dependencies
-	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
+	cd build && $(PYTHON) -m venv env
+	# Must bump pip as older versions trust some stale compromised CA certificates (see eMudhra CA incident).
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m pip install --upgrade pip
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) install build
 
 	mkdir -p build/wheels
 	# Provides IfcOpenShell Python functionality
