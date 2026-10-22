@@ -60,6 +60,16 @@ class TestAssign(NewIfc):
         assert len(wall_obj.users_collection) == 2
         assert "Unsorted" in wall_obj.users_collection[0].name
 
+    def test_space_boundaries_are_locked_in_object_mode(self):
+        assert bpy.context.scene
+        boundary_obj = bpy.data.objects.new("Object", None)
+        boundary = tool.Ifc.get().createIfcRelSpaceBoundary()
+        tool.Ifc.link(boundary, boundary_obj)
+        bpy.context.scene.collection.objects.link(boundary_obj)
+        subject.assign(boundary_obj)
+        assert tuple(boundary_obj.lock_location) == (True, True, True)
+        assert tuple(boundary_obj.lock_rotation) == (True, True, True)
+
     def test_spatial_structure_elements_are_placed_in_a_collection_of_the_same_name(self):
         assert bpy.context.scene
         building_obj = bpy.data.objects.new("IfcBuilding/Name", None)
