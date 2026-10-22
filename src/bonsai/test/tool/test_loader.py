@@ -21,7 +21,10 @@ from pathlib import Path
 
 import bmesh
 import bpy
+import ifcopenshell.api.context
 import ifcopenshell.api.library
+import ifcopenshell.api.material
+import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.util.schema
 import numpy as np
@@ -399,6 +402,39 @@ class TestCreatingStyles(NewFile):
         assert np.allclose(image_node.image.pixels[:], expected_pixel_data, atol=0.01), (
             f"Failed to match pixels for {n_components}.\nBlender pixel_data: {image_node.image.pixels[:]}.\nExpected data: {expected_pixel_data}"
         )
+
+
+class TestSliceLayersetMesh(NewFile):
+    def test_axis1_layers_start_at_the_reference_line_offset(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        body = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=body
+        )
+        layer_set = ifcopenshell.api.material.add_material_set(ifc, name="Set", set_type="IfcMaterialLayerSet")
+        for name in ("A", "B"):
+            material = ifcopenshell.api.material.add_material(ifc, name=name)
+            style = ifcopenshell.api.style.add_style(ifc, name=name)
+            ifcopenshell.api.style.assign_material_style(ifc, material=material, style=style, context=body)
+            tool.Ifc.link(style, bpy.data.materials.new(name))
+            layer = ifcopenshell.api.material.add_layer(ifc, layer_set=layer_set, material=material)
+            layer.LayerThickness = 0.5
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        ifcopenshell.api.material.assign_material(
+            ifc, products=[wall], type="IfcMaterialLayerSetUsage", material=layer_set
+        )
+        usage = ifc.by_type("IfcMaterialLayerSetUsage")[0]
+        usage.LayerSetDirection = "AXIS1"
+        usage.OffsetFromReferenceLine = 0.5
+        mesh = bpy.data.meshes.new("Mesh")
+        bm = bmesh.new()
+        bmesh.ops.create_cube(bm, size=4.0)
+        bm.to_mesh(mesh)
+        bm.free()
+        sliced = subject.slice_layerset_mesh(wall, mesh)
+        assert any(abs(v.co.x - 1.0) < 1e-4 for v in sliced.vertices)
 
 
 class TestLoadingIndexedMap(NewFile):
