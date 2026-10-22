@@ -1565,6 +1565,37 @@ express::base::set_attribute_value(size_t i, const T& t) {
             }
         }
     }
+    if constexpr (std::is_same_v<T, express::base> || std::is_same_v<T, std::vector<express::base>> || std::is_same_v<T, std::vector<std::vector<express::base>>>) {
+        // Instances owned by another file are added to this file first.
+        const auto foreign = [this](const express::base& v) { return v && v.file() != file(); };
+        if constexpr (std::is_same_v<T, express::base>) {
+            if (foreign(t)) {
+                return set_attribute_value(i, file()->add_entity(t));
+            }
+        } else if constexpr (std::is_same_v<T, std::vector<express::base>>) {
+            if (std::any_of(t.begin(), t.end(), foreign)) {
+                auto owned = t;
+                for (auto& v : owned) {
+                    if (foreign(v)) {
+                        v = file()->add_entity(v);
+                    }
+                }
+                return set_attribute_value(i, owned);
+            }
+        } else {
+            if (std::any_of(t.begin(), t.end(), [&foreign](const auto& tt) { return std::any_of(tt.begin(), tt.end(), foreign); })) {
+                auto owned = t;
+                for (auto& tt : owned) {
+                    for (auto& v : tt) {
+                        if (foreign(v)) {
+                            v = file()->add_entity(v);
+                        }
+                    }
+                }
+                return set_attribute_value(i, owned);
+            }
+        }
+    }
     auto current_attribute = get_attribute_value(i);
 
     inverse_attribute_difference inverse_difference;
