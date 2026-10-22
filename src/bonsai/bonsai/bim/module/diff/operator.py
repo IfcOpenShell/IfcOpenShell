@@ -28,6 +28,7 @@ import bonsai.bim.handler
 import bonsai.bim.import_ifc
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.diff.relationships import get_skipped_default_relationships
 
 
 class SelectDiffJsonFile(bpy.types.Operator, ImportHelper):
@@ -158,6 +159,15 @@ class ExecuteIfcDiff(bpy.types.Operator, ExportHelper):
             new = ifcopenshell.open(self.props.new_file)
 
         relationships = [r.relationship for r in self.props.diff_relationships]
+
+        skipped_defaults = get_skipped_default_relationships(relationships)
+        if skipped_defaults:
+            self.report(
+                {"INFO"},
+                f"Diff is not comparing: {', '.join(skipped_defaults)}. "
+                "Add them to the relationship list to also detect those changes.",
+            )
+
         query = tool.Search.export_filter_query(self.props.filter_groups) or None
 
         ifc_diff = ifcdiff.IfcDiff(old, new, relationships=relationships, filter_elements=query)
