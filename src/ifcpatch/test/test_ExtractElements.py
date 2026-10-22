@@ -42,6 +42,19 @@ class TestExtractElements(test.bootstrap.IFC4):
         assert output.by_type("IfcProject")[0].GlobalId == project.GlobalId
         assert output.by_type("IfcWall")[0].GlobalId == wall.GlobalId
 
+    def test_the_docstring_example_excluding_a_name_extracts_only_the_other_walls(self):
+        from ifcpatch.recipes.ExtractElements import Patcher
+
+        lines = Patcher.__init__.__doc__.splitlines()
+        example = next(line for line in lines if "!=" in line and '"arguments"' in line)
+        query = example.split('"arguments": ["', 1)[1].rsplit('"]', 1)[0]
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall", name="Foo")
+        bar = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall", name="Bar")
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": [query]})
+
+        assert [w.GlobalId for w in output.by_type("IfcWall")] == [bar.GlobalId]
+
     def test_keep_spatial_structure(self):
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
 
