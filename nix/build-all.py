@@ -169,6 +169,7 @@ TBB_VERSION = "2021.9.0"
 ROCKSDB_VERSION = "10.4.2"
 ZSTD_VERSION = "1.5.7"
 MANIFOLD_VERSION = "3.2.1"
+SMLIB_VERSION = "c9c5979f04cea8c38213004d4f04df0dcfb40d05"
 PROJ_VERSION = "9.4.1"
 QT6_VERSION = os.getenv("QT6_VERSION", "6.8.3")
 
@@ -599,7 +600,7 @@ cecho(""" - IFC Schemas to compile. If not provided, only common schemas are bui
 
 dependency_tree: dict[str, tuple[str, ...]] = {
     "IfcParse": ("boost", "libxml2", "rocksdb"),
-    "IfcGeom": ("IfcParse", "occ", "manifold", "json", "cgal", "eigen", "OpenCOLLADA"),
+    "IfcGeom": ("IfcParse", "occ", "manifold", "smlib", "json", "cgal", "eigen", "OpenCOLLADA"),
     "IfcConvert": ("IfcGeom",),
     "OpenCOLLADA": ("libxml2", "pcre"),
     "IfcGeomServer": ("IfcGeom",),
@@ -617,6 +618,7 @@ dependency_tree: dict[str, tuple[str, ...]] = {
     "rocksdb": ("zstd",),
     "zstd": (),
     "manifold": (),
+    "smlib": (),
     "qt6": (),
     "proj": (),
     # 'usd': ('boost', 'oneTBB')
@@ -1257,6 +1259,7 @@ os.environ["CLICOLOR_FORCE"] = "1"
 
 Dependency: TypeAlias = Literal[
     "manifold",
+    "smlib",
     "occt",
     "qt6",
     "pcre",
@@ -1476,6 +1479,25 @@ if "manifold" in targets:
         download_tool=download_tool_git,
         revision=f"v{MANIFOLD_VERSION}",
         patch=patches,
+    )
+
+# The SMLib kernel is only wired into native builds for now: the upstream
+# project does not target Emscripten, so the wasm build skips the dependency
+# and builds IfcOpenShell without the kernel.
+if "smlib" in targets and not WASM:
+    dependency_name = Dependencies.register("smlib", SMLIB_VERSION[:7])
+    build_dependency(
+        name=dependency_name,
+        mode="cmake",
+        build_tool_args=[
+            "-DCMAKE_POSITION_INDEPENDENT_CODE=ON",
+            *MAC_CROSS_COMPILE_INTEL_ARGS,
+        ],
+        download_url="https://github.com/NVIDIA-Omniverse/usd-brep.git",
+        download_name="usd-brep",
+        download_tool=download_tool_git,
+        revision=SMLIB_VERSION,
+        patch=["./patches/smlib/add-cmake-build.patch"],
     )
 
 if "proj" in targets:
@@ -1859,6 +1881,10 @@ if "occ" in targets:
 if "manifold" in targets:
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("manifold")))
     cmake_args.append("-DWITH_MANIFOLD=On")
+
+if "smlib" in targets and not WASM:
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("smlib")))
+    cmake_args.append("-DWITH_SMLIB=On")
 
 if "proj" in targets:
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("proj")))
