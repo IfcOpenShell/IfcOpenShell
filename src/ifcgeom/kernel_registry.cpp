@@ -164,10 +164,6 @@ std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> ifcopenshell::geom
 			for (const auto& backend_id : cached->second) {
 				kernels.push_back(registry.create(backend_id, file, settings, logger));
 			}
-			for (auto it = kernels.begin(); it != kernels.end(); ++it) {
-				(**it).propagate_exceptions = it == kernels.begin();
-				(**it).partial_success_is_success = it == kernels.end() - 1;
-			}
 			return std::make_unique<hybrid_kernel>(geometry_library, file, settings, std::move(kernels), logger);
 		}
 	}
@@ -204,11 +200,6 @@ std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel> ifcopenshell::geom
 			kernels.push_back(registry.create(matched_backend_id, file, settings, logger));
 			component_backend_ids.push_back(matched_backend_id);
 			geometry_library_lower = geometry_library_lower.substr(matched_backend_id.size());
-		}
-
-		for (auto it = kernels.begin(); it != kernels.end(); ++it) {
-			(**it).propagate_exceptions = it == kernels.begin();
-			(**it).partial_success_is_success = it == kernels.end() - 1;
 		}
 
 		if (!kernels.empty()) {

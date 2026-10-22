@@ -38,6 +38,11 @@ namespace ifcopenshell {
 					, mapping_(ifcopenshell::geom::impl::mapping_implementations().construct(file, settings, logger))
 					, file_(file)
 				{
+					// Only the last kernel may accept a partial result, the others defer to the next one.
+					for (auto it = kernels_.begin(); it != kernels_.end(); ++it) {
+						(**it).propagate_exceptions = it == kernels_.begin();
+						(**it).partial_success_is_success = it == kernels_.end() - 1;
+					}
 				}
 				virtual bool supports_boolean_operations() const
 				{
