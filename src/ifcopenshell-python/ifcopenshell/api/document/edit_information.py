@@ -30,7 +30,7 @@ def edit_information(
     For more information about the attributes and data types of an
     IfcDocumentInformation, consult the IFC documentation.
 
-    :param reference: The IfcDocumentInformation entity you want to edit
+    :param information: The IfcDocumentInformation entity you want to edit
     :param attributes: a dictionary of attribute names and values.
     :return: None
 
