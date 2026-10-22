@@ -764,7 +764,15 @@ def draw_door_properties(layout: bpy.types.UILayout, props: module_prop.BIMDoorP
     layout.label(text="Panel Properties")
     panel_props = props.get_panel_kwargs()
     for prop in panel_props:
+        if prop.startswith("handle_"):
+            continue
         layout.prop(props, prop)
+
+    # Handle properties
+    layout.label(text="Handle Properties")
+    layout.prop(props, "handle_size")
+    layout.prop(props, "handle_inset_from_edge")
+    layout.prop(props, "handle_height_above_floor")
 
 
 def draw_window_properties(layout: bpy.types.UILayout, props: module_prop.BIMWindowProperties) -> None:
