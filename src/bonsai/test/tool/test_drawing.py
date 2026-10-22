@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -1102,6 +1103,33 @@ class TestAddReferenceImage(NewFile):
 
         uv_node = material_nodes["Texture Coordinate"]
         assert len(uv_node.outputs["Generated"].links[:]) == 1
+
+
+class TestCreateDrawingShapelyFillLinkedModel(NewFile):
+    def test_linked_model_elements_get_surface_fills(self):
+        bpy.ops.bim.create_project()
+        tool.Project.save_test_project()
+        bpy.ops.bim.link_ifc(filepath=Path("test/files/basic.ifc").absolute().as_posix(), use_cache=False)
+        link = tool.Project.get_project_props().links[0]
+        offset = np.eye(4)
+        offset[0][3] = 4
+        tool.Ifc.get().by_id(link.ifc_definition_id).Identification = ",".join(map(str, offset.reshape(-1)))
+        tool.Project.get_link_empty_handle(link).matrix_world = tool.Project.calculate_link_matrix(link)
+
+        props = tool.Drawing.get_document_props()
+        bpy.ops.bim.load_drawings()
+        bpy.ops.bim.add_drawing()
+        drawing = tool.Ifc.get().by_type("IfcAnnotation")[0]
+        for i, d in enumerate(props.drawings):
+            if d.ifc_definition_id == drawing.id():
+                props.active_drawing_index = i
+        bpy.ops.bim.activate_drawing(drawing=drawing.id())
+        assert (camera := bpy.context.scene.camera)
+        tool.Drawing.get_camera_props(camera).fill_mode = "SHAPELY"
+        bpy.ops.bim.create_drawing()
+
+        svg = (Path(tool.Ifc.get_path()).parent / "drawings" / f"{drawing.Name}.svg").read_text()
+        assert re.search(r'class="Ifc\w+ [^"]*surface"', svg)
 
 
 class TestIsDrawingActive(NewFile):
