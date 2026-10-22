@@ -18,6 +18,7 @@
 
 import json
 import logging
+import os
 
 import bpy
 import ifcdiff
@@ -48,6 +49,14 @@ class VisualiseDiff(bpy.types.Operator):
     bl_idname = "bim.visualise_diff"
     bl_label = "Visualise Diff"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        diff_json_file = tool.Blender.get_diff_props().diff_json_file
+        if not diff_json_file or not os.path.exists(diff_json_file):
+            cls.poll_message_set("Select an existing diff JSON file first.")
+            return False
+        return True
 
     def execute(self, context):
         ifc_file = tool.Ifc.get()
@@ -227,6 +236,14 @@ class SelectDiffObjects(bpy.types.Operator):
     bl_label = "Select Diff Objects"
     bl_options = {"REGISTER", "UNDO"}
     mode: bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        diff_json_file = tool.Blender.get_diff_props().diff_json_file
+        if not diff_json_file or not os.path.exists(diff_json_file):
+            cls.poll_message_set("Select an existing diff JSON file first.")
+            return False
+        return True
 
     def execute(self, context):
         ifc_file = tool.Ifc.get()
