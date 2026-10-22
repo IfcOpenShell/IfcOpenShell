@@ -790,14 +790,11 @@ private:
     size_t&      tracked_chunk_idx_;
     bool&        tracked_was_resident_;
 
-    // Mouse-navigation bindings — mirrors GL's NavBindings + currentNavBindings().
-    // Selection stays on LMB for every preset (none of the presets steal it),
-    // so the click-vs-drag distinction at mouseReleaseEvent's pick path keeps
-    // working. Set at init from WGPU_NAV_PRESET=blender|rhino|revit (default
-    // blender, matching GL's AppSettings::NavPreset::Blender default).
-    // Mirror of ViewportCore's preset bindings, mapped to Qt types by
-    // applyNavPreset (the core owns the preset table; these are the Qt-side
-    // cache the mouse handlers compare against).
+    // Mouse-navigation bindings mirrored from ViewportCore and mapped to Qt.
+    // Pivot policy also remains core-owned: only Revit may activate a selected
+    // objects' combined-AABB pivot; every other path keeps camera_target_.
+    // WGPU_NAV_PRESET=blender|rhino|revit|web (desktop default: blender).
+    // applyNavPreset caches the core bindings for the Qt mouse handlers.
     Qt::MouseButton       orbit_button_  = Qt::MiddleButton;
     Qt::KeyboardModifiers orbit_mods_    = Qt::NoModifier;
     Qt::MouseButton       pan_button_    = Qt::MiddleButton;
