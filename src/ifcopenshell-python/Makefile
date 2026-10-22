@@ -138,10 +138,13 @@ else
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/ifcopenshell/__init__.py
 endif
 
+	# Older pip trusts the compromised TLS certificates.
 	cd build && if command -v uv >/dev/null 2>&1; then \
 		uv build --wheel; \
 	else \
-		$(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build && \
+		$(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && \
+		$(PYTHON) -m pip install --upgrade pip && \
+		$(PIP) install build && \
 		$(PYTHON) -m build --wheel; \
 	fi
 
