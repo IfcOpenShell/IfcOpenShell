@@ -596,6 +596,9 @@ class Usecase:
         bpy.context.scene.collection.objects.link(dummy)
         tool.Blender.select_and_activate_single_object(bpy.context, dummy)
         if not isinstance(geom_data, bpy.types.Mesh):
+            if isinstance(dummy.data, bpy.types.Curve) and dummy.data.bevel_depth:
+                # Strip the bevel so the mesh keeps wire edges and converts back to a curve (#3496).
+                dummy.data.bevel_depth = 0.0
             bpy.ops.object.convert(target="MESH")
         self.remove_doubles_from_mesh(dummy.data)
         bpy.ops.object.convert(target="CURVE")
