@@ -85,13 +85,13 @@ class Patcher:
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": []})
 
             # Reset all coordinates with an ordinate larger than 1000 arbitrarily
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": [True, 1000]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": ["Geometry", True, 1000]})
 
             # Reset all coordinates with an ordinate larger than 1000000 by -50000,-20000,0
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": [False, 1000000, -50000,-20000,0]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": ["Geometry", False, 1000000, -50000,-20000,0]})
 
             # Reset all coordinates with an ordinate larger than 1000 by -500,-200,0
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": [False, 1000, -500,-200,0]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": ["Geometry", False, 1000, -500,-200,0]})
         """
         self.file = file
         self.logger = logger
