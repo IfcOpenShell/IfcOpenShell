@@ -34,6 +34,116 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), bonsai.core.tool.Sequence)
 
 
+class TestApplyVisibilityToVoids(NewFile):
+    def create_wall_with_opening(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.primitive_cube_add(size=2)
+        bpy.ops.bim.assign_class(ifc_class="IfcWall")
+        wall_obj = bpy.data.objects["IfcWall/Cube"]
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        opening_obj = bpy.context.active_object
+        wall_obj.select_set(True)
+        opening_obj.select_set(True)
+        bpy.context.view_layer.objects.active = wall_obj
+        bpy.ops.bim.add_opening()
+        wall = tool.Ifc.get_entity(wall_obj)
+        opening = wall.HasOpenings[0].RelatedOpeningElement
+        return wall_obj, wall, opening
+
+    def test_hiding_an_opening_recuts_the_host_without_modifying_the_model(self):
+        wall_obj, wall, opening = self.create_wall_with_opening()
+        ifc = tool.Ifc.get()
+        cut_vertices = len(wall_obj.data.vertices)
+        ifc_before = ifc.to_string()
+
+        subject.apply_visibility_to_voids({wall})
+        assert len(wall_obj.data.vertices) < cut_vertices
+        assert opening.Representation
+        assert ifc.to_string() == ifc_before
+
+        subject.apply_visibility_to_voids({wall, opening})
+        assert len(wall_obj.data.vertices) == cut_vertices
+        assert ifc.to_string() == ifc_before
+
+    def test_a_hidden_opening_has_no_representation_only_while_the_kernel_runs(self):
+        _, wall, opening = self.create_wall_with_opening()
+        ifc = tool.Ifc.get()
+        representation = opening.Representation
+        with subject.status_hidden_openings_uncut(ifc, [wall]):
+            assert opening.Representation == representation
+
+        subject.apply_visibility_to_voids({wall})
+        with subject.status_hidden_openings_uncut(ifc, [wall]):
+            assert opening.Representation is None
+        assert opening.Representation == representation
+
+    def test_a_filter_round_trip_keeps_every_entity_and_inverse(self):
+        _, wall, opening = self.create_wall_with_opening()
+        ifc = tool.Ifc.get()
+
+        def dump():
+            return {e.id(): (str(e), sorted(i.id() for i in ifc.get_inverse(e))) for e in ifc}
+
+        before = dump()
+        subject.apply_visibility_to_voids({wall})
+        assert dump() == before
+        subject.apply_visibility_to_voids({wall, opening})
+        assert dump() == before
+
+    def test_an_error_during_the_recut_restores_the_representation(self, monkeypatch):
+        _, wall, opening = self.create_wall_with_opening()
+        ifc = tool.Ifc.get()
+        ifc_before = ifc.to_string()
+        seen = []
+
+        def fail(iterator):
+            seen.append(opening.Representation)
+            raise RuntimeError
+
+        monkeypatch.setattr("ifcopenshell.geom.iterator.initialize", fail)
+        try:
+            subject.apply_visibility_to_voids({wall})
+        except RuntimeError:
+            seen.append("raised")
+        assert seen == [None, "raised"]
+        assert opening.Representation
+        assert ifc.to_string() == ifc_before
+
+    def test_the_temporary_edit_is_not_recorded_for_undo(self):
+        _, wall, opening = self.create_wall_with_opening()
+        ifc = tool.Ifc.get()
+        subject.apply_visibility_to_voids({wall})
+        ifc.begin_transaction()
+        with subject.status_hidden_openings_uncut(ifc, [wall]):
+            assert opening.Representation is None
+        transaction = ifc.transaction
+        ifc.discard_transaction()
+        assert transaction.operations == []
+
+    def test_hiding_one_of_two_openings_sharing_a_representation_keeps_the_other_cut(self):
+        wall_obj, wall, opening = self.create_wall_with_opening()
+        ifc = tool.Ifc.get()
+        bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 1.2))
+        other_obj = bpy.context.active_object
+        wall_obj.select_set(True)
+        other_obj.select_set(True)
+        bpy.context.view_layer.objects.active = wall_obj
+        bpy.ops.bim.add_opening()
+        other = next(r.RelatedOpeningElement for r in wall.HasOpenings if r.RelatedOpeningElement != opening)
+        other.Representation = shared = opening.Representation
+        subject.apply_visibility_to_voids({wall})
+        uncut_vertices = len(wall_obj.data.vertices)
+        subject.apply_visibility_to_voids({wall, opening, other})
+        cut_vertices = len(wall_obj.data.vertices)
+
+        subject.apply_visibility_to_voids({wall, other})
+        assert uncut_vertices < len(wall_obj.data.vertices) < cut_vertices
+        assert opening.Representation == other.Representation == shared
+        with subject.status_hidden_openings_uncut(ifc, [wall]):
+            assert opening.Representation is None
+            assert other.Representation == shared
+
+
 class TestGetElementStatus(NewFile):
     def test_common_pset(self):
         ifc = ifcopenshell.file()
