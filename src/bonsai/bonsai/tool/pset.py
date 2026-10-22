@@ -218,12 +218,16 @@ class Pset(bonsai.core.tool.Pset):
             primary_measure_type = prop_or_prop_template.PrimaryMeasureType
             if primary_measure_type == "IfcURIReference":
                 return "URI"
+            if primary_measure_type == "IfcLogical":
+                return "LOGICAL"
             if primary_measure_type:
                 return cls.get_special_type_for_measure_class(primary_measure_type)
             return cls.QUANTITY_TEMPLATE_TYPE_TO_SPECIAL_TYPE.get(prop_or_prop_template.TemplateType, "")
         elif prop_or_prop_template.is_a("IfcPropertySingleValue"):
             value = prop_or_prop_template.NominalValue
             if value is not None:
+                if value.is_a("IfcLogical"):
+                    return "LOGICAL"
                 special_type = cls.get_special_type_for_measure_class(value.is_a())
                 if special_type:
                     return special_type
@@ -411,7 +415,12 @@ class Pset(bonsai.core.tool.Pset):
                 )
                 metadata.unit_id = own_unit.id() if own_unit else 0
                 metadata.unit_id_enum = str(metadata.unit_id)
-                metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
+                if metadata.special_type == "LOGICAL":
+                    metadata.data_type = "enum"
+                    if (enum_value := bonsai.bim.helper.set_logical_enum_items(metadata, value)) is not None:
+                        metadata.enum_value = enum_value
+                else:
+                    metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
                 process_prop_description(metadata)
 
                 if prop.is_a("IfcPropertySingleValue") and (possible_values := bsdd_allowed_values.get(prop.Name)):
@@ -508,6 +517,11 @@ class Pset(bonsai.core.tool.Pset):
             metadata.float_value = 0.0 if metadata.is_null else float(data[prop_template.Name])
         elif metadata.data_type == "boolean":
             metadata.bool_value = False if metadata.is_null else bool(data[prop_template.Name])
+        elif metadata.data_type == "enum" and metadata.special_type == "LOGICAL":
+            is_null = metadata.is_null
+            value = None if is_null else data[prop_template.Name]
+            metadata.enum_value = bonsai.bim.helper.set_logical_enum_items(metadata, value) or "UNKNOWN"
+            metadata.is_null = is_null
 
         metadata.ifc_class = pset_template.Name
         bonsai.bim.helper.add_attribute_description(metadata, prop_template)
