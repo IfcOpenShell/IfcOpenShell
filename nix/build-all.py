@@ -123,10 +123,8 @@ import time
 from collections.abc import Generator, Sequence
 from datetime import date, datetime
 from pathlib import Path
-from typing import IO, Literal, NamedTuple, TypeAlias
+from typing import IO, Literal, NamedTuple, TypeAlias, assert_never
 from urllib.request import urlretrieve
-
-from typing_extensions import assert_never
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "win"))
 # The `nix` package lives next to the repository root, not next to this script.
