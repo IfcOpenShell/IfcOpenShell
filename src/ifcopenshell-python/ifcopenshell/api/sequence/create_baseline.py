@@ -51,10 +51,10 @@ def create_baseline(
     .. code:: python
 
         # We have a Work Schedule
-        planned_work_schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Planned Construction Schedule")
+        planned_work_schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Planned Construction Schedule", predefined_type="PLANNED")
 
         # And now we have a baseline for our Work Schedule
-        baseline_work_schedule = ifcopenshell.api.sequence.create_baseline(file, work_schedule=planned_work_schedule, name="Baseline 1")
+        baseline_work_schedule = ifcopenshell.api.sequence.create_baseline(model, work_schedule=planned_work_schedule, name="Baseline 1")
     """
     usecase = Usecase()
     usecase.file = file

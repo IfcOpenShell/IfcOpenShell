@@ -86,7 +86,7 @@ def add_pset_template(
     .. code:: python
 
         # Create a simple template that may be applied to all types
-        ifcopenshell.api.pset_template.add_pset_template(model, name="ABC_RiskFactors")
+        template = ifcopenshell.api.pset_template.add_pset_template(model, name="ABC_RiskFactors")
 
         # Note that we aren't finished yet. Our property set template
         # doesn't have any properties in it. Let's add a minimum of one
