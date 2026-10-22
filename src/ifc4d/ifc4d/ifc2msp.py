@@ -155,7 +155,7 @@ class Ifc2Msp:
             6: "Saturday",
             7: "Sunday",
         }
-        for working_time in calendar.WorkingTimes:
+        for working_time in calendar.WorkingTimes or []:
             if not working_time.RecurrencePattern or working_time.RecurrencePattern.RecurrenceType != "WEEKLY":
                 continue
 
