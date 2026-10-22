@@ -8128,3 +8128,7 @@ def IfcVectorSum(arg1, arg2):
         else:
             result = IfcVector(Orientation=vec1, Magnitude=0.0)
     return result
+
+
+# Entity-level EXPRESS UNIQUE clauses, emitted from express_parser for ifcopenshell.validate.
+uniqueness_rules = {'IfcActionRequest': [('UR2', ('RequestID',))], 'IfcApplication': [('UR1', ('ApplicationIdentifier',)), ('UR2', ('ApplicationFullName', 'Version'))], 'IfcCostSchedule': [('UR2', ('ID',))], 'IfcFuelProperties': [('UR11', ('Material',))], 'IfcGeneralMaterialProperties': [('UR11', ('Material',))], 'IfcHygroscopicMaterialProperties': [('UR11', ('Material',))], 'IfcMechanicalMaterialProperties': [('UR11', ('Material',))], 'IfcOpticalMaterialProperties': [('UR11', ('Material',))], 'IfcOrderAction': [('UR2', ('ActionID',))], 'IfcPermit': [('UR2', ('PermitID',))], 'IfcProductsOfCombustionProperties': [('UR11', ('Material',))], 'IfcProjectOrder': [('UR2', ('ID',))], 'IfcPropertyEnumeration': [('UR1', ('Name',))], 'IfcRoot': [('UR1', ('GlobalId',))], 'IfcThermalMaterialProperties': [('UR11', ('Material',))], 'IfcWaterProperties': [('UR11', ('Material',))]}

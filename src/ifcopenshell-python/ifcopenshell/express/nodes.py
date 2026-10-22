@@ -182,11 +182,25 @@ class EntityDeclaration(Node):
 
             self.where = [(r.simple_id, format_clause(r.expression[0])) for r in clause[1::2]]
 
+        # Each entity-level UNIQUE clause is captured as (label, attributes)
+        # where label may be None and attributes is a tuple of the referenced
+        # attribute names. A rule may reference more than one attribute, e.g.
+        # ``UR2 : ApplicationFullName, Version;`` (a compound uniqueness rule).
         self.unique = []
         clause = [r for r in self.entity_body[0] if r.rule == "unique_clause"]
         if clause:
             clause = clause[0]
-            self.unique = [(r[0], r[2].simple_id) for r in map(list, list(clause)[1::2])]
+            for rule in map(list, list(clause)[1::2]):
+                if len(rule) >= 2 and rule[1] == ":":
+                    label = rule[0]
+                    attribute_tokens = rule[2:]
+                else:
+                    label = None
+                    attribute_tokens = rule
+                # Referenced attributes are Node instances (they carry a
+                # ``simple_id``); labels and the ``:``/``,`` punctuation are str.
+                attributes = tuple(t.simple_id for t in attribute_tokens if not isinstance(t, str))
+                self.unique.append((label, attributes))
 
     def __repr__(self):
         strm = io.StringIO()
@@ -222,8 +236,9 @@ class EntityDeclaration(Node):
 
         if self.unique:
             print(" UNIQUE", file=strm)
-            for nm_exp in self.unique:
-                print("    %s : %s;" % nm_exp, file=strm)
+            for label, attributes in self.unique:
+                prefix = "%s : " % label if label else ""
+                print("    %s%s;" % (prefix, ", ".join(attributes)), file=strm)
 
         print("END_ENTITY;", file=strm)
         return strm.getvalue()
