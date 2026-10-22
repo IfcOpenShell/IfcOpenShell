@@ -1349,7 +1349,12 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
 
         angle, rotation_axis = get_bend_rotation()
 
-        lateral_sign = tool.Cad.sign(bend_vector[lateral_axis])
+        # The turn direction comes from the end segment's outgoing axis, not
+        # from bend_vector - mesh endpoints of mitred run segments overshoot
+        # the corner and would flip the sign read from the point offset.
+        lateral_sign = tool.Cad.sign(z_axis_end_object_local[lateral_axis] * -end_segment_sign)
+        if tool.Cad.sign(bend_vector[lateral_axis]) != lateral_sign:
+            bend_vector[lateral_axis] *= -1
         radial_offset = V(0, 0, 0)
         ref_point_radius = self.radius + profile_dim[lateral_axis]
         radial_offset[lateral_axis] = ref_point_radius * (1 - cos(angle)) * lateral_sign
@@ -1423,6 +1428,8 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         # Without that offset the bend's leg endpoints fall short of the
         # extended segment by ``profile_dim * tan(angle/2)`` and a visible
         # gap appears at each joint.
+        # ``near_tolerance`` admits mitred run segments whose meshes overhang
+        # the axis intersection by up to the miter apex length.
         _bend_centerline_world = compute_bend_preview_polylines(
             start_object,
             end_object,
@@ -1430,6 +1437,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             self.end_length,
             self.radius + profile_dim[lateral_axis],
             arc_resolution=24,
+            near_tolerance=profile_dim[lateral_axis] * tan(angle / 2) + 1e-4,
         )
         if _bend_centerline_world["valid"]:
             # The bend fitting covers the straight start_length leg, the arc,
@@ -1765,15 +1773,17 @@ def _is_bend_fitting(element) -> bool:
     return getattr(element_type, "PredefinedType", None) == "BEND"
 
 
-def _intersection_past_near(intersection: Vector, near: Vector, far: Vector) -> bool:
+def _intersection_past_near(intersection: Vector, near: Vector, far: Vector, tolerance: float = 0.0) -> bool:
     """True iff ``intersection`` lies past ``near`` away from ``far`` — i.e.
     on the bend-corner side of the segment. Used to reject configurations
     where the axes meet INSIDE one of the segments (the bend fitting
-    wouldn't physically fit)."""
+    wouldn't physically fit). ``tolerance`` admits a bounded overshoot of
+    ``near`` past the intersection, e.g. the apex of a mitred run segment
+    whose mesh overhangs the axis intersection."""
     base = near - far
     if base.length < 1e-6:
         return False
-    return (intersection - near).dot(base.normalized()) > 1e-6
+    return (intersection - near).dot(base.normalized()) > 1e-6 - tolerance
 
 
 def compute_bend_preview_polylines(
@@ -1783,9 +1793,14 @@ def compute_bend_preview_polylines(
     end_length: float,
     radius: float,
     arc_resolution: int = 24,
+    near_tolerance: float = 0.0,
 ):
     """Compute the centerline polylines visualising a bend between two MEP
     segments WITHOUT mutating IFC or Blender state.
+
+    ``near_tolerance`` admits segment meshes overhanging the axis
+    intersection by up to that distance (mitred run segments) without
+    flagging the intersection as inside the segment.
 
     Returns a dict with keys:
 
@@ -1819,7 +1834,7 @@ def compute_bend_preview_polylines(
         (end_far, intersection_point),
     ]
 
-    if not _intersection_past_near(intersection_point, start_near, start_far):
+    if not _intersection_past_near(intersection_point, start_near, start_far, tolerance=near_tolerance):
         return {
             "valid": False,
             "reason": "intersection_inside_start",
@@ -1828,7 +1843,7 @@ def compute_bend_preview_polylines(
             "arc": [],
             "invalid_axes": invalid_axes,
         }
-    if not _intersection_past_near(intersection_point, end_near, end_far):
+    if not _intersection_past_near(intersection_point, end_near, end_far, tolerance=near_tolerance):
         return {
             "valid": False,
             "reason": "intersection_inside_end",
@@ -1838,8 +1853,11 @@ def compute_bend_preview_polylines(
             "invalid_axes": invalid_axes,
         }
 
-    dir_into_start = start_near - intersection_point
-    dir_into_end = end_near - intersection_point
+    # Derive the leg directions from the far endpoints - the near endpoint of
+    # a mitred run segment can sit past the intersection, which would flip
+    # the direction read from it.
+    dir_into_start = start_far - intersection_point
+    dir_into_end = end_far - intersection_point
     if dir_into_start.length < 1e-6 or dir_into_end.length < 1e-6:
         return {"valid": False, "leg_a": None, "leg_b": None, "arc": []}
     dir_into_start.normalize()
