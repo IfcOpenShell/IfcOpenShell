@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import ifcopenshell.api.material
 import ifcopenshell.util.element
 
 
@@ -28,8 +29,10 @@ def remove_profile(
 ) -> None:
     """Removes a profile item from a profile set
 
-    Note that it is invalid to have zero items in a set, so you should leave
-    at least one profile to ensure a valid IFC dataset.
+    It is invalid to have zero items in a profile set. If you remove the
+    last profile, the entire IfcMaterialProfileSet is removed instead,
+    following the same convention as
+    ifcopenshell.api.material.remove_material_set.
 
     :param profile: The IfcMaterialProfile entity you want to remove
     :param should_remove_profile_def: If true, profile defs with no users will be removed
@@ -71,7 +74,11 @@ def remove_profile(
     for attribute in profile:
         if isinstance(attribute, ifcopenshell.entity_instance):
             subelements.add(attribute)
-    file.remove(profile)
+    profile_set = next(i for i in file.get_inverse(profile) if i.is_a("IfcMaterialProfileSet"))
+    if len(profile_set.MaterialProfiles) == 1:
+        ifcopenshell.api.material.remove_material_set(file, material=profile_set)
+    else:
+        file.remove(profile)
     for subelement in subelements:
         if subelement.is_a("IfcMaterial") and not should_remove_material:
             continue
