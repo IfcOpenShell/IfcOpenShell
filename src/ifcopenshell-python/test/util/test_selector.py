@@ -227,6 +227,17 @@ class TestGetElementValue(test.bootstrap.IFC4):
         # The explicit "properties" path is preserved for backwards compatibility.
         assert subject.get_element_value(element, "Qto_Custom.Layer1.properties.Width") == 0.1
 
+    def test_selecting_a_pset_with_a_dot_in_its_name_requires_quoting(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo.Bar")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Baz": "correct"})
+        assert subject.get_element_value(element, '"Foo.Bar".Baz') == "correct"
+        assert subject.get_element_value(element, r"/Foo\.Bar/.Baz") == "correct"
+        assert subject.get_element_value(element, "Foo.Bar.Baz") is None
+        other_pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=other_pset, properties={"Bar": "unrelated"})
+        assert subject.get_element_value(element, "Foo.Bar.Baz") is None
+
 
 class TestFilterElements(test.bootstrap.IFC4):
     def test_selecting_by_globalid(self):
@@ -508,6 +519,19 @@ class TestSetElementValue(test.bootstrap.IFC4):
         layer.Material = material
         subject.set_element_value(self.file, layer, "Material.Name", "Foo")
         assert material.Name == "Foo"
+
+    def test_setting_a_pset_with_a_dot_in_its_name_requires_quoting(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo.Bar")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Baz": "original"})
+        other_pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=other_pset, properties={"Bar": "original_unrelated"})
+        with pytest.raises(subject.SetElementValueException):
+            subject.set_element_value(self.file, element, "Foo.Bar.Baz", "new_value")
+        assert ifcopenshell.util.element.get_pset(element, "Foo.Bar")["Baz"] == "original"
+        assert ifcopenshell.util.element.get_pset(element, "Foo")["Bar"] == "original_unrelated"
+        subject.set_element_value(self.file, element, '"Foo.Bar".Baz', "new_value")
+        assert ifcopenshell.util.element.get_pset(element, "Foo.Bar")["Baz"] == "new_value"
 
 
 class TestSetElementValuePredefinedType(test.bootstrap.IFC4):
