@@ -18,6 +18,7 @@
 
 import json
 
+import bpy
 import ifcopenshell
 import ifcopenshell.api.document
 
@@ -216,3 +217,11 @@ class TestSetActiveDocument(NewFile):
         subject.set_active_document(document)
         props = tool.Document.get_document_props()
         assert props.active_document_id == document.id()
+
+
+class TestAssignDocumentOperator(NewFile):
+    def test_unknown_object_name_is_ignored(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        document = ifc.createIfcDocumentInformation()
+        assert bpy.ops.bim.assign_document(obj="missing", document=document.id()) == {"FINISHED"}
