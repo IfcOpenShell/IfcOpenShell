@@ -18,7 +18,6 @@
 
 import ntpath
 import os
-import re
 import shutil
 import urllib.parse
 import uuid
@@ -31,6 +30,7 @@ import pystache
 from mathutils import Vector
 
 import bonsai.tool as tool
+from bonsai.bim.module.drawing import css_scope
 
 VIEW_TITLE_OFFSET_Y = 5
 DRAWING_PADDING = 10
@@ -335,49 +335,10 @@ class SheetBuilder:
         """
         prefix = f"d{drawing_id}"  # just number doesn't work
 
-        # add .prefix class to all css selectors
+        # add .prefix class to all css selectors (documents without a stylesheet skip this)
         style = svg.find(f"{SVG}defs/{SVG}style")
-        assert style is not None
-        style_data = style.text
-        assert style_data is not None
-        text = ""
-        brackets_level = 0
-        selector_buffer = ""  # Buffer to accumulate selectors across lines
-
-        for l in style_data:
-            if l == "{":
-                if brackets_level == 0:
-                    # Get all accumulated selector text (may span multiple lines)
-                    # Find where the last rule ended (after last }) or start of text
-                    last_close = text.rfind("}")
-                    if last_close == -1:
-                        selector_text = text
-                        text = ""
-                    else:
-                        selector_text = text[last_close + 1 :]
-                        text = text[: last_close + 1]
-
-                    # Process all selectors (split by comma)
-                    css_selectors = []
-                    for css_selector in selector_text.split(","):
-                        css_selector = css_selector.strip()
-                        if css_selector:  # Only process non-empty selectors
-                            css_selector = f"{css_selector}.{prefix}"
-                            css_selectors.append(css_selector)
-
-                    text += ", ".join(css_selectors) + " "
-                brackets_level += 1
-            elif l == "}":
-                brackets_level -= 1
-            text += l
-
-        def replace_urls(text: str) -> str:
-            """replace urls `url(#marker)` with `url(#prefix-marker)`
-            since `url(#marker.prefix)` doesn't seem to work
-            """
-            return re.sub(r"url\(#([^\)]+)\)", rf"url(#{prefix}-\1)", text)
-
-        style.text = replace_urls(text)
+        if style is not None and style.text is not None:
+            style.text = css_scope.scope_css_rules(style.text, prefix)
 
         for svg_element in svg.findall(f".//*"):
             if svg_element.tag in (f"{SVG}style", f"{SVG}svg"):
@@ -391,9 +352,9 @@ class SheetBuilder:
                 attrib["class"] += f" {prefix}"
             if "filter" in attrib:
                 # example use "#fill-background" filter
-                attrib["filter"] = replace_urls(attrib["filter"])
+                attrib["filter"] = css_scope.replace_css_urls(attrib["filter"], prefix)
             if "style" in attrib:
-                attrib["style"] = replace_urls(attrib["style"])
+                attrib["style"] = css_scope.replace_css_urls(attrib["style"], prefix)
             if svg_element.tag == f"{SVG}use":
                 href_attrib = f"{XLINK}href"
                 if href_attrib in attrib:
@@ -478,7 +439,10 @@ class SheetBuilder:
                     view_title = image
 
             if table is not None:
-                view.append(self.parse_embedded_svg(table, {}))
+                # Scope the document's styles like drawings, so they don't clobber other documents (#5221).
+                svg = self.parse_embedded_svg(table, {})
+                svg = self.ensure_drawing_unique_styles(svg, int(view.attrib["data-id"]))
+                view.append(svg)
 
             if view_title is not None:
                 path = self.get_href(table)
