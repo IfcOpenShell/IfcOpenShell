@@ -59,7 +59,13 @@ def distance_along_from_station(file: ifcopenshell.file, alignment: entity_insta
 
     .. code:: python
 
-        alignment = model.by_type("IfcAlignment")[0] # alignment with start station 1+00.00
+        model = ifcopenshell.file(schema="IFC4X3")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        alignment = ifcopenshell.api.alignment.create_by_pi_method(model,
+            name="A1", hpoints=[(0.0, 0.0), (100.0, 0.0), (100.0, 100.0)], radii=[20.0])
+        # alignment with start station 1+00.00
+        ifcopenshell.api.alignment.add_stationing_referent(model,
+            name="1+00.0", alignment=alignment, distance_along=0.0, station=100.0)
         dist_along = ifcopenshell.api.alignment.distance_along_from_station(model,alignment=alignment,station=200.0)
         print(dist_along) # 100.00
     """
