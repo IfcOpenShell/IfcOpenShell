@@ -236,3 +236,10 @@ class TestGetObjectFromGuidMissing(NewFile):
         bpy.ops.bim.create_project()
         assert tool.Ifc.get() is not None
         assert subject.get_object_from_guid("3iyt7r$Hf4_hQYNhBIDJI4") is None
+
+
+class TestGetAddonPreferences(NewFile):
+    def test_raise_a_clear_error_when_the_registered_name_is_stale(self, monkeypatch):
+        monkeypatch.setattr(bonsai, "REGISTERED_BBIM_PACKAGE", "bl_ext.some_other_repo.bonsai")
+        with pytest.raises(RuntimeError, match="bl_ext.some_other_repo.bonsai"):
+            subject.get_addon_preferences()
