@@ -800,16 +800,25 @@ class SelectQueryElements(Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     query: StringProperty(name="Query")
+    clear_previous_selection: BoolProperty(
+        name="Clear Previous Selection",
+        description="Replace the current selection with the query results instead of adding to it",
+        default=False,
+    )
 
     if TYPE_CHECKING:
         query: str
+        clear_previous_selection: bool
 
     def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), self.query)
         objs = [obj for e in results if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)]
-        active_object = context.active_object or next(iter(objs), None)
+        if self.clear_previous_selection:
+            active_object = next(iter(objs), None)
+        else:
+            active_object = context.active_object or next(iter(objs), None)
         selection = tool.Blender.validate_object_selection(context, active_object, objs)
-        tool.Blender.set_objects_selection(*selection, clear_previous_selection=False)
+        tool.Blender.set_objects_selection(*selection, clear_previous_selection=self.clear_previous_selection)
         self.report({"INFO"}, f"{len(results)} Results, {len(selection.selected_objects)} Objects Selected")
         return {"FINISHED"}
 
