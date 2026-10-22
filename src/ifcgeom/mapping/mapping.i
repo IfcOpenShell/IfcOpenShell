@@ -61,6 +61,9 @@ BIND(IfcExtrudedAreaSolidTapered);
 #endif
 BIND(IfcPlane);
 BIND(IfcExtrudedAreaSolid);
+#ifdef SCHEMA_HAS_IfcRevolvedAreaSolidTapered
+BIND(IfcRevolvedAreaSolidTapered);
+#endif
 BIND(IfcRevolvedAreaSolid);
 BIND(IfcConnectedFaceSet);
 BIND(IfcBooleanResult);
