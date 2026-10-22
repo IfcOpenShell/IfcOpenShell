@@ -33,6 +33,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import numpy as np
+import pytest
 
 import ifcpatch
 import test.bootstrap
@@ -74,6 +75,17 @@ class TestMergeProjects(test.bootstrap.IFC4):
         matrix = np.eye(4)
         matrix[:, 3] = (1, 2, 3, 1)
         assert to_tuple(placement1) == to_tuple(placement2) == to_tuple(matrix)
+
+    def test_raises_on_missing_project_in_the_original_file(self):
+        second_file = self.setup_project()
+        with pytest.raises(ValueError):
+            ifcpatch.execute({"file": self.file, "recipe": "MergeProjects", "arguments": [[second_file]]})
+
+    def test_raises_on_missing_project_in_the_other_file(self):
+        self.file = self.setup_project(self.file)
+        second_file = ifcopenshell.file(schema=self.file.schema)
+        with pytest.raises(ValueError):
+            ifcpatch.execute({"file": self.file, "recipe": "MergeProjects", "arguments": [[second_file]]})
 
     def test_reusing_geometric_contexts(self):
         self.file = self.setup_project(self.file)
