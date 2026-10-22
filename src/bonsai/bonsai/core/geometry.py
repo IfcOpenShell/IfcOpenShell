@@ -198,9 +198,12 @@ def remove_connection(geometry: type[tool.Geometry], connection: ifcopenshell.en
 def get_similar_openings(
     ifc: type[tool.Ifc], opening: ifcopenshell.entity_instance
 ) -> list[ifcopenshell.entity_instance]:
+    # ObjectPlacement is optional, unplaced openings must not match each other.
+    if not (placement := opening.ObjectPlacement):
+        return []
     model = ifc.get()
     all_openings = model.by_type("IfcOpeningElement")
-    similar_openings = [o for o in all_openings if o.ObjectPlacement == opening.ObjectPlacement and o != opening]
+    similar_openings = [o for o in all_openings if o.ObjectPlacement == placement and o != opening]
     return similar_openings
 
 
@@ -209,6 +212,9 @@ def get_similar_openings_building_objs(
 ) -> list[bpy.types.Object]:
     building_objs = []
     for similar_opening in similar_openings:
+        # VoidsElements may be empty for an opening that voids nothing yet.
+        if not similar_opening.VoidsElements:
+            continue
         building_objs.append(ifc.get_object(similar_opening.VoidsElements[0].RelatingBuildingElement))
     return building_objs
 
