@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 from typing import Any, Literal, Union
 
 import bpy
@@ -46,10 +47,15 @@ class ClassificationsData:
         cls.data["classifications"] = cls.classifications()
         cls.data["available_classifications"] = cls.available_classifications()
         cls.data["classification_source"] = cls.classification_source()
+        cls.data["loaded_classification_libraries"] = cls.loaded_classification_libraries()
 
     @classmethod
     def has_classification_file(cls):
         return bool(IfcStore.classification_file)
+
+    @classmethod
+    def loaded_classification_libraries(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        return [(filepath, os.path.basename(filepath), filepath) for filepath in IfcStore.classification_files]
 
     @classmethod
     def classifications(cls):
