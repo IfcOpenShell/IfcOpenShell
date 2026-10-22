@@ -93,6 +93,45 @@ def get_calendar(task: ifcopenshell.entity_instance) -> Union[ifcopenshell.entit
         return calendar[0]
 
 
+def get_hours_in_day(calendar: Union[ifcopenshell.entity_instance, None]) -> Union[float, None]:
+    """Calculates the number of working hours in a typical working day of a calendar.
+
+    This is derived from the IfcTimePeriod's assigned to the recurrence
+    patterns of the calendar's working times (e.g. 9am-12pm and 1pm-5pm would
+    be 7 hours, accounting for a 1 hour lunch break). If a calendar defines
+    multiple different working time patterns (e.g. a full weekday and a
+    shorter Saturday), the longest is returned as the "typical" day.
+
+    :param calendar: The IfcWorkCalendar to inspect. May be None.
+    :return: The total hours in a typical working day, or None if it cannot
+        be derived (e.g. no calendar, or the calendar only defines which days
+        are working days without specifying the hours within them).
+    """
+    if not calendar or not calendar.WorkingTimes:
+        return None
+    hours_in_day = None
+    for work_time in calendar.WorkingTimes:
+        recurrence_pattern = work_time.RecurrencePattern
+        if not recurrence_pattern or not recurrence_pattern.TimePeriods:
+            continue
+        day_hours = 0.0
+        for time_period in recurrence_pattern.TimePeriods:
+            if not time_period.StartTime or not time_period.EndTime:
+                continue
+            start = ifcopenshell.util.date.ifc2datetime(time_period.StartTime)
+            end = ifcopenshell.util.date.ifc2datetime(time_period.EndTime)
+            seconds = (
+                datetime.datetime.combine(datetime.date.min, end) - datetime.datetime.combine(datetime.date.min, start)
+            ).total_seconds()
+            if seconds < 0:
+                # An overnight time period (e.g. a night shift crossing midnight)
+                seconds += 24 * 60 * 60
+            day_hours += seconds / 3600
+        if day_hours:
+            hours_in_day = max(hours_in_day or 0.0, day_hours)
+    return hours_in_day
+
+
 def count_working_days(start, finish, calendar: ifcopenshell.entity_instance) -> int:
     result = 0
     if start == finish:
