@@ -325,6 +325,10 @@ class CadArcFrom3Points(bpy.types.Operator):
             else:
                 sorted_arc[2 if sorted_arc[2] is None else 0] = v1
 
+        # The middle vertex is removed to build the arc, taking any connected faces with it.
+        if sorted_arc[1].link_faces:
+            self.report({"WARNING"}, "Arc from 3 points removes the middle vertex, deleting any connected faces.")
+
         points = [tuple(v.co) for v in sorted_arc]
         verts, _ = tool.Cad.create_arc_segments(points, num_verts=(self.resolution * 4) + 1, make_edges=False)
 
