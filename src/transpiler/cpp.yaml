@@ -1,0 +1,712 @@
+# This file was generated with the assistance of an AI coding tool.
+# SPDX-License-Identifier: LGPL-3.0-or-later
+# C++20 exploration: TODO markers are intentional; this is not compiler-validated.
+unsupported: |
+  template <typename... Args>
+  std::any {{ name }}(Args&&...) {
+    throw std::logic_error({{ ("Unsupported Python in " ~ name ~ ": " ~ reason) | literal }});
+  }
+names:
+  pi: std::numbers::pi
+calls:
+  abs: std::abs
+  str: std::to_string
+operators:
+  Add: +
+  Sub: '-'
+  Mult: '*'
+  Div: /
+  Pow: '/* exponentiation: use std::pow */'
+  Mod: '%'
+return_types:
+  get_prefix: std::optional<std::string>
+  get_prefix_multiplier: double
+attribute_types:
+  Name: std::string
+  UnitType: std::string
+  Prefix: std::string
+  Exponent: int
+  UnitsInContext: express::entity
+  Units: std::vector<express::entity>
+  Elements: std::vector<express::entity>
+  Unit: express::entity
+  ConversionFactor: express::entity
+  UnitComponent: express::entity
+  ValueComponent: express::entity
+  wrappedValue: double
+types:
+  - input: null
+    output: auto
+  - input:
+      node: Attribute
+      value:
+        node: Name
+        id: ifcopenshell
+      attr: file
+    output: ifcopenshell::file*
+  - input:
+      node: Attribute
+      value:
+        node: Name
+        id: ifcopenshell
+      attr: entity_instance
+    output: express::entity
+  - input:
+      node: Name
+      id: $name
+    output: '{{ {"str":"std::string", "float":"double", "int":"int", "bool":"bool"}.get(name,name) }}'
+  - input:
+      node: Constant
+      value: null
+    output: std::nullopt_t
+  - input:
+      node: Constant
+      value: $name
+    output: '{{ name }}'
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: Optional
+      slice: $element
+    output: std::optional<{{ element | type }}>
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: list
+      slice: $element
+    output: std::vector<{{ element | type }}>
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: $kind
+      slice:
+        node: Tuple
+        elts: $elements
+    when: kind in ["dict", "Literal", "Union", "tuple"]
+    output: '{% if kind == "dict" %}std::map<{{ elements[0] | type }}, {{ elements[1] | type }}>{% elif kind == "Literal" %}std::string{% elif kind == "Union" and elements[-1].value is defined and elements[-1].value is none %}std::optional<{{ elements[0] | type }}>{% elif kind == "Union" %}std::variant<{{ elements | map("type") | join(", ") }}>{% elif elements[-1].value is defined and elements[-1].value.__class__.__name__ == "ellipsis" %}std::vector<{{ elements[0] | type }}>{% else %}std::tuple<{{ elements | map("type") | join(", ") }}>{% endif %}'
+rules:
+  - input: $value
+    context: condition
+    when: value | kind in ["array", "dict", "string"]
+    output: '!{{ value | emit }}.empty()'
+  - input: $value
+    context: condition
+    when: value | kind == "optional_string"
+    output: '{{ value | emit }}.has_value()'
+  - input: $value
+    context: condition
+    output: '{{ value | emit }}'
+  - input: $value
+    context: iterable
+    when: value | kind == "dict"
+    output: '{{ value | emit }} | std::views::keys'
+  - input: $value
+    context: iterable
+    output: '{{ value | emit }}'
+  - input:
+      node: ImportFrom
+      module: __future__
+    output: |-
+      // This file was generated with the assistance of an AI coding tool.
+      // SPDX-License-Identifier: LGPL-3.0-or-later
+      // Derived from ifcopenshell.util.unit, Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>.
+      // C++20 design sketch, not a compilable translation.
+      #include <algorithm>
+      #include <any>
+      #include <array>
+      #include <cctype>
+      #include <cmath>
+      #include <map>
+      #include <numbers>
+      #include <optional>
+      #include <ranges>
+      #include <stdexcept>
+      #include <string>
+      #include <tuple>
+      #include <variant>
+      #include <vector>
+      #include <boost/algorithm/string.hpp>
+  - input:
+      node: ImportFrom
+      module: $module
+    when: module in ["typing", "collections.abc", "math", "fractions"]
+    output: ''
+  - input:
+      node: Import
+      names:
+        - node: alias
+          name: ifcopenshell
+          asname: null
+    output: |-
+      #include "ifcparse/file.h"
+      #include "ifcparse/express.h"
+  - input:
+      node: Import
+      names: $imports
+    when: imports | map(attribute="name") | list == ["ifcopenshell.ifcopenshell_wrapper"]
+    output: ''
+  - input:
+      node: If
+      test:
+        node: Name
+        id: TYPE_CHECKING
+      body: $body
+    output: '{{ body | emit }}'
+  - input:
+      node: AnnAssign
+      target:
+        node: Name
+        id: DimensionalExponents
+      annotation:
+        node: Name
+        id: TypeAlias
+    output: using DimensionalExponents = std::array<int, 7>;
+  - input:
+      node: Assign
+      targets:
+        - $name
+      value:
+        node: Subscript
+        value:
+          node: Name
+          id: Literal
+    output: 'using {{ name | emit }} = std::string; // Python Literal: consider a scoped enum.'
+  - input:
+      node: Assign
+      targets:
+        - node: Name
+          id: FloatOrSequenceOfFloats
+    output: |-
+      // TODO: recursive struct holding variant<double, vector<Self>>.
+      using FloatOrSequenceOfFloats = std::any;
+  - input:
+      node: FunctionDef
+      name: $name
+      args: $arguments
+      body: $body
+      returns: $returns
+      decorator_list: []
+    output: |-
+      {{ return_types.get(name, "void" if returns is not none and returns.value is defined and returns.value is none else returns | type) }} {{ name }}({{ arguments | emit }}) {
+      {% if locals %}  // TODO: infer concrete types and declaration scopes for {{ locals | join(", ") }}.
+      {% endif %}{{ body | emit | indent(2, true) }}
+      {% if body[-1].__class__.__name__ != "Return" and (returns is none or not (returns.value is defined and returns.value is none)) %}  return std::nullopt;
+      {% endif %}}
+  - input:
+      node: arguments
+      args: $args
+      defaults: $defaults
+      posonlyargs: []
+      kwonlyargs: []
+      vararg: null
+      kwarg: null
+    output: '{% for arg in args %}{{ arg | emit }}{% if loop.index0 >= args | length - defaults | length %} = {{ defaults[loop.index0 - (args | length - defaults | length)] | emit }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}'
+  - input:
+      node: arg
+      arg: $name
+      annotation: $annotation
+    output: '{{ "std::string" if name == "text" and annotation is none else "bool" if name == "suppress_zero_inches" else annotation | type }} {{ name }}'
+  - input:
+      node: Expr
+      value:
+        node: Constant
+        value: $text
+    when: text is string
+    output: ''
+  - input:
+      node: Expr
+      value: $value
+    output: '{{ value | emit }};'
+  - input:
+      node: Return
+      value: $value
+    output: return {{ value | emit if value is not none else "std::nullopt" }};
+  - input:
+      node: Assign
+      targets:
+        - $target
+      value: $value
+    output: '{% if top_level %}const auto {% elif target.__class__.__name__ == "Name" and target.id not in declared %}{% set _ = declared.append(target.id) %}auto {% endif %}{{ target | emit }} = {{ value | emit }};'
+  - input:
+      node: AnnAssign
+      target: $target
+      annotation: $annotation
+      value: $value
+    output: '{% if value is not none %}{{ "const " if top_level else "" }}{{ annotation | type }} {{ target | emit }} = {{ value | emit }};{% endif %}'
+  - input:
+      node: NamedExpr
+      target: $target
+      value: $value
+    output: ({{ target | emit }} = {{ value | emit }})
+  - input:
+      node: AugAssign
+      target: $target
+      op: $op
+      value: $value
+    when: op.__class__.__name__ != "Pow"
+    output: '{{ target | emit }} {{ op | emit }}= {{ value | emit }};'
+  - input:
+      node: AugAssign
+      target: $target
+      op:
+        node: Pow
+      value: $value
+    output: '{{ target | emit }} = std::pow({{ target | emit }}, {{ value | emit }});'
+  - input:
+      node: If
+      test: $test
+      body: $body
+      orelse: $otherwise
+    output: |-
+      if ({{ test | condition }}) {
+      {{ body | emit | indent(2, true) }}
+      }{% if otherwise %} else {
+      {{ otherwise | emit | indent(2, true) }}
+      }{% endif %}
+  - input:
+      node: For
+      target: $target
+      iter:
+        node: Call
+        func:
+          node: Name
+          id: range
+        args:
+          - $stop
+        keywords: []
+      body: $body
+      orelse: []
+    output: |-
+      for (int {{ target | emit }} = 0; {{ target | emit }} < {{ stop | emit }}; ++{{ target | emit }}) {
+      {{ body | emit | indent(2, true) }}
+      }
+  - input:
+      node: For
+      target:
+        node: Tuple
+        elts: $targets
+      iter: $iterable
+      body: $body
+      orelse: []
+    output: |-
+      for (const auto& [{{ targets | map("emit") | join(", ") }}] : {{ iterable | iterable }}) {
+      {{ body | emit | indent(2, true) }}
+      }
+  - input:
+      node: For
+      target: $target
+      iter: $iterable
+      body: $body
+      orelse: []
+    output: |-
+      for (const auto& {{ target | emit }} : {{ iterable | iterable }}) {
+      {{ body | emit | indent(2, true) }}
+      }
+  - input:
+      node: While
+      test: $test
+      body: $body
+      orelse: []
+    output: |-
+      while ({{ test | condition }}) {
+      {{ body | emit | indent(2, true) }}
+      }
+  - input:
+      node: Continue
+    output: continue;
+  - input:
+      node: ListComp
+      elt: $clause
+      generators:
+        - node: comprehension
+          target: $target
+          iter: $iterable
+          ifs: $filters
+          is_async: 0
+    output: |-
+      ([&] {
+        std::vector<express::entity> result; // TODO: infer the element type.
+        for (const auto& {{ target | emit }} : {{ iterable | iterable }}) {
+      {% for filter in filters %}    if (!({{ filter | condition }})) continue;
+      {% endfor %}    result.push_back({{ clause | emit }});
+        }
+        return result;
+      }())
+  - input:
+      node: DictComp
+      key: $key
+      value: $value
+      generators:
+        - node: comprehension
+          target: $target
+          iter: $iterable
+          ifs: $filters
+          is_async: 0
+    output: |-
+      ([&] {
+        std::map<std::string, express::entity> result; // TODO: infer key/value types.
+        for (const auto& {{ target | emit }} : {{ iterable | iterable }}) {
+      {% for filter in filters %}    if (!({{ filter | condition }})) continue;
+      {% endfor %}    result.emplace({{ key | emit }}, {{ value | emit }});
+        }
+        return result;
+      }())
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $file
+        attr: by_type
+      args:
+        - $type
+      keywords: []
+    output: ifcopenshell::cast_vector<express::entity>({{ file | emit }}->instances_by_type({{ type | emit }}))
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: is_a
+      args:
+        - $type
+      keywords: []
+    output: '{{ value | emit }}.declaration().is({{ type | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: is_a
+      args: []
+      keywords: []
+    output: '{{ value | emit }}.declaration().name()'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: getattr
+      args:
+        - $value
+        - node: Constant
+          value: $key
+        - $default
+      keywords: []
+    when: key in attribute_types
+    output: '{{ value | emit }}.get_value<{{ attribute_types[key] }}>({{ key | literal }}, {{ default | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: get
+      args:
+        - $key
+        - $default
+      keywords: []
+    output: '({{ value | emit }}.contains({{ key | emit }}) ? {{ value | emit }}.at({{ key | emit }}) : {{ default | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: $method
+      args: []
+      keywords: []
+    when: method in ["keys", "items"]
+    output: '{{ value | emit }}{% if method == "keys" %} | std::views::keys{% endif %}'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: $method
+      args: []
+      keywords: []
+    when: method in ["upper", "lower"]
+    output: boost::to_{{ "upper" if method == "upper" else "lower" }}_copy({{ value | emit }})
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: replace
+      args:
+        - $old
+        - $new
+      keywords: []
+    output: boost::replace_all_copy({{ value | emit }}, {{ old | emit }}, {{ new | emit }})
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $separator
+        attr: join
+      args:
+        - $values
+      keywords: []
+    output: boost::join({{ values | emit }}, {{ separator | emit }})
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: append
+      args:
+        - $item
+      keywords: []
+    output: '{{ value | emit }}.push_back({{ item | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: any
+      args:
+        - $values
+      keywords: []
+    output: std::ranges::any_of({{ values | emit }}, [](const auto& value) { return bool(value); })
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: tuple
+      args:
+        - $value
+      keywords: []
+    output: '{{ value | emit }} /* TODO: materialize the annotated fixed-size array */'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: $name
+      args: $args
+      keywords: []
+    when: name in calls
+    output: '{{ calls[name] }}({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: $name
+      args: $args
+      keywords: []
+    when: name in functions
+    output: '{{ name }}({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Attribute
+      value: $value
+      attr: file
+    output: '{{ value | emit }}.file()'
+  - input:
+      node: Attribute
+      value: $value
+      attr: $attr
+      ctx:
+        node: Load
+    when: attr in attribute_types
+    output: '{{ value | emit }}.get_value<{{ attribute_types[attr] }}>({{ attr | literal }})'
+  - input:
+      node: Compare
+      left: $left
+      ops:
+        - $op
+      comparators:
+        - $right
+    when: op.__class__.__name__ in ["In", "NotIn"] and right | kind == "dict"
+    output: '{{ "!" if op.__class__.__name__ == "NotIn" else "" }}{{ right | emit }}.contains({{ left | emit }})'
+  - input:
+      node: Compare
+      left: $left
+      ops:
+        - $op
+      comparators:
+        - $right
+    when: op.__class__.__name__ in ["In", "NotIn"] and right | kind == "string"
+    output: ({{ right | emit }}.find({{ left | emit }}) {{ "==" if op.__class__.__name__ == "NotIn" else "!=" }} std::string::npos)
+  - input:
+      node: Compare
+      left: $left
+      ops:
+        - $op
+      comparators:
+        - $right
+    when: op.__class__.__name__ in ["In", "NotIn"] and right | kind == "array"
+    output: (std::ranges::find({{ right | emit }}, {{ left | emit }}) {{ "==" if op.__class__.__name__ == "NotIn" else "!=" }} {{ right | emit }}.end())
+  - input:
+      node: Compare
+      left: $left
+      ops:
+        - $op
+      comparators:
+        - $right
+    when: op.__class__.__name__ in ["Eq", "NotEq", "Is", "IsNot", "Gt", "Lt", "GtE", "LtE"]
+    output: ({{ left | emit }} {{ {"Eq":"==", "NotEq":"!=", "Is":"==", "IsNot":"!=", "Gt":">", "Lt":"<", "GtE":">=", "LtE":"<="}[op.__class__.__name__] }} {{ right | emit }})
+  - input:
+      node: Subscript
+      value: $value
+      slice: $index
+    when: index.__class__.__name__ != "Slice"
+    output: '{{ value | emit }}.at({{ "*" if index | kind == "optional_string" else "" }}{{ index | emit }})'
+  - input:
+      node: BoolOp
+      op:
+        node: Or
+      values:
+        - $value
+        - $fallback
+    when: fallback | kind == "string"
+    output: '([&](auto value) { return {{ "value.has_value() ? *value" if value | kind == "optional_string" else "!value.empty() ? value" }} : {{ fallback | emit }}; }({{ value | emit }})) /* TODO: optional attribute typing */'
+  - input:
+      node: BoolOp
+      op: $op
+      values: $values
+    output: '({% for value in values %}{{ value | condition }}{% if not loop.last %} {{ "||" if op.__class__.__name__ == "Or" else "&&" }} {% endif %}{% endfor %}) /* TODO: operand-valued Python and/or */'
+  - input:
+      node: UnaryOp
+      op:
+        node: Not
+      operand: $value
+    output: '!({{ value | condition }})'
+  - input:
+      node: UnaryOp
+      op:
+        node: USub
+      operand: $value
+    output: (-{{ value | emit }})
+  - input:
+      node: BinOp
+      left: $left
+      op:
+        node: Pow
+      right: $right
+    output: std::pow({{ left | emit }}, {{ right | emit }})
+  - input:
+      node: BinOp
+      left: $left
+      op: $op
+      right: $right
+    output: ({{ left | emit }} {{ op | emit }} {{ right | emit }})
+  - input:
+      node: IfExp
+      test: $test
+      body: $body
+      orelse: $otherwise
+    output: '({{ test | condition }} ? {{ body | emit }} : {{ otherwise | emit }})'
+  - input:
+      node: Dict
+      keys: $keys
+      values: $values
+    output: std::map<std::string, {{ "express::entity" if not values else "DimensionalExponents" if values[0] | kind == "array" else "std::string" if values[0] | kind == "string" else "double" }}>{ {% for key in keys %}{ {{ key | emit }}, {{ values[loop.index0] | emit }} }{% if not loop.last %}, {% endif %}{% endfor %} }
+  - input:
+      node: Tuple
+      elts: $elements
+    output: std::array{ {{ elements | map("emit") | join(", ") }} }
+  - input:
+      node: List
+      elts: $elements
+    output: std::vector<{{ "std::string" if elements and elements[0] | kind == "string" else "int" }}>{ {{ elements | map("emit") | join(", ") }} }
+  - input:
+      node: Constant
+      value: null
+    output: std::nullopt
+  - input:
+      node: Constant
+      value: $value
+    when: value is string
+    output: std::string{ {{ value | literal }} }
+  - input:
+      node: Constant
+      value: $value
+    output: '{{ value | literal }}'
+  - input:
+      node: Name
+      id: $name
+    output: '{{ names.get(name,name) }}'
+  - input: $operator
+    when: operator.__class__.__name__ in operators
+    output: '{{ operators[operator.__class__.__name__] }}'
+annotation_kinds:
+  - input: null
+    output: string
+  - input:
+      node: Name
+      id: $name
+    output: '{{ {"str":"string", "float":"number", "int":"number", "bool":"boolean", "DimensionalExponents":"array", "MEASURE_CLASS":"string", "QUANTITY_CLASS":"string"}.get(name, "unknown") }}'
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: Optional
+      slice: $element
+    output: '{{ element | emit("annotation_kinds") }}'
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: $name
+    output: '{{ {"list":"array", "tuple":"array", "dict":"dict"}.get(name,"unknown") }}'
+  - input: $value
+    output: unknown
+inference:
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: get_prefix
+    output: optional_string
+  - input:
+      node: Name
+      id: $name
+    output: '{{ symbols.get(name, "unknown") }}'
+  - input:
+      node: Constant
+      value: $value
+    output: '{{ "string" if value is string else "unknown" }}'
+  - input: $value
+    when: value is not none and value.__class__.__name__ in ["List", "Tuple", "ListComp"]
+    output: array
+  - input: $value
+    when: value is not none and value.__class__.__name__ in ["Dict", "DictComp"]
+    output: dict
+  - input:
+      node: NamedExpr
+      value: $value
+    output: '{{ value | kind }}'
+  - input:
+      node: BoolOp
+      values: $values
+    output: '{{ values[-1] | kind }}'
+  - input:
+      node: Attribute
+      attr: units
+    output: dict
+  - input:
+      node: Attribute
+      attr: $attr
+    when: attr in ["Units", "Elements", "DefiningValues", "DefinedValues"]
+    output: array
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        attr: $method
+    when: method in ["by_type", "keys", "items", "upper", "lower", "replace", "capitalize", "join"]
+    output: '{{ "array" if method in ["by_type", "keys", "items"] else "string" }}'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: $name
+    when: name in functions
+    output: '{{ functions[name].returns | emit("annotation_kinds") }}'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: $name
+    when: name in ["tuple", "list", "range", "str"]
+    output: '{{ "array" if name in ["tuple", "list", "range"] else "string" }}'
+  - input: $value
+    output: unknown
