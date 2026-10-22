@@ -502,6 +502,17 @@ class TestSetElementValue(test.bootstrap.IFC4):
         subject.set_element_value(self.file, element, "Name", 123)
         assert element.Name == "123"
 
+    def test_set_boolean_attribute_is_case_insensitive(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoorType")
+        for value in ("Yes", "yes", "YES", "True", "true", "TRUE", "1"):
+            subject.set_element_value(self.file, element, "ParameterTakesPrecedence", value)
+            assert element.ParameterTakesPrecedence is True, value
+        for value in ("No", "no", "NO", "False", "false", "FALSE", "0"):
+            subject.set_element_value(self.file, element, "ParameterTakesPrecedence", value)
+            assert element.ParameterTakesPrecedence is False, value
+        subject.set_element_value(self.file, element, "ParameterTakesPrecedence", None)
+        assert element.ParameterTakesPrecedence is None
+
     def test_set_attributes_attribute(self):
         material = self.file.create_entity("IfcMaterial")
         layer = self.file.create_entity("IfcMaterialLayer")
