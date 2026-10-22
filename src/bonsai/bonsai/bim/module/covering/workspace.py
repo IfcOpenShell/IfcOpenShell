@@ -143,7 +143,8 @@ class CoveringToolUI:
         if AuthoringData.data["ifc_classes"]:
             if cls.props.ifc_class:
                 box = cls.layout.box()
-                if thumbnail := AuthoringData.data["relating_type_data"].get("thumbnail"):
+                relating_type_id = AuthoringData.data["relating_type_data"].get("id")
+                if thumbnail := AuthoringData.type_thumbnails.get(relating_type_id, 0):
                     box.template_icon(icon_value=thumbnail, scale=5)
                 else:
                     op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
