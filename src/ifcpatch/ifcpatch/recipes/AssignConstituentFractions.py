@@ -79,6 +79,11 @@ class Patcher:
                     break
 
             if not element_quantities:
+                self.logger.warning(
+                    f"Skipping material constituent set #{constituent_set.id()}: none of its "
+                    f"{len(elements_sorted)} associated element(s) have layer-discriminated "
+                    "BaseQuantities to derive widths from."
+                )
                 continue
 
             # Calculate constituent widths and total width
