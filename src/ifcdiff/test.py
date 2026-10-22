@@ -26,6 +26,7 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+import ifcopenshell.guid
 import ifcopenshell.util.representation
 
 import ifcdiff
@@ -139,3 +140,22 @@ class TestIfcDiff:
         assert ifc_diff.added_elements == set()
         assert ifc_diff.deleted_elements == set()
         assert ifc_diff.change_register == {wall.GlobalId: {"geometry_changed": True}}
+
+    def test_reissued_globalid_is_rematched_by_signature(self):
+        ifc_file = setup_project()
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
+
+        new_file = ifc_file.from_string(ifc_file.to_string())
+        wall_new = new_file.by_id(wall.id())
+        wall_new.GlobalId = ifcopenshell.guid.new()
+
+        default = ifcdiff.IfcDiff(ifc_file, new_file)
+        default.diff()
+        assert default.added_elements == {wall_new.GlobalId}
+        assert default.deleted_elements == {wall.GlobalId}
+
+        matched = ifcdiff.IfcDiff(ifc_file, new_file, match_by_signature=True)
+        matched.diff()
+        assert matched.added_elements == set()
+        assert matched.deleted_elements == set()
+        assert matched.rematched_elements == {wall_new.GlobalId: {"old_global_id": wall.GlobalId, "moved": False}}
