@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import jsonpickle
@@ -33,7 +33,7 @@ class MyDB:
 
     @staticmethod
     def timestamp():
-        return datetime.now(timezone.utc).isoformat(sep="T", timespec="milliseconds")
+        return datetime.now(UTC).isoformat(sep="T", timespec="milliseconds")
 
     @staticmethod
     def bcf_time(any_datetime):
