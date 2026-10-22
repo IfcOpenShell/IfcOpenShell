@@ -971,10 +971,20 @@ class Raycast(bonsai.core.tool.Raycast):
             vertex = obj.location
             is_visible = cls.point_is_visible_in_clipping_plane(vertex)
 
-        if obj.type == "CURVE":
-            obj = bpy.data.objects.new("new_object", obj.to_mesh().copy())
+        elif obj.type == "CURVE":
+            # Test the curve's control points; to_mesh() on every snap event pegged a CPU core (#7525).
+            matrix = obj.matrix_world
+            for spline in obj.data.splines:
+                points = spline.bezier_points if spline.bezier_points else spline.points
+                for point in points:
+                    vertex = matrix @ Vector(point.co[:3])
+                    is_visible = cls.point_is_visible_in_clipping_plane(vertex)
+                    if is_visible:
+                        break
+                if is_visible:
+                    break
 
-        if obj.type == "MESH":
+        elif obj.type == "MESH":
             for v in obj.data.vertices:
                 vertex = obj.matrix_world @ v.co
                 is_visible = cls.point_is_visible_in_clipping_plane(vertex)
