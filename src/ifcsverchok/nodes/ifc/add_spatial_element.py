@@ -169,13 +169,11 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
                             ifcopenshell.api.aggregate.unassign_object(
                                 self.file,
                                 products=[removed_element],
-                                relating_object=result,
                             )
                         else:
                             ifcopenshell.api.spatial.unassign_container(
                                 self.file,
                                 products=[removed_element],
-                                relating_object=result,
                             )
                     for added_element in element_set - subelements:
                         if added_element.is_a("IfcSpatialElement") or added_element.is_a("IfcSpatialStructureElement"):
