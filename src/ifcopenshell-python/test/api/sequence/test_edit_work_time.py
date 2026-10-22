@@ -19,6 +19,7 @@
 import datetime
 
 import ifcopenshell.api.sequence
+import ifcopenshell.util.sequence
 import test.bootstrap
 
 
@@ -42,6 +43,24 @@ class TestEditWorkTime(test.bootstrap.IFC4):
         assert work_time.RecurrencePattern == attributes["RecurrencePattern"]
         assert work_time[4] == "2020-01-01"
         assert work_time[5] == "2020-02-01"
+
+    def test_editing_a_recurrence_pattern_updates_calculated_working_days(self):
+        self.file.create_entity("IfcProject")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
+        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar)
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(self.file, parent=work_time)
+        ifcopenshell.api.sequence.edit_recurrence_pattern(
+            self.file, recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]}
+        )
+        start = datetime.date(2020, 1, 1)
+        finish = datetime.date(2020, 1, 14)
+        assert ifcopenshell.util.sequence.count_working_days(start, finish, calendar) == 10
+
+        other_pattern = self.file.createIfcRecurrencePattern("WEEKLY", WeekdayComponent=[1, 2, 3])
+        ifcopenshell.api.sequence.edit_work_time(
+            self.file, work_time=work_time, attributes={"RecurrencePattern": other_pattern}
+        )
+        assert ifcopenshell.util.sequence.count_working_days(start, finish, calendar) == 6
 
 
 class TestEditWorkTimeIFC4X3(test.bootstrap.IFC4X3):
