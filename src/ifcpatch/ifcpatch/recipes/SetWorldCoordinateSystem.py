@@ -84,9 +84,21 @@ class Patcher:
                     self.file.createIfcDirection(x.tolist()),
                 )
             elif context.ContextType == "Plan":
+                if self.z:
+                    self.logger.warning(
+                        "SetWorldCoordinateSystem: a Plan context's WorldCoordinateSystem is an "
+                        "IfcAxis2Placement2D and cannot hold a Z coordinate. Z has been dropped."
+                    )
+                if self.ax or self.ay:
+                    self.logger.warning(
+                        "SetWorldCoordinateSystem: a Plan context's WorldCoordinateSystem is an "
+                        "IfcAxis2Placement2D and cannot be tilted out of plane. The X and Y rotations "
+                        "have been ignored; only the Z rotation was applied."
+                    )
+                plan_angle = math.radians(self.az)
                 context.WorldCoordinateSystem = self.file.createIfcAxis2Placement2D(
-                    self.file.createIfcCartesianPoint((self.x, self.y, self.z)),
-                    self.file.createIfcDirection(x.tolist()),
+                    self.file.createIfcCartesianPoint((self.x, self.y)),
+                    self.file.createIfcDirection((math.cos(plan_angle), math.sin(plan_angle))),
                 )
 
     def identity_matrix(self):
