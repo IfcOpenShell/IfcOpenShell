@@ -207,6 +207,7 @@ class ObjectMaterialData:
                 "id": mset.id(),
                 "name": getattr(mset, "LayerSetName", getattr(mset, "Name", None)) or "Unnamed",
                 "description": getattr(mset, "Description", None),
+                "has_composite_profile": bool(getattr(mset, "CompositeProfile", None)),
             }
 
     @classmethod
