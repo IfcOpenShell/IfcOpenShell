@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "opencascade_kernel.h"
 
 #include "boolean_utils.h"
@@ -51,6 +52,7 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, s
 
 	TopoDS_Shape a;
 	NCollection_List<TopoDS_Shape> b;
+	NCollection_List<TopoDS_Shape> halfspace_tools;
 
 	taxonomy::style::ptr first_item_style;
 
@@ -110,6 +112,9 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, s
 				}
 
 				b.Append(S);
+				if (c->instance && c->instance.declaration().is("IfcHalfSpaceSolid")) {
+					halfspace_tools.Append(S);
+				}
 			}
 		}
 		first = false;
@@ -121,6 +126,22 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, s
 	bst.precision = settings_.get<settings::Precision>().get();
 	bst.logger = &logger_;
 
+	// A half-space whose plane is rounded a little off an operand face touches that face
+	// on one stretch and crosses it on the rest, which OpenCASCADE resolves into a wrong
+	// solid (#349). Absorb the drift with a fuzziness for this operation alone.
+	double fuzziness = -1.;
+	if (br->operation == taxonomy::boolean_result::SUBTRACTION && !a.IsNull()) {
+		for (NCollection_List<TopoDS_Shape>::Iterator it(halfspace_tools); it.More(); it.Next()) {
+			const double drift = util::drifting_contact(a, it.Value(), tol);
+			if (drift > 0. && drift <= tol * 100.) {
+				fuzziness = (std::max)(fuzziness, 2. * drift);
+			}
+		}
+		if (fuzziness > 0.) {
+			logger_.notice("GEO", 404, "Half-space face drifts " + std::to_string(fuzziness / 2.) + " from a coincident face, using fuzziness " + std::to_string(fuzziness));
+		}
+	}
+
 	TopoDS_Shape r;
 
 	if (br->operation == taxonomy::boolean_result::SUBTRACTION && !a.IsNull() && a.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(a).More() && util::is_nested_compound_of_solid(a)) {
@@ -131,7 +152,7 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, s
 		valid_result = true;
 		for (; it.More(); it.Next()) {
 			TopoDS_Shape part;
-			if (util::boolean_operation(bst, it.Value(), b, op_to_occt(br->operation), part)) {
+			if (util::boolean_operation(bst, it.Value(), b, op_to_occt(br->operation), part, fuzziness)) {
 				B.Add(C, part);
 			} else {
 				valid_result = false;
@@ -143,7 +164,7 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, s
 			a = b.First();
 			b.RemoveFirst();
 		}
-		valid_result = util::boolean_operation(bst, a, b, op_to_occt(br->operation), r);
+		valid_result = util::boolean_operation(bst, a, b, op_to_occt(br->operation), r, fuzziness);
 	}
 
 	if (valid_result) {
