@@ -24,6 +24,33 @@ import ifcopenshell.util.cost as subject
 import test.bootstrap
 
 
+class TestCalculateTotalAppliedValue(test.bootstrap.IFC4):
+    def test_run(self):
+        model = self.file
+        cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
+
+        def component(value: float) -> ifcopenshell.entity_instance:
+            return model.create_entity("IfcCostValue", AppliedValue=model.createIfcMonetaryMeasure(value))
+
+        value1 = model.create_entity(
+            "IfcCostValue", ArithmeticOperator="MULTIPLY", Components=[component(8.0), component(5.0)]
+        )
+        value2 = model.create_entity(
+            "IfcCostValue", ArithmeticOperator="MULTIPLY", Components=[component(6.0), component(7.0)]
+        )
+        item.CostValues = [value1, value2]
+        assert subject.calculate_applied_value(item, value1) == 40.0
+        assert subject.calculate_applied_value(item, value2) == 42.0
+        assert subject.calculate_total_applied_value(item) == 82.0
+
+    def test_no_cost_values(self):
+        model = self.file
+        cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
+        assert subject.calculate_total_applied_value(item) == 0.0
+
+
 class TestGetCostItemForProduct(test.bootstrap.IFC4):
     def test_run(self):
         model = self.file
