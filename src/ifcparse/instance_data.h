@@ -627,6 +627,18 @@ class IFC_PARSE_API instance_data {
 
     attribute_value get_attribute_value(size_t attribute_index) const;
 
+    // The aggregate held in memory at attribute_index as T, one of the
+    // std::vector attribute storage types, for reading and editing in place;
+    // nullptr when the attribute is not held in memory as that type.
+    template<typename T>
+    T* in_memory_aggregate(std::size_t attribute_index) {
+        ensure_loaded();
+        if (storage_ && storage_->has<T>(attribute_index)) {
+            return &storage_->get<T>(attribute_index);
+        }
+        return nullptr;
+    }
+
     template<typename T>
     void set_attribute_value(std::size_t attribute_index, T&& value) {
         ensure_loaded();
