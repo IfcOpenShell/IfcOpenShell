@@ -50,6 +50,27 @@ def get_named_unit_types(self: "BIMUnitProperties", context: bpy.types.Context) 
     return UnitsData.data["named_unit_types"]
 
 
+def get_derived_unit_types(self: "BIMUnitProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    if not UnitsData.is_loaded:
+        UnitsData.load()
+    return UnitsData.data["derived_unit_types"]
+
+
+def get_named_units(self: "DerivedUnitElement", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    if not UnitsData.is_loaded:
+        UnitsData.load()
+    return UnitsData.data["named_units"]
+
+
+class DerivedUnitElement(PropertyGroup):
+    unit: EnumProperty(items=get_named_units, name="Unit")
+    exponent: IntProperty(name="Exponent", default=1)
+
+    if TYPE_CHECKING:
+        unit: str
+        exponent: int
+
+
 class Unit(PropertyGroup):
     unit_type: StringProperty(name="Unit Type")
     is_assigned: BoolProperty(name="Is Assigned")
@@ -71,6 +92,8 @@ class BIMUnitProperties(PropertyGroup):
     unit_classes: EnumProperty(items=get_unit_classes, name="Unit Classes")
     conversion_unit_types: EnumProperty(items=get_conversion_unit_types, name="Conversion Unit Types")
     named_unit_types: EnumProperty(items=get_named_unit_types, name="Named Unit Types")
+    derived_unit_types: EnumProperty(items=get_derived_unit_types, name="Derived Unit Types")
+    derived_unit_elements: CollectionProperty(name="Derived Unit Elements", type=DerivedUnitElement)
     unit_attributes: CollectionProperty(name="Unit Attributes", type=Attribute)
 
     if TYPE_CHECKING:
@@ -81,4 +104,6 @@ class BIMUnitProperties(PropertyGroup):
         unit_classes: str
         conversion_unit_types: str
         named_unit_types: str
+        derived_unit_types: str
+        derived_unit_elements: bpy.types.bpy_prop_collection_idprop[DerivedUnitElement]
         unit_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
