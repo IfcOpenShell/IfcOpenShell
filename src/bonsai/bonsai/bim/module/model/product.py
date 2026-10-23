@@ -298,6 +298,8 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
                 material.is_a("IfcMaterialProfileSet") or material.is_a("IfcMaterialLayerSet")
             ):
                 return self.execute(context)
+            if tool.Parametric.is_framing(relating_type):
+                return self.execute(context)
             return context.window_manager.invoke_props_dialog(self)
         return self.execute(context)
 
@@ -359,6 +361,24 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
             if self.generate_layered_element(ifc_class, relating_type):
                 tool.Blender.select_and_activate_single_object(context, context.selected_objects[-1])
                 return {"FINISHED"}
+        elif tool.Parametric.is_framing(relating_type):
+            # Framing types hold a system, not geometry: assigning the type builds the
+            # occurrence's own body along a default path.
+            obj = bpy.data.objects.new(
+                tool.Model.generate_occurrence_name(relating_type, instance_class), bpy.data.meshes.new("Mesh")
+            )
+            obj.location = bpy.context.scene.cursor.location
+            element = bonsai.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class=instance_class,
+                should_add_representation=False,
+            )
+            bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
+            tool.Blender.select_and_activate_single_object(context, obj)
+            return {"FINISHED"}
         elif not relating_type.RepresentationMaps:
             mesh = None if self.representation_template == "EMPTY" else bpy.data.meshes.new("Mesh")
             obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
