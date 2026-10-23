@@ -2071,7 +2071,7 @@ void svg_serializer::write(const geometry_data& data) {
 					const double area = prop.Mass();
 					std::stringstream ss;
 					ss << std::setprecision(2) << std::fixed << std::showpoint << area;
-					labels.push_back(ss.str() + "m&#178;");
+					labels.push_back(ss.str() + "m²");
 				}
 
 				util::string_buffer path;
