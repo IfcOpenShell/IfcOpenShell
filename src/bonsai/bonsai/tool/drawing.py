@@ -519,8 +519,10 @@ class Drawing(bonsai.core.tool.Drawing):
         for reference in cls.get_document_references(sheet):
             reference_description = cls.get_reference_description(reference)
             if reference_description == "DRAWING":
-                drawing_references[Path(reference.Location).stem] = reference
-                drawing_names.append(Path(reference.Location).stem)
+                info = cls.get_reference_document(reference)
+                drawing_name = info.Name if info else Path(reference.Location).stem
+                drawing_references[drawing_name] = reference
+                drawing_names.append(drawing_name)
         for drawing_annotation in [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]:
             if drawing_annotation.Name in drawing_names:
                 sheet_builder.add_drawing(drawing_references[drawing_annotation.Name], drawing_annotation, sheet)
@@ -1228,6 +1230,12 @@ class Drawing(bonsai.core.tool.Drawing):
             if not new.is_expanded:
                 continue
 
+            drawing_name_by_location = {
+                cls.get_document_uri(cls.get_drawing_document(d)): d.Name
+                for d in tool.Ifc.get().by_type("IfcAnnotation")
+                if d.ObjectType == "DRAWING" and cls.get_drawing_document(d)
+            }
+
             for reference in cls.get_document_references(sheet):
                 reference_description = cls.get_reference_description(reference)
                 if reference_description in ("SHEET", "LAYOUT", "RASTER"):
@@ -1239,7 +1247,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
                 new.identification = tool.Document.get_external_reference_id(reference) or ""
 
-                new.name = os.path.basename(reference.Location)
+                resolved_location = cls.get_document_uri(reference)
+                new.name = drawing_name_by_location.get(resolved_location) or os.path.basename(reference.Location)
                 new.reference_type = reference_description
 
     @classmethod
@@ -2318,6 +2327,63 @@ class Drawing(bonsai.core.tool.Drawing):
     def get_drawing_human_scale(cls, drawing: ifcopenshell.entity_instance) -> str:
         pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing") or {}
         return "NTS" if pset.get("IsNTS", False) else pset.get("HumanScale", "NTS")
+
+    @classmethod
+    def get_human_scale_from_scale_denominator(cls, denominator: str) -> str:
+        """Return the human-readable scale string for a scale CSS class denominator.
+
+        E.g. denominator '4' returns '3"=1\'-0"' (imperial) or '' if not found.
+        """
+        IMPERIAL_SCALES = {
+            "1": "1'=1'-0\"",
+            "2": '6"=1\'-0"',
+            "4": '3"=1\'-0"',
+            "8": '1-1/2"=1\'-0"',
+            "12": '1"=1\'-0"',
+            "16": '3/4"=1\'-0"',
+            "24": '1/2"=1\'-0"',
+            "32": '3/8"=1\'-0"',
+            "48": '1/4"=1\'-0"',
+            "64": '3/16"=1\'-0"',
+            "96": '1/8"=1\'-0"',
+            "128": '3/32"=1\'-0"',
+            "192": '1/16"=1\'-0"',
+            "384": '1/32"=1\'-0"',
+            "768": '1/64"=1\'-0"',
+            "1536": '1/128"=1\'-0"',
+            "120": "1\"=10'",
+            "240": "1\"=20'",
+            "360": "1\"=30'",
+            "480": "1\"=40'",
+            "600": "1\"=50'",
+            "720": "1\"=60'",
+            "840": "1\"=70'",
+            "960": "1\"=80'",
+            "1080": "1\"=90'",
+            "1200": "1\"=100'",
+            "1800": "1\"=150'",
+            "2400": "1\"=200'",
+            "3600": "1\"=300'",
+            "4800": "1\"=400'",
+            "6000": "1\"=500'",
+        }
+        METRIC_SCALES = {
+            "5000": "1:5000",
+            "2000": "1:2000",
+            "1000": "1:1000",
+            "500": "1:500",
+            "200": "1:200",
+            "100": "1:100",
+            "50": "1:50",
+            "20": "1:20",
+            "10": "1:10",
+            "5": "1:5",
+            "2": "1:2",
+            "1": "1:1",
+        }
+        import bpy
+        is_imperial = bpy.context.scene.unit_settings.system == "IMPERIAL"
+        return (IMPERIAL_SCALES if is_imperial else METRIC_SCALES).get(denominator, "")
 
     @classmethod
     def get_drawing_metadata(cls, drawing: ifcopenshell.entity_instance) -> list[str]:
