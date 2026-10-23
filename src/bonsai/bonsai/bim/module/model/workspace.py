@@ -591,7 +591,11 @@ class CreateObjectUI:
             return
 
         ifc_class = AuthoringData.data["ifc_class_current"]
-        if ifc_class == "IfcWallType":
+        relating_type_id = tool.Blender.get_enum_safe(cls.props, "relating_type_id")
+        if relating_type_id and tool.Parametric.is_framing(tool.Ifc.get().by_id(int(relating_type_id))):
+            # Framing of any class draws along a path at a height; the class's own fields do not apply.
+            row.prop(data=cls.props, property="framing_height", text="Height" if ui_context != "TOOL_HEADER" else "H")
+        elif ifc_class == "IfcWallType":
             row.prop(data=cls.props, property="rl1", text="Relative Level" if ui_context != "TOOL_HEADER" else "RL")
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
@@ -774,7 +778,16 @@ class EditObjectUI:
         row.label(text="Parameter Adjustments") if ui_context != "TOOL_HEADER" else row
         row = cls.layout.row(align=True)
 
-        if AuthoringData.data["active_material_usage"] == "LAYER2":
+        from bonsai.bim.module.model.framing import get_system_owner
+
+        active = tool.Ifc.get_entity(context.active_object) if context.active_object else None
+        if active and not active.is_a("IfcTypeObject") and get_system_owner(active):
+            row.prop(data=cls.props, property="framing_height", text="Height" if ui_context != "TOOL_HEADER" else "H")
+            # Applies straight away, as the walls' height does, rather than opening the dialog.
+            row.operator_context = "EXEC_DEFAULT"
+            op = row.operator("bim.edit_framing_height", icon="FILE_REFRESH", text="")
+            op.height = cls.props.framing_height
+        elif AuthoringData.data["active_material_usage"] == "LAYER2":
             row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
             op = row.operator("bim.change_extrusion_depth", icon="FILE_REFRESH", text="")
             op.depth = cls.props.extrusion_depth
@@ -1188,6 +1201,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             "IfcPileType",
         ):
             return bpy.ops.bim.draw_polyline_profile("INVOKE_DEFAULT")
+        elif tool.Parametric.is_framing(relating_type):
+            return bpy.ops.bim.draw_polyline_framing("INVOKE_DEFAULT")
         return bpy.ops.bim.draw_occurrence("INVOKE_DEFAULT")
 
     def hotkey_S_Q(self):
@@ -1450,6 +1465,31 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.toggle_host_openings()
 
     def hotkey_C_E(self):
+        if not bpy.context.selected_objects:
+            return
+
+        # Framing takes the cursor as its top; everything else carries on as before.
+        from bonsai.bim.module.model.framing import extend_framing_to_z
+
+        framed = extend_framing_to_z(bpy.context.selected_objects, bpy.context.scene.cursor.location.z, self.report)
+        if not framed:
+            return self.extend_to_cursor()
+        others = [o for o in bpy.context.selected_objects if o not in framed]
+        if not others:
+            return
+        active = bpy.context.view_layer.objects.active
+        for obj in framed:
+            obj.select_set(False)
+        if active in framed:
+            bpy.context.view_layer.objects.active = others[0]
+        try:
+            self.extend_to_cursor()
+        finally:
+            for obj in framed:
+                obj.select_set(True)
+            bpy.context.view_layer.objects.active = active
+
+    def extend_to_cursor(self):
         if not bpy.context.selected_objects:
             return
 
