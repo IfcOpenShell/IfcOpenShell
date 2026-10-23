@@ -52,6 +52,7 @@ classes = (
     operator.EnableEditingHeader,
     operator.EnableEditingLink,
     operator.ExportIFC,
+    operator.FileChangedReloadPrompt,
     operator.FlipClippingPlane,
     operator.HideQueriedLinkedElement,
     operator.IFCFileHandlerOperator,
@@ -71,6 +72,7 @@ classes = (
     operator.RefreshClippingPlanes,
     operator.RefreshLibrary,
     operator.ReloadLink,
+    operator.ReloadProject,
     operator.RemoveProjectLibrary,
     operator.RevertProject,
     operator.RewindLibrary,
@@ -140,6 +142,7 @@ def unregister():
     if not bpy.app.background:
         bpy.utils.unregister_tool(workspace.ExploreTool)
     tool.Autosave.cancel_timer()
+    tool.FileWatcher.cancel_timer()
     del bpy.types.Scene.BIMProjectProperties
     del bpy.types.Scene.MeasureToolSettings
     bpy.app.handlers.load_post.remove(decorator.toggle_decorations_on_load)

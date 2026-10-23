@@ -83,3 +83,4 @@ from bonsai.tool.web import Web
 
 # Have to move after import of tool.drawing
 from bonsai.tool.autosave import Autosave  # isort: skip
+from bonsai.tool.file_watcher import FileWatcher  # isort: skip
