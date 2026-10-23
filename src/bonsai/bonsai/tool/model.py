@@ -2799,7 +2799,8 @@ class Model(bonsai.core.tool.Model):
             normal = face.normal.to_4d()
             normal.w = 0
             world_normal_z = (obj.matrix_world @ normal).z
-            if world_normal_z >= -0.5:
+            # Any downward-facing face, however steep; only (near-)vertical faces are skipped.
+            if world_normal_z >= -0.01:
                 continue
             kept += 1
             new_verts = []
