@@ -799,6 +799,10 @@ class BIM_PT_framing(bpy.types.Panel):
         row.operator("bim.enable_editing_framing_path", icon="ANIM", text="")
         row.operator("bim.create_framing_type", icon="FILE_3D", text="")
         row.operator("bim.remove_framing", icon="X", text="")
+        if (height := FramingData.data["height"]) is not None:
+            row = layout.row(align=True)
+            row.label(text=f"Height: {height}")
+            row.operator("bim.edit_framing_height", icon="GREASEPENCIL", text="")
         box = layout.box()
         for line in FramingData.data["summary"]:
             box.label(text=line)

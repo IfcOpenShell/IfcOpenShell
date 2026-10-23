@@ -282,6 +282,57 @@ def update_profile_references(system: dict[str, Any]) -> bool:
     return changed
 
 
+def get_occurrence_height(element: ifcopenshell.entity_instance) -> float:
+    """An occurrence's own height in SI units: its path's, else its system's default."""
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    default = read_system(element).get("default_height", 1.1 / unit_scale)
+    return read_guide(element).get("height", default) * unit_scale
+
+
+def is_framed_occurrence(obj: Optional[bpy.types.Object]) -> bool:
+    element = tool.Ifc.get_entity(obj) if obj else None
+    return bool(element and not element.is_a("IfcTypeObject") and get_system_owner(element))
+
+
+def set_framing_height(obj: bpy.types.Object, height: float) -> bool:
+    """Give one framed occurrence a new height (SI units) and rebuild only it."""
+    element = tool.Ifc.get_entity(obj)
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    guide = read_guide(element) or default_guide(height / unit_scale, unit_scale)
+    guide["height"] = height / unit_scale
+    write_framing_pset(element, Guide=guide)
+    return regenerate_framing(obj)
+
+
+def extend_framing_to_z(objs: list[bpy.types.Object], z: float, report) -> list[bpy.types.Object]:
+    """Ctrl+E: raise each framed occurrence's top to ``z``. Returns the framed objects handled.
+
+    Each occurrence's height is measured from where its path starts, so occurrences on
+    different levels each reach ``z``. Those starting at or above ``z`` are skipped."""
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    framed = [o for o in objs if is_framed_occurrence(o)]
+    extended, skipped, errors = 0, 0, []
+    for obj in framed:
+        element = tool.Ifc.get_entity(obj)
+        verts = read_guide(element).get("verts") or [[0.0, 0.0, 0.0]]
+        base = (obj.matrix_world @ (Vector(verts[0]) * unit_scale)).z
+        if z - base <= 1e-5:
+            skipped += 1
+        elif set_framing_height(obj, z - base):
+            extended += 1
+        else:
+            errors.append(f"{element.Name or element.is_a()}: {get_framing_error(element)}")
+    if extended:
+        report({"INFO"}, f"Extended {extended} framing object(s) to z: {z:.2f}m")
+    if skipped:
+        report({"WARNING"}, f"Skipped {skipped} framing object(s) starting at or above the cursor ({z:.2f}m).")
+    for error in errors:
+        report({"WARNING"}, error)
+    if framed:
+        refresh()
+    return framed
+
+
 def regenerate_framing(obj: bpy.types.Object) -> bool:
     """Rebuild an occurrence's Body from its system and its own guide. Returns False on failure."""
     element = tool.Ifc.get_entity(obj)
@@ -1025,9 +1076,11 @@ class CreateFramingType(bpy.types.Operator, tool.Ifc.Operator):
 
 
 def create_framing_occurrence(
-    relating_type: ifcopenshell.entity_instance, points: list[Vector], closed: bool
+    relating_type: ifcopenshell.entity_instance, points: list[Vector], closed: bool, height: Optional[float] = None
 ) -> Optional[bpy.types.Object]:
-    """Place an occurrence of a framing type along drawn points (world, SI units)."""
+    """Place an occurrence of a framing type along drawn points (world, SI units).
+
+    :param height: In SI units. Defaults to the type's default height."""
     ifc_file = tool.Ifc.get()
     ifc_class = ifcopenshell.util.type.get_applicable_entities(relating_type.is_a(), ifc_file.schema)[0].ifc_class
     obj = bpy.data.objects.new(
@@ -1041,7 +1094,10 @@ def create_framing_occurrence(
     )
     bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-    height = read_system(relating_type).get("default_height", 1.1 / unit_scale)
+    if height is None:
+        height = read_system(relating_type).get("default_height", 1.1 / unit_scale)
+    else:
+        height = height / unit_scale
     verts = [list((p - location) / unit_scale) for p in points]
     write_framing_pset(element, Guide={"verts": verts, "closed": closed, "height": height})
     # Assigning the type builds the body from the type's system, along this path.
@@ -1080,9 +1136,11 @@ class FramingGhostDecorator(tool.Blender.ViewportDecorator):
 
 
 def framing_ghost(
-    relating_type: ifcopenshell.entity_instance, points: list[Vector]
+    relating_type: ifcopenshell.entity_instance, points: list[Vector], height: Optional[float] = None
 ) -> Optional[tuple[list[tuple[float, float, float]], list[tuple[int, int, int]]]]:
-    """World-space triangles for a framing type laid along drawn points, or None if not valid yet."""
+    """World-space triangles for a framing type laid along drawn points, or None if not valid yet.
+
+    :param height: In SI units. Defaults to the type's default height."""
     ifc_file = tool.Ifc.get()
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
     system = read_system(relating_type)
@@ -1101,7 +1159,7 @@ def framing_ghost(
         items = compute_framing_geometry(
             system=system,
             guide=[tuple((p - origin) / unit_scale) for p in points],
-            height=system.get("default_height", 1.1 / unit_scale),
+            height=height / unit_scale if height else system.get("default_height", 1.1 / unit_scale),
             profile_points={name: points_ for name, (points_, _) in profile_meshes.items()},
             scope=system.get("scope", "SEGMENT"),
         )
@@ -1142,11 +1200,12 @@ class DrawPolylineFraming(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
             mouse = polyline_props.snap_mouse_point[0]
             points.append(Vector((mouse.x, mouse.y, mouse.z)))
         points = [p for i, p in enumerate(points) if i == 0 or (p - points[i - 1]).length > 1e-6]
-        key = tuple(round(c, 6) for p in points for c in p)
+        key = (tool.Model.get_model_props().framing_height, *(round(c, 6) for p in points for c in p))
         if key == self.ghost_key:
             return
         self.ghost_key = key
-        geometry = framing_ghost(self.relating_type, points) if len(points) > 1 else None
+        height = tool.Model.get_model_props().framing_height
+        geometry = framing_ghost(self.relating_type, points, height) if len(points) > 1 else None
         FramingGhostDecorator.set_geometry(geometry)
 
     def cleanup(self, context: bpy.types.Context) -> None:
@@ -1162,7 +1221,8 @@ class DrawPolylineFraming(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
             points = points[:-1]
         if len(points) < 2:
             return
-        if obj := create_framing_occurrence(self.relating_type, points, closed):
+        height = tool.Model.get_model_props().framing_height
+        if obj := create_framing_occurrence(self.relating_type, points, closed, height):
             tool.Blender.select_and_activate_single_object(context, obj)
             if error := get_framing_error(tool.Ifc.get_entity(obj)):
                 self.report({"WARNING"}, error)
@@ -1221,6 +1281,39 @@ class DrawPolylineFraming(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
         self.tool_state.use_default_container = False
         self.tool_state.plane_method = None
         return {"RUNNING_MODAL"}
+
+
+class EditFramingHeight(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_framing_height"
+    bl_label = "Edit Framing Height"
+    bl_description = (
+        "Change the height of the selected framed occurrences. Only they are rebuilt; their type is unchanged"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    height: bpy.props.FloatProperty(name="Height", min=0.001, subtype="DISTANCE")
+
+    @classmethod
+    def poll(cls, context):
+        element = tool.Ifc.get_entity(context.active_object) if context.active_object else None
+        if not element or element.is_a("IfcTypeObject") or not get_system_owner(element):
+            cls.poll_message_set("Select a framed occurrence. A type's height is the default for new ones.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        self.height = get_occurrence_height(tool.Ifc.get_entity(context.active_object))
+        return context.window_manager.invoke_props_dialog(self)
+
+    def _execute(self, context):
+        errors = []
+        for obj in {context.active_object, *context.selected_objects}:
+            if is_framed_occurrence(obj) and not set_framing_height(obj, self.height):
+                element = tool.Ifc.get_entity(obj)
+                errors.append(f"{element.Name or element.is_a()}: {get_framing_error(element)}")
+        refresh()
+        for error in errors:
+            self.report({"WARNING"}, error)
+        return {"FINISHED"}
 
 
 class RemoveFraming(bpy.types.Operator, tool.Ifc.Operator):

@@ -619,6 +619,7 @@ class FramingData:
         cls.data["system_owner"] = cls.system_owner()
         cls.data["occurrences"] = cls.occurrences()
         cls.data["summary"] = cls.summary()
+        cls.data["height"] = cls.height()
         cls.data["error"] = cls.error()
 
     @classmethod
@@ -662,6 +663,19 @@ class FramingData:
         if element_type := ifcopenshell.util.element.get_type(element):
             return len(ifcopenshell.util.element.get_types(element_type))
         return 1
+
+    @classmethod
+    def height(cls) -> Optional[str]:
+        """The occurrence's own height, formatted in scene units, or None for a type."""
+        from bonsai.bim.module.model.framing import get_occurrence_height
+
+        element = cls.element()
+        if element.is_a("IfcTypeObject"):
+            return None
+        unit_settings = bpy.context.scene.unit_settings
+        return bpy.utils.units.to_string(
+            unit_settings.system, "LENGTH", get_occurrence_height(element), precision=3, split_unit=False
+        )
 
     @classmethod
     def summary(cls) -> list[str]:

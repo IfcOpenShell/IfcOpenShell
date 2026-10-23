@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Union, get_args
 
 import bpy
 import ifcopenshell.util.element
+import ifcopenshell.util.unit
 from bpy.types import NodeTree, PropertyGroup
 from mathutils import Vector
 
@@ -93,6 +94,14 @@ def update_relating_type_id(self: "BIMModelProperties", context: bpy.types.Conte
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
     AuthoringData.data["relating_type_data"] = AuthoringData.relating_type_data()
     self.type_page = [e[0] for e in AuthoringData.data["relating_type_id"]].index(self.relating_type_id) // 9 + 1
+    # A framing type: start drawing at its default height, which the tool header shows.
+    relating_type_id = self.relating_type_id
+    relating_type = tool.Ifc.get().by_id(int(relating_type_id)) if relating_type_id.isdigit() else None
+    if relating_type and tool.Parametric.is_framing(relating_type):
+        from bonsai.bim.module.model.framing import read_system
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        self.framing_height = read_system(relating_type).get("default_height", 1.1 / unit_scale) * unit_scale
 
 
 def update_type_page(self: "BIMModelProperties", context: bpy.types.Context) -> None:
@@ -284,6 +293,13 @@ class BIMModelProperties(PropertyGroup):
     updating: bpy.props.BoolProperty(default=False)
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type_id}
     extrusion_depth: bpy.props.FloatProperty(name="Extrusion Depth", min=0.001, default=42.0, subtype="DISTANCE")
+    framing_height: bpy.props.FloatProperty(
+        name="Height",
+        description="The height of framing drawn with the active framing type, or applied to the selected framing",
+        min=0.001,
+        default=1.1,
+        subtype="DISTANCE",
+    )
     cardinal_point: bpy.props.EnumProperty(
         items=(
             # TODO: complain to buildingSMART
