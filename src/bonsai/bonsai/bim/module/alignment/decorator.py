@@ -980,6 +980,19 @@ def _nice_interval(span: float, target_count: int = 8) -> float:
     return factor * magnitude
 
 
+def _visible_top(area, region) -> float:
+    """Return the region-space y below the header and tool header. With region overlap on, those
+    bars are drawn over the top of the viewport region, so text placed against region.height
+    ends up behind them."""
+    top = region.height
+    for r in area.regions if area else ():
+        if r.type not in ("HEADER", "TOOL_HEADER") or r.alignment != "TOP":
+            continue
+        if r.y < region.y + region.height and r.y + r.height > region.y:
+            top = min(top, r.y - region.y)
+    return top
+
+
 def _dot_tris(centers: list, radius: float, segments: int = 12):
     """Build a triangle-fan mesh for filled circular dots, one per (x, z) in
     ``centers`` (world X/Z plane, Y=0), combined into a single TRIS batch.
@@ -2371,7 +2384,12 @@ class VerticalProfileDecorator:
         # --- Window header ----------------------------------------------------
         blf.size(font_id, tool.Blender.scale_font_size(13))
         blf.color(font_id, *cls.COLOR_HEADER)
-        blf.position(font_id, 16, region.height - 28, 0)
+        top = _visible_top(bpy.context.area, region)
+        # Keep clear of Blender's own two lines of view/object text under the header
+        overlay = getattr(bpy.context.space_data, "overlay", None)
+        if overlay and overlay.show_overlays and overlay.show_text:
+            top -= 2 * 20 * bpy.context.preferences.system.ui_scale
+        blf.position(font_id, 16, top - 28, 0)
         blf.draw(font_id, f"Vertical Profile — {cls.alignment_name}")
 
         # --- Station axis labels (horizontal, along the bottom) --------------
@@ -2423,7 +2441,7 @@ class VerticalProfileDecorator:
             if screen is None:
                 continue
             sy = screen.y
-            if sy < elev_label_sy_min or sy > region.height - 40:
+            if sy < elev_label_sy_min or sy > top - 40:
                 continue
             if sy - prev_sy < 14:
                 continue
@@ -2436,7 +2454,7 @@ class VerticalProfileDecorator:
         # Axis title "Elev (unit)" at the top of the elevation column
         blf.size(font_id, tool.Blender.scale_font_size(10))
         blf.color(font_id, *cls.COLOR_AXIS_TITLE)
-        blf.position(font_id, 4, region.height - 44, 0)
+        blf.position(font_id, 4, top - 44, 0)
         blf.draw(font_id, f"Elev ({cls.unit_symbol})")
 
         # --- BVC / PVI / EVC callouts and gradient endpoint labels -----------
@@ -2479,7 +2497,7 @@ class VerticalProfileDecorator:
             # edge so a multi-line label can't run off-screen -- a point can end
             # up arbitrarily close to any edge once you zoom in far enough.
             total_h = len(stacked_lines) * pt_line_h
-            if sy > region.height - total_h - 8:
+            if sy > top - total_h - 8:
                 for j, line in enumerate(stacked_lines):
                     blf.position(font_id, sx + 12, sy - 4 - (j + 1) * pt_line_h, 0)
                     blf.draw(font_id, line)
@@ -2629,7 +2647,7 @@ class VerticalProfileDecorator:
                 if sc is None:
                     continue
                 sy = sc.y
-                if sy < BOTTOM_MARGIN + 8 or sy > region.height - 40:
+                if sy < BOTTOM_MARGIN + 8 or sy > top - 40:
                     continue
                 if sy - prev_csy < 12:
                     continue
