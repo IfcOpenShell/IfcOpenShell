@@ -2,6 +2,8 @@
 
 # Framing system (branch `framing-system`)
 
+Tracking issue: #10044, with the roadmap.
+
 Status: written, with tests:
 - the layout solver `ifcopenshell.util.framing` (`test/util/test_framing.py`);
 - the 3D geometry and IFC writer
