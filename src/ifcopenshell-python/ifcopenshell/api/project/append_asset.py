@@ -51,6 +51,7 @@ def append_asset(
     element: ifcopenshell.entity_instance,
     reuse_identities: dict[int, ifcopenshell.entity_instance] | None = None,
     assume_asset_uniqueness_by_name: bool = True,
+    use_geolocation: bool = True,
 ) -> ifcopenshell.entity_instance:
     """Appends an asset from a library into the active project
 
@@ -77,6 +78,8 @@ def append_asset(
         to add just 1 asset or if added assets won't have any shared elements, then it can be left empty.
     :param assume_asset_uniqueness_by_name: If True, checks if elements (profiles, materials, styles)
         with the same name already exist in the project and reuses them instead of appending new ones.
+    :param use_geolocation: If True, applies geolocation transformations (auto_local2global and auto_global2local)
+        to placement matrices when appending products. If False, skips geolocation transformations.
     :return: The appended element
 
     Example:
@@ -141,6 +144,7 @@ def append_asset(
         element,
         {} if reuse_identities is None else reuse_identities,
         assume_asset_uniqueness_by_name,
+        use_geolocation,
     )
 
 
@@ -218,6 +222,7 @@ class Usecase:
         element: ifcopenshell.entity_instance,
         reuse_identities: dict[int, ifcopenshell.entity_instance],
         assume_asset_uniqueness_by_name: bool,
+        use_geolocation: bool = True,
     ) -> ifcopenshell.entity_instance | None:
         self.library = library
         self.element = element
@@ -227,6 +232,7 @@ class Usecase:
         self.whitelisted_inverse_attributes = {}
         self.base_material_class = "IfcMaterial" if self.file.schema == "IFC2X3" else "IfcMaterialDefinition"
         self.assume_asset_uniqueness_by_name = assume_asset_uniqueness_by_name
+        self.use_geolocation = use_geolocation
 
         if element.is_a("IfcTypeProduct"):
             self.target_class = "IfcTypeProduct"
@@ -425,8 +431,9 @@ class Usecase:
         placement = new_element.ObjectPlacement
         if placement is not None:
             matrix = ifcopenshell.util.placement.get_placement(placement)
-            matrix = ifcopenshell.util.geolocation.auto_local2global(self.library, matrix)
-            matrix = ifcopenshell.util.geolocation.auto_global2local(self.file, matrix)
+            if self.use_geolocation:
+                matrix = ifcopenshell.util.geolocation.auto_local2global(self.library, matrix)
+                matrix = ifcopenshell.util.geolocation.auto_global2local(self.file, matrix)
             with SafeRemovalContext(self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name):
                 ifcopenshell.api.geometry.edit_object_placement(self.file, new_element, matrix, is_si=False)
 
@@ -438,6 +445,7 @@ class Usecase:
                 library=self.library,
                 element=element_type,
                 reuse_identities=self.reuse_identities,
+                use_geolocation=self.use_geolocation,
             )
             ifcopenshell.api.type.assign_type(
                 self.file,
