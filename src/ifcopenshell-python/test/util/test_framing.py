@@ -98,7 +98,7 @@ class TestParseSystem:
             (
                 [
                     {"name": "Cables", "kind": "H", "spacing": {"mode": "COUNT", "value": 3}},
-                    {"name": "Post", "kind": "V", "at_ends": True, "top": {"member": "Cables"}},
+                    {"name": "Rail", "kind": "H", "v": {"member": "Cables"}},
                 ],
                 "repeating horizontal",
             ),
@@ -142,6 +142,42 @@ class TestVerticalSpacing:
         layout = self.solve_one({"spacing": {"mode": "FIXED", "value": 1.0}}, segments=(3.5,))
         assert us(layout, "M") == approx_list([0.25, 1.25, 2.25, 3.25])
 
+    @pytest.mark.parametrize(
+        "align, expected",
+        [
+            ("START", [1.0, 2.0, 3.0]),
+            ("CENTER", [0.25, 1.25, 2.25, 3.25]),
+            ("END", [0.5, 1.5, 2.5]),
+        ],
+    )
+    def test_fixed_spacing_alignment(self, align, expected):
+        layout = self.solve_one({"spacing": {"mode": "FIXED", "value": 1.0, "align": align}}, segments=(3.5,))
+        assert us(layout, "M") == approx_list(expected)
+
+    def test_fixed_alignment_counts_per_bay(self):
+        layout = solve(
+            [
+                POSTS,
+                {
+                    "name": "B",
+                    "kind": "V",
+                    "spacing": {"mode": "FIXED", "value": 0.4, "align": "START"},
+                    "within": "Post",
+                },
+            ]
+        )
+        # Each 1.5 bay starts again from its own start: 0.4, 0.8, 1.2, then 1.9, 2.3, 2.7.
+        assert us(layout, "B") == approx_list([0.4, 0.8, 1.2, 1.9, 2.3, 2.7])
+
+    def test_horizontal_fixed_spacing_from_the_top(self):
+        rail = {"name": "R", "kind": "H", "spacing": {"mode": "FIXED", "value": 0.3, "align": "END"}}
+        layout = solve([rail], height=1.0)
+        assert [m.v for m in layout.by_entry("R")] == approx_list([0.1, 0.4, 0.7])
+
+    def test_rejects_unknown_alignment(self):
+        with pytest.raises(FramingError, match="alignment"):
+            self.solve_one({"spacing": {"mode": "FIXED", "value": 1.0, "align": "MIDDLE"}})
+
     def test_fixed_spacing_does_not_duplicate_ends(self):
         layout = self.solve_one({"spacing": {"mode": "FIXED", "value": 1.0}, "at_ends": True})
         assert us(layout, "M") == approx_list([0.0, 1.0, 2.0, 3.0])
@@ -183,7 +219,85 @@ class TestRailing:
 
     def test_top_rail_runs_over_the_posts(self):
         rails = self.solve().by_entry("TopRail")
-        assert [(r.u_start, r.u_end) for r in rails] == [(0.0, 3.0)]
+        # Not broken at the posts, so it covers the end posts out to their outer faces.
+        assert [(r.u_start, r.u_end) for r in rails] == [pytest.approx((-0.025, 3.025))]
+
+    def test_rail_reaches_the_faces_of_posts_at_its_bay_ends(self):
+        members = [
+            {"name": "Post", "kind": "V", "spacing": {"mode": "MAX", "value": 1.5}, "at_ends": True},
+            {"name": "Rail", "kind": "H", "v": 0.5, "between": "Post", "bays": [2]},
+        ]
+        layout = subject.solve(
+            subject.parse_system({"members": members}), [3.0], 1.1, extents={"Post": (-0.025, 0.025)}
+        )
+        assert [(r.u_start, r.u_end) for r in layout.by_entry("Rail")] == [pytest.approx((1.475, 3.025))]
+
+    def test_offset_rail_is_not_stretched_over_posts_it_misses(self):
+        members = [
+            {"name": "Post", "kind": "V", "at_ends": True},
+            {"name": "Handrail", "kind": "H", "v": 0.9},
+        ]
+        extents = {"Post": (-0.025, 0.025), "Handrail": (-0.025, 0.025)}
+        entries = subject.parse_system({"members": members})
+        beside = subject.solve(
+            entries, [3.0], 1.1, extents=extents, lateral={"Post": (-0.025, 0.025), "Handrail": (-0.02, 0.03)}
+        )
+        apart = subject.solve(
+            entries, [3.0], 1.1, extents=extents, lateral={"Post": (-0.025, 0.025), "Handrail": (-0.125, -0.075)}
+        )
+        assert [(r.u_start, r.u_end) for r in beside.by_entry("Handrail")] == [pytest.approx((-0.025, 3.025))]
+        assert [(r.u_start, r.u_end) for r in apart.by_entry("Handrail")] == [(0.0, 3.0)]
+
+    def test_rail_extends_past_its_ends_by_a_distance(self):
+        members = [
+            {"name": "Post", "kind": "V", "at_ends": True},
+            {"name": "Rail", "kind": "H", "v": 1.0, "extend_start": 0.3, "extend_end": -0.1},
+        ]
+        layout = subject.solve(
+            subject.parse_system({"members": members}), [3.0], 1.1, extents={"Post": (-0.025, 0.025)}
+        )
+        # Past the outer post faces at the start; pulled back from them at the end.
+        assert [(r.u_start, r.u_end) for r in layout.by_entry("Rail")] == [pytest.approx((-0.325, 2.925))]
+
+    def test_extension_leaves_breaks_alone(self):
+        members = [
+            {"name": "Post", "kind": "V", "spacing": {"mode": "MAX", "value": 1.5}, "at_ends": True},
+            {"name": "Rail", "kind": "H", "v": 0.5, "breaks_at": ["Post"], "extend_start": 0.2, "extend_end": 0.2},
+        ]
+        layout = subject.solve(
+            subject.parse_system({"members": members}), [3.0], 1.1, extents={"Post": (-0.025, 0.025)}
+        )
+        # The run ends are past the end posts, but the posts still cut it back to their faces.
+        assert [(r.u_start, r.u_end) for r in layout.by_entry("Rail")] == [
+            pytest.approx((-0.225, -0.025)),
+            pytest.approx((0.025, 1.475)),
+            pytest.approx((1.525, 2.975)),
+            pytest.approx((3.025, 3.225)),
+        ]
+
+    def test_rejects_non_numeric_extension(self):
+        with pytest.raises(FramingError, match="to be a number"):
+            subject.parse_system({"members": [{"name": "R", "kind": "H", "v": 1.0, "extend_end": "far"}]})
+
+    def test_rail_ignores_verticals_that_do_not_reach_it(self):
+        members = [
+            {"name": "Stub", "kind": "V", "at_ends": True, "top": 0.2},
+            {"name": "Rail", "kind": "H", "v": 1.0},
+        ]
+        layout = subject.solve(
+            subject.parse_system({"members": members}), [3.0], 1.1, extents={"Stub": (-0.025, 0.025)}
+        )
+        assert [(r.u_start, r.u_end) for r in layout.by_entry("Rail")] == [(0.0, 3.0)]
+
+    def test_rail_round_a_loop_has_no_ends_to_extend(self):
+        members = [
+            {"name": "Post", "kind": "V", "at_corners": True},
+            {"name": "Rail", "kind": "H", "v": 1.0},
+        ]
+        layout = subject.solve(
+            subject.parse_system({"members": members}), [2.0] * 4, 1.1, closed=True, extents={"Post": (-0.025, 0.025)}
+        )
+        assert [(r.u_start, r.u_end) for r in layout.by_entry("Rail")] == [(0.0, 8.0)]
 
     def test_bottom_rail_breaks_at_post_faces(self):
         rails = self.solve().by_entry("BotRail")
@@ -263,10 +377,27 @@ class TestInfill:
         assert len(layout.by_entry("Sill")) == 2
         assert len(layout.by_entry("Head")) == 2
         panels = layout.by_entry("Vision")
-        assert [p.address for p in panels] == [(0, 0, 0), (0, 1, 0)]
+        assert [p.address for p in panels] == [(0, 0, 0, 0), (0, 1, 0, 0)]
         first = panels[0]
         assert (first.u_start, first.u_end) == pytest.approx((0.0285, 1.4715))
         assert (first.v_start, first.v_end) == pytest.approx((0.0285, 2.3715))
+
+    def test_negative_gap_runs_the_panel_into_its_members(self):
+        members = [
+            {"name": "Post", "kind": "V", "spacing": {"mode": "MAX", "value": 1.5}, "at_ends": True},
+            {"name": "Rail", "kind": "H", "v": 1.0},
+            {"name": "Glass", "kind": "INFILL", "between": "Post", "top": {"member": "Rail"}, "gap": -0.01},
+        ]
+        layout = subject.solve(
+            subject.parse_system({"members": members}),
+            [3.0],
+            1.1,
+            extents={"Post": (-0.025, 0.025), "Rail": (-0.02, 0.02)},
+        )
+        glass = layout.by_entry("Glass")[0]
+        # 10 mm into the post faces at either side and into the rail above.
+        assert (glass.u_start, glass.u_end) == pytest.approx((0.015, 1.485))
+        assert glass.v_end == pytest.approx(0.99)
 
     def test_frameless_panels_split_by_max_width(self):
         entries = subject.parse_system(
@@ -278,10 +409,45 @@ class TestInfill:
         assert panels[1].u_start - panels[0].u_end == pytest.approx(0.01)
         assert panels[-1].u_end == pytest.approx(5.0)
 
+    def test_infill_breaks_at_members_it_is_not_between(self):
+        # Pickets fill the post bays but never stand at a post, so glass between pickets
+        # would run straight past the middle post unless it breaks there.
+        members = [
+            {"name": "Post", "kind": "V", "spacing": {"mode": "MAX", "value": 1.5}, "at_ends": True},
+            {
+                "name": "Picket",
+                "kind": "V",
+                "spacing": {"mode": "MAX", "value": 0.28},
+                "at_ends": True,
+                "within": "Post",
+            },
+            {"name": "Glass", "kind": "INFILL", "between": "Picket", "gap": 0.02},
+        ]
+        extents = {"Post": (-0.025, 0.025), "Picket": (-0.03, 0.03)}
+
+        def crossing(layout):
+            return [p for p in layout.by_entry("Glass") if p.u_start < 1.525 and p.u_end > 1.475]
+
+        assert crossing(subject.solve(subject.parse_system({"members": members}), [3.0], 1.1, extents=extents))
+        members[2]["breaks_at"] = ["Post"]
+        layout = subject.solve(subject.parse_system({"members": members}), [3.0], 1.1, extents=extents)
+        assert not crossing(layout)
+        ends = sorted(round(p.u_end, 6) for p in layout.by_entry("Glass"))
+        starts = sorted(round(p.u_start, 6) for p in layout.by_entry("Glass"))
+        assert 1.455 in ends and 1.545 in starts
+
+    def test_infill_breaks_only_at_members_through_its_height(self):
+        members = [
+            {"name": "Stub", "kind": "V", "spacing": {"mode": "COUNT", "value": 1}, "top": 0.2},
+            {"name": "Glass", "kind": "INFILL", "bottom": 0.5, "breaks_at": ["Stub"]},
+        ]
+        layout = subject.solve(subject.parse_system({"members": members}), [3.0], 1.1)
+        assert len(layout.by_entry("Glass")) == 1
+
     def test_infill_splits_at_path_vertices(self):
         entries = subject.parse_system({"members": [{"name": "Glass", "kind": "INFILL"}]})
         panels = subject.solve(entries, [1.0, 2.0], 1.0).infills
-        assert [(p.u_start, p.u_end, p.address) for p in panels] == [(0.0, 1.0, (0, 0, 0)), (1.0, 3.0, (1, 0, 0))]
+        assert [(p.u_start, p.u_end, p.address) for p in panels] == [(0.0, 1.0, (0, 0, 0, 0)), (1.0, 3.0, (1, 0, 0, 0))]
 
 
 class TestResolveProfile:
@@ -310,6 +476,243 @@ class TestResolveProfile:
     def test_none_when_nothing_resolves(self):
         assert subject.resolve_profile(self.file, {"id": 0, "name": "Missing"}) is None
         assert subject.resolve_profile(self.file, None) is None
+
+
+def solve(members, segments=(3.0,), height=1.1, extents=None):
+    return subject.solve(subject.parse_system({"members": members}), list(segments), height, extents=extents)
+
+
+POSTS = {
+    "name": "Post",
+    "kind": "V",
+    "spacing": {"mode": "MAX", "value": 1.5},
+    "at_ends": True,
+    "at_corners": True,
+}
+
+
+class TestBaySelection:
+    def test_select_counts_from_one_and_from_the_end(self):
+        assert subject._select(list("abcd"), ()) == list("abcd")
+        assert subject._select(list("abcd"), (1, -1)) == ["a", "d"]
+        assert subject._select(list("abcd"), (2, 3)) == ["b", "c"]
+        assert subject._select(list("abcd"), (9,)) == []
+
+    def test_rejects_zero_or_non_integers(self):
+        with pytest.raises(FramingError, match="non-zero whole numbers"):
+            subject.parse_system({"members": [dict(POSTS, bays=[0])]})
+        with pytest.raises(FramingError, match="non-zero whole numbers"):
+            subject.parse_system({"members": [dict(POSTS, bays="1")]})
+
+    def test_verticals_fill_only_the_picked_bays(self):
+        # Posts at 0, 1.5 and 3 give two bays; one baluster in the middle of the second only.
+        baluster = {"name": "Baluster", "kind": "V", "spacing": {"mode": "COUNT", "value": 1}, "within": "Post"}
+        layout = solve([POSTS, dict(baluster, bays=[2])])
+        assert us(layout, "Baluster") == approx_list([2.25])
+        assert us(solve([POSTS, dict(baluster, bays=[-1])]), "Baluster") == approx_list([2.25])
+        assert us(solve([POSTS, baluster]), "Baluster") == approx_list([0.75, 2.25])
+
+    def test_horizontal_runs_only_in_the_picked_bays(self):
+        rail = {"name": "Rail", "kind": "H", "v": 0.5, "between": "Post", "bays": [2], "breaks_at": ["Post"]}
+        layout = solve([POSTS, rail], extents={"Post": (-0.025, 0.025)})
+        assert [(r.u_start, r.u_end) for r in layout.by_entry("Rail")] == [pytest.approx((1.525, 2.975))]
+
+    def test_verticals_follow_the_rail_they_are_bounded_by(self):
+        rail = {"name": "Rail", "kind": "H", "v": 0.5, "between": "Post", "bays": [2]}
+        baluster = {
+            "name": "Baluster",
+            "kind": "V",
+            "spacing": {"mode": "COUNT", "value": 3},
+            "within": "Post",
+            "bottom": {"member": "Rail"},
+        }
+        layout = solve([POSTS, rail, baluster], extents={"Baluster": (-0.01, 0.01)})
+        # Balusters stand on the rail, and only in the second bay, where the rail runs.
+        assert us(layout, "Baluster") == approx_list([1.875, 2.25, 2.625])
+        assert [(r.u_start, r.u_end) for r in layout.by_entry("Rail")] == [(1.5, 3.0)]
+
+    def test_adjacent_bays_merge_into_one_rail(self):
+        rail = {"name": "Rail", "kind": "H", "v": 0.5, "between": "Post", "bays": [1, 2]}
+        layout = solve([POSTS, rail])
+        assert [(r.u_start, r.u_end) for r in layout.by_entry("Rail")] == [(0.0, 3.0)]
+
+
+class TestVerticalBreaks:
+    def test_picket_breaks_at_a_mid_rail(self):
+        members = [
+            {"name": "Mid", "kind": "H", "v": 0.5},
+            {"name": "Picket", "kind": "V", "spacing": {"mode": "COUNT", "value": 1}, "breaks_at": ["Mid"]},
+        ]
+        layout = solve(members, extents={"Mid": (-0.02, 0.02)})
+        assert [(m.v_start, m.v_end, m.piece) for m in layout.by_entry("Picket")] == [
+            pytest.approx((0.0, 0.48, 0)),
+            pytest.approx((0.52, 1.1, 1)),
+        ]
+        # The rail itself stays continuous.
+        assert len(layout.by_entry("Mid")) == 1
+
+    def test_mullion_breaks_at_every_row_of_a_repeating_transom(self):
+        members = [
+            {"name": "Transom", "kind": "H", "spacing": {"mode": "COUNT", "value": 2}},
+            {"name": "Mullion", "kind": "V", "at_ends": True, "breaks_at": ["Transom"]},
+        ]
+        layout = solve(members, height=3.0)
+        assert [(m.u, m.v_start, m.v_end) for m in layout.by_entry("Mullion")] == [
+            (0.0, 0.0, 1.0),
+            (0.0, 1.0, 2.0),
+            (0.0, 2.0, 3.0),
+            (3.0, 0.0, 1.0),
+            (3.0, 1.0, 2.0),
+            (3.0, 2.0, 3.0),
+        ]
+
+    def test_only_breaks_where_the_rail_runs(self):
+        members = [
+            dict(POSTS),
+            {"name": "Mid", "kind": "H", "v": 0.5, "between": "Post", "bays": [1]},
+            {
+                "name": "Picket",
+                "kind": "V",
+                "spacing": {"mode": "COUNT", "value": 1},
+                "within": "Post",
+                "breaks_at": ["Mid"],
+            },
+        ]
+        layout = solve(members, extents={"Mid": (-0.02, 0.02)})
+        pieces = layout.by_entry("Picket")
+        # Broken in the first bay, where the mid rail runs; whole in the second.
+        assert [round(m.u, 6) for m in pieces] == [0.75, 0.75, 2.25]
+
+    def test_entries_cannot_break_at_each_other(self):
+        members = [
+            {"name": "Post", "kind": "V", "at_ends": True, "breaks_at": ["Rail"]},
+            {"name": "Rail", "kind": "H", "v": 0.5, "breaks_at": ["Post"]},
+        ]
+        with pytest.raises(FramingError, match="break at each other"):
+            subject.parse_system({"members": members})
+
+    def test_breaks_at_must_be_horizontal(self):
+        members = [dict(POSTS), {"name": "Picket", "kind": "V", "at_ends": True, "breaks_at": ["Post"]}]
+        with pytest.raises(FramingError, match="to be a horizontal"):
+            subject.parse_system({"members": members})
+
+
+class TestRepeatingBounds:
+    STOREFRONT = [
+        {"name": "Mullion", "kind": "V", "at_ends": True},
+        {"name": "Sill", "kind": "H", "v": "BASE", "breaks_at": ["Mullion"]},
+        {"name": "Transom", "kind": "H", "spacing": {"mode": "COUNT", "value": 2}, "breaks_at": ["Mullion"]},
+        {"name": "Head", "kind": "H", "v": "TOP", "breaks_at": ["Mullion"]},
+        {
+            "name": "Vision",
+            "kind": "INFILL",
+            "between": "Mullion",
+            "bottom": {"member": "Sill"},
+            "top": {"member": "Transom"},
+        },
+        {
+            "name": "Clerestory",
+            "kind": "INFILL",
+            "between": "Mullion",
+            "bottom": {"member": "Transom"},
+            "top": {"member": "Head"},
+        },
+        {"name": "Middle", "kind": "INFILL", "between": "Mullion", "within": "Transom", "rows": [2]},
+    ]
+
+    def test_infill_uses_the_nearest_rows(self):
+        # Transoms at 1 and 2 on a 3 high storefront.
+        layout = solve(self.STOREFRONT, height=3.0, extents={"Transom": (-0.02, 0.02)})
+        (vision,) = layout.by_entry("Vision")
+        (clerestory,) = layout.by_entry("Clerestory")
+        (middle,) = layout.by_entry("Middle")
+        assert (vision.v_start, vision.v_end) == pytest.approx((0.0, 0.98))
+        assert (clerestory.v_start, clerestory.v_end) == pytest.approx((2.02, 3.0))
+        assert (middle.v_start, middle.v_end) == pytest.approx((1.02, 1.98))
+
+    def test_vertical_between_two_repeating_bounds_takes_the_first_gap(self):
+        members = [
+            {"name": "Rail", "kind": "H", "spacing": {"mode": "COUNT", "value": 3}},
+            {
+                "name": "Picket",
+                "kind": "V",
+                "at_ends": True,
+                "bottom": {"member": "Rail"},
+                "top": {"member": "Rail"},
+            },
+        ]
+        layout = solve(members, height=4.0)
+        assert {(m.v_start, m.v_end) for m in layout.by_entry("Picket")} == {(1.0, 2.0)}
+
+
+class TestHorizontalWithin:
+    RAILS = {"name": "Rail", "kind": "H", "spacing": {"mode": "COUNT", "value": 2}}
+
+    def test_repeats_in_each_gap_between_rows(self):
+        cable = {"name": "Cable", "kind": "H", "spacing": {"mode": "COUNT", "value": 1}, "within": "Rail"}
+        layout = solve([self.RAILS, cable], height=3.0, extents={"Rail": (-0.02, 0.02)})
+        assert [r.v for r in layout.by_entry("Rail")] == approx_list([1.0, 2.0])
+        # Gaps are (0, 0.98), (1.02, 1.98), (2.02, 3).
+        assert [c.v for c in layout.by_entry("Cable")] == approx_list([0.49, 1.5, 2.51])
+        assert [c.address[0] for c in layout.by_entry("Cable")] == [0, 1, 2]
+
+    def test_rows_pick_gaps(self):
+        cable = {
+            "name": "Cable",
+            "kind": "H",
+            "spacing": {"mode": "COUNT", "value": 1},
+            "within": "Rail",
+            "rows": [1, -1],
+        }
+        layout = solve([self.RAILS, cable], height=3.0, extents={"Rail": (-0.02, 0.02)})
+        assert [c.v for c in layout.by_entry("Cable")] == approx_list([0.49, 2.51])
+
+    def test_needs_spacing(self):
+        with pytest.raises(FramingError, match="needs spacing"):
+            subject.parse_system({"members": [self.RAILS, {"name": "C", "kind": "H", "v": 1.0, "within": "Rail"}]})
+
+    def test_within_must_be_horizontal(self):
+        with pytest.raises(FramingError, match="to be a horizontal"):
+            subject.parse_system(
+                {
+                    "members": [
+                        POSTS,
+                        {"name": "C", "kind": "H", "spacing": {"mode": "COUNT", "value": 1}, "within": "Post"},
+                    ]
+                }
+            )
+
+
+class TestInfillGrid:
+    GLASS = {"name": "Glass", "kind": "INFILL", "between": "Post"}
+    RAIL = {"name": "Rail", "kind": "H", "spacing": {"mode": "COUNT", "value": 1}}
+
+    def test_stacks_panels_between_rows(self):
+        layout = solve([POSTS, self.RAIL, dict(self.GLASS, within="Rail")], extents={"Rail": (-0.02, 0.02)})
+        panels = layout.by_entry("Glass")
+        assert [(p.address[1], p.address[2]) for p in panels] == [(0, 0), (0, 1), (1, 0), (1, 1)]
+        assert (panels[0].v_start, panels[0].v_end) == pytest.approx((0.0, 0.53))
+        assert (panels[1].v_start, panels[1].v_end) == pytest.approx((0.57, 1.1))
+
+    def test_bays_and_rows_pick_cells(self):
+        layout = solve([POSTS, self.RAIL, dict(self.GLASS, within="Rail", bays=[-1], rows=[2])])
+        panels = layout.by_entry("Glass")
+        assert [(p.address[1], p.address[2]) for p in panels] == [(1, 1)]
+
+    def test_panels_follow_the_rail_they_are_bounded_by(self):
+        # The mid rail only runs in the second bay, so the panel under it is only there too.
+        mid = {"name": "Mid", "kind": "H", "v": 0.6, "between": "Post", "bays": [2], "breaks_at": ["Post"]}
+        glass = dict(self.GLASS, top={"member": "Mid"})
+        layout = solve([POSTS, mid, glass], extents={"Post": (-0.025, 0.025), "Mid": (-0.02, 0.02)})
+        panels = layout.by_entry("Glass")
+        assert [p.address[1] for p in panels] == [1]
+        assert panels[0].v_end == pytest.approx(0.58)
+
+    def test_stacked_panels_follow_a_partial_rail(self):
+        # Within a rail that only runs in the first bay: that bay stacks, the other does not.
+        rail = {"name": "Rail", "kind": "H", "v": 0.5, "between": "Post", "bays": [1]}
+        layout = solve([POSTS, rail, dict(self.GLASS, within="Rail")])
+        assert [(p.address[1], p.address[2]) for p in layout.by_entry("Glass")] == [(0, 0), (0, 1), (1, 0)]
 
 
 class TestSolveInput:
