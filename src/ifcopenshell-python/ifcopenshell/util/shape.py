@@ -18,9 +18,9 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from math import cos, radians
 from typing import TYPE_CHECKING, Literal, Optional, Union
-from copy import deepcopy
 
 import numpy as np
 import numpy.typing as npt
@@ -99,9 +99,66 @@ def get_volume(geometry: W.triangulation) -> float:
             grouped_verts[faces[i + 1]],
             grouped_verts[faces[i + 2]],
         )
-        for i in range(0, len(faces), 3):
+        for i in range(0, len(faces), 3)
     ]
     return abs(sum(volumes))
+
+
+def get_center_of_mass(geometry: W.triangulation) -> list[float]:
+    """Calculates the center of mass of a geometry in local coordinates
+
+    Center of Mass of non-manifold geometry will be unpredictable.
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :return: a list representing the XYZ center of mass
+    """
+
+    # https://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up
+    def signed_triangle_volume(p1, p2, p3):
+        v321 = p3[0] * p2[1] * p1[2]
+        v231 = p2[0] * p3[1] * p1[2]
+        v312 = p3[0] * p1[1] * p2[2]
+        v132 = p1[0] * p3[1] * p2[2]
+        v213 = p2[0] * p1[1] * p3[2]
+        v123 = p1[0] * p2[1] * p3[2]
+        return (1.0 / 6.0) * (-v321 + v231 + v312 - v132 - v213 + v123)
+
+    # Can't optimize it using buffers - performance seems to get only worse.
+    verts = geometry.verts
+    faces = geometry.faces
+    grouped_verts = [
+        [verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)
+    ]
+    Total_Volumes = 0
+    center_of_mass: list[float] = [0.0, 0.0, 0.0]
+    for i in range(0, len(faces), 3):
+        _vol = signed_triangle_volume(
+            grouped_verts[faces[i]],
+            grouped_verts[faces[i + 1]],
+            grouped_verts[faces[i + 2]],
+        )
+        Total_Volumes += _vol
+
+        volume_weighted_center_of_volume_grouped_verts = deepcopy(
+            grouped_verts[faces[i]]
+        )
+
+        for _i_xyz in range(3):
+            for j in range(2):
+                volume_weighted_center_of_volume_grouped_verts[_i_xyz] += grouped_verts[
+                    faces[i + j + 1]
+                ][_i_xyz]
+            # centre of mass of any uniform density tetrahedron is the same as its centroid
+            # consider all triangular faces of the mesh form a tetrahedron with origin
+            # and their centroid is mean of four points (including implicit origin point [0,0,0])
+            center_of_mass[_i_xyz] += (
+                volume_weighted_center_of_volume_grouped_verts[_i_xyz] / 4.0
+            ) * _vol
+
+    for _i_xyz in range(3):
+        center_of_mass[_i_xyz] = center_of_mass[_i_xyz] / Total_Volumes
+
+    return center_of_mass
 
 
 def get_x(geometry: W.triangulation) -> float:
@@ -389,32 +446,59 @@ def get_element_vertices(
     )
 
 
-def get_element_center_of_volume(
-    element: ifcopenshell.entity_instance, geometry: W.triangulation, is_si: bool = True) -> npt.NDArray[np.float64]:
-    """Calculates the center of volume of a geometry
+def get_shape_center_of_mass(
+    shape: ShapeElementType,
+    geometry: W.triangulation,
+) -> npt.NDArray[np.float64]:
+    """Get the shape's center of mass as a numpy array in global coordinates
+
+    Center of Mass of non-manifold geometry will be unpredictable.
+
+    :param element: The element occurrence
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :param is_si: Whether the geometry is in SI metres (the default kernel
+        output) or in the file's length unit (the ``convert-back-units``
+        setting). The placement is applied in the same unit.
+    :return: A numpy array listing the COM vertex, a numpy array with XYZ coordinates.
+        Array shape: (1, 3)
+    """
+
+    center_of_mass = np.array(get_center_of_mass(geometry)).reshape(-1, 3)
+    mat = get_shape_matrix(shape)
+    return np.delete(
+        (mat @ np.hstack((center_of_mass, np.ones((len(center_of_mass), 1)))).T).T,
+        -1,
+        axis=1,
+    )
+
+
+def get_element_center_of_mass(
+    element: ifcopenshell.entity_instance,
+    geometry: W.triangulation,
+    is_si: bool = True,
+) -> npt.NDArray[np.float64]:
+    """Get the element's center of mass as a numpy array in global coordinates
 
     Volumes of non-manifold geometry will be unpredictable.
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :return: Center of Mass in XYZ
+    :return: A numpy array listing the COM vertex, a numpy array with XYZ coordinates.
+        Array shape: (1, 3)
     """
 
-
-    # Can't optimize it using buffers - performance seems to get only worse.
-    verts = get_element_vertices(element, geometry, is_si)
-    faces = get_faces(geometry)
-    
-    volumes = []
-    vol_weighted_center_of_volume = []
-    for grouped_face in faces:
-        sign_vol = np.linalg.det(verts[grouped_face]) / 6.0
-        volumes.append(sign_vol)
-        center_of_volume = verts[grouped_face].sum(axis=0) / 4.0
-        vol_weighted_center_of_volume.append(center_of_volume * sign_vol)
-
-    center_of_volume = np.array(vol_weighted_center_of_volume).sum(axis=0) / sum(volumes)
-    return center_of_volume
-
+    center_of_mass = np.array(get_center_of_mass(geometry)).reshape(-1, 3)
+    if not element.ObjectPlacement or not element.ObjectPlacement.is_a(
+        "IfcLocalPlacement"
+    ):
+        return center_of_mass
+    mat = ifcopenshell.util.placement.get_placement(
+        element.ObjectPlacement, should_return_si=is_si
+    )
+    return np.delete(
+        (mat @ np.hstack((center_of_mass, np.ones((len(center_of_mass), 1)))).T).T,
+        -1,
+        axis=1,
+    )
 
 
 def get_bottom_elevation(geometry: W.triangulation) -> float:
