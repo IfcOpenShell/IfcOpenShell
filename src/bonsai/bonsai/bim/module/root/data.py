@@ -142,7 +142,30 @@ class IfcClassData:
         elif ifc_class in ("IfcStairType", "IfcStairFlightType", "IfcStair", "IfcStairFlight"):
             templates.extend([None, ("STAIR", "Stair", "Parametric stair")])
         elif ifc_class in ("IfcRailingType", "IfcRailing"):
-            templates.extend([None, ("RAILING", "Railing", "Parametric railing")])
+            templates.extend(
+                [
+                    None,
+                    ("RAILING", "Railing", "Parametric railing"),
+                    ("FRAMING_RAILING", "Framing (Railing)", "Framing system of posts, rails and infill"),
+                    (
+                        "FRAMING_STOREFRONT",
+                        "Framing (Storefront)",
+                        "Framing system of mullions, transoms and glazing",
+                    ),
+                ]
+            )
+        elif ifc_class in ("IfcCurtainWallType", "IfcCurtainWall"):
+            templates.extend(
+                [
+                    None,
+                    ("FRAMING_RAILING", "Framing (Railing)", "Framing system of posts, rails and infill"),
+                    (
+                        "FRAMING_STOREFRONT",
+                        "Framing (Storefront)",
+                        "Framing system of mullions, transoms and glazing",
+                    ),
+                ]
+            )
         elif ifc_class in ("IfcRoofType", "IfcRoof", "IfcSlabType", "IfcSlab", "IfcCovering", "IfcCoveringType"):
             templates.extend([None, ("ROOF", "Roof", "Parametric roof with a constant pitch")])
         elif ifc_class and "Segment" in ifc_class:
