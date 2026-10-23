@@ -25,7 +25,10 @@ import bonsai.tool as tool
 
 @persistent
 def load_post(*args):
+    decoration.SvgOverlay.uninstall()
     props = tool.Drawing.get_document_props()
+    if props.should_draw_svg_overlay:
+        decoration.SvgOverlay.install()
     if props.should_draw_decorations:
         decoration.DecorationsHandler.install(bpy.context)
     else:
