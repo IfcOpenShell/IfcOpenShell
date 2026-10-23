@@ -8,8 +8,10 @@ Status: written, with tests:
   `ifcopenshell.api.geometry.add_framing_representation`
   (`test/api/geometry/test_add_framing_representation.py`).
 
-Next is Bonsai: the Framing panel, type-to-occurrence regeneration, the constituent set,
-and profile write-back. Base: `v0.9.0`.
+- Bonsai: `bim/module/model/framing.py`, the Framing panel, type-to-occurrence
+  regeneration, constituent sync, and profile write-back. Being tested in Blender 5.1.
+
+Base: `v0.9.0`.
 
 ## Problem
 
@@ -65,7 +67,9 @@ The type holds an ordered list. Each entry is an array of one of three kinds.
 ### Vertical member (posts, balusters, mullions, studs)
 
 - Spacing modes:
-  - `FIXED`: the remainder is centred.
+  - `FIXED`: exact spacing. `align` sets where it is measured from in each range:
+    `START`, `CENTER` (the default: the remainder is split between both ends) or `END`.
+    For a repeating horizontal, start is the bottom and end the top.
   - `MAX`: equal bays, no wider than the value.
   - `COUNT`: a fixed number per segment.
 - `at_ends` / `at_corners`.
@@ -74,12 +78,28 @@ The type holds an ordered list. Each entry is an array of one of three kinds.
 - `bottom` / `top` bound: `BASE` (v = 0), `TOP` (occurrence height), an absolute `v`, or
   `{"member": name}`.
 - Square or raked cut at sloped bounds.
+- `breaks_at: [horizontal names]` cuts the member into pieces at the faces of those
+  rows that cross it: every row of a repeating horizontal, and only where the row runs
+  at that u. Pieces are `VerticalMember.piece` 0, 1, … upward. Two entries cannot break
+  at each other: each would cut the other and leave a hole, so it is an error that asks
+  which one is continuous.
 
 ### Horizontal member (rails, cables, transoms, plates)
 
 - At `v`, or repeating upward between two bounds (`COUNT` / `FIXED`).
 - `continuous`, or `breaks_at: [vertical names]`. Each end of a broken member is
   shortened by half the depth of the profile it stops at.
+- `extend_start` / `extend_end`: how far each run carries on past its start and end, in
+  plan along the path, added after the outer-face overhang. Negative pulls it back.
+  Breaks within a run are not affected, so a rail broken at posts and extended past
+  the end posts gets stubs beyond them. Past the path's ends it follows the end
+  segment's direction and slope.
+- **Run ends reach outer faces:** where a run ends at a vertical that meets the member
+  (passing through it, or stopping just under or over it), the run carries on to that
+  vertical's outer face. So a top rail covers its end posts, and a rail limited to some
+  bays covers the posts at its bay ends. With `breaks_at` set, the cut still trims it to
+  the inner faces. A rail all the way round a closed path has no ends. On an open path
+  the first and last segments carry on past the path's ends for this.
 
 ### Infill (glass, spandrel, plate, mesh)
 
@@ -91,6 +111,36 @@ The type holds an ordered list. Each entry is an array of one of three kinds.
   today's `FRAMELESS_PANEL`.
 - Glass, mesh and plate differ only by material; the geometry is one thin solid per
   panel.
+
+### Picking bays and rows (added after first testing)
+
+- **Bays** always count along the path and **Rows** always count upward. Both are 1-based
+  lists, with negatives counting from the end (`[1, -1]` is first and last). Empty means
+  all. In the UI they are text fields such as `2, 4`.
+- **Verticals:** `bays` picks which ranges spacing fills: the bays of `within`, or the
+  path segments.
+- **Horizontals:**
+  - `within` on a repeating horizontal fills each gap between the rows of another
+    horizontal, which may itself repeat. The gaps lie within the horizontal's own
+    bottom and top bounds.
+  - `rows` picks those gaps.
+  - `between` + `bays` makes a rail run only in some bays along the path, centre to
+    centre between the members of `between`. `breaks_at` still trims to faces.
+    Adjacent picked bays merge into one piece.
+- **Infill:**
+  - `within` stacks panels between the rows of a horizontal; `between` + `within` makes
+    a grid.
+  - `bays` picks columns and `rows` picks rows. Addresses are now
+    `(segment, bay, row, panel)`.
+  - `breaks_at` cuts panels at the faces of other verticals, as for rails, but only
+    where those members pass through the panel's height. It is needed when the panels
+    are `between` members that skip some verticals, e.g. pickets placed `within` posts.
+- **Following members:**
+  - A panel appears only where each horizontal it is bounded by runs along at least half
+    the bay. The same goes for the rows it stacks between.
+  - A vertical bounded by a member stands only where that member runs. This is checked
+    against the member's runs before breaks, so balusters on a rail limited to bay 2 are
+    only in bay 2.
 
 ### Shared per entry
 
@@ -143,7 +193,14 @@ Decision: keep both rooted in the .ifc, so the JSON holds only layout.
 - Spacing positions are always interior: `FIXED` does not put members on range ends; use
   `at_ends` / `at_corners` for those. Spacing is centre to centre. A `CLEAR` measure for
   balusters (a 100 mm sphere rule) may be wanted later.
-- Bounds that reference a repeating horizontal are rejected in phase 1.
+- **Bounds may reference a repeating horizontal**, resolved to the nearest row:
+  - a repeating top bound is its lowest row above the bottom;
+  - a repeating bottom bound is its highest row below the top;
+  - with both repeating, the bottom is the first row and the top the next one up.
+
+  So a storefront with repeating transoms keeps Vision (Sill → Transom) and Clerestory
+  (Transom → Head), and the gaps in between are filled with `within`. A repeating
+  member is still rejected as a horizontal's own level `v`.
 - Running the tests without Blender: a checkout needs a compiled 0.9 wrapper. On Ryan's
   machine that is the git-ignored cp313 wrapper in `C:\IfcOpenShell`, so the tests run
   with Blender 5.1's bundled `python.exe` (3.13; it does not start Blender). Put
@@ -298,11 +355,41 @@ Profile convention, for users drawing profiles:
 - **Infill:** an `IfcExtrudedAreaSolid` of a rectangle in the segment plane, centred on
   the plane plus `offset`. On a raked cell (phase 2) the outline becomes an
   `IfcArbitraryClosedProfileDef` parallelogram. Curved paths are faceted per segment.
-- **Phase 1 limits:**
-  - Verticals and infill use the segment's plan direction, and `u` is measured along the
-    3D path, so sloped guides (stairs) are not right yet.
-  - Rails on a sloped segment are extruded along the slope, with the section
-    perpendicular to the rail.
+- **Sloped guides** (stairs, ramps), added after testing on an L path with a 29° leg:
+  - **u is measured in plan.** Spacing, bay widths and member extents are horizontal,
+    as baluster spacing rules are. Members stay plumb, and v is plumb above the path.
+  - **Rails are oblique extrusions with a plumb section.** The profile sits in a plumb
+    plane facing along the path in plan, and the extrusion direction follows the slope.
+    So the rail keeps its vertical height and thickness, its ends are plumb (flush with
+    post faces), and a change of slope joins with no clip. Plan corners still get a plumb
+    bisector mitre.
+  - **Verticals are raked by default:** both ends are clipped to planes that follow the
+    path's slope at that point. A member standing on a change of slope is clipped under
+    both slopes, which never penetrates and leaves at most a small gap. `square_cut`
+    (the Square Cut toggle) opts out.
+  - **Panels on a slope are parallelograms** (`IfcArbitraryClosedProfileDef`): plumb
+    sides, with the bottom and top following the slope.
+  - **ShapeBuilder.plane degenerates for a downward normal**, so `_clip` builds its own
+    plane placements.
+  - **Offset rails ease round climbing corners** (`_ease_corners`). Offset to one side,
+    the two legs reach the rail's own corner at different heights. So one leg's slope
+    carries on around the corner until the other leg's line meets it:
+    - On the outside of a rising turn, a short level return along the outgoing leg.
+    - On the inside, the climb starts a little before the corner, on the incoming leg.
+
+    The plan corner is then a mitre between pieces of the same slope, and the slope
+    change is a plumb joint. This only applies at plan corners where the slope changes;
+    centred rails are unchanged.
+  - **Run ends only reach over verticals the rail overlaps out of plane.** `solve()`
+    takes `lateral` (profile plus offset across the guide plane), so an offset handrail
+    is not stretched over end posts it misses.
+  - **Clipped pieces need a kernel with booleans.** Mitred rails and raked verticals are
+    `IfcCsgSolid(IfcBooleanClippingResult)`. Bonsai's "CGAL Simple" geometry library
+    ("CGAL without booleans") drops them, while OpenCASCADE, CGAL and the default Hybrid
+    build them. Decision (Ryan, 2026-10-23): keep clipping, the standard IFC pattern, as
+    for walls clipped under roofs. An option to write those pieces as exact faceted
+    solids instead was considered and parked.
+
 - **Pure solver** (no IFC, no Blender) returning dataclasses, shared by the viewport
   preview and the IFC writer. Suggested homes: the solver in
   `ifcopenshell.util.framing`, the IFC writer in
@@ -312,9 +399,14 @@ Profile convention, for users drawing profiles:
 ## Materials
 
 - `IfcMaterialConstituentSet` on the type, one constituent per entry (see above).
-- `BODY`: shape aspects named after the constituents. Still to check: Bonsai's viewport
-  and drawing support for shape aspects. Fallback: per-item `IfcStyledItem` from the
-  constituent's style.
+- `BODY`: shape aspects named after the constituents. **The geometry kernel does not
+  resolve constituents through shape aspects.** `mapping.cpp` uses a constituent set's
+  material only when it has exactly one constituent, so every entry rendered in one
+  colour. So `add_framing_representation(constituent_set=...)` also gives each item an
+  `IfcStyledItem` with its constituent material's surface style (Body context, or its
+  parent). Verified on the 0.9 kernel: per-entry materials come out.
+- Only entries with a material get a constituent. Removing an entry or clearing its
+  material removes its constituent.
 - `PARTS`: each generated element gets the constituent's material directly.
 
 ## UI
@@ -325,13 +417,45 @@ occurrence or type. Its states follow the railing panel: "Add Framing" when the 
 has no `BBIM_Framing`, then an edit / finish / cancel flow for the system and a separate
 flow for editing the path. One generator per element: on an element that has
 `BBIM_Railing`, "Add Framing" is disabled with a poll message, and the reverse also
-applies. When framing a host type, the panel edits the type's system. On an occurrence
-it shows the type's system read-only, with a button to go to the type, plus the
-occurrence's own height and path.
+applies.
+
+As built (phase 1):
+- **Editing from an occurrence edits the system where it lives.** If the system comes
+  from the type, the panel says so ("System from type: X (N occurrences)"), and Finish
+  rebuilds every occurrence that has its own path. Height and path are always the
+  occurrence's own. This replaces the earlier "read-only on occurrences" idea: Bonsai type
+  objects are awkward to select, so editing in place is more practical.
+- **On a type, the height field sets `default_height`**, which new occurrences start
+  with.
+- **Add Framing:**
+  - On an untyped element or a type: applies a preset (Railing or Storefront), which
+    creates its profiles and materials by name if missing.
+  - On an occurrence whose type already has a system: only adds a default path.
+  - Refused when the type has representation maps, because rebuilding a mapped Body
+    would rewrite the type's shared geometry through `replace_object_ifc_representation`.
+- **Create Framing Type** moves an untyped element's system and constituent set onto a
+  new `<Class>Type` with no representation (an empty object, like the EMPTY template),
+  then assigns it.
+- **When a type's system is first added or edited**, occurrences with no path of their
+  own are left alone, so their existing geometry is not replaced.
+- **Assign type** (`core.type.assign_type`, new `model.is_framing` branch) and **Add
+  Occurrence** (a new branch that skips the representation-template dialog) build the
+  occurrence's body, along a default 3 m path if it has none.
+- **Framing is registered in `tool.Parametric.EDIT_TYPES`** (`is_framing`,
+  `BIMFramingProperties`, `bim.{enable,finish,cancel}_editing_framing`), so a pending edit
+  is committed on save like the other parametric types.
+- **Entry references** (`within`, bounds, `between`) are strings picked with
+  `prop_search` over the entry list. Blender stores dynamic enums by index, so they would
+  break on reorder. Profile and material pickers are dynamic enums keyed by step id.
 
 - A UIList of entries: kind, profile, material and output pickers; add, duplicate,
   reorder.
 - A 2D elevation preview of one bay, via a schematic gizmo like `GizmoRailingSchematic`.
+- **Space** (`bim.direct_profile_edit`) enters and leaves path editing on a framed
+  occurrence, as it does for roof footprints: entering calls
+  `bim.enable_editing_framing_path`, which commits a pending system edit first, and leaving
+  calls `bim.finish_editing_framing_path`. Types have no path, so Space does nothing
+  special on them.
 - Presets:
   - Railing: pickets, cables, glass with posts, frameless glass.
   - Storefront: 1 and 2 transoms.
