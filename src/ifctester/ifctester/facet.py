@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import builtins
+import copy
 import re
 from collections.abc import Sequence
 from functools import cache, lru_cache
@@ -705,6 +706,27 @@ class Property(Facet):
         else:
             all_psets = get_psets(inst)
             psets = {k: v for k, v in all_psets.items() if k == self.propertySet}
+
+        if self.cardinality == "prohibited" and not self.value:
+            # "Must not exist, even if empty": only a genuinely unset (None) property is absent.
+            for pset_props in psets.values():
+                if isinstance(self.baseName, str):
+                    raw_values = [pset_props[self.baseName]] if self.baseName in pset_props else []
+                else:
+                    raw_values = [v for k, v in pset_props.items() if k == self.baseName]
+                if any(v is not None for v in raw_values):
+                    return PropertyResult(False, {"type": "PROHIBITED"})
+            return PropertyResult(True, {"type": "PROHIBITED"})
+
+        if self.cardinality == "prohibited" and self.value:
+            # Check each matching pset independently so an earlier pset cannot mask a later one.
+            for pset_name in psets:
+                probe = copy.copy(self)
+                probe.propertySet = pset_name
+                probe.cardinality = "required"
+                if probe(inst, logger).is_pass:
+                    return PropertyResult(False, {"type": "PROHIBITED"})
+            return PropertyResult(True, {"type": "PROHIBITED"})
 
         is_pass = bool(psets)
         reason = None
