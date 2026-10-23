@@ -11,6 +11,7 @@ import pytest
 
 import ifcopenshell
 import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import ifcopenshell.api.owner.settings
 import ifcopenshell.api.project
 import ifcopenshell.api.root
@@ -22,6 +23,49 @@ import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
 
 fn = os.path.join(os.path.dirname(__file__), "fixtures/ColumnPSetsOfSets.ifc")
+
+
+@pytest.mark.skipif(
+    not ifcopenshell.geom.has_geometry_library("opencascade"),
+    reason="SVG serializer requires the OpenCASCADE geometry library",
+)
+def test_svg_space_area_label_not_double_escaped():
+    ifc_file = ifcopenshell.file()
+    ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject")
+    unit = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="LENGTHUNIT")
+    ifcopenshell.api.unit.assign_unit(ifc_file, [unit])
+    model_context = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
+    body_context = ifcopenshell.api.context.add_context(
+        ifc_file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model_context
+    )
+    space = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcSpace", name="Test space")
+    builder = ShapeBuilder(ifc_file)
+    representation = builder.get_representation(body_context, builder.extrude(builder.rectangle((4, 3)), 3))
+    ifcopenshell.api.geometry.assign_representation(ifc_file, space, representation)
+
+    settings = ifcopenshell.geom.settings()
+    settings.set("iterator-output", W.NATIVE)
+    settings.set("dimensionality", W.CURVES_SURFACES_AND_SOLIDS)
+    settings.set("section-height", 1.5)
+    settings.set("print-space-areas", True)
+    settings.set("svg-without-storeys", True)
+    settings.set("auto-elevation", False)
+    settings.set("auto-section", False)
+    buffer = ifcopenshell.geom.serializers.buffer()
+    serializer = ifcopenshell.geom.serializers.svg(buffer, settings)
+    serializer.setFile(ifc_file)
+    serializer.writeHeader()
+    iterator = ifcopenshell.geom.iterator(settings, ifc_file)
+    assert iterator.initialize()
+    while True:
+        serializer.write(iterator.get())
+        if not iterator.next():
+            break
+    serializer.finalize()
+
+    svg = buffer.get_value()
+    assert "12.00m²" in svg
+    assert "m&amp;#178;" not in svg
 
 
 class TestGeomSettings:
