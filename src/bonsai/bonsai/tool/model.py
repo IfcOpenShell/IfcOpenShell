@@ -2898,6 +2898,8 @@ class Model(bonsai.core.tool.Model):
             ref = Vector((0, 0, 1)) if abs(normal.z) < 0.9 else Vector((1, 0, 0))
             tangent1 = normal.cross(ref).normalized()
             tangent2 = normal.cross(tangent1).normalized()
+            if tangent2.z < 0:
+                tangent2 = -tangent2  # upslope
 
             centroid = sum((v.co for v in face.verts), Vector()) / len(face.verts)
 
@@ -2905,14 +2907,18 @@ class Model(bonsai.core.tool.Model):
             t1_coords = [(v.co - centroid).dot(tangent1) for v in face.verts]
             t2_coords = [(v.co - centroid).dot(tangent2) for v in face.verts]
             half1 = max(abs(c) for c in t1_coords) + margin
-            half2 = max(abs(c) for c in t2_coords) + margin
+            # The ridge overlap only needs the margin upslope. Downslope it would carry
+            # the plane under a steeper neighbouring face (e.g. from a roof's eave cut
+            # back under its underside) and notch the wall.
+            t2_max = max(t2_coords) + margin
+            t2_min = min(t2_coords) - (margin if tangent2.z < 1e-3 else 0.0)
 
             # Rectangle on the slope plane, extruded upward in wall-local Z.
             clip_bm = bmesh.new()
-            v0 = clip_bm.verts.new(centroid + half1 * tangent1 + half2 * tangent2)
-            v1 = clip_bm.verts.new(centroid - half1 * tangent1 + half2 * tangent2)
-            v2 = clip_bm.verts.new(centroid - half1 * tangent1 - half2 * tangent2)
-            v3 = clip_bm.verts.new(centroid + half1 * tangent1 - half2 * tangent2)
+            v0 = clip_bm.verts.new(centroid + half1 * tangent1 + t2_max * tangent2)
+            v1 = clip_bm.verts.new(centroid - half1 * tangent1 + t2_max * tangent2)
+            v2 = clip_bm.verts.new(centroid - half1 * tangent1 + t2_min * tangent2)
+            v3 = clip_bm.verts.new(centroid + half1 * tangent1 + t2_min * tangent2)
             bottom_face = clip_bm.faces.new([v0, v1, v2, v3])
             result = bmesh.ops.extrude_face_region(clip_bm, geom=[bottom_face])
             top_verts = [e for e in result["geom"] if isinstance(e, bmesh.types.BMVert)]
