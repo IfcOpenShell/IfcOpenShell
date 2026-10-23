@@ -261,8 +261,21 @@ class Link(PropertyGroup):
         default=0,
     )
     query: StringProperty(
-        name="Query",
-        description="Selector query used to filter elements when loading the linked model",
+        name="Include",
+        description="Selector query for the elements to load from the linked model",
+        default="",
+    )
+    exclude: StringProperty(
+        name="Exclude",
+        description="Selector query whose matches are excluded when loading the linked model",
+        default="",
+    )
+    display_name: StringProperty(
+        name="Name",
+        description=(
+            "Optional display name to tell links apart (e.g. when the same file "
+            "is linked several times). Shows the file path when empty"
+        ),
         default="",
     )
 
@@ -281,6 +294,8 @@ class Link(PropertyGroup):
         empty_handle: Union[bpy.types.Object, None]
         ifc_definition_id: int
         query: str
+        exclude: str
+        display_name: str
 
 
 class EditedObj(PropertyGroup):
