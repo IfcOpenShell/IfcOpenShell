@@ -708,6 +708,7 @@ class Model:
     def recalculate_walls(cls, objs): pass
     def recreate_wall(cls, element, obj): pass
     def regenerate_array(cls, parent, data): pass
+    def apply_framing_type(cls, obj): pass
     def regenerate_framing(cls, obj): pass
     def regenerate_profile(cls, obj): pass
     def regenerate_slab(cls, obj): pass

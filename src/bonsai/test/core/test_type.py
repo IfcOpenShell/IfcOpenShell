@@ -49,7 +49,7 @@ class TestAssignType:
         ifc.run("type.assign_type", related_objects=["element"], relating_type="type").should_be_called()
         model.get_usage_type("type").should_be_called(2).will_return(None)
         model.is_framing("type").should_be_called().will_return(True)
-        model.regenerate_framing("obj").should_be_called()
+        model.apply_framing_type("obj").should_be_called()
         ifc.get_object("element").should_be_called().will_return("obj")
         type.disable_editing("obj").should_be_called()
         subject.assign_type(ifc, model, type, element="element", type="type")

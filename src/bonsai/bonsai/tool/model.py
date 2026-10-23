@@ -3257,6 +3257,12 @@ class Model(bonsai.core.tool.Model):
         return tool.Parametric.is_framing(element)
 
     @classmethod
+    def apply_framing_type(cls, obj: bpy.types.Object) -> None:
+        from bonsai.bim.module.model.framing import apply_framing_type
+
+        apply_framing_type(obj)
+
+    @classmethod
     def regenerate_framing(cls, obj: bpy.types.Object) -> None:
         from bonsai.bim.module.model.framing import regenerate_framing
 

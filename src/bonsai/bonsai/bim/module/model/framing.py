@@ -183,10 +183,23 @@ def read_guide(element: ifcopenshell.entity_instance) -> dict[str, Any]:
     )
 
 
+def get_own_framing_pset(product: ifcopenshell.entity_instance) -> Optional[ifcopenshell.entity_instance]:
+    """The product's own BBIM_Framing pset, never its type's.
+
+    ``tool.Pset.get_element_pset`` inherits, so for an occurrence without a pset of its
+    own it returns the type's, and writing to that would change every occurrence."""
+    pset = ifcopenshell.util.element.get_pset(product, "BBIM_Framing", should_inherit=False)
+    return tool.Ifc.get().by_id(pset["id"]) if pset else None
+
+
 def write_framing_pset(product: ifcopenshell.entity_instance, **properties: Optional[dict[str, Any]]) -> None:
-    """Write ``Data`` / ``Guide`` as JSON. ``None`` removes the property."""
+    """Write ``Data`` / ``Guide`` as JSON on the product itself. ``None`` removes the property."""
     ifc_file = tool.Ifc.get()
-    pset = tool.Pset.get_element_pset(product, "BBIM_Framing")
+    if product.is_a("IfcTypeObject"):
+        # Paths belong to occurrences. Drop any a type picked up, as earlier versions
+        # could write an occurrence's path to its type.
+        properties.setdefault("Guide", None)
+    pset = get_own_framing_pset(product)
     if not pset:
         pset = ifcopenshell.api.pset.add_pset(ifc_file, product=product, name="BBIM_Framing")
     values = {k: None if v is None else ifc_file.createIfcText(json.dumps(v)) for k, v in properties.items()}
@@ -258,6 +271,21 @@ def regenerate_framing(obj: bpy.types.Object) -> bool:
     _errors.pop(element.id(), None)
     tool.Model.replace_object_ifc_representation(body, obj, representation)
     return True
+
+
+def apply_framing_type(obj: bpy.types.Object) -> bool:
+    """After a framing type is assigned: use the type's system, keeping this occurrence's path.
+
+    Like a wall taking its type's layer set, the occurrence drops a system and material
+    set of its own, which would otherwise override the type's."""
+    element = tool.Ifc.get_entity(obj)
+    if not element or element.is_a("IfcTypeObject"):
+        return False
+    if ifcopenshell.util.element.get_pset(element, "BBIM_Framing", "Data", should_inherit=False):
+        write_framing_pset(element, Data=None)
+    if ifcopenshell.util.element.get_material(element, should_inherit=False):
+        ifcopenshell.api.material.unassign_material(tool.Ifc.get(), products=[element])
+    return regenerate_framing(obj)
 
 
 def regenerate_system_users(owner: ifcopenshell.entity_instance) -> list[str]:
@@ -956,7 +984,7 @@ class RemoveFraming(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = tool.Model.get_framing_props(obj)
         props.is_editing = False
-        if pset := tool.Pset.get_element_pset(element, "BBIM_Framing"):
+        if pset := get_own_framing_pset(element):
             ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
         _errors.pop(element.id(), None)
         refresh()
