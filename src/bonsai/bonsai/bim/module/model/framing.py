@@ -33,6 +33,7 @@ import json
 from typing import Any, Optional
 
 import bpy
+import gpu
 import ifcopenshell
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
@@ -41,25 +42,30 @@ import ifcopenshell.api.style
 import ifcopenshell.util.element
 import ifcopenshell.util.framing
 import ifcopenshell.util.representation
+import ifcopenshell.util.schema
+import ifcopenshell.util.system
+import ifcopenshell.util.type
 import ifcopenshell.util.unit
+import numpy as np
+from gpu_extras.batch import batch_for_shader
 from ifcopenshell.api.geometry.add_framing_representation import (
     compute_framing_geometry,
     compute_framing_mesh,
     get_profile_mesh,
 )
 from ifcopenshell.util.framing import FramingError
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.core.style
 import bonsai.core.type
 import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.model.data import FramingData, refresh
-from bonsai.bim.module.model.decorator import ProfileDecorator
+from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator, ProfileDecorator
+from bonsai.bim.module.model.polyline import PolylineOperator
 from bonsai.bim.module.model.railing import get_path_data
-
-FRAMING_CLASSES = ("IfcRailing", "IfcCurtainWall", "IfcRailingType", "IfcCurtainWallType")
 
 # Last regeneration error per element id, shown in the panel.
 _errors: dict[int, str] = {}
@@ -71,8 +77,57 @@ _profile_meshes = tool.Parametric.GenerationKeyedCache()
 _is_loading_props = False
 
 
+# Parametric tools that already build an element's body, by their tool.Parametric predicate.
+_OTHER_GENERATORS = (
+    ("door", "Door"),
+    ("window", "Window"),
+    ("stair", "Stair"),
+    ("railing", "Railing"),
+    ("roof", "Roof"),
+    ("array", "Array"),
+)
+
+
+def is_framing_class(ifc_class: str) -> bool:
+    """Whether elements of this class can be framed at all: any element or element type,
+    apart from feature and virtual elements, which have no body of their own to build."""
+    try:
+        declaration = tool.Ifc.schema().declaration_by_name(ifc_class)
+    except Exception:
+        return False
+    is_a = ifcopenshell.util.schema.is_a
+    if not (is_a(declaration, "IfcElement") or is_a(declaration, "IfcElementType")):
+        return False
+    return not any(is_a(declaration, c) for c in ("IfcFeatureElement", "IfcVirtualElement"))
+
+
 def is_framing_host(element: Optional[ifcopenshell.entity_instance]) -> bool:
-    return element is not None and element.is_a() in FRAMING_CLASSES
+    return element is not None and is_framing_class(element.is_a())
+
+
+def framing_refusal(element: Optional[ifcopenshell.entity_instance]) -> Optional[str]:
+    """Why framing cannot be added to an element, or None if it can.
+
+    Framing is open to any element, except where something else already owns the body."""
+    if not is_framing_host(element):
+        return "Only elements and element types can be framed, not openings or virtual elements."
+    for name, label in _OTHER_GENERATORS:
+        if getattr(tool.Parametric, f"is_{name}")(element):
+            return f"This element is driven by the {label} tool. Remove its parameters first."
+    if ifcopenshell.util.element.get_pset(element, "BBIM_Array"):
+        return "This element is part of an array, which builds its copies itself."
+    element_type = None if element.is_a("IfcTypeObject") else ifcopenshell.util.element.get_type(element)
+    for product in filter(None, (element, element_type)):
+        if tool.Model.get_usage_type(product):
+            return "This element is built from its layered or profiled material."
+    if element_type and element_type.RepresentationMaps:
+        return "This element's type shares its geometry. Use a type without geometry."
+    if not element.is_a("IfcTypeObject"):
+        if ifcopenshell.util.system.get_ports(element):
+            return "Elements with distribution ports cannot be framed."
+        if element.is_a("IfcElementAssembly") and element.IsDecomposedBy:
+            return "This assembly already has parts."
+    return None
 
 
 def get_system_owner(element: Optional[ifcopenshell.entity_instance]) -> Optional[ifcopenshell.entity_instance]:
@@ -357,6 +412,14 @@ def ensure_material(
     return material
 
 
+def default_preset(element: ifcopenshell.entity_instance) -> str:
+    """The system an element starts with: a storefront for walls, else a railing.
+
+    Only a starting point; the entries are then edited freely."""
+    walls = ("IfcCurtainWall", "IfcCurtainWallType", "IfcWall", "IfcWallType")
+    return "STOREFRONT" if any(element.is_a(c) for c in walls) else "RAILING"
+
+
 def preset_system(preset: str) -> tuple[dict[str, Any], dict[str, ifcopenshell.entity_instance]]:
     """A starting system in project units, and the material for each entry."""
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -611,42 +674,30 @@ def materials_from_props(props) -> dict[str, Optional[ifcopenshell.entity_instan
     }
 
 
-def _poll_framing_host(cls, context) -> bool:
-    obj = context.active_object
-    element = tool.Ifc.get_entity(obj) if obj else None
-    if not is_framing_host(element):
-        cls.poll_message_set("Select an IfcRailing or IfcCurtainWall, or their type.")
-        return False
-    return True
-
-
 class AddFraming(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_framing"
     bl_label = "Add Framing"
     bl_description = "Build this element from a framing system of posts, rails, mullions and infill"
     bl_options = {"REGISTER", "UNDO"}
     preset: bpy.props.EnumProperty(
-        name="Preset",
+        name="Starting System",
         items=[
+            ("AUTO", "Automatic", "Storefront for curtain walls and walls, otherwise railing"),
             ("RAILING", "Railing", "Posts, a top rail, a bottom rail and glass"),
             ("STOREFRONT", "Storefront", "Mullions, sill, transom, head and glazing"),
         ],
+        default="AUTO",
+        options={"SKIP_SAVE"},
     )
 
     @classmethod
     def poll(cls, context):
-        if not _poll_framing_host(cls, context):
-            return False
-        element = tool.Ifc.get_entity(context.active_object)
-        if tool.Parametric.is_railing(element):
-            cls.poll_message_set("This railing is driven by the Railing tool. Remove its railing parameters first.")
-            return False
+        element = tool.Ifc.get_entity(context.active_object) if context.active_object else None
         if tool.Parametric.is_framing(element):
             cls.poll_message_set("This element already has framing.")
             return False
-        element_type = None if element.is_a("IfcTypeObject") else ifcopenshell.util.element.get_type(element)
-        if element_type and element_type.RepresentationMaps:
-            cls.poll_message_set("This element's type shares its geometry. Use a type without geometry.")
+        if reason := framing_refusal(element):
+            cls.poll_message_set(reason)
             return False
         return True
 
@@ -663,7 +714,7 @@ class AddFraming(bpy.types.Operator, tool.Ifc.Operator):
                 self.report({"WARNING"}, get_framing_error(element) or "Framing failed.")
             refresh()
             return {"FINISHED"}
-        system, materials = preset_system(self.preset)
+        system, materials = preset_system(self.preset if self.preset != "AUTO" else default_preset(element))
         owner = element_type or element
         update_profile_references(system)
         write_framing_pset(owner, Data=system)
@@ -971,6 +1022,205 @@ class CreateFramingType(bpy.types.Operator, tool.Ifc.Operator):
         bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=element_type)
         refresh()
         return {"FINISHED"}
+
+
+def create_framing_occurrence(
+    relating_type: ifcopenshell.entity_instance, points: list[Vector], closed: bool
+) -> Optional[bpy.types.Object]:
+    """Place an occurrence of a framing type along drawn points (world, SI units)."""
+    ifc_file = tool.Ifc.get()
+    ifc_class = ifcopenshell.util.type.get_applicable_entities(relating_type.is_a(), ifc_file.schema)[0].ifc_class
+    obj = bpy.data.objects.new(
+        tool.Model.generate_occurrence_name(relating_type, ifc_class), bpy.data.meshes.new("Framing")
+    )
+    location = points[0].copy()
+    obj.matrix_world = Matrix.Translation(location)
+    bpy.context.view_layer.update()
+    element = bonsai.core.root.assign_class(
+        tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class=ifc_class, should_add_representation=False
+    )
+    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+    height = read_system(relating_type).get("default_height", 1.1 / unit_scale)
+    verts = [list((p - location) / unit_scale) for p in points]
+    write_framing_pset(element, Guide={"verts": verts, "closed": closed, "height": height})
+    # Assigning the type builds the body from the type's system, along this path.
+    bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
+    return obj
+
+
+class FramingGhostDecorator(tool.Blender.ViewportDecorator):
+    """A translucent preview of the framing being drawn, without any IFC or Blender data."""
+
+    draw_method = "draw_ghost"
+    # (world vertices, triangle indices), set by the drawing tool as the mouse moves.
+    geometry: Optional[tuple[list[tuple[float, float, float]], list[tuple[int, int, int]]]] = None
+
+    @classmethod
+    def set_geometry(cls, geometry) -> None:
+        cls.geometry = geometry
+        tool.Blender.update_viewport()
+
+    def draw_ghost(self, context: bpy.types.Context) -> None:
+        if not (geometry := FramingGhostDecorator.geometry):
+            return
+        vertices, triangles = geometry
+        shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        batch = batch_for_shader(shader, "TRIS", {"pos": vertices}, indices=triangles)
+        colour = tool.Blender.get_addon_preferences().decorator_color_special
+        gpu.state.blend_set("ALPHA")
+        gpu.state.depth_test_set("LESS_EQUAL")
+        gpu.state.depth_mask_set(False)
+        shader.bind()
+        shader.uniform_float("color", (colour[0], colour[1], colour[2], 0.35))
+        batch.draw(shader)
+        gpu.state.depth_mask_set(True)
+        gpu.state.depth_test_set("NONE")
+        gpu.state.blend_set("NONE")
+
+
+def framing_ghost(
+    relating_type: ifcopenshell.entity_instance, points: list[Vector]
+) -> Optional[tuple[list[tuple[float, float, float]], list[tuple[int, int, int]]]]:
+    """World-space triangles for a framing type laid along drawn points, or None if not valid yet."""
+    ifc_file = tool.Ifc.get()
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+    system = read_system(relating_type)
+    try:
+        profile_meshes = {}
+        for member in system.get("members", []):
+            if member.get("kind") not in ("V", "H"):
+                continue
+            profile = ifcopenshell.util.framing.resolve_profile(ifc_file, member.get("profile"))
+            if profile is None:
+                return None
+            profile_meshes[member["name"]] = _profile_meshes.get_or_compute(
+                profile.id(), lambda profile=profile: get_profile_mesh(profile, unit_scale)
+            )
+        origin = points[0]
+        items = compute_framing_geometry(
+            system=system,
+            guide=[tuple((p - origin) / unit_scale) for p in points],
+            height=system.get("default_height", 1.1 / unit_scale),
+            profile_points={name: points_ for name, (points_, _) in profile_meshes.items()},
+            scope=system.get("scope", "SEGMENT"),
+        )
+        mesh = compute_framing_mesh(items, profile_meshes)
+    except FramingError:
+        return None
+    vertices = [tuple(v) for v in (mesh.vertices * unit_scale + np.array(origin)).tolist()]
+    triangles = [(face[0], face[i], face[i + 1]) for face in mesh.faces for i in range(1, len(face) - 1)]
+    return vertices, triangles
+
+
+class DrawPolylineFraming(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
+    bl_idname = "bim.draw_polyline_framing"
+    bl_label = "Draw Polyline Framing"
+    bl_description = "Draw the path of a new occurrence of the selected framing type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.type == "VIEW_3D"
+
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
+        self.input_options = ["D", "A", "X", "Y", "Z"]
+        self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
+        self.relating_type = None
+        if relating_type_id := tool.Model.get_model_props().relating_type_id:
+            self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+        self.ghost_key = None
+
+    def update_ghost(self) -> None:
+        """Preview the framing along the points so far plus the mouse, as it moves."""
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
+        points = [Vector((p.x, p.y, p.z)) for p in polyline_data[0].polyline_points] if polyline_data else []
+        if polyline_props.snap_mouse_point:
+            mouse = polyline_props.snap_mouse_point[0]
+            points.append(Vector((mouse.x, mouse.y, mouse.z)))
+        points = [p for i, p in enumerate(points) if i == 0 or (p - points[i - 1]).length > 1e-6]
+        key = tuple(round(c, 6) for p in points for c in p)
+        if key == self.ghost_key:
+            return
+        self.ghost_key = key
+        geometry = framing_ghost(self.relating_type, points) if len(points) > 1 else None
+        FramingGhostDecorator.set_geometry(geometry)
+
+    def cleanup(self, context: bpy.types.Context) -> None:
+        FramingGhostDecorator.uninstall()
+        FramingGhostDecorator.geometry = None
+        super().cleanup(context)
+
+    def create_framing_from_polyline(self, context: bpy.types.Context) -> None:
+        polyline_data = tool.Model.get_polyline_props().insertion_polyline
+        points = [Vector((p.x, p.y, p.z)) for p in polyline_data[0].polyline_points] if polyline_data else []
+        closed = len(points) > 3 and (points[0] - points[-1]).length < 1e-6
+        if closed:
+            points = points[:-1]
+        if len(points) < 2:
+            return
+        if obj := create_framing_occurrence(self.relating_type, points, closed):
+            tool.Blender.select_and_activate_single_object(context, obj)
+            if error := get_framing_error(tool.Ifc.get_entity(obj)):
+                self.report({"WARNING"}, error)
+
+    def modal(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
+
+    def _modal(self, context, event):
+        if not self.relating_type or not tool.Parametric.is_framing(self.relating_type):
+            self.report({"WARNING"}, "You need to select a framing type.")
+            self.cleanup(context)
+            return {"FINISHED"}
+
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+
+        self.handle_lock_axis(context, event)  # Must come before "PASS_THROUGH"
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        self.handle_instructions(context)
+        self.handle_mouse_move(context, event, should_round=True)
+        self.choose_axis(event, z=True)
+        self.choose_plane(event)
+        self.handle_snap_selection(context, event)
+
+        if (
+            not self.tool_state.is_input_on
+            and event.value == "RELEASE"
+            and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
+        ):
+            self.create_framing_from_polyline(context)
+            self.tool_state.plane_method = None
+            self.cleanup(context)
+            return {"FINISHED"}
+
+        self.handle_keyboard_input(context, event)
+        self.handle_inserting_polyline(context, event)
+
+        cancel = self.handle_cancelation(context, event)
+        if cancel is not None:
+            return cancel
+
+        self.update_ghost()
+        return {"RUNNING_MODAL"}
+
+    def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _invoke(self, context, event):
+        super().invoke(context, event)
+        ProductDecorator.install(context)
+        FramingGhostDecorator.install(context)
+        self.tool_state.use_default_container = False
+        self.tool_state.plane_method = None
+        return {"RUNNING_MODAL"}
 
 
 class RemoveFraming(bpy.types.Operator, tool.Ifc.Operator):

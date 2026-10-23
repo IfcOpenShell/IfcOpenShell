@@ -286,6 +286,7 @@ classes = (
     framing.FinishEditingFramingPath,
     framing.CreateFramingType,
     framing.RemoveFraming,
+    framing.DrawPolylineFraming,
     roof.BIM_OT_add_roof,
     roof.AddRoof,
     roof.CancelEditingRoof,

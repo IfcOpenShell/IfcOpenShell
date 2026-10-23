@@ -29,6 +29,19 @@ stud framing (studs, plates and blocking that breaks at studs).
 
 ## Decisions so far
 
+- **Framing is open to any element class** (decided 2026-10-23), not a list of hosts.
+  Any IfcElement or IfcElementType can be framed. Feature and virtual elements are
+  excluded by class. `framing_refusal()` refuses, with a reason shown in the panel, where
+  something else already owns the body:
+  - another parametric tool (door, window, stair, old railing, roof, array, or array
+    copies);
+  - a layered or profiled material usage, on the element or its type;
+  - a type with representation maps;
+  - distribution ports;
+  - an assembly that already has parts.
+
+  The Type Manager offers the Framing (Railing) and Framing (Storefront) templates for
+  every framing class, after the class's own templates.
 - **Generic engine, not railing-specific.** It uses a new `BBIM_Framing` pset,
   independent of `BBIM_Railing`. The legacy railing kinds stay as they are, and
   `tool.Parametric.is_railing` (keyed on `BBIM_Railing`) is unaffected.

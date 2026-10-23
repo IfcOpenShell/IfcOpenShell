@@ -1188,6 +1188,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             "IfcPileType",
         ):
             return bpy.ops.bim.draw_polyline_profile("INVOKE_DEFAULT")
+        elif tool.Parametric.is_framing(relating_type):
+            return bpy.ops.bim.draw_polyline_framing("INVOKE_DEFAULT")
         return bpy.ops.bim.draw_occurrence("INVOKE_DEFAULT")
 
     def hotkey_S_Q(self):

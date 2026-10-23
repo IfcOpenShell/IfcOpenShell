@@ -613,7 +613,7 @@ class FramingData:
         cls.data["pset_data"] = cls.pset_data()
         cls.data["profiles"] = cls.profiles()
         cls.data["materials"] = cls.materials()
-        cls.data["has_railing"] = cls.has_railing()
+        cls.data["refusal"] = cls.refusal()
         if not cls.data["pset_data"]:
             return
         cls.data["system_owner"] = cls.system_owner()
@@ -639,8 +639,10 @@ class FramingData:
         }
 
     @classmethod
-    def has_railing(cls) -> bool:
-        return bool((element := cls.element()) and tool.Parametric.is_railing(element))
+    def refusal(cls) -> Optional[str]:
+        from bonsai.bim.module.model.framing import framing_refusal
+
+        return framing_refusal(cls.element())
 
     @classmethod
     def system_owner(cls) -> Optional[str]:

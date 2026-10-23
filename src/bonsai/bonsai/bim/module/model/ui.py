@@ -750,12 +750,12 @@ class BIM_PT_framing(bpy.types.Panel):
         layout = self.layout
 
         if not FramingData.data["pset_data"]:
-            if FramingData.data["has_railing"]:
-                layout.label(text="Driven by the Railing tool", icon="INFO")
+            if refusal := FramingData.data["refusal"]:
+                layout.label(text=refusal, icon="INFO")
                 return
             row = layout.row(align=True)
             row.label(text="No Framing Found")
-            row.operator_menu_enum("bim.add_framing", "preset", text="Add Framing", icon="ADD")
+            row.operator("bim.add_framing", text="Add Framing", icon="ADD")
             return
 
         if owner := FramingData.data["system_owner"]:
