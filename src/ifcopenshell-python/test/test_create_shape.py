@@ -15,6 +15,7 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.owner.settings
 import ifcopenshell.api.project
 import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
@@ -38,7 +39,9 @@ def test_svg_space_area_label_not_double_escaped():
     body_context = ifcopenshell.api.context.add_context(
         ifc_file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model_context
     )
+    storey = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey")
     space = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcSpace", name="Test space")
+    ifcopenshell.api.spatial.assign_container(ifc_file, products=[space], relating_structure=storey)
     builder = ShapeBuilder(ifc_file)
     representation = builder.get_representation(body_context, builder.extrude(builder.rectangle((4, 3)), 3))
     ifcopenshell.api.geometry.assign_representation(ifc_file, space, representation)
