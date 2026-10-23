@@ -59,9 +59,7 @@ def get_applicable_structural_load_types(
 
 
 def updateApplicableStructuralLoadTypes(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
-    StructuralLoadCasesData.data["applicable_structural_load_types"] = (
-        StructuralLoadCasesData.applicable_structural_load_types()
-    )
+    StructuralLoadCasesData.data["applicable_structural_loads"] = StructuralLoadCasesData.applicable_structural_loads()
 
 
 def get_applicable_structural_loads(
