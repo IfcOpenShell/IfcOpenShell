@@ -169,10 +169,61 @@ def update_search_name(self: "BIMModelProperties", context: bpy.types.Context) -
     bpy.ops.bim.load_type_thumbnails()
 
 
+_is_syncing_slope = False
+
+
 def update_x_angle(self: "BIMModelProperties", context: bpy.types.Context) -> None:
+    global _is_syncing_slope
     angle_deg = math.degrees(self.x_angle)
     if tool.Cad.is_x(angle_deg, -90, 0.5) or tool.Cad.is_x(angle_deg, 90, 0.5):
         self.x_angle = 0
+        return
+    if _is_syncing_slope:
+        return
+    sync_slope_inputs(self)
+
+
+def sync_slope_inputs(props: "BIMModelProperties") -> None:
+    """Refresh the degree and rise fields from ``x_angle``, holding the chosen run."""
+    global _is_syncing_slope
+    _is_syncing_slope = True
+    try:
+        props.slope_rise = props.slope_run * math.tan(props.x_angle)
+        props.slope_degrees = math.degrees(props.x_angle)
+    finally:
+        _is_syncing_slope = False
+
+
+def update_slope_rise_run(self: "BIMModelProperties", context: bpy.types.Context) -> None:
+    global _is_syncing_slope
+    if _is_syncing_slope:
+        return
+    _is_syncing_slope = True
+    try:
+        self.x_angle = math.atan2(self.slope_rise, self.slope_run)
+    finally:
+        _is_syncing_slope = False
+    # Re-sync in case update_x_angle reset a near-vertical slope to 0.
+    sync_slope_inputs(self)
+
+
+def update_slope_degrees(self: "BIMModelProperties", context: bpy.types.Context) -> None:
+    global _is_syncing_slope
+    if _is_syncing_slope:
+        return
+    _is_syncing_slope = True
+    try:
+        self.x_angle = math.radians(self.slope_degrees)
+    finally:
+        _is_syncing_slope = False
+    sync_slope_inputs(self)
+
+
+def update_slope_method(self: "BIMModelProperties", context: bpy.types.Context) -> None:
+    # Reload the active slab's angle for the chosen method (extrusion direction or object tilt).
+    from bonsai.bim.handler import refresh_bim_tool_headers
+
+    refresh_bim_tool_headers()
 
 
 def update_door(self: "BIMDoorProperties", context: bpy.types.Context) -> None:
@@ -339,6 +390,58 @@ class BIMModelProperties(PropertyGroup):
         max=math.radians(180),
         update=update_x_angle,
     )
+    # Plain float so Blender shows a fixed 2 decimals; unit (ANGLE) fields treat precision as significant digits.
+    slope_degrees: bpy.props.FloatProperty(
+        name="Angle (°)",
+        default=0,
+        precision=2,
+        min=-180,
+        max=180,
+        description="Slope angle in degrees. Changing it updates the X Angle",
+        update=update_slope_degrees,
+    )
+    slope_input_mode: bpy.props.EnumProperty(
+        items=[
+            ("ANGLE", "Angle", "Enter the slope as an angle"),
+            ("RATIO", "Rise / Run", "Enter the slope as a rise over a run, e.g. 4/12 or 2/100"),
+        ],
+        name="Slope Input",
+        default="ANGLE",
+    )
+    slope_rise: bpy.props.FloatProperty(
+        name="Rise",
+        default=0,
+        description="Slope rise per run. Changing it updates the X Angle",
+        update=update_slope_rise_run,
+    )
+    slope_run: bpy.props.FloatProperty(
+        name="Run",
+        default=12,
+        min=0.001,
+        description="Slope run (the denominator), e.g. 12 or 100. Changing it updates the X Angle",
+        update=update_slope_rise_run,
+    )
+    slope_method: bpy.props.EnumProperty(
+        items=[
+            (
+                "EXTRUSION",
+                "Extrusion",
+                "Slope the slab by changing its extrusion direction (the slab stays level, its sides lean)",
+                "MOD_SOLIDIFY",
+                0,
+            ),
+            (
+                "ROTATION",
+                "Rotation",
+                "Slope the slab by tilting the whole object about its local X axis (extrusion direction unchanged)",
+                "ORIENTATION_GIMBAL",
+                1,
+            ),
+        ],
+        name="Slope Method",
+        default="EXTRUSION",
+        update=update_slope_method,
+    )
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
     boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
     direction_sense: bpy.props.EnumProperty(
@@ -421,6 +524,11 @@ class BIMModelProperties(PropertyGroup):
         rl3: float
         type_page: int
         x_angle: float
+        slope_degrees: float
+        slope_input_mode: Literal["ANGLE", "RATIO"]
+        slope_rise: float
+        slope_run: float
+        slope_method: Literal["EXTRUSION", "ROTATION"]
         type_name: str
         boundary_class: str
         direction_sense: Literal["POSITIVE", "NEGATIVE"]
