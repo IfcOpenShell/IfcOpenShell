@@ -174,7 +174,8 @@ std::vector<express::base> mapping::find_openings(const express::base& inst) {
         // @todo this is essentially only for hybrid kernel trying to guess
         // when not to use a simple kernel.
         IfcSchema::IfcRepresentationMap rmap;
-        auto prods = products_represented_by(rep, rmap, true);
+        // Last attribute false means not only direct, so we also check for openings of products represented by mapped items.
+        auto prods = products_represented_by(rep, rmap, false);
         for (auto& p : prods) {
             auto ops = find_openings(p);
             openings.insert(openings.end(), ops.begin(), ops.end());
