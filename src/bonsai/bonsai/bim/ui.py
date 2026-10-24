@@ -39,6 +39,7 @@ from natsort import natsorted
 import bonsai.bim
 import bonsai.bim.helper
 import bonsai.tool as tool
+from bonsai.bim.helper import GEOMETRY_LIBRARY_ITEMS
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
 from bonsai.bim.module.material.operator import SelectByMaterial
 from bonsai.bim.module.model import prop as _model_prop
@@ -482,6 +483,22 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default=True,
         description="If disabled, the toolbar will only load when an IFC model is active",
     )
+    geometry_library: bpy.props.EnumProperty(
+        items=GEOMETRY_LIBRARY_ITEMS,
+        name="Default Geometry Library",
+        description="The geometry library new projects load with. Each saved .blend file keeps its own choice",
+        default="hybrid-cgal-simple-opencascade",
+    )
+    deflection_tolerance: bpy.props.FloatProperty(
+        name="Default Deflection Tolerance",
+        description="The deflection tolerance new projects load with",
+        default=0.05,
+    )
+    angular_tolerance: bpy.props.FloatProperty(
+        name="Default Angular Tolerance",
+        description="The angular tolerance new projects load with",
+        default=0.5,
+    )
     should_use_snap: BoolProperty(
         name="Enable Snapping on Startup",
         default=True,
@@ -806,12 +823,19 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "occurrence_name_style")
         if self.occurrence_name_style == "CUSTOM":
             layout.prop(self, "occurrence_name_function")
+        bonsai.bim.helper.draw_expandable_panel(layout, context, "Geometry Loading", self.draw_geometry_loading)
         bonsai.bim.helper.draw_expandable_panel(
             layout,
             context,
             "Default Parameters",
             self.draw_default_parameters,
         )
+
+    def draw_geometry_loading(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        layout.prop(self, "geometry_library")
+        layout.prop(self, "deflection_tolerance")
+        layout.prop(self, "angular_tolerance")
+        layout.label(text="New projects start with these. Each saved .blend keeps its own.", icon="INFO")
 
     def draw_directories(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "data_dir")

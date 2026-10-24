@@ -586,8 +586,29 @@ def _install_viewport_overlays() -> None:
         install_geom_cache_handlers()
 
 
+def _apply_geometry_defaults() -> None:
+    """Give a scene that never chose geometry loading settings the user's defaults.
+
+    A scene with its own values, chosen in it or carried by an older .blend, keeps them."""
+    if not (scene := bpy.context.scene):
+        return
+    pprops = tool.Project.get_project_props()
+    if pprops.has_geometry_settings:
+        return
+    rna = type(pprops).bl_rna.properties
+    untouched = (
+        pprops.geometry_library == rna["geometry_library"].default
+        and abs(pprops.deflection_tolerance - rna["deflection_tolerance"].default) < 1e-6
+        and abs(pprops.angular_tolerance - rna["angular_tolerance"].default) < 1e-6
+    )
+    if untouched:
+        tool.Project.apply_geometry_defaults(pprops)
+    pprops["has_geometry_settings"] = True
+
+
 @persistent
 def load_post(scene):
     _apply_save_file_invariants(scene)
     _apply_user_preferences()
+    _apply_geometry_defaults()
     _install_viewport_overlays()
