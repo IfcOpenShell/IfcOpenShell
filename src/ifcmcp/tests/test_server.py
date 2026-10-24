@@ -74,10 +74,7 @@ class TestToolErrorsKeepTheirReason:
         for tool in server._tool_manager.list_tools():
             schema = tool.parameters or {}
             props = schema.get("properties", {})
-            args = {
-                name: dummy.get(props.get(name, {}).get("type"), "")
-                for name in schema.get("required", [])
-            }
+            args = {name: dummy.get(props.get(name, {}).get("type"), "") for name in schema.get("required", [])}
             try:
                 asyncio.run(server.call_tool(tool.name, args))
             except UnexpectedToolError as e:
