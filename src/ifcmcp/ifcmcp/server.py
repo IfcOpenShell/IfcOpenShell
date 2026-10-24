@@ -27,13 +27,12 @@ def build_server() -> Any:
 
     session = IfcSession()
 
-    def _tool(fn):
-        """Register a tool, taking its MCP description from the identically-named
-        IfcSession method rather than duplicating it here.
+    def _keep_reason(fn):
+        """Raise a tool's failure as ToolError so its reason reaches the agent.
 
-        A failure is raised as ToolError so its reason reaches the agent. MCPServer
-        passes on a ToolError's text but replaces any other exception with a bare
-        "Error executing tool <name>", which leaves the agent nothing to correct.
+        MCPServer passes on a ToolError's text but replaces any other exception
+        with a bare "Error executing tool <name>", which leaves the agent nothing
+        to correct. Every tool, however it is registered, goes through this.
         """
 
         @functools.wraps(fn)
@@ -45,7 +44,12 @@ def build_server() -> Any:
             except Exception as e:
                 raise ToolError(str(e) or type(e).__name__) from e
 
-        return server.tool(description=inspect.getdoc(getattr(IfcSession, fn.__name__)))(call)
+        return call
+
+    def _tool(fn):
+        """Register a tool, taking its MCP description from the identically-named
+        IfcSession method rather than duplicating it here."""
+        return server.tool(description=inspect.getdoc(getattr(IfcSession, fn.__name__)))(_keep_reason(fn))
 
     server = MCPServer(
         name="ifc-mcp",
@@ -164,6 +168,7 @@ def build_server() -> Any:
         return session.ifc_shape(method=method, params=params)
 
     @server.tool(structured_output=False)
+    @_keep_reason
     def ifc_plot(
         selector: str = "",
         element_ids: list[int] | None = None,
@@ -225,6 +230,7 @@ def build_server() -> Any:
         return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mime_type="image/png")]
 
     @server.tool(structured_output=False)
+    @_keep_reason
     def ifc_render(
         selector: str = "",
         element_ids: list[int] | None = None,

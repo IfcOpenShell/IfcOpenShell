@@ -49,6 +49,8 @@ class TestToolErrorsKeepTheirReason:
             ("ifc_summary", {}, "No model loaded"),
             ("ifc_load", {"path": "/nonexistent/model.ifc"}, "/nonexistent/model.ifc"),
             ("ifc_info", {"element_id": 999999}, "#999999"),
+            ("ifc_plot", {}, "No model loaded"),
+            ("ifc_render", {}, "No model loaded"),
         ],
     )
     def test_reason_reaches_the_client(self, name, arguments, reason):
@@ -61,6 +63,27 @@ class TestToolErrorsKeepTheirReason:
             asyncio.run(server.call_tool(name, arguments))
         assert not isinstance(caught.value, UnexpectedToolError)
         assert reason in str(caught.value)
+
+    def test_no_tool_loses_its_reason(self):
+        """Every registered tool, however it is registered: called with no model
+        loaded, it either works or fails with its reason, never the bare message."""
+        from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
+
+        server = build_server()
+        dummy = {"string": "", "integer": 0, "number": 0, "boolean": False, "array": [], "object": {}}
+        for tool in server._tool_manager.list_tools():
+            schema = tool.parameters or {}
+            props = schema.get("properties", {})
+            args = {
+                name: dummy.get(props.get(name, {}).get("type"), "")
+                for name in schema.get("required", [])
+            }
+            try:
+                asyncio.run(server.call_tool(tool.name, args))
+            except UnexpectedToolError as e:
+                pytest.fail(f"{tool.name} lost its reason: {e}")
+            except ToolError:
+                pass
 
 
 @pytest.fixture
