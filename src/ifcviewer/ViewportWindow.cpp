@@ -972,7 +972,44 @@ void ViewportWindow::toggleSectionTool() {
     section_tool_active_ = !section_tool_active_;
     Log::info().noquote() << "[wgpu section] tool"
                       << (section_tool_active_ ? "active" : "off");
+    emit sectionToolChanged(section_tool_active_);
     if (isExposed()) requestUpdate();
+}
+
+void ViewportWindow::setSectionToolSingleShot(bool single_shot) {
+    section_tool_single_shot_ = single_shot;
+}
+
+void ViewportWindow::setSectionGizmosVisible(bool visible) {
+    core_.setSectionGizmosVisible(visible);
+    emit sectionStateChanged(core_.sectionGizmosVisible(), core_.sectionCutsEnabled());
+}
+
+bool ViewportWindow::sectionGizmosVisible() const {
+    return core_.sectionGizmosVisible();
+}
+
+void ViewportWindow::setSectionCutsEnabled(bool enabled) {
+    core_.setSectionCutsEnabled(enabled);
+    emit sectionStateChanged(core_.sectionGizmosVisible(), core_.sectionCutsEnabled());
+}
+
+bool ViewportWindow::sectionCutsEnabled() const {
+    return core_.sectionCutsEnabled();
+}
+
+void ViewportWindow::activatePerpendicularViewTool() {
+    if (perpendicular_tool_active_) return;
+    perpendicular_tool_active_ = true;
+    requestActivate();
+    Log::info() << "[wgpu] perpendicular view tool active — click a surface";
+    emit perpendicularViewToolChanged(true);
+}
+
+void ViewportWindow::cancelPerpendicularViewTool() {
+    if (!perpendicular_tool_active_) return;
+    perpendicular_tool_active_ = false;
+    emit perpendicularViewToolChanged(false);
 }
 
 bool ViewportWindow::addSectionPlaneAtSurface(const Eigen::Vector3f& point, const Eigen::Vector3f& normal, float visual_radius) {
@@ -1139,6 +1176,27 @@ void ViewportWindow::setSelectedObjectId(uint32_t id) {
 void ViewportWindow::hideSelectedElements()    { core_.hideSelected(); }
 void ViewportWindow::isolateSelectedElements() { core_.isolateSelected(); }
 void ViewportWindow::showAllElements()         { core_.showAll(); }
+
+void ViewportWindow::setObjectsVisible(const std::vector<uint32_t>& object_ids, bool visible) {
+    core_.setObjectsVisible(object_ids, visible);
+}
+void ViewportWindow::setObjectsColor(const std::vector<uint32_t>& object_ids, uint32_t rgba8) {
+    core_.setObjectsColor(object_ids, rgba8);
+}
+void ViewportWindow::clearObjectColors() { core_.clearObjectColors(); }
+void ViewportWindow::hideAllElements()   { core_.hideAll(); }
+bool ViewportWindow::isElementHidden(uint32_t object_id) const {
+    return core_.isObjectHidden(object_id);
+}
+bool ViewportWindow::hasVisibleElements() const {
+    return core_.hasVisibleElements();
+}
+bool ViewportWindow::viewVisibleElements() {
+    return core_.viewVisibleElements();
+}
+bool ViewportWindow::anyDrawableElementWithinCameraPlane(float max_distance_m) const {
+    return core_.anyDrawableElementWithinCameraPlane(max_distance_m);
+}
 
 void ViewportWindow::invertElementVisibility() {
     // Compute the new hidden set: every live object_id in a visible model
@@ -1546,12 +1604,17 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
     nav_press_pos_     = nav_last_pos_;
     nav_dragged_       = false;
 
-    // Section tool: claim a plain-LMB press if it lands on one of the
-    // plane gizmos' arrows. Suppresses nav classification so the drag
-    // doesn't also rotate the camera.
-    if (section_tool_active_
-        && event->button() == Qt::LeftButton
-        && event->modifiers() == Qt::NoModifier) {
+    // Section gizmo drag: claim a plain-LMB press if it lands on one of the
+    // plane gizmos' arrows. Works whenever the gizmos are on screen — not
+    // only while the section tool is armed, so a plane placed with the
+    // single-shot "Add Section" flow can be dragged right away. Suppresses
+    // nav classification so the drag doesn't also rotate the camera; a miss
+    // falls through to normal selection.
+    if (event->button() == Qt::LeftButton
+        && event->modifiers() == Qt::NoModifier
+        && core_.sectionPlaneCount() > 0
+        && core_.sectionGizmosVisible()
+        && core_.sectionCutsEnabled()) {
         const Eigen::Vector2i lp = toV2i(event->position().toPoint());
         const int hit = core_.hitTestSectionGizmo(lp.x(), lp.y());
         if (hit >= 0 && core_.beginSectionDrag(hit, lp.x(), lp.y())) {
@@ -1560,6 +1623,26 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
             Log::info().noquote().nospace()
                 << "[wgpu section] drag start: plane=" << hit;
             return;
+        }
+    }
+
+    // Right-click on a section-plane gizmo: remember the plane; the release
+    // emits sectionPlaneContextMenuRequested so the host (with Widgets) can
+    // show a context menu. Claiming the press keeps the nav from also
+    // orbiting; a miss falls through to normal nav.
+    if (event->button() == Qt::RightButton) {
+        section_context_plane_ = -1;
+        if (core_.sectionPlaneCount() > 0
+            && core_.sectionGizmosVisible()
+            && core_.sectionCutsEnabled()) {
+            const Eigen::Vector2i lp = toV2i(event->position().toPoint());
+            const int hit = core_.hitTestSectionGizmo(lp.x(), lp.y());
+            if (hit >= 0) {
+                core_.setSelectedSectionPlane(hit);
+                section_context_plane_ = hit;
+                nav_drag_kind_ = NavDrag::Inactive;
+                return;
+            }
         }
     }
 
@@ -1579,6 +1662,7 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
         core_.setPivotIndicatorVisible(true);
     } else if (event->button() == select_button_
             && !section_tool_active_
+            && !perpendicular_tool_active_
             && tool_mode_ != ToolMode::Area
             && tool_mode_ != ToolMode::Length
             && nav_drag_kind_ == NavDrag::Inactive) {
@@ -1598,6 +1682,17 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
     if (core_.sectionDragActive() && event->button() == Qt::LeftButton) {
         core_.endSectionDrag();
         nav_active_button_   = Qt::NoButton;
+        return;
+    }
+    // Right-click over a section-plane gizmo (press hit a gizmo): hand the
+    // plane index to the host, which shows the context menu (e.g. Delete
+    // plane). The viewport itself has no Widgets dependency.
+    if (event->button() == Qt::RightButton && section_context_plane_ >= 0) {
+        const int plane_index = section_context_plane_;
+        section_context_plane_ = -1;
+        nav_active_button_ = Qt::NoButton;
+        emit sectionPlaneContextMenuRequested(
+            plane_index, event->globalPosition().toPoint());
         return;
     }
     // Marquee finalisation: only commit when the drag actually became
@@ -1668,6 +1763,39 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                 } else {
                     Log::info().noquote() << "[wgpu section] click missed (no surface)";
                 }
+                // Single-shot flow (bonsai's "Add Section" button): one
+                // plane, then back to selection.
+                if (section_tool_single_shot_ && section_tool_active_) {
+                    section_tool_active_ = false;
+                    emit sectionToolChanged(false);
+                }
+                nav_active_button_ = Qt::NoButton;
+                nav_drag_kind_     = NavDrag::Inactive;
+                core_.setPivotIndicatorVisible(false);
+                return;
+            }
+
+            // Perpendicular-view tool: one plain-LMB click turns the camera
+            // to look along -normal at the picked point, zooms to fit the
+            // visible elements, then deactivates itself.
+            if (perpendicular_tool_active_
+                && event->modifiers() == Qt::NoModifier) {
+                uint32_t hit_id = 0;
+                Eigen::Vector3f hit_pos, hit_normal;
+                if (pickSurfaceAt(px, py, hit_id, hit_pos, hit_normal)) {
+                    Eigen::Vector3f n = hit_normal.normalized();
+                    const float nz_clamped = std::clamp(n.z(), -1.0f, 1.0f);
+                    constexpr float kRad2Deg = 57.29577951308232f;
+                    const float yaw_deg   = std::atan2(n.y(), n.x()) * kRad2Deg;
+                    const float pitch_deg = std::asin(nz_clamped) * kRad2Deg;
+                    setCamera(hit_pos.x(), hit_pos.y(), hit_pos.z(),
+                              core_.fitDistanceForVisibleElements(), yaw_deg, pitch_deg);
+                } else {
+                    Log::info().noquote()
+                        << "[wgpu] perpendicular view: click missed (no surface)";
+                }
+                perpendicular_tool_active_ = false;
+                emit perpendicularViewToolChanged(false);
                 nav_active_button_ = Qt::NoButton;
                 nav_drag_kind_     = NavDrag::Inactive;
                 core_.setPivotIndicatorVisible(false);
@@ -1946,6 +2074,11 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
                                              : int(section_planes_.size()) - 1);
             return;
         }
+    }
+    if (perpendicular_tool_active_ && key == Qt::Key_Escape
+        && !event->isAutoRepeat()) {
+        cancelPerpendicularViewTool();
+        return;
     }
 
     // Measurement tools. V toggles Volume, A toggles Area; Esc exits

@@ -548,6 +548,91 @@ bool ViewportCore::viewModels(const std::vector<uint32_t>& session_model_ids) {
     return true;
 }
 
+bool ViewportCore::hasVisibleElements() const {
+    for (const auto& [session_model_id, m] : models_gpu_) {
+        if (!m.drawable()) continue;
+        for (const InstanceInfo& inst : m.instances) {
+            if (!visibility_.isHidden(inst.object_id)) return true;
+        }
+    }
+    return false;
+}
+
+// Union of the world AABBs of every visible element (drawable model,
+// not element-hidden). Shared by the fit, the perpendicular-view zoom,
+// and the empty-view check.
+bool ViewportCore::computeVisibleElementsAabb(float mn[3], float mx[3]) const {
+    bool any = false;
+    for (int i = 0; i < 3; ++i) {
+        mn[i] =  std::numeric_limits<float>::infinity();
+        mx[i] = -std::numeric_limits<float>::infinity();
+    }
+    for (const auto& [session_model_id, m] : models_gpu_) {
+        if (!m.drawable()) continue;
+        for (const InstanceInfo& inst : m.instances) {
+            if (visibility_.isHidden(inst.object_id)) continue;
+            for (int i = 0; i < 3; ++i) {
+                mn[i] = std::min(mn[i], inst.world_aabb_min[i]);
+                mx[i] = std::max(mx[i], inst.world_aabb_max[i]);
+            }
+            any = true;
+        }
+    }
+    return any;
+}
+
+bool ViewportCore::viewVisibleElements() {
+    float mn[3], mx[3];
+    if (!computeVisibleElementsAabb(mn, mx)) return false;
+    // Same padding as viewAll(); the box is just restricted to what is on
+    // screen, so isolated objects fill the view instead of shrinking into
+    // the whole-scene frame.
+    frameAabb(mn, mx, 1.10f);
+    return true;
+}
+
+bool ViewportCore::anyDrawableElementWithinCameraPlane(float max_distance_m) const {
+    const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
+    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
+                                         camera_yaw_deg_, camera_pitch_deg_);
+    Eigen::Vector3f look = target - eye;
+    const float len = look.norm();
+    if (len < 1e-6f) return true;   // degenerate camera — treat as near
+    look /= len;
+
+    for (const auto& [session_model_id, m] : models_gpu_) {
+        if (!m.drawable()) continue;
+        for (const InstanceInfo& inst : m.instances) {
+            if (visibility_.isHidden(inst.object_id)) continue;
+            // Nearest point of the world AABB to the camera plane along the
+            // look axis: the corner that maximizes dot(look, p).
+            Eigen::Vector3f p;
+            for (int i = 0; i < 3; ++i) {
+                p[i] = look[i] >= 0.0f ? inst.world_aabb_max[i]
+                                       : inst.world_aabb_min[i];
+            }
+            if (std::abs(look.dot(eye - p)) <= max_distance_m) return true;
+        }
+    }
+    return false;
+}
+
+float ViewportCore::fitDistanceForVisibleElements() const {
+    float mn[3], mx[3];
+    if (!computeVisibleElementsAabb(mn, mx)) return camera_distance_;
+    constexpr float kDeg2Rad = kPiF / 180.0f;
+    const float dx = mx[0] - mn[0];
+    const float dy = mx[1] - mn[1];
+    const float dz = mx[2] - mn[2];
+    const float radius = 0.5f * std::sqrt(dx * dx + dy * dy + dz * dz);
+    if (radius <= 1e-4f) return camera_distance_;
+    const float tan_half = std::tan(camera_fov_y_deg_ * 0.5f * kDeg2Rad);
+    if (tan_half <= 1e-6f) return camera_distance_;
+    const float aspect     = float(std::max(configured_w_, 1)) / float(std::max(configured_h_, 1));
+    const float min_aspect = aspect < 1.0f ? aspect : 1.0f;
+    return std::max(0.1f, (radius / (tan_half * min_aspect)) * 1.10f);
+}
+
 void ViewportCore::setCamera(float tx, float ty, float tz,
                              float dist, float yaw_deg, float pitch_deg) {
     camera_target_[0]   = tx;
@@ -1059,7 +1144,16 @@ fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
         let cg = f32((inst.color_override >>  8u) & 0xFFu) / 255.0;
         let cb = f32((inst.color_override >> 16u) & 0xFFu) / 255.0;
         let ca = f32((inst.color_override >> 24u) & 0xFFu) / 255.0;
-        if (ca > 0.0) { color = vec4<f32>(cr, cg, cb, ca); }
+        if (ca > 0.0) {
+            // Sentinel R=G=B=1 (value & 0x00FFFFFFu == 0x00010101u):
+            // alpha-only override (bonsai's transparency tool) — keep the
+            // baked colour, replace just the alpha.
+            if ((inst.color_override & 0x00FFFFFFu) == 0x00010101u) {
+                color = vec4<f32>(color.rgb, ca);
+            } else {
+                color = vec4<f32>(cr, cg, cb, ca);
+            }
+        }
     }
 
     var out: VsOut;
@@ -1507,8 +1601,12 @@ void ViewportCore::updateFrameUniforms() {
 
     // Pack active section planes. `is_section_clipped` (WGSL) reads
     // u.clip_count and u.clip_planes[0..clip_count) and discards
-    // fragments on the positive side.
-    const int n = std::min<int>(int(section_planes_.size()), kMaxSectionPlanes);
+    // fragments on the positive side. While cuts are suspended
+    // ("Suspend Sections") clip_count is forced to 0 so the planes
+    // stay stored but have no effect.
+    const int n = section_cuts_enabled_
+        ? std::min<int>(int(section_planes_.size()), kMaxSectionPlanes)
+        : 0;
     u.clip_count = n;
     for (int i = 0; i < n; ++i) {
         const SectionPlane& p = section_planes_[i];
@@ -8098,8 +8196,12 @@ void ViewportCore::render() {
 
     // Section-plane gizmo — shared renderer, drawn for desktop + web from here.
     // (The desktop's OverlayRenderer no longer draws it, to avoid doubling.)
-    section_gizmo_.encode(pass, vp_this_frame, section_planes_,
-                          viewport_w_px, viewport_h_px, dpr_int, section_selected_index_);
+    // Hidden while "Hide Planes / Suspend Sections" is active: the gizmo draw
+    // gate is (gizmos_visible && cuts_enabled).
+    if (section_gizmos_visible_ && section_cuts_enabled_) {
+        section_gizmo_.encode(pass, vp_this_frame, section_planes_,
+                              viewport_w_px, viewport_h_px, dpr_int, section_selected_index_);
+    }
 
     // Orbit pivot indicator — same shared-renderer story. Drawn while the host
     // has it gated on (drag) or an afterglow is still running; in the latter
@@ -8452,6 +8554,21 @@ void ViewportCore::setSelectedSectionPlane(int index) {
     const int clamped = (index >= 0 && index < int(section_planes_.size())) ? index : -1;
     if (clamped == section_selected_index_) return;
     section_selected_index_ = clamped;
+    host_->requestFrame();
+}
+
+void ViewportCore::setSectionGizmosVisible(bool visible) {
+    if (section_gizmos_visible_ == visible) return;
+    section_gizmos_visible_ = visible;
+    host_->requestFrame();
+}
+
+void ViewportCore::setSectionCutsEnabled(bool enabled) {
+    if (section_cuts_enabled_ == enabled) return;
+    section_cuts_enabled_ = enabled;
+    // Spec for "Suspend Sections": resuming re-shows the plane gizmos and
+    // reactivates the cuts, even if the planes had been hidden before.
+    if (enabled) section_gizmos_visible_ = true;
     host_->requestFrame();
 }
 

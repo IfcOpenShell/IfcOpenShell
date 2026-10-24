@@ -46,5 +46,16 @@
         <file alias="database.svg">icons/database.svg</file>
         <file alias="database-restore.svg">icons/database-restore.svg</file>
         <file alias="cube-bandage.svg">icons/cube-bandage.svg</file>
+        <file alias="knife.svg">icons/knife.svg</file>
+        <file alias="set-square.svg">icons/set-square.svg</file>
+        <file alias="paint-bucket.svg">icons/paint-bucket.svg</file>
+        <file alias="ghost.svg">icons/ghost.svg</file>
+        <file alias="box.svg">icons/box.svg</file>
+        <file alias="search.svg">icons/search.svg</file>
+        <file alias="wall.svg">icons/wall.svg</file>
+        <file alias="slab.svg">icons/slab.svg</file>
+        <file alias="roof.svg">icons/roof.svg</file>
+        <file alias="ceiling.svg">icons/ceiling.svg</file>
+        <file alias="section-pause.svg">icons/section-pause.svg</file>
     </qresource>
 </RCC>
