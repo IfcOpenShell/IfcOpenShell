@@ -53,7 +53,6 @@ namespace ifcopenshell {
 					auto ops = mapping_->find_openings(item->instance);
 					bool has_openings = ops.size();
 					for (auto& k : kernels_) {
-#ifdef IFOPSH_WITH_CGAL
 						if (has_openings && !k->supports_boolean_operations()) {
 							// @todo this would fail later on in the find_openings() call, because we have a
 							// SimpleCgalShape which cannot be used on a kernel that supports booleans.
@@ -63,7 +62,6 @@ namespace ifcopenshell {
 							//         to instance wouldn't matter as much.
 							continue;
 						}
-#endif
 						if (has_openings && k->geometry_library() == "passthrough") {
 							continue;
 						}
