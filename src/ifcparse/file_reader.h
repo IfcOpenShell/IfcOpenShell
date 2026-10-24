@@ -144,6 +144,45 @@ public:
     size_t size() const { return impl_->size(); }
     IFC_READER_INLINE size_t remaining() const { return size() - cursor_; }
 
+    // Hands fn(const char* data, size_t length, size_t offset) contiguous
+    // spans that together cover [begin, end): a single span for a
+    // contiguous implementation, one per page for the paged one. This is
+    // how a pass over the bytes stays independent of how the file is held.
+    template <typename Fn>
+    void for_each_span(size_t begin, size_t end, Fn&& fn) const {
+        end = std::min(end, size());
+        if (begin >= end) {
+            return;
+        }
+        if constexpr (std::is_same_v<Impl, paged_file_impl>) {
+            const size_t page_size = impl_->page_size();
+            for (size_t index = begin / page_size; index * page_size < end; ++index) {
+                const auto page = impl_->page(index);
+                const size_t page_begin = index * page_size;
+                const size_t from = std::max(begin, page_begin) - page_begin;
+                const size_t to = std::min(end, page_begin + page.second) - page_begin;
+                if (to > from) {
+                    fn(page.first + from, to - from, page_begin + from);
+                }
+            }
+        } else if constexpr (std::is_same_v<Impl, pushed_sequential_impl>) {
+            throw std::logic_error("A pushed sequential reader has no random access to byte ranges");
+        } else {
+            fn(impl_->data() + begin, end - begin, begin);
+        }
+    }
+
+    // A reader over the same file that can be used from another thread:
+    // the paged implementation gets its own page cache, a contiguous one
+    // shares the (read-only) content.
+    file_reader reopen() const {
+        if constexpr (std::is_same_v<Impl, paged_file_impl>) {
+            return file_reader(impl_->path(), impl_->page_size(), impl_->capacity());
+        } else {
+            return clone();
+        }
+    }
+
     // The current contiguous bytes, valid until the shared page cache evicts
     // them. An empty span asks callers to use the regular reader operations.
     IFC_READER_INLINE std::pair<const char*, size_t> span() const {
