@@ -78,16 +78,17 @@
             await micropip.install("typing-extensions");
             document.querySelector("#status2").innerHTML = "Loading IfcOpenShell";
 
-            const IFOPSH_VERSION = "0.9.1+0f15b2c";
+            const IFOPSH_VERSION = "0.9.1+a963c38";
             const PYODIDE_ARCHITECTURE = "pyemscripten_2025_0_wasm32";
             const GEOMETRY_LIBRARY = "manifold";
 
             const installedWheels = new Map();
             async function installWheel(name, pure = false) {
                 if (!installedWheels.has(name)) {
+                    const WHEEL_BASE = "https://ifcopenshell.github.io/wasm-wheels";
                     const tag = pure ? 'py3-none-any' : `cp313-cp313-${PYODIDE_ARCHITECTURE}`;
                     const installation = (async () => {
-                        await micropip.install(`wheels/modular/${IFOPSH_VERSION}/${name}-${IFOPSH_VERSION}-${tag}.whl`);
+                        await micropip.install(`${WHEEL_BASE}/modular/${IFOPSH_VERSION}/${name}-${IFOPSH_VERSION}-${tag}.whl`);
                     })();
                     installedWheels.set(name, installation);
                     try {
