@@ -32,8 +32,8 @@
 #pragma warning(disable : 4018 4267 4250 4984 4985)
 #endif
 
-#include "../ifcparse/schemas/Ifc4x3_add2.h"
-#include "../ifcparse/hierarchy_helper.h"
+#include "ifcparse/schemas/Ifc4x3_add2.h"
+#include "ifcparse/hierarchy_helper.h"
 
 #include <boost/math/constants/constants.hpp>
 #include <fstream>

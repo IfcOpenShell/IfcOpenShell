@@ -65,13 +65,16 @@ jobs:
       IFCOS_NUM_BUILD_PROCS: '2'
       # Debian-family consumers do not search lib64 for package configs.
       IFCOS_CMAKE_ARGS: '-DCMAKE_INSTALL_LIBDIR=lib'
+      CMAKE_C_COMPILER_LAUNCHER: ccache
+      CMAKE_CXX_COMPILER_LAUNCHER: ccache
     steps:
       - name: Install build tools
         run: |
+          echo "fastestmirror=True" >> /etc/dnf/dnf.conf
           dnf install -y epel-release
           dnf install -y --enablerepo=crb gcc gcc-c++ git autoconf automake bison byacc \
             make cmake ninja-build patch bzip2 xz zip unzip findutils binutils patchelf \
-            zlib-devel libxml2-devel openssl-devel libffi-devel
+            zlib-devel libxml2-devel openssl-devel libffi-devel mesa-libGL-devel mesa-libEGL-devel
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -79,19 +82,32 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
       - run: uv python install 3.13
-      - name: Check SDK packaging helpers
-        run: uv run --python 3.13 python -B -m unittest discover -s test/package -p test_cpp_sdk.py -v
+      - name: Check packaging inputs
+        run: |
+          test -s nix/cpp-sdk-README.md
+          uv run --python 3.13 nix/package-cpp-sdk.py --help > /dev/null
       - uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           key: cpp-sdk-rockylinux9-${{ runner.arch }}
+          max-size: 2G
           install: ${{ matrix.arch == 'linuxarm64' && 'detect' || 'binary' }}
       # Build dependencies from source: binary caches omit source license
       # notices. Keep the sources until packaging has collected those notices.
       # An explicit target excludes Python, SWIG, Qt, and BonsaiViewer.
+      - name: Build C++ dependencies
+        shell: bash
+        run: |
+          set -o pipefail
+          trap 'result=$?; if [ "$result" -ne 0 ]; then tail -n 120 build/Linux/*/logs/latest.log; fi' EXIT
+          CFLAGS="-O3" CXXFLAGS="-O3" uv run --python 3.13 nix/build-all.py \
+            occ boost eigen json libxml2 rocksdb manifold cgal OpenCOLLADA \
+            --shared --use-ninja --build-cfg Release \
+            2>&1 | tee cpp-sdk-dependencies.log
       - name: Build C++ libraries, dependencies, tools, and examples
         shell: bash
         run: |
           set -o pipefail
+          trap 'result=$?; if [ "$result" -ne 0 ]; then tail -n 120 build/Linux/*/logs/latest.log; fi' EXIT
           CFLAGS="-O3" CXXFLAGS="-O3" uv run --python 3.13 nix/build-all.py \
             IfcConvert --shared --build-examples --use-ninja --build-cfg Release \
             2>&1 | tee cpp-sdk-build.log
@@ -100,6 +116,7 @@ jobs:
           name: cpp-sdk-documentation
           path: cpp-documentation
       - name: Package SDK zip and checksum
+        id: package
         run: |
           uv run --python 3.13 nix/package-cpp-sdk.py \
             --install-dir "build/Linux/${{ matrix.machine }}/install" \
@@ -108,35 +125,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          (cd dist && sha256sum --check ./*.zip.sha256)
-          test_root="$(mktemp -d)/relocated sdk"
-          mkdir -p "$test_root"
-          unzip -q dist/*.zip -d "$test_root"
-          sdk_root="$(find "$test_root" -mindepth 1 -maxdepth 1 -type d)"
           install_root="$GITHUB_WORKSPACE/build/Linux/${{ matrix.machine }}/install"
           mv "$install_root" "${install_root}.hidden"
           trap 'mv "${install_root}.hidden" "$install_root"' EXIT
-          unset LD_LIBRARY_PATH CMAKE_PREFIX_PATH
-          cmake -S "$sdk_root/examples" -B "$test_root/examples-build" -G Ninja \
-            -DCMAKE_PREFIX_PATH="$sdk_root" -DCMAKE_BUILD_TYPE=Release
-          cmake --build "$test_root/examples-build" --parallel 2
-          mkdir "$test_root/run"
-          cd "$test_root/run"
-          for binary_dir in "$sdk_root/bin" "$test_root/examples-build"; do
-            "$binary_dir/IfcOpenHouse"
-            test -s IfcOpenHouse.ifc
-            "$binary_dir/IfcParseExamples" IfcOpenHouse.ifc
-            "$binary_dir/IfcAdvancedHouse"
-            test -s IfcAdvancedHouse.ifc
-            "$binary_dir/IfcAlignment"
-            test -s FHWA_Bridge_Geometry_Alignment_Example.ifc
-            "$binary_dir/IfcSimplifiedAlignment"
-            test -s FHWA_Bridge_Geometry_Alignment_Example_Simplified.ifc
-            rm -f ./*.ifc
-          done
-          "$sdk_root/bin/IfcOpenHouse"
-          "$sdk_root/bin/IfcConvert" --yes IfcOpenHouse.ifc model.obj
-          test -s model.obj
+          bash nix/test-cpp-sdk.sh dist
       - name: Upload SDK
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -152,5 +144,63 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cpp-sdk-build-log-${{ matrix.arch }}
-          path: cpp-sdk-build.log
+          path: |
+            cpp-sdk-dependencies.log
+            cpp-sdk-build.log
+            build/Linux/*/logs/latest.log
           retention-days: 7
+      - name: Upload SDK for failure investigation
+        if: failure() && steps.package.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cpp-sdk-debug-${{ matrix.arch }}
+          path: |
+            dist/*.zip
+            dist/*.zip.sha256
+          compression-level: 0
+          retention-days: 7
+
+  consumer:
+    needs: sdk
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: linux64
+            machine: x86_64
+            runner: ubuntu-22.04
+            cmake_sha256: 2dd48ccd3e3d872ee4cc916f3f4e24812612421007e895f82bf9fc7e49831d62
+          - arch: linuxarm64
+            machine: aarch64
+            runner: ubuntu-22.04-arm
+            cmake_sha256: 7b91a212b9e8ca38c1482ae40ff2d3e33e9d1c7b337b39f74bd4f34fd070bb1d
+    runs-on: ${{ matrix.runner }}
+    # This image has no project dependencies or graphics development packages.
+    # Native runners also avoid relying on emulation for ARM verification.
+    container: ubuntu:22.04
+    steps:
+      - name: Install consumer tools
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          CMAKE_SHA256: ${{ matrix.cmake_sha256 }}
+          CMAKE_MACHINE: ${{ matrix.machine }}
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends g++ ninja-build unzip curl ca-certificates
+          curl --fail --location --retry 3 \
+            "https://github.com/Kitware/CMake/releases/download/v3.26.6/cmake-3.26.6-linux-${CMAKE_MACHINE}.tar.gz" \
+            --output /tmp/cmake.tar.gz
+          echo "$CMAKE_SHA256  /tmp/cmake.tar.gz" | sha256sum --check
+          mkdir -p /opt/cmake
+          tar -xzf /tmp/cmake.tar.gz --strip-components=1 -C /opt/cmake
+          echo /opt/cmake/bin >> "$GITHUB_PATH"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ifcopenshell-cpp-${{ matrix.arch }}
+          path: package
+      - name: Verify SDK in clean Ubuntu container
+        shell: bash
+        run: |
+          unzip -p package/*.zip '*/share/ifcopenshell/build-recipe/test-cpp-sdk.sh' > /tmp/test-cpp-sdk.sh
+          test -s /tmp/test-cpp-sdk.sh
+          bash /tmp/test-cpp-sdk.sh package
