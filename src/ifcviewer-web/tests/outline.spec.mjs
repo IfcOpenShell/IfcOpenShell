@@ -19,6 +19,9 @@ test('halo reads on an object painted the selection tint colour', async ({ page 
   await page.goto('/scripting.html');
   await page.waitForFunction(() => !!(window.viewer && window.viewer.isLive()),
                              null, { timeout: 30_000 });
+  await page.waitForFunction(() => document.getElementById('sample-btn').onclick,
+                             null, { timeout: 30_000 });
+  await page.click('#sample-btn');
   await page.waitForTimeout(1500);
 
   const n = await page.evaluate(async () => {

@@ -13,6 +13,7 @@ Provides:
 
 import json
 import logging
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -94,13 +95,20 @@ def bootstrap_emsdk(lock: dict[str, Any], target_dir: Path, force: bool = False)
 
 
 def emsdk_env(toolchain_dir: Path) -> dict[str, str]:
-    """Return environment variables produced by sourcing `emsdk_env.sh`.
+    """Return environment variables for an activated emsdk.
+
+    On Linux this sources `emsdk_env.sh`. On Windows that script's PATH is
+    POSIX-only and cannot launch `emcmake.bat`, so the toolchain directories
+    are prepended to the native PATH instead.
 
     Raises `RuntimeError` if emsdk is not installed at `toolchain_dir`.
     """
     emsdk_env_file = toolchain_dir / "emsdk_env.sh"
     if not emsdk_env_file.exists():
         raise RuntimeError(f"emsdk not found at {toolchain_dir}. Run bootstrap first.")
+
+    if os.name == "nt":
+        return _windows_emsdk_env(toolchain_dir)
 
     result = run(
         ["bash", "-c", f"source {emsdk_env_file} && env"],
@@ -112,3 +120,21 @@ def emsdk_env(toolchain_dir: Path) -> dict[str, str]:
             key, _, value = line.partition("=")
             env_vars[key] = value
     return env_vars
+
+
+def _windows_emsdk_env(toolchain_dir: Path) -> dict[str, str]:
+    emscripten = toolchain_dir / "upstream" / "emscripten"
+    if not (emscripten / "emcmake.bat").exists():
+        raise RuntimeError(f"emsdk not found at {toolchain_dir}. Run bootstrap first.")
+    env = dict(os.environ)
+    prepend = [str(toolchain_dir), str(emscripten), str(toolchain_dir / "upstream" / "bin")]
+    node_bin = next(iter((toolchain_dir / "node").glob("*_64bit/bin")), None)
+    if node_bin is not None:
+        prepend.append(str(node_bin))
+    env["PATH"] = os.pathsep.join(prepend + [env.get("PATH", "")])
+    env["EMSDK"] = str(toolchain_dir)
+    env["EMSCRIPTEN"] = str(emscripten)
+    emsdk_python = next(iter((toolchain_dir / "python").glob("*_64bit/python.exe")), None)
+    if emsdk_python is not None:
+        env["EMSDK_PYTHON"] = str(emsdk_python)
+    return env

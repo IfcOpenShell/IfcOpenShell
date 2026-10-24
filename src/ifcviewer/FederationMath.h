@@ -131,6 +131,20 @@ double federationUnitToMeters(const FederationConfig&);
 Eigen::Matrix4d composeFederatedFalseOrigin(const FederatedFalseOrigin&,
                                             const FederationConfig&);
 
+// Two frames. World: the one frame models, grids and the floor axes are
+// placed in; it exists before any model is loaded. Viewer: what the GPU draws
+// in, which is world shifted by the false origin so coordinates near the
+// building stay small. composeFederatedFalseOrigin is world -> viewer.
+
+// The survey point in world metres: the false-origin xyz recovered from
+// composeFederatedFalseOrigin (Rz · T(-xyz)), so a rotated origin still comes
+// back as xyz. Not a viewer position: that matrix draws it at viewer (0,0,0).
+Eigen::Vector3d surveyPointMetres(const Eigen::Matrix4d& federated_false_origin);
+
+// Where world 0,0,0 is drawn, in viewer metres. The same matrix's 3x3
+// columns are the world X, Y and Z directions in the viewer.
+Eigen::Vector3d worldOriginInViewer(const Eigen::Matrix4d& federated_false_origin);
+
 // Compose ModelTransformation into a 4x4 matrix in metres.
 // `coordinate_operation_meters` is the model's CoordinateOperation matrix
 // (e.g. helmert_meters_from_parameters · inv(wcs_meters)) — needed to lift

@@ -28,6 +28,10 @@ async function open(page) {
   await page.goto('/scripting.html');
   await page.waitForFunction(() => !!(window.viewer && window.viewer.isLive()), null,
     { timeout: 30_000 });
+  // The page starts empty; the sample comes in through its button.
+  await page.waitForFunction(() => document.getElementById('sample-btn').onclick, null,
+    { timeout: 30_000 });
+  await page.click('#sample-btn');
   await page.waitForFunction(() => {
     const v = window.viewer;
     if (!v.modelCount()) return false;
@@ -68,8 +72,8 @@ async function frameAndReadTarget(page) {
 test('false origin: guessed for the first model, and overridable', async ({ page }) => {
   const errors = await open(page);
 
-  // The sample loads before any host code runs, so by now the automatic guess
-  // has already happened. It must NOT be flagged explicit — that flag is what
+  // The sample is the first model into an empty scene, so by now the
+  // automatic guess has already happened. It must NOT be flagged explicit — that flag is what
   // tells the viewer a host has taken over placement.
   const guessed = await page.evaluate(() => window.viewer.getFalseOrigin());
   expect(guessed).not.toBeNull();
@@ -108,6 +112,38 @@ test('false origin shifts the scene by the negated offset', async ({ page }) => 
   expect(after[0] - before[0]).toBeCloseTo(-100, 1);
   expect(after[1] - before[1]).toBeCloseTo(0, 1);
   expect(after[2] - before[2]).toBeCloseTo(0, 1);
+
+  expect(errors).toEqual([]);
+});
+
+// The axes cross at world 0,0,0 and the survey marker shows the false origin, which the
+// renderer draws at viewer zero. Changing the false origin must not look like
+// the model moved: the camera is carried through the same shift.
+test('axes stay on world zero and the camera follows the false origin', async ({ page }) => {
+  const errors = await open(page);
+
+  const r = await page.evaluate(() => {
+    const v = window.viewer;
+    v.setFalseOrigin({ xyz: [0, 0, 0], rzDeg: 0 });
+    const t0 = v.getCamera().target;
+    const atZero = v.worldOrigin();
+    v.setFalseOrigin({ xyz: [100, 0, 0], rzDeg: 0 });
+    const t1 = v.getCamera().target;
+    const shifted = v.worldOrigin();
+    v.setFalseOrigin({ xyz: [100, 0, 0], rzDeg: 90 });
+    const rotated = v.worldOrigin();
+    return { t0, t1, atZero, shifted, rotated, survey: v.surveyPoint() };
+  });
+
+  expect(r.survey).toEqual([0, 0, 0]);
+  r.atZero.forEach((c) => expect(c).toBeCloseTo(0, 6));
+  expect(r.shifted[0]).toBeCloseTo(-100, 6);
+  expect(r.shifted[1]).toBeCloseTo(0, 6);
+  expect(r.rotated[0]).toBeCloseTo(0, 6);
+  expect(r.rotated[1]).toBeCloseTo(-100, 6);
+  expect(r.t1[0] - r.t0[0]).toBeCloseTo(-100, 2);
+  expect(r.t1[1] - r.t0[1]).toBeCloseTo(0, 2);
+  expect(r.t1[2] - r.t0[2]).toBeCloseTo(0, 2);
 
   expect(errors).toEqual([]);
 });
