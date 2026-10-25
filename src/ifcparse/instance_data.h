@@ -627,6 +627,13 @@ class IFC_PARSE_API instance_data {
 
     attribute_value get_attribute_value(size_t attribute_index) const;
 
+    // Erases every occurrence of `instance` from the aggregate of instances
+    // stored at attribute_index, in place. Returns how many were erased, or
+    // nothing when the attribute is not held in memory as such an aggregate
+    // (RocksDB-backed, or of another type), in which case the caller
+    // rewrites the attribute through set_attribute_value().
+    std::optional<size_t> erase_from_aggregate(std::size_t attribute_index, const express::base& instance);
+
     template<typename T>
     void set_attribute_value(std::size_t attribute_index, T&& value) {
         ensure_loaded();
