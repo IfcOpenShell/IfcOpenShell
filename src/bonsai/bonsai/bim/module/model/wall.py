@@ -1027,7 +1027,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
 
     def __init__(self, *args, **kwargs):
         bpy.types.Operator.__init__(self, *args, **kwargs)
-        PolylineOperator.__init__(self)
+        PolylineOperator.__init__(self, enable_rectangle=True)
         self.relating_type = None
         props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id
@@ -1039,11 +1039,11 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             return {"FINISHED"}
 
         model_props = tool.Model.get_model_props()
-        polyline_settings = tool.Model.get_polyline_settings()
         direction_sense = model_props.direction_sense
         offset = model_props.offset
 
-        walls, is_polyline_closed = DumbWallGenerator(self.relating_type).generate(polyline_settings.drawing_type)
+        drawing_type = "RECTANGLE" if self.is_rectangle_mode() else "POLYLINE"
+        walls, is_polyline_closed = DumbWallGenerator(self.relating_type).generate(drawing_type)
         for wall in walls:
             model = tool.Ifc.get()
             element = tool.Ifc.get_entity(wall["obj"])
@@ -1096,7 +1096,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
 
         custom_instructions = {
             "Choose Axis": {"icons": True, "keys": ["EVENT_X", "EVENT_Y"]},
-            "Drawing Mode": {"icons": True, "keys": ["EVENT_R"]}
+            "Drawing Mode": {"icons": True, "keys": ["EVENT_R"]},
         }
 
         wall_config = [
@@ -1277,12 +1277,10 @@ class DumbWallGenerator:
         polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         if type == "RECTANGLE":
-            rectangle_verts = [polyline_points[0],
-                Vector((polyline_points[0].x, polyline_points[-1].y, polyline_points[0].z)),
-                polyline_points[-1],
-                Vector((polyline_points[-1].x, polyline_points[0].y, polyline_points[0].z)),
-                polyline_points[0]
-            ]
+            anchor = Vector((polyline_points[0].x, polyline_points[0].y, polyline_points[0].z))
+            corner = Vector((polyline_points[-1].x, polyline_points[-1].y, polyline_points[-1].z))
+            rectangle_verts = tool.Polyline.rectangle_corners(anchor, corner)
+            rectangle_verts.append(rectangle_verts[0])
             polyline_points = rectangle_verts
         is_polyline_closed = False
         if len(polyline_points) > 3:

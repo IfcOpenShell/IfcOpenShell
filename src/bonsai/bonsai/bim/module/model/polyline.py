@@ -39,11 +39,12 @@ class PolylineOperator:
     def poll(cls, context: bpy.types.Context) -> bool:
         return context.space_data.type == "VIEW_3D"
 
-    def __init__(self):
+    def __init__(self, enable_rectangle: bool = False):
         self.mousemove_count = 0
         self.action_count = 0
         self.visible_objs = []
         self.objs_2d_bbox = []
+        self.enable_rectangle = enable_rectangle
         self.number_options = {
             "0",
             "1",
@@ -94,6 +95,20 @@ class PolylineOperator:
         ]
 
         self.tool_state = tool.Polyline.create_tool_state()
+        self.tool_state.supports_rectangle = enable_rectangle
+
+    def is_rectangle_mode(self) -> bool:
+        return self.enable_rectangle and tool.Polyline.is_rectangle_mode(self.tool_state)
+
+    def set_input_options(self, options: list[str], remap: dict = {}) -> None:
+        self.input_options = options
+        self.input_ui.input_options = options
+        if self.input_type is not None:
+            if self.input_type in remap:
+                self.input_type = remap[self.input_type]
+            elif self.input_type not in options:
+                self.input_type = options[0]
+            self.tool_state.input_type = self.input_type
 
     def recalculate_inputs(self, context: bpy.types.Context) -> Union[bool, None]:
         if self.number_input:
@@ -103,7 +118,9 @@ class PolylineOperator:
                 self.report({"WARNING"}, "The number typed is not valid.")
                 return is_valid
             else:
-                if self.input_type in {"X", "Y", "Z"}:
+                if self.is_rectangle_mode():
+                    tool.Polyline.calculate_x_y_and_z_from_rectangle(context, self.input_ui, self.tool_state)
+                elif self.input_type in {"X", "Y", "Z"}:
                     tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
                 elif self.input_type in {"D", "A"}:
                     tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)
@@ -174,15 +191,24 @@ class PolylineOperator:
                 get_plane_origin()
 
     def choose_drawing_mode(self, event: bpy.types.Event) -> None:
-        polyline_settings = tool.Model.get_polyline_settings()
+        if not self.enable_rectangle:
+            return
         if event.value == "PRESS" and event.type == "R":
-            print("FOI")
-            if polyline_settings.drawing_type== "POLYLINE":
-                setattr(polyline_settings, "drawing_type", "RECTANGLE")
-                tool.Polyline.remove_in_between_polyline_points()
-            elif polyline_settings.drawing_type== "RECTANGLE":
-                print("2")
-                setattr(polyline_settings, "drawing_type", "POLYLINE")
+            polyline_settings = tool.Model.get_polyline_settings()
+            if polyline_settings.drawing_type == "POLYLINE":
+                if not hasattr(self, "polyline_input_options"):
+                    self.polyline_input_options = list(self.input_options)
+                polyline_settings.drawing_type = "RECTANGLE"
+                tool.Polyline.remove_intermediate_polyline_points()
+                self.set_input_options(["L", "W", "A"], {"D": "L", "X": "L", "Y": "L", "Z": "L"})
+                self.input_ui.set_value("L", 0)
+                self.input_ui.set_value("W", 0)
+                self.input_ui.set_value("A", 0)
+            else:
+                polyline_settings.drawing_type = "POLYLINE"
+                self.set_input_options(self.polyline_input_options, {"L": "D", "W": "X"})
+            polyline_settings.rectangle_angle = 0.0
+            self.input_ui.set_value("A", 0)
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
@@ -265,8 +291,8 @@ class PolylineOperator:
             self.recalculate_inputs(context)
             self.tool_state.mode = "Select"
             self.tool_state.is_input_on = True
-            self.input_type = "D"
-            self.tool_state.input_type = "D"
+            self.input_type = self.input_options[0]
+            self.tool_state.input_type = self.input_options[0]
             self.is_typing = False
             self.number_input = self.input_ui.get_formatted_value(self.input_type)
             self.number_input = list(self.number_input)
@@ -279,12 +305,12 @@ class PolylineOperator:
             self.recalculate_inputs(context)
             self.tool_state.mode = "Edit"
             self.tool_state.is_input_on = True
-            self.input_type = "D"
-            self.tool_state.input_type = "D"
+            self.input_type = self.input_options[0]
+            self.tool_state.input_type = self.input_options[0]
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
-        if event.value == "RELEASE" and event.type == "D":
+        if event.value == "RELEASE" and event.type == "D" and "D" in self.input_options:
             self.recalculate_inputs(context)
             self.tool_state.mode = "Edit"
             self.tool_state.is_input_on = True
@@ -328,7 +354,7 @@ class PolylineOperator:
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
 
         if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type == "LEFTMOUSE":
-            if tool.Model.get_polyline_settings().drawing_type == "RECTANGLE" and len(polyline_points) >= 2:
+            if self.is_rectangle_mode() and len(polyline_points) >= 2:
                 tool.Polyline.remove_last_polyline_point()
                 result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
                 tool.Blender.update_viewport()
@@ -391,7 +417,10 @@ class PolylineOperator:
             self.snapping_points = tool.Snap.modify_snapping_point_selection(
                 self.snapping_points, lock_axis=self.tool_state.lock_axis
             )
-            tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
+            if self.is_rectangle_mode():
+                tool.Polyline.calculate_rectangle_from_mouse(context, self.input_ui, self.tool_state)
+            else:
+                tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
@@ -446,17 +475,29 @@ class PolylineOperator:
                 if not self.has_polyline_points():
                     should_round = False
 
-                tool.Polyline.calculate_distance_and_angle(
-                    context, self.input_ui, self.tool_state, should_round=should_round
-                )
-                if should_round:
-                    tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)
-                    snap_prop = tool.Model.get_polyline_props().snap_mouse_point[0]
-                    snap_prop.x = self.input_ui.get_number_value("X")
-                    snap_prop.y = self.input_ui.get_number_value("Y")
-                    z = self.input_ui.get_number_value("Z")
-                    if z is not None and z != "":
-                        snap_prop.z = z
+                # In rectangle mode the UI still show distance, angle, x and y coords before the first point confirmed
+                if self.is_rectangle_mode() and self.has_polyline_points():
+                    polyline_settings = tool.Model.get_polyline_settings()
+                    polyline_settings.rectangle_angle = 0.0
+                    if polyline_settings.drawing_type == "RECTANGLE":
+                        self.polyline_input_options = list(self.input_options)
+                        self.set_input_options(["L", "W", "A"])
+                        self.input_ui.set_value("L", 0)
+                        self.input_ui.set_value("W", 0)
+                        self.input_ui.set_value("A", 0)
+                    tool.Polyline.calculate_rectangle_from_mouse(context, self.input_ui, self.tool_state)
+                else:
+                    tool.Polyline.calculate_distance_and_angle(
+                        context, self.input_ui, self.tool_state, should_round=should_round
+                    )
+                    if should_round:
+                        tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)
+                        snap_prop = tool.Model.get_polyline_props().snap_mouse_point[0]
+                        snap_prop.x = self.input_ui.get_number_value("X")
+                        snap_prop.y = self.input_ui.get_number_value("Y")
+                        z = self.input_ui.get_number_value("Z")
+                        if z is not None and z != "":
+                            snap_prop.z = z
 
                 tool.Blender.update_viewport()
             return {"RUNNING_MODAL"}
@@ -467,6 +508,7 @@ class PolylineOperator:
         GpuSnapDecorator.uninstall()
         ProductDecorator.uninstall()
         tool.Polyline.clear_polyline()
+        tool.Model.get_polyline_settings().rectangle_angle = 0.0
         tool.Raycast.clear_cache()
         tool.Blender.update_viewport()
 
