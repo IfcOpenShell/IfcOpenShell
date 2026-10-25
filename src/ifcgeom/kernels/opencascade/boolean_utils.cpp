@@ -1404,8 +1404,21 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 	if (!success) {
 		if (allow_retry) {
 			return boolean_operation(settings, a, b, op, result, new_fuzziness);
-		} else {
-			settings.log().notice("GEO", 154, "No longer attempting boolean operation with higher fuzziness");
+		}
+		settings.log().notice("GEO", 154, "No longer attempting boolean operation with higher fuzziness");
+		if (op == BOPAlgo_CUT && b.Extent() > 1) {
+			// #487 a batch of tools can fail together while each one cuts cleanly on its own
+			settings.log().notice("GEO", 405, "Retrying cut with " + std::to_string(b.Extent()) + " operands applied sequentially");
+			TopoDS_Shape current = s1s.First();
+			for (NCollection_List<TopoDS_Shape>::Iterator it(b); it.More(); it.Next()) {
+				TopoDS_Shape step;
+				if (!boolean_operation(settings, current, it.Value(), op, step)) {
+					return false;
+				}
+				current = step;
+			}
+			result = current;
+			return true;
 		}
 	}
 	return success && !result.IsNull();
