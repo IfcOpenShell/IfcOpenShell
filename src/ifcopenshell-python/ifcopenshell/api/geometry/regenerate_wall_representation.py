@@ -268,7 +268,8 @@ class Regenerator:
             split_points = []
             for points in sorted(self.split_points, key=lambda x: x[0][0]):  # Sort islands in the +X direction
                 # Can't have anything outside our start/end (with precision buffer)
-                if any([ifcopenshell.util.shape_builder.is_greater(p[0], maxx) or ifcopenshell.util.shape_builder.is_less(p[0], minx) for p in points]):
+                tol = ifcopenshell.util.shape_builder.PRECISION
+                if any([p[0] > maxx + tol or p[0] < minx - tol for p in points]):
                     continue
                 split_points.append(points)
             start_points = [p.copy() for p in self.start_points]
