@@ -2,34 +2,56 @@
 from __future__ import annotations
 
 import base64
+import functools
 import inspect
 from typing import Any
 
 from ifcmcp.core import IfcSession
 
 try:
-    from mcp.server.fastmcp import FastMCP  # type: ignore
+    from mcp.server.mcpserver import MCPServer  # type: ignore
+    from mcp.server.mcpserver.exceptions import ToolError  # type: ignore
     from mcp.types import ImageContent  # type: ignore
 except ImportError:  # pragma: no cover
-    FastMCP = None  # type: ignore
+    MCPServer = None  # type: ignore
+    ToolError = None  # type: ignore
     ImageContent = None  # type: ignore
 
 
 def build_server() -> Any:
-    """Create the FastMCP server if the dependency is available."""
-    if FastMCP is None:
+    """Create the MCP server if the dependency is available."""
+    if MCPServer is None:
         raise ImportError(
-            "FastMCP is not installed. Install with: pip install ifcmcp[mcp] (or add 'mcp' to your environment)."
+            "The mcp package is not installed. Install with: pip install ifcmcp[mcp] (or add 'mcp' to your environment)."
         )
 
     session = IfcSession()
 
+    def _keep_reason(fn):
+        """Raise a tool's failure as ToolError so its reason reaches the agent.
+
+        MCPServer passes on a ToolError's text but replaces any other exception
+        with a bare "Error executing tool <name>", which leaves the agent nothing
+        to correct. Every tool, however it is registered, goes through this.
+        """
+
+        @functools.wraps(fn)
+        def call(*args, **kwargs):
+            try:
+                return fn(*args, **kwargs)
+            except ToolError:
+                raise
+            except Exception as e:
+                raise ToolError(str(e) or type(e).__name__) from e
+
+        return call
+
     def _tool(fn):
         """Register a tool, taking its MCP description from the identically-named
         IfcSession method rather than duplicating it here."""
-        return server.tool(description=inspect.getdoc(getattr(IfcSession, fn.__name__)))(fn)
+        return server.tool(description=inspect.getdoc(getattr(IfcSession, fn.__name__)))(_keep_reason(fn))
 
-    server = FastMCP(
+    server = MCPServer(
         name="ifc-mcp",
         instructions=(
             "MCP server for querying and editing IFC building models. "
@@ -146,6 +168,7 @@ def build_server() -> Any:
         return session.ifc_shape(method=method, params=params)
 
     @server.tool(structured_output=False)
+    @_keep_reason
     def ifc_plot(
         selector: str = "",
         element_ids: list[int] | None = None,
@@ -204,9 +227,10 @@ def build_server() -> Any:
             else:
                 with open(output_path, "wb") as f:
                     f.write(png_bytes)
-        return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mimeType="image/png")]
+        return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mime_type="image/png")]
 
     @server.tool(structured_output=False)
+    @_keep_reason
     def ifc_render(
         selector: str = "",
         element_ids: list[int] | None = None,
@@ -232,6 +256,6 @@ def build_server() -> Any:
         if output_path:
             with open(output_path, "wb") as f:
                 f.write(png_bytes)
-        return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mimeType="image/png")]
+        return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mime_type="image/png")]
 
     return server
