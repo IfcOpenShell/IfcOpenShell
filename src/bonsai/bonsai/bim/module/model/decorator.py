@@ -1554,16 +1554,16 @@ class ProductDecorator(tool.Blender.ViewportDecorator):
             axis_side = axes["side"]
             point_on_base_axis = tool.Cad.point_on_edge(mouse_point, axis_base)
             point_on_side_axis = tool.Cad.point_on_edge(mouse_point, axis_side)
+            rot_mat = snap_obj.matrix_world.to_quaternion().to_matrix().to_4x4()
             if (point_on_base_axis - mouse_point).length_squared <= (point_on_side_axis - mouse_point).length_squared:
                 # mouse is snapped to the base axis, the preview looks exactly like the placed door / window
-                rot_mat = snap_obj.matrix_world
+                mouse_point.x = point_on_base_axis.x
+                mouse_point.y = point_on_base_axis.y
             else:
                 # mouse is snapped to the side axis, the preview is inverted, rotate it now and correct x position later
-                rot_mat = (
-                    (snap_obj.matrix_world.to_quaternion() @ Quaternion(Vector((0, 0, 1)), radians(180)))
-                    .to_matrix()
-                    .to_4x4()
-                )
+                rot_mat = rot_mat @ Matrix.Rotation(radians(180), 4, "Z")
+                mouse_point.x = point_on_side_axis.x
+                mouse_point.y = point_on_side_axis.y
 
             mouse_point.z = snap_obj.matrix_world.translation.z
 
