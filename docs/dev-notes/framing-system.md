@@ -348,12 +348,14 @@ Profile convention, for users drawing profiles:
   - A whole-loop member on a closed path is mitred at the start vertex too, with no gap.
 - **Why not `IfcFixedReferenceSweptAreaSolid`:** the first design swept along the path
   with FixedReference = +Z. That sweep puts profile X up and profile Y to the path's
-  right, so it needs an `IfcDerivedProfileDef` to turn the profile 90°. **The kernel
-  applies a derived profile's operator rotation twice**: 45° comes out as 90°, ±90° as
-  180°. This happens in plain extrusions too, in both 0.8.5 and 0.9, and is likely in
-  `src/ifcgeom/mapping/IfcDerivedProfileDef.cpp` or in the 2D operator's mapping. Reported
-  upstream as #10043. Per-piece extrusions avoid it entirely.
-  Minimal repro: a point at (1, 0), rotated 45°, lands on (0, 1).
+  right, so it needs an `IfcDerivedProfileDef` to turn the profile 90°. **Kernels before
+  `db2d6a3e41` apply a derived profile's operator rotation twice**: 45° comes out as 90°,
+  ±90° as 180°, in plain extrusions too. Since the v0.8 taxonomy rewrite the profile
+  matrix was applied to both the wire and the loop (#10043). `db2d6a3e41` fixed it on
+  v0.9.0 on 2026-10-13. It is not in v0.8.0, nor in the `7b8f129` build pin that Bonsai
+  releases use as of 2026-10-24. Per-piece extrusions work on every build, so they stay;
+  the sweep becomes an option once the pin includes the fix.
+  Minimal repro: a point at (1, 0), rotated 45°, lands on (0, 1) on an affected build.
 
   ```python
   f = ifcopenshell.file(schema="IFC4")
@@ -362,7 +364,7 @@ Profile convention, for users drawing profiles:
   op = f.createIfcCartesianTransformationOperator2D(f.createIfcDirection((c, c)), None, f.createIfcCartesianPoint((0.0, 0.0)), 1.0)
   solid = f.createIfcExtrudedAreaSolid(f.createIfcDerivedProfileDef("AREA", None, sq, op, None), None, f.createIfcDirection((0.0, 0.0, 1.0)), 1.0)
   v = ifcopenshell.util.shape.get_vertices(ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), solid))
-  print(v.min(0), v.max(0))  # expected about (0.707, 0.707); prints about (0, 1)
+  print(v.min(0), v.max(0))  # expected about (0.707, 0.707); affected builds print about (0, 1)
   ```
 - **Verticals:** `IfcExtrudedAreaSolid` along Z (along `v` in a tilted mapping), with
   the length solved from the bounds. A corner member takes the direction of the segment
