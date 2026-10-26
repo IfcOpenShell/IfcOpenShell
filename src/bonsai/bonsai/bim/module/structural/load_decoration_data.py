@@ -175,6 +175,13 @@ class ShaderInfo:
         self.get_force_units()
         self.get_structural_elements_and_activities()
         self.moment_force_scale = self.get_moment_force_scale()
+        # While moments are taken about a point, the viewport numbers forces as their moments are, across the load
+        # case; a report's points number their own, as their equations do.
+        self.moment_numbers = (
+            {activity: i for i, (_, activity, _, _) in enumerate(self.get_moment_forces(), 1)}
+            if self.load_group is None and self.get_moment_centre()[0]
+            else {}
+        )
         self.get_linear_loads()
         self.get_point_loads()
         self.get_planar_loads()
@@ -686,27 +693,48 @@ class ShaderInfo:
                 # The arm's slope, out by its foot, clear of r's by A; A brought to the arm's own X-Z plane, as
                 # Blender's single precision can leave it a hair off it, which would show no slope.
                 self.add_force_slope(np.array((at[0], foot[1], at[2])), foot, size, color)
-            # The arm's length, then its moment beneath it: labels placed later move clear of earlier ones, away
-            # from the arm, which is down, or across for a level line of action.
+            # A level force's arm is its Δz, a plumb one's its Δx, which then stands for it; a line of action square
+            # to r leaves no triangle, r being the arm.
+            arm_axis = "z" if abs(along[2]) < 1e-6 else "x" if abs(along[0]) < 1e-6 else None
+            flat = np.linalg.norm(foot - location) <= 1e-6 * max(reach, 1e-9)
+            # The arm's length, unless a dimension gives it, then its moment, moved beside its force's value once the
+            # forces are all drawn: labels placed later move clear of earlier ones, away from the arm, which is
+            # down, or across for a level line of action.
             away = -along if along[2] > 0 else along
-            for text in (
-                f"{get_plain_symbol(f'd_{{{i}}}')} = {arm:.2f} {self.length_unit}",
-                f"{symbol} = {moment:+.{decimals}f} {self.moment_unit}",  # Counter-clockwise positive.
-            ):
+            d = get_plain_symbol(f"d_{{{i}}}")
+            if not arm_axis:
+                text = f"{d} = {get_plain_symbol(f'r_{{{i}}}')}" if flat else d
                 self.text_info.append(
-                    {"position": (at + foot) / 2, "text": text, "color": color, "away": away, "focus": "arm"}
+                    {
+                        "position": (at + foot) / 2,
+                        "text": f"{text} = {arm:.2f} {self.length_unit}",
+                        "color": color,
+                        "away": away,
+                        "focus": "arm",
+                    }
                 )
-            self.add_moment_triangle(i, at, location, foot, size, color, length_scale)
+            self.text_info.append(
+                {
+                    "position": (at + foot) / 2,
+                    "text": f"{symbol} = {moment:+.{decimals}f} {self.moment_unit}",  # Counter-clockwise positive.
+                    "color": color,
+                    "away": away,
+                    "focus": "arm",
+                    "moment_of_force": activity,
+                }
+            )
+            self.add_moment_triangle(i, at, location, foot, size, color, length_scale, flat)
             # Last, so that they clear all of it and the force's own diagram at its point.
             point_obj = tool.Ifc.get_object(point)
             drawn = self.get_drawn_points(starts[-1][0], starts[-1][1], point_obj.name if point_obj else None)
-            self.add_moment_dimensions(i, at, location, size, color, length_scale, drawn)
+            at_end = len(forces) > 1  # Dimensions from A lie over each other, so each is named at its own end.
+            self.add_moment_dimensions(i, at, location, size, color, length_scale, drawn, arm_axis, at_end)
             if props.show_axes_components and props.reference_frame == "GLOBAL_COORDS":
                 rotation = self.get_point_connection_rotation(point)
                 if not np.allclose(rotation, np.eye(3)):
                     # Clear of Δx and Δz too, now drawn.
                     drawn = self.get_drawn_points(starts[-1][0], starts[-1][1], point_obj.name if point_obj else None)
-                    self.add_axes_moment_dimensions(i, at, location, size, color, length_scale, rotation, drawn)
+                    self.add_axes_moment_dimensions(i, at, location, size, color, length_scale, rotation, drawn, at_end)
         # Each force's moment hides with its point as its force does, and all of them with the centre.
         ends = [(info, text) for info, text, _, _ in starts[1:]] + [(len(self.info), len(self.text_info))]
         for (info, text, point, activity), (info_end, text_end) in zip(starts, ends):
@@ -725,6 +753,18 @@ class ShaderInfo:
         if self.load_group is not None:
             # A report's diagram stands alone, so it also draws what the viewport has around it.
             self.add_moment_context(centre, at, forces, size, reach, colors)
+        # Each force's moment beside its value, so that they read together, rather than on its arm, where arms sharing
+        # a line put it beside another force's point.
+        values, components = {}, {}
+        for text in self.text_info:
+            if key := text.get("moment_force") or text.get("force_of"):
+                values[key] = text
+            elif key := text.get("value_of"):
+                components.setdefault(key, text)
+        for text in self.text_info[first_text:]:
+            activity = text.get("moment_of_force")
+            if (value := values.get(activity) or components.get(activity)) is not None:
+                text["position"], text["away"], text["follows"] = value["position"], value["away"], value
         for entry in self.info[first:] + self.text_info[first_text:]:
             entry["object"] = f"{obj.name} moments"  # Kept apart from the centre's own loads, as its own diagram.
             entry.setdefault("visible_with", (obj.name,))
@@ -779,7 +819,7 @@ class ShaderInfo:
                 size,
                 label_at_tail=push,
             )
-            self.text_info[-1]["symbol"] = f"F_{{{i}}}"
+            self.text_info[-1] |= {"symbol": f"F_{{{i}}}", "moment_force": activity}
 
     def is_on_segment(self, point: np.ndarray, a: np.ndarray, b: np.ndarray, reach: float) -> bool:
         """Whether a point lies on the line between a and b, within a small share of the distances drawn"""
@@ -798,14 +838,18 @@ class ShaderInfo:
         size: float,
         color: tuple,
         length_scale: float,
+        flat: bool = False,
     ) -> None:
         """Complete the right triangle a force's moment arm makes, as a text draws it to find the arm: r, from the
         centre to the force's point, labelled with its length, with its direction and slope from the point if
         angles and slopes are shown, the angle phi between r and the line of action at that point, so that
-        d = r sin phi, and the angle alpha at the centre"""
+        d = r sin phi, and the angle alpha at the centre.
+
+        :param flat: Whether the line of action is square to r, which is then the arm, drawn and named as it.
+        """
         r = location - at
-        if not np.linalg.norm(r):
-            return
+        if not np.linalg.norm(r) or flat:
+            return  # Flat, r is the arm, drawn and named as it, and phi is the arm's corner.
         self.add_dashed_line(at, location, size, color)
         if tool.Structural.get_structural_props().show_force_slopes:
             # Its slope, from the point to A, as Edit Moment Centre enters it, as a force's slope is shown; A brought
@@ -874,11 +918,17 @@ class ShaderInfo:
         color: tuple,
         length_scale: float,
         drawn: Union[list[np.ndarray], None] = None,
+        arm_axis: Union[str, None] = None,
+        at_end: bool = False,
     ) -> None:
         """Dimension r's run and rise, Δx and Δz from A to where the force acts, as a text's figure gives them: a
         horizontal dimension above all that is drawn and a vertical one beside it, with extension lines and ticks.
 
         :param drawn: Points of what is drawn, which they keep clear of, with room for its labels.
+        :param arm_axis: The axis, x or z, whose dimension is also the force's moment arm, as a level force's Δz
+            is, named as the arm too.
+        :param at_end: Name each at its end by the force's point, rather than its middle, as several forces'
+            dimensions from A lie over each other.
         """
         clear = 0.3 * size  # Beyond what is drawn, with room for the labels anchored at its edge.
         tick = 0.03 * size
@@ -910,10 +960,14 @@ class ShaderInfo:
             self.add_dashed_line(a, b, size, color, dashed=False)
             for end_point in (a, b):
                 self.add_dashed_line(end_point - slash, end_point + slash, size, color, dashed=False)
+            name = f"Δ{get_plain_symbol(f'{axis}_{{{i}}}')}"
+            if axis == arm_axis:
+                name = f"{get_plain_symbol(f'd_{{{i}}}')} = {name}"  # The arm, which then has no label of its own.
+                focus = "arm"
             self.text_info.append(
                 {
-                    "position": (a + b) / 2,
-                    "text": f"Δ{get_plain_symbol(f'{axis}_{{{i}}}')} = {abs(delta) / length_scale:.2f} {self.length_unit}",  # A length, as dimensions give.
+                    "position": b if at_end else (a + b) / 2,
+                    "text": f"{name} = {abs(delta) / length_scale:.2f} {self.length_unit}",  # A length, as dimensions give.
                     "color": color,
                     "away": away,
                     "focus": focus,
@@ -930,12 +984,14 @@ class ShaderInfo:
         length_scale: float,
         rotation: np.ndarray,
         drawn: Union[list[np.ndarray], None] = None,
+        at_end: bool = False,
     ) -> None:
         """Dimension r along the point's own tilted axes, Δx′ and Δz′, the arms of the force's components along
         them as Δx and Δz are of its X and Z ones: one along x′ beyond all that is drawn, one along z′ beside it.
 
         :param rotation: The point's axes, as columns, in global coordinates.
         :param drawn: Points of what is drawn, which they keep clear of, with room for its labels.
+        :param at_end: Name each at its end, as add_moment_dimensions does.
         """
         ex, ez = rotation[:, 0], rotation[:, 2]
         clear, tick = 0.3 * size, 0.03 * size
@@ -960,7 +1016,7 @@ class ShaderInfo:
                 self.add_dashed_line(end_point - slash, end_point + slash, size, color, dashed=False)
             self.text_info.append(
                 {
-                    "position": (a + b) / 2,
+                    "position": b if at_end else (a + b) / 2,
                     "text": f"Δ{get_plain_symbol(f'{axis}_{{{i}}}')} = {abs(delta) / length_scale:.2f} {self.length_unit}",
                     "color": color,
                     "away": away,
@@ -1102,6 +1158,9 @@ class ShaderInfo:
         first_text = len(self.text_info)
         # Forces are numbered as they are drawn, tip to tail, as calculations number them.
         numbers = {activity: i for i, activity in enumerate(activities or [], 1) if activity}
+        moment_numbers = getattr(self, "moment_numbers", {})
+        if numbers and all(activity in moment_numbers for activity in numbers):
+            numbers = {activity: moment_numbers[activity] for activity in numbers}
         if props.reference_frame == "LOCAL_COORDS":
             forces = [rotation @ force for force in forces]
         kept = [
@@ -1217,6 +1276,8 @@ class ShaderInfo:
                 k = int(np.argmax(np.abs(axes.T @ vector)))
                 tilted = props.reference_frame == "LOCAL_COORDS" and not np.allclose(rotation, np.eye(3))
                 self.text_info[-1]["component"] = "xyz"[k] + ("′" if tilted else "")
+                if single:
+                    self.text_info[-1]["value_of"] = single  # A force drawn as its components gives its value so.
                 if not tilted and picked is not None:
                     # Clicked, its arrow or its value, its own component is ready to type; Edit Load takes X, Y and
                     # Z, not x' and z'.
