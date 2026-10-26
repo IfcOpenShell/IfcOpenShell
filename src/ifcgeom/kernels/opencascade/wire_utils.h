@@ -2,6 +2,7 @@
 #define WIRE_UTILS_H
 
 #include "../ifc_geomlibrary_api.h"
+#include "../../../ifcparse/logger.h"
 
 #include <gp_Pln.hxx>
 
@@ -21,6 +22,7 @@
 namespace ifcopenshell::geom {
 	namespace util {
 		IFC_GEOMLIBRARY_API bool approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane, double eps);
+		IFC_GEOMLIBRARY_API bool approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane, double eps, ifcopenshell::logger& logger);
 
 		IFC_GEOMLIBRARY_API bool flatten_wire(TopoDS_Wire& wire, double eps);
 
@@ -38,7 +40,7 @@ namespace ifcopenshell::geom {
 		};
 
 		/// Triangulate the set of wires. The firstmost wire is assumed to be the outer wire.
-        IFC_GEOMLIBRARY_API triangulate_wire_result triangulate_wire(const std::vector<TopoDS_Wire>& wires, NCollection_List<TopoDS_Shape>& faces);
+        IFC_GEOMLIBRARY_API triangulate_wire_result triangulate_wire(const std::vector<TopoDS_Wire>& wires, NCollection_List<TopoDS_Shape>& faces, ifcopenshell::logger& logger);
 
 		IFC_GEOMLIBRARY_API bool wire_intersections(const TopoDS_Wire& wire, NCollection_List<TopoDS_Shape>& wires, const wire_tolerance_settings& settings);
 
