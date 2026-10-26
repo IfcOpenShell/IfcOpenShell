@@ -1082,6 +1082,14 @@ typedef item const* ptr;
 
 				std::optional<bool> closed;
 
+				bool is_polyhedral() const;
+				// Assumes polyhedral geometry with explicit endpoints. Tests oriented
+				// edge incidence, not vertex links or geometric self-intersection.
+				bool is_manifold() const;
+				// Assumes polyhedral geometry. Project every point onto the Newell
+				// plane of the face with the largest bounding-box diagonal.
+				bool is_coplanar(double linear_tolerance) const;
+
 				virtual void print_impl(std::ostream& o, int indent) const {
 					using namespace std::string_literals;
 					o << std::string(indent, ' ') << "closed " << (closed ? *closed ? "yes"s : "no"s : "unknown"s) << std::endl;

@@ -35,8 +35,14 @@
 #include <boost/range/algorithm_ext/push_back.hpp>
 
 #include <map>
+#include <cmath>
+#include <sstream>
 
 bool ifcopenshell::geom::util::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane, double eps_) {
+	return approximate_plane_through_wire(wire, plane, eps_, ifcopenshell::logger::root());
+}
+
+bool ifcopenshell::geom::util::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane, double eps_, ifcopenshell::logger& logger) {
 	// Newell's Method is used for the normal calculation
 	// as a simple edge cross product can give opposite results
 	// for a concave face boundary.
@@ -81,16 +87,21 @@ bool ifcopenshell::geom::util::approximate_plane_through_wire(const TopoDS_Wire&
 	}
 
 	if (n < 3) {
+		logger.message(ifcopenshell::logger::LOG_DEBUG, "GEO", 410, "Cannot estimate face plane: fewer than three vertices");
 		return false;
 	}
 
 	gp_Vec v(x, y, z);
-	// @todo the epsilon passed to us here is the maximum allowed deviation of
-	// the given points to the constructed plane. When doing triangulation and
-	// obtaining a 2d points for the Delaunay, infinity is passed here, so this
-	// can't for assessing degenerativeness.
-	if (v.Magnitude() < 1.e-7) {
-		ifcopenshell::logger::root().warning("GEO", 215, "Degenerate face boundary in normal estimation");
+	// Newell's vector has units of area. Comparing it to a linear tolerance
+	// incorrectly rejects small, usable faces. Triangulation passes infinity
+	// to allow projection of warped boundaries; use OCCT precision in that case.
+	const double linear_tolerance = std::isfinite(eps_) ? std::max(std::abs(eps_), Precision::Confusion()) : Precision::Confusion();
+	const double area_tolerance = linear_tolerance * linear_tolerance;
+	if (v.Magnitude() <= area_tolerance) {
+		std::ostringstream message;
+		message << "Degenerate face boundary in normal estimation: Newell magnitude=" << v.Magnitude()
+			<< " m2, area threshold=" << area_tolerance << " m2, vertices=" << n;
+		logger.warning("GEO", 215, message.str());
 		return false;
 	}
 
@@ -101,6 +112,10 @@ bool ifcopenshell::geom::util::approximate_plane_through_wire(const TopoDS_Wire&
 		const TopoDS_Vertex& vrt = exp.CurrentVertex();
 		current = BRep_Tool::Pnt(vrt);
 		if (plane.SquareDistance(current) > eps2) {
+			std::ostringstream message;
+			message << "Face boundary is non-planar: vertex-plane distance=" << plane.Distance(current)
+				<< " m, tolerance=" << eps_ << " m, Newell magnitude=" << v.Magnitude() << " m2";
+			logger.message(ifcopenshell::logger::LOG_DEBUG, "GEO", 410, message.str());
 			return false;
 		}
 	}
@@ -129,7 +144,7 @@ bool ifcopenshell::geom::util::flatten_wire(TopoDS_Wire& wire, double eps) {
 	return true;
 }
 
-ifcopenshell::geom::util::triangulate_wire_result ifcopenshell::geom::util::triangulate_wire(const std::vector<TopoDS_Wire>& wires, NCollection_List<TopoDS_Shape>& faces) {
+ifcopenshell::geom::util::triangulate_wire_result ifcopenshell::geom::util::triangulate_wire(const std::vector<TopoDS_Wire>& wires, NCollection_List<TopoDS_Shape>& faces, ifcopenshell::logger& logger) {
 	// This is a bit of a precarious approach, but seems to work for the
 	// versions of OCCT tested for. OCCT has a Delaunay triangulation function
 	// BRepMesh_Delaun, but it is notoriously hard to interpret the results
@@ -146,7 +161,7 @@ ifcopenshell::geom::util::triangulate_wire_result ifcopenshell::geom::util::tria
 	typedef std::pair<double, double> uv_node;
 
 	gp_Pln pln;
-	if (!approximate_plane_through_wire(wires.front(), pln, std::numeric_limits<double>::infinity())) {
+	if (wires.empty() || !approximate_plane_through_wire(wires.front(), pln, std::numeric_limits<double>::infinity(), logger)) {
 		return TRIANGULATE_WIRE_FAIL;
 	}
 
