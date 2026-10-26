@@ -327,7 +327,67 @@ class Debug(bonsai.core.tool.Debug):
 
             if merged_elements_names:
                 merged_element_types[element_type] = merged_elements_names
+
+        if object_type == "STYLE":
+            if merged_materials := cls.merge_stale_style_materials():
+                merged_element_types["Blender Material"] = merged_materials
         return merged_element_types
+
+    @classmethod
+    def merge_stale_style_materials(cls) -> list[str]:
+        """Merge Blender materials that duplicate a surface style's linked material.
+
+        A material is stale if it is not the one linked to its style in the id map,
+        either because it is unlinked from IFC (e.g. "Foo" next to the linked "Foo.001")
+        or because it points to a style that is linked to another material.
+        Unlinked materials are matched to styles by name, ignoring .XXX suffixes.
+        The kept material and its style are then renamed without the suffix, if that name is free.
+
+        :return: Names of the removed materials.
+        """
+
+        def normalize_name(name: str) -> str:
+            return re.sub(r"\.\d+$", "", name)
+
+        ifc_file = tool.Ifc.get()
+        linked_materials: set[bpy.types.Material] = set()
+        name_to_material: dict[str, Union[bpy.types.Material, None]] = {}
+        for style in ifc_file.by_type("IfcSurfaceStyle"):
+            obj = tool.Ifc.get_object(style)
+            if not isinstance(obj, bpy.types.Material):
+                continue
+            linked_materials.add(obj)
+            key = normalize_name(style.Name or "")
+            if not key:
+                continue
+            # Ambiguous names are not safe to merge into.
+            name_to_material[key] = None if key in name_to_material else obj
+
+        merged_names: list[str] = []
+        for material in list(bpy.data.materials):
+            if material.library or material in linked_materials:
+                continue
+            style = tool.Ifc.get_entity(material)
+            if style:
+                target = tool.Ifc.get_object(style)
+            else:
+                target = name_to_material.get(normalize_name(material.name))
+            if not isinstance(target, bpy.types.Material) or target == material:
+                continue
+            merged_names.append(material.name)
+            material.user_remap(target)
+            tool.Blender.remove_data_block(material)
+
+        # Keep the name without the .XXX suffix, e.g. "Foo.001" becomes "Foo" once "Foo" is merged.
+        for name, material in name_to_material.items():
+            if material is None:
+                continue
+            if material.name != name and name not in bpy.data.materials:
+                material.name = name
+            style = tool.Ifc.get_entity(material)
+            if style and material.name == name and style.Name != name:
+                style.Name = name
+        return merged_names
 
     PurgeMergeObjectType = Literal[
         "TYPE",
