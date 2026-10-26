@@ -47,7 +47,14 @@ def _get_scope_elements(
     if scope == "storey":
         container = ifcopenshell.util.element.get_container(element)
         if container is not None:
-            siblings = set(ifcopenshell.util.element.get_contained(container))
+            # An element that spans storeys is contained in one and referenced into the others
+            # (IfcRelReferencedInSpatialStructure), and is part of each: check it against every storey it is
+            # part of, and against what each storey contains and what is referenced into it.
+            structures = [container, *ifcopenshell.util.element.get_referenced_structures(element)]
+            siblings = set()
+            for structure in structures:
+                siblings.update(ifcopenshell.util.element.get_contained(structure))
+                siblings.update(ifcopenshell.util.element.get_structure_referenced_elements(structure))
             siblings.discard(element)
             return siblings, "storey"
         else:
@@ -120,8 +127,10 @@ def clash(
     :param clearance: Minimum required clearance distance; when given, also
         runs the clearance check alongside the intersection check.
     :param tolerance: Intersection tolerance in meters (default 0.002).
-    :param scope: ``"storey"`` (default) checks only elements sharing the
-        same spatial container; ``"all"`` checks every ``IfcElement``.
+    :param scope: ``"storey"`` (default) checks only elements on the same
+        storey: those its spatial container contains or references, and for
+        an element referenced into other storeys, theirs too; ``"all"``
+        checks every ``IfcElement``.
         ``"storey"`` falls back to ``"all"`` when the element has no spatial
         container.
     :return: Dict with clash results suitable for JSON serialization.

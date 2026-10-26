@@ -323,3 +323,56 @@ class TestCLI:
             assert "Error" in result.stderr
         finally:
             os.unlink(path)
+
+
+@pytest.fixture
+def model_wall_through_two_storeys():
+    """A wall contained in the ground storey and referenced into the first (it rises through both), and a beam
+    contained in the first storey that runs into the wall."""
+    f = ifcopenshell.api.project.create_file()
+    ifcopenshell.api.owner.settings.get_user = lambda ifc: (ifc.by_type("IfcPersonAndOrganization") or [None])[0]
+    ifcopenshell.api.owner.settings.get_application = lambda ifc: (ifc.by_type("IfcApplication") or [None])[0]
+    project = ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject", name="TestProject")
+    ifcopenshell.api.unit.assign_unit(f)
+    building = ifcopenshell.api.root.create_entity(f, ifc_class="IfcBuilding", name="TestBuilding")
+    ground = ifcopenshell.api.root.create_entity(f, ifc_class="IfcBuildingStorey", name="Ground Floor")
+    first = ifcopenshell.api.root.create_entity(f, ifc_class="IfcBuildingStorey", name="First Floor")
+    ifcopenshell.api.aggregate.assign_object(f, products=[building], relating_object=project)
+    ifcopenshell.api.aggregate.assign_object(f, products=[ground, first], relating_object=building)
+    model_ctx = ifcopenshell.api.context.add_context(f, context_type="Model")
+    body = ifcopenshell.api.context.add_context(
+        f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model_ctx
+    )
+
+    wall = ifcopenshell.api.root.create_entity(f, ifc_class="IfcWall", name="TallWall")
+    rep = ifcopenshell.api.geometry.add_wall_representation(f, context=body, length=5, height=6, thickness=0.2)
+    ifcopenshell.api.geometry.assign_representation(f, product=wall, representation=rep)
+    ifcopenshell.api.spatial.assign_container(f, products=[wall], relating_structure=ground)
+    ifcopenshell.api.spatial.reference_structure(f, products=[wall], relating_structure=first)
+
+    beam = ifcopenshell.api.root.create_entity(f, ifc_class="IfcBeam", name="FirstFloorBeam")
+    rep = ifcopenshell.api.geometry.add_wall_representation(f, context=body, length=3, height=0.3, thickness=0.2)
+    ifcopenshell.api.geometry.assign_representation(f, product=beam, representation=rep)
+    ifcopenshell.api.spatial.assign_container(f, products=[beam], relating_structure=first)
+    matrix = np.array([[0, -1, 0, 2.5], [1, 0, 0, -1.0], [0, 0, 1, 4.0], [0, 0, 0, 1]], dtype=float)
+    ifcopenshell.api.geometry.edit_object_placement(f, product=beam, matrix=matrix)
+    return f
+
+
+class TestScopeReferenced:
+    def test_scope_storey_includes_an_element_referenced_into_the_storey(self, model_wall_through_two_storeys):
+        f = model_wall_through_two_storeys
+        beam = next(e for e in f.by_type("IfcBeam"))
+        wall = next(e for e in f.by_type("IfcWall"))
+        result = clash(f, beam, scope="storey")
+        assert result["scope"] == "storey"
+        assert result["pass"] is False
+        assert wall.id() in {e["id"] for e in result["elements"]}
+
+    def test_scope_storey_of_an_element_spanning_storeys_includes_each_storey(self, model_wall_through_two_storeys):
+        f = model_wall_through_two_storeys
+        wall = next(e for e in f.by_type("IfcWall"))
+        result = clash(f, wall, scope="storey")
+        # Which side a clash names is not asserted here: IfcOpenShell#5357.
+        assert result["pass"] is False
+        assert len(result["checks"]["intersection"]["clashes"]) == 1
