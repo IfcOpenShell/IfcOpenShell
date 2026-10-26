@@ -250,7 +250,7 @@ class DumbProfileRegenerator:
                 else:
                     for rel in inverse.AssociatedTo:
                         results.extend(rel.RelatedObjects)
-        return results
+        return [e for e in results if not e.is_a("IfcStructuralItem")]
 
     def get_element_types_using_profile(
         self, profile: ifcopenshell.entity_instance
@@ -443,6 +443,11 @@ class DumbProfileJoiner:
         self.recreate_profile(element2, profile2, axis2, axis2)
 
     def recreate_profile(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, axis=None, body=None):
+        if not element or element.is_a("IfcStructuralItem"):
+            return
+        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if old_body and old_body.is_a("IfcTopologyRepresentation"):
+            return
         if axis is None or body is None:
             axis = body = self.get_profile_axis(obj)
         self.axis = copy.deepcopy(axis)
@@ -514,7 +519,6 @@ class DumbProfileJoiner:
                 return (position.Axis.DirectionRatios, position.RefDirection.DirectionRatios)
             return ((0.0, 0.0, 1.0), (1.0, 0.0, 0.0))
 
-        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         new_body = ifcopenshell.api.geometry.add_profile_representation(
             tool.Ifc.get(),
             context=self.body_context,
@@ -885,6 +889,8 @@ class DumbProfileRecalculator:
         # also recalculate all connected elements
         for profile in profiles:
             element = tool.Ifc.get_entity(profile)
+            if not element or element.is_a("IfcStructuralItem"):
+                continue
             queue.add((element, profile))
             connected_elements = []
 
@@ -894,7 +900,8 @@ class DumbProfileRecalculator:
                 connected_elements.append(rel.RelatingElement)
 
             for element in connected_elements:
-                queue.add((element, tool.Ifc.get_object(element)))
+                if element and not element.is_a("IfcStructuralItem"):
+                    queue.add((element, tool.Ifc.get_object(element)))
 
         joiner = DumbProfileJoiner()
         for element, profile in queue:
