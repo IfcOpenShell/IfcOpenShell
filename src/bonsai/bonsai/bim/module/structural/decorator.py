@@ -301,6 +301,7 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         self.depth_array = n / (f - (f - n) * depth_array) * (f - n)
 
         placed: list[tuple[float, float, float, float]] = []
+        drawn: dict[int, tuple[float, float, float]] = {}  # Where each label went, for one following it.
         segments = self.get_screen_segments(context)
         boxes = self.label_boxes[context.region.as_pointer()] = []
         # Each item's diagram size, its longest arrow, so that labels keep to it as in a report's diagram.
@@ -328,8 +329,14 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
                     f"{get_plain_symbol(symbol)} = {info['text']}" if (symbol := info.get("symbol")) else info["text"]
                 )
                 x, y = text_position[0], text_position[1]
-                if (away := info.get("away")) is not None:
+                if (follows := info.get("follows")) is not None and id(follows) in drawn:
+                    # On the same line, just after the value it goes with, as a moment its force's.
+                    fx, fy, fw = drawn[id(follows)]
+                    x, y = fx + fw + 12, fy
+                    placed.append((x, y, *blf.dimensions(font_id, text)))
+                elif (away := info.get("away")) is not None:
                     x, y = self.place_beside(info["position"], away, x, y, text, context, placed, segments)
+                drawn[id(info)] = (x, y, blf.dimensions(font_id, text)[0])
                 blf.position(font_id, x, y, text_position[2])
                 if index is not None:
                     boxes.append(
