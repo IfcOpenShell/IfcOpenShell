@@ -807,7 +807,10 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                 # assign_inverted_type already applied any needed rotation change; only reflect translation.
                 origin_in_mirror = mirror_ref.matrix_world.inverted() @ obj.matrix_world.translation
                 origin_in_mirror.x *= -1
-                obj.matrix_world.translation = mirror_ref.matrix_world @ origin_in_mirror
+                new_t = mirror_ref.matrix_world @ origin_in_mirror
+                new_mat = obj.matrix_world.copy()
+                new_mat.translation = new_t
+                obj.matrix_world = new_mat  # full assignment so obj.location is back-decomposed
             else:
                 # invert_representation path: reflect translation AND rotation.
                 # P_world  = Householder from mirror plane normal (mirror_ref local X).
@@ -866,20 +869,30 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             self._apply_opening_mirror(element, mirror_axes, M_slab_before, opening_placements_before, frame_change, M_slab_new)
             for rel in element.HasOpenings:
                 opening = rel.RelatedOpeningElement
-                tool.Geometry.clear_cache(opening)
                 opening_obj = tool.Ifc.get_object(opening)
                 if opening_obj:
                     tool.Geometry.reload_representation(opening_obj)
 
-        # bonsai does not automatically switch to the representation that should be active in the given context
-        # when switching to a type that was previously viewed in another context (e.g. plan view),
-        # the wrong representation will be used.
-        bonsai.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=ifcopenshell.util.representation.get_representation(element, active_context),
-        )
+        active_rep = ifcopenshell.util.representation.get_representation(element, active_context)
+        if active_rep:
+            # bonsai does not automatically switch to the representation that should be active in the given context
+            # when switching to a type that was previously viewed in another context (e.g. plan view),
+            # the wrong representation will be used.
+            # Hybrid CGAL/OCC fails on MappedRepresentation + openings (#10049); force OCC for this call.
+            project_props = bpy.context.scene.BIMProjectProperties
+            original_library = project_props.geometry_library if is_assign_type_path else None
+            if is_assign_type_path:
+                project_props.geometry_library = "opencascade"
+            try:
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=active_rep,
+                )
+            finally:
+                if original_library is not None:
+                    project_props.geometry_library = original_library
 
         # For LAYER2/LAYER3 elements, _apply_opening_mirror computes opening positions
         # relative to the wall's pre-move IFC origin.  When the wall's Blender matrix is
@@ -1211,14 +1224,16 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             obj = tool.Ifc.get_object(element)
             loc = obj.matrix_world.translation.copy()
             rot_180_z = Matrix.Rotation(math.pi, 4, "Z")
-            obj.matrix_world = rot_180_z @ obj.matrix_world
-            obj.matrix_world.translation = loc
+            new_mat = rot_180_z @ obj.matrix_world
+            new_mat.translation = loc
+            obj.matrix_world = new_mat  # full assignment so obj.location is back-decomposed
         elif mirror_axes == (0.0, 0.0, 1.0):
             obj = tool.Ifc.get_object(element)
             loc = obj.matrix_world.translation.copy()
             rot_180_y = Matrix.Rotation(math.pi, 4, "Y")
-            obj.matrix_world = rot_180_y @ obj.matrix_world
-            obj.matrix_world.translation = loc
+            new_mat = rot_180_y @ obj.matrix_world
+            new_mat.translation = loc
+            obj.matrix_world = new_mat  # full assignment so obj.location is back-decomposed
 
 
 def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
