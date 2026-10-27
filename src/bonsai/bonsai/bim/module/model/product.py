@@ -1088,6 +1088,14 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                     mirror_item(sub, rep_id)
             elif item.is_a("IfcExtrudedAreaSolid"):
                 sw = item.SweptArea
+                # If this profile is shared between multiple items (e.g. two instances
+                # of the same type both referencing the same IfcArbitraryClosedProfileDef),
+                # modifying it in-place would double-flip sibling elements.  Make a
+                # private deep copy so each element gets its own mutable profile.
+                _ifc = tool.Ifc.get()
+                if sw is not None and len(_ifc.get_inverse(sw)) > 1:
+                    sw = ifcopenshell.util.element.copy_deep(_ifc, sw)
+                    item.SweptArea = sw
                 oc = getattr(sw, "OuterCurve", None) if sw else None
                 if oc and oc.is_a("IfcIndexedPolyCurve"):
                     # Profile coords live in the Position frame, which may be rotated within
