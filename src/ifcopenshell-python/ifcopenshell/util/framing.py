@@ -96,7 +96,8 @@ class VerticalEntry:
     top: Bound
     at_ends: bool = False
     at_corners: bool = False
-    within: Optional[str] = None
+    # Space inside the bays between the members of these vertical entries, face to face.
+    within: tuple[str, ...] = ()
     # Which of the bays to fill, counted from 1 along the path; negatives count from
     # the end. Empty means all.
     bays: tuple[int, ...] = ()
@@ -258,7 +259,7 @@ def _parse_entry(item: dict[str, Any], name: str) -> Entry:
             top=_parse_bound(item.get("top", "TOP"), name),
             at_ends=bool(item.get("at_ends", False)),
             at_corners=bool(item.get("at_corners", False)),
-            within=item.get("within"),
+            within=_parse_names(item.get("within"), name, "within"),
             bays=_parse_selection(item.get("bays"), name, "bays"),
             breaks_at=tuple(item.get("breaks_at", ())),
             flush=bool(item.get("flush", False)),
@@ -325,6 +326,16 @@ def _parse_bound(value: Any, name: str) -> Bound:
     raise FramingError(f"Entry {name!r} has an invalid bound {value!r}.")
 
 
+def _parse_names(value: Any, name: str, key: str) -> tuple[str, ...]:
+    """One entry name, or a list of them."""
+    if not value:
+        return ()
+    names = [value] if isinstance(value, str) else value
+    if not isinstance(names, list) or not all(isinstance(n, str) and n for n in names):
+        raise FramingError(f"Entry {name!r} needs an entry name or a list of them for {key!r}.")
+    return tuple(dict.fromkeys(names))
+
+
 def _parse_length(value: Any, name: str, key: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise FramingError(f"Entry {name!r} needs {key!r} to be a number.")
@@ -374,7 +385,8 @@ def _validate_references(entries: list[Entry]) -> None:
 
     for e in entries:
         if isinstance(e, VerticalEntry):
-            expect(e.within, VerticalEntry, e.name, "'within'")
+            for ref in e.within:
+                expect(ref, VerticalEntry, e.name, "'within'")
             for ref in e.breaks_at:
                 expect(ref, HorizontalEntry, e.name, "'breaks_at'", allow_repeating=True)
                 if e.name in getattr(by_name[ref], "breaks_at", ()):
@@ -401,7 +413,7 @@ def _validate_references(entries: list[Entry]) -> None:
 
     # Verticals depend on verticals through 'within', horizontals on horizontals through
     # their bounds and 'within'. Nothing else can form a cycle, see solve().
-    _topological_order([e for e in entries if isinstance(e, VerticalEntry)], lambda e: [e.within])
+    _topological_order([e for e in entries if isinstance(e, VerticalEntry)], lambda e: list(e.within))
     _topological_order([e for e in entries if isinstance(e, HorizontalEntry)], _horizontal_deps)
 
 
@@ -471,7 +483,7 @@ def solve(
 
     vertical_positions: dict[str, list[tuple[float, tuple[int, int, int]]]] = {}
     verticals = [e for e in entries if isinstance(e, VerticalEntry)]
-    for entry in _topological_order(verticals, lambda e: [e.within]):
+    for entry in _topological_order(verticals, lambda e: list(e.within)):
         positions = _solve_vertical_positions(entry, guide, scope, vertical_positions, extents)
         vertical_positions[entry.name] = positions
         v_start, v_end = _resolve_bounds(entry.name, entry.bottom, entry.top, height, levels, extents)
@@ -779,21 +791,28 @@ def _solve_vertical_positions(
     # Each range is (u_start, u_end, segment, bay) that spacing fills.
     ranges: list[tuple[float, float, int, int]] = []
     if entry.within:
-        parents = [u for u, _ in solved[entry.within]]
-        lo, hi = extents.get(entry.within, (0.0, 0.0))
+        # Every parent member as (u, lo, hi), whichever entry it comes from.
+        parents = [(u, *extents.get(name, (0.0, 0.0))) for name in entry.within for u, _ in solved[name]]
+
+        def faces(u: float) -> Optional[tuple[float, float]]:
+            # Where parents of several entries share a position, the widest one bounds the bay.
+            here = [(lo, hi) for p, lo, hi in parents if abs(p - u) <= TOLERANCE]
+            return (min(lo for lo, _ in here), max(hi for _, hi in here)) if here else None
+
         # Bays run face to face between parent members and never across a path vertex.
-        breaks = sorted(set(parents + guide.starts + [guide.length]))
+        breaks = sorted(set([p for p, _, _ in parents] + guide.starts + [guide.length]))
         bay_counts: dict[int, int] = {}
         for a, b in zip(breaks, breaks[1:]):
             if b - a <= TOLERANCE:
                 continue
-            start = a + hi if _near(a, parents) else a
-            end = b + lo if _near(b, parents) else b
+            start = a + face[1] if (face := faces(a)) else a
+            end = b + face[0] if (face := faces(b)) else b
+            if end - start <= TOLERANCE:
+                continue
             segment = guide.segment_at(a)
             bay = bay_counts.get(segment, 0)
             bay_counts[segment] = bay + 1
-            if end - start > TOLERANCE:
-                ranges.append((start, end, segment, bay))
+            ranges.append((start, end, segment, bay))
     elif scope == "PATH":
         ranges.append((0.0, guide.length, 0, 0))
     else:

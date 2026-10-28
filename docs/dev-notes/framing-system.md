@@ -104,7 +104,12 @@ The type holds an ordered list. Each entry is an array of one of three kinds.
   Tops and bottoms already stop at faces: BASE and TOP are the extrusion's end faces,
   and a member bound stops on that member's face.
 - `within`: spaces this array inside the bays of another vertical array. Examples are
-  balusters between posts, and intermediate mullions between primary ones.
+  balusters between posts, and intermediate mullions between primary ones. It can be a
+  list of vertical entries: the bays then run face to face between the members of any
+  of them, the widest where two share a position. This is for a parent with `at_ends`
+  off whose end posts come from another entry (a window wall's mid posts and its end
+  posts): within the mid posts alone, the end bays would run to the path ends, inside
+  the end posts. Bays are numbered as before. Saved as a string when there is one.
 - `bottom` / `top` bound: `BASE` (v = 0), `TOP` (occurrence height), an absolute `v`, or
   `{"member": name}`.
 - Square or raked cut at sloped bounds.

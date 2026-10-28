@@ -694,7 +694,13 @@ def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
         row.prop(entry, "at_corners", toggle=True)
         row.prop(entry, "square_cut", toggle=True)
         row.prop(entry, "flush", toggle=True)
-        box.prop_search(entry, "within", props, "entries")
+        row = box.row(align=True)
+        row.prop_search(entry, "within", props, "entries")
+        row.operator("bim.add_framing_within", text="", icon="ADD")
+        for i, item in enumerate(entry.within_also):
+            row = box.row(align=True)
+            row.prop_search(item, "name", props, "entries", text="Also Within")
+            row.operator("bim.remove_framing_within", text="", icon="REMOVE").index = i
         box.prop(entry, "bays")
         _draw_framing_bound(box, props, entry, "top", "Top")
         _draw_framing_bound(box, props, entry, "bottom", "Bottom")

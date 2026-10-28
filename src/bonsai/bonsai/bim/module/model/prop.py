@@ -1674,6 +1674,17 @@ class BIMFramingBreak(PropertyGroup):
         name: str
 
 
+class BIMFramingWithin(PropertyGroup):
+    name: bpy.props.StringProperty(
+        update=update_framing_preview,
+        name="Within",
+        description="Another vertical entry whose members also bound the bays",
+    )
+
+    if TYPE_CHECKING:
+        name: str
+
+
 class BIMFramingEntry(PropertyGroup):
     name: bpy.props.StringProperty(update=update_framing_preview, name="Name")
     kind: bpy.props.EnumProperty(
@@ -1751,6 +1762,7 @@ class BIMFramingEntry(PropertyGroup):
     top: bpy.props.FloatProperty(update=update_framing_preview, name="Top", default=1.0, subtype="DISTANCE")
     top_member: bpy.props.StringProperty(update=update_framing_preview, name="Top Member")
     breaks_at: bpy.props.CollectionProperty(type=BIMFramingBreak, name="Breaks At")
+    within_also: bpy.props.CollectionProperty(type=BIMFramingWithin, name="Also Within")
     between: bpy.props.StringProperty(
         update=update_framing_preview, name="Between", description="The vertical entry whose bays this runs in"
     )
@@ -1849,6 +1861,7 @@ class BIMFramingEntry(PropertyGroup):
         top: float
         top_member: str
         breaks_at: bpy.types.bpy_prop_collection_idprop[BIMFramingBreak]
+        within_also: bpy.types.bpy_prop_collection_idprop[BIMFramingWithin]
         between: str
         square_cut: bool
         flush: bool

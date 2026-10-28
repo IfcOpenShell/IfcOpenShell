@@ -852,3 +852,68 @@ class TestFlush:
     def test_off_by_default(self):
         entries = subject.parse_system({"members": [{"name": "P", "kind": "V", "at_ends": True}]})
         assert entries[0].flush is False
+
+
+class TestWithinSeveralEntries:
+    MEMBERS = [
+        {"name": "Ends", "kind": "V", "at_ends": True},
+        {"name": "Mid", "kind": "V", "spacing": {"mode": "COUNT", "value": 2}},
+    ]
+    EXTENTS = {"Ends": (-0.2, 0.2), "Mid": (-0.1, 0.1)}
+
+    def jambs(self, within):
+        jamb = {
+            "name": "Jamb",
+            "kind": "V",
+            "within": within,
+            "spacing": {"mode": "MAX", "value": 10.0, "align": "END", "offset": 0.05},
+        }
+        return solve(self.MEMBERS + [jamb], segments=(6.0,), extents=self.EXTENTS).by_entry("Jamb")
+
+    def test_end_bays_stop_at_the_other_entry_faces(self):
+        # Within Mid alone, the end bays run to the path ends, inside the Ends posts.
+        assert [m.u for m in self.jambs("Mid")] == approx_list([1.85, 3.85, 5.95])
+        # Within both, every bay runs face to face, so the last jamb clears the Ends post.
+        assert [m.u for m in self.jambs(["Mid", "Ends"])] == approx_list([1.85, 3.85, 5.75])
+
+    def test_bays_are_counted_the_same(self):
+        assert [m.address[1] for m in self.jambs(["Mid", "Ends"])] == [0, 1, 2]
+
+    def test_one_name_or_a_list_of_one(self):
+        assert [m.u for m in self.jambs(["Mid"])] == [m.u for m in self.jambs("Mid")]
+
+    def test_widest_parent_bounds_a_shared_position(self):
+        members = [
+            {"name": "Ends", "kind": "V", "at_ends": True},
+            {"name": "Corner", "kind": "V", "at_ends": True},
+            {"name": "B", "kind": "V", "within": ["Ends", "Corner"], "spacing": {"mode": "COUNT", "value": 1}},
+        ]
+        layout = solve(members, segments=(2.0,), extents={"Ends": (-0.1, 0.1), "Corner": (-0.3, 0.3)})
+        # Both sit at 0 and 2; the wider Corner bounds the bay, 0.3 to 1.7.
+        assert us(layout, "B") == approx_list([1.0])
+        assert solve(
+            members[:2] + [{**members[2], "spacing": {"mode": "FIXED", "value": 0.5, "align": "START"}}],
+            segments=(2.0,),
+            extents={"Ends": (-0.1, 0.1), "Corner": (-0.3, 0.3)},
+        ).by_entry("B")[0].u == pytest.approx(0.8)
+
+    @pytest.mark.parametrize(
+        "within, message",
+        [(["Nope"], "unknown entry"), ([1], "entry name"), ({"name": "Ends"}, "entry name")],
+    )
+    def test_rejects_invalid_parents(self, within, message):
+        members = [
+            {"name": "Ends", "kind": "V", "at_ends": True},
+            {"name": "B", "kind": "V", "within": within, "at_ends": True},
+        ]
+        with pytest.raises(FramingError, match=message):
+            subject.parse_system({"members": members})
+
+    def test_rejects_a_loop_through_a_list(self):
+        members = [
+            {"name": "A", "kind": "V", "spacing": {"mode": "COUNT", "value": 1}, "within": ["C", "B"]},
+            {"name": "B", "kind": "V", "spacing": {"mode": "COUNT", "value": 1}, "within": "A"},
+            {"name": "C", "kind": "V", "at_ends": True},
+        ]
+        with pytest.raises(FramingError, match="loop"):
+            subject.parse_system({"members": members})

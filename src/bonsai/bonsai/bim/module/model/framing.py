@@ -620,7 +620,12 @@ def _load_props(obj: bpy.types.Object) -> None:
         entry.flush = member.get("flush", False)
         entry.extend_start = member.get("extend_start", 0.0) * unit_scale
         entry.extend_end = member.get("extend_end", 0.0) * unit_scale
-        entry.within = member.get("within") or ""
+        within = member.get("within") or []
+        within = [within] if isinstance(within, str) else within
+        entry.within = within[0] if within else ""
+        entry.within_also.clear()
+        for name in within[1:]:
+            entry.within_also.add().name = name
         if "v" in member:
             _bound_to_props(entry, "level", member["v"], unit_scale)
         _bound_to_props(entry, "bottom", member.get("bottom", "BASE"), unit_scale)
@@ -674,8 +679,12 @@ def system_from_props(props, previous: dict[str, Any]) -> dict[str, Any]:
         if entry.flush and entry.kind in ("V", "H"):
             member["flush"] = True
         repeats = entry.kind == "INFILL" or entry.spacing_mode != "NONE"
-        if entry.within and repeats:
-            member["within"] = entry.within
+        within = [entry.within.strip()]
+        if entry.kind == "V":
+            within += [w.name.strip() for w in entry.within_also]
+        within = list(dict.fromkeys(w for w in within if w))
+        if within and repeats:
+            member["within"] = within[0] if len(within) == 1 else within
         if entry.between and entry.kind in ("H", "INFILL"):
             member["between"] = entry.between
         if bays := _selection_from_props(entry, "bays"):
@@ -981,6 +990,47 @@ class RemoveFramingBreak(bpy.types.Operator):
             entry = props.entries[props.active_entry_index]
             if 0 <= self.index < len(entry.breaks_at):
                 entry.breaks_at.remove(self.index)
+                update_framing_preview(obj)
+        return {"FINISHED"}
+
+
+class AddFramingWithin(bpy.types.Operator):
+    bl_idname = "bim.add_framing_within"
+    bl_label = "Add Within"
+    bl_description = "Also space inside the bays of another vertical entry, so bays run between the members of both"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        global _is_loading_props
+        obj = context.active_object
+        props = tool.Model.get_framing_props(obj)
+        if 0 <= props.active_entry_index < len(props.entries):
+            entry = props.entries[props.active_entry_index]
+            taken = {entry.name, entry.within} | {w.name for w in entry.within_also}
+            # Start with the first vertical entry not already listed.
+            choice = next((e.name for e in props.entries if e.kind == "V" and e.name not in taken), "")
+            _is_loading_props = True
+            try:
+                entry.within_also.add().name = choice
+            finally:
+                _is_loading_props = False
+            update_framing_preview(obj)
+        return {"FINISHED"}
+
+
+class RemoveFramingWithin(bpy.types.Operator):
+    bl_idname = "bim.remove_framing_within"
+    bl_label = "Remove Within"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        props = tool.Model.get_framing_props(obj)
+        if 0 <= props.active_entry_index < len(props.entries):
+            entry = props.entries[props.active_entry_index]
+            if 0 <= self.index < len(entry.within_also):
+                entry.within_also.remove(self.index)
                 update_framing_preview(obj)
         return {"FINISHED"}
 
