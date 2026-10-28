@@ -1369,7 +1369,250 @@ class TestSlopedVoids:
             assert m.v_end < rake_line(m.u)
             assert m.top_cut is not None
 
-    def test_crossing_a_corner(self):
-        void = subject.Void(2.0, 4.0, 1.0, 2.0, outline=((2.0, 1.0), (4.0, 1.0), (3.0, 2.0)))
-        with pytest.raises(FramingError, match="crosses a corner"):
-            solve(frame(), segments=(3.0, 3.0), height=3.0, extents=FRAME_EXTENTS, voids=[void])
+    def test_stays_on_its_leg(self):
+        # Mostly on the second leg, reaching back round the corner: kept to the second leg.
+        void = subject.Void(2.5, 5.0, 1.0, 2.0, outline=((2.5, 1.0), (5.0, 1.0), (5.0, 2.0), (2.5, 2.0)))
+        layout = solve(frame(), segments=(3.0, 3.0), height=3.0, extents=FRAME_EXTENTS, voids=[void])
+        assert all(m.start[0] >= 3.0 - 1e-9 for m in layout.inclined)
+        # The first leg's studs are not cut.
+        assert all(m.top_cut is None and m.bottom_cut is None for m in layout.by_entry("Stud") if m.u < 3.0)
+
+
+class TestEdgeAndHoleOpenings:
+    # A door standing on the base reaches a side of the framing, so it is an edge opening;
+    # a window inside it is a hole.
+    DOOR = subject.Void(2.0, 3.0, 0.0, 2.6, "IfcDoor")
+    WINDOW = subject.Void(4.0, 5.0, 1.0, 2.6, "IfcWindow")
+
+    def transom(self, **cuts):
+        transom = {"name": "Transom", "kind": "H", "v": 2.4, **cuts}
+        extents = {**STOREFRONT_EXTENTS, "Transom": (-0.025, 0.025)}
+        layout = solve_storefront(storefront() + [transom], [self.DOOR, self.WINDOW], extents=extents)
+        return [(round(m.u_start, 3), round(m.u_end, 3)) for m in layout.by_entry("Transom") if m.address[0] >= 0]
+
+    def test_cut_by_both(self):
+        runs = self.transom()
+        assert not any(a < 2.5 < b for a, b in runs) and not any(a < 4.5 < b for a, b in runs)
+
+    def test_runs_through_holes(self):
+        runs = self.transom(cut_by_hole_voids=False)
+        assert not any(a < 2.5 < b for a, b in runs)
+        assert any(a < 4.0 and b > 5.0 for a, b in runs)
+
+    def test_runs_through_edge_openings(self):
+        runs = self.transom(cut_by_edge_voids=False)
+        assert any(a < 2.0 and b > 3.0 for a, b in runs)
+        assert not any(a < 4.5 < b for a, b in runs)
+
+    def test_the_older_key_sets_both(self):
+        (entry,) = subject.parse_system({"members": [{"name": "R", "kind": "H", "v": 1.0, "cut_by_voids": False}]})
+        assert not entry.cut_by_edge_voids and not entry.cut_by_hole_voids
+        (entry,) = subject.parse_system(
+            {"members": [{"name": "R", "kind": "H", "v": 1.0, "cut_by_voids": False, "cut_by_hole_voids": True}]}
+        )
+        assert not entry.cut_by_edge_voids and entry.cut_by_hole_voids
+
+    def test_sloped_openings_are_sorted_too(self):
+        # The rake reaches the top, so it is an edge opening; a diamond in the middle is a hole.
+        diamond = subject.Void(2.7, 3.3, 0.7, 1.3, outline=((3.0, 0.7), (3.3, 1.0), (3.0, 1.3), (2.7, 1.0)))
+        members = frame()
+        rail = next(m for m in members if m["name"] == "Rail")
+        rail.update(v=1.0, cut_by_edge_voids=False)
+        stud = next(m for m in members if m["name"] == "Stud")
+        stud["cut_by_hole_voids"] = False
+        layout = solve(members, segments=(6.0,), height=3.0, extents=FRAME_EXTENTS, voids=[RAKED_TOP, diamond])
+        # The rail is cut by the diamond, but the stud at 3.0 runs through it, and stops at the rake.
+        assert not any(m.u_start < 2.85 < m.u_end for m in layout.by_entry("Rail"))
+        (stud,) = [m for m in layout.by_entry("Stud") if abs(m.u - 3.0) < 1e-9]
+        assert stud.v_start == pytest.approx(0.1) and stud.top_cut is not None
+
+
+class TestHeadAndSillLayers:
+    def test_layers_stack_away_from_the_opening(self):
+        members = WOOD[:-2] + [
+            {"name": "Header Bottom", "kind": "H", "void_role": "HEAD"},
+            {"name": "Header A", "kind": "H", "void_role": "HEAD", "void_layer": 2, "offset": -0.02},
+            {"name": "Header B", "kind": "H", "void_role": "HEAD", "void_layer": 2, "offset": 0.02},
+            {"name": "Header Top", "kind": "H", "void_role": "HEAD", "void_layer": 3},
+            {"name": "Sill Top", "kind": "H", "void_role": "SILL"},
+            {"name": "Sill Bottom", "kind": "H", "void_role": "SILL", "void_layer": 2},
+        ]
+        extents = {
+            **WOOD_EXTENTS,
+            "Header Bottom": (-0.02, 0.02),
+            "Header A": (-0.1, 0.1),
+            "Header B": (-0.1, 0.1),
+            "Header Top": (-0.02, 0.02),
+            "Sill Top": (-0.02, 0.02),
+            "Sill Bottom": (-0.02, 0.02),
+        }
+        layout = solve(members, segments=(3.2,), height=2.4, extents=extents, voids=[WINDOW])
+        levels = {m.entry: m.v for m in layout.horizontals if m.address[0] < 0}
+        # Upwards from the opening's head at 2.0: 0.04, then the sistered pair 0.2 side by side, then 0.04.
+        assert levels == pytest.approx(
+            {
+                "Header Bottom": 2.02,
+                "Header A": 2.14,
+                "Header B": 2.14,
+                "Header Top": 2.26,
+                "Sill Top": 0.88,
+                "Sill Bottom": 0.84,
+            }
+        )
+        # Studs over the opening stop on the top layer, and under it at the bottom one.
+        pieces = [(m.v_start, m.v_end) for m in layout.by_entry("Stud") if abs(m.u - 1.2) < 1e-9]
+        assert pieces == [pytest.approx((0.04, 0.82)), pytest.approx((2.28, 2.36))]
+
+    def test_the_layer_must_be_positive(self):
+        with pytest.raises(FramingError, match="void layer"):
+            subject.parse_system({"members": [{"name": "H", "kind": "H", "void_role": "HEAD", "void_layer": 0}]})
+
+
+# Over the second leg of an L (u 3 to 6), everything above a line falling from 3.0 at the corner.
+RAKE_ON_LEG = subject.Void(3.0, 7.0, 2.0, 5.0, outline=((3.0, 3.0), (7.0, 1.8), (7.0, 5.0), (3.0, 5.0)))
+RAKE_PLATES = [
+    {"name": "Rake Plate", "kind": "H", "void_role": "SILL", "void_layer": 1},
+    {"name": "Rake Plate 2", "kind": "H", "void_role": "SILL", "void_layer": 2},
+]
+
+
+class TestSlopedLayers:
+    def test_layers_stack_parallel_to_the_slope_and_stop_at_the_corner(self):
+        extents = {**FRAME_EXTENTS, "Rake Plate": (-0.05, 0.05), "Rake Plate 2": (-0.05, 0.05)}
+        layout = solve(frame() + RAKE_PLATES, segments=(3.0, 3.0), height=3.0, extents=extents, voids=[RAKE_ON_LEG])
+        first, second = sorted(layout.inclined, key=lambda m: m.entry)
+        slope = math.hypot(1, 0.3)
+        for member, depth in ((first, 0.05), (second, 0.15)):
+            # Parallel to the rake, each a plate's depth further from it, square to the slope.
+            u, v = member.start
+            assert v == pytest.approx(3.0 - 0.3 * (u - 3.0) - depth * slope)
+            assert (member.end[1] - member.start[1]) / (member.end[0] - member.start[0]) == pytest.approx(-0.3)
+            # They start on the corner, cut plumb there, and run to the path end.
+            assert u == pytest.approx(3.0) and parallel(member.start_cut, (0, 1))
+            assert member.end[0] == pytest.approx(6.0)
+        # The first leg's top rail stops at the corner, cut plumb there too.
+        (top,) = [m for m in layout.by_entry("Top") if m.u_start < 3.0]
+        assert top.u_end == pytest.approx(3.0) and parallel(top.end_cut, (0, 1))
+
+
+class TestLevelOffset:
+    def test_a_plate_follows_the_top_a_set_distance_under_it(self):
+        members = [
+            {"name": "Upper", "kind": "H", "v": "TOP", "flush": True},
+            {"name": "Lower", "kind": "H", "v": "TOP", "flush": True, "level_offset": -0.125},
+        ]
+        extents = {"Upper": (-0.0625, 0.0625), "Lower": (-0.0625, 0.0625)}
+        for height in (8.0, 9.0):
+            layout = solve(members, height=height, extents=extents)
+            (upper,), (lower,) = layout.by_entry("Upper"), layout.by_entry("Lower")
+            # Flush under the top, then down by its own depth: right under the upper plate.
+            assert lower.v == pytest.approx(upper.v - 0.125) == pytest.approx(height - 0.1875)
+
+    def test_offsets_any_level(self):
+        members = [
+            {"name": "Rail", "kind": "H", "v": 1.0},
+            {"name": "Above", "kind": "H", "v": {"member": "Rail"}, "level_offset": 0.25},
+        ]
+        assert solve(members).by_entry("Above")[0].v == pytest.approx(1.25)
+
+
+class TestCornerMembers:
+    def test_keep_both_legs_clear(self):
+        members = [
+            {"name": "Post", "kind": "V", "at_ends": True, "at_corners": True},
+            {
+                "name": "Next",
+                "kind": "V",
+                "within": "Post",
+                "spacing": {"mode": "MAX", "value": 100.0, "align": "START", "offset": 0.02},
+            },
+        ]
+        entries = subject.parse_system({"members": members})
+        # Facing along one leg, the corner post reaches its depth out of plane across the other.
+        extents, lateral = {"Post": (-0.02, 0.02), "Next": (-0.02, 0.02)}, {"Post": (-0.07, 0.07)}
+        layout = subject.solve(entries, [3.0, 3.0], 1.0, extents=extents, lateral=lateral)
+        assert us(layout, "Next") == approx_list([0.02 + 0.02, 3.0 + 0.07 + 0.02])
+
+
+class TestButtCorners:
+    def layout(self, turn=math.pi / 2):
+        members = [
+            {"name": "Post", "kind": "V", "at_corners": True, "butt_corners": True},
+            {"name": "Stud", "kind": "V", "within": "Post", "spacing": {"mode": "FIXED", "value": 0.5}},
+        ]
+        entries = subject.parse_system({"members": members})
+        # 0.04 along the path, 0.14 through the wall.
+        extents, lateral = {"Post": (-0.02, 0.02), "Stud": (-0.02, 0.02)}, {"Post": (-0.07, 0.07)}
+        return subject.solve(entries, [3.0, 3.0], 1.0, extents=extents, lateral=lateral, turns=[turn])
+
+    def test_the_first_leg_runs_through_and_the_second_butts_into_it(self):
+        posts = sorted((m.u, m.address[0]) for m in self.layout().by_entry("Post"))
+        # The first leg's post is flush with the second leg's outer face, 0.07 past the
+        # corner; the second leg's stands against the first leg's inner face, 0.07 along.
+        assert posts == [(pytest.approx(3.05), 0), (pytest.approx(3.09), 1)]
+
+    def test_the_legs_space_from_their_own_posts(self):
+        layout = self.layout()
+        first = [m.u for m in layout.by_entry("Stud") if m.address[0] == 0]
+        second = [m.u for m in layout.by_entry("Stud") if m.address[0] == 1]
+        # The first leg's bay runs to its post's inner face at 3.03, past the corner, and the
+        # second's from its post's outer face at 3.11.
+        assert 3.0 < max(first) < 3.03
+        assert min(second) > 3.11
+
+    def test_an_open_corner_reaches_further(self):
+        posts = sorted(m.u for m in self.layout(math.pi / 4).by_entry("Post"))
+        assert posts[0] == pytest.approx(3.0 + 0.07 / math.sin(math.pi / 4) - 0.02)
+
+
+class TestCornerMembersAndOpenings:
+    def test_corner_members_run_through_and_serve_as_jambs(self):
+        members = frame() + RAKE_PLATES
+        ends = next(m for m in members if m["name"] == "Ends")
+        ends.update(at_corners=True, butt_corners=True)
+        extents = {**FRAME_EXTENTS, "Rake Plate": (-0.05, 0.05), "Rake Plate 2": (-0.05, 0.05)}
+        # A rake starting at the first leg's inner face, well under the top, so its first edge
+        # is steep, as a rake butting into the corner.
+        rake = subject.Void(3.07, 7.0, 1.0, 5.0, outline=((3.07, 2.0), (7.0, 1.0), (7.0, 5.0), (3.07, 5.0)))
+        entries = subject.parse_system({"members": members})
+        # 0.14 through the wall, so the corner members stand at 3.02 and 3.12, either side of the
+        # first leg's inner face at 3.07.
+        layout = subject.solve(
+            entries, [3.0, 3.0], 3.0, extents=extents, lateral={"Ends": (-0.07, 0.07)}, voids=(rake,)
+        )
+        corner = sorted(
+            (m for m in layout.by_entry("Ends") if isinstance(m, subject.VerticalMember) and 3.0 < m.u < 3.2),
+            key=lambda m: m.u,
+        )
+        # The first leg's member runs through, whole from the bottom rail to the top rail. The
+        # second leg's is an end member like any other, so it stops under the rake plates.
+        through, butting = corner
+        assert (through.v_start, through.v_end) == pytest.approx((0.1, 2.9))
+        assert butting.v_end < 2.0 and butting.top_cut is not None
+        # The steep edge beside them gets no jamb of its own; only the rake plates frame the rake.
+        assert sorted(m.entry for m in layout.inclined) == ["Rake Plate", "Rake Plate 2"]
+
+
+class TestSlopedMembersAtButtCorners:
+    def test_run_over_the_member_that_runs_through(self):
+        members = frame() + RAKE_PLATES
+        ends = next(m for m in members if m["name"] == "Ends")
+        ends.update(at_corners=True, butt_corners=True)
+        extents = {**FRAME_EXTENTS, "Rake Plate": (-0.05, 0.05), "Rake Plate 2": (-0.05, 0.05)}
+        # Over the middle leg, reaching past its end at the second corner, u = 6.
+        rake = subject.Void(3.07, 6.5, 1.0, 5.0, outline=((3.07, 2.0), (6.5, 1.415), (6.5, 5.0), (3.07, 5.0)))
+        entries = subject.parse_system({"members": members})
+        layout = subject.solve(
+            entries, [3.0, 3.0, 3.0], 3.0, extents=extents, lateral={"Ends": (-0.07, 0.07)}, voids=(rake,)
+        )
+        # At the second corner the middle leg runs through, so the rake plates run square over
+        # its member at 6.02, to the last leg's outer face at 6.07, and it is cut under them.
+        for member in layout.inclined:
+            assert member.end[0] == pytest.approx(6.07)
+            assert parallel(member.end_cut, (0, 1))
+        ends = layout.by_entry("Ends")
+        (through,) = [m for m in ends if isinstance(m, subject.VerticalMember) and abs(m.u - 6.02) < 1e-9]
+        assert through.v_end < 2.0 and through.top_cut is not None
+        # The last leg's member, standing against the middle leg, runs whole.
+        (last,) = [m for m in ends if isinstance(m, subject.VerticalMember) and abs(m.u - 6.12) < 1e-9]
+        assert (last.v_start, last.v_end) == pytest.approx((0.1, 2.9))

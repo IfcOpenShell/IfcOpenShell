@@ -405,6 +405,7 @@ def _rail_pieces(
     profile_points: np.ndarray,
     start_cut: Optional[ifcopenshell.util.framing.Cut] = None,
     end_cut: Optional[ifcopenshell.util.framing.Cut] = None,
+    corner_joint: str = "MITRE",
 ) -> list[FramingRail]:
     pieces = guide.pieces(u_start, u_end)
     whole_loop = guide.closed and u_start <= TOLERANCE and u_end >= guide.length - TOLERANCE
@@ -428,6 +429,21 @@ def _rail_pieces(
             return None
         return m / length
 
+    def square_reach(cut, u: float, segment: int) -> Optional[float]:
+        """For a plumb cut on a corner of the path, how far past it the other leg's outer face is."""
+        if abs(cut[0]) > TOLERANCE or (corner := _corner_at(guide, u)) is None:
+            return None
+        k = next(n for n, frame in enumerate(frames) if frame[0] == segment)
+        half = float(np.max(np.abs(frames[k][6] @ frames[k][4] + offset)))
+        turn = abs(float(np.cross(guide.direction(corner[0]), guide.direction(corner[1]))[2]))
+        return half / max(turn, 0.2)
+
+    def butt_reach(i: int, j: int) -> float:
+        """How far past a corner, in plan, the other leg's faces are from the path."""
+        half = max(float(np.max(np.abs(frames[k][6] @ frames[k][4] + offset))) for k in (i, j))
+        turn = abs(float(np.cross(frames[i][7], frames[j][7])[2]))
+        return half / max(turn, 0.2)
+
     result = []
     for k, (segment, a, b, d, n, x_axis, section, plan, stretch) in enumerate(frames):
         start = guide.point_at(a, segment) + _Z * v + n * offset
@@ -437,20 +453,38 @@ def _rail_pieces(
         prev_k = k - 1 if k > 0 else (len(frames) - 1 if whole_loop and len(frames) > 1 else None)
         next_k = k + 1 if k < len(frames) - 1 else (0 if whole_loop and len(frames) > 1 else None)
         if prev_k is not None and (m := mitre_between(prev_k, k)) is not None:
-            start_mitre = -m
-            start_corner = guide.point_at(a, segment) + _Z * v
-            start_extension = _mitre_extension(start_corner, start, -d, start_mitre, section)
+            if corner_joint == "MITRE":
+                start_mitre = -m
+                start_corner = guide.point_at(a, segment) + _Z * v
+                start_extension = _mitre_extension(start_corner, start, -d, start_mitre, section)
+            else:
+                # Butted: the leg that runs through reaches the other leg's outer face, and
+                # the other stops at its inner face. Ends are square to the piece.
+                reach = butt_reach(prev_k, k) * stretch
+                start_extension = reach if corner_joint == "BUTT_SECOND" else -reach
         if next_k is not None and (m := mitre_between(k, next_k)) is not None:
-            end_mitre = m
-            end_corner = guide.point_at(b, segment) + _Z * v
-            end_extension = _mitre_extension(end_corner, end, d, end_mitre, section)
+            if corner_joint == "MITRE":
+                end_mitre = m
+                end_corner = guide.point_at(b, segment) + _Z * v
+                end_extension = _mitre_extension(end_corner, end, d, end_mitre, section)
+            else:
+                reach = butt_reach(k, next_k) * stretch
+                end_extension = reach if corner_joint == "BUTT_FIRST" else -reach
         # Where a sloped opening cuts the run, its first and last pieces end along the edge.
-        if k == 0 and start_cut is not None and (m := _cut_normal(guide, segment, start_cut, -d)) is not None:
-            start_mitre, start_corner = m, guide.point_at(a, segment) + _Z * v
-            start_extension = _mitre_extension(start_corner, start, -d, start_mitre, section)
-        if k == len(frames) - 1 and end_cut is not None and (m := _cut_normal(guide, segment, end_cut, d)) is not None:
-            end_mitre, end_corner = m, guide.point_at(b, segment) + _Z * v
-            end_extension = _mitre_extension(end_corner, end, d, end_mitre, section)
+        # Cut plumb on a corner of the path, a butted run ends square as its corners do: on
+        # the leg that runs through at the other leg's outer face, else at its inner face.
+        if k == 0 and start_cut is not None:
+            if corner_joint != "MITRE" and (reach := square_reach(start_cut, a, segment)) is not None:
+                start_extension = (reach if corner_joint == "BUTT_SECOND" else -reach) * stretch
+            elif (m := _cut_normal(guide, segment, start_cut, -d, a)) is not None:
+                start_mitre, start_corner = m, guide.point_at(a, segment) + _Z * v
+                start_extension = _mitre_extension(start_corner, start, -d, start_mitre, section)
+        if k == len(frames) - 1 and end_cut is not None:
+            if corner_joint != "MITRE" and (reach := square_reach(end_cut, b, segment)) is not None:
+                end_extension = (reach if corner_joint == "BUTT_FIRST" else -reach) * stretch
+            elif (m := _cut_normal(guide, segment, end_cut, d, b)) is not None:
+                end_mitre, end_corner = m, guide.point_at(b, segment) + _Z * v
+                end_extension = _mitre_extension(end_corner, end, d, end_mitre, section)
         result.append(
             FramingRail(
                 entry,
@@ -470,7 +504,11 @@ def _rail_pieces(
     pairs = [(k, k + 1) for k in range(len(result) - 1)]
     if whole_loop and len(result) > 1:
         pairs.append((len(result) - 1, 0))
-    return _ease_corners(result, frames, guide, pairs)
+    rails = _ease_corners(result, frames, guide, pairs)
+    # A butted corner or a cut can leave a piece with no length, such as a second leg's
+    # plate ending as far past the corner as the first leg's plate is deep. Drop those.
+    least = 0.01 * max(float(np.max(np.abs(section))) for *_, section, _, _ in frames)
+    return [r for r in rails if r.length + r.start_extension + r.end_extension > least]
 
 
 def _ease_corners(
@@ -615,12 +653,23 @@ def _uv_vector(guide: _GuideMap, segment: int, du: float, dv: float) -> np.ndarr
 
 
 def _cut_normal(
-    guide: _GuideMap, segment: int, cut: ifcopenshell.util.framing.Cut, outward: np.ndarray
+    guide: _GuideMap,
+    segment: int,
+    cut: ifcopenshell.util.framing.Cut,
+    outward: np.ndarray,
+    u: Optional[float] = None,
 ) -> Optional[np.ndarray]:
     """The normal of the plane through a (u, v) cut line, square to the guide plane.
 
     It points along ``outward``, away from the member's material. None if the plane would
-    run along the member rather than across it."""
+    run along the member rather than across it. A plumb cut at ``u`` on a corner of the
+    path is a mitre on the corner's bisector instead, so the members either side meet."""
+    if u is not None and abs(cut[0]) <= TOLERANCE and (corner := _corner_at(guide, u)) is not None:
+        before, after = corner
+        normal = guide.direction(before) + guide.direction(after)
+        if np.linalg.norm(normal) > TOLERANCE:
+            normal /= np.linalg.norm(normal)
+            return normal if normal @ outward > 0 else -normal
     normal = np.cross(_uv_vector(guide, segment, *cut), guide.normal(segment))
     length = np.linalg.norm(normal)
     if length <= TOLERANCE:
@@ -631,6 +680,17 @@ def _cut_normal(
     if normal @ outward < 0.05:
         return None
     return normal
+
+
+def _corner_at(guide: _GuideMap, u: float) -> Optional[tuple[int, int]]:
+    """The segments either side of the path corner at ``u``, or None if it is not on one."""
+    last = len(guide.lengths) - 1
+    for i, start in enumerate(guide.starts):
+        if i > 0 and abs(u - start) <= TOLERANCE:
+            return i - 1, i
+    if guide.closed and last > 0 and (u <= TOLERANCE or abs(u - guide.length) <= TOLERANCE):
+        return last, 0
+    return None
 
 
 def _plane_extension(section: np.ndarray, axis: np.ndarray, normal: np.ndarray) -> float:
@@ -669,8 +729,8 @@ def _inclined_member(
     y_axis = np.cross(axis, ref_direction)
     section = np.outer(profile_points[:, 0], ref_direction) + np.outer(profile_points[:, 1], y_axis)
     planes = []
-    for point, cut, outward in ((start, member.start_cut, -axis), (end, member.end_cut, axis)):
-        normal = _cut_normal(guide, segment, cut, outward)
+    for point, cut, outward, u in ((start, member.start_cut, -axis, u0), (end, member.end_cut, axis, u1)):
+        normal = _cut_normal(guide, segment, cut, outward, u)
         planes.append(((point, normal),) if normal is not None else ())
     extensions = [max((_plane_extension(section, axis, m) for _, m in p), default=0.0) for p in planes]
     return FramingExtrusion(
@@ -745,8 +805,8 @@ def project_void(
     _, i, t = best
     u = guide_map.starts[i] + t
     v = pts[:, 2] - (guide_map.points[i][2] + guide_map.rises[i] * t / guide_map.lengths[i])
-    # An opening that is not a rectangle in (u, v), such as a sloped one, keeps its outline.
-    # The solver trims it to the framing, so it may reach past the path's ends.
+    # An opening that is not a rectangle in (u, v), such as a sloped one, keeps its outline,
+    # measured along its segment even past its ends. The solver keeps it to that leg.
     outline: tuple[tuple[float, float], ...] = ()
     hull = shapely.MultiPoint(np.column_stack((u, v))).convex_hull
     if hull.geom_type == "Polygon":
@@ -864,6 +924,10 @@ def compute_framing_geometry(
         extents=extents,
         lateral=lateral,
         voids=voids,
+        turns=[
+            float(np.arccos(np.clip(guide_map.direction(i - 1) @ guide_map.direction(i), -1.0, 1.0)))
+            for i in range(1, len(guide_map.lengths))
+        ],
     )
 
     items: list[FramingItem] = []
@@ -877,7 +941,8 @@ def compute_framing_geometry(
                     continue
                 segment = member.address[0]
                 d, n = guide_map.direction(segment), guide_map.normal(segment)
-                origin = guide_map.point_at(member.u) + _Z * member.v_start + n * offset
+                # On its own segment, which a member at a butt corner stands past the end of.
+                origin = guide_map.point_at(member.u, segment) + _Z * member.v_start + n * offset
                 ref_direction = d * cos(rotation) + n * sin(rotation)
                 items.append(
                     _raked_vertical(
@@ -908,6 +973,7 @@ def compute_framing_geometry(
                             profile_points[entry.name],
                             member.start_cut,
                             member.end_cut,
+                            entry_data.get("corner_joint", "MITRE"),
                         )
                     )
             for member in layout.inclined:
@@ -995,7 +1061,7 @@ def add_framing_representation(
         will be automatically calculated for you.
     :param voids: Rough openings to frame, see :func:`get_framing_voids`. The
         element's IfcOpeningElements still cut its body as usual, including members
-        that are not ``cut_by_voids``.
+        that are not cut by them.
     :return: IfcShapeRepresentation for the framing system.
     """
     if unit_scale is None:

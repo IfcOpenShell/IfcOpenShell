@@ -29,11 +29,14 @@ import ifcopenshell.api.material
 import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.geom
+import ifcopenshell.util.framing
 import ifcopenshell.util.shape
 from ifcopenshell.api.geometry.add_framing_representation import (
     FramingExtrusion,
     FramingPanel,
     FramingRail,
+    _GuideMap,
+    _rail_pieces,
     compute_framing_geometry,
     compute_framing_mesh,
     get_framing_voids,
@@ -752,3 +755,115 @@ class TestSlopedOpenings:
         # Nothing reaches into the angled end or above the rake.
         assert all(u >= 2 / 3 + (v + 1) / 3 - 1e-6 for u, _, v in vertices)
         assert all(v <= 2.9 - 0.1 * (u + 1) + 1e-6 for u, _, v in vertices)
+
+
+class TestRakeOverACorner:
+    def test_members_mitre_on_the_corner(self):
+        system = sloped_system()
+        system["members"] += [
+            {"name": "Rake", "kind": "H", "void_role": "SILL"},
+        ]
+        profiles = {**SLOPED_PROFILES, "Rake": (0.1, 0.1)}
+        rake = Void(3.0, 7.0, 2.0, 5.0, outline=((3.0, 3.0), (7.0, 1.8), (7.0, 5.0), (3.0, 5.0)))
+        items = compute_framing_geometry(
+            system=system,
+            guide=[(0.0, 0.0, 0.0), (3.0, 0.0, 0.0), (3.0, 3.0, 0.0)],
+            height=3.0,
+            profile_points={name: rectangle_points(*size) for name, size in profiles.items()},
+            voids=(rake,),
+        )
+        bisector = np.array((1.0, 1.0, 0.0)) / np.sqrt(2)
+        (rake_member,) = [i for i in items if i.entry == "Rake"]
+        ((_, normal),) = rake_member.bottom_planes
+        assert abs(normal @ bisector) == pytest.approx(1.0)
+        top = [i for i in items if i.entry == "Top" and isinstance(i, FramingRail)]
+        assert any(i.end_mitre is not None and abs(i.end_mitre @ bisector) == pytest.approx(1.0) for i in top)
+
+
+class TestRailCornerJoints:
+    def pieces(self, joint):
+        rail = {"name": "Rail", "kind": "H", "v": 1.0, "corner_joint": joint}
+        items = compute_framing_geometry(
+            system={"members": [rail]},
+            guide=[(0.0, 0.0, 0.0), (3.0, 0.0, 0.0), (3.0, 3.0, 0.0)],
+            height=1.1,
+            # 0.1 out of the guide plane, 0.05 tall.
+            profile_points={"Rail": rectangle_points(0.1, 0.05)},
+        )
+        first, second = (i for i in items if isinstance(i, FramingRail))
+        ends = []
+        for rail in (first, second):
+            start = rail.origin - rail.direction * rail.start_extension
+            end = rail.origin + rail.direction * (rail.length + rail.end_extension)
+            ends.append((start, end, rail.start_mitre, rail.end_mitre))
+        return ends
+
+    def test_mitre(self):
+        (_, _, _, end_mitre), (_, _, start_mitre, _) = self.pieces("MITRE")
+        assert end_mitre is not None and start_mitre is not None
+
+    @pytest.mark.parametrize(
+        "joint, first_end, second_start", [("BUTT_FIRST", 3.05, 0.05), ("BUTT_SECOND", 2.95, -0.05)]
+    )
+    def test_butt(self, joint, first_end, second_start):
+        (_, end, _, end_mitre), (start, _, start_mitre, _) = self.pieces(joint)
+        # Square ends: the leg running through reaches the other's outer face, the other
+        # stops at its inner face.
+        assert end_mitre is None and start_mitre is None
+        assert end[0] == pytest.approx(first_end)
+        assert start[1] == pytest.approx(second_start)
+
+    def test_rejects_unknown(self):
+        with pytest.raises(FramingError, match="corner joint"):
+            ifcopenshell.util.framing.parse_system(
+                {"members": [{"name": "R", "kind": "H", "v": 1.0, "corner_joint": "LAP"}]}
+            )
+
+
+class TestRailPiecesWithNoLength:
+    def test_a_butted_second_leg_ending_within_the_first_legs_depth_is_left_out(self):
+        # The run ends 0.05 past the corner, as deep as the first leg's rail reaches across it.
+        rail = {"name": "Rail", "kind": "H", "v": 1.0, "corner_joint": "BUTT_FIRST", "extend_end": -2.95}
+        items = compute_framing_geometry(
+            system={"members": [rail]},
+            guide=[(0.0, 0.0, 0.0), (3.0, 0.0, 0.0), (3.0, 3.0, 0.0)],
+            height=1.1,
+            profile_points={"Rail": rectangle_points(0.1, 0.05)},
+        )
+        (only,) = [i for i in items if isinstance(i, FramingRail)]
+        assert (only.origin + only.direction * (only.length + only.end_extension))[0] == pytest.approx(3.05)
+
+
+class TestSlopedOpeningOnALeg:
+    def test_is_measured_along_its_segment(self):
+        # Sloped and reaching 0.5 past the end of the middle leg, round the next corner.
+        box = [(x, y, z) for x in (-0.1, 0.1) for y, z in ((1.0, 2.0), (3.5, 1.0), (3.5, 3.0), (1.0, 3.0))]
+        void = project_void([(0.0, 0.0, 0.0), (0.0, 3.0, 0.0), (2.0, 3.0, 0.0)], box)
+        # Measured along the second leg, even past its end; the solver keeps it to that leg.
+        assert max(u for u, _ in void.outline) == pytest.approx(3.5)
+        assert void.u_end == pytest.approx(3.0)
+
+    def test_may_reach_past_the_path_end(self):
+        box = [(x, y, z) for x in (-0.1, 0.1) for y, z in ((1.0, 2.0), (3.5, 1.0), (3.5, 3.0), (1.0, 3.0))]
+        void = project_void([(0.0, 0.0, 0.0), (0.0, 3.0, 0.0)], box)
+        assert max(u for u, _ in void.outline) == pytest.approx(3.5)
+
+
+class TestRailCutOnACorner:
+    def test_a_butted_run_cut_on_a_corner_ends_as_its_corners_do(self):
+        # The run starts on the corner, cut plumb there, with nothing on the first leg to meet.
+        guide_map = _GuideMap([(0.0, 0.0, 0.0), (3.0, 0.0, 0.0), (3.0, 3.0, 0.0)], False)
+        (piece,) = _rail_pieces(
+            "Rail", 3.0, 6.0, 1.0, guide_map, 0.0, 0.0, rectangle_points(0.1, 0.05), (0.0, 1.0), None, "BUTT_FIRST"
+        )
+        # The second leg butts: square, starting at the first leg's inner face.
+        assert piece.start_mitre is None
+        assert (piece.origin - piece.direction * piece.start_extension)[1] == pytest.approx(0.05)
+        profile = rectangle_points(0.1, 0.05)
+        (through,) = _rail_pieces("Rail", 3.0, 6.0, 1.0, guide_map, 0.0, 0.0, profile, (0.0, 1.0), None, "BUTT_SECOND")
+        # The second leg runs through: back to the first leg's outer face.
+        assert (through.origin - through.direction * through.start_extension)[1] == pytest.approx(-0.05)
+        (mitred,) = _rail_pieces(
+            "Rail", 3.0, 6.0, 1.0, guide_map, 0.0, 0.0, rectangle_points(0.1, 0.05), (0.0, 1.0), None, "MITRE"
+        )
+        assert mitred.start_mitre is not None
