@@ -6,7 +6,7 @@ The modules being ported are loaded from this checkout's source, the rest of
 ifcopenshell (wrapper, fixture-building APIs) from the installed package. Every
 call the tests make into a recorded module is captured with the input file
 snapshot, arguments, return value and resulting file changes, and written to
-golden/<module>.json for the tests of src/ts/ifcopenshell-util and src/ts/ifcopenshell-api to replay.
+golden/<module>.json for tests/python in src/ts/ifcopenshell-js to replay.
 """
 
 import argparse
@@ -23,7 +23,7 @@ from pathlib import Path
 HERE = Path(__file__).parent
 PYTHON_ROOT = HERE.parent.parent / "ifcopenshell-python"
 SOURCE = PYTHON_ROOT / "ifcopenshell"
-# Tier 1 util modules and api-core packages (see tracking.yaml).
+# Tier 1 util modules and api-core packages (see the tiers in PLAN.md).
 DEFAULT_MODULES = [
     *(f"util.{m}" for m in ["alignment", "attribute", "brick", "classification", "constraint", "element", "file", "fm"]),
     *(f"util.{m}" for m in ["pset", "resource", "schema", "system", "type", "unit"]),
@@ -301,13 +301,9 @@ def test_paths(module_name):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "modules", nargs="*", default=DEFAULT_MODULES, help="for example util.unit api.root, or util or api for their defaults"
-    )
+    parser.add_argument("modules", nargs="*", default=DEFAULT_MODULES, help="for example util.unit api.root")
     parser.add_argument("-k", help="pytest -k expression")
     args = parser.parse_args()
-    # `util` and `api` stand for the default modules of that package (npm run record in each package).
-    args.modules = [m for name in args.modules for m in ([d for d in DEFAULT_MODULES if d.startswith(f"{name}.")] if name in ("util", "api") else [name])]
 
     recorder = Recorder(args.modules)
     # Load all of util and api from this checkout, so recorded modules and the code they

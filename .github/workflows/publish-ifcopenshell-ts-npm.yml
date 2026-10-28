@@ -2,19 +2,18 @@
 
 name: Publish IfcOpenShell TypeScript npm
 
-# Publishes the npm packages of the TypeScript API:
+# Publishes the two npm packages of the TypeScript API:
 #
 #   @ifcopenshell/wasm  - the standalone WASM build (artifacts staged from CI)
 #   ifcopenshell           - the ergonomic TypeScript/JavaScript wrapper
-#   @ifcopenshell/util  - ifcopenshell.util, transpiled from Python (opt-in)
-#   @ifcopenshell/api   - ifcopenshell.api, transpiled from Python (opt-in)
 #
 # `ifcopenshell` depends on `@ifcopenshell/wasm`, so the WASM package goes
-# first. All are published from one job because the wrapper's type checks read
+# first. Both are published from one job because the wrapper's type checks read
 # the staged artifacts through the workspace link rather than from the registry.
 #
-# The sources of @ifcopenshell/util and @ifcopenshell/api are not committed:
-# src/transpiler/generate.py writes them from this checkout's Python source.
+# With `transpiled`, `ifcopenshell` also ships ifcopenshell.util and
+# ifcopenshell.api (`ifcopenshell/util/<module>`, `ifcopenshell/api/<package>`),
+# transpiled from this checkout's Python source; they are not committed.
 
 on:
   workflow_dispatch:
@@ -24,7 +23,7 @@ on:
         required: false
         default: ''
       transpiled:
-        description: 'Also publish @ifcopenshell/util and @ifcopenshell/api, transpiled from ifcopenshell-python.'
+        description: 'Include ifcopenshell.util and ifcopenshell.api, transpiled from ifcopenshell-python.'
         type: boolean
         required: false
         default: false
@@ -54,8 +53,6 @@ jobs:
     env:
       WASM_PACKAGE_DIR: src/ts/ifcopenshell-wasm
       TS_PACKAGE_DIR: src/ts/ifcopenshell-js
-      UTIL_PACKAGE_DIR: src/ts/ifcopenshell-util
-      API_PACKAGE_DIR: src/ts/ifcopenshell-api
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -127,6 +124,19 @@ jobs:
           }
           NODE
 
+      # The generated code does not type-check yet (see "Path to full parity" in
+      # src/transpiler/PLAN.md), so with `transpiled` the build below fails until it does.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        if: inputs.transpiled
+        with:
+          python-version: '3.13'
+
+      - name: Transpile ifcopenshell.util and ifcopenshell.api
+        if: inputs.transpiled
+        run: |
+          python -m pip install -r src/transpiler/requirements.txt
+          python src/transpiler/generate.py
+
       - name: Build the TypeScript package
         working-directory: ${{ env.TS_PACKAGE_DIR }}
         run: |
@@ -137,58 +147,3 @@ jobs:
         working-directory: ${{ env.TS_PACKAGE_DIR }}
         run: npm publish --provenance --access public
 
-      # @ifcopenshell/util and @ifcopenshell/api are generated, then built against the
-      # wrapper built above. They do not build yet: util has type errors and imports
-      # @ifcopenshell/api (util.alignment and util.unit call the api), so the two packages
-      # depend on each other. See "Path to full parity" in src/transpiler/PLAN.md.
-
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        if: inputs.transpiled
-        with:
-          python-version: '3.13'
-
-      - name: Generate the transpiled packages
-        if: inputs.transpiled
-        run: |
-          python -m pip install -r src/transpiler/requirements.txt
-          python src/transpiler/generate.py
-
-      - name: Set the transpiled packages' versions
-        if: inputs.transpiled
-        run: |
-          node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
-          const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
-          const version = readJson(`${process.env.TS_PACKAGE_DIR}/package.json`).version;
-          for (const dir of [process.env.UTIL_PACKAGE_DIR, process.env.API_PACKAGE_DIR]) {
-            const pkg = readJson(`${dir}/package.json`);
-            // Released together with the wrapper they are generated against.
-            pkg.version = version;
-            for (const name of Object.keys(pkg.peerDependencies)) pkg.peerDependencies[name] = `^${version}`;
-            writeFileSync(`${dir}/package.json`, JSON.stringify(pkg, null, 2) + '\n');
-          }
-          NODE
-
-      - name: Build the util package
-        if: inputs.transpiled
-        working-directory: ${{ env.UTIL_PACKAGE_DIR }}
-        run: |
-          npm ci
-          npm run build
-
-      - name: Build the api package
-        if: inputs.transpiled
-        working-directory: ${{ env.API_PACKAGE_DIR }}
-        run: |
-          npm ci
-          npm run build
-
-      - name: Publish the util package
-        if: inputs.transpiled
-        working-directory: ${{ env.UTIL_PACKAGE_DIR }}
-        run: npm publish --provenance --access public
-
-      - name: Publish the api package
-        if: inputs.transpiled
-        working-directory: ${{ env.API_PACKAGE_DIR }}
-        run: npm publish --provenance --access public

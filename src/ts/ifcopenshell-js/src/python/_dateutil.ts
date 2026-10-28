@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 // Python `dateutil.parser` for generated code: ISO 8601 parsing and a lenient parser for common
-// day/month/year formats. Hand-written; src/transpiler/generate.py copies it into src/.
+// day/month/year formats. Hand-written, unlike the transpiled util/ and api/ next to it.
 
 import { bindArguments, datetime } from './_datetime.js';
 
@@ -13,13 +13,6 @@ class ParserError extends Error {}
 /** dateutil.parser.isoparse: dates (as midnight), and dates with times and offsets. */
 function isoparse(text: string): datetime {
   const value = String(text).trim();
-  const week = /^(\d{4})-?W(\d{2})-?(\d)?$/.exec(value);
-  if (week) {
-    const jan4 = datetime(Number(week[1]), 1, 4);
-    const monday = jan4.toordinal() - jan4.weekday() + (Number(week[2]) - 1) * 7 + Number(week[3] ?? 1) - 1;
-    const day = datetime.fromordinal(monday);
-    return datetime(day.year, day.month, day.day);
-  }
   const month = /^(\d{4})-(\d{2})$/.exec(value);
   if (month) return datetime(Number(month[1]), Number(month[2]), 1);
   if (/^\d{4}$/.test(value)) return datetime(Number(value), 1, 1);

@@ -14,9 +14,11 @@ header: |-
   // SPDX-License-Identifier: LGPL-3.0-or-later
   // Transpiled from ifcopenshell/{{ this_module | replace(".", "/") }}.py by src/transpiler; see that file for copyright.
 
-  import * as ifcopenshell from "ifcopenshell";
+  import * as ifcopenshell from "{{ "../" * (this_module.split(".") | length) }}index.js";
+# Generated modules live in src/python/{util,api} of the ifcopenshell package, next to the runtime
+# (src/python/_*.ts): util.x is util/x.ts, api.p.u is api/p/u.ts and api.p is api/p/index.ts.
 import: |-
-  {% set here = this_module.split(".") %}{% set there = target.split(".") %}import * as {{ alias }} from "{% if there[0] == "util" %}{% if here[0] == "util" %}./{{ there[1] }}.js{% else %}@ifcopenshell/util/{{ there[1] }}{% endif %}{% elif here[0] == "api" %}../{{ there[1] }}/{{ there[2] if there | length > 2 else "index" }}.js{% else %}@ifcopenshell/api/{{ there[1] }}{% endif %}";
+  {% set there = target.split(".") %}{% set path = there[1] ~ ".js" if there[1].startswith("_") else there | join("/") ~ ".js" if there[0] == "util" or there | length > 2 else there | join("/") ~ "/index.js" %}import * as {{ alias }} from "{{ "../" * (this_module.split(".") | length - 1) }}{{ path }}";
 # Classes of ifcopenshell_wrapper, as exported by ifcopenshell.wrapper.
 wrapper_classes:
   attribute: IfcOpenshellAttribute
@@ -118,7 +120,7 @@ footer: |-
   export const overrides: { [name: string]: ((...args: any[]) => any) | undefined } = {};{% endif %}
 # JS reserved words that are valid Python names get a trailing underscore.
 reserved: [new, class, function, var, default, delete, this, switch, case, const, let, enum, export, import, typeof, void, with, package, interface, private, protected, public, static, arguments, eval, instanceof, do, catch, extends, super, debugger, implements]
-# Python modules with a hand-written counterpart in @ifcopenshell/util: `import x as y` and
+# Python modules with a hand-written counterpart in src/ts/ifcopenshell-js/src/python: `import x as y` and
 # `from x import z` refer to `alias.member` of that module, with camelCase members.
 # math has no module; its names map through math_functions and math_constants.
 runtime_modules:
@@ -192,9 +194,6 @@ types:
   - input: $value
     when: value | source in ["npt.NDArray", "NDArray", "np.ndarray", "numpy.ndarray"]
     output: '{{ "util._numpy" | use("np") }}.NDArray'
-  - input: $value
-    when: value.__class__.__name__ == "Attribute" and (value | source).split(".")[0] in ["np", "numpy"] and value | runtime_path is none
-    output: number
   - input: $value
     when: value | source in ["npt.ArrayLike", "npt.DTypeLike"] or (value | source).startswith("ifcopenshell.geom.") or (value | source).startswith("ifcopenshell.ifcopenshell_wrapper.")
     output: any
@@ -409,13 +408,6 @@ rules:
       level: 0
     when: not node.module.startswith("ifcopenshell")
     output: ''
-  - input:
-      node: If
-      test:
-        node: Name
-        id: TYPE_CHECKING
-      body: $body
-    output: '{{ body | emit }}'
   - input:
       node: AnnAssign
       target: $name
@@ -732,14 +724,6 @@ rules:
     context: member
     output: '{{ name }}: {{ annotation | type }} = {{ value | emit }};'
   - input:
-      node: Assign
-      targets:
-        - node: Name
-          id: $name
-      value: $value
-    context: member
-    output: '{{ name }} = {{ value | emit }};'
-  - input:
       node: Expr
       value:
         node: Constant
@@ -878,19 +862,6 @@ rules:
       node: Break
     output: 'break{% if break_label %} {{ break_label }}{% endif %};'
   - input:
-      node: Expr
-      value:
-        node: Call
-        func:
-          node: Name
-          id: setattr
-        args:
-          - $target
-          - $name
-          - $value
-        keywords: []
-    output: '{{ target | emit }}[{{ name | emit }}] = {{ value | emit }};'
-  - input:
       node: AnnAssign
       target: $target
       annotation: $annotation
@@ -907,14 +878,6 @@ rules:
           slice: $key
     when: container | kind == "map"
     output: '{{ container | emit }}.delete({{ key | emit }});'
-  - input:
-      node: Assign
-      targets:
-        - node: Subscript
-          value: $container
-          slice: $key
-      value: $value
-    output: '{{ container | emit }}[{{ key | emit }}] = {{ value | emit }};'
   - input:
       node: Delete
       targets:
@@ -1152,26 +1115,6 @@ rules:
       keywords: []
     when: method in ["dumps", "loads"]
     output: 'JSON.{{ "stringify" if method == "dumps" else "parse" }}({{ value | emit }})'
-  - input:
-      node: Call
-      func:
-        node: Attribute
-        value:
-          node: Name
-          id: math
-        attr: $name
-      args: $args
-      keywords: []
-    when: name in math_functions
-    output: '{{ math_functions[name] }}({{ args | map("emit") | join(", ") }})'
-  - input:
-      node: Attribute
-      value:
-        node: Name
-        id: math
-      attr: $name
-    when: name in math_constants
-    output: '{{ math_constants[name] }}'
   - input:
       node: Call
       func:
@@ -1877,21 +1820,6 @@ rules:
       keywords: []
     when: callee.__class__.__name__ == "Name" and callee.id in shadowed and (callee | signature is none or (node | bind(callee | signature)).error is not none)
     output: '{{ callee | emit }}({{ args | map("emit") | join(", ") }})'
-  - input:
-      node: Call
-      func:
-        node: Name
-        id: next
-      args:
-        - node: Call
-          func:
-            node: Name
-            id: iter
-          args:
-            - $values
-          keywords: []
-      keywords: []
-    output: 'Array.from({{ values | iterable }})[0]'
   - input:
       node: Call
       func:

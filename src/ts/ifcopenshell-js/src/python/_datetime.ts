@@ -3,8 +3,8 @@
 
 // Python `datetime` for generated code: date, datetime, time, timedelta and fixed-offset
 // timezones, with Python arithmetic (__add__, __sub__, ...), comparison and ISO formatting.
-// Classes can be called without `new`, as in Python. Hand-written; src/transpiler/generate.py
-// copies it into src/.
+// Classes can be called without `new`, as in Python. Hand-written, unlike the
+// transpiled util/ and api/ next to it.
 
 import { NotImplemented as NOT_IMPLEMENTED } from './_py.js';
 
@@ -614,5 +614,3 @@ export const timedelta = pyclass(TimeDelta);
 export type timedelta = TimeDelta;
 export const timezone = pyclass(TimeZone);
 export type timezone = TimeZone;
-export const MINYEAR = 1;
-export const MAXYEAR = 9999;

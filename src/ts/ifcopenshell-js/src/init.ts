@@ -69,6 +69,8 @@ export function schemaByName(name: string) {
   return downcasting(schema);
 }
 
+// Native schema objects are reflected on dynamically (method names vary by declaration kind).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Native = Record<string | symbol, any>;
 
 /**

@@ -7,10 +7,10 @@
 // "$duration": [years, months, d, s, us]} (isodate.Duration).
 
 import * as ifcopenshell from 'ifcopenshell';
-import { PyDict } from '../../src/_py.js';
-import { NDArray, array } from '../../src/_numpy.js';
-import * as datetime from '../../src/_datetime.js';
-import * as isodate from '../../src/_isodate.js';
+import { PyDict } from '../../dist/python/_py.js';
+import { NDArray, array } from '../../dist/python/_numpy.js';
+import * as datetime from '../../dist/python/_datetime.js';
+import * as isodate from '../../dist/python/_isodate.js';
 
 export type Encoded = null | boolean | number | string | Encoded[] | { [key: string]: Encoded };
 

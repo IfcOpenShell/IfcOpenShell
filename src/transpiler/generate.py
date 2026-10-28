@@ -1,16 +1,20 @@
 # This file was generated with the assistance of an AI coding tool.
 # SPDX-License-Identifier: LGPL-3.0-or-later
-"""Transpile ifcopenshell.util and ifcopenshell.api into the @ifcopenshell/util and @ifcopenshell/api packages.
+"""Transpile ifcopenshell.util and ifcopenshell.api into the ifcopenshell npm package.
 
-The packages' src/ folders are build output: they are not committed, and are written here from
-this checkout's Python source, the rules, the hand-written runtime (ifcopenshell-util/runtime)
-and precomputed.json. Needs only PyYAML and Jinja2 (requirements.txt). `--precompute` refreshes
-precomputed.json, which needs an installed ifcopenshell close to this checkout.
+Writes src/python/util and src/python/api of src/ts/ifcopenshell-js, which are build output
+and not committed, from this checkout's Python source, the rules and precomputed.json.
+src/python/transpile.json lists each module's untranslated functions; `--report` also prints
+coverage per module and the most frequent unsupported constructs. Needs only PyYAML and
+Jinja2 (requirements.txt). `--precompute` refreshes precomputed.json, which needs an
+installed ifcopenshell close to this checkout.
 """
 
 import argparse
 import ast
+import collections
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -19,20 +23,20 @@ import yaml
 from transpile import PACKAGE, Transpiler, build_index, camel, module_name
 
 HERE = Path(__file__).parent
-TS = HERE.parent / "ts"
-TARGETS = {"util": TS / "ifcopenshell-util", "api": TS / "ifcopenshell-api"}
-RUNTIME = TARGETS["util"] / "runtime"
+OUTPUT = HERE.parent / "ts" / "ifcopenshell-js" / "src" / "python"
 PRECOMPUTED = HERE / "precomputed.json"
+# Documentation and developer scripts, not ported; other modules import them, so their functions throw.
+SKIP = {"doc", "ifc4x3dev_scrape_data_for_docs", "generate_pset_templates", "profiler"}
 HEADER = "// This file was generated with the assistance of an AI coding tool.\n// SPDX-License-Identifier: LGPL-3.0-or-later\n"
 
 
 def sources():
     for path in sorted(PACKAGE.glob("util/*.py")):
         if path.stem != "__init__":
-            yield path, Path(f"{path.stem}.ts")
+            yield path, Path("util") / f"{path.stem}.ts"
     for path in sorted(PACKAGE.glob("api/*/*.py")):
         if path.stem != "__init__":
-            yield path, Path(path.parent.name) / f"{path.stem}.ts"
+            yield path, Path("api") / path.parent.name / f"{path.stem}.ts"
 
 
 def stub_module(source, reason):
@@ -60,17 +64,36 @@ def precompute(rules):
     return results
 
 
+def report(manifest):
+    """Coverage per util module and api package, and the most frequent unsupported constructs."""
+    totals = collections.defaultdict(lambda: [0, 0])
+    blockers = collections.Counter()
+    for key, entry in manifest.items():
+        group = key if key.startswith("util/") else "/".join(key.split("/")[:2])
+        functions = entry["functions"]
+        stubs = functions if "error" in entry else len(entry.get("stubs", {}))
+        totals[group][0] += functions - stubs
+        totals[group][1] += functions
+        for reason in [entry["error"]] if "error" in entry else entry.get("stubs", {}).values():
+            blockers[re.sub(r"^No \w+ rule at line \d+: ", "", reason)[:80]] += 1
+    for group, (done, total) in sorted(totals.items()):
+        if done < total:
+            print(f"  {group}: {done}/{total}")
+    print("Most frequent unsupported constructs:")
+    for reason, count in blockers.most_common(15):
+        print(f"  {count:4} {reason}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rules", type=Path, default=HERE / "ts.yaml")
     parser.add_argument("--precompute", action="store_true", help=f"only refresh {PRECOMPUTED.name}")
+    parser.add_argument("--report", action="store_true", help="also print coverage per module and top blockers")
     args = parser.parse_args()
-    tracking = yaml.safe_load((HERE / "tracking.yaml").read_text(encoding="utf-8"))
-    skip = {name for name, info in tracking["util"].items() if info.get("tier") == "skip"}
 
     rules = yaml.safe_load(args.rules.read_text(encoding="utf-8"))
     if args.precompute:
-        PRECOMPUTED.write_text(json.dumps(precompute(rules), indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        PRECOMPUTED.write_text(json.dumps(precompute(rules), sort_keys=True) + "\n", encoding="utf-8")
         print(f"Wrote {PRECOMPUTED}")
         return
     precomputed = json.loads(PRECOMPUTED.read_text(encoding="utf-8"))
@@ -78,58 +101,54 @@ def main():
     if missing:
         raise SystemExit(f"{PRECOMPUTED.name} lacks {', '.join(sorted(missing))}; run generate.py --precompute")
     compiler = Transpiler(args.rules, build_index(), precomputed)
-    manifests = {scope: {} for scope in TARGETS}
-    for target in TARGETS.values():
-        shutil.rmtree(target / "src", ignore_errors=True)
-        (target / "src").mkdir()
-    for runtime in sorted(RUNTIME.glob("*.ts")):
-        shutil.copyfile(runtime, TARGETS["util"] / "src" / runtime.name)
+    manifest = {}
+    for scope in ("util", "api"):
+        shutil.rmtree(OUTPUT / scope, ignore_errors=True)
     for source_path, relative in sources():
         name = module_name(source_path)
-        scope = name.split(".")[0]
-        output = TARGETS[scope] / "src" / relative
+        output = OUTPUT / relative
         output.parent.mkdir(parents=True, exist_ok=True)
         source = source_path.read_text(encoding="utf-8")
-        entry = {"source": f"ifcopenshell/{source_path.relative_to(PACKAGE).as_posix()}"}
-        if source_path.stem in skip and scope == "util":
-            # Not ported, but other modules import it, so its functions exist and throw.
-            entry["error"] = "not ported (tier skip)"
-            output.write_text(stub_module(source, entry["error"]), encoding="utf-8")
-            manifests[scope][relative.with_suffix("").as_posix()] = entry
-            continue
-        try:
-            code = compiler.translate(source, name)
-            entry["functions"] = sum(isinstance(n, (ast.FunctionDef, ast.ClassDef)) for n in ast.parse(source).body)
-            entry["stubs"] = {u.split(": ", 1)[0]: u.split(": ", 1)[1] for u in compiler.unsupported}
-        except Exception as error:  # Module-level constructs stop the whole file.
-            entry["error"] = str(error).splitlines()[0]
+        entry = {
+            "source": f"ifcopenshell/{source_path.relative_to(PACKAGE).as_posix()}",
+            "functions": sum(isinstance(n, (ast.FunctionDef, ast.ClassDef)) for n in ast.parse(source).body),
+        }
+        if name.startswith("util.") and source_path.stem in SKIP:
+            entry["error"] = "not ported"
             code = stub_module(source, entry["error"])
+        else:
+            try:
+                code = compiler.translate(source, name)
+                entry["stubs"] = {u.split(": ", 1)[0]: u.split(": ", 1)[1] for u in compiler.unsupported}
+            except Exception as error:  # Module-level constructs stop the whole file.
+                entry["error"] = str(error).splitlines()[0]
+                code = stub_module(source, entry["error"])
         output.write_text(code, encoding="utf-8")
-        manifests[scope][relative.with_suffix("").as_posix()] = entry
+        manifest[relative.with_suffix("").as_posix()] = entry
 
     # Data files that generated code opens next to itself, as the Python modules do.
-    data = TARGETS["util"] / "src" / "schema"
-    data.mkdir(exist_ok=True)
+    (OUTPUT / "util" / "schema").mkdir()
     for path in sorted((PACKAGE / "util" / "schema").glob("Pset_*.ifc")):
-        shutil.copyfile(path, data / path.name)
+        shutil.copyfile(path, OUTPUT / "util" / "schema" / path.name)
     for path in sorted((PACKAGE / "util").glob("*.json")):
-        shutil.copyfile(path, TARGETS["util"] / "src" / path.name)
+        shutil.copyfile(path, OUTPUT / "util" / path.name)
 
     # Each API package re-exports its usecases, as ifcopenshell.api.<package> does.
-    for package in sorted({Path(k).parts[0] for k in manifests["api"]}):
-        usecases = sorted(Path(k).name for k in manifests["api"] if Path(k).parts[0] == package)
+    for package in sorted({k.split("/")[1] for k in manifest if k.startswith("api/")}):
+        usecases = sorted(k.split("/")[2] for k in manifest if k.startswith(f"api/{package}/"))
         lines = [f'export {{ {camel(u)} }} from "./{u}.js";' for u in usecases if not u.startswith("_") and u != "settings"]
         lines += [f'export * as {u} from "./{u}.js";' for u in usecases if u == "settings"]
-        (TARGETS["api"] / "src" / package / "index.ts").write_text(HEADER + "\n" + "\n".join(lines) + "\n", encoding="utf-8")
+        (OUTPUT / "api" / package / "index.ts").write_text(HEADER + "\n" + "\n".join(lines) + "\n", encoding="utf-8")
 
-    for scope, target in TARGETS.items():
-        manifest = manifests[scope]
-        (target / "transpile.json").write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-        files = len(manifest)
-        failed = sum("error" in e for e in manifest.values())
-        functions = sum(e.get("functions", 0) for e in manifest.values())
-        stubs = sum(len(e.get("stubs", {})) for e in manifest.values())
-        print(f"@ifcopenshell/{scope}: {files - failed}/{files} files, {functions - stubs}/{functions} functions translated")
+    (OUTPUT / "transpile.json").write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    for scope in ("util", "api"):
+        entries = [e for k, e in manifest.items() if k.startswith(f"{scope}/")]
+        functions = sum(e["functions"] for e in entries)
+        stubs = sum(e["functions"] if "error" in e else len(e.get("stubs", {})) for e in entries)
+        failed = sum("error" in e for e in entries)
+        print(f"ifcopenshell.{scope}: {len(entries) - failed}/{len(entries)} files, {functions - stubs}/{functions} functions translated")
+    if args.report:
+        report(manifest)
 
 
 if __name__ == "__main__":

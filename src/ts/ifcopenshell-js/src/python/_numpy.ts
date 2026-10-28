@@ -5,7 +5,7 @@
 // strided n-dimensional arrays whose slices are views, broadcasting arithmetic through Python's
 // operator protocol (see _py.ts), and the vector and matrix functions those modules call.
 // Function names are camelCase (np.zeros_like is zerosLike); keyword arguments are a trailing
-// options object. Hand-written; src/transpiler/generate.py copies it into src/.
+// options object. Hand-written, unlike the transpiled util/ and api/ next to it.
 
 import { hooks, IndexList, NotImplemented, Slice } from './_py.js';
 
@@ -441,8 +441,6 @@ export function asarray(value: ArrayLike, ...values: unknown[]): NDArray {
   return array(value, ...values, { copy: false });
 }
 
-export const asanyarray = asarray;
-
 function shapeOf(shape: number | Iterable<number>): number[] {
   return typeof shape === 'number' ? [shape] : Array.from(shape);
 }
@@ -456,10 +454,6 @@ export function full(shape: number | Iterable<number>, value: any, ...values: un
 
 export const zeros = (shape: number | Iterable<number>, ...values: unknown[]) => full(shape, 0, ...values);
 export const ones = (shape: number | Iterable<number>, ...values: unknown[]) => full(shape, 1, ...values);
-export const empty = zeros;
-export const zerosLike = (value: ArrayLike, ...values: unknown[]) => zeros(asarray(value).shape, ...values);
-export const onesLike = (value: ArrayLike, ...values: unknown[]) => ones(asarray(value).shape, ...values);
-export const fullLike = (value: ArrayLike, fill: any, ...values: unknown[]) => full(asarray(value).shape, fill, ...values);
 
 export function eye(n: number, ...values: unknown[]): NDArray {
   const { M } = options(values);
@@ -467,21 +461,6 @@ export function eye(n: number, ...values: unknown[]): NDArray {
   const result = zeros([n, columns]);
   for (let i = 0; i < Math.min(n, columns); i++) result.data[i * columns + i] = 1;
   return result;
-}
-
-export const identity = (n: number) => eye(n);
-
-export function arange(...values: number[]): NDArray {
-  const [start, stop, step = 1] = values.length === 1 ? [0, values[0]!] : values;
-  const data: number[] = [];
-  for (let v = start!; step > 0 ? v < stop! : v > stop!; v += step) data.push(v);
-  return array(data);
-}
-
-export function linspace(start: number, stop: number, ...values: unknown[]): NDArray {
-  const { num = 50, endpoint = true } = { ...options(values), ...(values.length ? { num: values[0] } : {}) } as Options;
-  const step = (stop - start) / (endpoint ? num - 1 : num);
-  return new NDArray(Array.from({ length: num }, (_, i) => (endpoint && i === num - 1 ? stop : start + i * step)), [num]);
 }
 
 /** numpy.frombuffer for the vertex and index buffers of ifcopenshell.geom (typed arrays or bytes). */
@@ -532,11 +511,6 @@ export const hstack = (arrays: Iterable<ArrayLike>) => {
   const items = Array.from(arrays, a => asarray(a));
   return concatenate(items, items[0]!.ndim === 1 ? 0 : 1);
 };
-export const columnStack = (arrays: Iterable<ArrayLike>) =>
-  concatenate(Array.from(arrays, a => {
-    const x = asarray(a);
-    return x.ndim === 1 ? x.reshape([x.size, 1]) : x;
-  }), 1);
 
 export function append(value: ArrayLike, items: ArrayLike, ...values: unknown[]): NDArray {
   const { axis = null } = { ...options(values), ...(values.length ? { axis: values[0] } : {}) } as Options;
@@ -554,15 +528,6 @@ export function deleteIndices(value: ArrayLike, indices: number | Iterable<numbe
 }
 export { deleteIndices as delete };
 
-export function tile(value: ArrayLike, reps: number | Iterable<number>): NDArray {
-  const a = asarray(value);
-  const counts = shapeOf(reps);
-  let result = a.ndim < counts.length ? a.reshape([...new Array(counts.length - a.ndim).fill(1), ...a.shape]) : a;
-  const offset = result.ndim - counts.length;
-  counts.forEach((count, i) => (result = concatenate(new Array(count).fill(result), offset + i)));
-  return result;
-}
-
 export function pad(value: ArrayLike, width: number | number[] | number[][], ...values: unknown[]): NDArray {
   const { constant_values: fill = 0, constantValues = fill } = options(values);
   const a = asarray(value);
@@ -578,30 +543,10 @@ export function pad(value: ArrayLike, width: number | number[] | number[][], ...
 const elementwise = (f: (a: number) => number) => (value: ArrayLike) => unary(value, f);
 export const sin = elementwise(Math.sin);
 export const cos = elementwise(Math.cos);
-export const tan = elementwise(Math.tan);
 export const arcsin = elementwise(Math.asin);
 export const arccos = elementwise(Math.acos);
 export const arctan = elementwise(Math.atan);
-export const sqrt = elementwise(Math.sqrt);
-export const exp = elementwise(Math.exp);
-export const log = elementwise(Math.log);
 export const radians = elementwise(v => (v * Math.PI) / 180);
-export const degrees = elementwise(v => (v * 180) / Math.PI);
-export const deg2rad = radians;
-export const rad2deg = degrees;
-export const floor = elementwise(Math.floor);
-export const ceil = elementwise(Math.ceil);
-export const sign = elementwise(Math.sign);
-export const isnan = (value: ArrayLike) => unary(value, Number.isNaN as (a: number) => any, 'bool');
-export const isinf = (value: ArrayLike) => unary(value, v => Math.abs(v) === Infinity, 'bool');
-export const isfinite = (value: ArrayLike) => unary(value, Number.isFinite as (a: number) => any, 'bool');
-
-export function abs(value: ArrayLike): any {
-  if (typeof value === 'number') return Math.abs(value);
-  const a = asarray(value);
-  return new NDArray(a.values().map(v => Math.abs(v)), [...a.shape], undefined, 0, a.dtype === 'bool' ? 'int64' : a.dtype);
-}
-export const absolute = abs;
 
 /** Python/numpy rounding: halves to even. */
 function roundHalfEven(value: number, decimals: number): number {
@@ -619,7 +564,6 @@ export function round(value: ArrayLike, ...values: unknown[]): any {
   const a = asarray(value);
   return new NDArray(a.values().map(v => roundHalfEven(v, decimals)), [...a.shape], undefined, 0, a.dtype);
 }
-export const around = round;
 
 export function clip(value: ArrayLike, lower: number | null, upper: number | null): any {
   return unary(value, v => Math.min(upper ?? Infinity, Math.max(lower ?? -Infinity, v)));
@@ -629,20 +573,9 @@ const binaryFunction = (f: (a: any, b: any) => any, dtype?: DType) => (a: ArrayL
   if (typeof a === 'number' && typeof b === 'number') return f(a, b);
   return binary(asarray(a), asarray(b), f, dtype);
 };
-export const add = binaryFunction((a, b) => a + b);
 export const subtract = binaryFunction((a, b) => a - b);
-export const multiply = binaryFunction((a, b) => a * b);
 export const divide = binaryFunction((a, b) => a / b, 'float64');
-export const power = binaryFunction((a, b) => a ** b);
 export const arctan2 = binaryFunction(Math.atan2, 'float64');
-export const hypot = binaryFunction(Math.hypot, 'float64');
-export const maximum = binaryFunction(Math.max);
-export const minimum = binaryFunction(Math.min);
-export const equal = binaryFunction((a, b) => a === b, 'bool');
-export const less = binaryFunction((a, b) => a < b, 'bool');
-export const greater = binaryFunction((a, b) => a > b, 'bool');
-export const logicalAnd = binaryFunction((a, b) => Boolean(a && b), 'bool');
-export const logicalOr = binaryFunction((a, b) => Boolean(a || b), 'bool');
 
 /** numpy.where(condition, x, y), or the indices of true values for numpy.where(condition). */
 export function where(condition: ArrayLike, ...values: ArrayLike[]): any {
@@ -694,8 +627,6 @@ export const max = (value: ArrayLike, ...values: unknown[]) => reduce(value, val
   if (!items.length) throw new Error('ValueError: zero-size array to reduction operation maximum which has no identity');
   return items.reduce((a, b) => (b > a || Number.isNaN(b) ? b : a));
 });
-export const amin = min;
-export const amax = max;
 export const any = (value: ArrayLike, ...values: unknown[]) => reduce(value, values, items => items.some(Boolean), 'bool');
 export const all = (value: ArrayLike, ...values: unknown[]) => reduce(value, values, items => items.every(Boolean), 'bool');
 
@@ -719,12 +650,6 @@ export function isclose(a: ArrayLike, b: ArrayLike, ...values: unknown[]): any {
 export function allclose(a: ArrayLike, b: ArrayLike, ...values: unknown[]): boolean {
   const result = isclose(a, b, ...values);
   return result instanceof NDArray ? result.values().every(Boolean) : Boolean(result);
-}
-
-export function arrayEqual(a: ArrayLike, b: ArrayLike): boolean {
-  const x = asarray(a);
-  const y = asarray(b);
-  return x.shape.length === y.shape.length && x.shape.every((n, i) => n === y.shape[i]) && x.values().every((v, i) => v === y.values()[i]);
 }
 
 // Linear algebra.
@@ -803,39 +728,13 @@ function inv(value: ArrayLike): NDArray {
   return new NDArray(m.flatMap(row => row.slice(n)), [n, n]);
 }
 
-function det(value: ArrayLike): number {
-  const a = asarray(value);
-  const n = a.shape[0]!;
-  const m = [...a].map(row => (row as NDArray).values() as number[]);
-  let result = 1;
-  for (let col = 0; col < n; col++) {
-    let pivot = col;
-    for (let r = col + 1; r < n; r++) if (Math.abs(m[r]![col]!) > Math.abs(m[pivot]![col]!)) pivot = r;
-    if (!m[pivot]![col]) return 0;
-    if (pivot !== col) {
-      [m[col], m[pivot]] = [m[pivot]!, m[col]!];
-      result = -result;
-    }
-    result *= m[col]![col]!;
-    for (let r = col + 1; r < n; r++) {
-      const factor = m[r]![col]! / m[col]![col]!;
-      m[r] = m[r]!.map((v, j) => v - factor * m[col]![j]!);
-    }
-  }
-  return result;
-}
-
 /** Euclidean (Frobenius) norm, optionally along an axis. */
 function norm(value: ArrayLike, ...values: unknown[]): any {
   if (typeof value === 'number') return Math.abs(value);
   return reduce(value, values, items => Math.sqrt(items.reduce((a, b) => a + b * b, 0)), 'float64');
 }
 
-function solve(a: ArrayLike, b: ArrayLike): any {
-  return matmul(inv(a), b);
-}
-
-export const linalg = { norm, inv, det, solve };
+export const linalg = { norm, inv };
 
 // Scalar types and constants, as numpy names them.
 

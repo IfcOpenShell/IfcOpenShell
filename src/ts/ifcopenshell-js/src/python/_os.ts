@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 // Python `os.path` for locating data files next to a module. Paths are plain paths or file URLs.
-// Hand-written; src/transpiler/generate.py copies it into src/.
+// Hand-written, unlike the transpiled util/ and api/ next to it.
 
 function strip(value: string): string {
   return value.startsWith('file:') ? decodeURIComponent(new URL(value).pathname) : value;

@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 // Python semantics for generated code, used only where a value's type is not known when
-// transpiling. Hand-written; src/transpiler/generate.py copies it into src/.
+// transpiling. Hand-written, unlike the transpiled util/ and api/ next to it.
 
-import { readResource } from "ifcopenshell";
+import { readResource } from "../file.js";
 
 function isDict(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype;
@@ -281,16 +281,6 @@ export function format(template: string, ...args: unknown[]): string {
     return formatValue(value, replace(spec));
   });
   return replace(template);
-}
-
-/** Python `collections.defaultdict(factory)` for string keys. */
-export function defaultdict<T>(factory: () => T): Record<string, T> {
-  return new Proxy({} as Record<string, T>, {
-    get(target, key, receiver) {
-      if (typeof key === 'string' && !(key in target)) target[key] = factory();
-      return Reflect.get(target, key, receiver);
-    },
-  });
 }
 
 /** Python regular expressions as JS RegExp: named groups and Python flags translated. */

@@ -1,8 +1,8 @@
 // This file was generated with the assistance of an AI coding tool.
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-// Python `isodate` (0.7) for generated code: ISO 8601 durations. Hand-written;
-// src/transpiler/generate.py copies it into src/.
+// Python `isodate` (0.7) for generated code: ISO 8601 durations.
+// Hand-written, unlike the transpiled util/ and api/ next to it.
 
 import { bindArguments, date as pydate, datetime as pydatetime, pyclass, timedelta } from './_datetime.js';
 import { NotImplemented } from './_py.js';
@@ -183,23 +183,4 @@ function strftimeDuration(duration: timedelta | IsoDuration, format: string): st
     }
     return result.length ? result.join('') : '0D';
   });
-}
-
-/** isodate.parse_datetime: an ISO 8601 date and time. */
-export function parseDatetime(text: string): pydatetime {
-  return pydatetime.fromisoformat(text);
-}
-
-/** isodate.parse_date. */
-export function parseDate(text: string): pydate {
-  return pydate.fromisoformat(text);
-}
-
-/** isodate.datetime_isoformat / date_isoformat with the default formats. */
-export function datetimeIsoformat(value: pydatetime): string {
-  return value.isoformat();
-}
-
-export function dateIsoformat(value: pydate): string {
-  return value instanceof pydatetime ? value.date().isoformat() : value.isoformat();
 }
