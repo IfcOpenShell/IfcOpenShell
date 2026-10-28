@@ -8,9 +8,11 @@
 #include <ifcparse/exception.h>
 #include <ifcparse/file.h>
 #include <ifcparse/parse.h>
+#include <map>
 #include <plugin/plugin.h>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 TEST_CASE("SPF strings can be encoded and decoded", "[ifcparse]") {
@@ -820,4 +822,28 @@ TEST_CASE("A file loaded out of id order lists each type in id order", "[ifcpars
         ids.push_back(instance.id());
     }
     CHECK(ids == std::vector<int>{1, 3, 5});
+}
+
+TEST_CASE("Null instance handles can be compared and used as ordered keys", "[ifcparse][handles]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const auto* point_declaration = file.schema()->declaration_by_name("IfcCartesianPoint");
+    const express::base a = file.create(point_declaration);
+    const express::base b = file.create(point_declaration);
+    const express::base a_copy = a;
+
+    CHECK(express::base{} == express::base{});
+    CHECK(express::base{} != a);
+    CHECK(a == a_copy);
+    CHECK(a != b);
+    CHECK((a < b) != (b < a));
+    CHECK_FALSE(express::base{} < express::base{});
+
+    // The SVG serializer keys drawings on {null handle, drawing name}.
+    std::map<std::pair<express::base, std::string>, int> drawings;
+    drawings[{express::base{}, "Elevation A"}] = 1;
+    drawings[{express::base{}, "Elevation B"}] = 2;
+    drawings[{a, "Storey"}] = 3;
+    drawings[{express::base{}, "Elevation A"}] += 10;
+    CHECK(drawings.size() == 3);
+    CHECK(drawings[{express::base{}, "Elevation A"}] == 11);
 }

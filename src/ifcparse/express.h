@@ -81,11 +81,19 @@ class IFC_PARSE_API base {
     }
 
     bool operator<(const base& other) const {
-        return data() < other.data();
+#ifdef IFOPSH_SAFE_INSTANCE
+        return data_.owner_before(other.data_);
+#else
+        return data_ < other.data_;
+#endif
     }
 
     bool operator==(const base& other) const {
-        return data() == other.data();
+#ifdef IFOPSH_SAFE_INSTANCE
+        return !data_.owner_before(other.data_) && !other.data_.owner_before(data_);
+#else
+        return data_ == other.data_;
+#endif
     }
 
     bool operator!=(const base& other) const {
