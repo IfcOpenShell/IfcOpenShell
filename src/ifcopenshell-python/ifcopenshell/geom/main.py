@@ -113,6 +113,7 @@ SETTING = Literal[
     "no-parallel-mapping",
     "no-wire-intersection-check",
     "no-wire-intersection-tolerance",
+    "offset-applied",
     "permissive-shape-reuse",
     "print-space-areas",
     "print-space-names",
