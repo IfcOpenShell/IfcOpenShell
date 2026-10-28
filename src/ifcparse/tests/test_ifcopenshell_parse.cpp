@@ -2,12 +2,15 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <cmath>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <ifcparse/aggregate.h>
 #include <ifcparse/exception.h>
 #include <ifcparse/file.h>
 #include <ifcparse/parse.h>
+#include <ifcparse/schemas/Ifc4.h>
 #include <plugin/plugin.h>
 #include <sstream>
 #include <string>
@@ -820,4 +823,170 @@ TEST_CASE("A file loaded out of id order lists each type in id order", "[ifcpars
         ids.push_back(instance.id());
     }
     CHECK(ids == std::vector<int>{1, 3, 5});
+}
+
+TEST_CASE("An aggregate view reads the attribute in place and casts its elements", "[ifcparse][aggregate]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const auto* point_declaration = file.schema()->declaration_by_name("IfcCartesianPoint");
+    auto p0 = file.create(point_declaration);
+    p0.set_attribute_value(0, std::vector<double>{1., 2., 3.});
+    auto p1 = file.create(point_declaration);
+    p1.set_attribute_value(0, std::vector<double>{4., 5., 6.});
+    auto polyline = file.create(file.schema()->declaration_by_name("IfcPolyline"));
+    polyline.set_attribute_value(0, std::vector<express::base>{p0, p1});
+
+    auto points = polyline.get<express::aggregate<Ifc4::IfcCartesianPoint>>(0);
+    REQUIRE(points.size() == 2);
+    CHECK(points[1].Coordinates() == std::vector<double>{4., 5., 6.});
+    std::vector<double> xs;
+    for (auto point : points) {
+        xs.push_back(point.Coordinates()[0]);
+    }
+    CHECK(xs == std::vector<double>{1., 4.});
+    std::vector<express::base> handles = polyline.get<express::aggregate<express::base>>(0);
+    CHECK(handles == std::vector<express::base>{p0, p1});
+    // The view is the stored list itself, whichever element type it is read as.
+    CHECK(&points.stored() == &polyline.get<express::aggregate<express::base>>(0).stored());
+}
+
+TEST_CASE("Editing an aggregate of instances through its view keeps the inverse index current", "[ifcparse][aggregate]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const auto* point_declaration = file.schema()->declaration_by_name("IfcCartesianPoint");
+    auto p0 = file.create(point_declaration);
+    auto p1 = file.create(point_declaration);
+    auto p2 = file.create(point_declaration);
+    auto polyline = file.create(file.schema()->declaration_by_name("IfcPolyline"));
+    polyline.set_attribute_value(0, std::vector<express::base>{p0, p1});
+
+    auto points = polyline.get<express::aggregate<express::base>>(0);
+    points.push_back(p2);
+    CHECK((std::vector<express::base>)polyline.get_attribute_value(0) == std::vector<express::base>{p0, p1, p2});
+    CHECK(file.instances_by_reference((int)p2.id()) == std::vector<express::base>{polyline});
+    // One record per occurrence.
+    points.push_back(p1);
+    CHECK(file.instances_by_reference((int)p1.id()).size() == 2);
+    CHECK(points.erase(p1) == 2);
+    CHECK(file.instances_by_reference((int)p1.id()).empty());
+    CHECK(points.erase(p1) == 0);
+    CHECK((std::vector<express::base>)polyline.get_attribute_value(0) == std::vector<express::base>{p0, p2});
+    CHECK(file.instances_by_reference((int)p0.id()) == std::vector<express::base>{polyline});
+}
+
+TEST_CASE("A simple-type aggregate is edited in place through its view", "[ifcparse][aggregate]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    auto point = file.create(file.schema()->declaration_by_name("IfcCartesianPoint"));
+    point.set_attribute_value(0, std::vector<double>{1., 2.});
+
+    auto coordinates = point.get<express::aggregate<double>>(0);
+    coordinates.push_back(3.);
+    CHECK((std::vector<double>)point.get_attribute_value(0) == std::vector<double>{1., 2., 3.});
+    CHECK(coordinates.erase(2.) == 1);
+    CHECK((std::vector<double>)point.get_attribute_value(0) == std::vector<double>{1., 3.});
+    CHECK(coordinates[1] == 3.);
+    CHECK_THROWS_AS(coordinates.push_back(std::nan("")), ifcopenshell::exception);
+    CHECK(coordinates.size() == 2);
+}
+
+TEST_CASE("A view on an attribute not held as a list writes its edits back through set_attribute_value", "[ifcparse][aggregate]") {
+    // Edits through the view on an unset attribute end up as the list, with
+    // the inverse records they imply; a parsed empty list is edited in place.
+    auto check_edits = [](ifcopenshell::file& file, express::base polyline, express::base p0, express::base p1) {
+        auto points = polyline.get<express::aggregate<express::base>>(0);
+        CHECK(points.empty());
+        points.push_back(p0);
+        points.push_back(p1);
+        CHECK(polyline.get_attribute_value(0).type() == ifcopenshell::Argument_AGGREGATE_OF_ENTITY_INSTANCE);
+        CHECK((std::vector<express::base>)polyline.get_attribute_value(0) == std::vector<express::base>{p0, p1});
+        CHECK(file.instances_by_reference((int)p0.id()) == std::vector<express::base>{polyline});
+        CHECK(points.erase(p0) == 1);
+        CHECK((std::vector<express::base>)polyline.get_attribute_value(0) == std::vector<express::base>{p1});
+        CHECK(file.instances_by_reference((int)p0.id()).empty());
+        CHECK(file.instances_by_reference((int)p1.id()) == std::vector<express::base>{polyline});
+    };
+
+    SECTION("an unset attribute") {
+        ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+        const auto* point_declaration = file.schema()->declaration_by_name("IfcCartesianPoint");
+        auto p0 = file.create(point_declaration);
+        auto p1 = file.create(point_declaration);
+        auto polyline = file.create(file.schema()->declaration_by_name("IfcPolyline"));
+        REQUIRE(polyline.get_attribute_value(0).isNull());
+        check_edits(file, polyline, p0, p1);
+    }
+    SECTION("a parsed empty aggregate, held as an empty list") {
+        const std::string contents =
+            "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((''),'2;1');\nFILE_NAME('','',(''),(''),'','','');\nFILE_SCHEMA(('IFC4'));\nENDSEC;\nDATA;\n"
+            "#1=IFCCARTESIANPOINT((0.,0.,0.));\n#2=IFCCARTESIANPOINT((1.,0.,0.));\n#3=IFCPOLYLINE(());\n"
+            "ENDSEC;\nEND-ISO-10303-21;\n";
+        ifcopenshell::logger log;
+        std::istringstream input(contents);
+        ifcopenshell::file file(input, (int)contents.size(), log);
+        REQUIRE(file.good());
+        auto polyline = file.instance_by_id(3);
+        REQUIRE(polyline.get_attribute_value(0).type() == ifcopenshell::Argument_AGGREGATE_OF_ENTITY_INSTANCE);
+        REQUIRE(polyline.get_attribute_value(0).size() == 0);
+        check_edits(file, polyline, file.instance_by_id(1), file.instance_by_id(2));
+    }
+}
+
+TEST_CASE("A nested aggregate is edited through its inner views", "[ifcparse][aggregate]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const auto* point_declaration = file.schema()->declaration_by_name("IfcCartesianPoint");
+    auto p0 = file.create(point_declaration);
+    auto p1 = file.create(point_declaration);
+    auto p2 = file.create(point_declaration);
+    auto surface = file.create(file.schema()->declaration_by_name("IfcBSplineSurfaceWithKnots"));
+    surface.set_attribute_value(2, std::vector<std::vector<express::base>>{{p0, p1}, {p1, p2}});
+
+    auto rows = surface.get<express::aggregate<express::aggregate<express::base>>>(2);
+    REQUIRE(rows.size() == 2);
+    size_t erased = 0;
+    for (auto row : rows) {
+        erased += row.erase(p1);
+    }
+    CHECK(erased == 2);
+    CHECK((std::vector<std::vector<express::base>>)surface.get_attribute_value(2) == std::vector<std::vector<express::base>>{{p0}, {p2}});
+    CHECK(file.instances_by_reference((int)p1.id()).empty());
+    rows[0].push_back(p2);
+    CHECK((std::vector<std::vector<express::base>>)surface.get_attribute_value(2) == std::vector<std::vector<express::base>>{{p0, p2}, {p2}});
+    CHECK(file.instances_by_reference((int)p2.id()).size() == 2);
+}
+
+TEST_CASE("Removing an instance referenced from aggregates edits them in place", "[ifcparse][aggregate]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const auto* point_declaration = file.schema()->declaration_by_name("IfcCartesianPoint");
+    auto p0 = file.create(point_declaration);
+    auto p1 = file.create(point_declaration);
+    auto p2 = file.create(point_declaration);
+    // A list naming the same instance twice.
+    auto polyline = file.create(file.schema()->declaration_by_name("IfcPolyline"));
+    polyline.set_attribute_value(0, std::vector<express::base>{p0, p1, p2, p1});
+    // A list of lists.
+    auto surface = file.create(file.schema()->declaration_by_name("IfcBSplineSurfaceWithKnots"));
+    surface.set_attribute_value(2, std::vector<std::vector<express::base>>{{p0, p1}, {p1, p2}});
+    // An optional aggregate that is left empty.
+    const auto* wall_type_declaration = file.schema()->declaration_by_name("IfcWallType");
+    auto wall_type = file.create(wall_type_declaration);
+    auto map = file.create(file.schema()->declaration_by_name("IfcRepresentationMap"));
+    const size_t maps_index = (size_t)wall_type_declaration->as_entity()->attribute_index("RepresentationMaps");
+    wall_type.set_attribute_value(maps_index, std::vector<express::base>{map});
+
+    // One inverse record per occurrence: twice in the polyline, twice in the surface.
+    REQUIRE(file.instances_by_reference((int)p1.id()).size() == 4);
+    file.remove_entity(p1);
+    std::vector<express::base> points = polyline.get_attribute_value(0);
+    CHECK(points == std::vector<express::base>{p0, p2});
+    std::vector<std::vector<express::base>> control_points = surface.get_attribute_value(2);
+    CHECK(control_points == std::vector<std::vector<express::base>>{{p0}, {p2}});
+    // The other points keep their inverses.
+    CHECK(file.instances_by_reference((int)p0.id()).size() == 2);
+    CHECK(file.instances_by_reference((int)p2.id()).size() == 2);
+    std::vector<int> point_ids;
+    for (const auto& instance : file.instances_by_type_excl_subtypes(point_declaration)) {
+        point_ids.push_back(instance.id());
+    }
+    CHECK(point_ids == std::vector<int>{(int)p0.id(), (int)p2.id()});
+
+    file.remove_entity(map);
+    CHECK(wall_type.get_attribute_value(maps_index).isNull());
 }
