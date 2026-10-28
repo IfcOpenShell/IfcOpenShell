@@ -1774,6 +1774,15 @@ class BIMFramingEntry(PropertyGroup):
         description="Cut the ends square instead of following the slope of the path",
         default=False,
     )
+    flush: bpy.props.BoolProperty(
+        update=update_framing_preview,
+        name="Flush",
+        description=(
+            "Keep the profile inside the boundary instead of centred on it: end verticals inside the path ends, "
+            "a Base or Top level on or under it, and spacing measured to the member's faces"
+        ),
+        default=False,
+    )
     bays: bpy.props.StringProperty(
         update=update_framing_preview,
         name="Bays",
@@ -1842,6 +1851,7 @@ class BIMFramingEntry(PropertyGroup):
         breaks_at: bpy.types.bpy_prop_collection_idprop[BIMFramingBreak]
         between: str
         square_cut: bool
+        flush: bool
         extend_start: float
         extend_end: float
         bays: str

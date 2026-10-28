@@ -102,6 +102,9 @@ class VerticalEntry:
     bays: tuple[int, ...] = ()
     # Cut into pieces at the faces of these horizontal entries' rows, where they cross.
     breaks_at: tuple[str, ...] = ()
+    # Keep the profile's faces inside the boundary instead of centring it on it: end
+    # verticals stop at the path ends, and spacing is measured to the member's faces.
+    flush: bool = False
 
 
 @dataclass(frozen=True)
@@ -125,6 +128,9 @@ class HorizontalEntry:
     # Negative pulls it back. Breaks within a run are not affected.
     extend_start: float = 0.0
     extend_end: float = 0.0
+    # Keep the profile's faces inside the boundary instead of centring it on it: a level
+    # at BASE or TOP sits on or under it, and spacing is measured to the member's faces.
+    flush: bool = False
 
 
 @dataclass(frozen=True)
@@ -255,6 +261,7 @@ def _parse_entry(item: dict[str, Any], name: str) -> Entry:
             within=item.get("within"),
             bays=_parse_selection(item.get("bays"), name, "bays"),
             breaks_at=tuple(item.get("breaks_at", ())),
+            flush=bool(item.get("flush", False)),
         )
     elif kind == "H":
         if "v" in item:
@@ -270,6 +277,7 @@ def _parse_entry(item: dict[str, Any], name: str) -> Entry:
                 bays=_parse_selection(item.get("bays"), name, "bays"),
                 extend_start=_parse_length(item.get("extend_start", 0.0), name, "extend_start"),
                 extend_end=_parse_length(item.get("extend_end", 0.0), name, "extend_end"),
+                flush=bool(item.get("flush", False)),
             )
         if spacing is None:
             raise FramingError(f"Horizontal {name!r} needs either 'v' or 'spacing'.")
@@ -285,6 +293,7 @@ def _parse_entry(item: dict[str, Any], name: str) -> Entry:
             bays=_parse_selection(item.get("bays"), name, "bays"),
             extend_start=_parse_length(item.get("extend_start", 0.0), name, "extend_start"),
             extend_end=_parse_length(item.get("extend_end", 0.0), name, "extend_end"),
+            flush=bool(item.get("flush", False)),
         )
     elif kind == "INFILL":
         max_width = item.get("max_width")
@@ -680,8 +689,12 @@ def _solve_levels(
 ) -> dict[str, list[float]]:
     levels: dict[str, list[float]] = {}
     for entry in horizontals:
+        lo, hi = extents.get(entry.name, (0.0, 0.0)) if entry.flush else (0.0, 0.0)
         if entry.v is not None:
-            levels[entry.name] = [_resolve_bound(entry.v, height, levels, extents, side="level")]
+            v = _resolve_bound(entry.v, height, levels, extents, side="level")
+            # Flush, the bottom face sits on BASE and the top face under TOP.
+            v -= lo if entry.v == "BASE" else hi if entry.v == "TOP" else 0.0
+            levels[entry.name] = [v]
             continue
         assert entry.spacing and entry.bottom is not None and entry.top is not None
         start, end = _resolve_bounds(entry.name, entry.bottom, entry.top, height, levels, extents)
@@ -689,14 +702,23 @@ def _solve_levels(
             raise FramingError(f"Horizontal {entry.name!r} has no room between its bounds.")
         gaps = [(start, end)]
         if entry.within:
-            lo, hi = extents.get(entry.within, (0.0, 0.0))
-            gaps = _subtract_intervals(start, end, [(v + lo, v + hi) for v in levels[entry.within]])
-        levels[entry.name] = [v for a, b in _select(gaps, entry.rows) for v in _interior_positions(a, b, entry.spacing)]
+            w_lo, w_hi = extents.get(entry.within, (0.0, 0.0))
+            gaps = _subtract_intervals(start, end, [(v + w_lo, v + w_hi) for v in levels[entry.within]])
+        levels[entry.name] = [
+            v
+            for a, b in _select(gaps, entry.rows)
+            for v in _interior_positions(a - lo, b - hi, entry.spacing, entry.flush)
+        ]
     return levels
 
 
-def _interior_positions(start: float, end: float, spacing: Spacing) -> list[float]:
-    """Positions strictly inside ``(start, end)``, evenly spread by ``spacing``."""
+def _interior_positions(start: float, end: float, spacing: Spacing, inclusive: bool = False) -> list[float]:
+    """Positions strictly inside ``(start, end)``, evenly spread by ``spacing``.
+
+    With ``inclusive``, as for a flush member whose range already stops at its faces, a
+    FIXED or anchored MAX member may also sit on either end."""
+    # Positive keeps members off the ends, negative lets them sit on them.
+    slack = -TOLERANCE if inclusive else TOLERANCE
     length = end - start
     if spacing.mode == "COUNT":
         n = int(spacing.value)
@@ -709,7 +731,7 @@ def _interior_positions(start: float, end: float, spacing: Spacing) -> list[floa
             "END": end - spacing.offset,
         }[spacing.align]
         # An anchor on or past either end leaves nothing to split around.
-        if anchor is None or not start + TOLERANCE < anchor < end - TOLERANCE:
+        if anchor is None or not start + slack < anchor < end - slack:
             return _equal_bays(start, end, spacing.value)
         return _equal_bays(start, anchor, spacing.value) + [anchor] + _equal_bays(anchor, end, spacing.value)
     # FIXED: exact spacing. START and END run from the first member, offset in from
@@ -724,7 +746,7 @@ def _interior_positions(start: float, end: float, spacing: Spacing) -> list[floa
         origin = start + (length - n * step) / 2 + spacing.offset
         first = math.ceil((start - origin) / step - TOLERANCE)
         positions = _steps(origin + first * step, end, step)
-    return sorted(p for p in positions if start + TOLERANCE < p < end - TOLERANCE)
+    return sorted(p for p in positions if start + slack < p < end - slack)
 
 
 def _equal_bays(start: float, end: float, max_width: float) -> list[float]:
@@ -746,9 +768,11 @@ def _solve_vertical_positions(
     solved: dict[str, list[tuple[float, tuple[int, int, int]]]],
     extents: dict[str, tuple[float, float]],
 ) -> list[tuple[float, tuple[int, int, int]]]:
+    # Flush, the member's own faces are what reach the path ends and the range ends.
+    own_lo, own_hi = extents.get(entry.name, (0.0, 0.0)) if entry.flush else (0.0, 0.0)
     fixed: list[float] = []
     if entry.at_ends and not guide.closed:
-        fixed += [0.0, guide.length]
+        fixed += [0.0 - own_lo, guide.length - own_hi]
     if entry.at_corners:
         fixed += guide.corners()
 
@@ -781,7 +805,7 @@ def _solve_vertical_positions(
         found.append((u, guide.segment_at(u), 0))
     if entry.spacing:
         for start, end, segment, bay in ranges:
-            for u in _interior_positions(start, end, entry.spacing):
+            for u in _interior_positions(start - own_lo, end - own_hi, entry.spacing, entry.flush):
                 found.append((u, segment if scope == "SEGMENT" or entry.within else guide.segment_at(u), bay))
 
     found.sort()

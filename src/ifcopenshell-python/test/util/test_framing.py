@@ -786,3 +786,69 @@ class TestSolveInput:
         entries = subject.parse_system({"members": [{"name": "A", "kind": "V", "at_ends": True}]})
         with pytest.raises(FramingError, match="height"):
             subject.solve(entries, [1.0], 0.0)
+
+
+class TestFlush:
+    def test_end_verticals_stop_at_the_path_ends(self):
+        post = {"name": "P", "kind": "V", "at_ends": True, "at_corners": True}
+        extents = {"P": (-0.05, 0.05)}
+        assert us(solve([post], segments=(2.0, 2.0), extents=extents), "P") == approx_list([0.0, 2.0, 4.0])
+        # Flush, the outer faces sit on the ends; a corner is not a boundary, so it stays centred.
+        flush = solve([{**post, "flush": True}], segments=(2.0, 2.0), extents=extents)
+        assert us(flush, "P") == approx_list([0.05, 2.0, 3.95])
+
+    def test_max_spacing_between_flush_end_verticals(self):
+        post = {"name": "P", "kind": "V", "at_ends": True, "flush": True, "spacing": {"mode": "MAX", "value": 1.4}}
+        layout = solve([post], extents={"P": (-0.05, 0.05)})
+        # 0.05 to 2.95 in three equal bays.
+        assert us(layout, "P") == approx_list([0.05, 0.05 + 2.9 / 3, 0.05 + 5.8 / 3, 2.95])
+
+    def test_fixed_start_puts_the_first_face_on_the_start(self):
+        member = {"name": "P", "kind": "V", "flush": True, "spacing": {"mode": "FIXED", "value": 1.0, "align": "START"}}
+        layout = solve([member], segments=(3.5,), extents={"P": (-0.05, 0.05)})
+        assert us(layout, "P") == approx_list([0.05, 1.05, 2.05, 3.05])
+
+    def test_max_anchor_on_the_end(self):
+        spacing = {"mode": "MAX", "value": 1.5, "align": "END"}
+        member = {"name": "P", "kind": "V", "flush": True, "spacing": spacing}
+        layout = solve([member], segments=(3.0,), extents={"P": (-0.05, 0.05)})
+        # A member with its face on the end, then 0.05 to 2.95 in two equal bays.
+        assert us(layout, "P") == approx_list([1.5, 2.95])
+
+    def test_balusters_start_against_the_post_face(self):
+        baluster = {
+            "name": "B",
+            "kind": "V",
+            "flush": True,
+            "within": "Post",
+            "spacing": {"mode": "FIXED", "value": 0.1, "align": "START"},
+        }
+        layout = solve([POSTS, baluster], extents={"Post": (-0.025, 0.025), "B": (-0.008, 0.008)})
+        bays = {}
+        for m in layout.by_entry("B"):
+            bays.setdefault(m.address[1], []).append(m.u)
+        assert [min(u) for u in bays.values()] == approx_list([0.033, 1.533])
+
+    def test_horizontals_at_base_and_top(self):
+        members = [
+            {"name": "Head", "kind": "H", "v": "TOP", "flush": True},
+            {"name": "Sill", "kind": "H", "v": "BASE", "flush": True},
+            {"name": "Mid", "kind": "H", "v": 0.5, "flush": True},
+            {"name": "Post", "kind": "V", "at_ends": True, "top": {"member": "Head"}},
+        ]
+        extents = {"Head": (-0.02, 0.02), "Sill": (-0.03, 0.03), "Mid": (-0.01, 0.01)}
+        layout = solve(members, height=1.0, extents=extents)
+        levels = {name: [m.v for m in layout.by_entry(name)] for name in ("Head", "Sill", "Mid")}
+        # An absolute level is not a boundary, so it stays centred.
+        assert levels == {"Head": approx_list([0.98]), "Sill": approx_list([0.03]), "Mid": approx_list([0.5])}
+        # A vertical bounded by the flush head still stops under its bottom face.
+        assert [m.v_end for m in layout.by_entry("Post")] == approx_list([0.96, 0.96])
+
+    def test_repeating_horizontal(self):
+        rail = {"name": "R", "kind": "H", "flush": True, "spacing": {"mode": "FIXED", "value": 0.3, "align": "START"}}
+        layout = solve([rail], height=1.0, extents={"R": (-0.01, 0.01)})
+        assert [m.v for m in layout.by_entry("R")] == approx_list([0.01, 0.31, 0.61, 0.91])
+
+    def test_off_by_default(self):
+        entries = subject.parse_system({"members": [{"name": "P", "kind": "V", "at_ends": True}]})
+        assert entries[0].flush is False

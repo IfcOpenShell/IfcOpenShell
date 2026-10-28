@@ -96,6 +96,13 @@ The type holds an ordered list. Each entry is an array of one of three kinds.
     `align` is an error, as is any offset on `COUNT`.
   - `COUNT`: a fixed number per segment.
 - `at_ends` / `at_corners`.
+- `flush`: keep the profile inside the boundary instead of centring it on it. End
+  verticals sit with their outer face on the path ends; corner verticals stay centred,
+  as a corner is not a boundary. Spacing ranges shrink by the member's own half-widths,
+  so spacing and offsets are measured to its faces, and a FIXED or anchored MAX member
+  may sit on a range end (a flush baluster at START, offset 0, touches the post).
+  Tops and bottoms already stop at faces: BASE and TOP are the extrusion's end faces,
+  and a member bound stops on that member's face.
 - `within`: spaces this array inside the bays of another vertical array. Examples are
   balusters between posts, and intermediate mullions between primary ones.
 - `bottom` / `top` bound: `BASE` (v = 0), `TOP` (occurrence height), an absolute `v`, or
@@ -110,6 +117,9 @@ The type holds an ordered list. Each entry is an array of one of three kinds.
 ### Horizontal member (rails, cables, transoms, plates)
 
 - At `v`, or repeating upward between two bounds (`COUNT` / `FIXED`).
+- `flush`: a level at `BASE` sits with its bottom face on it and one at `TOP` with its
+  top face under it. An absolute or member level stays centred. A repeat measures its
+  spacing to its faces, as for verticals.
 - `continuous`, or `breaks_at: [vertical names]`. Each end of a broken member is
   shortened by half the depth of the profile it stops at.
 - `extend_start` / `extend_end`: how far each run carries on past its start and end, in

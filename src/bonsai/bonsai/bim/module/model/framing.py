@@ -617,6 +617,7 @@ def _load_props(obj: bpy.types.Object) -> None:
         entry.at_ends = member.get("at_ends", False)
         entry.at_corners = member.get("at_corners", False)
         entry.square_cut = member.get("square_cut", False)
+        entry.flush = member.get("flush", False)
         entry.extend_start = member.get("extend_start", 0.0) * unit_scale
         entry.extend_end = member.get("extend_end", 0.0) * unit_scale
         entry.within = member.get("within") or ""
@@ -670,6 +671,8 @@ def system_from_props(props, previous: dict[str, Any]) -> dict[str, Any]:
             member["at_corners"] = entry.at_corners
             if entry.square_cut:
                 member["square_cut"] = True
+        if entry.flush and entry.kind in ("V", "H"):
+            member["flush"] = True
         repeats = entry.kind == "INFILL" or entry.spacing_mode != "NONE"
         if entry.within and repeats:
             member["within"] = entry.within
