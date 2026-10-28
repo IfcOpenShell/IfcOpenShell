@@ -199,6 +199,68 @@ The type holds an ordered list. Each entry is an array of one of three kinds.
 - No `material` key: an entry's material is the IfcMaterialConstituent named after the
   entry (see below).
 
+### Openings (voids) — step 1 of 4, solver only
+
+Doors, windows and bare openings in a storefront, curtain wall or stud wall.
+
+- **Input.** `solve(..., voids=)` takes `Void(u_start, u_end, v_start, v_end, filling)` rectangles.
+  - Their edges are the *rough opening*: the jambs' inner faces, the head's underside
+    and the sill's top go there. Clearance is therefore the caller's job.
+  - `filling` is the IFC class (`"IfcDoor"`) or None for a bare opening.
+  - An opening may not cross a path corner.
+  - Step 2: the writer projects the host's `IfcOpeningElement`s into (u, v).
+  - Roadmap: clearance from a pset on the filling, or from a Reference representation on
+    it. That Reference must be told apart from the opening-template Reference (on
+    Frankenstein, not v0.9.0).
+- **Framing entries** have a `void_role` and no layout of their own (no spacing, level,
+  `within`, `between` or `bays`). Other entries cannot use them as a bound, `within` or
+  `between`, though `breaks_at` may name them.
+  - `JAMB` (V): `void_layer` counts outward from the opening, so in wood framing 1 is the
+    jack and 2 the king.
+  - `jamb_height`: `FULL` runs between the entry's bounds; `HEAD` stops under the head.
+  - `HEAD` / `SILL` (H). The sill is only placed when the opening starts above BASE, and
+    spans the opening's width.
+  - `void_for`: the filling classes the entry frames (`"IfcOpeningElement"` for none).
+    Empty means all, and entries naming the filling win.
+- **The head's span comes from the jamb heights, with no setting of its own.** It runs
+  between the inner faces of the innermost `FULL` layer, and the `HEAD` layers inside it
+  carry it. With no `FULL` layer, it runs over the outermost layer.
+  - Wood: Jack HEAD + King FULL, so the header spans king to king.
+  - Storefront: one FULL jamb, so the head is between the jambs.
+- **Defaults when no framing entry matches.**
+  - Jambs: one FULL layer of the first `at_ends` vertical (else `at_corners`), with its
+    bounds. The members carry that entry's name, so they take its profile, material and
+    `breaks_at`.
+  - Head and sill: the highest and lowest single-level horizontals.
+  - User request: the jambs and head/sill must be reassignable to a new entry, and default
+    to the profiles at the ends, top and bottom.
+- **Cutting.** Every entry has `cut_by_voids` (default true). The clear zone is the
+  opening plus the jambs, head and sill.
+  - Members are cut where their faces cross the zone. A mullion over a door then starts
+    on the head, and studs become cripples.
+  - Infill is cut into full-width pieces above and below, then pieces beside, with the
+    entry's `gap` at each cut.
+  - `cut_by_voids: false` members run through untouched.
+- **Merge rules, by overlap.** A jamb layer that would overlap an existing member:
+  - an end or corner member, another opening's jamb, or a run-through member serves as
+    that jamb. Outer layers on that side are skipped, and the head ends on its inner face;
+  - a spaced member is left out (and removed from `within`/`between` positions).
+
+  A run-through horizontal where the head or sill would go serves as it. An opening
+  running to a path end has no jamb on that side, and the end member is cut.
+- **Addresses.** Jambs are `(segment, -1 - n, 2 * layer + side)`; heads `(-1 - n, 0)` and
+  sills `(-1 - n, 1)`, for the nth void. Cut pieces are renumbered (`piece`,
+  `InfillPanel.piece`).
+- **Known limits.**
+  - Spacing does not re-flow around openings (a later toggle).
+  - A cut panel leaves seams without a gap where its pieces meet.
+  - In `BODY` output, the IFC opening still cuts run-through members. The plan is to
+    notch the opening's body in step 2; `PARTS` would make it unnecessary.
+- **Remaining steps.**
+  2. Writer and Bonsai: read the openings and regenerate when they change.
+  3. Panel UI for the void roles and Cut by Voids.
+  4. Re-flow, thresholds, openings across corners.
+
 ## Profile and material references
 
 Decision: keep both rooted in the .ifc, so the JSON holds only layout.

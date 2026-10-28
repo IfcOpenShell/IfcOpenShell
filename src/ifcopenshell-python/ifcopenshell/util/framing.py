@@ -48,6 +48,7 @@ SpacingMode = Literal["FIXED", "MAX", "COUNT"]
 SpacingAlign = Literal["START", "CENTER", "END"]
 SpacingScope = Literal["SEGMENT", "PATH"]
 Bound = Union[Literal["BASE", "TOP"], float, dict[str, str]]
+JambHeight = Literal["FULL", "HEAD"]
 
 
 class FramingError(ValueError):
@@ -114,6 +115,16 @@ class VerticalEntry:
     # Keep the profile's faces inside the boundary instead of centring it on it: end
     # verticals stop at the path ends, and spacing is measured to the member's faces.
     flush: bool = False
+    # Off, members run straight through openings instead of being cut by them.
+    cut_by_voids: bool = True
+    # "JAMB" frames the sides of openings instead of being laid out itself. Layer 1 sits
+    # against the opening, layer 2 outside it, and so on. FULL runs between the entry's
+    # bounds; HEAD stops under the opening's head, which sits on it.
+    void_role: Optional[Literal["JAMB"]] = None
+    void_layer: int = 1
+    jamb_height: JambHeight = "FULL"
+    # The IFC classes of the fillings it frames ("IfcOpeningElement" for none). Empty means all.
+    void_for: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -140,6 +151,10 @@ class HorizontalEntry:
     # Keep the profile's faces inside the boundary instead of centring it on it: a level
     # at BASE or TOP sits on or under it, and spacing is measured to the member's faces.
     flush: bool = False
+    cut_by_voids: bool = True
+    # "HEAD" spans over openings and "SILL" under raised ones, instead of being laid out itself.
+    void_role: Optional[Literal["HEAD", "SILL"]] = None
+    void_for: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -157,9 +172,23 @@ class InfillEntry:
     breaks_at: tuple[str, ...] = ()
     bays: tuple[int, ...] = ()  # columns along the path, as for verticals
     rows: tuple[int, ...] = ()  # rows upwards, as for horizontals
+    cut_by_voids: bool = True
 
 
 Entry = Union[VerticalEntry, HorizontalEntry, InfillEntry]
+
+
+@dataclass(frozen=True)
+class Void:
+    """A rough opening in ``(u, v)``: its edges are where the jambs' inner faces, the head's
+    underside and the sill's top go. It must not cross a corner of the path."""
+
+    u_start: float
+    u_end: float
+    v_start: float
+    v_end: float
+    # The IFC class of what fills it, such as "IfcDoor", or None for a bare opening.
+    filling: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -168,7 +197,8 @@ class VerticalMember:
     u: float
     v_start: float
     v_end: float
-    # (segment, bay, index): bay is the parent bay for ``within`` arrays, else 0.
+    # (segment, bay, index): bay is the parent bay for ``within`` arrays, else 0. Jambs
+    # have bay -1 - n for the nth void, and index 2 * layer + side.
     address: tuple[int, int, int]
     # Counts the pieces upward when the member breaks at horizontals.
     piece: int = 0
@@ -181,6 +211,7 @@ class HorizontalMember:
     u_start: float
     u_end: float
     # (row, interval): row counts repeats upward, interval counts breaks along the path.
+    # Heads and sills have row -1 - n for the nth void, and interval 0 or 1.
     address: tuple[int, int]
 
 
@@ -193,6 +224,8 @@ class InfillPanel:
     v_end: float
     # (segment, bay, row, panel): row counts gaps upwards, panel counts max_width splits.
     address: tuple[int, int, int, int]
+    # Counts the pieces left where voids cut the panel.
+    piece: int = 0
 
 
 @dataclass
@@ -257,6 +290,10 @@ def parse_system(data: dict[str, Any]) -> list[Entry]:
 def _parse_entry(item: dict[str, Any], name: str) -> Entry:
     kind = item.get("kind")
     spacing = Spacing.from_data(item["spacing"], name) if "spacing" in item else None
+    cut_by_voids = bool(item.get("cut_by_voids", True))
+    void_role = item.get("void_role")
+    if void_role is not None:
+        return _parse_void_framing(item, name, kind, void_role)
     if kind == "V":
         if spacing is None and not item.get("at_ends") and not item.get("at_corners"):
             raise FramingError(f"Vertical {name!r} needs spacing, at_ends or at_corners.")
@@ -271,6 +308,7 @@ def _parse_entry(item: dict[str, Any], name: str) -> Entry:
             bays=_parse_selection(item.get("bays"), name, "bays"),
             breaks_at=tuple(item.get("breaks_at", ())),
             flush=bool(item.get("flush", False)),
+            cut_by_voids=cut_by_voids,
         )
     elif kind == "H":
         if "v" in item:
@@ -287,6 +325,7 @@ def _parse_entry(item: dict[str, Any], name: str) -> Entry:
                 extend_start=_parse_length(item.get("extend_start", 0.0), name, "extend_start"),
                 extend_end=_parse_length(item.get("extend_end", 0.0), name, "extend_end"),
                 flush=bool(item.get("flush", False)),
+                cut_by_voids=cut_by_voids,
             )
         if spacing is None:
             raise FramingError(f"Horizontal {name!r} needs either 'v' or 'spacing'.")
@@ -303,6 +342,7 @@ def _parse_entry(item: dict[str, Any], name: str) -> Entry:
             extend_start=_parse_length(item.get("extend_start", 0.0), name, "extend_start"),
             extend_end=_parse_length(item.get("extend_end", 0.0), name, "extend_end"),
             flush=bool(item.get("flush", False)),
+            cut_by_voids=cut_by_voids,
         )
     elif kind == "INFILL":
         max_width = item.get("max_width")
@@ -320,8 +360,45 @@ def _parse_entry(item: dict[str, Any], name: str) -> Entry:
             breaks_at=tuple(item.get("breaks_at", ())),
             bays=_parse_selection(item.get("bays"), name, "bays"),
             rows=_parse_selection(item.get("rows"), name, "rows"),
+            cut_by_voids=cut_by_voids,
         )
     raise FramingError(f"Entry {name!r} has unknown kind {kind!r}.")
+
+
+def _parse_void_framing(item: dict[str, Any], name: str, kind: Any, void_role: Any) -> Entry:
+    """An entry that frames openings: it has no layout of its own, so no spacing or level."""
+    void_for = _parse_names(item.get("void_for"), name, "void_for")
+    if kind == "V":
+        if void_role != "JAMB":
+            raise FramingError(f"Vertical {name!r} has unknown void role {void_role!r}.")
+        for key in ("spacing", "at_ends", "at_corners", "within", "bays"):
+            if item.get(key):
+                raise FramingError(f"Jamb {name!r} frames openings, so it cannot have {key!r}.")
+        layer = item.get("void_layer", 1)
+        if isinstance(layer, bool) or not isinstance(layer, int) or layer < 1:
+            raise FramingError(f"Jamb {name!r} needs a void layer of 1 or more.")
+        jamb_height = item.get("jamb_height", "FULL")
+        if jamb_height not in ("FULL", "HEAD"):
+            raise FramingError(f"Jamb {name!r} has unknown jamb height {jamb_height!r}.")
+        return VerticalEntry(
+            name=name,
+            spacing=None,
+            bottom=_parse_bound(item.get("bottom", "BASE"), name),
+            top=_parse_bound(item.get("top", "TOP"), name),
+            breaks_at=tuple(item.get("breaks_at", ())),
+            void_role="JAMB",
+            void_layer=layer,
+            jamb_height=jamb_height,
+            void_for=void_for,
+        )
+    if kind == "H":
+        if void_role not in ("HEAD", "SILL"):
+            raise FramingError(f"Horizontal {name!r} has unknown void role {void_role!r}.")
+        for key in ("v", "spacing", "within", "between", "bays"):
+            if item.get(key) is not None:
+                raise FramingError(f"{void_role.title()} {name!r} frames openings, so it cannot have {key!r}.")
+        return HorizontalEntry(name=name, void_role=void_role, void_for=void_for)
+    raise FramingError(f"Entry {name!r} of kind {kind!r} cannot have a void role.")
 
 
 def _parse_bound(value: Any, name: str) -> Bound:
@@ -385,6 +462,8 @@ def _validate_references(entries: list[Entry]) -> None:
             raise FramingError(f"Entry {owner!r} refers to unknown entry {ref!r} as {role}.")
         if not isinstance(target, kind):
             raise FramingError(f"Entry {owner!r} needs {role} {ref!r} to be a {_KIND_NAMES[kind]}.")
+        if target.void_role and role != "'breaks_at'":
+            raise FramingError(f"Entry {owner!r} cannot use {ref!r} as {role}, as it only frames openings.")
         if kind is HorizontalEntry and target.v is None and not allow_repeating:
             raise FramingError(f"Entry {owner!r} cannot use repeating horizontal {ref!r} as {role}.")
 
@@ -458,6 +537,7 @@ def solve(
     scope: SpacingScope = "SEGMENT",
     extents: Optional[dict[str, tuple[float, float]]] = None,
     lateral: Optional[dict[str, tuple[float, float]]] = None,
+    voids: tuple[Void, ...] = (),
 ) -> FramingLayout:
     """Lay out a framing system along a guide.
 
@@ -474,6 +554,11 @@ def solve(
         plane, offset included. A run only reaches over an end vertical it overlaps
         this way, so an offset handrail is not stretched over posts it misses. Missing
         entries are assumed to overlap.
+    :param voids: Rough openings to frame. Members of entries that are ``cut_by_voids``
+        are cut where they cross an opening or its framing, and spaced verticals in the
+        way of a jamb are left out. Jambs, heads and sills come from the entries with a
+        ``void_role``. Without them, jambs default to the end vertical's profile, the
+        head to the highest horizontal's and the sill to the lowest one's.
     """
     if not segment_lengths or any(length <= TOLERANCE for length in segment_lengths):
         raise FramingError("The guide path needs segments of non-zero length.")
@@ -486,11 +571,11 @@ def solve(
     # Order matters: horizontal levels depend only on other horizontals; verticals need
     # those levels for their bounds; horizontal intervals need the verticals they break
     # at; infill needs both.
-    horizontals = [e for e in entries if isinstance(e, HorizontalEntry)]
+    horizontals = [e for e in entries if isinstance(e, HorizontalEntry) and not e.void_role]
     levels = _solve_levels(_topological_order(horizontals, _horizontal_deps), height, extents)
 
     vertical_positions: dict[str, list[tuple[float, tuple[int, int, int]]]] = {}
-    verticals = [e for e in entries if isinstance(e, VerticalEntry)]
+    verticals = [e for e in entries if isinstance(e, VerticalEntry) and not e.void_role]
     for entry in _topological_order(verticals, lambda e: list(e.within)):
         positions = _solve_vertical_positions(entry, guide, scope, vertical_positions, extents)
         vertical_positions[entry.name] = positions
@@ -520,8 +605,12 @@ def solve(
         for m in layout.verticals
         if all(any(a - TOLERANCE <= m.u <= b + TOLERANCE for a, b in runs[name]) for name in bounds_by_entry[m.entry])
     ]
+    by_name = {e.name: e for e in entries}
+    frames = [
+        _frame_void(i, void, entries, verticals, guide, height, levels, layout, extents) for i, void in enumerate(voids)
+    ]
     for name in vertical_positions:
-        kept = {m.u for m in layout.verticals if m.entry == name}
+        kept = {m.u for m in layout.verticals if m.entry == name and m.address[1] >= 0}
         vertical_positions[name] = [p for p in vertical_positions[name] if p[0] in kept]
 
     lateral = lateral or {}
@@ -558,9 +647,16 @@ def solve(
             for interval, (u_start, u_end) in enumerate(intervals):
                 layout.horizontals.append(HorizontalMember(entry.name, v, u_start, u_end, (row, interval)))
 
+    if frames:
+        for frame in frames:
+            frame.place_head_and_sill(layout.horizontals, by_name, extents)
+        layout.horizontals = _cut_horizontals(layout.horizontals, frames, by_name, extents)
+        for frame in frames:
+            layout.horizontals.extend(frame.horizontals)
+
     # Verticals that break at horizontals are cut at the faces of the rows that cross
     # them, where those rows actually run.
-    breaks_by_entry = {e.name: e.breaks_at for e in verticals if e.breaks_at}
+    breaks_by_entry = {e.name: e.breaks_at for e in entries if isinstance(e, VerticalEntry) and e.breaks_at}
     if breaks_by_entry:
         pieces = []
         for m in layout.verticals:
@@ -577,14 +673,17 @@ def solve(
             for i, (a, b) in enumerate(_subtract_intervals(m.v_start, m.v_end, cuts)):
                 pieces.append(VerticalMember(m.entry, m.u, a, b, m.address, i))
         layout.verticals = pieces
+    if frames:
+        layout.verticals = _cut_verticals(layout.verticals, frames, by_name, extents)
 
     for entry in entries:
         if isinstance(entry, InfillEntry):
-            layout.infills.extend(
-                _solve_infill(
-                    entry, guide, height, levels, vertical_positions, layout.verticals, layout.horizontals, extents
-                )
+            panels = _solve_infill(
+                entry, guide, height, levels, vertical_positions, layout.verticals, layout.horizontals, extents
             )
+            if frames and entry.cut_by_voids:
+                panels = _cut_panels(panels, frames, entry.gap)
+            layout.infills.extend(panels)
     return layout
 
 
@@ -812,6 +911,17 @@ def _steps(first: float, end: float, step: float) -> list[float]:
     return [first + i * step for i in range(n + 1)]
 
 
+def _fixed_positions(entry: VerticalEntry, guide: _Guide, extents: dict[str, tuple[float, float]]) -> list[float]:
+    """Where an entry's end and corner members stand."""
+    own_lo, own_hi = extents.get(entry.name, (0.0, 0.0)) if entry.flush else (0.0, 0.0)
+    fixed: list[float] = []
+    if entry.at_ends and not guide.closed:
+        fixed += [0.0 - own_lo, guide.length - own_hi]
+    if entry.at_corners:
+        fixed += guide.corners()
+    return fixed
+
+
 def _solve_vertical_positions(
     entry: VerticalEntry,
     guide: _Guide,
@@ -821,11 +931,7 @@ def _solve_vertical_positions(
 ) -> list[tuple[float, tuple[int, int, int]]]:
     # Flush, the member's own faces are what reach the path ends and the range ends.
     own_lo, own_hi = extents.get(entry.name, (0.0, 0.0)) if entry.flush else (0.0, 0.0)
-    fixed: list[float] = []
-    if entry.at_ends and not guide.closed:
-        fixed += [0.0 - own_lo, guide.length - own_hi]
-    if entry.at_corners:
-        fixed += guide.corners()
+    fixed = _fixed_positions(entry, guide, extents)
 
     # Each range is (u_start, u_end, segment, bay) that spacing fills.
     ranges: list[tuple[float, float, int, int]] = []
@@ -999,3 +1105,251 @@ def _solve_infill(
                 u0 = start + i * (panel_width + entry.joint)
                 panels.append(InfillPanel(entry.name, u0, u0 + panel_width, a, b, (segment, bay, row, i)))
     return panels
+
+
+Rect = tuple[float, float, float, float]  # u_start, u_end, v_start, v_end
+
+
+def _overlaps(a_start: float, a_end: float, b_start: float, b_end: float) -> bool:
+    return a_start < b_end - TOLERANCE and a_end > b_start + TOLERANCE
+
+
+def _void_framing(entries: list[Entry], kind: type, role: str, filling: Optional[str]) -> list:
+    """The entries with this void role that frame the filling, those naming it first."""
+    key = filling or "IfcOpeningElement"
+    found = [
+        e for e in entries if isinstance(e, kind) and e.void_role == role and (not e.void_for or key in e.void_for)
+    ]
+    return sorted(found, key=lambda e: not e.void_for)
+
+
+def _extent_at(
+    m: Union[VerticalMember, HorizontalMember], extents: dict[str, tuple[float, float]]
+) -> tuple[float, float]:
+    """A member's faces across its axis, as (lo, hi) around its position."""
+    lo, hi = extents.get(m.entry, (0.0, 0.0))
+    at = m.u if isinstance(m, VerticalMember) else m.v
+    return at + lo, at + hi
+
+
+@dataclass
+class _VoidFrame:
+    index: int
+    void: Void
+    reaches_top: bool
+    # The faces the head spans between, one per side.
+    head_span: list[float]
+    head: Optional[HorizontalEntry]
+    sill: Optional[HorizontalEntry]
+    # What the jambs, head and sill take up. With the opening, these cut other members.
+    rects: list[Rect] = field(default_factory=list)
+    horizontals: list[HorizontalMember] = field(default_factory=list)
+
+    def all_rects(self) -> list[Rect]:
+        return self.rects + [(self.void.u_start, self.void.u_end, self.void.v_start, self.void.v_end)]
+
+    def place_head_and_sill(
+        self,
+        horizontals: list[HorizontalMember],
+        by_name: dict[str, Entry],
+        extents: dict[str, tuple[float, float]],
+    ) -> None:
+        void = self.void
+        plans = []
+        if self.head and not self.reaches_top:
+            lo, _ = extents.get(self.head.name, (0.0, 0.0))
+            plans.append((self.head, void.v_end - lo, tuple(self.head_span), 0))
+        if self.sill and void.v_start > TOLERANCE:
+            _, hi = extents.get(self.sill.name, (0.0, 0.0))
+            plans.append((self.sill, void.v_start - hi, (void.u_start, void.u_end), 1))
+        for entry, v, (a, b), interval in plans:
+            lo, hi = extents.get(entry.name, (0.0, 0.0))
+            # A member running through the opening where this one would go serves as it instead.
+            if any(
+                not by_name[h.entry].cut_by_voids
+                and _overlaps(*_extent_at(h, extents), v + lo, v + hi)
+                and min(h.u_end, b) - max(h.u_start, a) >= (b - a) / 2
+                for h in horizontals
+            ):
+                continue
+            self.horizontals.append(HorizontalMember(entry.name, v, a, b, (-1 - self.index, interval)))
+            self.rects.append((a, b, v + lo, v + hi))
+
+
+def _frame_void(
+    index: int,
+    void: Void,
+    entries: list[Entry],
+    verticals: list[VerticalEntry],
+    guide: _Guide,
+    height: float,
+    levels: dict[str, list[float]],
+    layout: FramingLayout,
+    extents: dict[str, tuple[float, float]],
+) -> _VoidFrame:
+    """Place an opening's jambs, leaving out spaced verticals in their way. The head and
+    sill are placed once the horizontals are known, see :meth:`_VoidFrame.place_head_and_sill`."""
+    if void.u_end - void.u_start <= TOLERANCE or void.v_end - void.v_start <= TOLERANCE:
+        raise FramingError(f"Opening {index + 1} has no size.")
+    if any(void.u_start + TOLERANCE < s < void.u_end - TOLERANCE for s in guide.starts[1:]):
+        raise FramingError(f"Opening {index + 1} crosses a corner of the path.")
+    segment = guide.segment_at((void.u_start + void.u_end) / 2)
+    reaches_top = void.v_end >= height - TOLERANCE
+
+    # Jamb layers from the opening outwards. Without jamb entries, the end vertical frames it.
+    layers: list[tuple[VerticalEntry, JambHeight]] = []
+    if jambs := _void_framing(entries, VerticalEntry, "JAMB", void.filling):
+        for layer in sorted({e.void_layer for e in jambs}):
+            entry = next(e for e in jambs if e.void_layer == layer)
+            layers.append((entry, entry.jamb_height))
+    elif default := next((e for e in verticals if e.at_ends), None) or next(
+        (e for e in verticals if e.at_corners), None
+    ):
+        layers.append((default, "FULL"))
+    # The head bears on the layers inside the first FULL one and spans between its faces.
+    full = next((k for k, (_, mode) in enumerate(layers) if mode == "FULL"), None)
+
+    singles = [e for e in entries if isinstance(e, HorizontalEntry) and not e.void_role and e.v is not None]
+    head = next(iter(_void_framing(entries, HorizontalEntry, "HEAD", void.filling)), None)
+    if head is None and singles:
+        head = max(singles, key=lambda e: levels[e.name][0])
+    sill = next(iter(_void_framing(entries, HorizontalEntry, "SILL", void.filling)), None)
+    if sill is None and singles:
+        sill = min(singles, key=lambda e: levels[e.name][0])
+    frame = _VoidFrame(index, void, reaches_top, [void.u_start, void.u_end], head, sill)
+
+    by_name = {e.name: e for e in entries}
+    fixed = {e.name: _fixed_positions(e, guide, extents) for e in verticals}
+    dropped: set[int] = set()
+    for side, edge in ((0, void.u_start), (1, void.u_end)):
+        if edge <= TOLERANCE if side == 0 else edge >= guide.length - TOLERANCE:
+            continue  # The opening runs to the path end, so there is nothing to frame it there.
+        face, locked = edge, False
+        for k, (entry, mode) in enumerate(layers):
+            lo, hi = extents.get(entry.name, (0.0, 0.0))
+            u = face - hi if side == 0 else face - lo
+            v_start, v_end = _resolve_bounds(entry.name, entry.bottom, entry.top, height, levels, extents)
+            if mode == "HEAD" and not reaches_top:
+                v_end = void.v_end
+            in_way = [
+                m
+                for m in layout.verticals
+                if id(m) not in dropped
+                and _overlaps(*_extent_at(m, extents), u + lo, u + hi)
+                and _overlaps(m.v_start, m.v_end, v_start, v_end)
+            ]
+            # End and corner members, other jambs and members running through the opening
+            # serve as the jamb here. Spaced members make way for it.
+            serving = [
+                m
+                for m in in_way
+                if m.address[1] < 0 or _near(m.u, fixed.get(m.entry, [])) or not by_name[m.entry].cut_by_voids
+            ]
+            if serving:
+                if not locked:
+                    frame.head_span[side] = _extent_at(serving[0], extents)[1 - side]
+                break
+            dropped.update(id(m) for m in in_way)
+            layout.verticals.append(VerticalMember(entry.name, u, v_start, v_end, (segment, -1 - index, 2 * k + side)))
+            frame.rects.append((u + lo, u + hi, v_start, v_end))
+            outer = u + lo if side == 0 else u + hi
+            if not locked:
+                frame.head_span[side] = face if k == full else outer
+                locked = k == full
+            face = outer
+    layout.verticals = [m for m in layout.verticals if id(m) not in dropped]
+    return frame
+
+
+def _cut_verticals(
+    verticals: list[VerticalMember],
+    frames: list[_VoidFrame],
+    by_name: dict[str, Entry],
+    extents: dict[str, tuple[float, float]],
+) -> list[VerticalMember]:
+    """Cut the members that cross openings or their framing, renumbering the pieces."""
+    result: list[VerticalMember] = []
+    counters: dict[tuple, int] = {}
+    for m in verticals:
+        pieces = [(m.v_start, m.v_end)]
+        if m.address[1] >= 0 and by_name[m.entry].cut_by_voids:
+            faces = _extent_at(m, extents)
+            cuts = [(r[2], r[3]) for f in frames for r in f.all_rects() if _overlaps(*faces, r[0], r[1])]
+            pieces = _subtract_intervals(m.v_start, m.v_end, cuts)
+        for a, b in pieces:
+            key = (m.entry, m.address)
+            counters[key] = counters.get(key, -1) + 1
+            result.append(VerticalMember(m.entry, m.u, a, b, m.address, counters[key]))
+    return result
+
+
+def _cut_horizontals(
+    horizontals: list[HorizontalMember],
+    frames: list[_VoidFrame],
+    by_name: dict[str, Entry],
+    extents: dict[str, tuple[float, float]],
+) -> list[HorizontalMember]:
+    """Cut the members that cross openings or their framing, renumbering the intervals."""
+    result: list[HorizontalMember] = []
+    counters: dict[tuple, int] = {}
+    for h in horizontals:
+        pieces = [(h.u_start, h.u_end)]
+        if by_name[h.entry].cut_by_voids:
+            faces = _extent_at(h, extents)
+            cuts = [(r[0], r[1]) for f in frames for r in f.all_rects() if _overlaps(*faces, r[2], r[3])]
+            pieces = _subtract_intervals(h.u_start, h.u_end, cuts)
+        for a, b in pieces:
+            key = (h.entry, h.address[0])
+            counters[key] = counters.get(key, -1) + 1
+            result.append(HorizontalMember(h.entry, h.v, a, b, (h.address[0], counters[key])))
+    return result
+
+
+def _cut_panels(
+    panels: list[InfillPanel], frames: list[_VoidFrame], gap: tuple[float, float, float, float]
+) -> list[InfillPanel]:
+    """Cut panels around openings and their framing, keeping the entry's gap at each cut."""
+    gap_left, gap_right, gap_bottom, gap_top = gap
+    result: list[InfillPanel] = []
+    for panel in panels:
+        # Each piece, with which of its left, right, bottom and top sides a cut made.
+        pieces: list[tuple[Rect, tuple[bool, bool, bool, bool]]] = [
+            ((panel.u_start, panel.u_end, panel.v_start, panel.v_end), (False, False, False, False))
+        ]
+        for frame in frames:
+            for rect in frame.all_rects():
+                pieces = [p for box, cut in pieces for p in _subtract_rect(box, cut, rect)]
+        n = 0
+        for (u0, u1, v0, v1), (left, right, bottom, top) in pieces:
+            u0, u1 = u0 + (gap_left if left else 0.0), u1 - (gap_right if right else 0.0)
+            v0, v1 = v0 + (gap_bottom if bottom else 0.0), v1 - (gap_top if top else 0.0)
+            if u1 - u0 > TOLERANCE and v1 - v0 > TOLERANCE:
+                result.append(InfillPanel(panel.entry, u0, u1, v0, v1, panel.address, n))
+                n += 1
+    return result
+
+
+def _subtract_rect(
+    box: Rect, cut: tuple[bool, bool, bool, bool], rect: Rect
+) -> list[tuple[Rect, tuple[bool, bool, bool, bool]]]:
+    """What is left of ``box`` around ``rect``: full-width pieces below and above it, then
+    the pieces beside it."""
+    u0, u1, v0, v1 = box
+    a, b, c, d = rect
+    if not (_overlaps(u0, u1, a, b) and _overlaps(v0, v1, c, d)):
+        return [(box, cut)]
+    left, right, bottom, top = cut
+    pieces = []
+    if c > v0 + TOLERANCE:
+        pieces.append(((u0, u1, v0, c), (left, right, bottom, True)))
+    if d < v1 - TOLERANCE:
+        pieces.append(((u0, u1, d, v1), (left, right, True, top)))
+    # Beside the cut, a side against a piece above or below is a seam, not a cut.
+    mid_bottom = bottom if c <= v0 + TOLERANCE else False
+    mid_top = top if d >= v1 - TOLERANCE else False
+    mid_v0, mid_v1 = max(v0, c), min(v1, d)
+    if a > u0 + TOLERANCE:
+        pieces.append(((u0, a, mid_v0, mid_v1), (left, True, mid_bottom, mid_top)))
+    if b < u1 - TOLERANCE:
+        pieces.append(((b, u1, mid_v0, mid_v1), (True, right, mid_bottom, mid_top)))
+    return pieces

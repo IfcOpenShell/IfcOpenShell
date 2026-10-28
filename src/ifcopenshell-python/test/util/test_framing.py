@@ -539,8 +539,10 @@ class TestResolveProfile:
         assert subject.resolve_profile(self.file, None) is None
 
 
-def solve(members, segments=(3.0,), height=1.1, extents=None):
-    return subject.solve(subject.parse_system({"members": members}), list(segments), height, extents=extents)
+def solve(members, segments=(3.0,), height=1.1, extents=None, voids=()):
+    return subject.solve(
+        subject.parse_system({"members": members}), list(segments), height, extents=extents, voids=tuple(voids)
+    )
 
 
 POSTS = {
@@ -1018,3 +1020,196 @@ class TestEqualOpenings:
         extents = {"Bottom": (-0.1, 0.1), "Top": (-0.05, 0.05), "Rail": (-0.02, 0.02)}
         layout = solve(members + [rail], height=1.0, extents=extents)
         assert [m.v for m in layout.by_entry("Rail")] == approx_list([0.2 + 0.33 + 0.02])
+
+
+def storefront(**mullion):
+    return [
+        {"name": "Mullion", "kind": "V", "spacing": {"mode": "MAX", "value": 1.5}, "at_ends": True, **mullion},
+        {"name": "Sill", "kind": "H", "v": "BASE", "breaks_at": ["Mullion"]},
+        {"name": "Head", "kind": "H", "v": "TOP", "breaks_at": ["Mullion"]},
+        {
+            "name": "Glass",
+            "kind": "INFILL",
+            "between": "Mullion",
+            "bottom": {"member": "Sill"},
+            "top": {"member": "Head"},
+            "gap": 0.01,
+        },
+    ]
+
+
+STOREFRONT_EXTENTS = {"Mullion": (-0.025, 0.025), "Sill": (0.0, 0.1), "Head": (-0.1, 0.0)}
+DOOR = subject.Void(2.0, 3.0, 0.0, 2.1, "IfcDoor")
+
+
+def solve_storefront(members, voids, segments=(6.0,), extents=STOREFRONT_EXTENTS):
+    return solve(members, segments=segments, height=3.0, extents=extents, voids=voids)
+
+
+def jambs(layout, name):
+    return [m for m in layout.by_entry(name) if isinstance(m, subject.VerticalMember) and m.address[1] < 0]
+
+
+def boxes(layout, name):
+    return sorted((p.u_start, p.u_end, p.v_start, p.v_end) for p in layout.by_entry(name))
+
+
+class TestVoids:
+    def test_door_in_the_middle(self):
+        layout = solve_storefront(storefront(), [DOOR])
+        # The end mullion's profile frames the door, flush outside it. The spaced mullion
+        # at 3.0 is in the way of the right jamb, so it makes way.
+        assert [m.u for m in jambs(layout, "Mullion")] == approx_list([1.975, 3.025])
+        assert all((m.v_start, m.v_end) == (0.0, 3.0) for m in jambs(layout, "Mullion"))
+        assert sorted(us(layout, "Mullion")) == approx_list([0.0, 1.5, 1.975, 3.025, 4.5, 6.0])
+        # The head defaults to the top horizontal's profile, its underside on the opening.
+        head = [m for m in layout.by_entry("Head") if m.address[0] < 0]
+        assert [(m.v, m.u_start, m.u_end) for m in head] == [pytest.approx((2.2, 2.0, 3.0))]
+        # The sill does not cross the door or the jambs.
+        assert all(m.u_end <= 1.95 + 1e-9 or m.u_start >= 3.05 - 1e-9 for m in layout.by_entry("Sill"))
+
+    def test_glass_is_cut_around_the_door_with_its_gap(self):
+        layout = solve_storefront(storefront(), [DOOR])
+        middle_bay = [b for b in boxes(layout, "Glass") if 1.5 < b[0] < 4.5]
+        assert middle_bay == [
+            pytest.approx((1.535, 1.94, 0.11, 2.89)),
+            pytest.approx((2.01, 2.99, 2.21, 2.89)),  # the transom over the door
+            pytest.approx((3.06, 4.465, 0.11, 2.89)),
+        ]
+
+    def test_mullions_over_a_door_are_cut_above_the_head(self):
+        door = subject.Void(1.0, 2.0, 0.0, 2.1)
+        layout = solve_storefront(storefront(), [door], extents={**STOREFRONT_EXTENTS, "Mullion": (-0.01, 0.01)})
+        over = [(m.v_start, m.v_end) for m in layout.by_entry("Mullion") if abs(m.u - 1.5) < 1e-9]
+        assert over == [pytest.approx((2.2, 3.0))]
+
+    def test_members_can_run_through(self):
+        door = subject.Void(2.5, 3.5, 0.0, 2.1)
+        members = storefront(cut_by_voids=False)
+        members[3]["cut_by_voids"] = False
+        layout = solve_storefront(members, [door])
+        assert [(m.v_start, m.v_end) for m in layout.by_entry("Mullion") if abs(m.u - 3.0) < 1e-9] == [(0.0, 3.0)]
+        # The glass is left whole too.
+        assert boxes(layout, "Glass") == boxes(solve_storefront(members, []), "Glass")
+
+    def test_a_running_through_horizontal_serves_as_the_head(self):
+        transom = {"name": "Transom", "kind": "H", "v": 2.15, "cut_by_voids": False}
+        layout = solve_storefront(
+            storefront() + [transom], [DOOR], extents={**STOREFRONT_EXTENTS, "Transom": (-0.025, 0.025)}
+        )
+        assert not [m for m in layout.by_entry("Head") if m.address[0] < 0]
+        assert [(m.u_start, m.u_end) for m in layout.by_entry("Transom")] == [(-0.025, 6.025)]
+
+    def test_door_at_the_end_uses_the_end_mullion_as_its_jamb(self):
+        door = subject.Void(5.0, 5.975, 0.0, 2.1)
+        layout = solve_storefront(storefront(), [door])
+        assert [m.u for m in jambs(layout, "Mullion")] == approx_list([4.975])
+        head = [m for m in layout.by_entry("Head") if m.address[0] < 0]
+        assert [(m.u_start, m.u_end) for m in head] == [pytest.approx((5.0, 5.975))]
+
+    def test_opening_to_the_path_end_cuts_the_end_member(self):
+        door = subject.Void(5.5, 6.0, 0.0, 2.1)
+        layout = solve_storefront(storefront(), [door])
+        assert [m.u for m in jambs(layout, "Mullion")] == approx_list([5.475])
+        end = [(m.v_start, m.v_end) for m in layout.by_entry("Mullion") if abs(m.u - 6.0) < 1e-9]
+        assert end == [pytest.approx((2.2, 3.0))]
+
+    def test_full_height_opening_has_no_head(self):
+        gate = subject.Void(2.0, 3.0, 0.0, 3.0)
+        layout = solve_storefront(storefront(), [gate])
+        assert not [m for m in layout.by_entry("Head") if m.address[0] < 0]
+        assert all(m.u_end <= 2.0 or m.u_start >= 3.0 for m in layout.by_entry("Head"))
+
+
+WOOD = [
+    {"name": "Plate", "kind": "H", "v": "BASE"},
+    {"name": "TopPlate", "kind": "H", "v": "TOP"},
+    {
+        "name": "Stud",
+        "kind": "V",
+        "spacing": {"mode": "MAX", "value": 0.4},
+        "at_ends": True,
+        "bottom": {"member": "Plate"},
+        "top": {"member": "TopPlate"},
+    },
+    {
+        "name": "King",
+        "kind": "V",
+        "void_role": "JAMB",
+        "void_layer": 2,
+        "bottom": {"member": "Plate"},
+        "top": {"member": "TopPlate"},
+    },
+    {"name": "Jack", "kind": "V", "void_role": "JAMB", "jamb_height": "HEAD", "bottom": {"member": "Plate"}},
+    {"name": "Header", "kind": "H", "void_role": "HEAD"},
+    {"name": "RoughSill", "kind": "H", "void_role": "SILL"},
+]
+WOOD_EXTENTS = {
+    "Plate": (0.0, 0.04),
+    "TopPlate": (-0.04, 0.0),
+    "Stud": (-0.02, 0.02),
+    "King": (-0.02, 0.02),
+    "Jack": (-0.02, 0.02),
+    "Header": (-0.1, 0.1),
+    "RoughSill": (-0.02, 0.02),
+}
+WINDOW = subject.Void(1.0, 2.0, 0.9, 2.0, "IfcWindow")
+
+
+class TestLayeredJambs:
+    def layout(self, members=WOOD, voids=(WINDOW,)):
+        return solve(members, segments=(3.2,), height=2.4, extents=WOOD_EXTENTS, voids=voids)
+
+    def test_jacks_carry_the_header_between_full_height_kings(self):
+        layout = self.layout()
+        assert [(m.u, m.v_start, m.v_end) for m in layout.by_entry("Jack")] == [
+            pytest.approx((0.98, 0.04, 2.0)),
+            pytest.approx((2.02, 0.04, 2.0)),
+        ]
+        assert [(m.u, m.v_start, m.v_end) for m in layout.by_entry("King")] == [
+            pytest.approx((0.94, 0.04, 2.36)),
+            pytest.approx((2.06, 0.04, 2.36)),
+        ]
+        assert [(m.v, m.u_start, m.u_end) for m in layout.by_entry("Header")] == [pytest.approx((2.1, 0.96, 2.04))]
+        assert [(m.v, m.u_start, m.u_end) for m in layout.by_entry("RoughSill")] == [pytest.approx((0.88, 1.0, 2.0))]
+
+    def test_studs_become_cripples_or_make_way(self):
+        layout = self.layout()
+        cripples = [(m.v_start, m.v_end) for m in layout.by_entry("Stud") if abs(m.u - 1.2) < 1e-9]
+        assert cripples == [pytest.approx((0.04, 0.86)), pytest.approx((2.2, 2.36))]
+        # The stud at 2.0 is where the right jack goes.
+        assert not [m for m in layout.by_entry("Stud") if abs(m.u - 2.0) < 1e-9]
+        assert [(m.u_start, m.u_end) for m in layout.by_entry("Plate")] == [pytest.approx((-0.02, 3.22))]
+
+    def test_framing_entries_can_be_for_one_filling(self):
+        members = [dict(m, void_for=["IfcDoor"]) if m.get("void_role") else m for m in WOOD]
+        layout = self.layout(members, voids=(subject.Void(1.0, 2.0, 0.9, 2.0),))
+        assert not layout.by_entry("Jack") and not layout.by_entry("King")
+        # Without its own jambs, the bare opening falls back to the end stud's profile.
+        assert [m.u for m in jambs(layout, "Stud")] == approx_list([0.98, 2.02])
+
+    @pytest.mark.parametrize(
+        "member, message",
+        [
+            ({"name": "J", "kind": "V", "void_role": "JAMB", "at_ends": True}, "cannot have 'at_ends'"),
+            ({"name": "J", "kind": "V", "void_role": "JAMB", "jamb_height": "HALF"}, "jamb height"),
+            ({"name": "J", "kind": "V", "void_role": "HEAD"}, "unknown void role"),
+            ({"name": "J", "kind": "H", "void_role": "HEAD", "v": 1.0}, "cannot have 'v'"),
+            ({"name": "J", "kind": "INFILL", "void_role": "HEAD"}, "cannot have a void role"),
+            ({"name": "J", "kind": "V", "at_ends": True, "top": {"member": "Header"}}, "only frames openings"),
+        ],
+    )
+    def test_rejects(self, member, message):
+        with pytest.raises(FramingError, match=message):
+            subject.parse_system({"members": [{"name": "Header", "kind": "H", "void_role": "HEAD"}, member]})
+
+    @pytest.mark.parametrize(
+        "void, message",
+        [
+            (subject.Void(2.5, 3.5, 0.0, 2.0), "crosses a corner"),
+            (subject.Void(1.0, 1.0, 0.0, 2.0), "no size"),
+        ],
+    )
+    def test_rejects_openings(self, void, message):
+        with pytest.raises(FramingError, match=message):
+            solve(WOOD, segments=(3.0, 3.0), height=2.4, extents=WOOD_EXTENTS, voids=(void,))
