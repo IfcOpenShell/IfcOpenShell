@@ -214,14 +214,14 @@ namespace std {
 template <>
 struct hash<express::base> {
     std::size_t operator()(const express::base& value) const noexcept {
-        return std::hash<uint32_t>{}(value.identity());
+        return value ? std::hash<uint32_t>{}(value.identity()) : 0;
     }
 };
 
 template <>
 struct hash<express::entity> {
     std::size_t operator()(const express::entity& value) const noexcept {
-        return std::hash<uint32_t>{}(value.identity());
+        return value ? std::hash<uint32_t>{}(value.identity()) : 0;
     }
 };
 
@@ -232,14 +232,14 @@ namespace boost {
 template <>
 struct hash<express::base> {
     std::size_t operator()(const express::base& value) const noexcept {
-        return std::hash<uint32_t>{}(value.identity());
+        return value ? std::hash<uint32_t>{}(value.identity()) : 0;
     }
 };
 
 template <>
 struct hash<express::entity> {
     std::size_t operator()(const express::entity& value) const noexcept {
-        return std::hash<uint32_t>{}(value.identity());
+        return value ? std::hash<uint32_t>{}(value.identity()) : 0;
     }
 };
 
