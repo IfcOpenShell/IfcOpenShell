@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <ifcparse/exception.h>
 #include <ifcparse/file.h>
 #include <ifcparse/parse.h>
@@ -12,6 +13,7 @@
 #include <plugin/plugin.h>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -846,4 +848,26 @@ TEST_CASE("Null instance handles can be compared and used as ordered keys", "[if
     drawings[{express::base{}, "Elevation A"}] += 10;
     CHECK(drawings.size() == 3);
     CHECK(drawings[{express::base{}, "Elevation A"}] == 11);
+}
+
+TEST_CASE("Null instance handles can be hashed", "[ifcparse][handles]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const express::base a = file.create(file.schema()->declaration_by_name("IfcCartesianPoint"));
+    const express::base a_copy = a;
+
+    CHECK(std::hash<express::base>{}(a) == std::hash<express::base>{}(a_copy));
+    CHECK(boost::hash<express::base>{}(a) == boost::hash<express::base>{}(a_copy));
+
+    // These hashes are noexcept, so an exception from a null handle terminates.
+    std::unordered_set<express::base> handles{express::base{}, a, a_copy, express::base{}};
+    CHECK(handles.size() == 2);
+    CHECK(handles.count(express::base{}) == 1);
+    CHECK(boost::hash<express::base>{}(express::base{}) == std::hash<express::base>{}(express::base{}));
+
+#ifdef IFOPSH_SAFE_INSTANCE
+    file.remove_entity(a);
+    REQUIRE_FALSE(a_copy);
+    CHECK(a == a_copy);
+    CHECK(std::hash<express::base>{}(a) == std::hash<express::base>{}(a_copy));
+#endif
 }
