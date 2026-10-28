@@ -1711,6 +1711,25 @@ class BIMFramingEntry(PropertyGroup):
         ],
         default="CENTER",
     )
+    max_align: bpy.props.EnumProperty(
+        update=update_framing_preview,
+        name="Align",
+        description="Where a member is anchored before the bays are split equally",
+        items=[
+            ("EVEN", "Even", "Equal bays across the whole of each bay"),
+            ("START", "Start", "A member offset from the start, or the bottom for horizontals"),
+            ("CENTER", "Centre", "A member on the centre line, moved by the offset"),
+            ("END", "End", "A member offset from the end, or the top for horizontals"),
+        ],
+        default="EVEN",
+    )
+    spacing_offset: bpy.props.FloatProperty(
+        update=update_framing_preview,
+        name="Offset",
+        description="From the aligned end to the first member, or along the path from the centre",
+        default=0.0,
+        subtype="DISTANCE",
+    )
     at_ends: bpy.props.BoolProperty(update=update_framing_preview, name="At Ends", default=False)
     at_corners: bpy.props.BoolProperty(update=update_framing_preview, name="At Corners", default=False)
     within: bpy.props.StringProperty(
@@ -1806,6 +1825,8 @@ class BIMFramingEntry(PropertyGroup):
         spacing: float
         count: int
         spacing_align: Literal["START", "CENTER", "END"]
+        max_align: Literal["EVEN", "START", "CENTER", "END"]
+        spacing_offset: float
         at_ends: bool
         at_corners: bool
         within: str

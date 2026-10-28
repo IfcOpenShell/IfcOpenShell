@@ -154,6 +154,67 @@ class TestVerticalSpacing:
         layout = self.solve_one({"spacing": {"mode": "FIXED", "value": 1.0, "align": align}}, segments=(3.5,))
         assert us(layout, "M") == approx_list(expected)
 
+    @pytest.mark.parametrize(
+        "align, offset, expected",
+        [
+            ("START", 0.3, [0.3, 1.3, 2.3, 3.3]),
+            ("END", 0.3, [0.2, 1.2, 2.2, 3.2]),
+            # Centred remainder of 0.25 each side, slid 0.5 along u, refilled at the start.
+            ("CENTER", 0.5, [0.75, 1.75, 2.75]),
+            ("CENTER", -0.5, [0.75, 1.75, 2.75]),
+            # The first member is the offset in from that end, with nothing before it.
+            ("START", 1.3, [1.3, 2.3, 3.3]),
+        ],
+    )
+    def test_fixed_spacing_offset(self, align, offset, expected):
+        spacing = {"mode": "FIXED", "value": 1.0, "align": align, "offset": offset}
+        layout = self.solve_one({"spacing": spacing}, segments=(3.5,))
+        assert us(layout, "M") == approx_list(expected)
+
+    @pytest.mark.parametrize(
+        "align, offset, expected",
+        [
+            (None, 0.0, [1.25, 2.5, 3.75]),
+            ("START", 0.0, [1.25, 2.5, 3.75]),
+            ("END", 0.0, [1.25, 2.5, 3.75]),
+            # A member 0.4 in, then 4.6 split into bays no wider than 1.5.
+            ("START", 0.4, [0.4, 1.55, 2.7, 3.85]),
+            ("END", 0.4, [1.15, 2.3, 3.45, 4.6]),
+            # A member on the centre line, then 2.5 either side in bays of 1.25.
+            ("CENTER", 0.0, [1.25, 2.5, 3.75]),
+            ("CENTER", 0.5, [1.5, 3.0, 4.0]),
+            # An anchor past the end leaves the range evenly split.
+            ("START", 6.0, [1.25, 2.5, 3.75]),
+        ],
+    )
+    def test_max_spacing_anchor(self, align, offset, expected):
+        spacing = {"mode": "MAX", "value": 1.5, "offset": offset}
+        if align:
+            spacing["align"] = align
+        layout = self.solve_one({"spacing": spacing}, segments=(5.0,))
+        assert us(layout, "M") == approx_list(expected)
+
+    def test_max_centre_anchor_differs_from_even(self):
+        # Three bays of 1.0 have no member on the centre line; anchoring there gives two each side.
+        even = self.solve_one({"spacing": {"mode": "MAX", "value": 1.0}})
+        centred = self.solve_one({"spacing": {"mode": "MAX", "value": 1.0, "align": "CENTER"}})
+        assert us(even, "M") == approx_list([1.0, 2.0])
+        assert us(centred, "M") == approx_list([0.75, 1.5, 2.25])
+
+    def test_horizontal_max_anchor_from_the_top(self):
+        rail = {"name": "R", "kind": "H", "spacing": {"mode": "MAX", "value": 0.5, "align": "END", "offset": 0.1}}
+        layout = solve([rail], height=1.0)
+        # A rail 0.1 below the top, then 0.9 down to the base in two bays of 0.45.
+        assert [m.v for m in layout.by_entry("R")] == approx_list([0.45, 0.9])
+
+    @pytest.mark.parametrize(
+        "spacing",
+        [{"mode": "MAX", "value": 1.0, "offset": 0.2}, {"mode": "COUNT", "value": 2, "offset": 0.2}],
+    )
+    def test_rejects_offset_without_alignment(self, spacing):
+        with pytest.raises(FramingError, match="nothing to offset from"):
+            self.solve_one({"spacing": spacing})
+
     def test_fixed_alignment_counts_per_bay(self):
         layout = solve(
             [

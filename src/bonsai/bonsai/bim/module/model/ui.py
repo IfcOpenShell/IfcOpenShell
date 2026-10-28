@@ -663,6 +663,16 @@ def _draw_framing_breaks(layout: bpy.types.UILayout, props, entry) -> None:
         row.operator("bim.remove_framing_break", text="", icon="REMOVE").index = i
 
 
+def _draw_framing_spacing_align(layout: bpy.types.UILayout, entry) -> None:
+    if entry.spacing_mode == "FIXED":
+        layout.prop(entry, "spacing_align")
+        layout.prop(entry, "spacing_offset")
+    elif entry.spacing_mode == "MAX":
+        layout.prop(entry, "max_align")
+        if entry.max_align != "EVEN":
+            layout.prop(entry, "spacing_offset")
+
+
 def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
     box = layout.box()
     box.prop(entry, "kind")
@@ -678,8 +688,7 @@ def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
             box.prop(entry, "count")
         elif entry.spacing_mode != "NONE":
             box.prop(entry, "spacing")
-            if entry.spacing_mode == "FIXED":
-                box.prop(entry, "spacing_align")
+            _draw_framing_spacing_align(box, entry)
         row = box.row(align=True)
         row.prop(entry, "at_ends", toggle=True)
         row.prop(entry, "at_corners", toggle=True)
@@ -698,8 +707,7 @@ def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
                 box.prop(entry, "count")
             else:
                 box.prop(entry, "spacing")
-                if entry.spacing_mode == "FIXED":
-                    box.prop(entry, "spacing_align")
+                _draw_framing_spacing_align(box, entry)
             box.prop_search(entry, "within", props, "entries")
             box.prop(entry, "rows")
             _draw_framing_bound(box, props, entry, "top", "Top")

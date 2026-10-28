@@ -609,7 +609,11 @@ def _load_props(obj: bpy.types.Object) -> None:
                 entry.count = int(spacing["value"])
             else:
                 entry.spacing = spacing["value"] * unit_scale
-            entry.spacing_align = spacing.get("align", "CENTER")
+            if spacing["mode"] == "MAX":
+                entry.max_align = spacing.get("align", "EVEN")
+            else:
+                entry.spacing_align = spacing.get("align", "CENTER")
+            entry.spacing_offset = spacing.get("offset", 0.0) * unit_scale
         entry.at_ends = member.get("at_ends", False)
         entry.at_corners = member.get("at_corners", False)
         entry.square_cut = member.get("square_cut", False)
@@ -656,6 +660,11 @@ def system_from_props(props, previous: dict[str, Any]) -> dict[str, Any]:
             member["spacing"] = {"mode": entry.spacing_mode, "value": value}
             if entry.spacing_mode == "FIXED" and entry.spacing_align != "CENTER":
                 member["spacing"]["align"] = entry.spacing_align
+            elif entry.spacing_mode == "MAX" and entry.max_align != "EVEN":
+                member["spacing"]["align"] = entry.max_align
+            has_anchor = entry.spacing_mode == "FIXED" or (entry.spacing_mode == "MAX" and entry.max_align != "EVEN")
+            if has_anchor and entry.spacing_offset:
+                member["spacing"]["offset"] = entry.spacing_offset / unit_scale
         if entry.kind == "V":
             member["at_ends"] = entry.at_ends
             member["at_corners"] = entry.at_corners

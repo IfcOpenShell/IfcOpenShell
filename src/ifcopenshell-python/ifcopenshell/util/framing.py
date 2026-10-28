@@ -58,9 +58,14 @@ class FramingError(ValueError):
 class Spacing:
     mode: SpacingMode
     value: float
-    # Where FIXED spacing is measured from: the start of each range, its end, or
-    # centred with the remainder split between both ends.
-    align: SpacingAlign = "CENTER"
+    # FIXED: where spacing is measured from in each range. START and END put the first
+    # member ``offset`` in from that end; CENTER splits the remainder between both ends
+    # and then slides the pattern ``offset`` along u. The default is CENTER.
+    # MAX: None spreads equal bays over the whole range. START, END and CENTER anchor a
+    # member ``offset`` in from that end, or ``offset`` along u from the midpoint, and
+    # spread equal bays on each side of it.
+    align: Optional[SpacingAlign] = None
+    offset: float = 0.0
 
     @classmethod
     def from_data(cls, data: dict[str, Any], entry_name: str) -> Spacing:
@@ -72,10 +77,15 @@ class Spacing:
             raise FramingError(f"Entry {entry_name!r} needs a positive spacing value.")
         if mode == "COUNT" and value != int(value):
             raise FramingError(f"Entry {entry_name!r} needs a whole number for COUNT spacing.")
-        align = data.get("align", "CENTER")
-        if align not in ("START", "CENTER", "END"):
+        align = data.get("align")
+        if align not in (None, "START", "CENTER", "END"):
             raise FramingError(f"Entry {entry_name!r} has unknown spacing alignment {align!r}.")
-        return cls(mode, float(value), align)
+        offset = data.get("offset", 0.0)
+        if not isinstance(offset, (int, float)):
+            raise FramingError(f"Entry {entry_name!r} needs a number for its spacing offset.")
+        if offset and (mode == "COUNT" or (mode == "MAX" and align is None)):
+            raise FramingError(f"Entry {entry_name!r} has a spacing offset but nothing to offset from.")
+        return cls(mode, float(value), align, float(offset))
 
 
 @dataclass(frozen=True)
@@ -692,15 +702,41 @@ def _interior_positions(start: float, end: float, spacing: Spacing) -> list[floa
         n = int(spacing.value)
         return [start + length * i / (n + 1) for i in range(1, n + 1)]
     if spacing.mode == "MAX":
-        n_bays = max(1, math.ceil(length / spacing.value - TOLERANCE))
-        return [start + length * i / n_bays for i in range(1, n_bays)]
-    # FIXED: exact spacing, measured from the start, the end, or with the remainder
-    # split evenly between both ends.
-    n = int(math.floor(length / spacing.value + TOLERANCE))
-    remainder = length - n * spacing.value
-    offset = {"START": 0.0, "CENTER": remainder / 2, "END": remainder}[spacing.align]
-    positions = [start + offset + i * spacing.value for i in range(n + 1)]
-    return [p for p in positions if start + TOLERANCE < p < end - TOLERANCE]
+        anchor = {
+            None: None,
+            "START": start + spacing.offset,
+            "CENTER": (start + end) / 2 + spacing.offset,
+            "END": end - spacing.offset,
+        }[spacing.align]
+        # An anchor on or past either end leaves nothing to split around.
+        if anchor is None or not start + TOLERANCE < anchor < end - TOLERANCE:
+            return _equal_bays(start, end, spacing.value)
+        return _equal_bays(start, anchor, spacing.value) + [anchor] + _equal_bays(anchor, end, spacing.value)
+    # FIXED: exact spacing. START and END run from the first member, offset in from
+    # that end; CENTER splits the remainder between both ends, then slides the pattern.
+    step = spacing.value
+    if spacing.align == "START":
+        positions = _steps(start + spacing.offset, end, step)
+    elif spacing.align == "END":
+        positions = [end - (p - start) for p in _steps(start + spacing.offset, end, step)]
+    else:
+        n = int(math.floor(length / step + TOLERANCE))
+        origin = start + (length - n * step) / 2 + spacing.offset
+        first = math.ceil((start - origin) / step - TOLERANCE)
+        positions = _steps(origin + first * step, end, step)
+    return sorted(p for p in positions if start + TOLERANCE < p < end - TOLERANCE)
+
+
+def _equal_bays(start: float, end: float, max_width: float) -> list[float]:
+    """Positions strictly inside ``(start, end)`` that split it into equal bays no wider than ``max_width``."""
+    n_bays = max(1, math.ceil((end - start) / max_width - TOLERANCE))
+    return [start + (end - start) * i / n_bays for i in range(1, n_bays)]
+
+
+def _steps(first: float, end: float, step: float) -> list[float]:
+    """``first``, then every ``step`` after it up to ``end``."""
+    n = int(math.floor((end - first) / step + TOLERANCE)) if end >= first else -1
+    return [first + i * step for i in range(n + 1)]
 
 
 def _solve_vertical_positions(

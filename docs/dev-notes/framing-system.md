@@ -84,8 +84,16 @@ The type holds an ordered list. Each entry is an array of one of three kinds.
 - Spacing modes:
   - `FIXED`: exact spacing. `align` sets where it is measured from in each range:
     `START`, `CENTER` (the default: the remainder is split between both ends) or `END`.
-    For a repeating horizontal, start is the bottom and end the top.
-  - `MAX`: equal bays, no wider than the value.
+    For a repeating horizontal, start is the bottom and end the top. `offset` puts the
+    first member that far in from the `START` or `END`, with nothing before it; for
+    `CENTER` it slides the centred pattern along u, refilling the range.
+  - `MAX`: equal bays, no wider than the value. With no `align` (the panel's *Even*),
+    the whole range is split equally. `START` / `END` anchor a member `offset` in from
+    that end; `CENTER` anchors one on the midpoint, moved `offset` along u. The bays on
+    each side of the anchor are then split equally. An anchor on or past an end is
+    ignored, so `START` and `END` with no offset match *Even*, but `CENTER` puts a
+    member on the centre line even when *Even* would not. A Max `offset` without
+    `align` is an error, as is any offset on `COUNT`.
   - `COUNT`: a fixed number per segment.
 - `at_ends` / `at_corners`.
 - `within`: spaces this array inside the bays of another vertical array. Examples are
