@@ -72,7 +72,7 @@ class IFC_PARSE_API base {
     const ifcopenshell::instance_data* data() const;
     ifcopenshell::instance_data* data();
   public:
-    operator bool() const {
+    explicit operator bool() const {
 #ifdef IFOPSH_SAFE_INSTANCE
         return !data_.expired();
 #else

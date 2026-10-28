@@ -11,6 +11,7 @@
 #include <plugin/plugin.h>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 TEST_CASE("SPF strings can be encoded and decoded", "[ifcparse]") {
@@ -820,4 +821,14 @@ TEST_CASE("A file loaded out of id order lists each type in id order", "[ifcpars
         ids.push_back(instance.id());
     }
     CHECK(ids == std::vector<int>{1, 3, 5});
+}
+
+TEST_CASE("Instance handles only convert to bool explicitly", "[ifcparse][handles]") {
+    // An implicit conversion lets C++20 synthesise <=> from bool <=> bool,
+    // so std::pair<express::base, ...> keys would order by null-ness alone.
+    CHECK_FALSE(std::is_convertible_v<express::base, bool>);
+    CHECK(std::is_constructible_v<bool, express::base>);
+    const express::base null;
+    CHECK_FALSE(null);
+    CHECK(!null);
 }

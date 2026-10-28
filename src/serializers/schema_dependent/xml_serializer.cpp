@@ -786,7 +786,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 				for (auto& layer : ls) {
 					ptree subnode;
 					if (layer.Material()) {
-                        subnode.put("<xmlattr>.Name", layer.Material());
+                        subnode.put("<xmlattr>.Name", layer.Material().Name());
 					}
                     format_entity_instance(log, mapping_, layer, subnode, node);
 				}
