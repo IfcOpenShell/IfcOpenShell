@@ -1,0 +1,19 @@
+{
+  "name": "@ifcopenshell/parity",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Checks @ifcopenshell/util and @ifcopenshell/api against the Python implementation",
+  "license": "LGPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "record": "python ../../transpiler/parity/record.py",
+    "generate": "python ../../transpiler/generate.py",
+    "test": "vitest run",
+    "typecheck": "npm run build --prefix ../ifcopenshell-util && npm run typecheck --prefix ../ifcopenshell-api"
+  },
+  "devDependencies": {
+    "@ifcopenshell/wasm": "file:../ifcopenshell-wasm",
+    "ifcopenshell": "file:../ifcopenshell-js",
+    "vitest": "^4.1.11"
+  }
+}
