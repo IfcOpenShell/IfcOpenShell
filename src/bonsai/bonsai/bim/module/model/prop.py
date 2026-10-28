@@ -1734,6 +1734,15 @@ class BIMFramingEntry(PropertyGroup):
         ],
         default="EVEN",
     )
+    equal_openings: bpy.props.BoolProperty(
+        update=update_framing_preview,
+        name="Equal Openings",
+        description=(
+            "Make the clear openings between member faces equal, instead of the centre-to-centre spacing. "
+            "With Max, the spacing is then the widest opening"
+        ),
+        default=False,
+    )
     spacing_offset: bpy.props.FloatProperty(
         update=update_framing_preview,
         name="Offset",
@@ -1848,6 +1857,7 @@ class BIMFramingEntry(PropertyGroup):
         spacing_align: Literal["START", "CENTER", "END"]
         max_align: Literal["EVEN", "START", "CENTER", "END"]
         spacing_offset: float
+        equal_openings: bool
         at_ends: bool
         at_corners: bool
         within: str

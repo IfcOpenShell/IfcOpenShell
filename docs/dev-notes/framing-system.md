@@ -95,6 +95,15 @@ The type holds an ordered list. Each entry is an array of one of three kinds.
     member on the centre line even when *Even* would not. A Max `offset` without
     `align` is an error, as is any offset on `COUNT`.
   - `COUNT`: a fixed number per segment.
+  - `openings` (MAX and COUNT): equal clear openings between member faces instead of
+    equal centre-to-centre bays; with MAX the value is the widest opening. Centre spacing
+    gives unequal openings wherever the bounding members differ in width from this one,
+    such as mid posts between wider end posts. Mid posts `within` the end posts with
+    `openings` give equal panes. The openings run between faces: those bounding the
+    range, or the inner faces of the entry's own end or corner members standing on its
+    ends, so `at_ends` posts bound them whether centred or `flush`. Not with an
+    alignment or an offset, which pin members to an edge. With MAX, a bay narrower than
+    the value gets no member; use COUNT for one per pane.
 - `at_ends` / `at_corners`.
 - `flush`: keep the profile inside the boundary instead of centring it on it. End
   verticals sit with their outer face on the path ends; corner verticals stay centred,

@@ -66,6 +66,9 @@ class Spacing:
     # spread equal bays on each side of it.
     align: Optional[SpacingAlign] = None
     offset: float = 0.0
+    # MAX and COUNT: make the clear openings between member faces equal, instead of the
+    # centre-to-centre bays. With MAX, the value is then the widest clear opening.
+    openings: bool = False
 
     @classmethod
     def from_data(cls, data: dict[str, Any], entry_name: str) -> Spacing:
@@ -85,7 +88,12 @@ class Spacing:
             raise FramingError(f"Entry {entry_name!r} needs a number for its spacing offset.")
         if offset and (mode == "COUNT" or (mode == "MAX" and align is None)):
             raise FramingError(f"Entry {entry_name!r} has a spacing offset but nothing to offset from.")
-        return cls(mode, float(value), align, float(offset))
+        openings = bool(data.get("openings", False))
+        if openings and mode == "FIXED":
+            raise FramingError(f"Entry {entry_name!r} cannot have equal openings with FIXED spacing.")
+        if openings and mode == "MAX" and align is not None:
+            raise FramingError(f"Entry {entry_name!r} cannot have equal openings and an alignment.")
+        return cls(mode, float(value), align, float(offset), openings)
 
 
 @dataclass(frozen=True)
@@ -719,19 +727,40 @@ def _solve_levels(
         levels[entry.name] = [
             v
             for a, b in _select(gaps, entry.rows)
-            for v in _interior_positions(a - lo, b - hi, entry.spacing, entry.flush)
+            for v in (
+                # Openings run between the bound faces, so flush has nothing to add.
+                _interior_positions(a, b, entry.spacing, extent=extents.get(entry.name, (0.0, 0.0)))
+                if entry.spacing.openings
+                else _interior_positions(
+                    a - lo, b - hi, entry.spacing, entry.flush, extents.get(entry.name, (0.0, 0.0))
+                )
+            )
         ]
     return levels
 
 
-def _interior_positions(start: float, end: float, spacing: Spacing, inclusive: bool = False) -> list[float]:
+def _interior_positions(
+    start: float,
+    end: float,
+    spacing: Spacing,
+    inclusive: bool = False,
+    extent: tuple[float, float] = (0.0, 0.0),
+) -> list[float]:
     """Positions strictly inside ``(start, end)``, evenly spread by ``spacing``.
 
     With ``inclusive``, as for a flush member whose range already stops at its faces, a
-    FIXED or anchored MAX member may also sit on either end."""
+    FIXED or anchored MAX member may also sit on either end. ``extent`` is the member's
+    own ``(lo, hi)``, which equal openings need."""
     # Positive keeps members off the ends, negative lets them sit on them.
     slack = -TOLERANCE if inclusive else TOLERANCE
     length = end - start
+    if spacing.openings:
+        width = extent[1] - extent[0]
+        if spacing.mode == "COUNT":
+            n_openings = int(spacing.value) + 1
+        else:
+            n_openings = max(1, math.ceil((length + width) / (spacing.value + width) - TOLERANCE))
+        return _equal_openings(start, end, n_openings, extent)
     if spacing.mode == "COUNT":
         n = int(spacing.value)
         return [start + length * i / (n + 1) for i in range(1, n + 1)]
@@ -765,6 +794,16 @@ def _equal_bays(start: float, end: float, max_width: float) -> list[float]:
     """Positions strictly inside ``(start, end)`` that split it into equal bays no wider than ``max_width``."""
     n_bays = max(1, math.ceil((end - start) / max_width - TOLERANCE))
     return [start + (end - start) * i / n_bays for i in range(1, n_bays)]
+
+
+def _equal_openings(start: float, end: float, n_openings: int, extent: tuple[float, float]) -> list[float]:
+    """Positions of ``n_openings - 1`` members of ``extent`` that leave equal clear openings in ``(start, end)``."""
+    lo, hi = extent
+    gap = (end - start - (n_openings - 1) * (hi - lo)) / n_openings
+    if gap <= TOLERANCE:
+        raise FramingError("The members are too wide to leave openings between them.")
+    # Member k's low face is k openings and k - 1 members in.
+    return [start + k * gap + (k - 1) * (hi - lo) - lo for k in range(1, n_openings)]
 
 
 def _steps(first: float, end: float, step: float) -> list[float]:
@@ -824,7 +863,20 @@ def _solve_vertical_positions(
         found.append((u, guide.segment_at(u), 0))
     if entry.spacing:
         for start, end, segment, bay in ranges:
-            for u in _interior_positions(start - own_lo, end - own_hi, entry.spacing, entry.flush):
+            extent = extents.get(entry.name, (0.0, 0.0))
+            if entry.spacing.openings:
+                # Openings run between faces: the range's, or those of this entry's own end or
+                # corner members standing on its ends, wherever flush has put them.
+                lo, hi = extent
+                for u in fixed:
+                    if u + lo <= start + TOLERANCE and u + hi >= start - TOLERANCE:
+                        start = max(start, u + hi)
+                    if u + lo <= end + TOLERANCE and u + hi >= end - TOLERANCE:
+                        end = min(end, u + lo)
+                positions = _interior_positions(start, end, entry.spacing, extent=extent)
+            else:
+                positions = _interior_positions(start - own_lo, end - own_hi, entry.spacing, entry.flush, extent)
+            for u in positions:
                 found.append((u, segment if scope == "SEGMENT" or entry.within else guide.segment_at(u), bay))
 
     found.sort()

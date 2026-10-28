@@ -671,6 +671,26 @@ def _draw_framing_spacing_align(layout: bpy.types.UILayout, entry) -> None:
         layout.prop(entry, "max_align")
         if entry.max_align != "EVEN":
             layout.prop(entry, "spacing_offset")
+        else:
+            _draw_framing_equal_openings(layout, entry)
+    elif entry.spacing_mode == "COUNT":
+        _draw_framing_equal_openings(layout, entry)
+
+
+def _draw_framing_equal_openings(layout: bpy.types.UILayout, entry) -> None:
+    layout.prop(entry, "equal_openings")
+    if not entry.equal_openings:
+        return
+    # Without something to measure from, the openings run from the path ends or the
+    # base and top, which include the members standing there.
+    if entry.kind == "V" and not entry.within.strip() and not entry.at_ends:
+        col = layout.column(align=True)
+        col.label(text="Openings are measured from the path ends.", icon="INFO")
+        col.label(text="Set Within to the entry with the end posts.", icon="BLANK1")
+    elif entry.kind == "H" and "MEMBER" not in (entry.bottom_type, entry.top_type):
+        col = layout.column(align=True)
+        col.label(text="Openings are measured from the base and top.", icon="INFO")
+        col.label(text="Set the bounds to the members there.", icon="BLANK1")
 
 
 def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
@@ -686,6 +706,7 @@ def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
         box.prop(entry, "spacing_mode")
         if entry.spacing_mode == "COUNT":
             box.prop(entry, "count")
+            _draw_framing_spacing_align(box, entry)
         elif entry.spacing_mode != "NONE":
             box.prop(entry, "spacing")
             _draw_framing_spacing_align(box, entry)
@@ -714,7 +735,7 @@ def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
                 box.prop(entry, "count")
             else:
                 box.prop(entry, "spacing")
-                _draw_framing_spacing_align(box, entry)
+            _draw_framing_spacing_align(box, entry)
             box.prop_search(entry, "within", props, "entries")
             box.prop(entry, "rows")
             _draw_framing_bound(box, props, entry, "top", "Top")

@@ -917,3 +917,104 @@ class TestWithinSeveralEntries:
         ]
         with pytest.raises(FramingError, match="loop"):
             subject.parse_system({"members": members})
+
+
+class TestEqualOpenings:
+    EXTENTS = {"Ends": (-0.2, 0.2), "Mid": (-0.1, 0.1)}
+
+    def mids(self, spacing, extents=EXTENTS):
+        members = [
+            {"name": "Ends", "kind": "V", "at_ends": True},
+            {"name": "Mid", "kind": "V", "within": "Ends", "spacing": spacing},
+        ]
+        return us(solve(members, segments=(6.0,), extents=extents), "Mid")
+
+    def openings(self, mids):
+        faces = [0.2] + [f for u in mids for f in (u - 0.1, u + 0.1)] + [5.8]
+        return [b - a for a, b in zip(faces[::2], faces[1::2])]
+
+    def test_count_leaves_equal_openings(self):
+        mids = self.mids({"mode": "COUNT", "value": 2, "openings": True})
+        # 5.6 between the end faces, less two 0.2 posts, in three openings of 5.2 / 3.
+        assert self.openings(mids) == approx_list([5.2 / 3] * 3)
+        # Centre to centre between the end faces, the end openings are wider by half a post.
+        centred = self.openings(self.mids({"mode": "COUNT", "value": 2}))
+        assert centred[0] - centred[1] == pytest.approx(0.1)
+
+    @pytest.mark.parametrize("value, n_openings", [(1.8, 3), (1.7, 4)])
+    def test_max_limits_the_clear_opening(self, value, n_openings):
+        mids = self.mids({"mode": "MAX", "value": value, "openings": True})
+        openings = self.openings(mids)
+        assert len(openings) == n_openings
+        assert openings == approx_list([openings[0]] * n_openings)
+        assert openings[0] <= value
+
+    def test_lines_match_equal_bays(self):
+        spacing = {"mode": "COUNT", "value": 2}
+        assert self.mids({**spacing, "openings": True}, extents={}) == approx_list(self.mids(spacing, extents={}))
+
+    def test_horizontal_rows_between_member_faces(self):
+        members = [
+            {"name": "Bottom", "kind": "H", "v": "BASE", "flush": True},
+            {"name": "Top", "kind": "H", "v": "TOP", "flush": True},
+            {
+                "name": "Rail",
+                "kind": "H",
+                "bottom": {"member": "Bottom"},
+                "top": {"member": "Top"},
+                "spacing": {"mode": "COUNT", "value": 1, "openings": True},
+            },
+        ]
+        extents = {"Bottom": (-0.1, 0.1), "Top": (-0.05, 0.05), "Rail": (-0.02, 0.02)}
+        layout = solve(members, height=1.0, extents=extents)
+        # Faces at 0.2 and 0.9: a 0.04 rail leaves two openings of 0.33.
+        assert [m.v for m in layout.by_entry("Rail")] == approx_list([0.2 + 0.33 + 0.02])
+
+    def test_too_many_members(self):
+        with pytest.raises(FramingError, match="too wide"):
+            self.mids({"mode": "COUNT", "value": 40, "openings": True})
+
+    @pytest.mark.parametrize(
+        "member, message",
+        [
+            ({"spacing": {"mode": "FIXED", "value": 1.0, "openings": True}}, "FIXED"),
+            ({"spacing": {"mode": "MAX", "value": 1.0, "align": "START", "openings": True}}, "alignment"),
+        ],
+    )
+    def test_rejects_combinations(self, member, message):
+        with pytest.raises(FramingError, match=message):
+            subject.parse_system({"members": [{"name": "M", "kind": "V", **member}]})
+
+    @pytest.mark.parametrize("flush, openings", [(False, 1.6), (True, (5.2 - 0.8) / 3)])
+    def test_own_end_members_bound_the_openings(self, flush, openings):
+        post = {
+            "name": "Post",
+            "kind": "V",
+            "at_ends": True,
+            "flush": flush,
+            "spacing": {"mode": "COUNT", "value": 2, "openings": True},
+        }
+        layout = solve([post], segments=(6.0,), extents={"Post": (-0.2, 0.2)})
+        posts = us(layout, "Post")
+        # Centred end posts leave 0.2 to 5.8 between their faces, flush ones 0.4 to 5.6.
+        faces = [f for u in posts for f in (u - 0.2, u + 0.2)]
+        gaps = [b - a for a, b in zip(faces[1::2], faces[2::2])]
+        assert gaps == approx_list([openings] * 3)
+        assert posts[0] == pytest.approx(0.2 if flush else 0.0)
+
+    def test_flush_horizontal_repeat_measures_from_the_bound_faces(self):
+        rail = {
+            "name": "Rail",
+            "kind": "H",
+            "flush": True,
+            "bottom": {"member": "Bottom"},
+            "top": {"member": "Top"},
+            "spacing": {"mode": "COUNT", "value": 1, "openings": True},
+        }
+        members = [
+            {"name": "Bottom", "kind": "H", "v": "BASE", "flush": True},
+            {"name": "Top", "kind": "H", "v": "TOP", "flush": True},
+        ]
+        extents = {"Bottom": (-0.1, 0.1), "Top": (-0.05, 0.05), "Rail": (-0.02, 0.02)}
+        layout = solve(members + [rail], height=1.0, extents=extents)
+        assert [m.v for m in layout.by_entry("Rail")] == approx_list([0.2 + 0.33 + 0.02])
