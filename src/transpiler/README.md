@@ -101,3 +101,26 @@ recursive variants and operand-valued short-circuiting. Forward declarations,
 string/enum decoding, attribute writes, caches and schema-specific casts also
 need decisions. Dynamic attribute types currently come from a small explicit
 YAML table. No C++ compilation or runtime validation was attempted.
+
+## Porting plan and tracking
+
+[PLAN.md](PLAN.md) describes the plan for porting all of `ifcopenshell.util` and
+`ifcopenshell.api`, including the testing layers. `python src/transpiler/generate.py`
+writes the `src/` of both packages (`src/ts/ifcopenshell-util`, `src/ts/ifcopenshell-api`),
+which are build output and not committed; it needs only the packages in `requirements.txt`.
+The sections above describe the original single-module prototype. `TRACKING.md` is
+written by `python src/transpiler/status.py` from `tracking.yaml` (not committed either).
+`precomputed.json` holds the results of the functions listed under `precomputed` in
+`ts.yaml`; refresh it with `python src/transpiler/generate.py --precompute`, which needs an
+installed ifcopenshell close to this checkout.
+
+## Runtime modules
+
+Python libraries without a direct JS equivalent are ported by hand once, in
+`src/ts/ifcopenshell-util/runtime/_*.ts`, and `ts.yaml` maps imports of them there
+(`runtime_modules`): `_py.ts` (Python semantics: truthiness, operators, indexing,
+`str.format`, ...), `_numpy.ts`, `_datetime.ts`, `_isodate.ts`, `_dateutil.ts`,
+`_os.ts` and `_itertools.ts`. `generate.py` copies them into the package's `src/`. Their
+behaviour is checked against values computed with Python in
+`src/ts/ifcopenshell-parity/tests/runtime.test.ts`, and through the parity tests
+of the modules that use them.
