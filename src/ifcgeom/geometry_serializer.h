@@ -74,6 +74,10 @@ public:
 	{}
 	virtual ~geometry_serializer() {}
 
+	virtual void setExtras(const std::string& /*key*/, const std::string& /*value*/) {}
+	virtual void setExtras(const std::string& /*key*/, int /*value*/) {}
+	virtual void setExtras(const std::string& /*key*/, double /*value*/) {}
+	virtual void setExtras(const std::string& /*key*/, const std::vector<std::string>& /*value*/) {}
 	virtual bool isTesselated() const = 0;
 	virtual void write(const ifcopenshell::geom::triangulation_element* o) = 0;
 	virtual void write(const ifcopenshell::geom::native_element* o) = 0;

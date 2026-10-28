@@ -902,6 +902,7 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
+	serializer->settings() = context_iterator->settings();
 	serializer->setFile(*ifc_file);
 
     if (context_iterator && settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().get()) {
@@ -910,6 +911,12 @@ int main(int argc, char** argv) {
 		serializer->setUnitNameAndMagnitude("METER", 1.0f);
 	}
 
+	std::vector<std::string> filter_descriptions;
+	if (!layer_filter.values.empty()) { filter_descriptions.push_back(layer_filter.description); }
+	if (!entity_filter.entity_names.empty()) { filter_descriptions.push_back(entity_filter.description); }
+	if (!attribute_filter.values.empty()) { filter_descriptions.push_back(attribute_filter.description); }
+	serializer->setExtras("ifcopenshell-filters", filter_descriptions);
+	serializer->setExtras("ifcopenshell-geometry-library", geometry_kernel);
 	serializer->writeHeader();
 
 	int old_progress = quiet ? 0 : -1;

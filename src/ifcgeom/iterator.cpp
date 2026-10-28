@@ -854,6 +854,7 @@ ifcopenshell::geom::taxonomy::direction3::ptr ifcopenshell::geom::iterator::remo
 
 	logger_.notice("SYS", 29, "Removed large offsets within " + std::to_string(num_offset_applied) + " products");
 	logger_.notice("SYS", 30, "Offset applied (" + std::to_string(vec(0)) + "," + std::to_string(vec(1)) + "," + std::to_string(vec(2)) + ")");
+	settings_.get<ifcopenshell::geom::settings::OffsetApplied>().value = std::vector<double>{ vec(0), vec(1), vec(2) };
 
 	return make<direction3>(vec);
 }
