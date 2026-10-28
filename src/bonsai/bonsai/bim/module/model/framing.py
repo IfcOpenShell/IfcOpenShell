@@ -641,6 +641,8 @@ def _load_props(obj: bpy.types.Object) -> None:
             entry.equal_openings = spacing.get("openings", False)
         entry.at_ends = member.get("at_ends", False)
         entry.at_corners = member.get("at_corners", False)
+        entry.butt_corners = member.get("butt_corners", False)
+        entry.corner_joint = member.get("corner_joint", "MITRE")
         entry.square_cut = member.get("square_cut", False)
         entry.flush = member.get("flush", False)
         entry.extend_start = member.get("extend_start", 0.0) * unit_scale
@@ -653,6 +655,7 @@ def _load_props(obj: bpy.types.Object) -> None:
             entry.within_also.add().name = name
         if "v" in member:
             _bound_to_props(entry, "level", member["v"], unit_scale)
+        entry.level_offset = member.get("level_offset", 0.0) * unit_scale
         _bound_to_props(entry, "bottom", member.get("bottom", "BASE"), unit_scale)
         _bound_to_props(entry, "top", member.get("top", "TOP"), unit_scale)
         entry.breaks_at.clear()
@@ -668,6 +671,16 @@ def _load_props(obj: bpy.types.Object) -> None:
         entry.joint = member.get("joint", 0.0) * unit_scale
         entry.rotation = member.get("rotation", 0.0)
         entry.offset = member.get("offset", 0.0) * unit_scale
+        # The older single key sets both.
+        both = member.get("cut_by_voids", True)
+        entry.cut_by_edge_voids = member.get("cut_by_edge_voids", both)
+        entry.cut_by_hole_voids = member.get("cut_by_hole_voids", both)
+        entry.void_role = member.get("void_role") or "NONE"
+        entry.void_layer = member.get("void_layer", 1)
+        entry.jamb_height = member.get("jamb_height", "FULL")
+        void_for = member.get("void_for") or []
+        void_for = [void_for] if isinstance(void_for, str) else void_for
+        entry.void_for = {c for c in void_for if c in ("IfcDoor", "IfcWindow", "IfcOpeningElement")}
         if (profile := member.get("profile")) and str(profile.get("id")) in profile_ids:
             entry.profile = str(profile["id"])
         if material := constituents.get(entry.name):
@@ -703,6 +716,8 @@ def system_from_props(props, previous: dict[str, Any]) -> dict[str, Any]:
         if entry.kind == "V":
             member["at_ends"] = entry.at_ends
             member["at_corners"] = entry.at_corners
+            if entry.at_corners and entry.butt_corners:
+                member["butt_corners"] = True
             if entry.square_cut:
                 member["square_cut"] = True
         if entry.flush and entry.kind in ("V", "H"):
@@ -722,10 +737,14 @@ def system_from_props(props, previous: dict[str, Any]) -> dict[str, Any]:
             member["rows"] = rows
         if entry.kind == "H" and entry.spacing_mode == "NONE":
             member["v"] = _bound_from_props(entry, "level", unit_scale)
+            if entry.level_offset and entry.level_type != "HEIGHT":
+                member["level_offset"] = entry.level_offset / unit_scale
         else:
             member["bottom"] = _bound_from_props(entry, "bottom", unit_scale)
             member["top"] = _bound_from_props(entry, "top", unit_scale)
         if entry.kind == "H":
+            if entry.corner_joint != "MITRE":
+                member["corner_joint"] = entry.corner_joint
             if entry.extend_start:
                 member["extend_start"] = entry.extend_start / unit_scale
             if entry.extend_end:
@@ -746,12 +765,54 @@ def system_from_props(props, previous: dict[str, Any]) -> dict[str, Any]:
                 member["rotation"] = entry.rotation
         if entry.offset:
             member["offset"] = entry.offset / unit_scale
+        if not entry.cut_by_edge_voids:
+            member["cut_by_edge_voids"] = False
+        if not entry.cut_by_hole_voids:
+            member["cut_by_hole_voids"] = False
+        if (entry.kind, entry.void_role) in (("V", "JAMB"), ("H", "HEAD"), ("H", "SILL")):
+            _void_role_from_props(member, entry)
         members.append(member)
     system = {k: v for k, v in previous.items() if k not in ("members", "scope")}
     system["scope"] = props.scope
     system["members"] = members
     ifcopenshell.util.framing.parse_system(system)
     return system
+
+
+def _void_role_from_props(member: dict[str, Any], entry) -> None:
+    """An entry that frames openings has no layout of its own, so drop the keys for one."""
+    layout_keys = [
+        "spacing",
+        "at_ends",
+        "at_corners",
+        "butt_corners",
+        "within",
+        "bays",
+        "rows",
+        "between",
+        "v",
+        "flush",
+    ]
+    layout_keys += [
+        "corner_joint",
+        "square_cut",
+        "extend_start",
+        "extend_end",
+        "cut_by_edge_voids",
+        "cut_by_hole_voids",
+        "level_offset",
+    ]
+    if entry.kind == "H":
+        # A head or sill is placed by its opening, so it has no bounds or breaks either.
+        layout_keys += ["bottom", "top", "breaks_at"]
+    for key in layout_keys:
+        member.pop(key, None)
+    member["void_role"] = entry.void_role
+    member["void_layer"] = entry.void_layer
+    if entry.kind == "V":
+        member["jamb_height"] = entry.jamb_height
+    if entry.void_for:
+        member["void_for"] = sorted(entry.void_for)
 
 
 def _selection_from_props(entry, prop_name: str) -> list[int]:

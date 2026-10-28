@@ -159,6 +159,68 @@ The type holds an ordered list. Each entry is an array of one of three kinds.
 - Glass, mesh and plate differ only by material; the geometry is one thin solid per
   panel.
 
+### Members on path corners
+
+A vertical at a corner faces along one leg, so across the other it reaches as far as its
+depth out of the guide plane. `within` ranges keep its widest half (in-plane or out of
+plane, from `lateral`) clear on both legs (`_parent_extent`), so studs next to a single
+corner stud do not overlap it (user report, 2x6 test wall).
+
+**Butt corners** (`butt_corners`, user sketch): one member per leg instead of one on
+the corner.
+- The first leg runs through. Its member is flush with the second leg's outer face, at
+  `corner + reach - hi`, on the first leg extended past the vertex.
+- The second leg's member stands against the first leg's inner face, at
+  `corner + reach - lo`.
+- `reach` is the member's out-of-plane half depth over sin(turn). The writer passes the
+  turns.
+- Children's `within` bays see the pair as one parent at the corner, with faces at those
+  members' inner and outer faces. So the first leg's bay runs past the vertex, and the
+  writer places verticals with `point_at(u, segment)`.
+- Not at a loop's start corner.
+- Known: rails that break at butt-corner members are cut in u, which past the vertex is
+  the next leg's.
+
+**Horizontal corner joints** (`corner_joint`, user request):
+- `MITRE` (default) keeps the bisector mitre.
+- `BUTT_FIRST` / `BUTT_SECOND`: the named leg's piece runs past the corner to the other
+  leg's outer face, and the other stops at its inner face. Both have square ends, using
+  extensions in `_rail_pieces`.
+- The reach is the rail's widest out-of-plane half (offset included) over sin(turn).
+- Butted corners skip `_ease_corners`, which needs mitres.
+- Alternating the two on a double top plate laps it.
+- A butted run cut plumb on a path corner ends square as its corners do
+  (`square_reach`): on the leg that runs through at the other leg's outer face, else at
+  its inner face. With MITRE, it keeps the bisector mitre.
+- Sloped openings are kept to the leg they are measured along in the solver (`on_leg`),
+  not the writer.
+  - At a butt corner the leg reaches on to the other leg's outer face (`corner_bound`),
+    so on the first leg a rake and its plates run over the member that runs through, which
+    is then cut under them (user sketch).
+  - On the second leg they start at the first leg's inner face. Without butt corners they
+    stop at the corner, and the members mitre there.
+  - An opening's edge on a path corner is framed by the other leg, as at a path end.
+- At a butt corner only centred corner members are kept whole through openings. Both
+  members of a butt corner can serve as a sloped opening's jamb.
+- Pieces left with no length are dropped, under 1% of the profile's size (user report).
+  An example is a second leg's plate ending as far past the corner as the first leg's
+  plate is deep. The kernel turned those zero-depth clipped solids into stray geometry.
+
+**Corner members are continuous** (user request: corner studs run from the bottom plate
+to the tallest top plates).
+- A member centred on a corner is never cut by openings, rectangular or sloped. At a
+  butt corner, the first leg's member (the one that runs through) stays whole when the
+  opening is on the other leg, as it starts at its face.
+- The second leg's member at a butt corner is an end member like any other: a rake
+  starting at the first leg's inner face cuts it under the rake plates (user sketch).
+- A sloped opening's steep edge whose jamb strip would overlap one gets no jamb, so the
+  corner member serves as it and the rake plates butt into it.
+- The IFC opening still cuts the body, so a rake opening should start clear of the
+  through member: at the first leg's inner face.
+
+Known, general: FIXED spacing keeps members' centres inside a bay, not their faces, so
+a member landing within half its width of a bay end overlaps the parent there.
+
 ### Picking bays and rows (added after first testing)
 
 - **Bays** always count along the path and **Rows** always count upward. Both are 1-based
@@ -234,6 +296,14 @@ Doors, windows and bare openings in a storefront, curtain wall or stud wall.
   - `jamb_height`: `FULL` runs between the entry's bounds; `HEAD` stops under the head.
   - `HEAD` / `SILL` (H). The sill is only placed when the opening starts above BASE, and
     spans the opening's width.
+    - They have `void_layer` too (user request: a built-up header and a double sill).
+      Head layers stack upwards from the opening, sill layers downwards.
+    - Entries sharing a layer sit side by side, set apart only by their out-of-plane
+      `offset`, as sistered 2x10s. The layer above starts at their highest top face.
+    - In each layer, entries naming the filling win over generic ones.
+    - Sloped openings stack every layer too, out from the edge: a double top plate
+      parallel to a rake (user request). Joints at corners meet the neighbour's whole
+      stack, so all layers end on the same lines.
   - `void_for`: the filling classes the entry frames (`"IfcOpeningElement"` for none).
     Empty means all, and entries naming the filling win.
 - **The head's span comes from the jamb heights, with no setting of its own.** It runs
@@ -248,13 +318,20 @@ Doors, windows and bare openings in a storefront, curtain wall or stud wall.
   - Head and sill: the highest and lowest single-level horizontals.
   - User request: the jambs and head/sill must be reassignable to a new entry, and default
     to the profiles at the ends, top and bottom.
-- **Cutting.** Every entry has `cut_by_voids` (default true). The clear zone is the
-  opening plus the jambs, head and sill.
+- **Cutting.** Every entry has `cut_by_edge_voids` and `cut_by_hole_voids` (both default
+  true; user request to split them). The clear zone is the opening plus the jambs, head
+  and sill.
+  - An **edge** opening reaches a side of the framing: a path end, the base or the top
+    (user decision). So a door on the base, a rake and an angled end are edge openings, and
+    a window inside the framing is a **hole**.
+  - Merged sloped openings are sorted the same way, one zone each.
+  - The older `cut_by_voids` key sets both.
   - Members are cut where their faces cross the zone. A mullion over a door then starts
     on the head, and studs become cripples.
   - Infill is cut into full-width pieces above and below, then pieces beside, with the
     entry's `gap` at each cut.
-  - `cut_by_voids: false` members run through untouched.
+  - Members not cut by an opening's kind run through it untouched, and can serve as its
+    jamb or head.
 - **Merge rules, by overlap.** A jamb layer that would overlap an existing member:
   - an end or corner member, another opening's jamb, or a run-through member serves as
     that jamb. Outer layers on that side are skipped, and the head ends on its inner face;
@@ -293,8 +370,8 @@ Doors, windows and bare openings in a storefront, curtain wall or stud wall.
   - **True section** (user decision): an inclined member is a `FramingExtrusion` along
     its edge (`axis`), its section square to the axis and oriented as the jamb or head it
     stands for. Its ends are clip planes square to the guide plane.
-  - **Cutting.** The sloped zone (openings plus member strips) cuts every `cut_by_voids`
-    member, including rectangular openings' jambs and heads.
+  - **Cutting.** The sloped zones (openings plus member strips) cut every member cut by
+    their kind of opening, including rectangular openings' jambs and heads.
     - Members are cut along their axis. The new ends carry `bottom_cut`/`top_cut`
       (verticals) or `start_cut`/`end_cut` (horizontals), the zone boundary's direction,
       and the writer clips them on that line (`_cut_normal`, `_plane_extension`).
@@ -309,8 +386,10 @@ Doors, windows and bare openings in a storefront, curtain wall or stud wall.
     body that tessellates, and elevations rendered in each joint mode.
 - **Known limits.**
   - Spacing does not re-flow around openings (a later toggle).
-  - Sloped openings: one jamb layer only; concave openings are framed as their convex
-    hull.
+  - Sloped openings: concave ones are framed as their convex hull. A sloped member stays
+    on its path segment, cut plumb at a path vertex. The writer turns a plumb cut on a
+    vertex into the corner's bisector mitre (`_corner_at`), for rails and sloped members
+    alike, so a rake on one leg of an L meets the other leg's plates.
   - A cut panel leaves seams without a gap where its pieces meet.
   - In `BODY` output, the IFC opening still cuts run-through members.
     - Notching the opening's body was planned for step 2, but is deferred. Bonsai shares
@@ -318,8 +397,6 @@ Doors, windows and bare openings in a storefront, curtain wall or stud wall.
       door (`regenerate_filling_opening_body`, Recalculate Fill). A notch would have to
       detach it per host, and be redone after every rebuild.
     - `PARTS` output makes it unnecessary.
-  - The panel rebuilds entries from its own fields (`system_from_props`), so saving from
-    the panel drops `void_role`, `cut_by_voids` and the jamb keys until step 3.
   - Not hooked yet: deleting a door with its opening through `bim.delete`, and undo.
     Check whether those recut the host.
 - **Tested headless (Blender 5.1, feet project).** A storefront preset, then:
@@ -329,8 +406,23 @@ Doors, windows and bare openings in a storefront, curtain wall or stud wall.
 
   Each time the body matched the solve with the openings read back, and went back to
   the plain storefront once the opening was removed.
+- **Panel (step 3).**
+  - Every entry has **Cut by Openings: Edge / Hole** toggles. A vertical can be a **Jamb** under
+    **Openings**, and a horizontal a **Head** or **Sill**.
+  - A role entry then shows only its role's settings and drops its layout ones: **For**
+    (Doors / Windows / Bare, none picked = all), and for a jamb **Layer**, **Joint**
+    (Jamb Through / Head Through / Mitre = `jamb_height` FULL / HEAD / MITRE), its bounds
+    and breaks.
+  - `_void_role_from_props` removes the layout keys the parser rejects for a role entry.
+  - Checked headless (Blender 5.1):
+    - Door Jamb and Door Head entries made by duplicating Mullion and Head, and
+      Transom's Cut by Openings: Hole turned off, all save and reload (re-run for the Edge /
+      Hole split still to do; Blender was open);
+    - a door added afterwards is framed by them (shape aspects `Door Jamb` 2,
+      `Door Head` 1);
+    - every entry's drawing code runs against a stub layout that checks each property
+      name.
 - **Remaining steps.**
-  3. Panel UI for the void roles and Cut by Voids.
   4. Re-flow, thresholds, openings across corners, opening notches for run-through
      members.
 

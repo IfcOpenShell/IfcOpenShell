@@ -693,6 +693,35 @@ def _draw_framing_equal_openings(layout: bpy.types.UILayout, entry) -> None:
         col.label(text="Set the bounds to the members there.", icon="BLANK1")
 
 
+def _draw_framing_void_role(layout: bpy.types.UILayout, props, entry) -> bool:
+    """Whether the entry frames openings, and if so its settings. True if it does."""
+    if entry.kind == "INFILL":
+        return False
+    row = layout.row(align=True)
+    row.label(text="Openings")
+    for role in ("NONE", "JAMB") if entry.kind == "V" else ("NONE", "HEAD", "SILL"):
+        row.prop_enum(entry, "void_role", role)
+    if entry.void_role not in (("JAMB",) if entry.kind == "V" else ("HEAD", "SILL")):
+        return False
+    row = layout.row(align=True)
+    row.label(text="For")
+    row.prop(entry, "void_for", expand=True)
+    layout.prop(entry, "void_layer")
+    if entry.kind == "V":
+        layout.prop(entry, "jamb_height", expand=True)
+        _draw_framing_bound(layout, props, entry, "top", "Top")
+        _draw_framing_bound(layout, props, entry, "bottom", "Bottom")
+        _draw_framing_breaks(layout, props, entry)
+    col = layout.column(align=True)
+    if entry.kind == "V":
+        col.label(text="Layer 1 sits against the opening. Sloped", icon="INFO")
+        col.label(text="openings use layer 1, and the joint at corners.", icon="BLANK1")
+    else:
+        col.label(text="Placed by each opening, so it has no level. Layers", icon="INFO")
+        col.label(text="stack away from it; a shared layer sits side by side.", icon="BLANK1")
+    return True
+
+
 def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
     box = layout.box()
     box.prop(entry, "kind")
@@ -701,6 +730,12 @@ def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
         box.prop(entry, "rotation")
     prop_with_search(box, entry, "material")
     box.prop(entry, "offset")
+    if _draw_framing_void_role(box, props, entry):
+        return
+    row = box.row(align=True)
+    row.label(text="Cut by Openings")
+    row.prop(entry, "cut_by_edge_voids", text="Edge", toggle=True)
+    row.prop(entry, "cut_by_hole_voids", text="Hole", toggle=True)
 
     if entry.kind == "V":
         box.prop(entry, "spacing_mode")
@@ -715,6 +750,8 @@ def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
         row.prop(entry, "at_corners", toggle=True)
         row.prop(entry, "square_cut", toggle=True)
         row.prop(entry, "flush", toggle=True)
+        if entry.at_corners:
+            box.prop(entry, "butt_corners")
         row = box.row(align=True)
         row.prop_search(entry, "within", props, "entries")
         row.operator("bim.add_framing_within", text="", icon="ADD")
@@ -730,6 +767,8 @@ def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
         box.prop(entry, "spacing_mode", text="Repeat")
         if entry.spacing_mode == "NONE":
             _draw_framing_bound(box, props, entry, "level", "Level")
+            if entry.level_type != "HEIGHT":
+                box.prop(entry, "level_offset", text="Offset")
         else:
             if entry.spacing_mode == "COUNT":
                 box.prop(entry, "count")
@@ -747,6 +786,8 @@ def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
         row = box.row(align=True)
         row.prop(entry, "extend_start", text="Extend Start")
         row.prop(entry, "extend_end", text="End")
+        row = box.row(align=True)
+        row.prop(entry, "corner_joint", expand=True)
     else:
         box.prop_search(entry, "between", props, "entries")
         box.prop(entry, "bays")
