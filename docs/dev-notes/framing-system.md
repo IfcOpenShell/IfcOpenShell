@@ -199,7 +199,7 @@ The type holds an ordered list. Each entry is an array of one of three kinds.
 - No `material` key: an entry's material is the IfcMaterialConstituent named after the
   entry (see below).
 
-### Openings (voids) — step 1 of 4, solver only
+### Openings (voids) — steps 1 and 2 of 4: solver, writer and Bonsai hooks
 
 Doors, windows and bare openings in a storefront, curtain wall or stud wall.
 
@@ -208,7 +208,21 @@ Doors, windows and bare openings in a storefront, curtain wall or stud wall.
     and the sill's top go there. Clearance is therefore the caller's job.
   - `filling` is the IFC class (`"IfcDoor"`) or None for a bare opening.
   - An opening may not cross a path corner.
-  - Step 2: the writer projects the host's `IfcOpeningElement`s into (u, v).
+  - The writer's `get_framing_voids(element, guide)` reads the host's `HasOpenings`,
+    tessellates each opening, brings it into the host's object coordinates, and
+    `project_void` measures it along the nearest guide segment in plan and plumb above the
+    path. So an opening shaped as a rough opening (for example a type's opening template)
+    is framed as one. Fillings are named `IfcDoor` / `IfcWindow` (subtypes included),
+    else by their class.
+  - Bonsai: `regenerate_framing` passes them in, and the live preview too (cached per
+    IFC generation).
+    - `tool.Geometry.recut_host` (and its batch drain) and
+      `tool.Model.reload_body_representation` call `regenerate_framing_host` first, which
+      re-lays a framing occurrence instead of only recutting it.
+    - That covers adding a filled opening, Recalculate Fill (Shift+G after moving a door),
+      adding and removing a bare opening, editing a shown opening, and a filling's type
+      switch.
+    - While the framing is being edited, only the preview updates.
   - Roadmap: clearance from a pset on the filling, or from a Reference representation on
     it. That Reference must be told apart from the opening-template Reference (on
     Frankenstein, not v0.9.0).
@@ -251,15 +265,74 @@ Doors, windows and bare openings in a storefront, curtain wall or stud wall.
 - **Addresses.** Jambs are `(segment, -1 - n, 2 * layer + side)`; heads `(-1 - n, 0)` and
   sills `(-1 - n, 1)`, for the nth void. Cut pieces are renumbered (`piece`,
   `InfillPanel.piece`).
+- **Sloped openings** (user request; example: The Meadow, GlobalId
+  `0gdg4I2rj7i94iHrkuzNgC`, whose bare openings rake its top, angle its left end and hold
+  a window).
+  - **Input.** `project_void` keeps the convex hull of the opening in (u, v) as
+    `Void.outline` when it is not a rectangle. The hull is not trimmed, so it may reach
+    past the path ends or the top.
+  - **Framed edge by edge** (`_frame_sloped_voids`).
+    - Overlapping sloped openings are merged and trimmed to the framing. Edges on the
+      framing's boundary get no member.
+    - An edge steeper than 45 degrees is framed by a jamb, otherwise by a head (opening
+      below it) or a sill (opening above it, as under a rake).
+    - Each is one `InclinedMember` from outside the opening, its near face on the edge. It
+      uses layer 1 only, with the same entries and defaults as rectangles; a rake is a
+      sill, so it defaults to the lowest horizontal.
+  - **Joints are the jamb's `jamb_height`** (user request: configurable; sometimes mitred,
+    sometimes the jamb butts into the head, sometimes the head into the jamb).
+    - `FULL`: the jamb runs through to the far side of the head or sill, which butts into
+      it.
+    - `HEAD`: the head or sill runs through, and the jamb butts into it.
+    - `MITRE`: both are cut on the line through the corner and the meeting of their outer
+      faces.
+    - Members of the same kind always mitre.
+    - A member ending on the framing's boundary stops at its bound (a jamb on the bottom
+      rail) or the path end.
+    - A rectangular opening whose jamb is `MITRE` is framed this way too.
+  - **True section** (user decision): an inclined member is a `FramingExtrusion` along
+    its edge (`axis`), its section square to the axis and oriented as the jamb or head it
+    stands for. Its ends are clip planes square to the guide plane.
+  - **Cutting.** The sloped zone (openings plus member strips) cuts every `cut_by_voids`
+    member, including rectangular openings' jambs and heads.
+    - Members are cut along their axis. The new ends carry `bottom_cut`/`top_cut`
+      (verticals) or `start_cut`/`end_cut` (horizontals), the zone boundary's direction,
+      and the writer clips them on that line (`_cut_normal`, `_plane_extension`).
+    - Panels are cut by the zone grown by the entry's widest gap, and keep the polygon as
+      `InfillPanel.outline`. A hole splits a panel, and the preview mesh ear-clips the
+      outline.
+    - A member whose axis misses the zone but whose faces touch it is left alone (the IFC
+      opening still cuts it).
+  - Panels now follow their rails as laid out before openings cut them, so a pane beside
+    an opening is not dropped when its rail is cut below half the bay.
+  - **Checked on The Meadow** (read-only, nothing saved): an 84-item closed mesh, an IFC
+    body that tessellates, and elevations rendered in each joint mode.
 - **Known limits.**
   - Spacing does not re-flow around openings (a later toggle).
+  - Sloped openings: one jamb layer only; concave openings are framed as their convex
+    hull.
   - A cut panel leaves seams without a gap where its pieces meet.
-  - In `BODY` output, the IFC opening still cuts run-through members. The plan is to
-    notch the opening's body in step 2; `PARTS` would make it unnecessary.
+  - In `BODY` output, the IFC opening still cuts run-through members.
+    - Notching the opening's body was planned for step 2, but is deferred. Bonsai shares
+      one mapped opening body across a filling type's occurrences, and rebuilds it from the
+      door (`regenerate_filling_opening_body`, Recalculate Fill). A notch would have to
+      detach it per host, and be redone after every rebuild.
+    - `PARTS` output makes it unnecessary.
+  - The panel rebuilds entries from its own fields (`system_from_props`), so saving from
+    the panel drops `void_role`, `cut_by_voids` and the jamb keys until step 3.
+  - Not hooked yet: deleting a door with its opening through `bim.delete`, and undo.
+    Check whether those recut the host.
+- **Tested headless (Blender 5.1, feet project).** A storefront preset, then:
+  - a door added by `FilledOpeningGenerator.generate`;
+  - the door moved, then `bim.recalculate_fill`;
+  - `bim.remove_opening`.
+
+  Each time the body matched the solve with the openings read back, and went back to
+  the plain storefront once the opening was removed.
 - **Remaining steps.**
-  2. Writer and Bonsai: read the openings and regenerate when they change.
   3. Panel UI for the void roles and Cut by Voids.
-  4. Re-flow, thresholds, openings across corners.
+  4. Re-flow, thresholds, openings across corners, opening notches for run-through
+     members.
 
 ## Profile and material references
 

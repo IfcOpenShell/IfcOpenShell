@@ -51,6 +51,7 @@ from gpu_extras.batch import batch_for_shader
 from ifcopenshell.api.geometry.add_framing_representation import (
     compute_framing_geometry,
     compute_framing_mesh,
+    get_framing_voids,
     get_profile_mesh,
 )
 from ifcopenshell.util.framing import FramingError
@@ -73,6 +74,8 @@ _errors: dict[int, str] = {}
 _preview_errors: dict[int, str] = {}
 # Tessellated profiles for the live preview. Any IFC commit invalidates them.
 _profile_meshes = tool.Parametric.GenerationKeyedCache()
+# The element's openings on its guide, for the live preview, likewise.
+_preview_voids = tool.Parametric.GenerationKeyedCache()
 # Set while the panel's properties are filled from IFC, so that does not preview on every field.
 _is_loading_props = False
 
@@ -191,13 +194,17 @@ def update_framing_preview(obj: bpy.types.Object) -> None:
                 profile.id(), lambda profile=profile: get_profile_mesh(profile, unit_scale)
             )
         guide = read_guide(element) or default_guide(props.height / unit_scale, unit_scale)
+        closed = guide.get("closed", False)
         items = compute_framing_geometry(
             system=system,
             guide=guide["verts"],
             height=props.height / unit_scale,
             profile_points={name: points for name, (points, _) in profile_meshes.items()},
-            closed=guide.get("closed", False),
+            closed=closed,
             scope=props.scope,
+            voids=_preview_voids.get_or_compute(
+                (element.id(), str(guide)), lambda: get_framing_voids(element, guide["verts"], closed, unit_scale)
+            ),
         )
         mesh = compute_framing_mesh(items, profile_meshes)
     except FramingError as e:
@@ -359,6 +366,7 @@ def regenerate_framing(obj: bpy.types.Object) -> bool:
     if not element.Representation:
         element.Representation = ifc_file.createIfcProductDefinitionShape(None, None, ())
     try:
+        voids = get_framing_voids(element, guide["verts"], guide.get("closed", False), unit_scale)
         representation = ifcopenshell.api.geometry.add_framing_representation(
             ifc_file,
             context=body,
@@ -370,6 +378,7 @@ def regenerate_framing(obj: bpy.types.Object) -> bool:
             part_of_product=element.Representation,
             constituent_set=get_constituent_set(element),
             unit_scale=unit_scale,
+            voids=voids,
         )
     except FramingError as e:
         _errors[element.id()] = str(e)
@@ -377,6 +386,21 @@ def regenerate_framing(obj: bpy.types.Object) -> bool:
     _errors.pop(element.id(), None)
     tool.Model.replace_object_ifc_representation(body, obj, representation)
     return True
+
+
+def regenerate_framing_host(obj: bpy.types.Object) -> bool:
+    """Lay a framing occurrence out again around its openings, after they changed.
+
+    Returns False if ``obj`` is not a framing occurrence or its framing failed, so the
+    caller recuts it as usual instead."""
+    element = tool.Ifc.get_entity(obj)
+    if element is None or element.is_a("IfcTypeObject") or get_system_owner(element) is None:
+        return False
+    if tool.Model.get_framing_props(obj).is_editing:
+        # Finish writes the body; until then the preview shows the new openings.
+        update_framing_preview(obj)
+        return True
+    return regenerate_framing(obj)
 
 
 def apply_framing_type(obj: bpy.types.Object) -> bool:

@@ -18,6 +18,8 @@
 
 # This file was generated with the assistance of an AI coding tool.
 
+import math
+
 import pytest
 
 import ifcopenshell
@@ -1213,3 +1215,161 @@ class TestLayeredJambs:
     def test_rejects_openings(self, void, message):
         with pytest.raises(FramingError, match=message):
             solve(WOOD, segments=(3.0, 3.0), height=2.4, extents=WOOD_EXTENTS, voids=(void,))
+
+
+def frame(jamb_height=None):
+    members = [
+        {
+            "name": "Ends",
+            "kind": "V",
+            "at_ends": True,
+            "flush": True,
+            "bottom": {"member": "Bottom"},
+            "top": {"member": "Top"},
+        },
+        {
+            "name": "Stud",
+            "kind": "V",
+            "spacing": {"mode": "MAX", "value": 1.0},
+            "within": "Ends",
+            "bottom": {"member": "Bottom"},
+            "top": {"member": "Top"},
+        },
+        {"name": "Bottom", "kind": "H", "v": "BASE", "flush": True},
+        {"name": "Top", "kind": "H", "v": "TOP", "flush": True},
+        {"name": "Rail", "kind": "H", "v": 1.5, "breaks_at": ["Ends", "Stud"]},
+        {
+            "name": "Glass",
+            "kind": "INFILL",
+            "between": "Stud",
+            "bottom": {"member": "Bottom"},
+            "top": {"member": "Rail"},
+            "gap": 0.01,
+        },
+    ]
+    if jamb_height:
+        jamb = {"name": "Jamb", "kind": "V", "void_role": "JAMB", "jamb_height": jamb_height}
+        members.append({**jamb, "bottom": {"member": "Bottom"}, "top": {"member": "Top"}})
+    return members
+
+
+FRAME_EXTENTS = {
+    "Ends": (-0.05, 0.05),
+    "Stud": (-0.025, 0.025),
+    "Bottom": (-0.05, 0.05),
+    "Top": (-0.05, 0.05),
+    "Rail": (-0.02, 0.02),
+    "Jamb": (-0.05, 0.05),
+}
+# Everything left of the line from (2/3, -1) to (7/3, 4), so u = 2/3 + (v + 1) / 3.
+ANGLED_END = subject.Void(-1, 2.4, -1, 4, outline=((-1, -1), (2 / 3, -1), (7 / 3, 4), (-1, 4)))
+# Everything above the line v = 2.9 - 0.1 (u + 1).
+RAKED_TOP = subject.Void(-1, 7, 2.1, 4, outline=((-1, 2.9), (7, 2.1), (7, 4), (-1, 4)))
+
+
+def end_line(v):
+    return 2 / 3 + (v + 1) / 3
+
+
+def rake_line(u):
+    return 2.9 - 0.1 * (u + 1)
+
+
+def solve_frame(voids, jamb_height=None):
+    return solve(frame(jamb_height), segments=(6.0,), height=3.0, extents=FRAME_EXTENTS, voids=voids)
+
+
+def parallel(cut, direction):
+    return abs(cut[0] * direction[1] - cut[1] * direction[0]) < 1e-6
+
+
+class TestSlopedVoids:
+    def test_raked_top(self):
+        layout = solve_frame([RAKED_TOP])
+        (rake,) = layout.inclined
+        # The rake is framed under the opening, so as a sill: the lowest horizontal's profile.
+        assert (rake.entry, rake.kind) == ("Bottom", "H")
+        # Its top face lies on the rake, and it runs to the path end, cut plumb there.
+        assert rake.end[0] == pytest.approx(6.0)
+        assert rake.start[1] + 0.05 * math.hypot(1, 0.1) == pytest.approx(rake_line(rake.start[0]))
+        assert parallel(rake.end_cut, (0, 1))
+        # Studs stop on the rake's underside, cut along it.
+        for stud in layout.by_entry("Stud"):
+            assert stud.v_end == pytest.approx(rake_line(stud.u) - 0.1 * math.hypot(1, 0.1))
+            assert parallel(stud.top_cut, (1, -0.1))
+        # The end posts are cut too, and the top rail is gone.
+        assert all(m.top_cut for m in layout.by_entry("Ends"))
+        assert not layout.by_entry("Top")
+
+    def test_angled_end(self):
+        layout = solve_frame([ANGLED_END])
+        (jamb,) = layout.inclined
+        assert (jamb.entry, jamb.kind) == ("Ends", "V")
+        # It stands on the bottom rail and leans with the edge, its face on it.
+        assert jamb.start[1] == pytest.approx(0.1)
+        assert parallel(jamb.start_cut, (1, 0))
+        assert jamb.start[0] - 0.05 * math.hypot(1, 1 / 3) == pytest.approx(end_line(0.1))
+        # The end post inside the opening is gone; the other one stays.
+        assert [m.u for m in layout.by_entry("Ends") if isinstance(m, subject.VerticalMember)] == [5.95]
+        # The bottom rail runs to the edge, and the rail to the jamb's far face, both cut along it.
+        (bottom, *_) = layout.by_entry("Bottom")
+        assert bottom.u_start == pytest.approx(end_line(0.05))
+        rail = min(layout.by_entry("Rail"), key=lambda m: m.u_start)
+        assert rail.u_start == pytest.approx(end_line(1.5) + 0.1 * math.hypot(1, 1 / 3))
+        assert parallel(bottom.start_cut, (1, 3)) and parallel(rail.start_cut, (1, 3))
+
+    def test_panels_take_the_shape_left_by_the_opening(self):
+        layout = solve_frame([ANGLED_END])
+        first = min(layout.by_entry("Glass"), key=lambda p: p.u_start)
+        assert len(first.outline) == 4
+        # Its sloped side keeps the glass gap from the jamb's far face.
+        u, v = min(first.outline, key=lambda p: (p[1], p[0]))
+        assert v == pytest.approx(0.11)
+        assert u > end_line(0.11) + 0.1 * math.hypot(1, 1 / 3)
+
+    @pytest.mark.parametrize("jamb_height", [None, "FULL", "HEAD", "MITRE"])
+    def test_corner_joints(self, jamb_height):
+        layout = solve_frame([ANGLED_END, RAKED_TOP], jamb_height)
+        jamb = next(m for m in layout.inclined if m.kind == "V")
+        rake = next(m for m in layout.inclined if m.kind == "H")
+        if jamb_height in (None, "FULL"):
+            # The jamb runs through to the rake, which butts into it.
+            assert jamb.end[1] == pytest.approx(rake_line(jamb.end[0]))
+            assert parallel(rake.start_cut, (1, 3))
+            assert rake.start[0] > jamb.end[0]
+        elif jamb_height == "HEAD":
+            # The rake runs through to the edge, and the jamb stops under it.
+            assert rake.start[0] == pytest.approx(end_line(rake.start[1]))
+            assert jamb.end[1] < rake_line(jamb.end[0]) - 0.1
+        else:
+            assert jamb.end == pytest.approx(rake.start)
+            assert parallel(jamb.end_cut, rake.start_cut)
+            assert not parallel(jamb.end_cut, (1, 3)) and not parallel(jamb.end_cut, (1, -0.1))
+
+    def test_mitred_jambs_frame_a_rectangle_edge_by_edge(self):
+        window = subject.Void(2.0, 3.0, 1.0, 2.0)
+        layout = solve_frame([window], "MITRE")
+        assert sorted((m.entry, m.kind) for m in layout.inclined) == [
+            ("Bottom", "H"),
+            ("Jamb", "V"),
+            ("Jamb", "V"),
+            ("Top", "H"),
+        ]
+        jamb = next(m for m in layout.inclined if m.entry == "Jamb")
+        head = next(m for m in layout.inclined if m.entry == "Top")
+        assert parallel(jamb.end_cut, (1, 1)) or parallel(jamb.end_cut, (1, -1))
+        assert parallel(head.start_cut, jamb.end_cut) or parallel(head.end_cut, jamb.end_cut)
+
+    def test_cuts_the_framing_of_rectangular_openings(self):
+        window = subject.Void(3.2, 3.8, 1.0, 1.4)
+        layout = solve_frame([window, RAKED_TOP])
+        jambs = [m for m in layout.by_entry("Ends") if isinstance(m, subject.VerticalMember) and m.address[1] < 0]
+        assert len(jambs) == 2
+        for m in jambs:
+            assert m.v_end < rake_line(m.u)
+            assert m.top_cut is not None
+
+    def test_crossing_a_corner(self):
+        void = subject.Void(2.0, 4.0, 1.0, 2.0, outline=((2.0, 1.0), (4.0, 1.0), (3.0, 2.0)))
+        with pytest.raises(FramingError, match="crosses a corner"):
+            solve(frame(), segments=(3.0, 3.0), height=3.0, extents=FRAME_EXTENTS, voids=[void])

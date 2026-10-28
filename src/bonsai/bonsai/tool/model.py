@@ -1736,6 +1736,8 @@ class Model(bonsai.core.tool.Model):
         for obj in decomposed_objs:
             if not obj.data:
                 continue
+            if tool.Geometry.regenerate_framing_host(obj):
+                continue
             element = tool.Ifc.get_entity(obj)
             body = tool.Geometry.get_body_representation(element)
             bonsai.core.geometry.switch_representation(

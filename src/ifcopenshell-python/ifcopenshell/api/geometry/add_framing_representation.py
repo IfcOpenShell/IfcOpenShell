@@ -20,18 +20,20 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from math import cos, radians, sin
 from typing import Any, Optional, Union
 
 import numpy as np
 import shapely
+import shapely.geometry
 
 import ifcopenshell
 import ifcopenshell.api.geometry
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.util.framing
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
@@ -55,6 +57,9 @@ class FramingExtrusion:
     On a sloped path the ends are raked to follow it: the member is extended by
     ``bottom_extension`` / ``top_extension`` and cut by every plane in ``bottom_planes`` /
     ``top_planes``. A member standing where the slope changes is cut by both slopes.
+
+    A member along a sloped opening's edge is extruded along that edge (``axis``) instead
+    of up, its section square to it. Its profile's Y axis is then ``axis`` x ``ref_direction``.
     """
 
     entry: str
@@ -65,6 +70,7 @@ class FramingExtrusion:
     top_planes: tuple[ClipPlane, ...] = ()
     bottom_extension: float = 0.0
     top_extension: float = 0.0
+    axis: np.ndarray = field(default_factory=lambda: _Z.copy())
 
 
 @dataclass(frozen=True)
@@ -120,9 +126,13 @@ class FramingPanel:
     height: float
     thickness: float
     slope: float = 0.0
+    # A panel cut by a sloped opening: its corners in its own plane, counter-clockwise.
+    points: Optional[tuple[tuple[float, float], ...]] = None
 
     def outline(self) -> np.ndarray:
         """The panel's corners in its own plane: x along the path, y up."""
+        if self.points is not None:
+            return np.array(self.points, dtype=float)
         w, h, rise = self.width, self.height, self.width * self.slope
         return np.array(((0.0, 0.0), (w, rise), (w, rise + h), (0.0, h)))
 
@@ -313,16 +323,16 @@ def compute_framing_mesh(
     for item in items:
         if isinstance(item, FramingExtrusion):
             points, triangles = profile_meshes[item.entry]
-            y_axis = np.cross(_Z, item.ref_direction)
+            y_axis = np.cross(item.axis, item.ref_direction)
             add_prism(
                 item.entry,
                 points,
                 triangles,
                 edges_by_entry[item.entry],
-                item.origin - _Z * item.bottom_extension,
+                item.origin - item.axis * item.bottom_extension,
                 item.ref_direction,
                 y_axis,
-                _Z,
+                item.axis,
                 item.depth + item.bottom_extension + item.top_extension,
                 item.bottom_planes,
                 item.top_planes,
@@ -348,11 +358,13 @@ def compute_framing_mesh(
         else:
             up = np.cross(-item.normal, item.direction)
             origin = item.origin + item.normal * item.thickness / 2
+            outline = item.outline()
+            panel_triangles = rectangle_triangles if item.points is None else _triangulate(outline)
             add_prism(
                 item.entry,
-                item.outline(),
-                rectangle_triangles,
-                rectangle_edges,
+                outline,
+                panel_triangles,
+                rectangle_edges if item.points is None else _boundary_edges(panel_triangles),
                 origin,
                 item.direction,
                 up,
@@ -391,6 +403,8 @@ def _rail_pieces(
     rotation: float,
     offset: float,
     profile_points: np.ndarray,
+    start_cut: Optional[ifcopenshell.util.framing.Cut] = None,
+    end_cut: Optional[ifcopenshell.util.framing.Cut] = None,
 ) -> list[FramingRail]:
     pieces = guide.pieces(u_start, u_end)
     whole_loop = guide.closed and u_start <= TOLERANCE and u_end >= guide.length - TOLERANCE
@@ -429,6 +443,13 @@ def _rail_pieces(
         if next_k is not None and (m := mitre_between(k, next_k)) is not None:
             end_mitre = m
             end_corner = guide.point_at(b, segment) + _Z * v
+            end_extension = _mitre_extension(end_corner, end, d, end_mitre, section)
+        # Where a sloped opening cuts the run, its first and last pieces end along the edge.
+        if k == 0 and start_cut is not None and (m := _cut_normal(guide, segment, start_cut, -d)) is not None:
+            start_mitre, start_corner = m, guide.point_at(a, segment) + _Z * v
+            start_extension = _mitre_extension(start_corner, start, -d, start_mitre, section)
+        if k == len(frames) - 1 and end_cut is not None and (m := _cut_normal(guide, segment, end_cut, d)) is not None:
+            end_mitre, end_corner = m, guide.point_at(b, segment) + _Z * v
             end_extension = _mitre_extension(end_corner, end, d, end_mitre, section)
         result.append(
             FramingRail(
@@ -560,24 +581,233 @@ def _raked_vertical(
     """A plumb member whose ends follow the slope of the path where it stands."""
     depth = member.v_end - member.v_start
     slopes = {guide.slope(i): i for i in guide.segments_at(member.u)}
-    if square or all(abs(s) <= TOLERANCE for s in slopes):
+    segment = member.address[0]
+    bottom_cut = _cut_normal(guide, segment, member.bottom_cut, -_Z) if member.bottom_cut else None
+    top_cut = _cut_normal(guide, segment, member.top_cut, _Z) if member.top_cut else None
+    raked = not square and any(abs(s) > TOLERANCE for s in slopes)
+    if not raked and bottom_cut is None and top_cut is None:
         return FramingExtrusion(entry, origin, ref_direction, depth)
     y_axis = np.cross(_Z, ref_direction)
     section = np.outer(profile_points[:, 0], ref_direction) + np.outer(profile_points[:, 1], y_axis)
     bottom_planes, top_planes = [], []
-    extension = 0.0
-    for slope, segment in slopes.items():
+    for slope, segment in slopes.items() if raked else ():
         plan = guide.direction(segment)
         up = _Z - plan * slope
         up /= np.linalg.norm(up)
         top_planes.append((origin + _Z * depth, up))
         bottom_planes.append((origin, -up))
-        extension = max(extension, float(np.max(np.abs(section @ plan))) * abs(slope))
-    # A little extra so the clip always cuts through solid material.
-    extension = extension * 1.05 + TOLERANCE
-    return FramingExtrusion(
-        entry, origin, ref_direction, depth, tuple(bottom_planes), tuple(top_planes), extension, extension
+    # A sloped opening's edge cuts the end instead of the path's slope.
+    if bottom_cut is not None:
+        bottom_planes = [(origin, bottom_cut)]
+    if top_cut is not None:
+        top_planes = [(origin + _Z * depth, top_cut)]
+    # Each end is extended only as far as its own planes need.
+    bottom, top = (
+        max((_plane_extension(section, _Z, m) for _, m in planes), default=0.0)
+        for planes in (bottom_planes, top_planes)
     )
+    return FramingExtrusion(entry, origin, ref_direction, depth, tuple(bottom_planes), tuple(top_planes), bottom, top)
+
+
+def _uv_vector(guide: _GuideMap, segment: int, du: float, dv: float) -> np.ndarray:
+    """A direction in the solver's (u, v) as a 3D vector: v is plumb above the path."""
+    return guide.direction(segment) * du + _Z * (dv + guide.slope(segment) * du)
+
+
+def _cut_normal(
+    guide: _GuideMap, segment: int, cut: ifcopenshell.util.framing.Cut, outward: np.ndarray
+) -> Optional[np.ndarray]:
+    """The normal of the plane through a (u, v) cut line, square to the guide plane.
+
+    It points along ``outward``, away from the member's material. None if the plane would
+    run along the member rather than across it."""
+    normal = np.cross(_uv_vector(guide, segment, *cut), guide.normal(segment))
+    length = np.linalg.norm(normal)
+    if length <= TOLERANCE:
+        return None
+    normal /= length
+    if normal @ outward < 0:
+        normal = -normal
+    if normal @ outward < 0.05:
+        return None
+    return normal
+
+
+def _plane_extension(section: np.ndarray, axis: np.ndarray, normal: np.ndarray) -> float:
+    """How far past the end an extrusion must go so the plane cuts its whole section."""
+    # A little extra so the clip always cuts through solid material.
+    return float(np.max(np.abs(section @ normal))) / abs(float(axis @ normal)) * 1.05 + TOLERANCE
+
+
+def _inclined_member(
+    member: ifcopenshell.util.framing.InclinedMember,
+    guide: _GuideMap,
+    profile_points: np.ndarray,
+    rotation: float,
+    offset: float,
+) -> FramingExtrusion:
+    """A member along a sloped opening's edge, its section square to its axis.
+
+    It is oriented as the jamb or head it stands for, so a vertical or horizontal edge
+    gives the same member as a jamb or head of a rectangular opening."""
+    (u0, v0), (u1, v1) = member.start, member.end
+    segment = guide.segment_at((u0 + u1) / 2)
+    n = guide.normal(segment)
+    start = guide.point_at(u0, segment) + _Z * v0 + n * offset
+    end = guide.point_at(u1, segment) + _Z * v1 + n * offset
+    axis = end - start
+    depth = float(np.linalg.norm(axis))
+    axis /= depth
+    du, dv = u1 - u0, v1 - v0
+    across = _uv_vector(guide, segment, *((dv, -du) if member.kind == "V" else (-dv, du)))
+    across -= axis * float(across @ axis)
+    across /= np.linalg.norm(across)
+    if member.kind == "V":
+        ref_direction = across * cos(rotation) + n * sin(rotation)
+    else:
+        ref_direction = n * cos(rotation) + across * sin(rotation)
+    y_axis = np.cross(axis, ref_direction)
+    section = np.outer(profile_points[:, 0], ref_direction) + np.outer(profile_points[:, 1], y_axis)
+    planes = []
+    for point, cut, outward in ((start, member.start_cut, -axis), (end, member.end_cut, axis)):
+        normal = _cut_normal(guide, segment, cut, outward)
+        planes.append(((point, normal),) if normal is not None else ())
+    extensions = [max((_plane_extension(section, axis, m) for _, m in p), default=0.0) for p in planes]
+    return FramingExtrusion(
+        member.entry, start, ref_direction, depth, planes[0], planes[1], extensions[0], extensions[1], axis
+    )
+
+
+def _triangulate(points: np.ndarray) -> np.ndarray:
+    """Triangles of a simple counter-clockwise polygon, by ear clipping."""
+    remaining = list(range(len(points)))
+    triangles = []
+
+    def cross(o, a, b) -> float:
+        return float((a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]))
+
+    while len(remaining) > 3:
+        for k in range(len(remaining)):
+            i, j, l = remaining[k - 1], remaining[k], remaining[(k + 1) % len(remaining)]
+            a, b, c = points[i], points[j], points[l]
+            if cross(a, b, c) <= TOLERANCE:
+                continue
+            if any(
+                cross(a, b, points[m]) >= 0 and cross(b, c, points[m]) >= 0 and cross(c, a, points[m]) >= 0
+                for m in remaining
+                if m not in (i, j, l)
+            ):
+                continue
+            triangles.append((i, j, l))
+            remaining.pop(k)
+            break
+        else:
+            break  # Degenerate: fan out what is left.
+    for k in range(1, len(remaining) - 1):
+        triangles.append((remaining[0], remaining[k], remaining[k + 1]))
+    return np.array(triangles, dtype=int)
+
+
+def project_void(
+    guide: SequenceOfVectors,
+    points: SequenceOfVectors,
+    filling: Optional[str] = None,
+    closed: bool = False,
+) -> Optional[ifcopenshell.util.framing.Void]:
+    """The rough opening that an opening's vertices make on a guide path.
+
+    The points are measured along the guide segment nearest to them in plan, which is
+    where ``u`` is measured too, and plumb above the path, as ``v`` is.
+
+    :param guide: The guide path's points.
+    :param points: The opening's vertices, in the same coordinates as the guide.
+    :param filling: The IFC class of what fills the opening, or None for none.
+    :param closed: Whether the guide path loops back to its first point.
+    :return: The opening, or None if it does not reach along any segment.
+    """
+    guide_map = _GuideMap(guide, closed)
+    pts = np.array(points, dtype=float)
+    if pts.ndim != 2 or not len(pts):
+        return None
+    best: Optional[tuple[float, int, np.ndarray]] = None
+    for i, length in enumerate(guide_map.lengths):
+        if length <= TOLERANCE:
+            continue
+        relative = pts - guide_map.points[i]
+        t = relative @ guide_map.direction(i)
+        if t.max() <= TOLERANCE or t.min() >= length - TOLERANCE:
+            continue
+        distance = abs(float(np.mean(relative @ guide_map.normal(i))))
+        if best is None or distance < best[0]:
+            best = (distance, i, t)
+    if best is None:
+        return None
+    _, i, t = best
+    u = guide_map.starts[i] + t
+    v = pts[:, 2] - (guide_map.points[i][2] + guide_map.rises[i] * t / guide_map.lengths[i])
+    # An opening that is not a rectangle in (u, v), such as a sloped one, keeps its outline.
+    # The solver trims it to the framing, so it may reach past the path's ends.
+    outline: tuple[tuple[float, float], ...] = ()
+    hull = shapely.MultiPoint(np.column_stack((u, v))).convex_hull
+    if hull.geom_type == "Polygon":
+        u0, v0, u1, v1 = hull.bounds
+        if hull.area < (u1 - u0) * (v1 - v0) * (1 - 1e-6) - TOLERANCE:
+            ring = shapely.geometry.polygon.orient(hull, 1.0).exterior.coords[:-1]
+            outline = tuple((float(a), float(b)) for a, b in ring)
+    t = np.clip(t, 0.0, guide_map.lengths[i])
+    u = guide_map.starts[i] + t
+    v = pts[:, 2] - (guide_map.points[i][2] + guide_map.rises[i] * t / guide_map.lengths[i])
+    return ifcopenshell.util.framing.Void(
+        float(u.min()), float(u.max()), max(float(v.min()), 0.0), float(v.max()), filling, outline
+    )
+
+
+def get_framing_voids(
+    element: ifcopenshell.entity_instance,
+    guide: SequenceOfVectors,
+    closed: bool = False,
+    unit_scale: Optional[float] = None,
+) -> tuple[ifcopenshell.util.framing.Void, ...]:
+    """The rough openings that an element's IfcOpeningElements make on its guide.
+
+    Each opening's own geometry is used, so an opening shaped as a rough opening is
+    framed as one. Fillings are named by class, IfcDoor and IfcWindow including their
+    subtypes.
+
+    :param element: The framing occurrence.
+    :param guide: The guide path's points, in the element's object coordinates.
+    :param closed: Whether the guide path loops back to its first point.
+    :param unit_scale: See :func:`add_framing_representation`.
+    :return: One void per opening that reaches along the guide.
+    """
+    openings = [rel.RelatedOpeningElement for rel in getattr(element, "HasOpenings", None) or ()]
+    if not openings or not element.ObjectPlacement:
+        return ()
+    if unit_scale is None:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(element.file)
+    to_element = np.linalg.inv(
+        ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=True)
+    )
+    settings = ifcopenshell.geom.settings()
+    voids = []
+    for opening in openings:
+        try:
+            shape = ifcopenshell.geom.create_shape(settings, opening)
+        except RuntimeError:
+            continue
+        matrix = ifcopenshell.util.shape.get_shape_matrix(shape)
+        vertices = ifcopenshell.util.shape.get_vertices(shape.geometry)
+        # Both are in SI units, and the guide is in project units.
+        world = vertices @ matrix[:3, :3].T + matrix[:3, 3]
+        local = (world @ to_element[:3, :3].T + to_element[:3, 3]) / unit_scale
+        filling = None
+        for rel in opening.HasFillings or ():
+            filled = rel.RelatedBuildingElement
+            filling = next((c for c in ("IfcDoor", "IfcWindow") if filled.is_a(c)), filled.is_a())
+            break
+        if void := project_void(guide, local, filling, closed):
+            voids.append(void)
+    return tuple(voids)
 
 
 def compute_framing_geometry(
@@ -588,6 +818,7 @@ def compute_framing_geometry(
     profile_points: dict[str, np.ndarray],
     closed: bool = False,
     scope: SpacingScope = "SEGMENT",
+    voids: tuple[ifcopenshell.util.framing.Void, ...] = (),
 ) -> list[FramingItem]:
     """Lay out a framing system and place each member and panel in 3D.
 
@@ -602,6 +833,7 @@ def compute_framing_geometry(
         profile, see :func:`get_profile_points`.
     :param closed: Whether the guide path loops back to its first point.
     :param scope: See :func:`ifcopenshell.util.framing.solve`.
+    :param voids: Rough openings to frame, see :func:`get_framing_voids`.
     :return: Items in the order of the system's entries.
     """
     entries = ifcopenshell.util.framing.parse_system(system)
@@ -631,6 +863,7 @@ def compute_framing_geometry(
         scope=scope,
         extents=extents,
         lateral=lateral,
+        voids=voids,
     )
 
     items: list[FramingItem] = []
@@ -657,6 +890,9 @@ def compute_framing_geometry(
                         square=bool(entry_data.get("square_cut")),
                     )
                 )
+            for member in layout.inclined:
+                if member.entry == entry.name:
+                    items.append(_inclined_member(member, guide_map, profile_points[entry.name], rotation, offset))
         elif isinstance(entry, ifcopenshell.util.framing.HorizontalEntry):
             for member in layout.horizontals:
                 if member.entry == entry.name:
@@ -670,8 +906,13 @@ def compute_framing_geometry(
                             rotation,
                             offset,
                             profile_points[entry.name],
+                            member.start_cut,
+                            member.end_cut,
                         )
                     )
+            for member in layout.inclined:
+                if member.entry == entry.name:
+                    items.append(_inclined_member(member, guide_map, profile_points[entry.name], rotation, offset))
         else:
             thickness = float(entry_data.get("thickness", 0.0))
             if thickness <= TOLERANCE:
@@ -682,6 +923,13 @@ def compute_framing_geometry(
                 segment = panel.address[0]
                 d, n = guide_map.direction(segment), guide_map.normal(segment)
                 origin = guide_map.point_at(panel.u_start, segment) + _Z * panel.v_start + n * offset
+                slope = guide_map.slope(segment)
+                points = None
+                if panel.outline:
+                    # In the panel's plane, plumb heights rise with the path as its bottom does.
+                    points = tuple(
+                        (u - panel.u_start, v - panel.v_start + (u - panel.u_start) * slope) for u, v in panel.outline
+                    )
                 items.append(
                     FramingPanel(
                         entry.name,
@@ -691,7 +939,8 @@ def compute_framing_geometry(
                         panel.u_end - panel.u_start,
                         panel.v_end - panel.v_start,
                         thickness,
-                        guide_map.slope(segment),
+                        slope,
+                        points,
                     )
                 )
     return items
@@ -710,6 +959,7 @@ def add_framing_representation(
     part_of_product: Optional[ifcopenshell.entity_instance] = None,
     constituent_set: Optional[ifcopenshell.entity_instance] = None,
     unit_scale: Optional[float] = None,
+    voids: tuple[ifcopenshell.util.framing.Void, ...] = (),
 ) -> ifcopenshell.entity_instance:
     """Create a body representation for a framing system laid along a guide path.
 
@@ -743,6 +993,9 @@ def add_framing_representation(
     :param unit_scale: The unit scale as calculated by
         ifcopenshell.util.unit.calculate_unit_scale. If not provided, it
         will be automatically calculated for you.
+    :param voids: Rough openings to frame, see :func:`get_framing_voids`. The
+        element's IfcOpeningElements still cut its body as usual, including members
+        that are not ``cut_by_voids``.
     :return: IfcShapeRepresentation for the framing system.
     """
     if unit_scale is None:
@@ -768,6 +1021,7 @@ def add_framing_representation(
         profile_points={name: get_profile_points(p, unit_scale) for name, p in profiles.items()},
         closed=closed,
         scope=scope,
+        voids=voids,
     )
 
     builder = ShapeBuilder(file)
@@ -778,9 +1032,9 @@ def add_framing_representation(
             ifc_item = builder.extrude(
                 profiles[item.entry],
                 item.depth + item.bottom_extension + item.top_extension,
-                position=item.origin - _Z * item.bottom_extension,
+                position=item.origin - item.axis * item.bottom_extension,
                 position_x_axis=item.ref_direction,
-                position_z_axis=_Z,
+                position_z_axis=item.axis,
             )
             ifc_item = _clip(builder, ifc_item, (*item.bottom_planes, *item.top_planes))
         elif isinstance(item, FramingRail):
@@ -843,7 +1097,7 @@ def _clip(builder: ShapeBuilder, solid: ifcopenshell.entity_instance, planes) ->
 def _panel_solid(file: ifcopenshell.file, panel: FramingPanel) -> ifcopenshell.entity_instance:
     # Local X runs along the path and local Y up, which needs the local Z pointing to the
     # path's right. The extrusion then runs from the left face to the right face.
-    if abs(panel.slope) > TOLERANCE:
+    if abs(panel.slope) > TOLERANCE or panel.points is not None:
         outline = [file.createIfcCartesianPoint(p) for p in panel.outline().tolist()]
         rectangle = file.createIfcArbitraryClosedProfileDef("AREA", None, file.createIfcPolyline(outline + outline[:1]))
     else:

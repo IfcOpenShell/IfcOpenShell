@@ -23,6 +23,7 @@ import pytest
 
 import ifcopenshell
 import ifcopenshell.api.context
+import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.root
@@ -35,9 +36,12 @@ from ifcopenshell.api.geometry.add_framing_representation import (
     FramingRail,
     compute_framing_geometry,
     compute_framing_mesh,
+    get_framing_voids,
     get_profile_mesh,
+    project_void,
 )
-from ifcopenshell.util.framing import FramingError
+from ifcopenshell.util.framing import FramingError, Void
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
 def rectangle_points(x: float, y: float) -> np.ndarray:
@@ -569,3 +573,182 @@ class TestAddFramingRepresentation:
         system["members"][0]["profile"] = {"id": 0, "name": "Missing"}
         with pytest.raises(FramingError, match="No profile found for: Post"):
             self.add(system)
+
+
+class TestProjectVoid:
+    def test_box_on_a_straight_guide(self):
+        box = [(x, y, z) for x in (2.0, 3.0) for y in (-0.1, 0.1) for z in (0.0, 2.1)]
+        void = project_void([(0.0, 0.0, 0.0), (6.0, 0.0, 0.0)], box, "IfcDoor")
+        assert (void.u_start, void.u_end, void.v_start, void.v_end) == pytest.approx((2.0, 3.0, 0.0, 2.1))
+        assert void.filling == "IfcDoor"
+
+    def test_picks_the_nearest_segment(self):
+        box = [(x, y, z) for x in (3.9, 4.1) for y in (1.0, 2.0) for z in (0.5, 1.5)]
+        void = project_void([(0.0, 0.0, 0.0), (4.0, 0.0, 0.0), (4.0, 3.0, 0.0)], box)
+        assert (void.u_start, void.u_end, void.v_start, void.v_end) == pytest.approx((5.0, 6.0, 0.5, 1.5))
+
+    def test_height_is_measured_plumb_above_a_sloped_guide(self):
+        box = [(1.0, 0.0, 0.5), (2.0, 0.0, 1.0), (1.0, 0.0, 2.5), (2.0, 0.0, 3.0)]
+        void = project_void([(0.0, 0.0, 0.0), (4.0, 0.0, 2.0)], box)
+        assert (void.u_start, void.u_end, void.v_start, void.v_end) == pytest.approx((1.0, 2.0, 0.0, 2.0))
+
+    def test_off_the_guide(self):
+        box = [(x, 0.0, z) for x in (7.0, 8.0) for z in (0.0, 1.0)]
+        assert project_void([(0.0, 0.0, 0.0), (6.0, 0.0, 0.0)], box) is None
+
+
+class TestGetFramingVoids:
+    def setup_method(self):
+        self.file = ifcopenshell.file(schema="IFC4")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        self.body = ifcopenshell.api.context.add_context(
+            self.file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        self.host = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcCurtainWall")
+        # Turned a quarter and moved, so the opening has to come back into the host's coordinates.
+        self.host_matrix = np.array(((0.0, -1.0, 0.0, 10.0), (1.0, 0.0, 0.0, 5.0), (0.0, 0.0, 1.0, 1.0), (0, 0, 0, 1)))
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=self.host, matrix=self.host_matrix)
+
+    def add_opening(self, u, width, height, filling=None):
+        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+        local = np.eye(4)
+        local[:3, 3] = (u, -0.15, 0.0)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=opening, matrix=self.host_matrix @ local)
+        builder = ShapeBuilder(self.file)
+        solid = builder.extrude(builder.rectangle(size=(width, 0.3)), height)
+        ifcopenshell.api.geometry.assign_representation(
+            self.file, product=opening, representation=builder.get_representation(self.body, [solid])
+        )
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=self.host)
+        if filling:
+            element = ifcopenshell.api.root.create_entity(self.file, ifc_class=filling)
+            ifcopenshell.api.feature.add_filling(self.file, opening=opening, element=element)
+
+    def voids(self):
+        return get_framing_voids(self.host, [(0.0, 0.0, 0.0), (6.0, 0.0, 0.0)], unit_scale=1.0)
+
+    def test_reads_each_opening_in_the_hosts_coordinates(self):
+        self.add_opening(2.0, 1.0, 2.1, "IfcDoor")
+        self.add_opening(4.0, 1.2, 1.0)
+        door, bare = self.voids()
+        assert (door.u_start, door.u_end, door.v_start, door.v_end) == pytest.approx((2.0, 3.0, 0.0, 2.1))
+        assert door.filling == "IfcDoor"
+        assert (bare.u_start, bare.u_end, bare.v_end) == pytest.approx((4.0, 5.2, 1.0))
+        assert bare.filling is None
+
+    def test_no_openings(self):
+        assert self.voids() == ()
+
+
+def sloped_system(profile_ids=None) -> dict:
+    ids = profile_ids or {}
+    bounds = {"bottom": {"member": "Bottom"}, "top": {"member": "Top"}}
+    return {
+        "members": [
+            {"name": "Ends", "kind": "V", "at_ends": True, "flush": True, **bounds},
+            {"name": "Stud", "kind": "V", "spacing": {"mode": "MAX", "value": 1.0}, "within": "Ends", **bounds},
+            {"name": "Bottom", "kind": "H", "v": "BASE", "flush": True},
+            {"name": "Top", "kind": "H", "v": "TOP", "flush": True},
+            {
+                "name": "Glass",
+                "kind": "INFILL",
+                "between": "Stud",
+                "bottom": {"member": "Bottom"},
+                "top": {"member": "Top"},
+                "thickness": 0.01,
+                "gap": 0.01,
+            },
+        ]
+        if not ids
+        else [
+            {**m, "profile": {"id": ids[m["name"]], "name": m["name"]}} if m["name"] in ids else m
+            for m in sloped_system()["members"]
+        ]
+    }
+
+
+SLOPED_PROFILES = {"Ends": (0.1, 0.1), "Stud": (0.05, 0.1), "Bottom": (0.1, 0.1), "Top": (0.1, 0.1)}
+SLOPED_VOIDS = (
+    # An angled end, u = 2/3 + (v + 1) / 3, and a raked top, v = 2.9 - 0.1 (u + 1).
+    Void(-1, 2.4, -1, 4, outline=((-1, -1), (2 / 3, -1), (7 / 3, 4), (-1, 4))),
+    Void(-1, 7, 2.1, 4, outline=((-1, 2.9), (7, 2.1), (7, 4), (-1, 4))),
+)
+
+
+class TestSlopedOpenings:
+    def items(self):
+        return compute_framing_geometry(
+            system=sloped_system(),
+            guide=[(0.0, 0.0, 0.0), (6.0, 0.0, 0.0)],
+            height=3.0,
+            profile_points={name: rectangle_points(*size) for name, size in SLOPED_PROFILES.items()},
+            voids=SLOPED_VOIDS,
+        )
+
+    def test_a_sloped_outline_is_kept(self):
+        box = [(x, y, z) for x, z in ((1.0, 0.0), (2.0, 0.0), (3.0, 3.0), (0.0, 3.0)) for y in (-0.1, 0.1)]
+        void = project_void([(0.0, 0.0, 0.0), (6.0, 0.0, 0.0)], box)
+        assert sorted(void.outline) == pytest.approx([(0.0, 3.0), (1.0, 0.0), (2.0, 0.0), (3.0, 3.0)])
+        rectangle = [(x, y, z) for x in (1.0, 2.0) for y in (-0.1, 0.1) for z in (0.0, 2.0)]
+        assert project_void([(0.0, 0.0, 0.0), (6.0, 0.0, 0.0)], rectangle).outline == ()
+
+    def test_members_along_sloped_edges_have_a_true_section(self):
+        items = self.items()
+        jamb = next(i for i in items if i.entry == "Ends" and not np.allclose(i.axis, (0, 0, 1)))
+        rake = next(i for i in items if i.entry == "Bottom" and isinstance(i, FramingExtrusion))
+        assert jamb.axis == pytest.approx(np.array((1, 0, 3)) / np.sqrt(10))
+        assert rake.axis == pytest.approx(np.array((1, 0, -0.1)) / np.sqrt(1.01))
+        for item in (jamb, rake):
+            # The section is square to the axis, and its Y axis out of plane for a jamb, up for a head.
+            assert abs(item.ref_direction @ item.axis) < 1e-9
+        assert np.cross(jamb.axis, jamb.ref_direction) == pytest.approx((0, 1, 0))
+        assert np.cross(rake.axis, rake.ref_direction)[2] > 0.99
+
+    def test_studs_are_cut_along_the_rake(self):
+        studs = [i for i in self.items() if i.entry == "Stud"]
+        assert studs
+        for stud in studs:
+            ((_, normal),) = stud.top_planes
+            # The plane holds the rake's direction and faces up out of the stud.
+            assert normal @ np.array((1, 0, -0.1)) == pytest.approx(0.0, abs=1e-9)
+            assert normal[2] > 0.9
+            assert stud.top_extension > 0 and stud.bottom_extension == 0
+
+    def test_mesh_is_closed(self):
+        items = self.items()
+        meshes = {name: get_profile_mesh(self.rectangle_profile(*size), 1.0) for name, size in SLOPED_PROFILES.items()}
+        assert closed_mesh(compute_framing_mesh(items, meshes))
+        # Glass trimmed by the openings keeps its shape.
+        assert any(isinstance(i, FramingPanel) and i.points is not None for i in items)
+
+    def rectangle_profile(self, x, y):
+        # The file must outlive the profile, so it is kept on the test.
+        self.file = getattr(self, "file", None) or ifcopenshell.file(schema="IFC4")
+        return self.file.createIfcRectangleProfileDef("AREA", None, None, x, y)
+
+    def test_ifc_body_tessellates(self):
+        file = ifcopenshell.file(schema="IFC4")
+        ifcopenshell.api.root.create_entity(file, ifc_class="IfcProject")
+        model = ifcopenshell.api.context.add_context(file, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        ids = {
+            name: file.createIfcRectangleProfileDef("AREA", name, None, *size).id()
+            for name, size in SLOPED_PROFILES.items()
+        }
+        representation = ifcopenshell.api.geometry.add_framing_representation(
+            file,
+            context=body,
+            system=sloped_system(ids),
+            guide=[(0.0, 0.0, 0.0), (6.0, 0.0, 0.0)],
+            height=3.0,
+            unit_scale=1.0,
+            voids=SLOPED_VOIDS,
+        )
+        settings = ifcopenshell.geom.settings()
+        vertices = ifcopenshell.util.shape.get_vertices(ifcopenshell.geom.create_shape(settings, representation))
+        # Nothing reaches into the angled end or above the rake.
+        assert all(u >= 2 / 3 + (v + 1) / 3 - 1e-6 for u, _, v in vertices)
+        assert all(v <= 2.9 - 0.1 * (u + 1) + 1e-6 for u, _, v in vertices)

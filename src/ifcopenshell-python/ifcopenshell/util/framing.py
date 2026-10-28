@@ -48,7 +48,10 @@ SpacingMode = Literal["FIXED", "MAX", "COUNT"]
 SpacingAlign = Literal["START", "CENTER", "END"]
 SpacingScope = Literal["SEGMENT", "PATH"]
 Bound = Union[Literal["BASE", "TOP"], float, dict[str, str]]
-JambHeight = Literal["FULL", "HEAD"]
+JambHeight = Literal["FULL", "HEAD", "MITRE"]
+# The direction (du, dv) of the line a member's end is cut along.
+Cut = tuple[float, float]
+Point = tuple[float, float]
 
 
 class FramingError(ValueError):
@@ -119,7 +122,8 @@ class VerticalEntry:
     cut_by_voids: bool = True
     # "JAMB" frames the sides of openings instead of being laid out itself. Layer 1 sits
     # against the opening, layer 2 outside it, and so on. FULL runs between the entry's
-    # bounds; HEAD stops under the opening's head, which sits on it.
+    # bounds, so the head butts into it; HEAD stops under the opening's head, which sits
+    # on it; MITRE mitres with the head and sill. Sloped openings use layer 1 only.
     void_role: Optional[Literal["JAMB"]] = None
     void_layer: int = 1
     jamb_height: JambHeight = "FULL"
@@ -181,7 +185,11 @@ Entry = Union[VerticalEntry, HorizontalEntry, InfillEntry]
 @dataclass(frozen=True)
 class Void:
     """A rough opening in ``(u, v)``: its edges are where the jambs' inner faces, the head's
-    underside and the sill's top go. It must not cross a corner of the path."""
+    underside and the sill's top go. It must not cross a corner of the path.
+
+    The ``u_start`` to ``v_end`` rectangle is the opening, unless an ``outline`` gives its
+    shape, for example a sloped one. Edges steeper than 45 degrees are then framed by
+    jambs, and others by a head over the opening or a sill under it."""
 
     u_start: float
     u_end: float
@@ -189,6 +197,7 @@ class Void:
     v_end: float
     # The IFC class of what fills it, such as "IfcDoor", or None for a bare opening.
     filling: Optional[str] = None
+    outline: tuple[Point, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -202,6 +211,9 @@ class VerticalMember:
     address: tuple[int, int, int]
     # Counts the pieces upward when the member breaks at horizontals.
     piece: int = 0
+    # Where a sloped opening edge cuts an end, the line it is cut along. Else square.
+    bottom_cut: Optional[Cut] = None
+    top_cut: Optional[Cut] = None
 
 
 @dataclass(frozen=True)
@@ -212,6 +224,25 @@ class HorizontalMember:
     u_end: float
     # (row, interval): row counts repeats upward, interval counts breaks along the path.
     # Heads and sills have row -1 - n for the nth void, and interval 0 or 1.
+    address: tuple[int, int]
+    start_cut: Optional[Cut] = None
+    end_cut: Optional[Cut] = None
+
+
+@dataclass(frozen=True)
+class InclinedMember:
+    """A member along an edge of a sloped opening, from ``start`` to ``end`` on its axis.
+
+    ``kind`` is how its profile is oriented: "V" as a jamb, "H" as a head or sill. Its
+    section is square to its axis, and each end is cut along a line through it."""
+
+    entry: str
+    kind: Literal["V", "H"]
+    start: Point
+    end: Point
+    start_cut: Cut
+    end_cut: Cut
+    # (-1 - n, edge) for the nth sloped opening.
     address: tuple[int, int]
 
 
@@ -226,6 +257,8 @@ class InfillPanel:
     address: tuple[int, int, int, int]
     # Counts the pieces left where voids cut the panel.
     piece: int = 0
+    # Where a sloped opening cuts the panel, its shape, counter-clockwise. Else the rectangle.
+    outline: tuple[Point, ...] = ()
 
 
 @dataclass
@@ -233,9 +266,10 @@ class FramingLayout:
     verticals: list[VerticalMember] = field(default_factory=list)
     horizontals: list[HorizontalMember] = field(default_factory=list)
     infills: list[InfillPanel] = field(default_factory=list)
+    inclined: list[InclinedMember] = field(default_factory=list)
 
-    def by_entry(self, name: str) -> list[Union[VerticalMember, HorizontalMember, InfillPanel]]:
-        return [i for i in (*self.verticals, *self.horizontals, *self.infills) if i.entry == name]
+    def by_entry(self, name: str) -> list[Union[VerticalMember, HorizontalMember, InfillPanel, InclinedMember]]:
+        return [i for i in (*self.verticals, *self.horizontals, *self.infills, *self.inclined) if i.entry == name]
 
 
 def resolve_profile(ifc_file: Any, reference: Optional[dict[str, Any]]) -> Optional[Any]:
@@ -378,7 +412,7 @@ def _parse_void_framing(item: dict[str, Any], name: str, kind: Any, void_role: A
         if isinstance(layer, bool) or not isinstance(layer, int) or layer < 1:
             raise FramingError(f"Jamb {name!r} needs a void layer of 1 or more.")
         jamb_height = item.get("jamb_height", "FULL")
-        if jamb_height not in ("FULL", "HEAD"):
+        if jamb_height not in ("FULL", "HEAD", "MITRE"):
             raise FramingError(f"Jamb {name!r} has unknown jamb height {jamb_height!r}.")
         return VerticalEntry(
             name=name,
@@ -606,9 +640,16 @@ def solve(
         if all(any(a - TOLERANCE <= m.u <= b + TOLERANCE for a, b in runs[name]) for name in bounds_by_entry[m.entry])
     ]
     by_name = {e.name: e for e in entries}
+    # Sloped openings, and openings whose jambs mitre, are framed edge by edge.
+    sloped_voids = [(i, v) for i, v in enumerate(voids) if v.outline or _jamb_mode(entries, v.filling) == "MITRE"]
     frames = [
-        _frame_void(i, void, entries, verticals, guide, height, levels, layout, extents) for i, void in enumerate(voids)
+        _frame_void(i, void, entries, verticals, guide, height, levels, layout, extents)
+        for i, void in enumerate(voids)
+        if (i, void) not in sloped_voids
     ]
+    sloped = _frame_sloped_voids(sloped_voids, entries, verticals, guide, height, levels, extents)
+    if sloped:
+        layout.inclined = sloped.members
     for name in vertical_positions:
         kept = {m.u for m in layout.verticals if m.entry == name and m.address[1] >= 0}
         vertical_positions[name] = [p for p in vertical_positions[name] if p[0] in kept]
@@ -647,12 +688,17 @@ def solve(
             for interval, (u_start, u_end) in enumerate(intervals):
                 layout.horizontals.append(HorizontalMember(entry.name, v, u_start, u_end, (row, interval)))
 
+    # Panels follow their rails as laid out, before openings cut them, which cut the panels too.
+    uncut_horizontals = list(layout.horizontals)
     if frames:
         for frame in frames:
             frame.place_head_and_sill(layout.horizontals, by_name, extents)
         layout.horizontals = _cut_horizontals(layout.horizontals, frames, by_name, extents)
-        for frame in frames:
-            layout.horizontals.extend(frame.horizontals)
+    for frame in frames:
+        layout.horizontals.extend(frame.horizontals)
+    # A sloped opening also cuts the framing of rectangular ones, as a rake cuts a window's jambs.
+    if sloped:
+        layout.horizontals = sloped.cut_horizontals(layout.horizontals, by_name)
 
     # Verticals that break at horizontals are cut at the faces of the rows that cross
     # them, where those rows actually run.
@@ -675,14 +721,18 @@ def solve(
         layout.verticals = pieces
     if frames:
         layout.verticals = _cut_verticals(layout.verticals, frames, by_name, extents)
+    if sloped:
+        layout.verticals = sloped.cut_verticals(layout.verticals, by_name)
 
     for entry in entries:
         if isinstance(entry, InfillEntry):
             panels = _solve_infill(
-                entry, guide, height, levels, vertical_positions, layout.verticals, layout.horizontals, extents
+                entry, guide, height, levels, vertical_positions, layout.verticals, uncut_horizontals, extents
             )
             if frames and entry.cut_by_voids:
                 panels = _cut_panels(panels, frames, entry.gap)
+            if sloped and entry.cut_by_voids:
+                panels = sloped.cut_panels(panels, entry.gap)
             layout.infills.extend(panels)
     return layout
 
@@ -1353,3 +1403,342 @@ def _subtract_rect(
     if b < u1 - TOLERANCE:
         pieces.append(((b, u1, mid_v0, mid_v1), (True, right, mid_bottom, mid_top)))
     return pieces
+
+
+def _jamb_mode(entries: list[Entry], filling: Optional[str]) -> JambHeight:
+    """How the innermost jamb framing this filling meets the head and sill."""
+    jambs = _void_framing(entries, VerticalEntry, "JAMB", filling)
+    if not jambs:
+        return "FULL"
+    layer = min(e.void_layer for e in jambs)
+    return next(e for e in jambs if e.void_layer == layer).jamb_height
+
+
+def _sub(a: Point, b: Point) -> Point:
+    return (a[0] - b[0], a[1] - b[1])
+
+
+def _along(a: Point, d: Point, s: float) -> Point:
+    return (a[0] + d[0] * s, a[1] + d[1] * s)
+
+
+def _dot(a: Point, b: Point) -> float:
+    return a[0] * b[0] + a[1] * b[1]
+
+
+def _cross(a: Point, b: Point) -> float:
+    return a[0] * b[1] - a[1] * b[0]
+
+
+def _unit(a: Point) -> Point:
+    length = math.hypot(*a)
+    return (a[0] / length, a[1] / length)
+
+
+def _meet(p: Point, d: Point, q: Point, e: Point) -> Optional[float]:
+    """How far along ``d`` from ``p`` the line through ``q`` along ``e`` is, or None if parallel."""
+    denominator = _cross(d, e)
+    if abs(denominator) <= 1e-9:
+        return None
+    return _cross(_sub(q, p), e) / denominator
+
+
+@dataclass
+class _SlopedEdge:
+    """An edge of a sloped opening, and the member framing it from outside the opening."""
+
+    a: Point
+    b: Point
+    direction: Point  # from a to b
+    entry: Optional[Union[VerticalEntry, HorizontalEntry]] = None
+    role: str = ""
+    kind: Literal["V", "H"] = "V"
+    t: Point = (0.0, 1.0)  # the member's axis: upward for "V", along the path for "H"
+    p: Point = (1.0, 0.0)  # the direction the profile's (lo, hi) extent is measured in
+    out: Point = (1.0, 0.0)  # away from the opening
+    depth: float = 0.0
+    origin: Point = (0.0, 0.0)  # a point on the axis
+    mode: JambHeight = "FULL"
+
+    @property
+    def far(self) -> Point:
+        """A point on the member's face away from the opening."""
+        return _along(self.a, self.out, self.depth)
+
+
+class _SlopedFrames:
+    """Sloped openings and their framing, merged into one zone that cuts other members."""
+
+    def __init__(self, zone: Any, members: list[InclinedMember]):
+        self.zone = zone
+        self.members = members
+        self.segments: list[tuple[Point, Point]] = []
+        for polygon in getattr(zone, "geoms", [zone]):
+            for ring in (polygon.exterior, *polygon.interiors):
+                coords = list(ring.coords)
+                self.segments += [(a, b) for a, b in zip(coords, coords[1:]) if math.dist(a, b) > TOLERANCE]
+
+    def _cut_direction(self, point: Point) -> Cut:
+        """The direction of the zone's boundary where a member leaves it."""
+
+        def distance(segment: tuple[Point, Point]) -> float:
+            a, b = segment
+            d = _sub(b, a)
+            s = min(max(_dot(_sub(point, a), d) / _dot(d, d), 0.0), 1.0)
+            return math.dist(point, _along(a, d, s))
+
+        a, b = min(self.segments, key=distance)
+        return _unit(_sub(b, a))
+
+    def _cut_line(self, a: Point, b: Point) -> list[tuple[Point, Point, Optional[Cut], Optional[Cut]]]:
+        """What is left of the line from ``a`` to ``b`` outside the zone, with the new cuts."""
+        import shapely.geometry
+
+        line = shapely.geometry.LineString([a, b])
+        if not line.intersects(self.zone):
+            return [(a, b, None, None)]
+        rest = line.difference(self.zone)
+        length = math.dist(a, b)
+        d = _unit(_sub(b, a))
+        pieces = []
+        for piece in getattr(rest, "geoms", [rest]):
+            if piece.is_empty or piece.geom_type != "LineString" or piece.length <= TOLERANCE:
+                continue
+            start, end = sorted((tuple(piece.coords[0]), tuple(piece.coords[-1])), key=lambda p: _dot(_sub(p, a), d))
+            start_cut = None if _dot(_sub(start, a), d) <= TOLERANCE else self._cut_direction(start)
+            end_cut = None if _dot(_sub(end, a), d) >= length - TOLERANCE else self._cut_direction(end)
+            pieces.append((start, end, start_cut, end_cut))
+        return sorted(pieces, key=lambda p: _dot(_sub(p[0], a), d))
+
+    def cut_verticals(self, verticals: list[VerticalMember], by_name: dict[str, Entry]) -> list[VerticalMember]:
+        result: list[VerticalMember] = []
+        counters: dict[tuple, int] = {}
+        for m in verticals:
+            pieces = [((m.u, m.v_start), (m.u, m.v_end), None, None)]
+            if by_name[m.entry].cut_by_voids:
+                pieces = self._cut_line((m.u, m.v_start), (m.u, m.v_end))
+            for (_, v_start), (_, v_end), bottom, top in pieces:
+                key = (m.entry, m.address)
+                counters[key] = counters.get(key, -1) + 1
+                result.append(
+                    VerticalMember(
+                        m.entry,
+                        m.u,
+                        v_start,
+                        v_end,
+                        m.address,
+                        counters[key],
+                        bottom or (m.bottom_cut if abs(v_start - m.v_start) <= TOLERANCE else None),
+                        top or (m.top_cut if abs(v_end - m.v_end) <= TOLERANCE else None),
+                    )
+                )
+        return result
+
+    def cut_horizontals(self, horizontals: list[HorizontalMember], by_name: dict[str, Entry]) -> list[HorizontalMember]:
+        result: list[HorizontalMember] = []
+        counters: dict[tuple, int] = {}
+        for h in horizontals:
+            pieces = [((h.u_start, h.v), (h.u_end, h.v), None, None)]
+            if by_name[h.entry].cut_by_voids:
+                pieces = self._cut_line((h.u_start, h.v), (h.u_end, h.v))
+            for (u_start, _), (u_end, _), start, end in pieces:
+                key = (h.entry, h.address[0])
+                counters[key] = counters.get(key, -1) + 1
+                result.append(
+                    HorizontalMember(
+                        h.entry,
+                        h.v,
+                        u_start,
+                        u_end,
+                        (h.address[0], counters[key]),
+                        start or (h.start_cut if abs(u_start - h.u_start) <= TOLERANCE else None),
+                        end or (h.end_cut if abs(u_end - h.u_end) <= TOLERANCE else None),
+                    )
+                )
+        return result
+
+    def cut_panels(self, panels: list[InfillPanel], gap: tuple[float, float, float, float]) -> list[InfillPanel]:
+        """Cut panels around the zone, keeping the entry's widest gap from it."""
+        import shapely.geometry
+        import shapely.ops
+
+        cutter = self.zone.buffer(max(gap), join_style=2) if max(gap) > TOLERANCE else self.zone
+        result: list[InfillPanel] = []
+        for panel in panels:
+            if panel.outline:
+                box = shapely.geometry.Polygon(panel.outline)
+            else:
+                box = shapely.geometry.box(panel.u_start, panel.v_start, panel.u_end, panel.v_end)
+            if not box.intersects(cutter) or box.intersection(cutter).area <= TOLERANCE:
+                result.append(panel)
+                continue
+            rest = box.difference(cutter)
+            pieces = [g for g in getattr(rest, "geoms", [rest]) if g.geom_type == "Polygon"]
+            # A panel is one solid without holes, so a hole splits it in two.
+            while any(p.interiors for p in pieces):
+                p = next(p for p in pieces if p.interiors)
+                x = shapely.geometry.Polygon(p.interiors[0]).centroid.x
+                knife = shapely.geometry.LineString([(x, p.bounds[1] - 1.0), (x, p.bounds[3] + 1.0)])
+                pieces.remove(p)
+                pieces += [g for g in shapely.ops.split(p, knife).geoms if g.geom_type == "Polygon"]
+            n = 0
+            for piece in pieces:
+                if piece.area <= TOLERANCE:
+                    continue
+                u0, v0, u1, v1 = piece.bounds
+                rectangle = abs(piece.area - (u1 - u0) * (v1 - v0)) <= TOLERANCE
+                ring = shapely.geometry.polygon.orient(piece, 1.0).exterior.coords[:-1]
+                outline = () if rectangle else tuple((float(u), float(v)) for u, v in ring)
+                result.append(InfillPanel(panel.entry, u0, u1, v0, v1, panel.address, n, outline))
+                n += 1
+        return result
+
+
+def _frame_sloped_voids(
+    sloped_voids: list[tuple[int, Void]],
+    entries: list[Entry],
+    verticals: list[VerticalEntry],
+    guide: _Guide,
+    height: float,
+    levels: dict[str, list[float]],
+    extents: dict[str, tuple[float, float]],
+) -> Optional[_SlopedFrames]:
+    """Frame sloped openings edge by edge, from outside them.
+
+    Openings that overlap are merged, and only edges inside the framing are framed. Where
+    two members meet at a corner, the jamb's ``jamb_height`` decides which one runs
+    through: FULL the jamb, HEAD the head or sill, MITRE neither. Members framing edges
+    of the same kind mitre. A member ending on the framing's boundary stops at its bound,
+    as a jamb on the bottom rail, or at the path end."""
+    if not sloped_voids:
+        return None
+    import shapely
+    import shapely.geometry
+
+    def shape(void: Void) -> Any:
+        points = void.outline or (
+            (void.u_start, void.v_start),
+            (void.u_end, void.v_start),
+            (void.u_end, void.v_end),
+            (void.u_start, void.v_end),
+        )
+        if len(points) < 3:
+            raise FramingError("A sloped opening needs at least three points.")
+        return shapely.geometry.Polygon(points).buffer(0)
+
+    domain = shapely.geometry.box(0.0, 0.0, guide.length, height)
+    shapes = [(i, void, shape(void)) for i, void in sloped_voids]
+    merged = shapely.unary_union([s for _, _, s in shapes]).intersection(domain)
+    parts = [g for g in getattr(merged, "geoms", [merged]) if g.geom_type == "Polygon" and g.area > TOLERANCE]
+    zone_parts: list[Any] = list(parts)
+    members: list[InclinedMember] = []
+
+    def on_boundary(a: Point, b: Point) -> bool:
+        return any(
+            abs(a[axis] - value) <= TOLERANCE and abs(b[axis] - value) <= TOLERANCE
+            for axis, value in ((0, 0.0), (0, guide.length), (1, 0.0), (1, height))
+        )
+
+    for part in parts:
+        index, void = next(((i, v) for i, v, s in shapes if s.intersects(part)), sloped_voids[0])
+        u0, _, u1, _ = part.bounds
+        if any(u0 + TOLERANCE < s < u1 - TOLERANCE for s in guide.starts[1:]):
+            raise FramingError(f"Opening {index + 1} crosses a corner of the path.")
+
+        jambs = _void_framing(entries, VerticalEntry, "JAMB", void.filling)
+        if jambs:
+            layer = min(e.void_layer for e in jambs)
+            jamb = next(e for e in jambs if e.void_layer == layer)
+        else:
+            jamb = next((e for e in verticals if e.at_ends), None) or next((e for e in verticals if e.at_corners), None)
+        mode = jamb.jamb_height if jamb is not None else "FULL"
+        singles = [e for e in entries if isinstance(e, HorizontalEntry) and not e.void_role and e.v is not None]
+        head = next(iter(_void_framing(entries, HorizontalEntry, "HEAD", void.filling)), None)
+        if head is None and singles:
+            head = max(singles, key=lambda e: levels[e.name][0])
+        sill = next(iter(_void_framing(entries, HorizontalEntry, "SILL", void.filling)), None)
+        if sill is None and singles:
+            sill = min(singles, key=lambda e: levels[e.name][0])
+
+        # Counter-clockwise, so the opening is on each edge's left, without collinear points.
+        ring = list(shapely.geometry.polygon.orient(part, 1.0).exterior.coords)[:-1]
+        points = [
+            p
+            for k, p in enumerate(ring)
+            if abs(_cross(_sub(p, ring[k - 1]), _sub(ring[(k + 1) % len(ring)], p))) > TOLERANCE**2
+        ]
+        edges: list[_SlopedEdge] = []
+        for k, a in enumerate(points):
+            b = points[(k + 1) % len(points)]
+            edge = _SlopedEdge(a, b, _unit(_sub(b, a)))
+            edges.append(edge)
+            if on_boundary(a, b):
+                continue
+            d = edge.direction
+            edge.out = (d[1], -d[0])
+            if abs(d[1]) > abs(d[0]):
+                edge.role, edge.kind, edge.entry = "JAMB", "V", jamb
+                edge.t = d if d[1] > 0 else (-d[0], -d[1])
+                edge.p = (edge.t[1], -edge.t[0])
+            else:
+                edge.role = "HEAD" if edge.out[1] > 0 else "SILL"
+                edge.kind, edge.entry = "H", head if edge.role == "HEAD" else sill
+                edge.t = d if d[0] > 0 else (-d[0], -d[1])
+                edge.p = (-edge.t[1], edge.t[0])
+            if edge.entry is None:
+                continue
+            lo, hi = extents.get(edge.entry.name, (0.0, 0.0))
+            edge.depth = hi - lo
+            # The member's face nearest the opening lies on the edge.
+            edge.origin = _along(a, edge.p, -lo if _dot(edge.out, edge.p) > 0 else -hi)
+            edge.mode = mode
+
+        def end_of(x: _SlopedEdge, vertex: Point, y: _SlopedEdge, is_end: bool) -> tuple[float, Cut]:
+            """Where member ``x`` ends at ``vertex``, next to edge ``y``, and the line it is cut along."""
+            if y.entry is None:
+                line = (vertex, y.direction)
+                if on_boundary(y.a, y.b) and x.kind == "V" and abs(y.direction[1]) <= TOLERANCE:
+                    # A jamb ending on the framing's base or top stops at its own bound.
+                    v_bottom, v_top = _resolve_bounds(
+                        x.entry.name, x.entry.bottom, x.entry.top, height, levels, extents
+                    )
+                    line = ((vertex[0], v_bottom if vertex[1] < height / 2 else v_top), (1.0, 0.0))
+                at = _meet(x.origin, x.t, *line)
+                if at is None or abs(_cross(x.t, line[1])) < 0.2:
+                    return _dot(_sub(vertex, x.origin), x.t), x.p
+                return at, line[1]
+            if x.role == y.role or "JAMB" not in (x.role, y.role) or x.mode == "MITRE":
+                far = _meet(x.far, x.t, y.far, y.t)
+                corner = _along(x.far, x.t, far) if far is not None else vertex
+                cut = _unit(_sub(corner, vertex)) if math.dist(corner, vertex) > TOLERANCE else x.p
+                at = _meet(x.origin, x.t, vertex, cut)
+                return (at if at is not None else _dot(_sub(vertex, x.origin), x.t)), cut
+            through = (x.role == "JAMB") == (x.mode == "FULL")
+            ats = [at for q in (y.a, y.far) if (at := _meet(x.origin, x.t, q, y.t)) is not None]
+            pick = max if through == is_end else min
+            return pick(ats), y.t
+
+        for k, x in enumerate(edges):
+            if x.entry is None:
+                continue
+            ends = []
+            for vertex, y in ((x.a, edges[k - 1]), (x.b, edges[(k + 1) % len(edges)])):
+                other = x.b if vertex is x.a else x.a
+                is_end = _dot(_sub(vertex, other), x.t) > 0
+                ends.append((is_end, *end_of(x, vertex, y, is_end)))
+            (_, start_at, start_cut), (_, end_at, end_cut) = sorted(ends, key=lambda e: e[0])
+            if end_at - start_at <= TOLERANCE:
+                continue
+            start, end = _along(x.origin, x.t, start_at), _along(x.origin, x.t, end_at)
+            members.append(InclinedMember(x.entry.name, x.kind, start, end, start_cut, end_cut, (-1 - index, k)))
+            # What the member takes up: between its faces, and between its end cuts.
+            corners = []
+            for line_point in (x.a, x.far):
+                for point, cut in ((start, start_cut), (end, end_cut)):
+                    at = _meet(line_point, x.t, point, cut)
+                    corners.append(_along(line_point, x.t, at) if at is not None else point)
+            strip = shapely.geometry.Polygon([corners[0], corners[1], corners[3], corners[2]]).buffer(0)
+            if strip.area > TOLERANCE:
+                zone_parts.append(strip)
+
+    return _SlopedFrames(shapely.unary_union(zone_parts), members)
