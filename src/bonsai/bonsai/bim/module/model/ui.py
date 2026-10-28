@@ -786,6 +786,7 @@ class BIM_PT_framing(bpy.types.Panel):
             row.template_list("BIM_UL_framing_entries", "", props, "entries", props, "active_entry_index", rows=5)
             col = row.column(align=True)
             col.operator_menu_enum("bim.add_framing_entry", "kind", text="", icon="ADD")
+            col.operator("bim.duplicate_framing_entry", text="", icon="DUPLICATE")
             col.operator("bim.remove_framing_entry", text="", icon="REMOVE")
             col.separator()
             col.operator("bim.move_framing_entry", text="", icon="TRIA_UP").direction = "UP"

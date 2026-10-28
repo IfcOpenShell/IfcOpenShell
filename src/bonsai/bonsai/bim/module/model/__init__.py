@@ -277,6 +277,7 @@ classes = (
     framing.FinishEditingFraming,
     framing.CancelEditingFraming,
     framing.AddFramingEntry,
+    framing.DuplicateFramingEntry,
     framing.RemoveFramingEntry,
     framing.MoveFramingEntry,
     framing.AddFramingBreak,

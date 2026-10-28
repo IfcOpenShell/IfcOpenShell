@@ -883,6 +883,48 @@ class AddFramingEntry(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class DuplicateFramingEntry(bpy.types.Operator):
+    bl_idname = "bim.duplicate_framing_entry"
+    bl_label = "Duplicate Framing Entry"
+    bl_description = "Copy the active entry, with all its settings, below it"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        global _is_loading_props
+        obj = context.active_object
+        props = tool.Model.get_framing_props(obj)
+        index = props.active_entry_index
+        if not 0 <= index < len(props.entries):
+            return {"CANCELLED"}
+        names = {e.name for e in props.entries}
+        base = props.entries[index].name.rstrip("0123456789") or props.entries[index].name
+        name, i = f"{base}2", 2
+        while name in names:
+            i += 1
+            name = f"{base}{i}"
+        _is_loading_props = True
+        try:
+            entry = props.entries.add()
+            # Adding can reallocate the collection, so fetch the source only afterwards.
+            source = props.entries[index]
+            for prop in source.bl_rna.properties:
+                key = prop.identifier
+                if key in ("rna_type", "name") or (prop.is_readonly and prop.type != "COLLECTION"):
+                    continue
+                if prop.type == "COLLECTION":
+                    for item in getattr(source, key):
+                        getattr(entry, key).add().name = item.name
+                else:
+                    setattr(entry, key, getattr(source, key))
+            entry.name = name
+        finally:
+            _is_loading_props = False
+        props.entries.move(len(props.entries) - 1, index + 1)
+        props.active_entry_index = index + 1
+        update_framing_preview(obj)
+        return {"FINISHED"}
+
+
 class RemoveFramingEntry(bpy.types.Operator):
     bl_idname = "bim.remove_framing_entry"
     bl_label = "Remove Framing Entry"
