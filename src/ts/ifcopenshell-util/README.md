@@ -23,4 +23,10 @@ optional ones go into a trailing options object, so
 not committed. The hand-written runtime it relies on (Python semantics, numpy,
 datetime, ...) lives in `runtime/` and is copied into `src/` by the generator.
 `transpile.json`, also generated, lists each module's untranslated functions,
-which throw when called. Behaviour is checked against Python by `src/ts/ifcopenshell-parity`.
+which throw when called.
+
+## Tests
+
+`npm test` runs `tests/runtime.test.ts`, which checks the hand-written runtime against values computed with Python, and `tests/parity.test.ts`, which replays the calls the Python tests of `ifcopenshell.util` make. It needs the generated sources (`npm run generate`), a built
+`ifcopenshell-js`, `IFCOPENSHELL_WASM_DIR` and recordings (`npm run record`); see
+"Running the tests" in [src/transpiler/README.md](../../transpiler/README.md).

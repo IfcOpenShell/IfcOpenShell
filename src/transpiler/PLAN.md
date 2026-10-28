@@ -128,8 +128,8 @@ the generated `src/` folders as an artifact or post their diff against the base 
 
 ### L2: Type check (exists)
 
-`npm run typecheck` in `src/ts/ifcopenshell-parity` builds `@ifcopenshell/util` and
-type-checks `@ifcopenshell/api`. Current result: 8 errors in util and 32 in api,
+`npm run build` in `src/ts/ifcopenshell-util`, then `npm run typecheck` in
+`src/ts/ifcopenshell-api`, type-check both packages. Current result: 8 errors in util and 32 in api,
 mostly namedtuple types, unresolved `ifcopenshell.api.*` calls and core API
 signature differences. Each error is fixed in the bindings, the rules or the
 Python annotations, never by hand-editing output.
@@ -144,9 +144,13 @@ captures every call the tests make into them:
 src/transpiler/parity/
   record.py               # runs the Python tests, writes golden/<module>.json
   golden/<module>.json    # input file snapshots, arguments, results, file changes
-src/ts/ifcopenshell-parity/tests/parity/
-  parity.test.ts          # replays every recorded call against generated/
-  values.ts               # JSON encoding and comparison shared with record.py
+src/ts/ifcopenshell-util/tests/
+  runtime.test.ts         # the hand-written runtime against values computed with Python
+  parity.test.ts          # replays the recorded util.* calls
+  parity/replay.ts        # the replay, shared with the api package
+  parity/values.ts        # JSON encoding and comparison shared with record.py
+src/ts/ifcopenshell-api/tests/
+  parity.test.ts          # replays the recorded api.* calls
 ```
 
 How recording works:
@@ -178,12 +182,12 @@ Comparison rules:
 - `GlobalId`, `CreationDate` and `LastModifiedDate` are masked. Entity ids must
 match, so TS must create entities in the same order as Python.
 
-Golden data is recorded with `npm run record` (in `src/ts/ifcopenshell-parity`) and is
+Golden data is recorded with `npm run record` (in either package) and is
 not committed: recording needs pytest and an installed ifcopenshell close to this checkout.
 Once recorded, the TS tests need no Python.
 
 Current results, recorded against ifcopenshell 0.9.0.post1 with every util module and
-api package loaded from this checkout. Replay runs in `src/ts/ifcopenshell-parity`
+api package loaded from this checkout. Replay runs with `npm test` in each package
 (the earlier milestone's totals were 6287 passed and 75 failed):
 
 | Module | Passed | Failed | Skipped |
@@ -387,7 +391,7 @@ the first rules to add in M1. See the top blockers in `TRACKING.md` for the curr
 
 1. Run `status.py`; pick the next module in tier order with the most unblocked dependents.
 2. Add rules for its blockers; re-run `status.py` and check no other module regressed.
-3. Add the module to `DEFAULT_MODULES` in `parity/record.py`, run `npm run record`, `npm run generate` and `npm test` in `src/ts/ifcopenshell-parity`.
+3. Add the module to `DEFAULT_MODULES` in `parity/record.py`, run `npm run generate`, `npm run record` and `npm test` in its package (see "Running the tests" in [README.md](README.md)).
 4. Fix type errors in the bindings, rules or annotations.
 5. Set `stage` in `tracking.yaml` if CI does not report it yet; commit the rules, runtime and `tracking.yaml`.
 

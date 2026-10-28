@@ -154,6 +154,5 @@ CLAUDE.local.md
 /src/ts/ifcopenshell-api/dist/
 /src/ts/ifcopenshell-util/node_modules/
 /src/ts/ifcopenshell-api/node_modules/
-/src/ts/ifcopenshell-parity/node_modules/
 /src/ts/ifcopenshell-util/*.tsbuildinfo
 /src/ts/ifcopenshell-api/*.tsbuildinfo

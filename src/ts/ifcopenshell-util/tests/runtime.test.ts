@@ -4,11 +4,11 @@
 // against values computed with Python 3.13, numpy 2.3, isodate 0.7 and dateutil 2.9.
 
 import { describe, expect, it } from 'vitest';
-import * as py from '../../ifcopenshell-util/src/_py.js';
-import * as np from '../../ifcopenshell-util/src/_numpy.js';
-import * as datetime from '../../ifcopenshell-util/src/_datetime.js';
-import * as isodate from '../../ifcopenshell-util/src/_isodate.js';
-import { parser } from '../../ifcopenshell-util/src/_dateutil.js';
+import * as py from '../src/_py.js';
+import * as np from '../src/_numpy.js';
+import * as datetime from '../src/_datetime.js';
+import * as isodate from '../src/_isodate.js';
+import { parser } from '../src/_dateutil.js';
 
 const close = (actual: unknown, expected: unknown) => {
   const flat = (v: unknown): number[] => (Array.isArray(v) ? v.flatMap(flat) : [Number(v)]);

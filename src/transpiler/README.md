@@ -122,5 +122,65 @@ Python libraries without a direct JS equivalent are ported by hand once, in
 `str.format`, ...), `_numpy.ts`, `_datetime.ts`, `_isodate.ts`, `_dateutil.ts`,
 `_os.ts` and `_itertools.ts`. `generate.py` copies them into the package's `src/`. Their
 behaviour is checked against values computed with Python in
-`src/ts/ifcopenshell-parity/tests/runtime.test.ts`, and through the parity tests
+`src/ts/ifcopenshell-util/tests/runtime.test.ts`, and through the parity tests
 of the modules that use them.
+
+## Running the tests
+
+The tests live with the packages they test, as in `ifcopenshell-js`:
+
+| Package | Tests | Needs |
+|---|---|---|
+| `src/ts/ifcopenshell-util` | `tests/runtime.test.ts`: the hand-written runtime (`_py`, `_numpy`, `_datetime`, ...) against values computed with Python | built `ifcopenshell-js` |
+| | `tests/parity.test.ts`: replays the calls the Python tests of `ifcopenshell.util` make | also the WASM build and recordings |
+| `src/ts/ifcopenshell-api` | `tests/parity.test.ts`: the same for `ifcopenshell.api`, with the replay code of the util package (`tests/parity/replay.ts`) | the WASM build and recordings |
+
+### Once
+
+1. Get a WASM build of IfcOpenShell and point `IFCOPENSHELL_WASM_DIR` at the folder
+   containing `ifcopenshell_wasm.wasm`, as for the tests of `ifcopenshell-js`. Either
+   download the `ifcopenshell-native-wasm` artifact of the
+   `build-ifcopenshell-native-wasm.yml` workflow
+   (`gh run download <run id> --repo IfcOpenShell/IfcOpenShell --name ifcopenshell-native-wasm`),
+   use `/opt/ifcopenshell-wasm` in the Docker image (see `docker/README.md`), or build it
+   with `nix/build-all.py --native-wasm`.
+2. Stage it and build the wrapper the generated code imports:
+
+   ```shell
+   cd src/ts/ifcopenshell-wasm && npm ci && npm run stage
+   cd ../ifcopenshell-js && npm ci && npm run build
+   ```
+
+3. Install the generator's dependencies: `pip install -r src/transpiler/requirements.txt`.
+   Recording also needs `pytest` and an installed `ifcopenshell` close to this checkout
+   (`pip install ifcopenshell pytest`; the numbers in [PLAN.md](PLAN.md) use 0.9.0.post1).
+
+### Each time
+
+```shell
+cd src/ts/ifcopenshell-util
+npm ci
+npm run generate   # writes src/ of both @ifcopenshell/util and @ifcopenshell/api
+npm run record     # runs the Python tests of ifcopenshell.util, writes src/transpiler/parity/golden/util.*.json
+npm test           # runtime tests, then the replay
+
+cd ../ifcopenshell-api
+npm ci
+npm run record     # the same for ifcopenshell.api
+npm test
+```
+
+Neither the generated sources nor the recordings are committed, so run `generate` after
+changing the rules, the runtime or the Python source, and `record` after changing the
+Python source or its tests. Without `IFCOPENSHELL_WASM_DIR`, or without recordings, the
+replay is skipped and only the runtime tests run.
+
+- **One module:** `npm test -- -t util.date` replays one recorded module, and
+  `python ../../transpiler/parity/record.py util.date` (from a package folder) records one.
+  The modules recorded by default are `DEFAULT_MODULES` in `parity/record.py`.
+- **Skipped calls:** a call is skipped, with the reason in its test name, when its Python
+  test failed, its function is a stub, its module did not transpile, or its arguments could
+  not be recorded. Skips are what is still to be ported.
+- **Type check:** `npm run build` in `ifcopenshell-util`, then `npm run typecheck` in
+  `ifcopenshell-api`, whose types resolve `@ifcopenshell/util` from the util package's `dist/`.
+- **Coverage:** `python src/transpiler/status.py` writes `TRACKING.md`.
