@@ -81,11 +81,19 @@ class IFC_PARSE_API base {
     }
 
     bool operator<(const base& other) const {
-        return data() < other.data();
+#ifdef IFOPSH_SAFE_INSTANCE
+        return data_.owner_before(other.data_);
+#else
+        return data_ < other.data_;
+#endif
     }
 
     bool operator==(const base& other) const {
-        return data() == other.data();
+#ifdef IFOPSH_SAFE_INSTANCE
+        return !data_.owner_before(other.data_) && !other.data_.owner_before(data_);
+#else
+        return data_ == other.data_;
+#endif
     }
 
     bool operator!=(const base& other) const {
@@ -206,14 +214,14 @@ namespace std {
 template <>
 struct hash<express::base> {
     std::size_t operator()(const express::base& value) const noexcept {
-        return std::hash<uint32_t>{}(value.identity());
+        return value ? std::hash<uint32_t>{}(value.identity()) : 0;
     }
 };
 
 template <>
 struct hash<express::entity> {
     std::size_t operator()(const express::entity& value) const noexcept {
-        return std::hash<uint32_t>{}(value.identity());
+        return value ? std::hash<uint32_t>{}(value.identity()) : 0;
     }
 };
 
@@ -224,14 +232,14 @@ namespace boost {
 template <>
 struct hash<express::base> {
     std::size_t operator()(const express::base& value) const noexcept {
-        return std::hash<uint32_t>{}(value.identity());
+        return value ? std::hash<uint32_t>{}(value.identity()) : 0;
     }
 };
 
 template <>
 struct hash<express::entity> {
     std::size_t operator()(const express::entity& value) const noexcept {
-        return std::hash<uint32_t>{}(value.identity());
+        return value ? std::hash<uint32_t>{}(value.identity()) : 0;
     }
 };
 

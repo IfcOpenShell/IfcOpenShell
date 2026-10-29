@@ -277,8 +277,15 @@ jobs:
                -DWITH_ROCKSDB=On \
                -DWITH_MANIFOLD=ON \
                -DWITH_PROJ=ON \
-               -DBUILD_EXAMPLES=ON
+               -DBUILD_EXAMPLES=ON \
+               -DBUILD_IFCOPENSHELL_PARSE_TESTS=ON \
+               -DBUILD_IFCOPENSHELL_GEOMETRY_TESTS=${{ matrix.build_shared_libs == 'shared' && 'ON' || 'OFF' }}
           sudo cmake --build . --target install -j $(nproc)
+
+      - name: Run C++ tests
+        run: |
+          cd build
+          ctest --output-on-failure -j $(nproc)
 
       # - name: Run IfcConvert on Sample files
       #   run: |
