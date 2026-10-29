@@ -449,6 +449,8 @@ class Alignment:
         Only handles the tangent-spiral-arc-spiral-tangent pattern the
         PI-method solver already produces; raises ValueError for any
         horizontal segment type with no CANT_TYPE_FOR_HORIZONTAL_TYPE entry.
+        Tangents are never canted, so a curve without spirals steps to its
+        cant at the PC and back to 0 at the PT.
 
         ``arc_cant``, if given, is called with a CIRCULARARC's index into
         h_segments and returns that arc's own (left, right) cant, or None for
@@ -488,6 +490,9 @@ class Alignment:
                 raise ValueError(f"Horizontal segment type {h_type!r} has no cant equivalent")
 
             if h_type == "LINE":
+                # a tangent is never canted: after a curve without spirals the cant steps back to
+                # 0 at the PT, as it steps up at the PC
+                cur_left, cur_right = 0.0, 0.0
                 specs.append((cant_type, length, cur_left, cur_right, None, None))
                 continue
 
@@ -519,12 +524,15 @@ class Alignment:
 
     @classmethod
     def pair_cant_with_horizontal(cls, alignment: ifcopenshell.entity_instance) -> list:
-        """Before a horizontal edit: every cant layout that still corresponds one to one with the
-        horizontal (the i-th cant segment for the i-th horizontal segment, as generate_cant_layout
-        builds it), with (its cant segment, the horizontal segment's turn direction) for each
-        horizontal segment's entity id. Pass the result
-        to follow_horizontal_with_cant after the edit. A cant layout whose count has drifted from the
-        horizontal's (hand-edited in the cant table) is left out, and so left alone."""
+        """Before a horizontal edit: (cant layout, partners, anchors) for every cant layout. One that
+        corresponds one to one with the horizontal (the i-th cant segment for the i-th horizontal
+        segment, as generate_cant_layout builds it) gets partners: (its cant segment, the horizontal
+        segment's turn direction) for each horizontal segment's entity id. Pass the result
+        to follow_horizontal_with_cant after the edit.
+
+        Any other cant layout (hand-edited in the cant table, imported, or with breaks inside a
+        horizontal segment) gets anchors instead: each cant break as a fraction along the horizontal
+        segment it falls in (see _anchor_cant_segments)."""
         h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
         if not h_layout:
             return []
@@ -532,17 +540,126 @@ class Alignment:
         pairs = []
         for cant_layout in cls.get_all_cant_layouts(alignment):
             cant_segments = cls.get_real_layout_segments(cant_layout)
-            if cant_segments and len(cant_segments) == len(h_segments):
-                pairs.append(
-                    (
-                        cant_layout,
-                        {
-                            h.id(): (c, math.copysign(1.0, h.DesignParameters.StartRadiusOfCurvature or 0.0))
-                            for h, c in zip(h_segments, cant_segments)
-                        },
-                    )
-                )
+            if not cant_segments:
+                continue
+            if len(cant_segments) == len(h_segments):
+                partners = {
+                    h.id(): (c, math.copysign(1.0, h.DesignParameters.StartRadiusOfCurvature or 0.0))
+                    for h, c in zip(h_segments, cant_segments)
+                }
+                pairs.append((cant_layout, partners, None))
+            elif h_segments:
+                pairs.append((cant_layout, None, cls._anchor_cant_segments(h_segments, cant_segments)))
         return pairs
+
+    #: a cant break within this distance of a horizontal segment boundary is on it
+    CANT_ANCHOR_TOLERANCE = 1e-6
+
+    @classmethod
+    def _horizontal_starts(cls, h_segments: list) -> list[float]:
+        """The distance along at the start of each horizontal segment, then at the end of the last."""
+        starts = [0.0]
+        for h in h_segments:
+            starts.append(starts[-1] + (h.DesignParameters.SegmentLength or 0.0))
+        return starts
+
+    @classmethod
+    def _anchor_cant_segments(cls, h_segments: list, cant_segments: list) -> dict:
+        """Where each of a cant layout's breaks is relative to the horizontal, for
+        follow_horizontal_with_cant: ("in", horizontal segment id, fraction along it), or
+        ("start" | "end", None, distance from the horizontal's start or end) for breaks at or beyond
+        its ends. Also the horizontal segment ids in order (to place a break whose segment the edit
+        removes), and, for a cant segment that spans exactly one horizontal segment, that segment's
+        id and type (so a change of spiral family can retype it)."""
+        tol = cls.CANT_ANCHOR_TOLERANCE
+        starts = cls._horizontal_starts(h_segments)
+
+        def anchor(station: float) -> tuple:
+            if station <= tol:
+                return ("start", None, station)
+            if station >= starts[-1] - tol:
+                return ("end", None, station - starts[-1])
+            for i, h in enumerate(h_segments):
+                if station < starts[i + 1] - tol:
+                    length = starts[i + 1] - starts[i]
+                    fraction = (station - starts[i]) / length if abs(station - starts[i]) > tol and length > 0 else 0.0
+                    return ("in", h.id(), fraction)
+            return ("end", None, station - starts[-1])
+
+        def spanned(start: float, end: float):
+            for i, h in enumerate(h_segments):
+                if abs(start - starts[i]) <= tol and abs(end - starts[i + 1]) <= tol:
+                    return h.id(), h.DesignParameters.PredefinedType
+            return None, None
+
+        segments = []
+        for c in cant_segments:
+            dp = c.DesignParameters
+            start = dp.StartDistAlong or 0.0
+            end = start + (dp.HorizontalLength or 0.0)
+            segments.append((c, anchor(start), anchor(end), *spanned(start, end)))
+        return {"h_ids": [h.id() for h in h_segments], "segments": segments}
+
+    @classmethod
+    def _follow_anchored_cant(cls, cant_layout: ifcopenshell.entity_instance, h_segments: list, anchors: dict) -> bool:
+        """Move an anchored cant layout's breaks (see _anchor_cant_segments) to the same places on the
+        edited horizontal: the same fraction along each horizontal segment the edit kept, the end of
+        the nearest earlier kept segment for a break whose segment was removed. Every cant segment
+        keeps its GlobalId and cant values; one squeezed to nothing is removed. Returns False (and
+        changes nothing) when no anchor's horizontal segment survived, as after a full rebuild."""
+        file = tool.Ifc.get()
+        starts = cls._horizontal_starts(h_segments)
+        index = {h.id(): i for i, h in enumerate(h_segments)}
+        old_ids = anchors["h_ids"]
+        if not set(old_ids) & set(index):
+            return False
+
+        def resolve(anchor: tuple) -> float:
+            kind, h_id, value = anchor
+            if kind == "start":
+                return value
+            if kind == "end":
+                return starts[-1] + value
+            i = index.get(h_id)
+            if i is not None:
+                return starts[i] + value * (starts[i + 1] - starts[i])
+            for old_id in reversed(old_ids[: old_ids.index(h_id)]):
+                if old_id in index:
+                    return starts[index[old_id] + 1]
+            return 0.0
+
+        new_segments = []
+        previous_end = None
+        for c, start_anchor, end_anchor, h_id, old_h_type in anchors["segments"]:
+            start = resolve(start_anchor)
+            if previous_end is not None:
+                start = max(start, previous_end)
+            end = max(resolve(end_anchor), start)
+            previous_end = end
+            if end - start <= cls.CANT_ANCHOR_TOLERANCE:
+                continue  # squeezed out: its horizontal segment was removed
+            dp = c.DesignParameters
+            predefined_type = dp.PredefinedType
+            if h_id in index and predefined_type == cls.CANT_TYPE_FOR_HORIZONTAL_TYPE.get(old_h_type):
+                # it follows one horizontal segment exactly: follow that segment's family too
+                new_type = h_segments[index[h_id]].DesignParameters.PredefinedType
+                predefined_type = cls.CANT_TYPE_FOR_HORIZONTAL_TYPE.get(new_type, predefined_type)
+            design_parameters = file.createIfcAlignmentCantSegment(
+                StartTag=dp.StartTag,
+                EndTag=dp.EndTag,
+                StartDistAlong=start,
+                HorizontalLength=end - start,
+                StartCantLeft=dp.StartCantLeft,
+                EndCantLeft=dp.EndCantLeft,
+                StartCantRight=dp.StartCantRight,
+                EndCantRight=dp.EndCantRight,
+                PredefinedType=predefined_type,
+            )
+            new_segments.append((c, design_parameters))
+        if not new_segments:
+            return False
+        ifcopenshell.api.alignment.update_layout_segments(file, cant_layout, new_segments)
+        return True
 
     @classmethod
     def follow_horizontal_with_cant(cls, alignment: ifcopenshell.entity_instance, pairs: list) -> int:
@@ -553,8 +670,11 @@ class Alignment:
         A horizontal segment the edit kept (see update_layout_segments) keeps its cant segment and
         GlobalId; an arc it kept also keeps its own cant values (mirrored if the curve now turns the
         other way). A new arc gets the layout's design cant -- the largest cant it had anywhere.
-        Transitions and tangents are worked out from the arcs, as generate_cant_layout does. Returns
-        the number of cant layouts rebuilt."""
+        Transitions and tangents are worked out from the arcs, as generate_cant_layout does.
+
+        An anchored cant layout (one that didn't pair one to one) keeps its own segments, stretched
+        to the edited horizontal (see _follow_anchored_cant). Returns the number of cant layouts
+        rebuilt."""
         h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
         if not h_layout or not pairs:
             return 0
@@ -562,7 +682,11 @@ class Alignment:
         h_segments = cls.get_real_layout_segments(h_layout)
 
         rebuilt = 0
-        for cant_layout, partners in pairs:
+        for cant_layout, partners, anchors in pairs:
+            if anchors is not None:
+                if h_segments and cls._follow_anchored_cant(cant_layout, h_segments, anchors):
+                    rebuilt += 1
+                continue
             design_cant = max(
                 (
                     abs(value or 0.0)

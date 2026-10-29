@@ -524,3 +524,193 @@ class TestParseStation(NewFile):
         self._make_file(length={"is_metric": True, "raw": "METERS"})
         with pytest.raises(ValueError):
             subject.parse_station("not a station")
+
+
+# ---------------------------------------------------------------------------
+# Cant follows horizontal edits
+# ---------------------------------------------------------------------------
+
+
+class _FakeHorizontalParams:
+    def __init__(self, predefined_type: str, length: float, radius: float = 0.0):
+        self.PredefinedType = predefined_type
+        self.SegmentLength = length
+        self.StartRadiusOfCurvature = radius
+
+
+class TestBuildCantSpecsFromHorizontal(NewFile):
+    def test_tangent_after_a_curve_without_spirals_is_not_canted(self):
+        h_segments = [
+            _FakeSegment(_FakeHorizontalParams("LINE", 100.0)),
+            _FakeSegment(_FakeHorizontalParams("CIRCULARARC", 50.0, -300.0)),
+            _FakeSegment(_FakeHorizontalParams("LINE", 100.0)),
+            _FakeSegment(_FakeHorizontalParams("CIRCULARARC", 50.0, 300.0)),
+            _FakeSegment(_FakeHorizontalParams("LINE", 100.0)),
+        ]
+        specs = subject.build_cant_specs_from_horizontal(h_segments, 0.1)
+        assert [(left, right) for _, _, left, right, _, _ in specs] == [
+            (0.0, 0.0),
+            (0.1, 0.0),
+            (0.0, 0.0),
+            (0.0, 0.1),
+            (0.0, 0.0),
+        ]
+
+
+@requires_geometry_engine
+class TestFollowHorizontalWithCant(NewFile):
+    H = [(0.0, 0.0), (800.0, 0.0), (1400.0, 600.0), (2200.0, 600.0)]
+
+    def _alignment(self, radii, hpoints=None):
+        import ifcopenshell.api.root
+        import ifcopenshell.api.unit
+
+        ifc = ifcopenshell.file(schema="IFC4X3_ADD2")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc)
+        hpoints = hpoints or self.H
+        alignment = align_api.create_by_pi_method(ifc, "C", hpoints, radii, [(0.0, 100.0), (2000.0, 110.0)], [])
+        return ifc, alignment
+
+    @staticmethod
+    def _set_cant(ifc, alignment, rows):
+        """rows: (type, length, start right cant, end right cant or None); the left rail stays at 0"""
+        cant_layout = subject.get_or_create_cant_layout(alignment)
+        segments, dist_along = [], 0.0
+        for predefined_type, length, start, end in rows:
+            dp = ifc.createIfcAlignmentCantSegment(
+                StartDistAlong=dist_along,
+                HorizontalLength=length,
+                StartCantLeft=0.0,
+                EndCantLeft=None if end is None else 0.0,
+                StartCantRight=start,
+                EndCantRight=end,
+                PredefinedType=predefined_type,
+            )
+            segments.append((None, dp))
+            dist_along += length
+        align_api.update_layout_segments(ifc, cant_layout, segments)
+        return cant_layout
+
+    @staticmethod
+    def _edit_horizontal(ifc, alignment, hpoints, radii):
+        from bonsai.bim.module.alignment.operator import _update_horizontal_pi_segments
+
+        pairs = subject.pair_cant_with_horizontal(alignment)
+        assert _update_horizontal_pi_segments(ifc, align_api.get_horizontal_layout(alignment), hpoints, radii)
+        return subject.follow_horizontal_with_cant(alignment, pairs)
+
+    @staticmethod
+    def _values(layout, attribute):
+        return [getattr(s.DesignParameters, attribute) for s in subject.get_real_layout_segments(layout)]
+
+    def _assert_contiguous_to_horizontal_end(self, alignment, cant_layout):
+        h_total = sum(self._values(align_api.get_horizontal_layout(alignment), "SegmentLength"))
+        dist_along = 0.0
+        for segment in subject.get_real_layout_segments(cant_layout):
+            assert segment.DesignParameters.StartDistAlong == pytest.approx(dist_along, abs=1e-9)
+            dist_along += segment.DesignParameters.HorizontalLength
+        assert dist_along == pytest.approx(h_total, abs=1e-9)
+
+    def test_paired_cant_follows_a_curve_gaining_spirals(self):
+        ifc, alignment = self._alignment([(300.0, 0.0, 0.0), (400.0, 0.0, 0.0)])
+        h_layout = align_api.get_horizontal_layout(alignment)
+        specs = subject.build_cant_specs_from_horizontal(subject.get_real_layout_segments(h_layout), 0.1)
+        cant_layout = self._set_cant(ifc, alignment, [(t, length, sr, er) for t, length, _, sr, _, er in specs])
+
+        assert self._edit_horizontal(ifc, alignment, self.H, [(300.0, 60.0, 60.0), (400.0, 0.0, 0.0)]) == 1
+        h_types = self._values(h_layout, "PredefinedType")
+        assert self._values(cant_layout, "PredefinedType") == [
+            subject.CANT_TYPE_FOR_HORIZONTAL_TYPE[t] for t in h_types
+        ]
+        assert self._values(cant_layout, "HorizontalLength") == pytest.approx(
+            self._values(h_layout, "SegmentLength"), abs=1e-9
+        )
+        self._assert_contiguous_to_horizontal_end(alignment, cant_layout)
+
+    def test_anchored_cant_keeps_its_breaks_at_the_same_fraction(self):
+        radii = [(300.0, 60.0, 60.0), (400.0, 80.0, 80.0)]
+        ifc, alignment = self._alignment(radii)
+        h_layout = align_api.get_horizontal_layout(alignment)
+        lengths = self._values(h_layout, "SegmentLength")
+        line, spiral, arc = lengths[:3]
+        # the first tangent split by hand at 40%, the first curve one to one, then flat to the end
+        cant_layout = self._set_cant(
+            ifc,
+            alignment,
+            [
+                ("CONSTANTCANT", 0.4 * line, 0.0, None),
+                ("CONSTANTCANT", 0.6 * line, 0.0, None),
+                ("LINEARTRANSITION", spiral, 0.0, 0.1),
+                ("CONSTANTCANT", arc, 0.1, None),
+                ("LINEARTRANSITION", spiral, 0.1, 0.0),
+                ("CONSTANTCANT", sum(lengths[4:]), 0.0, None),
+            ],
+        )
+        guids = [s.GlobalId for s in subject.get_real_layout_segments(cant_layout)]
+
+        assert self._edit_horizontal(ifc, alignment, self.H, [(250.0, 60.0, 60.0), radii[1]]) == 1
+        new_line, new_spiral, new_arc = self._values(h_layout, "SegmentLength")[:3]
+        assert new_arc != pytest.approx(arc)
+        assert [s.GlobalId for s in subject.get_real_layout_segments(cant_layout)] == guids
+        assert self._values(cant_layout, "HorizontalLength")[:5] == pytest.approx(
+            [0.4 * new_line, 0.6 * new_line, new_spiral, new_arc, new_spiral], abs=1e-9
+        )
+        assert self._values(cant_layout, "StartCantRight") == [0.0, 0.0, 0.0, 0.1, 0.1, 0.0]
+        self._assert_contiguous_to_horizontal_end(alignment, cant_layout)
+
+    def test_anchored_cant_follows_a_spiral_family_change(self):
+        hpoints = self.H[:3]
+        ifc, alignment = self._alignment([(300.0, 60.0, 60.0)], hpoints)
+        h_layout = align_api.get_horizontal_layout(alignment)
+        lengths = self._values(h_layout, "SegmentLength")
+        cant_layout = self._set_cant(
+            ifc,
+            alignment,
+            [
+                ("CONSTANTCANT", lengths[0] / 2, 0.0, None),
+                ("CONSTANTCANT", lengths[0] / 2, 0.0, None),
+                ("LINEARTRANSITION", lengths[1], 0.0, 0.1),
+                ("CONSTANTCANT", lengths[2], 0.1, None),
+                ("LINEARTRANSITION", lengths[3], 0.1, 0.0),
+                ("CONSTANTCANT", lengths[4], 0.0, None),
+            ],
+        )
+
+        assert self._edit_horizontal(ifc, alignment, hpoints, [(300.0, 60.0, 60.0, "BLOSSCURVE")]) == 1
+        assert self._values(cant_layout, "PredefinedType") == [
+            "CONSTANTCANT",
+            "CONSTANTCANT",
+            "BLOSSCURVE",
+            "CONSTANTCANT",
+            "BLOSSCURVE",
+            "CONSTANTCANT",
+        ]
+        self._assert_contiguous_to_horizontal_end(alignment, cant_layout)
+
+    def test_anchored_cant_drops_the_segments_of_a_deleted_pi(self):
+        radii = [(300.0, 60.0, 60.0), (400.0, 80.0, 80.0)]
+        ifc, alignment = self._alignment(radii)
+        h_layout = align_api.get_horizontal_layout(alignment)
+        lengths = self._values(h_layout, "SegmentLength")
+        # the first tangent split by hand, then one cant segment per horizontal segment
+        rows = [("CONSTANTCANT", lengths[0] / 2, 0.0, None), ("CONSTANTCANT", lengths[0] / 2, 0.0, None)]
+        rows += [
+            ("LINEARTRANSITION", lengths[1], 0.0, 0.1),
+            ("CONSTANTCANT", lengths[2], 0.1, None),
+            ("LINEARTRANSITION", lengths[3], 0.1, 0.0),
+            ("CONSTANTCANT", lengths[4], 0.0, None),
+            ("LINEARTRANSITION", lengths[5], 0.0, 0.12),
+            ("CONSTANTCANT", lengths[6], 0.12, None),
+            ("LINEARTRANSITION", lengths[7], 0.12, 0.0),
+            ("CONSTANTCANT", lengths[8], 0.0, None),
+        ]
+        cant_layout = self._set_cant(ifc, alignment, rows)
+        guids = [s.GlobalId for s in subject.get_real_layout_segments(cant_layout)]
+
+        # deleting PI 1 removes its back tangent, spirals and arc; PI 2's segments are kept
+        assert self._edit_horizontal(ifc, alignment, [self.H[0], self.H[2], self.H[3]], [radii[1]]) == 1
+        assert [s.GlobalId for s in subject.get_real_layout_segments(cant_layout)] == guids[5:]
+        assert self._values(cant_layout, "StartCantRight") == [0.0, 0.0, 0.12, 0.12, 0.0]
+        self._assert_contiguous_to_horizontal_end(alignment, cant_layout)
