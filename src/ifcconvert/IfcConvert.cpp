@@ -1416,7 +1416,7 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 	for (;; ++num_created) {
 		bool has_more = true;
 		if (num_created) {
-			has_more = context_iterator.next();
+			has_more = static_cast<bool>(context_iterator.next());
 		}
 		std::unique_ptr<ifcopenshell::geom::native_element> geom_object;
 		if (has_more) {

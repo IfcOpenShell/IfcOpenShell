@@ -548,7 +548,7 @@ namespace {
             rgb[1] = colour.Green();
             rgb[2] = colour.Blue();
         }
-        return colour;
+        return static_cast<bool>(colour);
     }
 
     bool process_colour(const IfcSchema::IfcNormalisedRatioMeasure& factor, std::array<double, 3>& rgb) {

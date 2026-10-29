@@ -158,7 +158,7 @@ bool ifcopenshell::geom::iterator::initialize() {
 			// so the element conversion must succeed
 			initialization_outcome_ = wait_for_element();
 		} else {
-			initialization_outcome_ = create();
+			initialization_outcome_ = static_cast<bool>(create());
 		}
 	} else {
 		initialization_outcome_.emplace(true);
