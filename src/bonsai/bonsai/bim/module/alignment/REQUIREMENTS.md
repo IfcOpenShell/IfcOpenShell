@@ -7,6 +7,37 @@ resolving them.
 
 ## Status and work plan (resume here)
 
+**2026-10-28, cant follows every horizontal edit (not committed):** per the user, when the alignment
+has an IfcSegmentedReferenceCurve the cant must update when the horizontal changes: a radius change,
+a plain curve gaining spirals, a change of spiral family. A probe showed all three already worked for
+a cant from Generate Cant Layout (one cant segment per horizontal segment; the IfcSegmentedReferenceCurve
+is rebuilt in place by `update_layout_segments`), but found two gaps, both fixed in `tool/alignment.py`:
+
+- **Plain arcs:** `build_cant_specs_from_horizontal` left a spiral-less curve's cant on every tangent
+  after it, to the end of the alignment. Tangents are now never canted: the cant steps up at the PC
+  and back to 0 at the PT (the user's choice over a ramp on the tangent or a split runoff).
+- **Cant that doesn't pair one to one** with the horizontal was left stale. It is now anchored to
+  the horizontal segments (§11).
+- **The profile view didn't redraw** after a PI-method horizontal edit (Apply Curve, PI table, Draw,
+  Extend): the user saw the cant data update but not its graphics, until Match redrew them.
+  `_generate_alignment_segments` now calls `_refresh_vertical_profile_view`, as the horizontal
+  segment table's Apply already did.
+- **Verticals stretch with the horizontal (per the user, 2026-10-29).** Adding spirals changed the
+  horizontal's length and left the vertical short, until Match. Now a vertical that ended where the
+  horizontal did before a horizontal edit (PI method or segment table) has its last segment stretched
+  or shortened to end there again (`tool.Alignment.verticals_ending_with_horizontal` /
+  `stretch_verticals_with_horizontal`), before the cant follows. A vertical that was shorter or longer
+  on purpose (§9) is left alone; one whose last segment is too short to shorten is left as it is, with
+  a warning. Match now keeps the vertical's GlobalIds (`update_layout_segments` instead of clear and
+  recreate). Tests: `TestStretchVerticalsWithHorizontal`.
+
+Tests: `TestBuildCantSpecsFromHorizontal` and `TestFollowHorizontalWithCant` in
+`src/bonsai/test/tool/test_alignment.py` (4 of the 6 fail without the change). Run them inside Blender:
+`blender --background --python-expr "import sys, pytest; sys.exit(pytest.main(['test/tool/test_alignment.py', '-o', 'addopts=']))"`
+from `src/bonsai` (pytest-blender isn't installed here). The headless dev regression set (cant follow,
+cant lookup, multi-vertical cant, PI keep, tables keep, insert/delete, exact, extend, insert straight,
+key points) still passes. Not yet tried by the user in Blender.
+
 *Last updated 2026-10-14.* **2026-10-14, every fix PR merged; `rab_infrastructure` rebased:** #9927
 (deflection sampling), #9928 (Helmert heading), #9929 (degenerate segments), #9937 (Gauss-Kronrod),
 #9942 (cant frame), #9567, #9593 and #9505 are on `v0.9.0`. Upstream squash-merges, so the rebase drops
@@ -2073,8 +2104,16 @@ or spiral-length change left the cant lengths stale) and curve families. A horiz
 edit kept keeps its cant segment's GlobalId; a kept arc keeps its own cant values, hand-tuned ones
 included, mirrored only if that curve now turns the other way. A new arc (an inserted PI) gets the
 layout's design cant -- the largest cant it had anywhere -- and transitions/tangents are worked out
-from the arcs as Generate Cant Layout does. A cant layout whose segment count had already drifted
-from the horizontal's (hand-edited rows) is left alone, as before. Tested headless: radius change,
+from the arcs as Generate Cant Layout does. ~~A cant layout whose segment count had already drifted
+from the horizontal's (hand-edited rows) is left alone, as before.~~ Since 2026-10-28 such a cant
+layout (hand-edited, imported, breaks inside a horizontal segment) is *anchored* (per the user):
+before the edit each cant break is recorded as a fraction along the horizontal segment it falls in
+(`tool.Alignment._anchor_cant_segments`), and afterwards put back at that fraction of the segment's
+new length (`_follow_anchored_cant`). Every cant segment keeps its GlobalId and values; a break whose
+horizontal segment was removed moves to the end of the nearest earlier kept one, and a cant segment
+squeezed to nothing is removed. A cant segment spanning exactly one horizontal spiral follows its
+family. Not done: a new curve in an anchored layout gets no cant, and an anchored layout isn't
+mirrored when a curve flips. Tested headless: radius change,
 PI delete, PI insert, spiral-family change, and a row added in the horizontal segment table.
 The mirroring when a curve's turn direction flips is tested too (step 1b, 2026-10-14).
 
