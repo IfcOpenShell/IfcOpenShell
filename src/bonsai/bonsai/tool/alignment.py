@@ -2660,11 +2660,10 @@ class Alignment:
         return None if abs(delta) <= 1e-6 * max(target, 1.0) else delta
 
     @classmethod
-    def match_layout_length_to_horizontal(cls, layout: ifcopenshell.entity_instance) -> Optional[str]:
-        """Stretch or shorten a vertical or cant layout's last real segment so the layout ends exactly
-        where the horizontal does. Every other segment is rebuilt unchanged (the same clear + recreate
-        a segment-table Apply does). Returns an error message instead of changing anything if the last
-        segment is too short to absorb the difference."""
+    def _stretch_last_segment_to_horizontal(cls, layout: ifcopenshell.entity_instance) -> Optional[str]:
+        """match_layout_length_to_horizontal without the representation refresh: the last real
+        segment's HorizontalLength changes, every segment keeps its GlobalId (update_layout_segments).
+        Returns an error message, changing nothing, if the last segment is too short."""
         delta = cls.get_length_mismatch(layout)
         if delta is None:
             return None
@@ -2676,17 +2675,48 @@ class Alignment:
                 f"The last segment is only {segments[-1].DesignParameters.HorizontalLength:.3f} long -- too short to "
                 f"shorten by {delta:.3f}; edit the segments instead"
             )
-        definitions = []
+        new_segments = []
         for segment in segments:
-            dp = segment.DesignParameters
-            info = dp.get_info(include_identifier=False, recursive=False)
-            definitions.append((info.pop("type"), info))
-        definitions[-1][1]["HorizontalLength"] = new_length
-        ifcopenshell.api.alignment.clear_layout_segments(file, layout)
-        for entity_type, attributes in definitions:
-            ifcopenshell.api.alignment.create_layout_segment(
-                file, layout, file.create_entity(entity_type, **attributes)
-            )
+            info = segment.DesignParameters.get_info(include_identifier=False, recursive=False)
+            new_segments.append((segment, file.create_entity(info.pop("type"), **info)))
+        new_segments[-1][1].HorizontalLength = new_length
+        ifcopenshell.api.alignment.update_layout_segments(file, layout, new_segments)
+        return None
+
+    @classmethod
+    def verticals_ending_with_horizontal(cls, alignment: ifcopenshell.entity_instance) -> list:
+        """Before a horizontal edit: the vertical layouts that end where the horizontal does. Pass the
+        result to stretch_verticals_with_horizontal after the edit. A vertical that is shorter or
+        longer on purpose is left out, and so left alone."""
+        return [
+            v
+            for v in cls.get_all_vertical_layouts(alignment)
+            if cls.get_real_layout_segments(v) and cls.get_length_mismatch(v) is None
+        ]
+
+    @classmethod
+    def stretch_verticals_with_horizontal(cls, verticals: list) -> list[str]:
+        """After a horizontal edit, stretch or shorten the last segment of each vertical from
+        verticals_ending_with_horizontal so it still ends where the horizontal does. Run it before
+        follow_horizontal_with_cant: a cant's IfcSegmentedReferenceCurve is built on its vertical's
+        curve. Returns a message for each vertical whose last segment was too short to shorten."""
+        messages = []
+        for v_layout in verticals:
+            error = cls._stretch_last_segment_to_horizontal(v_layout)
+            if error:
+                messages.append(f"Vertical '{v_layout.Name or 'Vertical'}' was not shortened: {error}")
+        return messages
+
+    @classmethod
+    def match_layout_length_to_horizontal(cls, layout: ifcopenshell.entity_instance) -> Optional[str]:
+        """Stretch or shorten a vertical or cant layout's last real segment so the layout ends exactly
+        where the horizontal does. Every other segment is unchanged, and every segment keeps its
+        GlobalId. Returns an error message instead of changing anything if the last segment is too
+        short to absorb the difference."""
+        error = cls._stretch_last_segment_to_horizontal(layout)
+        if error:
+            return error
+        file = tool.Ifc.get()
         top = cls._get_top_level_alignment(ifcopenshell.api.alignment.get_alignment(layout))
         ifcopenshell.api.alignment.create_representation(file, top)
         cls.refresh_alignment_representation_object(top)

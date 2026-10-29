@@ -714,3 +714,65 @@ class TestFollowHorizontalWithCant(NewFile):
         assert [s.GlobalId for s in subject.get_real_layout_segments(cant_layout)] == guids[5:]
         assert self._values(cant_layout, "StartCantRight") == [0.0, 0.0, 0.12, 0.12, 0.0]
         self._assert_contiguous_to_horizontal_end(alignment, cant_layout)
+
+
+@requires_geometry_engine
+class TestStretchVerticalsWithHorizontal(NewFile):
+    H = [(0.0, 0.0), (800.0, 0.0), (1400.0, 600.0)]
+
+    def _alignment(self):
+        import ifcopenshell.api.root
+        import ifcopenshell.api.unit
+
+        ifc = ifcopenshell.file(schema="IFC4X3_ADD2")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc)
+        vpoints = [(0.0, 100.0), (700.0, 110.0), (1200.0, 108.0)]
+        alignment = align_api.create_by_pi_method(ifc, "S", self.H, [(300.0, 0.0, 0.0)], vpoints, [200.0])
+        return ifc, alignment
+
+    @staticmethod
+    def _add_spirals(ifc, alignment):
+        """A horizontal edit that changes the alignment's length."""
+        from bonsai.bim.module.alignment.operator import _update_horizontal_pi_segments
+
+        h_layout = align_api.get_horizontal_layout(alignment)
+        before = subject.get_horizontal_alignment_length(h_layout)
+        verticals = subject.verticals_ending_with_horizontal(alignment)
+        assert _update_horizontal_pi_segments(
+            ifc, h_layout, TestStretchVerticalsWithHorizontal.H, [(300.0, 60.0, 60.0)]
+        )
+        assert subject.get_horizontal_alignment_length(h_layout) != pytest.approx(before, abs=1e-3)
+        return subject.stretch_verticals_with_horizontal(verticals)
+
+    def test_match_keeps_the_vertical_segments(self):
+        # Match (match_layout_length_to_horizontal) stretches with this, then refreshes the Blender object
+        ifc, alignment = self._alignment()
+        v_layout = align_api.get_vertical_layout(alignment)
+        guids = [s.GlobalId for s in subject.get_real_layout_segments(v_layout)]
+        assert subject.get_length_mismatch(v_layout) is not None
+        assert subject._stretch_last_segment_to_horizontal(v_layout) is None
+        assert subject.get_length_mismatch(v_layout) is None
+        assert [s.GlobalId for s in subject.get_real_layout_segments(v_layout)] == guids
+
+    def test_a_vertical_that_matched_the_horizontal_still_does(self):
+        ifc, alignment = self._alignment()
+        v_layout = align_api.get_vertical_layout(alignment)
+        assert subject._stretch_last_segment_to_horizontal(v_layout) is None
+        guids = [s.GlobalId for s in subject.get_real_layout_segments(v_layout)]
+        lengths = [s.DesignParameters.HorizontalLength for s in subject.get_real_layout_segments(v_layout)]
+
+        assert self._add_spirals(ifc, alignment) == []
+        assert subject.get_length_mismatch(v_layout) is None
+        segments = subject.get_real_layout_segments(v_layout)
+        assert [s.GlobalId for s in segments] == guids
+        assert [s.DesignParameters.HorizontalLength for s in segments][:-1] == lengths[:-1]
+
+    def test_a_vertical_shorter_on_purpose_is_left_alone(self):
+        ifc, alignment = self._alignment()
+        v_layout = align_api.get_vertical_layout(alignment)
+        end = subject.get_layout_end_distance(v_layout)
+
+        assert self._add_spirals(ifc, alignment) == []
+        assert subject.get_layout_end_distance(v_layout) == pytest.approx(end, abs=1e-9)
