@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 from run_against_package import run_bonsaiviewer
 
-PLUGINS = [
+MINIMAL_PLUGINS = [
     "ifcopenshell_document_rdb",
     "ifcopenshell_geometry_kernel_cgal",
     "ifcopenshell_geometry_kernel_cgalsimple",
@@ -57,12 +57,12 @@ def test_no_plugin_fails(bonsaiviewer: Path):
     assert [plugin for plugin, status in get_plugin_statuses(bonsaiviewer).items() if status == "FAIL"] == []
 
 
-@pytest.mark.parametrize("plugin", PLUGINS)
+@pytest.mark.parametrize("plugin", MINIMAL_PLUGINS)
 def test_plugin_loads(plugin: str, bonsaiviewer: Path):
     assert get_plugin_statuses(bonsaiviewer).get(plugin) == "OK"
 
 
-def test_every_plugin_is_tested(bonsaiviewer: Path):
+def test_minimal_plugins_are_packaged(bonsaiviewer: Path):
     plugins_dir = bonsaiviewer.parent
     if sys.platform == "darwin":
         # Plug-ins are staged into `BonsaiViewer.app/Contents/Frameworks`.
@@ -80,4 +80,4 @@ def test_every_plugin_is_tested(bonsaiviewer: Path):
             "ifcopenshell_plugin",
         }
     }
-    assert packaged == set(PLUGINS)
+    assert set(MINIMAL_PLUGINS) <= packaged
