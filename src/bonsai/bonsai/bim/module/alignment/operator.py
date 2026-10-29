@@ -1053,6 +1053,7 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     tool.Alignment.remove_layout_and_child_layout_objects(alignment)
 
     cant_pairs = tool.Alignment.pair_cant_with_horizontal(alignment)
+    matched_verticals = tool.Alignment.verticals_ending_with_horizontal(alignment)
     split_stations = _split_tangent_stations(tool.Alignment.get_real_layout_segments(h_layout))
     try:
         # keep the existing segments where they correspond (REQUIREMENTS.md §11), else rebuild
@@ -1071,6 +1072,8 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
         # uncaught exception.
         tool.Alignment.clear_layout_segments(h_layout)
         return False, f"Could not lay out alignment: {e}"
+    # A vertical that ended where the horizontal did still does
+    vertical_messages = tool.Alignment.stretch_verticals_with_horizontal(matched_verticals)
     # Keep an already-generated cant layout in step with the horizontal -- lengths, curve
     # families, and a cant segment per new horizontal segment (see follow_horizontal_with_cant).
     tool.Alignment.follow_horizontal_with_cant(alignment, cant_pairs)
@@ -1099,6 +1102,8 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     if dropped:
         where = ", ".join(f"{s:.3f}" for s in dropped)
         message += f"; {len(dropped)} straight split point(s) at distance along {where} no longer fall on a straight and were removed"
+    for vertical_message in vertical_messages:
+        message += f"; {vertical_message}"
     return True, message
 
 
@@ -6029,6 +6034,7 @@ class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
         angle_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file, "PLANEANGLEUNIT")
 
         cant_pairs = tool.Alignment.pair_cant_with_horizontal(alignment)
+        matched_verticals = tool.Alignment.verticals_ending_with_horizontal(alignment)
         # every row that came from an existing segment keeps it (and its GlobalId) -- REQUIREMENTS.md §11
         new_segments = []
         for row in rows:
@@ -6065,6 +6071,7 @@ class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
             # a segment pointing north from one pointing south when Rdx≈0.
             direction = math.atan2(float(placement[1, 0]), float(placement[0, 0])) / angle_scale
         ifcopenshell.api.alignment.update_layout_segments(ifc_file, h_layout, new_segments)
+        vertical_messages = tool.Alignment.stretch_verticals_with_horizontal(matched_verticals)
         # Keep an already-generated cant layout in step with the horizontal (lengths, curve families
         # -- per the user, 2026-09-16: "change BLOSS to COSINE in horizontal makes the same change in
         # cant layout" -- and a cant segment per added row); see follow_horizontal_with_cant.
@@ -6087,6 +6094,8 @@ class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
 
         tool.Blender.update_viewport()
         _tag_all_areas_redraw(context)
+        for vertical_message in vertical_messages:
+            self.report({"WARNING"}, vertical_message)
         self.report({"INFO"}, f"Rebuilt {n} horizontal segment(s)")
         return {"FINISHED"}
 
