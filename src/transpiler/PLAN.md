@@ -32,6 +32,7 @@ The api calls util heavily (`util.element`, `util.unit`, `util.date`,
 | Imports | `ifcopenshell/util/unit` and `ifcopenshell/api/root`, through the package's `./util/*` and `./api/*` exports. Generated modules import the core and each other by relative path. |
 | Build | `npm run build` compiles the core strictly, then `src/python` with `tsconfig.python.json` (`strict: false`, as Python does not track None), and copies the data files (`Pset_*.ifc`, JSON tables) next to the generated modules. |
 | Inputs | The Python source, `ts.yaml`, the hand-written runtime `src/python/_*.ts`, and `precomputed.json` (results of the functions listed under `precomputed` in `ts.yaml`, refreshed with `generate.py --precompute`). `generate.py` needs only `requirements.txt`. |
+| Types | Annotations become TS types where TypeScript can check them as Python uses them. String `Literal` parameters accept `string` and `set` parameters any `Iterable`, as callers pass `file.schema()` and lists. A parameter the function rebinds to another kind of value, or narrows with `isinstance`/`hasattr` when it is a union, is `any`; so are the return types of `@overload` implementations and of nested functions returning unions, and names the module does not declare (`TYPE_CHECKING` imports such as `mathutils.Vector`). |
 | Naming | camelCase functions and module data (`getProjectUnit`); CONSTANT_CASE and `_private` names are kept. Locals keep their Python names; JS reserved words get a trailing `_`. |
 | Arguments | Required parameters stay positional; parameters with defaults and keyword-only parameters go into a trailing options object with camelCase keys, as in the core (`getInfo({ recursive })`). `f(a, *rest)` fills optional parameters at runtime. |
 | Calls | A project-wide index of util and api functions and classes resolves `ifcopenshell.util.x.f(...)`, `from ... import f`, local and nested calls, and binds their arguments with Python semantics. `ifcopenshell.api.run("pkg.usecase", ...)` becomes a direct call. |
@@ -97,7 +98,7 @@ Comparison:
 
 util 336/383 (88%) and api 506/531 (95%) functions and classes translate. 7610 recorded calls match
 Python, 226 fail and 10630 are skipped (recorded against ifcopenshell 0.9.0.post1).
-`tsc` reports 213 errors in the generated code.
+The generated code type-checks.
 
 | Module | Passed | Failed | Skipped |
 |---|---|---|---|
@@ -136,12 +137,11 @@ Largest first:
 
 1. **Failing calls.** `ifcopenshell.geom` (55: `util.placement.get_placement` builds the
    matrix with the geometry kernel, tier 5); `type()` as a value (114, `api.project`);
-   IFC4X1/IFC4X2 have no schema plugin in the JS build (17); `__builtins__["print"]`
-   in one ShapeBuilder method (14); networkx in `recalculate_schedule` (9, by hand).
-2. **Type errors** (213), mostly Python annotations narrower than the code's use (for
-   example `util.date.datetime2ifc` rebinds a `date | str` parameter to a `time`), entity
-   indexing by entity, and core API signature differences. Until they are fixed, the
-   build fails once the code is generated, so the publish workflow only includes it on request.
+   IFC4X1/IFC4X2 have no schema plugin in the JS build (17); a call with both `**kwargs`
+   and keywords in one ShapeBuilder method (14); networkx in `recalculate_schedule` (9, by hand).
+2. **Dates set from the current day.** IFC2X3 cost and sequence usecases write today's
+   date as an `IfcCalendarDate`; its components are not masked yet, so 14 recorded calls
+   fail when replayed on another day than they were recorded.
 3. **Grammars (tier 4).** `util.selector`, `util.mvd_info` and cost formulas use Lark grammars.
 4. **Smaller gaps:** `fractions.Fraction`, `decimal.Decimal`, `try`/`except`/`else`,
    `ifcopenshell.util.schema.Migrator` (needs generated `class_*_to_*.json` data), `ast`, `csv`.

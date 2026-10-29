@@ -437,6 +437,8 @@ function parseTime(text: string): [number, number, number, number, TimeZone | nu
 
 /** Python `datetime.datetime`; naive unless it has a fixed-offset tzinfo. */
 class PyDateTime extends PyDate {
+  static override min: PyDateTime;
+  static override max: PyDateTime;
   readonly hour: number;
   readonly minute: number;
   readonly second: number;
@@ -601,8 +603,8 @@ PyDate.min = new PyDate(1, 1, 1);
 PyDate.max = new PyDate(9999, 12, 31);
 PyTime.min = new PyTime(0, 0, 0, 0);
 PyTime.max = new PyTime(23, 59, 59, 999999);
-(PyDateTime as unknown as { min: PyDateTime }).min = new PyDateTime(1, 1, 1);
-(PyDateTime as unknown as { max: PyDateTime }).max = new PyDateTime(9999, 12, 31, 23, 59, 59, 999999);
+PyDateTime.min = new PyDateTime(1, 1, 1);
+PyDateTime.max = new PyDateTime(9999, 12, 31, 23, 59, 59, 999999);
 
 export const date = pyclass(PyDate);
 export type date = PyDate;

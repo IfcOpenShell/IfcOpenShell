@@ -667,7 +667,7 @@ function keyOf(key: unknown): unknown {
  * Python `dict` (or `defaultdict`) with keys other than strings: tuples compare by value,
  * entities by identity, and numbers stay numbers.
  */
-export class PyDict<K = unknown, V = unknown> extends Map<K, V> {
+export class PyDict<K = any, V = any> extends Map<K, V> {
   private readonly keys_ = new Map<unknown, K>();
 
   constructor(entries?: Iterable<readonly [K, V]> | null, private readonly factory?: () => V) {

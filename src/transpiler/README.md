@@ -119,7 +119,7 @@ The tests are part of `src/ts/ifcopenshell-js` and run against its build (`dist/
 cd src/ts/ifcopenshell-js
 npm ci
 npm run generate   # transpile into src/python/util and src/python/api
-npm run build      # reports the generated code's type errors, but still writes dist/
+npm run build      # type-checks and compiles the generated code into dist/python
 npm run record     # run the Python tests, write src/transpiler/parity/golden/*.json
 npm test           # all tests of the package, including tests/python
 ```

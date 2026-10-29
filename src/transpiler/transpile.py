@@ -108,6 +108,19 @@ def static_classmethods(tree):
                         node.id = cls.name
 
 
+def untyped_overloads(tree):
+    """Implementations of @overload functions return any: their union return type is narrowed per call in Python."""
+    for body in [tree.body] + [n.body for n in tree.body if isinstance(n, ast.ClassDef)]:
+        overloaded = {
+            n.name
+            for n in body
+            if isinstance(n, ast.FunctionDef) and any(ast.unparse(d) in ("overload", "typing.overload") for d in n.decorator_list)
+        }
+        for n in body:
+            if isinstance(n, ast.FunctionDef) and n.name in overloaded:
+                n.returns = None
+
+
 def flatten_type_checking(body):
     """Module statements with `if TYPE_CHECKING:` blocks (imports and type aliases) inlined; their else branches dropped."""
     return [
@@ -117,6 +130,21 @@ def flatten_type_checking(body):
             node.body if isinstance(node, ast.If) and isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING" else [node]
         )
     ]
+
+
+def value_path(node):
+    """Key of a dict value in symbols: `d[]` for d[k], d.get(k) and d.setdefault(k, v); `d[][]` one level down."""
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "self":
+        return f"self.{node.attr}"
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr in ("get", "setdefault", "pop"):
+        inner = value_path(node.func.value)
+        return f"{inner}[]" if inner else None
+    if isinstance(node, ast.Subscript):
+        inner = value_path(node.value)
+        return f"{inner}[]" if inner else None
+    return None
 
 
 def camel(name):
@@ -168,6 +196,7 @@ class Transpiler:
             literal=json.dumps,
             is_generator=self.is_generator,
             source=lambda n: ast.unparse(n.func if isinstance(n, ast.Call) else n),
+            path=value_path,
             code=ast.unparse,
             module_alias=lambda name: self.import_aliases.get(name),
             camel=camel,
@@ -365,6 +394,11 @@ class Transpiler:
             if result["error"] is None:
                 result["options"].append((None, spread))
             return result
+        if starred and starred == call.args[-1:] and len(parameters) == len(required) and not function.args.vararg and not function.args.kwonlyargs and not call.keywords:
+            # f(*xy) for def f(x, y): the starred value fills the remaining parameters, as a tuple of that length.
+            head = call.args[:-1]
+            count = ast.Constant(len(required) - len(head))
+            return {"positional": head + [ast.Starred(ast.Call(ast.Name("__fixed_tuple__", ast.Load()), [starred[0].value, count], []), ast.Load())], "options": [], "error": None}
         if function.args.vararg or starred:
             return {"positional": [], "options": [], "error": "variadic call"}
         if len(call.args) > len(parameters):
@@ -437,6 +471,18 @@ class Transpiler:
                 continue
             if isinstance(name, ast.Name) and isinstance(name.ctx, ast.Load) and name.id in foreign - bound:
                 raise ValueError(f"No rules rule at line {name.lineno}: uses module {name.id}")
+
+    def annotate(self, name, annotation, values_only=False):
+        """Record the kind of an annotated name, and of its values (`name[]`) for dict[K, V]."""
+        if not values_only:
+            self.symbols[name] = self.emit(annotation, "annotation_kinds")
+        if (
+            isinstance(annotation, ast.Subscript)
+            and isinstance(annotation.value, ast.Name)
+            and annotation.value.id in ("dict", "defaultdict")
+            and isinstance(annotation.slice, ast.Tuple)
+        ):
+            self.annotate(f"{name}[]", annotation.slice.elts[1])
 
     def use(self, qualified_module, alias=None):
         """Record an import of another module and return its local alias."""
@@ -539,6 +585,7 @@ class Transpiler:
         self.module = module
         tree = ast.parse(source)
         static_classmethods(tree)
+        untyped_overloads(tree)
         tree.body = flatten_type_checking(tree.body)
         self.functions = {n.name: n for n in tree.body if isinstance(n, ast.FunctionDef)}
         named_tuples = {
@@ -577,7 +624,9 @@ class Transpiler:
             for n in ast.walk(statement)
             if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)
         ]
-        self.reassigned = {name for name in assigned if assigned.count(name) > 1}
+        self.reassigned = {name for name in assigned if assigned.count(name) > 1} | {
+            name for n in ast.walk(tree) if isinstance(n, ast.Global) for name in n.names
+        }
         self.unsupported = []
         self.symbols = {}
         self.imports = {}
@@ -598,6 +647,17 @@ class Transpiler:
             self.declared = []
             self.shadowed = set()
             self.return_annotation = node.returns if isinstance(node, ast.FunctionDef) else None
+            if isinstance(node, ast.ClassDef):
+                # Annotated attributes, at class level or as self.x: T in methods.
+                for n in ast.walk(node):
+                    if isinstance(n, ast.AnnAssign) and (
+                        n in node.body and isinstance(n.target, ast.Name)
+                        or isinstance(n.target, ast.Attribute) and isinstance(n.target.value, ast.Name) and n.target.value.id == "self"
+                    ):
+                        self.annotate(f"self.{n.target.id if isinstance(n.target, ast.Name) else n.target.attr}", n.annotation)
+            for n in ast.walk(node):
+                if isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name):
+                    self.annotate(n.target.id, n.annotation, values_only=True)
             for function in functions:
                 self.symbols.update(
                     {
@@ -615,8 +675,11 @@ class Transpiler:
                     if value is None:
                         continue
                     kind = self.emit(value, "inference")
-                    if kind == "unknown" and isinstance(binding, ast.AnnAssign):
-                        kind = self.emit(binding.annotation, "annotation_kinds")
+                    if isinstance(binding, ast.AnnAssign):
+                        # The annotation decides where the value does not; dict[int, X] makes {} a Map.
+                        annotated = self.emit(binding.annotation, "annotation_kinds")
+                        if kind == "unknown" or kind == "dict" and annotated == "map":
+                            kind = annotated
                     targets = binding.targets if isinstance(binding, ast.Assign) else [binding.target]
                     if kind == "unknown" and not (isinstance(value, ast.Constant) and value.value is None):
                         for target in targets:
@@ -644,8 +707,46 @@ class Transpiler:
                         and self.symbols.get(subscript.value.id) == "dict"
                     ):
                         self.symbols[subscript.value.id] = "map"
+                # Likewise d.setdefault(entity, ...) and d.get(entity).
+                for call in ast.walk(node):
+                    if (
+                        isinstance(call, ast.Call)
+                        and isinstance(call.func, ast.Attribute)
+                        and call.func.attr in ("setdefault", "get", "pop")
+                        and isinstance(call.func.value, ast.Name)
+                        and self.symbols.get(call.func.value.id) == "dict"
+                        and call.args
+                        and (isinstance(call.args[0], ast.Tuple) or self.emit(call.args[0], "inference") in ("entity", "number"))
+                    ):
+                        self.symbols[call.func.value.id] = "map"
+                # Loop variables over an annotated dict's values: for k, v in d.items() and for v in d.values().
+                for loop in ast.walk(node):
+                    if isinstance(loop, ast.For) and isinstance(loop.iter, ast.Call) and isinstance(loop.iter.func, ast.Attribute):
+                        method, target = loop.iter.func.attr, loop.target
+                        if method == "items" and isinstance(target, ast.Tuple) and len(target.elts) == 2:
+                            target = target.elts[1]
+                        elif method != "values":
+                            continue
+                        prefix = f"{value_path(loop.iter.func.value)}[]"
+                        if isinstance(target, ast.Name) and prefix in self.symbols:
+                            for key in [k for k in self.symbols if k == prefix or k.startswith(prefix + "[]")]:
+                                self.symbols[target.id + key[len(prefix):]] = self.symbols[key]
                 if previous == self.symbols:
                     break
+            # A parameter rebound to another kind of value (products = set(products)) is typed any, as is
+            # one of unknown kind (a union) that the function narrows, by rebinding it (thickness = [thickness] * 4)
+            # or with isinstance/hasattr, which TypeScript does not follow.
+            for function in functions:
+                narrowed = {n.id for n in ast.walk(function) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)} | {
+                    n.args[0].id
+                    for n in ast.walk(function)
+                    if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id in ("isinstance", "hasattr")
+                    and n.args and isinstance(n.args[0], ast.Name)
+                }
+                for a in function.args.args + function.args.kwonlyargs:
+                    annotated = self.emit(a.annotation, "annotation_kinds") if a.annotation else None
+                    if a.annotation and (self.symbols.get(a.arg) != annotated or a.arg in narrowed and annotated == "unknown"):
+                        a.widened = True
             qualified = f"{module}.{getattr(node, 'name', '')}"
             try:
                 if isinstance(node, ast.FunctionDef) and qualified in self.precomputed:
@@ -677,8 +778,6 @@ class Transpiler:
             self.render(self.rules["import"], {"target": target, "alias": alias})
             for target, alias in sorted(self.imports.items())
         ]
-        footer = self.render(self.rules["footer"], {}) if "footer" in self.rules else ""
-        output += [footer] if footer else []
         return "\n\n".join(header + (["\n".join(imports)] if imports else []) + output) + "\n"
 
 

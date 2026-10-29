@@ -102,6 +102,7 @@ def main():
         raise SystemExit(f"{PRECOMPUTED.name} lacks {', '.join(sorted(missing))}; run generate.py --precompute")
     compiler = Transpiler(args.rules, build_index(), precomputed)
     manifest = {}
+    modules = set()  # API modules that are not a usecase (no function of their name), as settings.
     for scope in ("util", "api"):
         shutil.rmtree(OUTPUT / scope, ignore_errors=True)
     for source_path, relative in sources():
@@ -109,6 +110,8 @@ def main():
         output = OUTPUT / relative
         output.parent.mkdir(parents=True, exist_ok=True)
         source = source_path.read_text(encoding="utf-8")
+        if name.startswith("api.") and source_path.stem not in {n.name for n in ast.parse(source).body if isinstance(n, ast.FunctionDef)}:
+            modules.add(relative.with_suffix("").as_posix())
         entry = {
             "source": f"ifcopenshell/{source_path.relative_to(PACKAGE).as_posix()}",
             "functions": sum(isinstance(n, (ast.FunctionDef, ast.ClassDef)) for n in ast.parse(source).body),
@@ -133,11 +136,11 @@ def main():
     for path in sorted((PACKAGE / "util").glob("*.json")):
         shutil.copyfile(path, OUTPUT / "util" / path.name)
 
-    # Each API package re-exports its usecases, as ifcopenshell.api.<package> does.
+    # Each API package re-exports its usecases and other modules, as ifcopenshell.api.<package> does.
     for package in sorted({k.split("/")[1] for k in manifest if k.startswith("api/")}):
-        usecases = sorted(k.split("/")[2] for k in manifest if k.startswith(f"api/{package}/"))
-        lines = [f'export {{ {camel(u)} }} from "./{u}.js";' for u in usecases if not u.startswith("_") and u != "settings"]
-        lines += [f'export * as {u} from "./{u}.js";' for u in usecases if u == "settings"]
+        usecases = sorted(k.split("/")[2] for k in manifest if k.startswith(f"api/{package}/") and not k.split("/")[2].startswith("_"))
+        lines = [f'export {{ {camel(u)} }} from "./{u}.js";' for u in usecases if f"api/{package}/{u}" not in modules]
+        lines += [f'export * as {u} from "./{u}.js";' for u in usecases if f"api/{package}/{u}" in modules]
         (OUTPUT / "api" / package / "index.ts").write_text(HEADER + "\n" + "\n".join(lines) + "\n", encoding="utf-8")
 
     (OUTPUT / "transpile.json").write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n", encoding="utf-8")

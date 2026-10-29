@@ -124,8 +124,6 @@ jobs:
           }
           NODE
 
-      # The generated code does not type-check yet (see "Path to full parity" in
-      # src/transpiler/PLAN.md), so with `transpiled` the build below fails until it does.
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         if: inputs.transpiled
         with:
