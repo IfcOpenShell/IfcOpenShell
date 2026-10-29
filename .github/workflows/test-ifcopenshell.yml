@@ -284,7 +284,7 @@ jobs:
 
       - name: Diagnose static geometry test double free
         run: |
-          set -x
+          set -x +e
           sudo apt-get install -y gdb
           cd build
           exe=$(find . -name test_ifcopenshell_geometry -type f -executable | head -1)
@@ -298,6 +298,9 @@ jobs:
             gdb -batch -ex run -ex bt -ex 'info sharedlibrary' --args "$exe" "$t" 2>&1 | tail -120
             valgrind --version >/dev/null 2>&1 && valgrind --error-limit=no "$exe" "$t" 2>&1 | tail -80 || true
           done
+          ldd ifcparse/ifcopenshell_parse_schema_ifc4x3_add2.so
+          nm -D --defined-only ifcparse/ifcopenshell_parse_schema_ifc4x3_add2.so | c++filt | grep -c 'IfcParse::\|express::' || true
+          ninja -t commands ifcgeom/tests/test_ifcopenshell_geometry | tail -1 | tr ' ' '\n' | grep -E '\.(a|so)$' || true
           ldd "$(which IfcConvert)"
           IfcConvert -y ../test/input/acad2010_walls.ifc /tmp/walls.obj; echo "IfcConvert exit=$?"
           LD_DEBUG=files IfcConvert -y ../test/input/acad2010_walls.ifc /tmp/walls.obj 2>&1 | grep -i 'kernel\|calling fini' | head -40
