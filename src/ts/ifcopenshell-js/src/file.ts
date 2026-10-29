@@ -22,8 +22,11 @@ const openFiles = new Map<number, WeakRef<File>>();
 
 /** High-level wrapper for an IFC file and its entity graph. */
 export class File extends IfcOpenshellFile {
-  /** Unit cache keyed by unit type, as Python `file.units`; see `@ifcopenshell/util/unit`. */
+  /** Unit cache keyed by unit type, as Python `file.units`; see `ifcopenshell/util/unit`. */
   units?: Record<string, EntityInstance>;
+
+  /** Entities queued for removal by `ifcopenshell/util/element`, as Python `file.to_delete`. */
+  to_delete: Set<EntityInstance> | null = null;
 
   /** @internal The File wrapping a native file pointer, if it is still open. */
   static fromPointer(pointer: number): File | null {
@@ -73,6 +76,21 @@ export class File extends IfcOpenshellFile {
         set implementation_level(v) { description.setimplementationLevel(v); },
       },
     };
+  }
+
+  /** Copy the STEP header of another file, as Python `file.assign_header_from`. */
+  assignHeaderFrom(other: File): void {
+    const source = other.stepHeader;
+    const target = this.stepHeader;
+    for (const group of ['file_name', 'file_description'] as const) {
+      for (const key of Object.keys(source[group])) {
+        try {
+          (target[group] as Record<string, unknown>)[key] = (source[group] as Record<string, unknown>)[key];
+        } catch {
+          // An invalid header value is skipped, as in Python.
+        }
+      }
+    }
   }
 
   override dispose(): void {
@@ -248,7 +266,7 @@ const resources = new Map<string, Uint8Array>();
 
 /**
  * Provide the bytes of a file that generated code opens by path, such as the property set
- * templates of `@ifcopenshell/util/pset`. Browsers have no file system to read them from.
+ * templates of `ifcopenshell/util/pset`. Browsers have no file system to read them from.
  * The key is the file name or a suffix of its path or URL.
  */
 export function registerResource(path: string, bytes: Uint8Array | ArrayBuffer): void {

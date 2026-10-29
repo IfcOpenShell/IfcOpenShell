@@ -1,6 +1,6 @@
 // This file was generated with the assistance of an AI coding tool.
 
-// The hand-written runtime of @ifcopenshell/util (numpy, datetime, isodate, dateutil, str.format)
+// The hand-written runtime of ifcopenshell/util and ifcopenshell/api (numpy, datetime, isodate, dateutil, str.format)
 // against values computed with Python 3.13, numpy 2.3, isodate 0.7 and dateutil 2.9.
 
 import { describe, expect, it } from 'vitest';
