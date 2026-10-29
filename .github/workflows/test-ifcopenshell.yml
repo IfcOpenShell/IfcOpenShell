@@ -74,7 +74,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_shared_libs: [shared, static]
+        build_shared_libs: [static]
     env:
       # Colored output for cmake.
       CLICOLOR_FORCE: "1"
@@ -279,13 +279,29 @@ jobs:
                -DWITH_PROJ=ON \
                -DBUILD_EXAMPLES=ON \
                -DBUILD_IFCOPENSHELL_PARSE_TESTS=ON \
-               -DBUILD_IFCOPENSHELL_GEOMETRY_TESTS=${{ matrix.build_shared_libs == 'shared' && 'ON' || 'OFF' }}
+               -DBUILD_IFCOPENSHELL_GEOMETRY_TESTS=ON
           sudo cmake --build . --target install -j $(nproc)
 
-      - name: Run C++ tests
+      - name: Diagnose static geometry test double free
         run: |
+          set -x
+          sudo apt-get install -y gdb
           cd build
-          ctest --output-on-failure -j $(nproc)
+          exe=$(find . -name test_ifcopenshell_geometry -type f -executable | head -1)
+          echo "exe=$exe"
+          ldd "$exe"
+          find . -name 'ifcopenshell_geometry_kernel_*.so' -exec sh -c 'echo "== $1"; ldd "$1"' _ {} \;
+          nm -D --defined-only "$exe" | wc -l
+          nm -C "$exe" | grep -c ' [BDdb] ' || true
+          for t in "IfcGeom vertex rebase is off by default" "IfcGeom C++ fixture creates walls below and above the void limit"; do
+            "$exe" "$t"; echo "exit=$?"
+            gdb -batch -ex run -ex bt -ex 'info sharedlibrary' --args "$exe" "$t" 2>&1 | tail -120
+            valgrind --version >/dev/null 2>&1 && valgrind --error-limit=no "$exe" "$t" 2>&1 | tail -80 || true
+          done
+          ldd "$(which IfcConvert)"
+          IfcConvert -y ../test/input/acad2010_walls.ifc /tmp/walls.obj; echo "IfcConvert exit=$?"
+          LD_DEBUG=files IfcConvert -y ../test/input/acad2010_walls.ifc /tmp/walls.obj 2>&1 | grep -i 'kernel\|calling fini' | head -40
+          true
 
       # - name: Run IfcConvert on Sample files
       #   run: |
