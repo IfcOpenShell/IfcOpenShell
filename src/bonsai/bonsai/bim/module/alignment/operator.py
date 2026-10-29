@@ -1087,6 +1087,8 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     # Rebuild key-point referents at the new transitions, if this alignment has them.
     tool.Alignment.update_key_point_referents_if_present(alignment)
 
+    # the profile view shows the cant and stations, which follow the horizontal
+    _refresh_vertical_profile_view(context, alignment)
     _tag_all_areas_redraw(context)
 
     n_curved = sum(1 for r in radii if (r[0] if isinstance(r, tuple) else r))
