@@ -4,6 +4,11 @@ permissions: {}
 
 on:
   workflow_dispatch:
+    inputs:
+      only-common-schemas:
+        description: Build only common IFC schemas
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -92,6 +97,8 @@ jobs:
 
       - name: Run Build Script
         shell: bash
+        env:
+          BUILD_ONLY_COMMON_SCHEMAS: ${{ inputs.only-common-schemas && 'ON' || 'OFF' }}
         run: |
           if [ "${{ matrix.os }}" == "macos" ]; then
             DARWIN_C_SOURCE=-D_DARWIN_C_SOURCE

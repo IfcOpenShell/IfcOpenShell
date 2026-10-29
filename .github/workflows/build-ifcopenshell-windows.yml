@@ -4,6 +4,11 @@ permissions: {}
 
 on:
   workflow_dispatch:
+    inputs:
+      only-common-schemas:
+        description: Build only common IFC schemas
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -68,6 +73,8 @@ jobs:
 
       - name: Run Build Script And Pack .zip Archives
         shell: cmd # zizmor: ignore[misfeature] needed for vcvars environment
+        env:
+          BUILD_ONLY_COMMON_SCHEMAS: ${{ inputs.only-common-schemas && 'ON' || 'OFF' }}
         run: |
           call ${{ matrix.vcvars }}
           cd win
