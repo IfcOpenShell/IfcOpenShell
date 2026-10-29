@@ -279,7 +279,7 @@ jobs:
                -DWITH_PROJ=ON \
                -DBUILD_EXAMPLES=ON \
                -DBUILD_IFCOPENSHELL_PARSE_TESTS=ON \
-               -DBUILD_IFCOPENSHELL_GEOMETRY_TESTS=ON
+               -DBUILD_IFCOPENSHELL_GEOMETRY_TESTS=${{ matrix.build_shared_libs == 'shared' && 'ON' || 'OFF' }}
           sudo cmake --build . --target install -j $(nproc)
 
       - name: Run C++ tests
