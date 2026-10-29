@@ -71,10 +71,6 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [upstream-only, detect-ifcopenshell-changes]
     if: needs.detect-ifcopenshell-changes.outputs.should_run == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        build_shared_libs: [shared, static]
     env:
       # Colored output for cmake.
       CLICOLOR_FORCE: "1"
@@ -271,7 +267,6 @@ jobs:
                -DPYTHON_INCLUDE_DIR:PATH=$(python -c "import sysconfig; print(sysconfig.get_path('include'))") \
                -DUSE_MMAP=On \
                -DUSE_CCACHE=ON \
-               -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs == 'shared' && 'ON' || 'OFF' }} \
                -DBUILD_ONLY_COMMON_SCHEMAS=ON \
                -DGLTF_SUPPORT=On \
                -DWITH_ROCKSDB=On \
@@ -279,7 +274,7 @@ jobs:
                -DWITH_PROJ=ON \
                -DBUILD_EXAMPLES=ON \
                -DBUILD_IFCOPENSHELL_PARSE_TESTS=ON \
-               -DBUILD_IFCOPENSHELL_GEOMETRY_TESTS=${{ matrix.build_shared_libs == 'shared' && 'ON' || 'OFF' }}
+               -DBUILD_IFCOPENSHELL_GEOMETRY_TESTS=ON
           sudo cmake --build . --target install -j $(nproc)
 
       - name: Run C++ tests
