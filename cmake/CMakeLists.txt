@@ -92,6 +92,10 @@ endif()
 
 option(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
 option(BUILD_SHARED_LIBS "Build IfcOpenShell as shared libraries (required)." ON)
+if(NOT BUILD_SHARED_LIBS AND NOT WASM_BUILD)
+    # Each plug-in would embed its own copy of IfcParse and IfcGeom, see #10090.
+    message(FATAL_ERROR "BUILD_SHARED_LIBS=OFF is not supported. Configure with -DBUILD_SHARED_LIBS=ON.")
+endif()
 option(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" OFF)
 option(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 option(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
