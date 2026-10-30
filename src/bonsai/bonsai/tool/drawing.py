@@ -1116,6 +1116,8 @@ class Drawing(bonsai.core.tool.Drawing):
                 camera_props.has_linework = bool(pset["HasLinework"])
             if "HasAnnotation" in pset:
                 camera_props.has_annotation = bool(pset["HasAnnotation"])
+            if "HasAxisLinework" in pset:
+                camera_props.has_axis_linework = bool(pset["HasAxisLinework"])
             if "IsNTS" in pset:
                 camera_props.is_nts = bool(pset["IsNTS"])
             if "UseEdgeClassification" in pset:
