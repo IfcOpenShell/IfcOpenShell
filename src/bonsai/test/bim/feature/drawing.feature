@@ -200,6 +200,38 @@ Scenario: Add annotation - text
     When I press "bim.add_annotation"
     Then the object "IfcAnnotation/TEXT" is selected
 
+Scenario: Add annotation - image
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save IFC project
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I set "scene.BIMAnnotationProperties.object_type" to "IMAGE"
+    When I press "bim.add_annotation"
+    Then the object "IfcAnnotation/IMAGE" exists
+
+Scenario: Add annotation type - image
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save IFC project
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I set "scene.BIMAnnotationProperties.object_type" to "IMAGE"
+    And I set "scene.BIMAnnotationProperties.type_name" to "Logo"
+    And I set "scene.BIMAnnotationProperties.create_representation_for_type" to "True"
+    When I press "bim.add_annotation_type"
+    Then the object "IfcTypeProduct/Logo" exists
+
 Scenario: Add annotation - auto create context if it doesn't exist
     Given an empty IFC project
     And I add a cube
