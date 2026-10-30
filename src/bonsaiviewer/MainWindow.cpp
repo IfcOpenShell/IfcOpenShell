@@ -27,9 +27,13 @@
 #include "components/Buttons.h"
 #include "components/Panel.h"
 #include "components/Style.h"
+#include "components/SvgIcon.h"
 #include "components/Tabs.h"
 #include "modules/models/Commands.h"
 #include "modules/todo/Panel.h"
+#include "modules/display/Commands.h"
+#include "modules/display/DisplayState.h"
+#include "modules/display/Search.h"
 #include "modules/models/View.h"
 #include "modules/models/Panel.h"
 #include "modules/project/Commands.h"
@@ -46,9 +50,11 @@
 #include <QAction>
 #include <QDockWidget>
 #include <QFileInfo>
+#include <QFont>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMenu>
 #include <QMessageBox>
 #include <QShortcut>
@@ -85,6 +91,8 @@ MainWindow::MainWindow(QWidget* parent)
     };
     connect(session_state_, &bonsaiviewer::SessionState::projectOpened, this, remember_recent);
     connect(session_state_, &bonsaiviewer::SessionState::projectSaved,  this, remember_recent);
+    // Display-tools state (Box, category filters, manual colour/transparency).
+    display_state_ = new modules::display::DisplayState(session_state_, this);
     setupChrome();
     setupViewport();
     setupPanels();
@@ -131,6 +139,8 @@ void MainWindow::setupChrome() {
     });
     bind_shortcut(QKeySequence(Qt::ALT | Qt::Key_H), [this]() {
         modules::viewport::commands::showAll(*viewport_widget_->viewport());
+        // Disabled categories can never come back, even via a global show.
+        display_state_->applyAllCategoryFilters(*viewport_widget_->viewport());
     });
     updateWindowTitle();
 }
@@ -325,6 +335,8 @@ QWidget* MainWindow::buildInspectRibbonPage() {
     auto* show_all = components::buttons::makeButton("Show All", ":/icons/eye.svg", this);
     connect(show_all, &QToolButton::clicked, this, [this]() {
         modules::viewport::commands::showAll(*viewport_widget_->viewport());
+        // Disabled categories can never come back, even via a global show.
+        display_state_->applyAllCategoryFilters(*viewport_widget_->viewport());
     });
     auto* invert_selection = components::buttons::makeButton("Invert", ":/icons/intersect.svg", this);
     connect(invert_selection, &QToolButton::clicked, this, [this]() {
@@ -364,7 +376,8 @@ QWidget* MainWindow::buildPanelsRibbonPage() {
             makePanelToggle("Models", models_panel_),
             makePanelToggle("Spatial", spatial_panel_),
             makePanelToggle("Layers", layers_panel_),
-            makePanelToggle("Properties", properties_panel_)
+            makePanelToggle("Properties", properties_panel_),
+            makePanelToggle("Display Tools", display_tools_panel_)
         }, this),
         components::buttons::makeButtonGroup("QUERY", {
             makePanelToggle("Views", stored_views_panel_),
@@ -381,6 +394,351 @@ QWidget* MainWindow::buildPanelsRibbonPage() {
     return page;
 }
 
+QWidget* MainWindow::buildDisplayRibbonPage() {
+    auto* page = new QFrame(this);
+    page->setObjectName("ribbonPage");
+    auto* row = new QHBoxLayout(page);
+    row->setContentsMargins(2, 4, 2, 4);
+    row->setSpacing(0);
+
+    const DisplayToolButtons tools = makeDisplayToolButtons();
+
+    // Left cluster: ZOOM + BOX, flush at the band's left edge.
+    auto* left_cluster = new QWidget(page);
+    auto* left_layout = new QHBoxLayout(left_cluster);
+    left_layout->setContentsMargins(0, 0, 0, 0);
+    left_layout->setSpacing(0);
+    components::buttons::addButtonGroups(left_layout, {
+        components::buttons::makeButtonGroup("ZOOM", tools.zoom, this),
+        components::buttons::makeButtonGroup("BOX", tools.box, this),
+    });
+
+    // Mid-left cluster: SECTION + COLOR, centred between the left cluster
+    // and the DISPLAY group.
+    auto* mid_cluster = new QWidget(page);
+    auto* mid_layout = new QHBoxLayout(mid_cluster);
+    mid_layout->setContentsMargins(0, 0, 0, 0);
+    mid_layout->setSpacing(0);
+    components::buttons::addButtonGroups(mid_layout, {
+        components::buttons::makeButtonGroup("SECTION", tools.section, this),
+        components::buttons::makeButtonGroup("COLOR", tools.color, this),
+    });
+
+    // ZOOM+BOX at the left, SECTION+COLOR centred on the left, DISPLAY
+    // centred in the band's remaining space.
+    row->addWidget(left_cluster);
+    row->addStretch(1);
+    row->addWidget(mid_cluster);
+    row->addStretch(1);
+    components::buttons::addButtonGroups(row, {
+        components::buttons::makeButtonGroup("DISPLAY", tools.display, this),
+    });
+    row->addStretch(1);
+    return page;
+}
+
+MainWindow::DisplayToolButtons MainWindow::makeDisplayToolButtons() {
+    namespace commands = bonsaiviewer::modules::display::commands;
+    namespace display = bonsaiviewer::modules::display;
+
+    DisplayToolButtons tools;
+
+    // Compact variant: smaller icon and tighter minimum so all the tools
+    // fit on a single ribbon line (and stay compact in the dock panel).
+    auto make_display_button = [this](const QString& text, const QString& icon) {
+        auto* button = components::buttons::makeButton(text, icon, this,
+                                                       /*icon_size=*/16,
+                                                       /*min_width=*/46,
+                                                       /*min_height=*/50);
+        // Smaller text too: the long labels ("Perpendicular View", …) must
+        // not be truncated by Qt on the packed single-line row.
+        QFont font = button->font();
+        font.setPointSizeF(std::max(7.0, font.pointSizeF() - 2.0));
+        button->setFont(font);
+        return button;
+    };
+
+    // ---- Section ------------------------------------------------------------
+    auto* add_cut = make_display_button("Add Section", ":/icons/knife.svg");
+    add_cut->setToolTip("Click a surface to add a section plane perpendicular to it. The tool deactivates after one plane.");
+    connect(add_cut, &QToolButton::clicked, this, [this]() {
+        commands::activateCutPlaneTool(*session_state_, *viewport_widget_->viewport());
+    });
+    auto* remove_cuts = make_display_button("Remove Sections", ":/icons/xmark-circle.svg");
+    remove_cuts->setToolTip("Remove every section plane in the view.");
+    connect(remove_cuts, &QToolButton::clicked, this, [this]() {
+        commands::removeAllCutPlanes(*session_state_, *viewport_widget_->viewport());
+    });
+    auto* hide_cut_planes = make_display_button("Hide Planes", ":/icons/eye-closed.svg");
+    hide_cut_planes->setToolTip("Hide the section planes; the cuts stay active.");
+    hide_cut_planes->setCheckable(true);
+    connect(hide_cut_planes, &QToolButton::toggled, this, [this](bool checked) {
+        commands::setCutPlanesVisible(*session_state_, *viewport_widget_->viewport(), !checked);
+    });
+    auto* suspend_cuts = make_display_button("Suspend Sections", ":/icons/section-pause.svg");
+    suspend_cuts->setToolTip("Suspend the cuts and hide the planes. Click again to reactivate and show them.");
+    suspend_cuts->setCheckable(true);
+    connect(suspend_cuts, &QToolButton::toggled, this, [this](bool checked) {
+        commands::setCutSuspension(*session_state_, *viewport_widget_->viewport(), checked);
+    });
+    tools.section = {add_cut, remove_cuts, hide_cut_planes, suspend_cuts};
+
+    // ---- Colour --------------------------------------------------------------
+    auto* paint = make_display_button("Paint", ":/icons/paint-bucket.svg");
+    paint->setToolTip("Pick a colour and apply it to the selected elements.");
+    connect(paint, &QToolButton::clicked, this, [this]() {
+        commands::paintSelectionWithDialog(*session_state_, *viewport_widget_->viewport(), *display_state_, this);
+    });
+    auto* remove_paint = make_display_button("Remove Color", ":/icons/minus-square.svg");
+    remove_paint->setToolTip("Restore the original colour of the selected elements.");
+    connect(remove_paint, &QToolButton::clicked, this, [this]() {
+        commands::resetSelectionColor(*session_state_, *viewport_widget_->viewport(), *display_state_);
+    });
+    auto* transparency = make_display_button("Transparency", ":/icons/ghost.svg");
+    transparency->setToolTip("Set the opacity of the selected elements (100 / 75 / 50 / 25 %).");
+    connect(transparency, &QToolButton::clicked, this, [this]() {
+        commands::applyTransparencyWithDialog(*session_state_, *viewport_widget_->viewport(), *display_state_, this);
+    });
+    tools.color = {paint, remove_paint, transparency};
+
+    // ---- Box ----------------------------------------------------------------
+    auto* box_set = make_display_button("Selection → Box", ":/icons/box.svg");
+    box_set->setToolTip("Replace the current box with the selection.");
+    connect(box_set, &QToolButton::clicked, this, [this]() {
+        commands::boxFromSelection(*session_state_, *viewport_widget_->viewport(), *display_state_);
+    });
+    auto* box_add = make_display_button("Add to Box", ":/icons/plus-square.svg");
+    box_add->setToolTip("Add the selected elements to the current box.");
+    connect(box_add, &QToolButton::clicked, this, [this]() {
+        commands::boxAddSelection(*session_state_, *viewport_widget_->viewport(), *display_state_);
+    });
+    auto* box_remove = make_display_button("Remove from Box", ":/icons/minus-square.svg");
+    box_remove->setToolTip("Remove the selected elements from the current box.");
+    connect(box_remove, &QToolButton::clicked, this, [this]() {
+        commands::boxRemoveSelection(*session_state_, *viewport_widget_->viewport(), *display_state_);
+    });
+    auto* box_isolate = make_display_button("Isolate Box", ":/icons/eye-solid.svg");
+    box_isolate->setToolTip("Isolate the view on the current box.");
+    connect(box_isolate, &QToolButton::clicked, this, [this]() {
+        commands::isolateCurrentBox(*session_state_, *viewport_widget_->viewport(), *display_state_);
+    });
+    auto* box_hide = make_display_button("Hide Box", ":/icons/eye-closed.svg");
+    box_hide->setToolTip("Hide the current box objects in the active view.");
+    connect(box_hide, &QToolButton::clicked, this, [this]() {
+        commands::hideCurrentBox(*session_state_, *viewport_widget_->viewport(), *display_state_);
+    });
+    auto* box_save = make_display_button("Box Storage", ":/icons/floppy-disk.svg");
+    box_save->setToolTip("Save the current box to a slot, or show a saved box.");
+    auto* box_menu = new QMenu(box_save);
+    for (int slot = 1; slot <= 3; ++slot) {
+        QAction* save = box_menu->addAction(QString("Save Box to Slot %1").arg(slot));
+        connect(save, &QAction::triggered, this, [this, slot]() {
+            display_state_->saveBoxToSlot(slot);
+            session_state_->setStatusMessage("Box", QString("Box saved to Slot %1").arg(slot));
+        });
+        QAction* show = box_menu->addAction(QString("Show Box %1").arg(slot));
+        connect(show, &QAction::triggered, this, [this, slot]() {
+            commands::isolateBoxSlot(*session_state_, *viewport_widget_->viewport(), *display_state_, slot);
+        });
+    }
+    box_save->setMenu(box_menu);
+    box_save->setPopupMode(QToolButton::InstantPopup);
+    tools.box = {box_set, box_add, box_remove, box_isolate, box_hide, box_save};
+
+    // ---- Display ------------------------------------------------------------
+    auto* show_selection = make_display_button("Show Selection", ":/icons/eye.svg");
+    show_selection->setToolTip("Show the selected elements.");
+    connect(show_selection, &QToolButton::clicked, this, [this]() {
+        commands::showSelection(*viewport_widget_->viewport(), *display_state_);
+    });
+    auto* hide_selection = make_display_button("Hide Selection", ":/icons/eye-closed.svg");
+    hide_selection->setToolTip("Hide the selected elements.");
+    connect(hide_selection, &QToolButton::clicked, this, [this]() {
+        commands::hideSelection(*viewport_widget_->viewport());
+    });
+    auto* show_all = make_display_button("Show All", ":/icons/eye.svg");
+    show_all->setToolTip("Show all elements. Disabled categories stay hidden.");
+    connect(show_all, &QToolButton::clicked, this, [this]() {
+        commands::showEverything(*session_state_, *viewport_widget_->viewport(), *display_state_);
+    });
+
+    // ---- Categories: dropdown menu (infrequent actions, kept out of the row) --
+    // Two sections: "Show / Hide" per category (temporary visual effect) and
+    // "Enable / Disable" for spaces/openings (durable for the session,
+    // re-applied at each model load).
+    auto* categories_button = make_display_button("Categories", ":/icons/filter.svg");
+    categories_button->setToolTip("Show / hide categories, and enable / disable spaces and openings for the session.");
+    auto* categories_menu = new QMenu(categories_button);
+    categories_menu->setToolTipsVisible(true);
+
+    struct CategoryAction {
+        QAction* action;
+        display::DisplayState::Category category;
+        bool enabled_toggle;
+    };
+    QList<CategoryAction> category_actions;
+    auto add_category_action = [this, categories_menu, &category_actions](
+            const QString& label, const QString& tooltip,
+            display::DisplayState::Category category, bool enabled_toggle) {
+        QAction* action = categories_menu->addAction(label);
+        action->setCheckable(true);
+        action->setToolTip(tooltip);
+        action->setChecked(enabled_toggle ? display_state_->categoryEnabled(category)
+                                          : display_state_->categoryShown(category));
+        connect(action, &QAction::toggled, this, [this, category, enabled_toggle](bool checked) {
+            if (enabled_toggle) {
+                display_state_->setCategoryEnabled(category, checked, *viewport_widget_->viewport());
+            } else {
+                display_state_->setCategoryShown(category, checked, *viewport_widget_->viewport());
+            }
+        });
+        category_actions.append({action, category, enabled_toggle});
+    };
+
+    QAction* show_header = categories_menu->addAction("Show / Hide");
+    show_header->setEnabled(false);
+    add_category_action("Walls", "IfcWall, IfcWallStandardCase",
+                        display::DisplayState::Category::Walls, false);
+    add_category_action("Slabs", "IfcSlab",
+                        display::DisplayState::Category::Slabs, false);
+    add_category_action("Roofs", "IfcRoof",
+                        display::DisplayState::Category::Roofs, false);
+    add_category_action("Ceilings", "IfcCovering with CEILING predefined type",
+                        display::DisplayState::Category::Ceilings, false);
+    add_category_action("Spaces", "IfcSpace",
+                        display::DisplayState::Category::Spaces, false);
+    add_category_action("Openings", "IfcOpeningElement",
+                        display::DisplayState::Category::Reservations, false);
+    categories_menu->addSeparator();
+    QAction* enable_header = categories_menu->addAction("Enable / Disable (session)");
+    enable_header->setEnabled(false);
+    add_category_action("Spaces", "IfcSpace",
+                        display::DisplayState::Category::Spaces, true);
+    add_category_action("Openings", "IfcOpeningElement",
+                        display::DisplayState::Category::Reservations, true);
+
+    categories_button->setMenu(categories_menu);
+    categories_button->setPopupMode(QToolButton::InstantPopup);
+    tools.display = {show_selection, hide_selection, show_all, categories_button};
+
+    // ---- Zoom ----------------------------------------------------------------
+    auto* fit_view = make_display_button("Fit View", ":/icons/cube-scan.svg");
+    fit_view->setToolTip("Frame the visible objects; warns when the view is empty or the objects are far away.");
+    connect(fit_view, &QToolButton::clicked, this, [this]() {
+        commands::fitActiveView(*session_state_, *viewport_widget_->viewport(), this);
+    });
+    auto* perpendicular_view = make_display_button("Perpendicular View", ":/icons/set-square.svg");
+    perpendicular_view->setToolTip("Click a surface to look at it head-on, then fit the view.");
+    connect(perpendicular_view, &QToolButton::clicked, this, [this]() {
+        commands::activatePerpendicularView(*session_state_, *viewport_widget_->viewport());
+    });
+    tools.zoom = {fit_view, perpendicular_view};
+
+    // ---- Cross-surface sync ----------------------------------------------------
+    // Every surface built from this factory (ribbon, later the Display Tools
+    // panel) mirrors the authoritative state: the viewport for the section
+    // toggles, DisplayState for the categories.
+    connect(viewport_widget_->viewport(), &ViewportWindow::sectionStateChanged, this,
+            [hide_cut_planes, suspend_cuts](bool gizmos_visible, bool cuts_enabled) {
+        const QSignalBlocker hide_blocker(hide_cut_planes);
+        hide_cut_planes->setChecked(!gizmos_visible);
+        const QSignalBlocker suspend_blocker(suspend_cuts);
+        suspend_cuts->setChecked(!cuts_enabled);
+    });
+    connect(display_state_, &display::DisplayState::categoriesChanged, this,
+            [this, category_actions]() {
+        for (const auto& entry : category_actions) {
+            const QSignalBlocker blocker(entry.action);
+            entry.action->setChecked(entry.enabled_toggle
+                ? display_state_->categoryEnabled(entry.category)
+                : display_state_->categoryShown(entry.category));
+        }
+    });
+
+    return tools;
+}
+
+QWidget* MainWindow::buildSearchBar() {
+    auto* frame = new QFrame(this);
+    frame->setObjectName("ribbonSearchBar");
+    auto* layout = new QHBoxLayout(frame);
+    layout->setContentsMargins(8, 6, 8, 6);
+    layout->setSpacing(4);
+
+    search_edit_ = new QLineEdit(frame);
+    search_edit_->setPlaceholderText("Search…");
+    search_edit_->setToolTip(
+        "Search the loaded models (Name, Long Name, GUID, class name, predefined type, storey, materials, model name).\n"
+        "Prefixes: -fs all properties, -v visible only, -p current box, "
+        "-prop \"Set.Name\" one property, -c case-sensitive.");
+    search_edit_->setClearButtonEnabled(true);
+    layout->addWidget(search_edit_, 1);
+
+    auto* search_button = new QToolButton(frame);
+    search_button->setIcon(components::icons::makeAccentSvgIcon(":/icons/search.svg"));
+    search_button->setIconSize(QSize(18, 18));
+    search_button->setToolTip("Search");
+    layout->addWidget(search_button);
+
+    auto run_search = [this]() {
+        QString error;
+        const auto options = modules::display::search::parse(search_edit_->text(), &error);
+        if (!options.has_value()) {
+            QMessageBox::information(this, "Search", error);
+            return;
+        }
+        const std::vector<uint32_t> ids = modules::display::search::run(
+            *options, *session_state_, *viewport_widget_->viewport(), *display_state_);
+        if (ids.empty()) {
+            QMessageBox::information(this, "Search", "No results");
+            return;
+        }
+        modules::display::commands::isolateObjects(*viewport_widget_->viewport(), *display_state_, ids);
+        session_state_->setStatusMessage("Search",
+            QString("%1 object(s) found").arg(ids.size()));
+    };
+    connect(search_edit_, &QLineEdit::returnPressed, this, run_search);
+    connect(search_button, &QToolButton::clicked, this, run_search);
+
+    frame->setFixedWidth(224);
+    return frame;
+}
+
+QWidget* MainWindow::buildDisplayToolsPanelContent() {
+    const DisplayToolButtons tools = makeDisplayToolButtons();
+
+    auto* content = new QWidget(this);
+    content->setObjectName("displayToolsPanel");
+    auto* layout = new QVBoxLayout(content);
+    layout->setContentsMargins(8, 8, 8, 8);
+    layout->setSpacing(6);
+
+    // One titled section per group; buttons flow in rows so a narrow dock
+    // stays compact.
+    auto add_section = [&layout](const QString& title, const QList<QToolButton*>& buttons) {
+        auto* label = new QLabel(title, nullptr);
+        label->setObjectName("ribbonGroupLabel");
+        label->setProperty("textRole", "secondary");
+        layout->addWidget(label);
+        auto* row = new QHBoxLayout();
+        row->setContentsMargins(0, 0, 0, 0);
+        row->setSpacing(4);
+        for (auto* button : buttons) {
+            row->addWidget(button);
+        }
+        row->addStretch(1);
+        layout->addLayout(row);
+    };
+
+    add_section("Section", tools.section);
+    add_section("Color", tools.color);
+    add_section("Box", tools.box);
+    add_section("Display", tools.display);
+    add_section("Zoom", tools.zoom);
+    layout->addStretch(1);
+    return content;
+}
+
 void MainWindow::setupRibbon() {
     auto* shell = new QFrame(this);
 
@@ -392,6 +750,7 @@ void MainWindow::setupRibbon() {
     ribbon_tabs_->addTab("Home");
     ribbon_tabs_->addTab("Navigate");
     ribbon_tabs_->addTab("Inspect");
+    ribbon_tabs_->addTab("Display");
     ribbon_tabs_->addTab("Panels");
     ribbon_tabs_->setCurrentIndex(0);
 
@@ -405,9 +764,18 @@ void MainWindow::setupRibbon() {
     ribbon_pages_->addWidget(buildHomeRibbonPage());
     ribbon_pages_->addWidget(buildNavigateRibbonPage());
     ribbon_pages_->addWidget(buildInspectRibbonPage());
+    ribbon_pages_->addWidget(buildDisplayRibbonPage());
     ribbon_pages_->addWidget(buildPanelsRibbonPage());
 
-    band_layout->addWidget(ribbon_pages_);
+    // The search bar lives in the left corner of the band, on every tab.
+    // AlignVCenter keeps it at its own height, vertically centred in the
+    // band instead of stretching to the pages' full height.
+    auto* band_row = new QHBoxLayout();
+    band_row->setContentsMargins(0, 0, 0, 0);
+    band_row->setSpacing(0);
+    band_row->addWidget(buildSearchBar(), 0, Qt::AlignVCenter);
+    band_row->addWidget(ribbon_pages_, 1);
+    band_layout->addLayout(band_row);
     shell_layout->addWidget(ribbon_tabs_);
     shell_layout->addWidget(ribbon_band);
 
@@ -443,6 +811,10 @@ void MainWindow::setupPanels() {
     audit_panel_ = new components::Panel("Audit", new modules::todo::TodoPanel("Audit", this), this);
     clash_panel_ = new components::Panel("Clash", new modules::todo::TodoPanel("Clash", this), this);
     issues_panel_ = new components::Panel("Issues", new modules::todo::TodoPanel("Issues", this), this);
+    // Display Tools: the same commands as the Display ribbon tab, as a dock
+    // under the Properties panel.
+    display_tools_panel_ = new components::Panel(
+        "Display Tools", buildDisplayToolsPanelContent(), this);
 
     addDockWidget(Qt::LeftDockWidgetArea, models_panel_);
     addDockWidget(Qt::LeftDockWidgetArea, spatial_panel_);
@@ -464,6 +836,10 @@ void MainWindow::setupPanels() {
     tabifyDockWidget(spreadsheet_panel_, audit_panel_);
     tabifyDockWidget(audit_panel_, clash_panel_);
     tabifyDockWidget(clash_panel_, issues_panel_);
+    // Stack the Display Tools dock under the Properties stack (not tabbed
+    // with it): the two stay visible side by side vertically.
+    addDockWidget(Qt::RightDockWidgetArea, display_tools_panel_);
+    splitDockWidget(properties_panel_, display_tools_panel_, Qt::Vertical);
     properties_panel_->raise();
 
     layers_panel_->hide();
@@ -621,6 +997,61 @@ void MainWindow::setupLoader() {
             this, [this](uint32_t object_id) {
         session_state_->setSelectedObjectId(object_id);
         session_state_->notifySelectionChanged();
+    });
+
+    // Display tools ("Display" tab). The knife / set-square cursors follow
+    // the viewport's tool transitions; the single-shot cut tool resets itself.
+    connect(viewport_widget_->viewport(), &ViewportWindow::sectionToolChanged,
+            this, [this](bool active) {
+        auto* viewport = viewport_widget_->viewport();
+        if (active) {
+            viewport->setCursor(modules::display::commands::knifeCursor());
+        } else {
+            viewport->setCursor(QCursor(Qt::ArrowCursor));
+            viewport->setSectionToolSingleShot(false);
+        }
+    });
+    connect(viewport_widget_->viewport(), &ViewportWindow::perpendicularViewToolChanged,
+            this, [this](bool active) {
+        auto* viewport = viewport_widget_->viewport();
+        viewport->setCursor(active ? modules::display::commands::setSquareCursor()
+                                   : QCursor(Qt::ArrowCursor));
+    });
+    // Right-click on a section-plane gizmo: context menu with Delete.
+    connect(viewport_widget_->viewport(),
+            &ViewportWindow::sectionPlaneContextMenuRequested,
+            this, [this](int plane_index, const QPoint& global_pos) {
+        QMenu menu(this);
+        QAction* delete_action = menu.addAction("Delete plane");
+        if (menu.exec(global_pos) == delete_action) {
+            viewport_widget_->viewport()->removeSectionPlane(plane_index);
+            session_state_->setStatusMessage("Section", "Section plane deleted");
+        }
+    });
+    // Category filters are session-durable: re-apply them each time a model's
+    // geometry / live data source arrives so a disabled category never
+    // reappears with a fresh load.
+    connect(session_state_, &bonsaiviewer::SessionState::modelGeometryReady,
+            this, [this](uint32_t session_model_id) {
+        if (viewport_widget_ && viewport_widget_->viewport()) {
+            display_state_->applyCategoryFiltersForModel(
+                session_model_id, *viewport_widget_->viewport());
+        }
+    });
+    connect(session_state_, &bonsaiviewer::SessionState::modelDataSourceReady,
+            this, [this](uint32_t session_model_id) {
+        if (viewport_widget_ && viewport_widget_->viewport()) {
+            display_state_->applyCategoryFiltersForModel(
+                session_model_id, *viewport_widget_->viewport());
+        }
+    });
+    // The Box and the manual appearance map only hold ids the registry knows:
+    // purge on every model list change (close / reload / reset).
+    connect(session_state_, &bonsaiviewer::SessionState::modelsChanged, this, [this]() {
+        display_state_->purgeRemovedObjects();
+    });
+    connect(session_state_, &bonsaiviewer::SessionState::projectReset, this, [this]() {
+        display_state_->purgeRemovedObjects();
     });
 }
 
