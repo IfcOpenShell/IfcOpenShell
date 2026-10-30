@@ -603,6 +603,37 @@ def disable_editing_extrusion_profile(context):
     return {"FINISHED"}
 
 
+class ChangeSlabRotationXAngle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.change_slab_rotation_x_angle"
+    bl_label = "Update"
+    bl_description = (
+        "Tilt the selected slabs about their local X axis to this angle.\n"
+        "Rotates the object placement; the extrusion direction is unchanged"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE")
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Model.has_selected_mesh_ifc_objects():
+            cls.poll_message_set("No mesh IFC objects selected.")
+            return False
+        return True
+
+    def _execute(self, context):
+        for obj in tool.Model.get_selected_mesh_ifc_objects():
+            element = tool.Ifc.get_entity(obj)
+            if not element or tool.Model.get_usage_type(element) != "LAYER3":
+                continue
+            # Keep location, scale and Z rotation; only the X tilt changes.
+            location, rotation, scale = obj.matrix_world.decompose()
+            euler = rotation.to_euler("XYZ")
+            euler.x = self.x_angle
+            obj.matrix_world = Matrix.LocRotScale(location, euler, scale)
+            context.view_layer.update()
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+
 class DisableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_extrusion_profile"
     bl_label = "Disable Editing Extrusion Profile"
