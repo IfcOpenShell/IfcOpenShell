@@ -147,3 +147,15 @@ class Group(bonsai.core.tool.System):
     def update_uilist_index(cls, group_type: GroupType) -> None:
         props, blender_groups = cls.get_groups_data(group_type)
         props.active_group_index = tool.Blender.get_valid_uilist_index(props.active_group_index, blender_groups)
+
+    @classmethod
+    def get_description_type(cls, group: ifcopenshell.entity_instance) -> Union[str, None]:
+        """Get the "type" Bonsai stores in a group's JSON Description (e.g. "BBIM_Search").
+
+        Returns None for groups whose Description is not such JSON, e.g. user groups.
+        """
+        try:
+            data = json.loads(group.Description or "")
+        except ValueError:
+            return None
+        return data.get("type") if isinstance(data, dict) else None
