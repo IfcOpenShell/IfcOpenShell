@@ -44,6 +44,7 @@ class IfcExporter:
         self.file = tool.Ifc.get()
         self.set_header()
         self.sync_all_objects()
+        tool.LinkedReference.sync_placements_to_ifc()
         extension = self.ifc_export_settings.output_file.split(".")[-1].lower()
         if extension == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:
