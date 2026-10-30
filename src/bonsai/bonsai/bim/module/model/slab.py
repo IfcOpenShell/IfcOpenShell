@@ -93,11 +93,11 @@ class DumbSlabGenerator:
         polyline_props = tool.Model.get_polyline_props()
         polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
+        if len(polyline_points) <= 2:
+            return
+
         self.location = Vector((polyline_points[0].x, polyline_points[0].y, self.container_obj.location.z))
         self.polyline = [tuple(Vector((p.x, p.y, 0.0)) - self.location) for p in polyline_points]
-
-        if len(self.polyline) <= 2:
-            return
 
         # Always assume a closed polyline
         if self.polyline[0] != self.polyline[-1]:
@@ -115,11 +115,11 @@ class DumbSlabGenerator:
         poly = tool.Model.get_polygons_from_wall_axis(walls)
         polyline_points = [tuple([v for v in c]) for c in poly.exterior.coords]
 
+        if len(polyline_points) <= 2:
+            return
+
         self.location = Vector((polyline_points[0][0], polyline_points[0][1], self.container_obj.location.z))
         self.polyline = [tuple(Vector((p[0], p[1], 0.0)) - self.location) for p in polyline_points]
-
-        if len(self.polyline) <= 2:
-            return
 
         # Always assume a closed polyline
         if self.polyline[0] != self.polyline[-1]:
