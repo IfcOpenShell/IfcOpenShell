@@ -96,15 +96,18 @@ class BIM_PT_classifications(Panel):
 
     def draw_add_file_ui(self, context):
         assert self.layout
+        row = self.layout.row(align=True)
+        row.prop(self.props, "builtin_classification_library", text="")
+        if self.props.builtin_classification_library == "0":
+            row.operator("bim.load_classification_library", text="", icon="IMPORT")
+
         if ClassificationsData.data["has_classification_file"]:
             row = self.layout.row(align=True)
             row.prop(self.props, "available_classifications", text="")
-            row.operator("bim.load_classification_library", text="", icon="IMPORT")
             row.operator("bim.add_classification", text="", icon="ADD")
         else:
             row = self.layout.row(align=True)
             row.label(text="No Active Classification Library")
-            row.operator("bim.load_classification_library", text="", icon="IMPORT")
 
     def draw_editable_ui(self) -> None:
         assert self.layout
