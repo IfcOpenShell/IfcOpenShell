@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ids xmlns="http://standards.buildingsmart.org/IDS" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd">
+    <info>
+        <title>Classification system and value must match on the same reference</title>
+        <description>A wall must have a SystemA classification with value ExpectedValue. The wall in this fixture has two unrelated classification references: SystemA/WRONG and SystemB/ExpectedValue. Neither reference satisfies both constraints at once, so the requirement must fail.</description>
+    </info>
+    <specifications>
+        <specification name="Walls must be classified as ExpectedValue under SystemA" ifcVersion="IFC4">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCWALL</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <classification cardinality="required">
+                    <value>
+                        <simpleValue>ExpectedValue</simpleValue>
+                    </value>
+                    <system>
+                        <simpleValue>SystemA</simpleValue>
+                    </system>
+                </classification>
+            </requirements>
+        </specification>
+    </specifications>
+</ids>
