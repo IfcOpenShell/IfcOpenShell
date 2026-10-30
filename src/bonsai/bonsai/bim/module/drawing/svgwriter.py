@@ -18,6 +18,7 @@
 
 import math
 import os
+import re
 import shutil
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Sequence
@@ -41,6 +42,11 @@ from mathutils import Vector, geometry
 import bonsai.bim.module.drawing.helper as helper
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
+
+
+def strip_css_comments(css: str) -> str:
+    """Strip `/* ... */` comments, which crash Inkscape when embedded in an SVG `<style>` block."""
+    return re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
 
 
 class External(svgwrite.container.Group):
@@ -302,7 +308,7 @@ class SvgWriter:
                 print(f"WARNING. Couldn't find stylesheet for the drawing by the path: {path}")
                 continue
             with open(path, "r") as stylesheet:
-                css.append(stylesheet.read())
+                css.append(strip_css_comments(stylesheet.read()))
         if css:
             self.svg.defs.add(self.svg.style("\n".join(css)))
 
