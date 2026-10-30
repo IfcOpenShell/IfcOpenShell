@@ -187,7 +187,7 @@ void SettingsDialog::setupUi() {
         // is what we read back via currentIndex / setCurrentIndex.
         nav_preset_combo_->addItem("Blender (Orbit MMB, Pan Shift+MMB)");
         nav_preset_combo_->addItem("Rhino (Orbit RMB, Pan Shift+RMB)");
-        nav_preset_combo_->addItem("Revit (Orbit Shift+MMB, Pan MMB)");
+        nav_preset_combo_->addItem("Revit (Orbit Shift+MMB around selection, Pan MMB)");
         nav_preset_combo_->addItem("Web (Orbit LMB, Pan MMB, Select RMB)");
         nav_preset_combo_->setToolTip(
             "Mouse-button mapping for orbit, pan, and selection.  Selection is "

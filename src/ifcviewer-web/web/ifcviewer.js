@@ -737,7 +737,7 @@
       // Which mouse buttons orbit / pan / select, as one of NAV_PRESETS:
       //   blender  MMB orbit · Shift+MMB pan · LMB select
       //   rhino    RMB orbit · Shift+RMB pan · LMB select
-      //   revit    Shift+MMB orbit · MMB pan · LMB select
+      //   revit    Shift+MMB orbit around combined selection AABB · MMB pan · LMB select
       //   web      LMB orbit · MMB pan · RMB select   (the default)
       // The wheel zooms under all four. Also settable up-front as the
       // `navPreset` option to create().
