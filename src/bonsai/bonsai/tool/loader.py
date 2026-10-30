@@ -51,7 +51,7 @@ import bonsai.tool as tool
 # supplementary objects (e.g. drawings, structural analysis models, etc).
 
 
-OBJECT_DATA_TYPE = Union[bpy.types.Mesh, bpy.types.Curve]
+OBJECT_DATA_TYPE = Union[bpy.types.Mesh, bpy.types.Curve, bpy.types.Light]
 
 
 class Loader(bonsai.core.tool.Loader):
