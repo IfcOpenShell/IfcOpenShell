@@ -115,10 +115,96 @@ def initialize_bbim_semver():
     bbim_semver["version"] = version_str
 
 
+def get_site_packages_path() -> Path:
+    """Folder Blender installs extension wheels into."""
+    import bpy
+
+    py_version = sys.version_info
+    return (
+        Path(bpy.utils.user_resource("EXTENSIONS"))
+        / ".local"
+        / "lib"
+        / f"python{py_version.major}.{py_version.minor}"
+        / "site-packages"
+    )
+
+
+# Same names as the symlinks made by scripts/dev_environment.py, excluding Bonsai itself.
+DEV_LINKED_PACKAGES = (
+    "ifcopenshell",
+    "ifccsv.py",
+    "ifcdiff.py",
+    "bsdd.py",
+    "bcf",
+    "ifc4d",
+    "ifc5d",
+    "ifccityjson",
+    "ifcclash",
+    "ifcpatch",
+    "ifctester",
+    "ifcfm",
+)
+
+
+def get_dev_environment_info() -> str:
+    """Report whether the symlinks made by scripts/dev_environment.py are all in place.
+
+    Blender's wheel manager reinstalls every extension wheel whenever the set of enabled
+    extensions changes, replacing those symlinks with packaged copies. The extension's
+    `__init__.py` survives, so Bonsai keeps loading - but runs release code, not the repo.
+    """
+    package_name = __name__.rsplit(".", 1)[-1]
+    extension = next(
+        (m for name, m in sys.modules.items() if name.startswith("bl_ext.") and name.endswith(f".{package_name}")),
+        None,
+    )
+    site_packages = get_site_packages_path()
+    paths = [site_packages / package_name] + [site_packages / name for name in DEV_LINKED_PACKAGES]
+    if extension and extension.__file__:
+        paths.insert(0, Path(extension.__file__))
+
+    repos: dict[str, Path] = {}
+    not_linked: list[str] = []
+    broken: list[str] = []
+    for path in paths:
+        label = path.name if path.name != "__init__.py" else f"{path.parent.name} extension"
+        if not path.is_symlink():
+            not_linked.append(label)
+            continue
+        if not path.exists():
+            broken.append(label)
+            continue
+        target = path.resolve()
+        # Repo root is the folder holding `src`, e.g. C:/IfcOpenShell/src/bcf/bcf -> C:/IfcOpenShell.
+        repo = next((p.parent for p in target.parents if p.name == "src"), target.parent)
+        repos.setdefault(str(repo).lower(), repo)
+
+    linked = len(paths) - len(not_linked) - len(broken)
+    if linked == 0 and not broken:
+        return "not linked (packaged install)"
+    if linked == len(paths) and len(repos) == 1:
+        return f"linked to {next(iter(repos.values()))} ({linked}/{len(paths)})"
+
+    problems = [f"PARTIALLY LINKED ({linked}/{len(paths)}), re-run scripts/dev_environment.py with Blender closed"]
+    if not_linked:
+        problems.append(f"not linked: {', '.join(not_linked)}")
+    if broken:
+        problems.append(f"broken: {', '.join(broken)}")
+    if len(repos) > 1:
+        problems.append(f"linked to several repos: {', '.join(map(str, repos.values()))}")
+    return "; ".join(problems)
+
+
 def get_debug_info(*, bonsai_failed_to_load: bool = False) -> dict[str, Any]:
     import bpy
 
     bbim_version = bbim_semver["version"]
+
+    try:
+        dev_environment = get_dev_environment_info()
+    except Exception as e:
+        # Debug info is also shown when Bonsai fails to load, so it must never raise.
+        dev_environment = f"unavailable ({e})"
 
     # All data here should be gettable even in case of `bpy.context` and `bpy.data` being inaccessible
     # and Bonsai completely failed to load.
@@ -134,6 +220,7 @@ def get_debug_info(*, bonsai_failed_to_load: bool = False) -> dict[str, Any]:
         "bonsai_commit_hash": get_last_commit_hash(),
         "bonsai_commit_date": get_last_commit_date(),
         "bonsai_git_branch": get_git_branch(),
+        "dev_environment": dev_environment,
         "last_actions": last_actions,
         "last_error": last_error,
     }
@@ -184,15 +271,7 @@ if IN_BLENDER:
 
     def get_binary_info() -> dict[str, Any]:
         info = {}
-        py_version = sys.version_info
-        site_path = (
-            Path(bpy.utils.user_resource("EXTENSIONS"))
-            / ".local"
-            / "lib"
-            / f"python{py_version.major}.{py_version.minor}"
-            / "site-packages"
-        )
-        lib = site_path / "ifcopenshell"
+        lib = get_site_packages_path() / "ifcopenshell"
         binary = next((i for i in lib.glob("_ifcopenshell_wrapper.*")), None)
         if binary is None:
             info["binary_error"] = "Couldn't find ifcopenshell wrapper binary."
