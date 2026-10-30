@@ -543,6 +543,8 @@ class DumbProfileJoiner:
             # Openings should move with the host overall ...
             # ... except their position should stay the same along the local Z axis of the wall
             for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
+                if not opening.ObjectPlacement:
+                    continue
                 percent = tool.Cad.edge_percent(self.body[0], (previous_origin, (previous_matrix @ Vector((0, 0, 1)))))
                 is_z_offset_increased = True if percent < 0 else False
 
