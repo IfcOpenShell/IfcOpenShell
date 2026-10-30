@@ -63,7 +63,134 @@ export function init(options: InitOptions = {}): Promise<IfcOpenShell> {
 export let ifcopenshell: IfcOpenshellModule;
 /** Retrieve the loaded schema declaration by its full identifier. */
 export function schemaByName(name: string) {
-  return ifcopenshell.parse.schemaByName(name);
+  // Accept general names such as `file.schema()` returns, as Python schema_by_name does.
+  const schema = ifcopenshell.parse.schemaByName(name.toUpperCase() === 'IFC4X3' ? 'IFC4X3_ADD2' : name);
+  indexDeclarations(schema);
+  return downcasting(schema);
+}
+
+// Native schema objects are reflected on dynamically (method names vary by declaration kind).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Native = Record<string | symbol, any>;
+
+/**
+ * Entity hierarchy by name. Entities returned by the native `supertype()` and `subtypes()` lack the
+ * base declaration's methods such as `name()`, so named declarations are returned instead,
+ * with the hierarchy derived from `isA()` on named declarations.
+ */
+interface Hierarchy {
+  byName: Map<string, Native>;
+  supertype: Map<string, string | null>;
+  subtypes: Map<string, string[]>;
+}
+const schemas = new Map<string, Native>();
+const hierarchies = new Map<string, Hierarchy>();
+
+/** @internal */
+export function indexDeclarations(schema: Native | null): void {
+  if (schema && !schemas.has(schema.name())) schemas.set(schema.name(), schema);
+}
+
+function hierarchy(schemaName: string): Hierarchy | undefined {
+  const schema = schemas.get(schemaName);
+  if (!schema) return undefined;
+  let result = hierarchies.get(schemaName);
+  if (result) return result;
+  const entities: Native[] = (schema.declarations() as Native[]).filter(d => d.asEntity());
+  const byName = new Map(entities.map(d => [d.name() as string, d]));
+  const depth = new Map<string, number>();
+  for (const [name, declaration] of byName) {
+    let level = 0;
+    for (let entity = declaration.asEntity().supertype(); entity; entity = entity.supertype()) level++;
+    depth.set(name, level);
+  }
+  const supertype = new Map<string, string | null>();
+  const subtypes = new Map<string, string[]>([...byName.keys()].map(name => [name, []]));
+  for (const [name, declaration] of byName) {
+    const level = depth.get(name)!;
+    const parent = level ? [...byName.keys()].find(other => depth.get(other) === level - 1 && declaration.isA(other)) ?? null : null;
+    supertype.set(name, parent);
+    if (parent) subtypes.get(parent)!.push(name);
+  }
+  result = { byName, supertype, subtypes };
+  hierarchies.set(schemaName, result);
+  return result;
+}
+
+const DOWNCASTS = ['asEntity', 'asTypeDeclaration', 'asSelectType', 'asEnumerationType', 'asAggregationType', 'asNamedType', 'asSimpleType'];
+
+/**
+ * Schema objects as Python returns them: declarations and parameter types are downcast to their
+ * most specific class, so `declarationByName('IfcWall').isAbstract()` works without `asEntity()`.
+ */
+/** Names of simple types, in the order of the native data_type enumeration. */
+const SIMPLE_TYPES = ['binary', 'boolean', 'integer', 'logical', 'number', 'real', 'string'];
+
+/**
+ * The text Python gives `str()` of a schema object, such as `<type IfcLabel: <string>>`;
+ * some Python utilities parse it. Aggregate bounds are not exposed natively, so they are `?`.
+ */
+function schemaString(kind: string, specific: Native, base: Native): string {
+  const text = (value: unknown) => String(downcasting(value));
+  switch (kind) {
+    case 'asEntity': return `<entity ${base.name()}>`;
+    case 'asTypeDeclaration': return `<type ${base.name()}: ${text(specific.declaredType())}>`;
+    case 'asSelectType': return `<select ${base.name()}: (${(specific.selectList() as unknown[]).map(text).join(' | ')})>`;
+    case 'asEnumerationType': return `<enumeration ${base.name()}: (${(specific.enumerationItems() as string[]).join(', ')})>`;
+    case 'asAggregationType': return `<${specific.typeOfAggregationString()} [?:?] of ${text(specific.typeOfElement())}>`;
+    case 'asNamedType': return text(specific.declaredType());
+    case 'asSimpleType': return `<${SIMPLE_TYPES[specific.declaredType() as number]}>`;
+    default: return Object.prototype.toString.call(specific);
+  }
+}
+
+/** @internal */
+export function downcasting<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(downcasting) as T;
+  if (value === null || typeof value !== 'object') return value;
+  const base = value as Record<string | symbol, unknown>;
+  let specific = base;
+  let kind: string | undefined;
+  for (const method of DOWNCASTS) {
+    if (typeof base[method] === 'function') {
+      const result = (base[method] as () => Record<string | symbol, unknown> | null).call(base);
+      if (result) {
+        specific = result;
+        kind = method;
+        break;
+      }
+    }
+  }
+  // Named entity declarations navigate the hierarchy by name; see hierarchy().
+  const named = typeof base.name === 'function' && typeof base.schema === 'function' && specific !== base
+    ? hierarchy((base as Native).schema().name()) : undefined;
+  const name = named ? (base as Native).name() as string : undefined;
+  // The WASM classes do not inherit from each other, so fall back to the base object's members.
+  return new Proxy(specific, {
+    get(object, key) {
+      if (key === 'toString' && kind) return () => schemaString(kind!, specific as Native, base as Native);
+      if (key === 'declarationByName') {
+        // Python raises for unknown names, and callers rely on it.
+        return (declarationName: string) => {
+          const declaration = (base as Native).declarationByName(declarationName);
+          if (!declaration) throw new IfcOpenShellError(`Declaration not found: ${declarationName}`);
+          return downcasting(declaration);
+        };
+      }
+      if (named && name && named.byName.has(name)) {
+        if (key === 'supertype') {
+          return () => {
+            const parent = named.supertype.get(name);
+            return parent ? downcasting(named.byName.get(parent)) : null;
+          };
+        }
+        if (key === 'subtypes') return () => named.subtypes.get(name)!.map(child => downcasting(named.byName.get(child)));
+      }
+      const owner = key in object ? object : base;
+      const member = Reflect.get(owner, key, owner);
+      return typeof member === 'function' ? (...args: unknown[]) => downcasting(member.apply(owner, args)) : member;
+    },
+  }) as T;
 }
 
 /** Emscripten filesystem, available after awaiting init(). */

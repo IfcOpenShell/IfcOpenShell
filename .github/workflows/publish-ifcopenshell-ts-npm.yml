@@ -10,6 +10,10 @@ name: Publish IfcOpenShell TypeScript npm
 # `ifcopenshell` depends on `@ifcopenshell/wasm`, so the WASM package goes
 # first. Both are published from one job because the wrapper's type checks read
 # the staged artifacts through the workspace link rather than from the registry.
+#
+# With `transpiled`, `ifcopenshell` also ships ifcopenshell.util and
+# ifcopenshell.api (`ifcopenshell/util/<module>`, `ifcopenshell/api/<package>`),
+# transpiled from this checkout's Python source; they are not committed.
 
 on:
   workflow_dispatch:
@@ -18,6 +22,11 @@ on:
         description: 'Version to publish, for example 0.1.1. Defaults to the version in package.json.'
         required: false
         default: ''
+      transpiled:
+        description: 'Include ifcopenshell.util and ifcopenshell.api, transpiled from ifcopenshell-python.'
+        type: boolean
+        required: false
+        default: false
 
 permissions: {}
 
@@ -115,6 +124,17 @@ jobs:
           }
           NODE
 
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        if: inputs.transpiled
+        with:
+          python-version: '3.13'
+
+      - name: Transpile ifcopenshell.util and ifcopenshell.api
+        if: inputs.transpiled
+        run: |
+          python -m pip install -r src/transpiler/requirements.txt
+          python src/transpiler/generate.py
+
       - name: Build the TypeScript package
         working-directory: ${{ env.TS_PACKAGE_DIR }}
         run: |
@@ -124,3 +144,4 @@ jobs:
       - name: Publish the TypeScript package
         working-directory: ${{ env.TS_PACKAGE_DIR }}
         run: npm publish --provenance --access public
+

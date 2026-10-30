@@ -1,0 +1,16 @@
+{
+  // src/python: ifcopenshell.util and ifcopenshell.api, transpiled from Python by
+  // src/transpiler/generate.py, and their hand-written runtime (src/python/_*.ts).
+  // Python does not track None, so this code is checked without strict null checks.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": false,
+    // Python set operations map onto ES2025 Set methods (union, difference, ...).
+    "lib": ["ESNext", "DOM"],
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": false,
+    "declarationMap": false
+  },
+  "include": ["src/python/**/*.ts"],
+  "exclude": []
+}
