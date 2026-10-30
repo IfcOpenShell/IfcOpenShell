@@ -10,6 +10,8 @@
 #include <TopExp.hxx>
 #include <TopoDS.hxx>
 #include <Bnd_Box.hxx>
+#include <limits>
+#include <BRepBndLib.hxx>
 #include <Extrema_ExtPC.hxx>
 #include <Geom_Plane.hxx>
 #include <Geom_BSplineCurve.hxx>
@@ -885,6 +887,80 @@ bool ifcopenshell::geom::util::points_on_planar_face_generator::operator()(gp_Pn
 	return false;
 }
 
+
+namespace {
+	struct planar_face {
+		gp_Pln pln;
+		Bnd_Box box;
+	};
+
+	std::vector<planar_face> planar_faces(const TopoDS_Shape& s) {
+		std::vector<planar_face> fs;
+		for (TopExp_Explorer exp(s, TopAbs_FACE); exp.More(); exp.Next()) {
+			const TopoDS_Face& f = TopoDS::Face(exp.Current());
+			auto plane = Handle(Geom_Plane)::DownCast(BRep_Tool::Surface(f));
+			if (plane.IsNull()) {
+				continue;
+			}
+			planar_face pf;
+			pf.pln = plane->Pln();
+			BRepBndLib::Add(f, pf.box, false);
+			fs.push_back(pf);
+		}
+		return fs;
+	}
+}
+
+double ifcopenshell::geom::util::drifting_contact(const TopoDS_Shape& a, const TopoDS_Shape& b, double prec) {
+	// A tool face that touches an operand face along a line and drifts away from it at a
+	// small angle (an export rounding the plane normal) is coincident within prec on one
+	// part of the contact and crossing on the rest, which OpenCASCADE's face/face
+	// intersection does not reconcile (#349). Report the drift so the caller can raise
+	// the fuzziness for this one operation to just above it.
+	const double cos_parallel = std::cos(0.01);
+	const auto fas = planar_faces(a);
+	const auto fbs = planar_faces(b);
+	double drift = 0.;
+	for (const auto& fa : fas) {
+		for (const auto& fb : fbs) {
+			if (std::abs(fa.pln.Axis().Direction().Dot(fb.pln.Axis().Direction())) < cos_parallel) {
+				continue;
+			}
+			// The gap between two planes is linear, so over the shared extent of the
+			// two faces its extremes are at the corners of the overlap of their boxes.
+			double lo[2][3], hi[2][3];
+			fa.box.Get(lo[0][0], lo[0][1], lo[0][2], hi[0][0], hi[0][1], hi[0][2]);
+			fb.box.Get(lo[1][0], lo[1][1], lo[1][2], hi[1][0], hi[1][1], hi[1][2]);
+			double o0[3], o1[3];
+			bool apart = false;
+			for (int k = 0; k < 3; ++k) {
+				o0[k] = (std::max)(lo[0][k], lo[1][k]);
+				o1[k] = (std::min)(hi[0][k], hi[1][k]);
+				if (o0[k] > o1[k] + prec) {
+					apart = true;
+				}
+			}
+			if (apart) {
+				continue;
+			}
+			const gp_Dir& na = fa.pln.Axis().Direction();
+			double dmin = std::numeric_limits<double>::infinity(), dmax = 0.;
+			for (int i = 0; i < 8; ++i) {
+				gp_Pnt p(i & 1 ? o1[0] : o0[0], i & 2 ? o1[1] : o0[1], i & 4 ? o1[2] : o0[2]);
+				// Project the corner onto the first plane before measuring to the second.
+				const double h = gp_Vec(fa.pln.Location(), p).Dot(na);
+				p.Translate(gp_Vec(na) * -h);
+				const double d = fb.pln.Distance(p);
+				dmin = (std::min)(dmin, d);
+				dmax = (std::max)(dmax, d);
+			}
+			if (dmin < prec && dmax > prec) {
+				drift = (std::max)(drift, dmax);
+			}
+		}
+	}
+	return drift;
+}
 
 bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	using namespace std::string_literals;
