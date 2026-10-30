@@ -390,7 +390,7 @@ class WorkPlan(PropertyGroup):
 class TaskResource(PropertyGroup):
     name: StringProperty(name="Name", update=updateAssignedResourceName)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
-    schedule_usage: FloatProperty(name="Schedule Usage", update=updateAssignedResourceUsage)
+    schedule_usage: FloatProperty(name="Schedule Usage", min=0.01, update=updateAssignedResourceUsage)
 
     if TYPE_CHECKING:
         name: str
