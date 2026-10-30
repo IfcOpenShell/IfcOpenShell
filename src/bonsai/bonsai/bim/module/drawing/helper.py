@@ -170,6 +170,7 @@ def format_distance(
     precision=None,
     decimal_places=None,
     suppress_zero_inches=False,
+    suppress_zero_feet=False,
     in_unit_length=False,
     custom_unit=None,
 ):
@@ -319,10 +320,10 @@ def format_distance(
             tx_dist = ""
             if feet:
                 tx_dist += str(feet) + "'"
-            if not feet and not add_inches:
+            if not feet and not add_inches and not suppress_zero_feet:
                 tx_dist += str(feet) + "'"
 
-            if not feet and add_inches and unit_length != "INCHES":
+            if not feet and add_inches and unit_length != "INCHES" and not suppress_zero_feet:
                 if value < 0:
                     tx_dist += "-0' - "
                 else:
