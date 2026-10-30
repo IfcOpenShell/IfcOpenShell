@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
+
 import blf
 import gpu
 from bpy_extras.view3d_utils import location_3d_to_region_2d
@@ -49,7 +51,11 @@ class GridDecorator(tool.Blender.ViewportDecorator):
             if obj.select_get() and context.mode != "OBJECT":
                 continue
 
-            tag = obj.name.split("/")[-1].split(".")[0]
+            element = tool.Ifc.get_entity(obj)
+            axis_tag = getattr(element, "AxisTag", None) if element else None
+            if axis_tag is None:
+                axis_tag = re.sub(r"\.\d{3}$", "", obj.name.split("/")[-1])
+            tag = axis_tag
             matrix_world = obj.matrix_world
             v1 = matrix_world @ obj.data.vertices[0].co
             v2 = matrix_world @ obj.data.vertices[1].co
