@@ -416,20 +416,19 @@ class DecoratorData:
 
             # Type keys
             elif key.startswith("type."):
-                if hasattr(element, "IsTypedBy") and element.IsTypedBy:
-                    element_type = element.IsTypedBy[0].RelatingType
+                element_type = ifcopenshell.util.element.get_type(element)
+                if element_type and element_type != element:
                     attr_name = key.split(".", 1)[1]
                     if hasattr(element_type, attr_name):
                         return getattr(element_type, attr_name)
 
             elif key == "types.count":
-                if hasattr(element, "IsTypedBy") and element.IsTypedBy:
-                    element_type = element.IsTypedBy[0].RelatingType
+                element_type = ifcopenshell.util.element.get_type(element)
+                if element_type and element_type != element:
                     occurrence_count = 0
-                    if hasattr(element_type, "Types"):
-                        for rel in element_type.Types:
-                            if hasattr(rel, "RelatedObjects"):
-                                occurrence_count += len(rel.RelatedObjects)
+                    for rel in getattr(element_type, "Types", None) or getattr(element_type, "ObjectTypeOf", ()):
+                        if hasattr(rel, "RelatedObjects"):
+                            occurrence_count += len(rel.RelatedObjects)
                     return occurrence_count
 
             elif key == "occurrences.count":
@@ -1097,8 +1096,10 @@ class ElementValuesData:
     def _get_type_keys(cls, element):
         keys = []
 
-        if hasattr(element, "IsTypedBy") and element.IsTypedBy:
-            element_type = element.IsTypedBy[0].RelatingType
+        element_type = ifcopenshell.util.element.get_type(element)
+        is_typed = element_type and element_type != element
+
+        if is_typed:
             if hasattr(element_type, "Name") and element_type.Name:
                 keys.append(("type.Name", f"Type Name: {element_type.Name}"))
 
@@ -1110,13 +1111,11 @@ class ElementValuesData:
                         occurrence_count += len(rel.RelatedObjects)
             keys.append(("occurrences.count", f"Occurrence Count: {occurrence_count}"))
 
-        elif hasattr(element, "IsTypedBy") and element.IsTypedBy:
-            element_type = element.IsTypedBy[0].RelatingType
+        elif is_typed:
             occurrence_count = 0
-            if hasattr(element_type, "Types"):
-                for rel in element_type.Types:
-                    if hasattr(rel, "RelatedObjects"):
-                        occurrence_count += len(rel.RelatedObjects)
+            for rel in getattr(element_type, "Types", None) or getattr(element_type, "ObjectTypeOf", ()):
+                if hasattr(rel, "RelatedObjects"):
+                    occurrence_count += len(rel.RelatedObjects)
             keys.append(("types.count", f"Type Occurrence Count: {occurrence_count}"))
 
         return keys
