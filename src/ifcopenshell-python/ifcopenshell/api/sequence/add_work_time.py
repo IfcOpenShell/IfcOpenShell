@@ -18,6 +18,7 @@
 from typing import Literal
 
 import ifcopenshell
+import ifcopenshell.util.sequence
 
 TIME_TYPE = Literal["WorkingTimes", "ExceptionTimes"]
 
@@ -81,4 +82,6 @@ def add_work_time(
         exception_times = list(work_calendar.ExceptionTimes or [])
         exception_times.append(work_time)
         work_calendar.ExceptionTimes = exception_times
+    ifcopenshell.util.sequence.is_working_day.cache_clear()
+    ifcopenshell.util.sequence.is_calendar_applicable.cache_clear()
     return work_time

@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
+import ifcopenshell.util.sequence
 
 
 def unassign_recurrence_pattern(file: ifcopenshell.file, recurrence_pattern: ifcopenshell.entity_instance) -> None:
@@ -51,3 +52,5 @@ def unassign_recurrence_pattern(file: ifcopenshell.file, recurrence_pattern: ifc
     for time_period in recurrence_pattern.TimePeriods or []:
         file.remove(time_period)
     file.remove(recurrence_pattern)
+    ifcopenshell.util.sequence.is_working_day.cache_clear()
+    ifcopenshell.util.sequence.is_calendar_applicable.cache_clear()
