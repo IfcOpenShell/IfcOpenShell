@@ -157,6 +157,29 @@ class TestBlenderErrorMessageExtraction(NewFile):
         bpy.utils.unregister_class(OBJECT_OT_test_fail_operator)
 
 
+class TestResetObjectVisibility(NewFile):
+    def test_unhide_ifc_objects_but_keep_blender_only_objects_hidden(self) -> None:
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.primitive_cube_add()
+        ifc_obj = bpy.context.active_object
+        bpy.ops.bim.assign_class(ifc_class="IfcWall")
+        bpy.ops.mesh.primitive_cube_add()
+        blender_only = bpy.context.active_object
+        assert not tool.Ifc.get_entity(blender_only)
+        ifc_obj.hide_set(True)
+        blender_only.hide_set(True)
+        subject.reset_object_visibility()
+        assert not ifc_obj.hide_get()
+        assert blender_only.hide_get()
+
+    def test_keep_visible_blender_only_objects_visible(self) -> None:
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.primitive_cube_add()
+        blender_only = bpy.context.active_object
+        subject.reset_object_visibility()
+        assert not blender_only.hide_get()
+
+
 class TestGetSelectedFiles(NewFile):
     def test_get_a_single_file(self) -> None:
         with tempfile.NamedTemporaryFile() as f:
