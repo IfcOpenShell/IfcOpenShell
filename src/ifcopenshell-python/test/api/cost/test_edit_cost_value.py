@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
+
 import ifcopenshell.api.cost
 import ifcopenshell.api.unit
 import test.bootstrap
@@ -50,6 +52,8 @@ class TestEditCostValue(test.bootstrap.IFC4):
         )
         assert value.UnitBasis is not None
         assert value.UnitBasis.id() != old_basis_id
+        with pytest.raises(RuntimeError):
+            self.file.by_id(old_basis_id)
 
     def test_clearing_unit_basis(self):
         schedule = ifcopenshell.api.cost.add_cost_schedule(self.file)
