@@ -61,16 +61,23 @@ If you forgot to select the wall before placing the door, you'll need to manuall
       Synchronisation between the Blender scene and IFC model is an issue that has the highest priority.
 
 5. Change Door Swing Direction:
-   - Select only the door.
-   - Press Shift+F to flip the door. It rotates the door by 180 degrees and moves the pivot point.
-   - Locate the "Parametric Geometry" panel in the `Scene Properties > Geometry and Materials` subtab.
-   - Find the "Door" section within this panel.
-   - Change the "Operation Type" to "SINGLE_SWING_RIGHT".
+   - Select only the door and enter door edit mode (the pen icon, or :kbd:`Tab`).
+   - Two swing arcs appear in the viewport: the highlighted arc is the current swing,
+     the dimmed arc is the alternative on the other side of the wall.
+   - Click the highlighted arc to move the hinge to the opposite jamb.
+     The door stays on the same face of the wall and keeps its opening direction,
+     only the hand mirrors (for example SINGLE_SWING_LEFT becomes SINGLE_SWING_RIGHT).
+   - Click the dimmed arc to swing the door from the opposite side of the wall instead.
+     :kbd:`Shift` + click mirrors the door geometry without changing the recorded swing.
+   - Alternatively, pick any Operation Type directly from the drop-down next to the gizmo.
 
    .. note::
-      The Shift+F shortcut is currently a hidden feature and not available as a button in the Door tool interface.
+      External doors (Pset_DoorCommon.IsExternal) ask for confirmation before a flip,
+      because a factory-handed door leaf cannot swap its hinge side on site:
+      the flipped door is a different product.
 
-      You may need to experiment with the combination of changing the Operation Type and using Shift+F to achieve the desired orientation.
+      If the door shares its type with other doors, entering edit mode warns you
+      that the change applies to every door of that type.
 
 6. Final Wall Geometry Regeneration:
    - Select the wall again.
@@ -79,8 +86,9 @@ If you forgot to select the wall before placing the door, you'll need to manuall
 Additional Notes
 ----------------
 
-- The Shift+F shortcut for flipping the door is not visible in the Door tool interface.
-  This functionality may be added as a visible button in future updates.
+- Shift+F (the Flip button in the Door tool interface) moves the door to the other
+  face of the wall. To change only the hinge side, use the swing arcs in door edit
+  mode as described above.
 - Always use Shift+G (Regenerate) after making changes
   to ensure the wall and door geometries are correctly updated.
 - Avoid using Shift+O (Apply Void) as it may cause issues
@@ -97,7 +105,8 @@ You can modify doors using various tools:
 
 - Resize: Adjust the width and height parameters in the top bar.
 - Move: Use Blender's standard move tools to reposition the door.
-- Flip: Change the opening direction using the flip tool (Shift+F).
+- Flip: Move the door to the other face of the wall using the flip tool (Shift+F),
+  or change the hinge side with the swing arcs in door edit mode.
 
 .. note::
    After moving a door, you need to recalculate the void in the wall. To do this:
