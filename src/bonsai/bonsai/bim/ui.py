@@ -339,6 +339,14 @@ class DocPreferences(bpy.types.PropertyGroup):
         default="Blender Default",
         name="Default Shading Style",
     )
+    metadata_default: StringProperty(
+        default="",
+        name="Default Metadata",
+        description=(
+            "Written to EPset_Drawing.Metadata on new drawings. Comma separated list of selector expressions "
+            "evaluated for each drawing element and added to its 'class' attribute, for use in CSS.\nEx: Name, id"
+        ),
+    )
     drawing_font: StringProperty(
         default="OpenGost Type B TT.ttf",
         name="Drawing Font",
@@ -378,6 +386,7 @@ class DocPreferences(bpy.types.PropertyGroup):
         patterns_path: str
         shadingstyles_path: str
         shadingstyle_default: str
+        metadata_default: str
         drawing_font: str
         magic_font_scale: float
         imperial_precision: str
@@ -832,6 +841,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(dprops, "patterns_path")
         layout.prop(dprops, "shadingstyles_path")
         layout.prop(dprops, "shadingstyle_default")
+        layout.prop(dprops, "metadata_default")
         row = layout.row()
         row.prop(dprops, "drawing_font")
         row.prop(dprops, "magic_font_scale")
