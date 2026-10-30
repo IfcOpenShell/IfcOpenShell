@@ -575,6 +575,36 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         )
         element.Description = props.description or None
 
+        if props.ifc_class == "IfcAlignment":
+            # Saikei: creating an alignment automatically creates its
+            # horizontal layout (spec 1.1). Alignments own an origin local
+            # placement (IFC 4.1.4.1.1 aggregates them to the project, never
+            # to a spatial container) and their representations come from
+            # ifcopenshell.api.alignment, so the representation templates and
+            # 3D-cursor placement do not apply.
+            obj.location = (0.0, 0.0, 0.0)
+            h_layout = tool.Alignment.add_horizontal_layout_to_alignment(element)
+            tool.Alignment.create_object_for_layout(h_layout, obj)
+            civil_props = context.scene.CivilAlignmentProperties
+            previous_id = civil_props.active_alignment_id
+            civil_props.active_alignment_id = element.id()
+            civil_props.active_alignment_name = element.Name or ""
+            if previous_id:
+                # The PI table belonged to another alignment; drop its PIs. An
+                # unbound table is adopted, as the PI operators do with no id.
+                from bonsai.bim.module.alignment.operator import sync_pis_from_ifc
+
+                sync_pis_from_ifc(context)
+            bpy.context.view_layer.update()
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            tool.Blender.set_active_object(obj)
+            self.report(
+                {"INFO"},
+                f"Alignment '{element.Name}' created with an empty horizontal layout — "
+                "add PI points from the CIVIL tab or viewport picking.",
+            )
+            return
+
         if representation_template == "EMTPY" or not ifc_context:
             pass
         elif representation_template == "OBJ" and props.representation_obj:
