@@ -916,6 +916,7 @@ class FacetTransformer(lark.Transformer):
     base_elements: Optional[set[ifcopenshell.entity_instance]]
     elements: set[ifcopenshell.entity_instance]
     container_trees: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
+    psets_cache: dict[int, dict[str, dict[str, Any]]]
 
     def __init__(self, ifc_file: ifcopenshell.file, elements: Optional[set[ifcopenshell.entity_instance]] = None):
         self.file = ifc_file
@@ -928,6 +929,17 @@ class FacetTransformer(lark.Transformer):
             self.elements = set()
         self.has_additive_facet_in_current_list = False
         self.container_trees = {}
+        # Scoped to this single filter_elements() call only; see get_psets_cached.
+        self.psets_cache = {}
+
+    def get_psets_cached(self, element: ifcopenshell.entity_instance) -> dict[str, dict[str, Any]]:
+        """get_psets(), memoised for the lifetime of this transformer only."""
+        element_id = element.id()
+        psets = self.psets_cache.get(element_id)
+        if psets is None:
+            psets = ifcopenshell.util.element.get_psets(element, psets_cache=self.psets_cache)
+            self.psets_cache[element_id] = psets
+        return psets
 
     def add_default_elements(self):
         if self.has_additive_facet_in_current_list:
@@ -1050,7 +1062,7 @@ class FacetTransformer(lark.Transformer):
                     if prop.match(element_prop):
                         return self.compare(element_value, comparison, value)
             elif isinstance(pset, re.Pattern):
-                element_psets = ifcopenshell.util.element.get_psets(element)
+                element_psets = self.get_psets_cached(element)
                 for element_pset, element_props in element_psets.items():
                     if not pset.match(element_pset):
                         continue
