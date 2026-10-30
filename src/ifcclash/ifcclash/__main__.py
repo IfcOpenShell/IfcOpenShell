@@ -30,10 +30,12 @@ parser.add_argument("input", type=str, help="A JSON dataset describing a series 
 parser.add_argument(
     "-o", "--output", type=str, help="The JSON diff file to output. Defaults to output.json", default="output.json"
 )
+parser.add_argument("--sort-keys", action="store_true", help="Sort JSON object keys for stable report comparisons")
 args = parser.parse_args()
 
 settings = ClashSettings()
 settings.output = args.output
+settings.sort_json_keys = args.sort_keys
 settings.logger = logging.getLogger("Clash")
 settings.logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
