@@ -33,7 +33,7 @@ class Patcher(ifcpatch.BasePatcher):
 
         .. code:: python
 
-            model = ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "AddGeometricRepresentationAlignment"})
+            model = ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "AddGeometricRepresentationToAlignment"})
         """
         super().__init__(file, logger)
         self.file_patched: ifcopenshell.file

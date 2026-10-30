@@ -44,6 +44,17 @@ class TestRegenerateGlobalIds(test.bootstrap.IFC4):
         assert len(new_guids) == 3
         assert len(new_guids.intersection(used_guids)) == 2
 
+    def test_only_duplicates_does_not_overcount_valid_unique_guids(self, capsys):
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        guids_before = {project.GlobalId, wall.GlobalId}
+
+        ifcpatch.execute({"file": self.file, "recipe": "RegenerateGlobalIds", "arguments": [True]})
+
+        assert {project.GlobalId, wall.GlobalId} == guids_before
+        output = capsys.readouterr().out
+        assert "Replaced 0 invalid GlobalIds" in output
+
 
 class TestRegenerateGlobalIdsIFC2X3(test.bootstrap.IFC2X3, TestRegenerateGlobalIds):
     pass
