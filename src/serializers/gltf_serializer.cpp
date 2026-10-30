@@ -461,7 +461,7 @@ void gltf_serializer::finalize() {
 	}
 
 	if (z_up_transform_) {
-        (*ecef_transform_)["children"] = roots_;
+        (*z_up_transform_)["children"] = roots_;
 	}
 
 	tmp_fstream1_.close();
