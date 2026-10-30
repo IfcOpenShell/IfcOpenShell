@@ -613,7 +613,7 @@ class BaseDecorator:
         font_size_mm = text_data["FontSize"] * text_scale
         for literal_data in literals_data:
             box_alignment = literal_data["BoxAlignment"]
-            text = literal_data["CurrentValue"]
+            text = tool.Drawing.strip_text_comments(literal_data["CurrentValue"])
 
             if newline_at != 0:
                 text = helper.add_newline_between_words(text, newline_at)
