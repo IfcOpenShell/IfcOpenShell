@@ -28,7 +28,7 @@ def add_task(
     file: ifcopenshell.file,
     work_schedule: Optional[ifcopenshell.entity_instance] = None,
     parent_task: Optional[ifcopenshell.entity_instance] = None,
-    name: Optional[str] = None,
+    name: str = "Unnamed",
     description: Optional[str] = None,
     identification: Optional[str] = None,
     predefined_type: str = "NOTDEFINED",
@@ -72,7 +72,9 @@ def add_task(
     :param parent_task: The parent task, if the task is to be a subtask or
         child task. This is mutually exclusive with the work_schedule
         parameter.
-    :param name: The name of the task.
+    :param name: The name of the task. IfcTask requires a Name in IFC4 and
+        later, so an unset name defaults to "Unnamed" rather than staying
+        blank.
     :param description: The description of the task.
     :param identification: The identification code of the task.
     :param predefined_type: The predefined type of the task. Common ones
