@@ -51,6 +51,7 @@ classes = (
     operator.EnableCulling,
     operator.EnableEditingHeader,
     operator.EnableEditingLink,
+    operator.ExportSelectedElements,
     operator.ExportIFC,
     operator.FlipClippingPlane,
     operator.HideQueriedLinkedElement,
