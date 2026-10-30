@@ -548,8 +548,8 @@ namespace ifcopenshell::geom {
 				v_ray.dir_inv[1] = static_cast<float>(1.0 / ray_vector.Y());
 				v_ray.dir_inv[2] = static_cast<float>(1.0 / ray_vector.Z());
 
-				double min_distance = std::numeric_limits<double>::infinity();
-				double max_distance = -std::numeric_limits<double>::infinity();
+				// Where the edge crosses the surface of the shape, by distance along the edge.
+				std::vector<std::pair<double, std::array<double, 3>>> crossings;
 
 				std::stack<int> stack;
 				stack.push(0);
@@ -606,14 +606,7 @@ namespace ifcopenshell::geom {
 										continue;
 									}
 
-									if (at < min_distance) {
-										min_distance = at;
-										min_int = {int_vec.X(), int_vec.Y(), int_vec.Z()};
-									}
-									if (at > max_distance) {
-										max_distance = at;
-										max_int = {int_vec.X(), int_vec.Y(), int_vec.Z()};
-									}
+									crossings.push_back({at, {int_vec.X(), int_vec.Y(), int_vec.Z()}});
 								}
 							}
 						}
@@ -623,10 +616,27 @@ namespace ifcopenshell::geom {
 					}
 				}
 
-				if (min_distance == std::numeric_limits<double>::infinity()) {
-					return std::make_tuple(-1, min_int, max_int);
+				// Two crossings do not make a piercing: the edge must run INSIDE the shape between them. An edge
+				// whose two ends only touch the shape crosses its surface at both ends and runs outside it in
+				// between, such as a guard rail set flush between the two jambs of an opening in a wall: its long
+				// edges meet the jambs at their ends, and floating point error leaves both crossings just inside
+				// (0, edge_length). So of each two consecutive crossings, the span between them is a piercing only
+				// when its midpoint is inside the shape, and the longest such span is the one reported.
+				std::sort(crossings.begin(), crossings.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+				double longest = -1;
+				for (size_t k = 1; k < crossings.size(); ++k) {
+					const double length = crossings[k].first - crossings[k - 1].first;
+					if (length <= longest) {
+						continue;
+					}
+					const gp_Pnt midpoint((ray_origin + ray_vector * ((crossings[k - 1].first + crossings[k].first) / 2.)).XYZ());
+					if (is_point_in_shape(midpoint, bvh, tris, verts) && is_point_in_shape(midpoint, bvh, tris, verts, true)) {
+						longest = length;
+						min_int = crossings[k - 1].second;
+						max_int = crossings[k].second;
+					}
 				}
-				return std::make_tuple(max_distance - min_distance, min_int, max_int);
+				return std::make_tuple(longest, min_int, max_int);
 			}
 
 			bool is_point_on_line(const gp_Pnt& point, const gp_Pnt& lineStart, const gp_Pnt& lineEnd) const {
