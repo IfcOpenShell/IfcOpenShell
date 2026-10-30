@@ -20,6 +20,7 @@
 import bpy
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
+import pytest
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -138,3 +139,12 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         assert bsdd_property.pset == "ISet_AirportDomain"
         assert bsdd_property.name == "Conveying speed"
         assert not ifcopenshell.util.element.get_psets(element)
+
+
+class TestAddManualClassificationReference(NewFile):
+    def test_no_classification_reports_an_error(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.primitive_cube_add()
+        bpy.ops.bim.assign_class(ifc_class="IfcWall")
+        with pytest.raises(RuntimeError, match="Add a classification"):
+            bpy.ops.bim.add_manual_classification_reference(obj_type="Object")
