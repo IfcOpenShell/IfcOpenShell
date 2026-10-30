@@ -92,10 +92,13 @@ class IfcCsv:
         groups=None,
         summaries=None,
         formatting=None,
+        split_by: Optional[str] = None,
     ):
         self.ifc_file = ifc_file
         self.results = []
         self.headers = []
+        self.split_by = split_by
+        self.split_groups = None
         attributes = attributes or []
 
         if not headers:
@@ -134,6 +137,7 @@ class IfcCsv:
         self.summarise_results(summaries, attributes)
         self.sort_results(sort, attributes, include_global_id)
         self.format_results(formatting, attributes, null)
+        self.split_groups = self.split_results(split_by, attributes)
 
         if format == "csv":
             self.export_csv(output, delimiter=delimiter)
@@ -205,6 +209,42 @@ class IfcCsv:
                         result[gi] = max(group_values[key][gi])
 
         self.results = group_results.values()
+
+    def split_results(self, split_by: Optional[str], attributes: list[str]) -> Optional[list[tuple[str, list]]]:
+        """Partitions results into one bucket per unique value of `split_by`."""
+        if not split_by:
+            return None
+
+        if split_by not in attributes:
+            raise ValueError(f"split_by attribute '{split_by}' is not part of the exported attributes")
+
+        index = attributes.index(split_by)
+        split_groups: dict[str, list] = {}
+        for row in self.results:
+            key = str(row[index])
+            split_groups.setdefault(key, []).append(row)
+        return list(split_groups.items())
+
+    @staticmethod
+    def sanitize_split_key(key: str, existing_names: set[str], max_length: int = 31) -> str:
+        """Sanitizes a split value into a safe, unique sheet name or filename suffix."""
+        name = str(key).strip()
+        for char in "\\/*?:[]":
+            name = name.replace(char, "_")
+        name = name.strip("'")
+        if not name:
+            name = "Sheet"
+        name = name[:max_length]
+
+        base_name = name
+        suffix_index = 1
+        while name in existing_names:
+            suffix = f"_{suffix_index}"
+            name = base_name[: max_length - len(suffix)] + suffix
+            suffix_index += 1
+
+        existing_names.add(name)
+        return name
 
     def summarise_results(self, summaries, attributes):
         self.summaries = [None] * len(attributes)
@@ -290,6 +330,10 @@ class IfcCsv:
                 self.results = sorted(self.results, key=lambda x: x[0])
 
     def export_csv(self, output: str, delimiter: Optional[str] = None) -> None:
+        if self.split_groups is not None:
+            self.export_csv_split(output, delimiter=delimiter)
+            return
+
         with open(output, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f, delimiter=delimiter)
             writer.writerow(self.headers)
@@ -298,7 +342,27 @@ class IfcCsv:
             if self.has_summaries():
                 writer.writerow(self.summaries)
 
+    def export_csv_split(self, output: str, delimiter: Optional[str] = None) -> None:
+        # e.g. data.csv -> data_IfcWall.csv, data_IfcSlab.csv
+        assert self.split_groups is not None
+        stem, ext = os.path.splitext(output)
+        ext = ext or ".csv"
+        existing_names: set[str] = set()
+        for key, rows in self.split_groups:
+            suffix = self.sanitize_split_key(key, existing_names, max_length=100)
+            with open(f"{stem}_{suffix}{ext}", "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f, delimiter=delimiter)
+                writer.writerow(self.headers)
+                for row in rows:
+                    writer.writerow(row)
+                if self.has_summaries():
+                    writer.writerow(self.summaries)
+
     def export_ods(self, output, should_preserve_existing=False):
+        if self.split_groups is not None:
+            self.export_ods_split(output)
+            return
+
         df = self.export_pd()
         if self.has_summaries():
             df.loc[df.shape[0]] = self.summaries
@@ -330,6 +394,17 @@ class IfcCsv:
             ods_document.save(output)
         else:
             df.to_excel(output, index=False, engine="odf")
+
+    def export_ods_split(self, output) -> None:
+        assert self.split_groups is not None
+        existing_names: set[str] = set()
+        with pd.ExcelWriter(output, engine="odf") as writer:
+            for key, rows in self.split_groups:
+                sheet_name = self.sanitize_split_key(key, existing_names)
+                df = pd.DataFrame(rows, columns=self.headers)
+                if self.has_summaries():
+                    df.loc[df.shape[0]] = self.summaries
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
 
     def set_cell_value(self, cell, value):
         for item in cell.childNodes:
@@ -364,6 +439,10 @@ class IfcCsv:
         return any([s for s in self.summaries if s is not None])
 
     def export_xlsx(self, output, should_preserve_existing=False):
+        if self.split_groups is not None:
+            self.export_xlsx_split(output)
+            return
+
         df = self.export_pd()
         if self.has_summaries():
             df.loc[df.shape[0]] = self.summaries
@@ -380,7 +459,26 @@ class IfcCsv:
         else:
             df.to_excel(output, index=False, engine="openpyxl")
 
-    def export_pd(self):
+    def export_xlsx_split(self, output) -> None:
+        assert self.split_groups is not None
+        existing_names: set[str] = set()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            for key, rows in self.split_groups:
+                sheet_name = self.sanitize_split_key(key, existing_names)
+                df = pd.DataFrame(rows, columns=self.headers)
+                if self.has_summaries():
+                    df.loc[df.shape[0]] = self.summaries
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+    def export_pd(self) -> Union["pd.DataFrame", dict[str, "pd.DataFrame"]]:
+        if self.split_groups is not None:
+            existing_names: set[str] = set()
+            self.dataframe = {
+                self.sanitize_split_key(key, existing_names): pd.DataFrame(rows, columns=self.headers)
+                for key, rows in self.split_groups
+            }
+            return self.dataframe
+
         self.dataframe = pd.DataFrame(self.results, columns=self.headers)
         return self.dataframe
 
@@ -537,6 +635,15 @@ if __name__ == "__main__":
     parser.add_argument("--headers", nargs="+", help="Specify human readable headers that correlate to each attribute.")
     parser.add_argument("--sort", nargs="+", help="Specify one or more attributes to sort by.")
     parser.add_argument("--order", nargs="+", help="Choose the sort order from ASC or DESC for each sorted attribute.")
+    parser.add_argument(
+        "--split-by",
+        type=str,
+        default=None,
+        help=(
+            "Specify an attribute to split results by, writing one worksheet per unique value for "
+            "xlsx/ods, or one suffixed file per unique value for csv."
+        ),
+    )
     parser.add_argument("--export", action="store_true", help="Export from IFC to the desired format.")
     parser.add_argument("--import", action="store_true", help="Import from the autodetected format to IFC.")
     args = parser.parse_args()
@@ -562,6 +669,7 @@ if __name__ == "__main__":
             bool_false=args.bool_false,
             concat=args.concat,
             sort=sort,
+            split_by=args.split_by,
         )
     elif getattr(args, "import"):
         ifc_csv = IfcCsv()
