@@ -83,7 +83,10 @@ class IFCFileSelector:
         filepath = self.get_filepath_abs()
 
         if self.use_relative_path:
-            filepath = filepath.relative_to(bpy.path.abspath("//"))
+            try:
+                filepath = filepath.relative_to(bpy.path.abspath("//"))
+            except ValueError:
+                pass  # IFC file is not under the blend directory; keep absolute path
         return filepath.as_posix().replace("\\", "/")
 
     def draw(self, context: bpy.types.Context) -> None:
