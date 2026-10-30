@@ -37,6 +37,7 @@ import ifcopenshell.api.classification
 import ifcopenshell.api.cost
 import ifcopenshell.api.sequence
 import ifcopenshell.util.cost
+import platformdirs
 import socketio
 from ifc5d.ifc2json import ifc5D2json
 from ifcopenshell.util.classification import get_classification_data, get_references
@@ -66,6 +67,13 @@ IFC_TASK_ATTRIBUTE_MAP = {
     "pEnd": "ScheduleFinish",
     "pName": "Name",
 }
+
+
+def get_pid_file_path():
+    """Get the path to the PID file in the user's cache directory."""
+    cache_dir = Path(platformdirs.user_cache_dir("bonsai"))
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return cache_dir / "running_pid.json"
 
 
 class Web(bonsai.core.tool.Web):
@@ -210,7 +218,7 @@ class Web(bonsai.core.tool.Web):
             cls.disconnect_websocket_server()
 
         # sleep(0.5)
-        pid_file = tool.Blender.get_data_dir_path("webui") / "running_pid.json"
+        pid_file = get_pid_file_path()
         with open(pid_file, "r") as f:
             pids = json.load(f)
 
@@ -245,7 +253,7 @@ class Web(bonsai.core.tool.Web):
         while True:
             if time.time() - start > max_time:
                 return False
-            pid_file = tool.Blender.get_data_dir_path("webui") / "running_pid.json"
+            pid_file = get_pid_file_path()
             try:
                 with open(pid_file, "r") as f:
                     data = json.load(f)
