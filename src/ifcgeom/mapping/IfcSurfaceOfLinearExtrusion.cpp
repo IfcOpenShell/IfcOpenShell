@@ -35,6 +35,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceOfLinearExtrusion& in
 		matrix,
 		map(inst.SweptCurve()),
 		taxonomy::cast<taxonomy::direction3>(map(inst.ExtrudedDirection())),
-		std::numeric_limits<double>::infinity()
+		inst.Depth() * length_unit_
 	);
 }
