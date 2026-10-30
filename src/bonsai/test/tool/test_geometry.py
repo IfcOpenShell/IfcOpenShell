@@ -169,6 +169,41 @@ class TestGetActiveRepresentation(NewFile):
         assert subject.get_active_representation(obj) is None
 
 
+class TestReloadRepresentation(NewFile):
+    def test_refreshes_a_type_object_with_a_stale_mesh(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc)
+        model = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        element_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWallType")
+        representation = ifcopenshell.api.geometry.add_wall_representation(
+            ifc, context=body, length=1.0, height=1.0, thickness=0.1
+        )
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element_type, representation=representation)
+        occurrence = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[occurrence], relating_type=element_type)
+
+        occurrence_mesh = bpy.data.meshes.new("Occurrence")
+        tool.Geometry.get_mesh_props(occurrence_mesh).ifc_definition_id = representation.id()
+        occurrence_obj = bpy.data.objects.new("Occurrence", occurrence_mesh)
+        tool.Ifc.link(occurrence, occurrence_obj)
+
+        stale_representation = ifc.createIfcShapeRepresentation()
+        type_mesh = bpy.data.meshes.new("Type")
+        tool.Geometry.get_mesh_props(type_mesh).ifc_definition_id = stale_representation.id()
+        ifc.remove(stale_representation)
+        type_obj = bpy.data.objects.new("Type", type_mesh)
+        tool.Ifc.link(element_type, type_obj)
+
+        subject.reload_representation(occurrence_obj)
+        assert subject.get_active_representation(occurrence_obj) == representation
+        assert subject.get_active_representation(type_obj) == representation
+
+
 class TestGetRepresentationId(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
