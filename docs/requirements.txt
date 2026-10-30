@@ -4,7 +4,7 @@
 # so that the interfaces between autoapi, breathe, exhale, and Sphinx stay in
 # the combination that is known to work.
 
-Sphinx==9.1.0
+Sphinx==9.2.0
 # breathe 5 renders template partial specialisations as duplicate C++
 # declarations, so stay on the 4.x series for now.
 breathe==5.1.0
