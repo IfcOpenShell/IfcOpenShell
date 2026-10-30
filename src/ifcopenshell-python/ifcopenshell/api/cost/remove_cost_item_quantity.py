@@ -48,4 +48,4 @@ def remove_cost_item_quantity(
         return
     quantities = list(cost_item.CostQuantities or [])
     quantities.remove(physical_quantity)
-    cost_item.CostQuantities = quantities
+    cost_item.CostQuantities = quantities or None
