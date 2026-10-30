@@ -187,6 +187,7 @@ class PortData:
                     "FlowDirection": port.FlowDirection,
                     "port_obj_name": port_obj_name,
                     "connected_obj_name": connected_obj_name,
+                    "size_label": tool.System.get_port_size_label(port),
                 }
             )
         return data

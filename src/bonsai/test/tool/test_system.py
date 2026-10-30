@@ -20,8 +20,10 @@ from math import pi
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.material
 import ifcopenshell.api.root
 import ifcopenshell.api.system
+import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
@@ -472,3 +474,57 @@ class TestFlowElementAndControls(NewFile):
         controls = subject.get_flow_element_controls(flow_element)
         assert set(controls) == set((flow_control, flow_control1))
         assert subject.get_flow_control_flow_element(flow_control) == flow_element
+
+
+def _add_profiled_segment_type(ifc, ifc_class, profile, name="TYPE"):
+    segment_type = ifcopenshell.api.root.create_entity(ifc, ifc_class=ifc_class, name=name)
+    material = ifcopenshell.api.material.add_material(ifc, name=name)
+    profile_set = ifcopenshell.api.material.add_material_set(ifc, name=name, set_type="IfcMaterialProfileSet")
+    ifcopenshell.api.material.add_profile(ifc, profile_set=profile_set, material=material, profile=profile)
+    ifcopenshell.api.material.assign_material(
+        ifc, products=[segment_type], type="IfcMaterialProfileSet", material=profile_set
+    )
+    return segment_type
+
+
+class TestPortSizeSync(NewFile):
+    def test_pipe_segment_ports_carry_nominal_diameter(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        profile = ifc.create_entity("IfcCircleProfileDef", ProfileType="AREA", ProfileName="DN100", Radius=50.0)
+        segment_type = _add_profiled_segment_type(ifc, "IfcPipeSegmentType", profile)
+        bpy.ops.bim.add_occurrence(relating_type_id=segment_type.id())
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        ports = ifcopenshell.util.system.get_ports(element)
+        assert len(ports) == 2
+        symbol = ifcopenshell.util.unit.get_unit_symbol(ifcopenshell.util.unit.get_project_unit(ifc, "LENGTHUNIT"))
+        for port in ports:
+            pset = ifcopenshell.util.element.get_pset(port, "Pset_DistributionPortTypePipe")
+            assert pset and pset["NominalDiameter"] == 100.0
+            assert subject.get_port_size_label(port) == f"⌀100 {symbol}"
+
+    def test_rectangular_duct_ports_carry_width_and_height(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        profile = ifc.create_entity("IfcRectangleProfileDef", ProfileType="AREA", XDim=200.0, YDim=100.0)
+        segment_type = _add_profiled_segment_type(ifc, "IfcDuctSegmentType", profile)
+        bpy.ops.bim.add_occurrence(relating_type_id=segment_type.id())
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        ports = ifcopenshell.util.system.get_ports(element)
+        assert len(ports) == 2
+        symbol = ifcopenshell.util.unit.get_unit_symbol(ifcopenshell.util.unit.get_project_unit(ifc, "LENGTHUNIT"))
+        for port in ports:
+            pset = ifcopenshell.util.element.get_pset(port, "Pset_DistributionPortTypeDuct")
+            assert pset and pset["NominalWidth"] == 200.0 and pset["NominalHeight"] == 100.0
+            assert subject.get_port_size_label(port) == f"200x100 {symbol}"
+
+    def test_ports_without_profile_get_no_size(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        obj = bpy.data.objects["Cube"]
+        bpy.ops.bim.assign_class(ifc_class="IfcPipeSegment", predefined_type="RIGIDSEGMENT", userdefined_type="")
+        ports = subject.add_ports(obj)
+        assert len(ports) == 2
+        for port in ports:
+            assert ifcopenshell.util.element.get_pset(port, "Pset_DistributionPortTypePipe") is None
+            assert subject.get_port_size_label(port) == ""
