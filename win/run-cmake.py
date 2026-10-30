@@ -342,7 +342,7 @@ def main() -> None:
         *build_type_option,
         "-DWITH_ROCKSDB=ON",
         "-DWITH_ZSTD=ON",
-        "-DBUILD_ONLY_COMMON_SCHEMAS=ON",
+        f"-DBUILD_ONLY_COMMON_SCHEMAS={os.environ.get('BUILD_ONLY_COMMON_SCHEMAS', 'ON')}",
         f"-DCMAKE_PREFIX_PATH={cmake_prefix_path}",
         f"-DADD_COMMIT_SHA={ADD_COMMIT_SHA}",
         f"-DVERSION_OVERRIDE={VERSION_OVERRIDE}",

@@ -1841,7 +1841,7 @@ if extra_cmake_args:
 if ARGS.schemas:
     cmake_args.append(f"-DSCHEMA_VERSIONS={ARGS.schemas}")
 else:
-    cmake_args.append("-DBUILD_ONLY_COMMON_SCHEMAS=ON")
+    cmake_args.append(f"-DBUILD_ONLY_COMMON_SCHEMAS={os.environ.get('BUILD_ONLY_COMMON_SCHEMAS', 'ON')}")
 
 if "cgal" in targets:
     cmake_args.append("-DWITH_CGAL=On")
