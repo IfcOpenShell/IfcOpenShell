@@ -192,14 +192,17 @@ class TestIsRelatingTypeCompatible(NewFile):
         assert subject.is_relating_type_compatible(door, door_style) is True
 
     def test_legacy_style_pairing_refused_in_ifc4x3(self):
+        ifc4x3 = ifcopenshell.file(schema="IFC4X3")
+        ifc4 = ifcopenshell.file(schema="IFC4")
+        door = ifcopenshell.api.root.create_entity(ifc4x3, ifc_class="IfcDoor")
+        door_style = ifcopenshell.api.root.create_entity(ifc4, ifc_class="IfcDoorStyle")
+        assert subject.is_relating_type_compatible(door, door_style) is False
+
+    def test_matched_pair_ifc4x3(self):
         ifc = ifcopenshell.file(schema="IFC4X3")
         door = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoor")
-        try:
-            door_style = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoorStyle")
-        except Exception:
-            # IfcDoorStyle was removed in IFC4X3 — exclusion holds trivially.
-            return
-        assert subject.is_relating_type_compatible(door, door_style) is False
+        door_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoorType")
+        assert subject.is_relating_type_compatible(door, door_type) is True
 
     def test_untypable_occurrence_returns_false(self):
         ifc = ifcopenshell.file()
