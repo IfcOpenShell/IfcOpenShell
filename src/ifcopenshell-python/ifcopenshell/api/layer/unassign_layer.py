@@ -38,9 +38,9 @@ def unassign_layer(
 
         # Remember, all geometry needs to specify the context it is part of first.
         # See ifcopenshell.api.context.add_context for details.
-        model = ifcopenshell.api.context.add_context(model, context_type="Model")
+        model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
         body = ifcopenshell.api.context.add_context(model,
-            context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+            context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d
         )
 
         wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
