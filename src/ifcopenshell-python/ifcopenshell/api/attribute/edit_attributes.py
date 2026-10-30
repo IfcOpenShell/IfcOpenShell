@@ -38,6 +38,10 @@ def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instan
     - PredefinedType to be "NOTDEFINED" if ElementType/ObjectType is None
     - PredefinedType to be "USERDEFINED" if ElementType/ObjectType is not None
 
+    If a type's own PredefinedType becomes a concrete value, its already
+    typed occurrences have their PredefinedType/ObjectType cleared to forbid
+    double typing (see #7006).
+
     :param product: The product you want to edit. This may be any rooted IFC
         entity.
     :param attributes: a dictionary of attribute names and values.
@@ -69,6 +73,19 @@ def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instan
                 product.PredefinedType = "NOTDEFINED"
             elif element_type and predefined_type != "USERDEFINED":
                 product.PredefinedType = "USERDEFINED"
+
+            # Remove occurrences' PredefinedType / ObjectType to forbid double typing (see #7006)
+            type_predefined_type = ifcopenshell.util.element.get_predefined_type(product)
+            if type_predefined_type not in ("NOTDEFINED", None):
+                if hasattr(product, "ObjectTypeOf"):
+                    types_rel = next(iter(product.ObjectTypeOf), None)
+                else:
+                    types_rel = next(iter(getattr(product, "Types", ())), None)
+                if types_rel:
+                    for obj in types_rel.RelatedObjects:
+                        obj.ObjectType = None
+                        if hasattr(obj, "PredefinedType"):
+                            obj.PredefinedType = None
 
         elif (object_type := getattr_safe(product, "ObjectType")) is not ...:
             relating_type = ifcopenshell.util.element.get_type(product)
