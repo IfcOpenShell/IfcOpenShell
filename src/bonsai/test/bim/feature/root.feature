@@ -14,6 +14,19 @@ Scenario: Add element - a type with no geometry
     Then the object "IfcFurnitureType/Foo" exists
     And the object "IfcFurnitureType/Foo" has no data
 
+Scenario: Add element - a layered type with a custom thickness
+    Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Name" property to "Foo"
+    And I set the "Definition" property to "IfcElementType"
+    And I set the "Class" property to "IfcWallType"
+    And I set the "Representation" property to "Vertical Layers"
+    And I set the "Thickness" property to "0.35"
+    When I click "OK"
+    Then the object "IfcWallType/Foo" exists
+    And the variable "layer_thickness" is "ifcopenshell.util.unit.calculate_unit_scale({ifc}) * {ifc}.by_type('IfcMaterialLayerSet')[0].MaterialLayers[0].LayerThickness"
+    And the variable "layer_thickness" equals "0.35"
+
 Scenario: Add element - an element with no geometry
     Given an empty IFC project
     And I trigger "Add Element"
