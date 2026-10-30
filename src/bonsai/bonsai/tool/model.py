@@ -2123,8 +2123,6 @@ class Model(bonsai.core.tool.Model):
             return voided_obj
         old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
 
-        ifcopenshell.api.geometry.unassign_representation(ifc_file, product=opening, representation=old_representation)
-
         filling_obj = tool.Ifc.get_object(filling)
         new_representation = FilledOpeningGenerator().generate_opening_from_filling(
             filling, filling_obj, voided_obj.dimensions[1]
@@ -2138,9 +2136,21 @@ class Model(bonsai.core.tool.Model):
         return voided_obj
 
     @classmethod
+    def get_opening_update_targets(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        """Propagation targets whose opening follows an edit of ``element``:
+        ``element`` itself and occurrences sharing its Body representation."""
+        from bonsai.bim.module.model.window import has_shared_model_body
+
+        targets = tool.Array.get_parametric_propagation_targets(element)
+        if not (body := ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")):
+            return targets
+        body = tool.Geometry.resolve_mapped_representation(body)
+        return [e for e in targets if e == element or has_shared_model_body(e, body)]
+
+    @classmethod
     def regenerate_simple_opening_bodies(cls, element: ifcopenshell.entity_instance) -> set:
-        """Regenerate every distinct mapped opening source within ``element``'s
-        type-occurrence family so each one matches the family's current
+        """Regenerate every distinct mapped opening source among ``element``
+        and the occurrences sharing its Body, so each one matches the current
         parametric dimensions.
 
         Most occurrences share a single mapped source — refreshing it once
@@ -2151,7 +2161,7 @@ class Model(bonsai.core.tool.Model):
         objects whose host representation needs a viewport-level recut
         (callers handle the recut themselves)."""
         ifc_file = tool.Ifc.get()
-        fillings = list(tool.Array.get_parametric_propagation_targets(element))
+        fillings = cls.get_opening_update_targets(element)
 
         voided_objs: set = set()
         seen_source_ids: set[int] = set()
@@ -2179,7 +2189,7 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def update_simple_openings(cls, element: ifcopenshell.entity_instance) -> None:
         voided_objs = cls.regenerate_simple_opening_bodies(element)
-        fillings = {e: tool.Ifc.get_object(e) for e in tool.Array.get_parametric_propagation_targets(element)}
+        fillings = {e: tool.Ifc.get_object(e) for e in cls.get_opening_update_targets(element)}
 
         tool.Model.reload_body_representation(voided_objs)
         if fillings:
