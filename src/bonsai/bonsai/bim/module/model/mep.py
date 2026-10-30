@@ -214,37 +214,32 @@ class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
                     bpy.ops.bim.mep_add_bend()
                 elif is_on_axis1 and is_on_axis2:
                     fitting_type = "CROSS"
+                    self.report(
+                        {"INFO"},
+                        "Cross junctions need 4 segments: split both segments at the junction, "
+                        "select the 4 parts and repeat.",
+                    )
                 else:
                     fitting_type = "TEE"
+                    self.report(
+                        {"INFO"},
+                        "Tee junctions need 3 segments: split the main segment at the junction, "
+                        "select all 3 parts and repeat.",
+                    )
             elif total_profiles == 2:
                 if is_parallel:
                     fitting_type = "TRANSITION"
                     bpy.ops.bim.mep_add_transition()
 
-        elif total_selected_objs == 3:
+        elif total_selected_objs >= 3:
             if total_profiles > 1:
                 return
-
-            axis1 = tool.Model.get_flow_segment_axis(selected_objs[0])
-            axis2 = tool.Model.get_flow_segment_axis(selected_objs[1])
-            axis3 = tool.Model.get_flow_segment_axis(selected_objs[2])
-
-            angle12 = tool.Cad.angle_edges(axis1, axis2, signed=False, degrees=True)
-            angle13 = tool.Cad.angle_edges(axis1, axis3, signed=False, degrees=True)
-            angle21 = tool.Cad.angle_edges(axis2, axis1, signed=False, degrees=True)
-            angle23 = tool.Cad.angle_edges(axis2, axis3, signed=False, degrees=True)
-            is_parallel12 = tool.Cad.is_x(angle12, (0, 180), tolerance=0.001)
-            is_parallel13 = tool.Cad.is_x(angle13, (0, 180), tolerance=0.001)
-            is_parallel21 = tool.Cad.is_x(angle21, (0, 180), tolerance=0.001)
-            is_parallel23 = tool.Cad.is_x(angle23, (0, 180), tolerance=0.001)
-
-            if not all([is_parallel12, is_parallel13, is_parallel21, is_parallel23]):
-                fitting_type = "WYE"
+            # mep_add_junction validates that the axes meet at a common point.
+            fitting_type = "JUNCTION"
+            bpy.ops.bim.mep_add_junction()
 
         if not fitting_type:
             return
-
-        print(fitting_type)
 
 
 class MEPGenerator:
@@ -1672,6 +1667,246 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             bpy.data.objects.remove(source_obj)
             if source_mesh.users == 0:
                 bpy.data.meshes.remove(source_mesh)
+
+
+class MEPAddJunction(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.mep_add_junction"
+    bl_label = "Add Junction"
+    bl_description = (
+        "Adds a junction fitting (tee, wye or cross) between 3 or more selected MEP segments\n"
+        "whose axes meet at a common point"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    leg_length: bpy.props.FloatProperty(
+        name="Leg Length",
+        description="Length of each junction leg measured from the junction point, in SI units",
+        default=0.1,
+        subtype="DISTANCE",
+        min=0.01,
+    )
+    segment_ids: bpy.props.StringProperty(
+        name="Segment Element IDs",
+        description="Comma separated segment element ids, uses the current selection when empty",
+        default="",
+        options={"SKIP_SAVE"},
+    )
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+
+        if self.segment_ids:
+            try:
+                elements = [ifc_file.by_id(int(i)) for i in self.segment_ids.split(",")]
+            except (ValueError, RuntimeError):
+                self.report({"ERROR"}, "Could not resolve segment element ids for the junction.")
+                return {"CANCELLED"}
+            objs = [tool.Ifc.get_object(e) for e in elements]
+            if not all(objs):
+                self.report({"ERROR"}, "Some junction segments have no Blender object bound.")
+                return {"CANCELLED"}
+            if not all(e.is_a("IfcFlowSegment") for e in elements):
+                self.report({"ERROR"}, "All provided elements should be flow segments.")
+                return {"CANCELLED"}
+        else:
+            objs, elements = [], []
+            for obj in context.selected_objects:
+                element = tool.Ifc.get_entity(obj)
+                if element and element.is_a("IfcFlowSegment"):
+                    objs.append(obj)
+                    elements.append(element)
+
+        if len(elements) < 3:
+            self.report({"ERROR"}, "At least 3 flow segments are required for a junction.")
+            return {"CANCELLED"}
+        if len({e.is_a() for e in elements}) != 1:
+            self.report({"ERROR"}, "All segments should be of the same class (do not mix ducts and pipes).")
+            return {"CANCELLED"}
+
+        segment_types = {ifcopenshell.util.element.get_type(e) for e in elements}
+        if None in segment_types or len(segment_types) != 1:
+            self.report({"ERROR"}, "All segments should share the same segment type for a junction.")
+            return {"CANCELLED"}
+
+        profile = tool.Model.get_flow_segment_profile(elements[0])
+        if not profile:
+            self.report({"ERROR"}, "Segments have no single profile to build the junction from.")
+            return {"CANCELLED"}
+
+        for obj in objs:
+            tool.Model.sync_object_ifc_position(obj)
+
+        # The active segment defines the junction's local frame.
+        if context.active_object in objs:
+            base_i = objs.index(context.active_object)
+            objs.insert(0, objs.pop(base_i))
+            elements.insert(0, elements.pop(base_i))
+
+        axes = [tool.Model.get_flow_segment_axis(o) for o in objs]
+
+        def get_junction_point():
+            # Least squares point minimizing distance to all segment axes.
+            a = np.zeros((3, 3))
+            b = np.zeros(3)
+            for start, end in axes:
+                direction = np.array((end - start).normalized())
+                m = np.eye(3) - np.outer(direction, direction)
+                a += m
+                b += m @ np.array(start)
+            try:
+                point = V(*np.linalg.solve(a, b))
+            except np.linalg.LinAlgError:
+                return None, None
+            max_distance = 0.0
+            for start, end in axes:
+                edge_dir = (end - start).normalized()
+                to_point = point - start
+                max_distance = max(max_distance, (to_point - to_point.dot(edge_dir) * edge_dir).length)
+            return point, max_distance
+
+        junction_point, max_distance = get_junction_point()
+        if junction_point is None or max_distance > 0.001:
+            self.report({"ERROR"}, "Segment axes do not meet at a common point, cannot build a junction.")
+            return {"CANCELLED"}
+
+        legs = []
+        for obj, element, axis in zip(objs, elements, axes):
+            segment_data = MEPGenerator.get_segment_data(element)
+            if "start_port" not in segment_data or "end_port" not in segment_data:
+                self.report({"ERROR"}, f"Segment '{obj.name}' has no ports to connect the junction to.")
+                return {"CANCELLED"}
+            near_point, far_point = tool.Cad.closest_and_furthest_vectors(
+                junction_point, (segment_data["start_point"], segment_data["end_point"])
+            )
+            near_is_start = near_point == segment_data["start_point"]
+            leg_dir = (far_point - near_point).normalized()
+
+            if (near_point - junction_point).dot(leg_dir) < -0.001:
+                self.report(
+                    {"ERROR"},
+                    f"Segment '{obj.name}' runs through the junction point, split it at the junction first.",
+                )
+                return {"CANCELLED"}
+            far_projection = (far_point - junction_point).dot(leg_dir)
+            if far_projection <= self.leg_length + 0.001:
+                self.report(
+                    {"ERROR"},
+                    f"Segment '{obj.name}' is too short for a junction leg of {self.leg_length:.3f}m.",
+                )
+                return {"CANCELLED"}
+
+            port = segment_data["start_port" if near_is_start else "end_port"]
+            if tool.System.get_connected_port(port):
+                self.report({"ERROR"}, f"Segment '{obj.name}' port at the junction is already connected.")
+                return {"CANCELLED"}
+
+            legs.append({"obj": obj, "dir": leg_dir, "near_is_start": near_is_start, "port": port})
+
+        for i in range(len(legs)):
+            for leg_j in legs[i + 1 :]:
+                if legs[i]["dir"].dot(leg_j["dir"]) > cos(radians(1)):
+                    self.report({"ERROR"}, "Two segments approach the junction from the same direction.")
+                    return {"CANCELLED"}
+
+        # Trim or extend every segment so its near end lands on its junction port.
+        for leg in legs:
+            port_point = junction_point + leg["dir"] * self.leg_length
+            connection = "ATSTART" if leg["near_is_start"] else "ATEND"
+            DumbProfileJoiner().join_E(leg["obj"], port_point, connection)
+        context.view_layer.update()
+
+        base_rotation = objs[0].matrix_world.to_quaternion()
+        to_local = base_rotation.inverted()
+        for leg in legs:
+            leg["dir_local"] = (to_local @ leg["dir"]).normalized()
+            leg["x_local"] = (to_local @ tool.Cad.get_basis_vector(leg["obj"], 0)).normalized()
+
+        # One extruded solid per leg, from the junction point out to the leg's port,
+        # each oriented by its own segment's frame so the profile matches the segment.
+        builder = ShapeBuilder(ifc_file)
+        items = [
+            builder.extrude(
+                profile,
+                self.leg_length / si_conversion,
+                position_z_axis=leg["dir_local"],
+                position_x_axis=leg["x_local"],
+            )
+            for leg in legs
+        ]
+        body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        rep = builder.get_representation(body, items)
+
+        fitting_class = MEPGenerator().get_mep_element_class_name(elements[0], "FittingType")
+        # Cable carrier fittings have no JUNCTION in their enum, they use TEE / CROSS.
+        if fitting_class == "IfcCableCarrierFittingType":
+            predefined_type = {3: "TEE", 4: "CROSS"}.get(len(legs), "NOTDEFINED")
+        else:
+            predefined_type = "JUNCTION"
+
+        mesh = bpy.data.meshes.new("Junction")
+        obj = bpy.data.objects.new("Junction", mesh)
+        junction_type = bonsai.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class=fitting_class,
+            predefined_type=predefined_type,
+            should_add_representation=False,
+        )
+        # Will implicitly remove `mesh`.
+        tool.Model.replace_object_ifc_representation(body, obj, rep)
+        junction_data = {"legs": [[*leg["dir_local"], self.leg_length / si_conversion] for leg in legs]}
+        pset = ifcopenshell.api.pset.add_pset(ifc_file, product=junction_type, name="BBIM_Fitting")
+        ifcopenshell.api.pset.edit_pset(
+            ifc_file,
+            pset=pset,
+            properties={"Data": ifc_file.createIfcText(json.dumps(junction_data, default=list))},
+        )
+
+        def add_junction_ports(element, element_obj):
+            ports = []
+            for leg in legs:
+                port = ifcopenshell.api.system.add_port(ifc_file, element=element)
+                port.FlowDirection = "NOTDEFINED"
+                port.PredefinedType = tool.System.get_port_predefined_type(element)
+                matrix = element_obj.matrix_world @ Matrix.Translation(leg["dir_local"] * self.leg_length)
+                ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=port, matrix=matrix, is_si=True)
+                ports.append(port)
+            return ports
+
+        context.view_layer.update()
+        add_junction_ports(junction_type, obj)
+
+        # NOTE: at this point we loose current blender objects selection
+        bpy.ops.bim.add_occurrence(relating_type_id=junction_type.id())
+        fitting_obj = bpy.context.active_object
+        assert fitting_obj
+        fitting_matrix = base_rotation.to_matrix().to_4x4()
+        fitting_matrix.translation = junction_point
+        fitting_obj.matrix_world = fitting_matrix
+        context.view_layer.update()
+        tool.Model.sync_object_ifc_position(fitting_obj)
+
+        fitting = tool.Ifc.get_entity(fitting_obj)
+        fitting_ports = tool.System.get_ports(fitting)
+        if len(fitting_ports) != len(legs):
+            # add_occurrence didn't instantiate the type ports on this occurrence.
+            fitting_ports = add_junction_ports(fitting, fitting_obj)
+
+        # Ports are matched to legs by proximity since their order is not guaranteed.
+        for leg in legs:
+            port_point = (junction_point + leg["dir"] * self.leg_length) / si_conversion
+            fitting_port = min(
+                fitting_ports, key=lambda p: (tool.Model.get_element_matrix(p).translation - port_point).length
+            )
+            fitting_ports.remove(fitting_port)
+            ifcopenshell.api.system.connect_port(
+                ifc_file, port1=fitting_port, port2=leg["port"], direction="NOTDEFINED"
+            )
+
+        self.report({"INFO"}, f"Added a {predefined_type.lower()} fitting with {len(legs)} legs.")
+        return {"FINISHED"}
 
 
 def _n_mep_selected(n: int) -> bool:
