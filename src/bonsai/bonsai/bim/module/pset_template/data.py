@@ -124,7 +124,10 @@ class PsetTemplatesData:
             props = tool.PsetTemplate.get_pset_template_props()
             IfcStore.pset_template_path = props.pset_template_files
             IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
-        return [(str(t.id()), t.Name, "") for t in IfcStore.pset_template_file.by_type("IfcPropertySetTemplate")]
+        return [
+            (str(t.id()), t.Name or "Unnamed", "")
+            for t in IfcStore.pset_template_file.by_type("IfcPropertySetTemplate")
+        ]
 
     @classmethod
     def pset_template(cls) -> dict[str, Any]:
