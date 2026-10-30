@@ -575,6 +575,12 @@ class IfcOpenShell(QtoCalculator):
             return ifcopenshell.util.shape.get_footprint_area(geometry)
         return ifcopenshell.util.shape.get_side_area(geometry)
 
+    @staticmethod
+    def unwrap_boolean_result(item: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        while item.is_a("IfcBooleanResult"):
+            item = item.FirstOperand
+        return item
+
     @classmethod
     def get_segment_length(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
         """Get segment length.
@@ -584,8 +590,11 @@ class IfcOpenShell(QtoCalculator):
             or ``None`` if element doesn't have a representation or it's not supported.
         """
         rep = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if rep and len(rep.Items or []) == 1 and rep.Items[0].is_a("IfcExtrudedAreaSolid"):
-            item = rep.Items[0]
+        if (
+            rep
+            and len(rep.Items or []) == 1
+            and (item := cls.unwrap_boolean_result(rep.Items[0])).is_a("IfcExtrudedAreaSolid")
+        ):
             if item.SweptArea.is_a("IfcRectangleProfileDef"):
                 # Revit doesn't follow the +Z extrusion rule, so the rectangle isn't the cross section
                 x = item.SweptArea.XDim
