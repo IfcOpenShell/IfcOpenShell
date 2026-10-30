@@ -57,7 +57,8 @@ class Patcher:
 
         After that, it will:
 
-        1. Reassign everything to an IfcGeographicElement
+        1. Reassign everything to an IfcGeographicElement. Skipped on IFC2X3,
+            where this class does not exist.
         2. Detect boundary edges and create an edge-only IfcVirtualElement.
             Good for clean viz in Revit.
         3. Create a copy of the object which has no sharp faces. This will
@@ -104,7 +105,7 @@ class Patcher:
 
         .. code:: python
 
-            ifcpatch.execute({"input": "input.ifc", "recipe": "FixRevit2025TINs", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "recipe": "FixRevit2025TINs", "arguments": ["input.ifc"]})
         """
         self.file = file
         self.filepath = filepath
@@ -122,6 +123,7 @@ class Patcher:
         props = tool.Project.get_project_props()
         props.should_use_native_meshes = True
         bpy.ops.bim.load_project(filepath=self.filepath)
+        self.file = tool.Ifc.get()
 
         old_history_size = tool.Ifc.get().history_size
         old_undo_steps = bpy.context.preferences.edit.undo_steps
@@ -136,9 +138,14 @@ class Patcher:
             if not obj.data.polygons:
                 continue
             element = tool.Ifc.get_entity(obj)
-            element.PredefinedType = "USERDEFINED"
             element.ObjectType = "TIN"
-            element = ifcopenshell.util.schema.reassign_class(tool.Ifc.get(), element, "IfcGeographicElement")
+            if tool.Ifc.get().schema == "IFC2X3":
+                self.logger.warning(
+                    f"{element} was not reassigned to IfcGeographicElement: this class does not exist in IFC2X3."
+                )
+            else:
+                element.PredefinedType = "USERDEFINED"
+                element = ifcopenshell.util.schema.reassign_class(tool.Ifc.get(), element, "IfcGeographicElement")
 
             bm = bmesh.new()
             bm.from_mesh(obj.data)
@@ -162,8 +169,6 @@ class Patcher:
 
         tool.Ifc.get().history_size = old_history_size
         bpy.context.preferences.edit.undo_steps = old_undo_steps
-
-        self.file = tool.Ifc.get()
 
     def create_edges(self, obj: bpy.types.Object) -> None:
         import bmesh  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
