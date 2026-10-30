@@ -1126,3 +1126,448 @@ class TestIsDrawingActive(NewFile):
         # addresses, so this assertion documents that assumption.
         assert bpy.app.background is True
         assert subject.is_drawing_active() is True
+
+
+class SheetOnDisk:
+    """A sheet, its layout and its drawings, as files and as a model.
+
+    The code under test decides which file on disk belongs to which sheet, so
+    the files have to be real. Locations are absolute, which is what Bonsai
+    writes for a project whose IFC has been saved.
+    """
+
+    def __init__(self, tmp_path, identification="A01", name="PLANS"):
+        self.ifc = ifcopenshell.file()
+        tool.Ifc.set(self.ifc)
+        self.layouts = tmp_path / "layouts"
+        self.drawings = tmp_path / "drawings"
+        self.layouts.mkdir(exist_ok=True)
+        self.drawings.mkdir(exist_ok=True)
+        self.sheet = self.ifc.createIfcDocumentInformation(
+            Identification=identification, Name=name, Scope="SHEET"
+        )
+        self.layout_path = str(self.layouts / f"{identification} - {name}.svg")
+        self.ifc.createIfcDocumentReference(
+            Location=self.layout_path, Description="LAYOUT", ReferencedDocument=self.sheet
+        )
+
+    def add_drawing(self, name: str, guid: str) -> str:
+        """A drawing on this sheet, with its SVG. Returns the file's path."""
+        path = str(self.drawings / f"{name}.svg")
+        drawing = self.ifc.createIfcAnnotation(GlobalId=guid, ObjectType="DRAWING", Name=name)
+        reference = self.ifc.createIfcDocumentReference(Location=path)
+        self.ifc.createIfcRelAssociatesDocument(
+            GlobalId=ifcopenshell.guid.new(), RelatedObjects=[drawing], RelatingDocument=reference
+        )
+        self.ifc.createIfcDocumentReference(
+            Location=path, Description="DRAWING", ReferencedDocument=self.sheet
+        )
+        Path(path).write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
+        return path
+
+    def write_layout(self, path: str, places: "list[tuple[str, str]]") -> str:
+        """A layout file placing (guid, drawing file) pairs, as Bonsai writes one."""
+        groups = "".join(
+            f'<g data-type="drawing" data-drawing="{guid}">'
+            f'<image data-type="foreground" xlink:href="{os.path.relpath(file, os.path.dirname(path))}"/>'
+            f"</g>"
+            for guid, file in places
+        )
+        Path(path).write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" '
+            f'xmlns:xlink="http://www.w3.org/1999/xlink">{groups}</svg>'
+        )
+        return path
+
+
+class TestFindMovedSheetFile(NewFile):
+    def test_nothing_to_find_when_the_file_is_where_the_model_says(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        model.write_layout(model.layout_path, [("0aaa", drawing)])
+        assert subject.find_moved_sheet_file(model.sheet, "LAYOUT") is None
+
+    def test_finds_a_layout_renamed_in_a_session_that_was_not_saved(self, tmp_path):
+        # The rename moved the file at once; the model was never saved, so it
+        # still names the old one. The file that places this sheet's drawings
+        # and belongs to no sheet is it.
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        moved = model.write_layout(str(model.layouts / "A99 - RENAMED.svg"), [("0aaa", drawing)])
+        assert subject.find_moved_sheet_file(model.sheet, "LAYOUT") == moved
+
+    def test_never_takes_a_file_another_sheet_refers_to(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        other = model.ifc.createIfcDocumentInformation(Identification="A02", Name="DETAILS", Scope="SHEET")
+        taken = model.write_layout(str(model.layouts / "A02 - DETAILS.svg"), [("0aaa", drawing)])
+        model.ifc.createIfcDocumentReference(Location=taken, Description="LAYOUT", ReferencedDocument=other)
+        assert subject.find_moved_sheet_file(model.sheet, "LAYOUT") is None
+
+    def test_matches_on_number_and_a_shared_drawing_when_the_sheet_was_edited_too(self, tmp_path):
+        # A sheet renamed and then changed does not place exactly what the model
+        # says any more, so the number plus one drawing in common carries it.
+        model = SheetOnDisk(tmp_path)
+        first = model.add_drawing("PLAN", "0aaa")
+        model.add_drawing("SECTION", "0bbb")
+        moved = model.write_layout(str(model.layouts / "A01 - PLANS AND MORE.svg"), [("0aaa", first)])
+        assert subject.find_moved_sheet_file(model.sheet, "LAYOUT") == moved
+
+    def test_matches_a_sheet_with_no_drawings_by_its_number(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        moved = model.write_layout(str(model.layouts / "A01 - RENAMED.svg"), [])
+        assert subject.find_moved_sheet_file(model.sheet, "LAYOUT") == moved
+
+    def test_takes_neither_of_two_candidates(self, tmp_path):
+        # Moving a file is not undoable in any useful sense, so a guess is worse
+        # than leaving it for the person to sort out.
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        model.write_layout(str(model.layouts / "A01 - ONE.svg"), [("0aaa", drawing)])
+        model.write_layout(str(model.layouts / "A01 - TWO.svg"), [("0aaa", drawing)])
+        assert subject.find_moved_sheet_file(model.sheet, "LAYOUT") is None
+
+    def test_ignores_a_file_that_shares_no_drawing_and_no_number(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        model.add_drawing("PLAN", "0aaa")
+        other = model.add_drawing("SECTION", "0bbb")
+        model.write_layout(str(model.layouts / "Z99 - SOMETHING ELSE.svg"), [("0bbb", other)])
+        assert subject.find_moved_sheet_file(model.sheet, "LAYOUT") is None
+
+
+class TestRestoreMovedSheetFiles(NewFile):
+    def test_moves_the_layout_back_and_says_so(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        moved = model.write_layout(str(model.layouts / "A99 - RENAMED.svg"), [("0aaa", drawing)])
+
+        changes = subject.restore_moved_sheet_files(model.sheet)
+
+        assert os.path.exists(model.layout_path)
+        assert not os.path.exists(moved)
+        assert len(changes) == 1
+        assert "A99 - RENAMED.svg" in changes[0] and "A01 - PLANS.svg" in changes[0]
+
+    def test_does_nothing_when_the_files_are_in_place(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        model.write_layout(model.layout_path, [("0aaa", drawing)])
+        assert subject.restore_moved_sheet_files(model.sheet) == []
+
+
+class TestRestoreMovedDrawingFiles(NewFile):
+    def test_moves_a_renamed_drawing_back_and_repoints_the_layout(self, tmp_path):
+        # Renaming a drawing moves its SVG and rewrites the href in every layout
+        # placing it. The layout is what still ties the GlobalId to the file.
+        model = SheetOnDisk(tmp_path)
+        expected = model.add_drawing("PLAN", "0aaa")
+        moved = str(model.drawings / "PLAN - RENAMED.svg")
+        os.rename(expected, moved)
+        model.write_layout(model.layout_path, [("0aaa", moved)])
+
+        changes = subject.restore_moved_drawing_files(model.sheet)
+
+        assert os.path.exists(expected)
+        assert not os.path.exists(moved)
+        assert len(changes) == 1
+        href = ET.parse(model.layout_path).getroot().find(
+            './/{http://www.w3.org/2000/svg}image[@data-type="foreground"]'
+        )
+        assert href.get("{http://www.w3.org/1999/xlink}href").endswith("PLAN.svg")
+
+    def test_never_takes_a_file_another_drawing_expects(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        expected = model.add_drawing("PLAN", "0aaa")
+        other = model.add_drawing("SECTION", "0bbb")
+        os.remove(expected)
+        # The layout points this drawing at a file the model gives to another.
+        model.write_layout(model.layout_path, [("0aaa", other)])
+
+        assert subject.restore_moved_drawing_files(model.sheet) == []
+        assert os.path.exists(other)
+        assert not os.path.exists(expected)
+
+    def test_a_raster_underlay_moves_with_its_drawing(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        expected = model.add_drawing("PLAN", "0aaa")
+        moved = str(model.drawings / "PLAN - RENAMED.svg")
+        os.rename(expected, moved)
+        Path(moved[0:-4] + "-underlay.png").write_bytes(b"not really a png")
+        model.write_layout(model.layout_path, [("0aaa", moved)])
+
+        subject.restore_moved_drawing_files(model.sheet)
+
+        assert os.path.exists(expected[0:-4] + "-underlay.png")
+
+    def test_does_nothing_when_the_layout_already_agrees(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        model.write_layout(model.layout_path, [("0aaa", drawing)])
+        assert subject.restore_moved_drawing_files(model.sheet) == []
+
+
+class TestRestoreAllMovedFiles(NewFile):
+    def test_every_sheet_is_checked_and_named(self, tmp_path):
+        # One unsaved session can have renamed several sheets, and the operator
+        # that prompts this is only ever about one of them.
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        model.write_layout(str(model.layouts / "A99 - RENAMED.svg"), [("0aaa", drawing)])
+
+        second = model.ifc.createIfcDocumentInformation(Identification="A02", Name="DETAILS", Scope="SHEET")
+        second_layout = str(model.layouts / "A02 - DETAILS.svg")
+        model.ifc.createIfcDocumentReference(
+            Location=second_layout, Description="LAYOUT", ReferencedDocument=second
+        )
+        model.write_layout(str(model.layouts / "A02 - ALSO RENAMED.svg"), [])
+
+        changes = subject.restore_all_moved_files()
+
+        assert os.path.exists(model.layout_path)
+        assert os.path.exists(second_layout)
+        assert len(changes) == 2
+        assert any(line.startswith("A01: ") for line in changes)
+        assert any(line.startswith("A02: ") for line in changes)
+
+class TestRemoveUnreferencedGroups(NewFile):
+    """Adding a drawing writes the group at once but the reference only on save,
+    so an unsaved session leaves the layout placing what the model never got.
+    The reopened model is what the sheet is."""
+
+    def _layout(self, model, places):
+        """places: (file, data-id) pairs written as drawing groups."""
+        groups = "".join(
+            f'<g data-type="drawing" data-id="{did}" data-drawing="0g{i}">'
+            f'<image data-type="foreground" xlink:href="{os.path.relpath(f, str(model.layouts))}"/>'
+            f"</g>"
+            for i, (f, did) in enumerate(places)
+        )
+        Path(model.layout_path).write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" '
+            f'xmlns:xlink="http://www.w3.org/1999/xlink">{groups}</svg>'
+        )
+
+    def _places(self, model) -> list[str]:
+        root = ET.parse(model.layout_path).getroot()
+        out = []
+        for g in root.findall("{http://www.w3.org/2000/svg}g"):
+            image = g.find('.//{http://www.w3.org/2000/svg}image[@data-type="foreground"]')
+            if image is not None:
+                out.append(os.path.basename(image.get("{http://www.w3.org/1999/xlink}href")))
+        return out
+
+    def test_a_group_the_model_does_not_place_is_removed(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        kept = model.add_drawing("PLAN", "0aaa")
+        stray = str(model.drawings / "NEVER SAVED.svg")
+        Path(stray).write_text("<svg/>")
+        self._layout(model, [(kept, 5000), (stray, 5001)])
+
+        removed = subject.remove_unreferenced_groups(model.sheet)
+
+        assert len(removed) == 1
+        assert "NEVER SAVED.svg" in removed[0]
+        assert self._places(model) == ["PLAN.svg"]
+
+    def test_a_second_copy_of_one_drawing_is_removed(self, tmp_path):
+        # One reference, three groups - what a removal that could not find its
+        # group leaves behind, once adding is allowed again.
+        model = SheetOnDisk(tmp_path)
+        plan = model.add_drawing("PLAN", "0aaa")
+        self._layout(model, [(plan, 5000), (plan, 5001), (plan, 5002)])
+
+        removed = subject.remove_unreferenced_groups(model.sheet)
+
+        assert len(removed) == 2
+        assert self._places(model) == ["PLAN.svg"]
+
+    def test_nothing_goes_when_the_model_accounts_for_everything(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        plan = model.add_drawing("PLAN", "0aaa")
+        section = model.add_drawing("SECTION", "0bbb")
+        self._layout(model, [(plan, 5000), (section, 5001)])
+
+        assert subject.remove_unreferenced_groups(model.sheet) == []
+        assert self._places(model) == ["PLAN.svg", "SECTION.svg"]
+
+    def test_a_renumbered_model_keeps_its_groups(self, tmp_path):
+        # After a re-serialisation no data-id matches anything. Removing on that
+        # basis would empty every sheet in the project.
+        model = SheetOnDisk(tmp_path)
+        plan = model.add_drawing("PLAN", "0aaa")
+        section = model.add_drawing("SECTION", "0bbb")
+        self._layout(model, [(plan, 999001), (section, 999002)])
+
+        assert subject.remove_unreferenced_groups(model.sheet) == []
+        assert self._places(model) == ["PLAN.svg", "SECTION.svg"]
+
+class TestRestoreUnplacedReferences(NewFile):
+    """The mirror of the above, and the way it bit in the field: drawings deleted
+    in a tool were taken off the sheets, then Blender was reopened without the
+    IFC having been saved, so the model was back to placing three drawings whose
+    groups had gone. Bonsai's Sheets panel listed them; the sheets were empty.
+
+    What a group would look like is Bonsai's own business and built elsewhere, so
+    the builder is recorded rather than run."""
+
+    def _layout(self, model, places):
+        """places: (file, data-id) pairs written as drawing groups."""
+        groups = "".join(
+            f'<g data-type="drawing" data-id="{did}" data-drawing="0g{i}">'
+            f'<image data-type="foreground" xlink:href="{os.path.relpath(f, str(model.layouts))}"/>'
+            f"</g>"
+            for i, (f, did) in enumerate(places)
+        )
+        Path(model.layout_path).write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" '
+            f'xmlns:xlink="http://www.w3.org/1999/xlink">{groups}</svg>'
+        )
+
+    @pytest.fixture
+    def built(self, monkeypatch):
+        """What the sheet builder was asked to put back, without putting it back."""
+        import bonsai.bim.module.drawing.sheeter as sheeter
+
+        recorded = []
+        monkeypatch.setattr(
+            subject, "owner_of_placed_file", classmethod(lambda cls, uri: ("drawing", uri))
+        )
+        for name in ("add_drawing", "add_document"):
+            monkeypatch.setattr(
+                sheeter.SheetBuilder,
+                name,
+                lambda self, reference, entity, sheet, _name=name: recorded.append(
+                    (_name, os.path.basename(entity))
+                ),
+            )
+        return recorded
+
+    def test_a_reference_with_no_group_is_put_back(self, tmp_path, monkeypatch, built):
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        plan = model.add_drawing("PLAN", "0aaa")
+        model.add_drawing("SECTION", "0bbb")
+        self._layout(model, [(plan, 5000)])
+
+        restored = subject.restore_unplaced_references(model.sheet)
+
+        assert built == [("add_drawing", "SECTION.svg")]
+        assert len(restored) == 1
+        assert "SECTION.svg" in restored[0]
+
+    def test_nothing_happens_when_every_reference_has_a_group(self, tmp_path, monkeypatch, built):
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        plan = model.add_drawing("PLAN", "0aaa")
+        section = model.add_drawing("SECTION", "0bbb")
+        self._layout(model, [(plan, 5000), (section, 5001)])
+
+        assert subject.restore_unplaced_references(model.sheet) == []
+        assert built == []
+
+    def test_a_group_whose_data_id_matches_nothing_still_counts(self, tmp_path, monkeypatch, built):
+        # Ids drift when a model is re-serialised. Placing a second copy because
+        # of that is how a sheet ends up showing one drawing three times.
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        plan = model.add_drawing("PLAN", "0aaa")
+        self._layout(model, [(plan, 999001)])
+
+        assert subject.restore_unplaced_references(model.sheet) == []
+        assert built == []
+
+    def test_a_drawing_placed_twice_wants_two_groups(self, tmp_path, monkeypatch, built):
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        plan = model.add_drawing("PLAN", "0aaa")
+        model.references.append(
+            model.ifc.createIfcDocumentReference(
+                Location=plan, Description="DRAWING", ReferencedDocument=model.sheet
+            )
+        )
+        self._layout(model, [(plan, 5000)])
+
+        assert len(subject.restore_unplaced_references(model.sheet)) == 1
+        assert built == [("add_drawing", "PLAN.svg")]
+
+    def test_one_never_generated_is_reported_not_placed(self, tmp_path, monkeypatch, built):
+        # Its file is what the group would place, so a group pointing at nothing
+        # is worse than saying why.
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        missing = str(model.drawings / "NOT GENERATED.svg")
+        model.references.append(
+            model.ifc.createIfcDocumentReference(
+                Location=missing, Description="DRAWING", ReferencedDocument=model.sheet
+            )
+        )
+        self._layout(model, [])
+
+        restored = subject.restore_unplaced_references(model.sheet)
+
+        assert built == []
+        assert "has not been generated" in restored[0]
+
+    def test_a_file_nothing_owns_is_reported(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(subject, "owner_of_placed_file", classmethod(lambda cls, uri: None))
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        model.add_drawing("ORPHAN", "0aaa")
+        self._layout(model, [])
+
+        restored = subject.restore_unplaced_references(model.sheet)
+
+        assert "nothing in it owns that file" in restored[0]
+
+    def test_it_finds_the_drawing_a_file_belongs_to(self, tmp_path, monkeypatch):
+        # Not stubbed here: this is the lookup the fixture above stands in for.
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        plan = model.add_drawing("PLAN", "0aaa")
+        drawing_reference = model.references[-1]
+        annotation = model.ifc.createIfcAnnotation(
+            GlobalId="0abcdefghijklmnopqrstu", ObjectType="DRAWING", Name="PLAN"
+        )
+        monkeypatch.setattr(
+            subject, "get_drawing_document", staticmethod(lambda d: drawing_reference)
+        )
+
+        assert subject.owner_of_placed_file(plan) == ("drawing", annotation)
+
+    def test_it_finds_the_schedule_a_rendered_svg_belongs_to(self, tmp_path, monkeypatch):
+        # The model stores the spreadsheet; the sheet references the SVG beside it.
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        schedule = model.ifc.createIfcDocumentInformation(
+            Identification="X1", Name="DOOR SCHEDULE", Scope="SCHEDULE"
+        )
+        spreadsheet = model.ifc.createIfcDocumentReference(
+            Location=str(model.drawings / "DOOR SCHEDULE.ods"), ReferencedDocument=schedule
+        )
+        monkeypatch.setattr(
+            subject,
+            "get_document_references",
+            staticmethod(
+                lambda info: model.references if info == model.sheet else [spreadsheet]
+            ),
+        )
+        monkeypatch.setattr(subject, "get_drawing_document", staticmethod(lambda d: None))
+
+        found = subject.owner_of_placed_file(str(model.drawings / "DOOR SCHEDULE.svg"))
+        assert found == ("schedule", schedule)
+
+    def test_it_answers_none_for_a_file_nothing_owns(self, tmp_path, monkeypatch):
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        monkeypatch.setattr(subject, "get_drawing_document", staticmethod(lambda d: None))
+
+        assert subject.owner_of_placed_file(str(model.drawings / "NOBODY.svg")) is None
+
+    def test_the_titleblock_and_layout_are_not_drawings(self, tmp_path, monkeypatch, built):
+        # They are references on the sheet too, and neither is placed as a group
+        # this way - asking for them back would add junk to every layout.
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        for description in ("TITLEBLOCK", "SHEET", "RASTER"):
+            model.references.append(
+                model.ifc.createIfcDocumentReference(
+                    Location=str(model.layouts / f"{description}.svg"),
+                    Description=description,
+                    ReferencedDocument=model.sheet,
+                )
+            )
+        self._layout(model, [])
+
+        assert subject.restore_unplaced_references(model.sheet) == []
+        assert built == []
+
