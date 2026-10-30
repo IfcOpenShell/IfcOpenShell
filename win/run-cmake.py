@@ -107,6 +107,8 @@ class Deps:
         ),
         # TODO: drop this TRANSITION check once everyone has re-run build-deps.py with manifold support.
         "manifold": Dep("MANIFOLD_INSTALL_PATH", None, required=False),
+        # TODO: drop this TRANSITION check once everyone has re-run build-deps.py with SMLib support.
+        "smlib": Dep("SMLIB_INSTALL_PATH", None, required=False),
         # TODO: drop this TRANSITION check once everyone has re-run build-deps.py with proj support.
         "proj": Dep("PROJ_INSTALL_DIR", None, required=False),
         "pythonhome": Dep("PYTHONHOME", None, cmake_prefix=False),
@@ -350,6 +352,8 @@ def main() -> None:
     cmake_args.extend(f"-D{var}={value}" for var, value in extra_vars.items())
     if Deps.values()["manifold"]:
         cmake_args.append("-DWITH_MANIFOLD=ON")
+    if Deps.values()["smlib"]:
+        cmake_args.append("-DWITH_SMLIB=ON")
     cmake_args += Deps.cmake_args()
     cmake_args += ARGS.extra_args
 
