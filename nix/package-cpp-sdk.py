@@ -49,6 +49,28 @@ def relocate_cmake(root, prefixes):
         path.write_text(content)
 
 
+def normalize_boost(prefix):
+    # build-all.py uses b2 stage and copies headers next to lib/. Its generated
+    # boost_headers config still points back into the Boost source tree.
+    # Give the SDK a conventional include/boost tree and repair that config.
+    staged_headers = prefix / "boost"
+    if staged_headers.is_dir():
+        (prefix / "include").mkdir(exist_ok=True)
+        shutil.move(staged_headers, prefix / "include" / "boost")
+    for config in prefix.rglob("*-config.cmake"):
+        original = config.read_text()
+        if "get_filename_component(_BOOST_INCLUDEDIR" not in original:
+            continue
+        content, count = re.subn(
+            r'get_filename_component\(_BOOST_INCLUDEDIR\s+"[^"]*"\s+ABSOLUTE\)',
+            'get_filename_component(_BOOST_INCLUDEDIR "${CMAKE_CURRENT_LIST_DIR}/../../../include" ABSOLUTE)',
+            original,
+        )
+        if count != 1:
+            raise RuntimeError(f"Cannot relocate Boost headers in {config}")
+        config.write_text(content)
+
+
 def configure_package(root, dependencies):
     configs = list(root.glob("lib*/cmake/IfcOpenShell/IfcOpenShellConfig.cmake"))
     if len(configs) != 1:
@@ -81,6 +103,9 @@ def configure_package(root, dependencies):
     relative_modules = os.path.relpath(modules, config.parent).replace(os.sep, "/")
     config.write_text(
         "# Locate the development dependencies shipped with this SDK.\n"
+        'if(CMAKE_VERSION VERSION_LESS "3.24")\n'
+        '    message(FATAL_ERROR "This IfcOpenShell SDK requires CMake 3.24 or newer (LINK_GROUP support).")\n'
+        "endif()\n"
         "list(PREPEND CMAKE_PREFIX_PATH\n" + "\n".join(prefix_lines) + "\n)\n"
         "list(PREPEND CMAKE_LIBRARY_PATH\n" + "\n".join(library_lines) + "\n)\n"
         f'list(PREPEND CMAKE_MODULE_PATH "${{CMAKE_CURRENT_LIST_DIR}}/{relative_modules}")\n'
@@ -130,6 +155,41 @@ def bundle_runtime(root):
     for name in bundled:
         patch(root / "lib" / name)
     return bundled
+
+
+def relocate_system_links(root, libraries):
+    # Legacy OCCT targets export bare GL/EGL link items. Bundling their SONAME
+    # files suffices at runtime, but -lGL still requires an OS development
+    # symlink. Link consumers directly to the bundled versioned libraries.
+    link_names = {}
+    for soname in libraries:
+        match = re.fullmatch(r"lib(.+)\.so(?:\..*)?", soname)
+        if match:
+            link_names[match[1]] = root / "lib" / soname
+    for config in root.rglob("*.cmake"):
+
+        def replace_property(match):
+            result = []
+            for entry in match[2].split(";"):
+                wrapped = entry.startswith("$<LINK_ONLY:") and entry.endswith(">")
+                value = entry[len("$<LINK_ONLY:") : -1] if wrapped else entry
+                name = value
+                if value.startswith("/"):
+                    library = re.fullmatch(r"lib(.+)\.so(?:\..*)?", Path(value).name)
+                    name = library[1] if library else value
+                elif value.startswith("-l"):
+                    name = value[2:]
+                if name in link_names:
+                    relative = os.path.relpath(link_names[name], config.parent).replace(os.sep, "/")
+                    value = "${CMAKE_CURRENT_LIST_DIR}/" + relative
+                    entry = "$<LINK_ONLY:" + value + ">" if wrapped else value
+                result.append(entry)
+            return match[1] + ";".join(result) + match[3]
+
+        original = config.read_text()
+        content = re.sub(r'(INTERFACE_LINK_LIBRARIES\s+")([^"]*)(")', replace_property, original)
+        if content != original:
+            config.write_text(content)
 
 
 def collect_licenses(install, root, runtime):
@@ -187,11 +247,14 @@ def main():
         source = Path(location).resolve()
         target = root / "third-party" / source.name
         shutil.copytree(source, target, symlinks=False)
+        if dependency == "boost":
+            normalize_boost(target)
         prefixes[source] = target
         dependencies.append(target)
     relocate_cmake(root, prefixes)
     configure_package(root, dependencies)
     runtime = bundle_runtime(root)
+    relocate_system_links(root, runtime)
     collect_licenses(install, root, runtime)
     shutil.copytree(REPO / "src" / "examples", root / "examples")
     shutil.copytree(args.docs, root / "doc" / "html", ignore=shutil.ignore_patterns(".doctrees", ".buildinfo"))
@@ -200,7 +263,11 @@ def main():
     shutil.copy2(REPO / "nix" / "cpp-sdk-README.md", root / "README.md")
     recipe = root / "share" / "ifcopenshell" / "build-recipe"
     recipe.mkdir(parents=True)
-    for path in (REPO / "nix" / "build-all.py", REPO / ".github" / "workflows" / "build-ifcopenshell-cpp.yml"):
+    for path in (
+        REPO / "nix" / "build-all.py",
+        REPO / "nix" / "test-cpp-sdk.sh",
+        REPO / ".github" / "workflows" / "build-ifcopenshell-cpp-linux.yml",
+    ):
         shutil.copy2(path, recipe)
     metadata = {
         "version": version,
