@@ -715,8 +715,10 @@ class CreateDrawing(bpy.types.Operator):
                 it = ifcopenshell.geom.iterator(
                     geom_settings, ifc, multiprocessing.cpu_count(), include=drawing_elements
                 )
+                with tool.Sequence.status_hidden_openings_uncut(ifc, drawing_elements):
+                    shapes = list(it)
                 processed = set()
-                for elem in it:
+                for elem in shapes:
                     processed.add(ifc.by_id(elem.id))
                     self.serialiser.write(elem)
                     tree.add_element(elem)
