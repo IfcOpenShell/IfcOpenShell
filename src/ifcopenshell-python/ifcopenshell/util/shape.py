@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from math import cos, radians
 from typing import TYPE_CHECKING, Literal, Optional, Union
 
@@ -89,12 +90,75 @@ def get_volume(geometry: W.triangulation) -> float:
     # Can't optimize it using buffers - performance seems to get only worse.
     verts = geometry.verts
     faces = geometry.faces
-    grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
+    grouped_verts = [
+        [verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)
+    ]
     volumes = [
-        signed_triangle_volume(grouped_verts[faces[i]], grouped_verts[faces[i + 1]], grouped_verts[faces[i + 2]])
+        signed_triangle_volume(
+            grouped_verts[faces[i]],
+            grouped_verts[faces[i + 1]],
+            grouped_verts[faces[i + 2]],
+        )
         for i in range(0, len(faces), 3)
     ]
     return abs(sum(volumes))
+
+
+def get_center_of_mass(geometry: W.triangulation) -> list[float]:
+    """Calculates the center of mass of a geometry in local coordinates
+
+    Center of Mass of non-manifold geometry will be unpredictable.
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :return: a list representing the XYZ center of mass
+    """
+
+    # https://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up
+    def signed_triangle_volume(p1, p2, p3):
+        v321 = p3[0] * p2[1] * p1[2]
+        v231 = p2[0] * p3[1] * p1[2]
+        v312 = p3[0] * p1[1] * p2[2]
+        v132 = p1[0] * p3[1] * p2[2]
+        v213 = p2[0] * p1[1] * p3[2]
+        v123 = p1[0] * p2[1] * p3[2]
+        return (1.0 / 6.0) * (-v321 + v231 + v312 - v132 - v213 + v123)
+
+    # Can't optimize it using buffers - performance seems to get only worse.
+    verts = geometry.verts
+    faces = geometry.faces
+    grouped_verts = [
+        [verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)
+    ]
+    Total_Volumes = 0
+    center_of_mass: list[float] = [0.0, 0.0, 0.0]
+    for i in range(0, len(faces), 3):
+        _vol = signed_triangle_volume(
+            grouped_verts[faces[i]],
+            grouped_verts[faces[i + 1]],
+            grouped_verts[faces[i + 2]],
+        )
+        Total_Volumes += _vol
+
+        volume_weighted_center_of_volume_grouped_verts = deepcopy(
+            grouped_verts[faces[i]]
+        )
+
+        for _i_xyz in range(3):
+            for j in range(2):
+                volume_weighted_center_of_volume_grouped_verts[_i_xyz] += grouped_verts[
+                    faces[i + j + 1]
+                ][_i_xyz]
+            # centre of mass of any uniform density tetrahedron is the same as its centroid
+            # consider all triangular faces of the mesh form a tetrahedron with origin
+            # and their centroid is mean of four points (including implicit origin point [0,0,0])
+            center_of_mass[_i_xyz] += (
+                volume_weighted_center_of_volume_grouped_verts[_i_xyz] / 4.0
+            ) * _vol
+
+    for _i_xyz in range(3):
+        center_of_mass[_i_xyz] = center_of_mass[_i_xyz] / Total_Volumes
+
+    return center_of_mass
 
 
 def get_x(geometry: W.triangulation) -> float:
@@ -202,13 +266,19 @@ def get_element_bbox_centroid(
     :return: A tuple representing the XYZ centroid
     """
     centroid = get_bbox_centroid(geometry)
-    if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
+    if not element.ObjectPlacement or not element.ObjectPlacement.is_a(
+        "IfcLocalPlacement"
+    ):
         return np.array(centroid)
-    mat = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=is_si)
+    mat = ifcopenshell.util.placement.get_placement(
+        element.ObjectPlacement, should_return_si=is_si
+    )
     return (mat @ np.array([*centroid, 1.0]))[0:3]
 
 
-def get_shape_bbox_centroid(shape: ShapeElementType, geometry: W.triangulation) -> npt.NDArray[np.float64]:
+def get_shape_bbox_centroid(
+    shape: ShapeElementType, geometry: W.triangulation
+) -> npt.NDArray[np.float64]:
     """Calculates the shape's bounding box centroid
 
     The centroid is in global coordinates. Note that if you do not have the
@@ -222,7 +292,9 @@ def get_shape_bbox_centroid(shape: ShapeElementType, geometry: W.triangulation) 
     return (get_shape_matrix(shape) @ np.array([*centroid, 1.0]))[0:3]
 
 
-def get_vertices(geometry: W.triangulation, is_2d: bool = False) -> npt.NDArray[np.float64]:
+def get_vertices(
+    geometry: W.triangulation, is_2d: bool = False
+) -> npt.NDArray[np.float64]:
     """Get all the vertices as a numpy array
 
     Vertices are in local coordinates.
@@ -304,12 +376,16 @@ def get_faces_material_style_ids(geometry: W.triangulation) -> npt.NDArray[np.in
     return np.frombuffer(geometry.material_ids_buffer, dtype="i")
 
 
-def get_faces_representation_item_ids(geometry: W.triangulation) -> npt.NDArray[np.int32]:
+def get_faces_representation_item_ids(
+    geometry: W.triangulation,
+) -> npt.NDArray[np.int32]:
     """Get representation item ids for the geometry faces."""
     return np.frombuffer(geometry.item_ids_buffer, dtype="i")
 
 
-def get_edges_representation_item_ids(geometry: W.triangulation) -> npt.NDArray[np.int32]:
+def get_edges_representation_item_ids(
+    geometry: W.triangulation,
+) -> npt.NDArray[np.int32]:
     """Get representation item ids for the geometry edges.
 
     Can be useful for geometry without faces and in general is more universal
@@ -318,7 +394,9 @@ def get_edges_representation_item_ids(geometry: W.triangulation) -> npt.NDArray[
     return np.frombuffer(geometry.edges_item_ids_buffer, dtype="i")
 
 
-def get_shape_vertices(shape: ShapeElementType, geometry: W.triangulation) -> npt.NDArray[np.float64]:
+def get_shape_vertices(
+    shape: ShapeElementType, geometry: W.triangulation
+) -> npt.NDArray[np.float64]:
     """Get the shape's vertices as a numpy array
 
     Vertices are in global coordinates. If you do not have the shape, you can
@@ -333,7 +411,9 @@ def get_shape_vertices(shape: ShapeElementType, geometry: W.triangulation) -> np
     """
     verts = get_vertices(geometry)
     mat = get_shape_matrix(shape)
-    return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
+    return np.delete(
+        (mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1
+    )
 
 
 def get_element_vertices(
@@ -354,10 +434,71 @@ def get_element_vertices(
     :return: A numpy array listing all the vertices. Each vertex is a numpy array with XYZ coordinates.
     """
     verts = get_vertices(geometry)
-    if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
+    if not element.ObjectPlacement or not element.ObjectPlacement.is_a(
+        "IfcLocalPlacement"
+    ):
         return verts
-    mat = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=is_si)
-    return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
+    mat = ifcopenshell.util.placement.get_placement(
+        element.ObjectPlacement, should_return_si=is_si
+    )
+    return np.delete(
+        (mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1
+    )
+
+
+def get_shape_center_of_mass(
+    shape: ShapeElementType,
+    geometry: W.triangulation,
+) -> npt.NDArray[np.float64]:
+    """Get the shape's center of mass as a numpy array in global coordinates
+
+    Center of Mass of non-manifold geometry will be unpredictable.
+
+    :param element: The element occurrence
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :param is_si: Whether the geometry is in SI metres (the default kernel
+        output) or in the file's length unit (the ``convert-back-units``
+        setting). The placement is applied in the same unit.
+    :return: A numpy array listing the COM vertex, a numpy array with XYZ coordinates.
+        Array shape: (1, 3)
+    """
+
+    center_of_mass = np.array(get_center_of_mass(geometry)).reshape(-1, 3)
+    mat = get_shape_matrix(shape)
+    return np.delete(
+        (mat @ np.hstack((center_of_mass, np.ones((len(center_of_mass), 1)))).T).T,
+        -1,
+        axis=1,
+    )
+
+
+def get_element_center_of_mass(
+    element: ifcopenshell.entity_instance,
+    geometry: W.triangulation,
+    is_si: bool = True,
+) -> npt.NDArray[np.float64]:
+    """Get the element's center of mass as a numpy array in global coordinates
+
+    Volumes of non-manifold geometry will be unpredictable.
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :return: A numpy array listing the COM vertex, a numpy array with XYZ coordinates.
+        Array shape: (1, 3)
+    """
+
+    center_of_mass = np.array(get_center_of_mass(geometry)).reshape(-1, 3)
+    if not element.ObjectPlacement or not element.ObjectPlacement.is_a(
+        "IfcLocalPlacement"
+    ):
+        return center_of_mass
+    mat = ifcopenshell.util.placement.get_placement(
+        element.ObjectPlacement, should_return_si=is_si
+    )
+    return np.delete(
+        (mat @ np.hstack((center_of_mass, np.ones((len(center_of_mass), 1)))).T).T,
+        -1,
+        axis=1,
+    )
 
 
 def get_bottom_elevation(geometry: W.triangulation) -> float:
@@ -380,7 +521,9 @@ def get_top_elevation(geometry: W.triangulation) -> float:
     return np.max(verts_flat[2::3]).item()
 
 
-def get_shape_bottom_elevation(shape: ShapeElementType, geometry: W.triangulation) -> float:
+def get_shape_bottom_elevation(
+    shape: ShapeElementType, geometry: W.triangulation
+) -> float:
     """Gets the lowest global Z ordinate of the shape
 
     If you do not have the shape, you can use :func:`get_element_bottom_elevation`
@@ -393,7 +536,9 @@ def get_shape_bottom_elevation(shape: ShapeElementType, geometry: W.triangulatio
     return min([v[2] for v in get_shape_vertices(shape, geometry)])
 
 
-def get_shape_top_elevation(shape: ShapeElementType, geometry: W.triangulation) -> float:
+def get_shape_top_elevation(
+    shape: ShapeElementType, geometry: W.triangulation
+) -> float:
     """Gets the highest global Z ordinate of the shape
 
     If you do not have the shape, you can use :func:`get_element_top_elevation`
@@ -438,7 +583,9 @@ def get_element_top_elevation(
     return max([v[2] for v in get_element_vertices(element, geometry, is_si)])
 
 
-def get_bbox(vertices: npt.NDArray[np.float64]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+def get_bbox(
+    vertices: npt.NDArray[np.float64],
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Gets the bounding box of vertices
 
     :param vertices: An iterable of vertices
@@ -450,7 +597,9 @@ def get_bbox(vertices: npt.NDArray[np.float64]) -> tuple[npt.NDArray[np.float64]
     return (np.min(vertices, axis=0), np.max(vertices, axis=0))
 
 
-def get_area_vf(vertices: npt.NDArray[np.float64], faces: npt.NDArray[np.int32]) -> float:
+def get_area_vf(
+    vertices: npt.NDArray[np.float64], faces: npt.NDArray[np.int32]
+) -> float:
     """Calculates the surface area given a list of vertices and triangulated faces
 
     :param vertices: A list of 3D vertices, such as returned from get_vertices.
@@ -509,7 +658,9 @@ def get_side_area(
     :return: The surface area.
     """
     if direction is None:
-        direction = {"X": (1.0, 0.0, 0.0), "Y": (0.0, 1.0, 0.0), "Z": (0.0, 0.0, 1.0)}[axis]
+        direction = {"X": (1.0, 0.0, 0.0), "Y": (0.0, 1.0, 0.0), "Z": (0.0, 0.0, 1.0)}[
+            axis
+        ]
 
     vertices = get_vertices(geometry)
     faces = get_faces(geometry)
@@ -520,7 +671,9 @@ def get_side_area(
     triangle_normals = np.cross(v1, v2)
 
     # Normalize the normal vectors
-    triangle_normals = triangle_normals / np.linalg.norm(triangle_normals, axis=1)[:, np.newaxis]
+    triangle_normals = (
+        triangle_normals / np.linalg.norm(triangle_normals, axis=1)[:, np.newaxis]
+    )
     direction = np.array(direction) / np.linalg.norm(direction)
 
     # Find the faces with a normal vector pointing in the desired +Y normal direction
@@ -541,7 +694,11 @@ def get_max_side_area(geometry: W.triangulation) -> float:
     :param geometry: Geometry output calculated by IfcOpenShell
     :return: The maximum surface area from either the X, Y, or Z axis.
     """
-    return max(get_side_area(geometry, axis="X"), get_side_area(geometry, axis="Y"), get_side_area(geometry, axis="Z"))
+    return max(
+        get_side_area(geometry, axis="X"),
+        get_side_area(geometry, axis="Y"),
+        get_side_area(geometry, axis="Z"),
+    )
 
 
 def get_top_area(geometry: W.triangulation) -> float:
@@ -573,7 +730,9 @@ def get_footprint_area(
     :return: The surface area.
     """
     if direction is None:
-        direction = {"X": (1.0, 0.0, 0.0), "Y": (0.0, 1.0, 0.0), "Z": (0.0, 0.0, 1.0)}[axis]
+        direction = {"X": (1.0, 0.0, 0.0), "Y": (0.0, 1.0, 0.0), "Z": (0.0, 0.0, 1.0)}[
+            axis
+        ]
 
     vertices = get_vertices(geometry)
     faces = get_faces(geometry)
@@ -584,7 +743,9 @@ def get_footprint_area(
     triangle_normals = np.cross(v1, v2)
 
     # Normalize the normal vectors
-    triangle_normals = triangle_normals / np.linalg.norm(triangle_normals, axis=1)[:, np.newaxis]
+    triangle_normals = (
+        triangle_normals / np.linalg.norm(triangle_normals, axis=1)[:, np.newaxis]
+    )
     direction = np.array(direction) / np.linalg.norm(direction)
 
     # Find the faces with a normal vector pointing in the desired direction using dot product
@@ -645,7 +806,9 @@ def get_outer_surface_area(geometry: W.triangulation) -> float:
     triangle_normals = np.cross(v1, v2)
 
     # Normalize the normal vectors
-    triangle_normals = triangle_normals / np.linalg.norm(triangle_normals, axis=1)[:, np.newaxis]
+    triangle_normals = (
+        triangle_normals / np.linalg.norm(triangle_normals, axis=1)[:, np.newaxis]
+    )
 
     # Find the faces with a normal vector that isn't +Z or -Z
     filtered_face_indices = np.where(abs(triangle_normals[:, 2]) < tol)[0]
@@ -671,7 +834,9 @@ def get_footprint_perimeter(geometry: W.triangulation) -> float:
     triangle_normals = np.cross(v1, v2)
 
     # Normalize the normal vectors
-    triangle_normals = triangle_normals / np.linalg.norm(triangle_normals, axis=1)[:, np.newaxis]
+    triangle_normals = (
+        triangle_normals / np.linalg.norm(triangle_normals, axis=1)[:, np.newaxis]
+    )
 
     # Find the faces with a normal vector pointing in the negative Z direction
     negative_z_face_indices = np.where(triangle_normals[:, 2] < -tol)[0]
@@ -695,10 +860,17 @@ def get_footprint_perimeter(geometry: W.triangulation) -> float:
             else:
                 all_edges.add(edge)
 
-    return np.sum([np.linalg.norm(vertices[e[0]] - vertices[e[1]]) for e in (all_edges - shared_edges)]).item()
+    return np.sum(
+        [
+            np.linalg.norm(vertices[e[0]] - vertices[e[1]])
+            for e in (all_edges - shared_edges)
+        ]
+    ).item()
 
 
-def get_profiles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+def get_profiles(
+    element: ifcopenshell.entity_instance,
+) -> list[ifcopenshell.entity_instance]:
     """Gets all 2D profiles used in the definition of a parametric shape
 
     Profiles may be retrieved either from material profile sets or from swept
@@ -713,16 +885,22 @@ def get_profiles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.ent
     return [e.SweptArea for e in get_extrusions(element)]
 
 
-def get_extrusions(element: ifcopenshell.entity_instance) -> Union[list[ifcopenshell.entity_instance], None]:
+def get_extrusions(
+    element: ifcopenshell.entity_instance,
+) -> Union[list[ifcopenshell.entity_instance], None]:
     """Gets all extruded area solids used to define an element's model body geometry
 
     :param element: The element occurrence
     :return: A list of extrusion representation items or `None` if element has no representation.
     """
-    representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+    representation = ifcopenshell.util.representation.get_representation(
+        element, "Model", "Body", "MODEL_VIEW"
+    )
     if not representation:
         return
-    representation = ifcopenshell.util.representation.resolve_representation(representation)
+    representation = ifcopenshell.util.representation.resolve_representation(
+        representation
+    )
     extrusions = []
     for item in representation.Items:
         while True:
@@ -736,7 +914,9 @@ def get_extrusions(element: ifcopenshell.entity_instance) -> Union[list[ifcopens
     return extrusions
 
 
-def get_base_extrusions(element: ifcopenshell.entity_instance) -> Union[list[ifcopenshell.entity_instance], None]:
+def get_base_extrusions(
+    element: ifcopenshell.entity_instance,
+) -> Union[list[ifcopenshell.entity_instance], None]:
     """Gets all base extrusions used to define an element's model body geometry
 
     A base extrusion is assumed to be an extrusion prior to all boolean
@@ -745,7 +925,11 @@ def get_base_extrusions(element: ifcopenshell.entity_instance) -> Union[list[ifc
     :param element: The element occurrence
     :return: A list of extrusion representation items or `None` if element has no representation.
     """
-    if not (rep := ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")):
+    if not (
+        rep := ifcopenshell.util.representation.get_representation(
+            element, "Model", "Body", "MODEL_VIEW"
+        )
+    ):
         return
     extrusions = []
     for item in ifcopenshell.util.representation.resolve_representation(rep).Items:
@@ -767,7 +951,9 @@ def get_total_edge_length(geometry: W.triangulation) -> float:
     return np.linalg.norm(vertices[:, 1] - vertices[:, 0], axis=1).sum().item()
 
 
-def _extend_line(start: np.ndarray, end: np.ndarray, distance: float) -> tuple[np.ndarray, np.ndarray]:
+def _extend_line(
+    start: np.ndarray, end: np.ndarray, distance: float
+) -> tuple[np.ndarray, np.ndarray]:
     """Extend a line segment by a fixed distance on both ends.
 
     :param start: (x, y) or (x, y, z) array.
@@ -811,7 +997,10 @@ def bisect_mesh_plane_vf(
     d0 = v0[:, 2] - plane_z
     d1 = v1[:, 2] - plane_z
     d2 = v2[:, 2] - plane_z
-    straddle = ~((np.minimum(np.minimum(d0, d1), d2) > 0) | (np.maximum(np.maximum(d0, d1), d2) < 0))
+    straddle = ~(
+        (np.minimum(np.minimum(d0, d1), d2) > 0)
+        | (np.maximum(np.maximum(d0, d1), d2) < 0)
+    )
     if not np.any(straddle):
         return []
     idx = np.where(straddle)[0]
@@ -835,7 +1024,9 @@ def bisect_mesh_plane_vf(
         pts_xy = []
         for pt, mask in ((p01[i], m01[i]), (p12[i], m12[i]), (p20[i], m20[i])):
             if mask:
-                pts_xy.append((round(float(pt[0]), precision), round(float(pt[1]), precision)))
+                pts_xy.append(
+                    (round(float(pt[0]), precision), round(float(pt[1]), precision))
+                )
         if len(pts_xy) == 2 and pts_xy[0] != pts_xy[1]:
             if extend > 0:
                 s, e = _extend_line(np.array(pts_xy[0]), np.array(pts_xy[1]), extend)
@@ -922,7 +1113,9 @@ def dissolve_faces(
         ngons.setdefault(root, []).append(tri_idx)
 
     if merge_coplanar:
-        _merge_coplanar_ngons(ngons, faces, verts, tri_edges, parent, find, union, angle_tolerance)
+        _merge_coplanar_ngons(
+            ngons, faces, verts, tri_edges, parent, find, union, angle_tolerance
+        )
 
     result = []
     for tri_indices in ngons.values():
@@ -947,7 +1140,11 @@ def dissolve_faces(
             v_list = list(e)
             for tri_idx in tri_indices:
                 f = faces[tri_idx]
-                f_edges = [(int(f[0]), int(f[1])), (int(f[1]), int(f[2])), (int(f[2]), int(f[0]))]
+                f_edges = [
+                    (int(f[0]), int(f[1])),
+                    (int(f[1]), int(f[2])),
+                    (int(f[2]), int(f[0])),
+                ]
                 for fe in f_edges:
                     if frozenset(fe) == e:
                         edge_adjacency[fe[0]] = fe[1]
