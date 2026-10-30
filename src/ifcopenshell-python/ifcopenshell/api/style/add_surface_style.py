@@ -20,6 +20,7 @@ from typing import Any, Literal, Optional
 
 import ifcopenshell
 import ifcopenshell.api.style
+from ifcopenshell.api.style.remove_surface_style import _remove_surface_style_item
 
 SURFACE_STYLE_TYPES = Literal[
     "IfcSurfaceStyleShading",
@@ -135,7 +136,9 @@ def add_surface_style(
         select_class = "IfcSurfaceStyleShading"
     duplicate_items = [s for s in styles if s.is_a(select_class)]
     for duplicate_item in duplicate_items:
-        ifcopenshell.api.style.remove_surface_style(file, style=duplicate_item)
+        # Not ifcopenshell.api.style.remove_surface_style: a new item is
+        # appended below, so the last-item guard does not apply here.
+        _remove_surface_style_item(file, style=duplicate_item)
 
     styles = list(style.Styles or [])
     styles.append(style_item)
