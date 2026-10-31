@@ -32,6 +32,7 @@ from bonsai.bim.module.model.data import (
     ArrayData,
     AuthoringData,
     DoorData,
+    FramingData,
     RailingData,
     RoofData,
     StairData,
@@ -631,6 +632,259 @@ class BIM_PT_railing(bpy.types.Panel):
             row = self.layout.row()
             row.label(text="No Railing Found")
             row.operator("bim.add_railing", icon="ADD", text="")
+
+
+class BIM_UL_framing_entries(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname) -> None:
+        if item:
+            icons = {"V": "SORT_DESC", "H": "FORWARD", "INFILL": "MESH_PLANE"}
+            row = layout.row(align=True)
+            row.label(text="", icon=icons.get(item.kind, "DOT"))
+            row.prop(item, "name", text="", emboss=False)
+
+
+def _draw_framing_bound(layout: bpy.types.UILayout, props, entry, prefix: str, label: str) -> None:
+    row = layout.row(align=True)
+    row.prop(entry, f"{prefix}_type", text=label)
+    bound_type = getattr(entry, f"{prefix}_type")
+    if bound_type == "HEIGHT":
+        row.prop(entry, prefix, text="")
+    elif bound_type == "MEMBER":
+        row.prop_search(entry, f"{prefix}_member", props, "entries", text="")
+
+
+def _draw_framing_breaks(layout: bpy.types.UILayout, props, entry) -> None:
+    row = layout.row(align=True)
+    row.label(text="Breaks At")
+    row.operator("bim.add_framing_break", text="", icon="ADD")
+    for i, item in enumerate(entry.breaks_at):
+        row = layout.row(align=True)
+        row.prop_search(item, "name", props, "entries", text="")
+        row.operator("bim.remove_framing_break", text="", icon="REMOVE").index = i
+
+
+def _draw_framing_spacing_align(layout: bpy.types.UILayout, entry) -> None:
+    if entry.spacing_mode == "FIXED":
+        layout.prop(entry, "spacing_align")
+        layout.prop(entry, "spacing_offset")
+    elif entry.spacing_mode == "MAX":
+        layout.prop(entry, "max_align")
+        if entry.max_align != "EVEN":
+            layout.prop(entry, "spacing_offset")
+        else:
+            _draw_framing_equal_openings(layout, entry)
+    elif entry.spacing_mode == "COUNT":
+        _draw_framing_equal_openings(layout, entry)
+
+
+def _draw_framing_equal_openings(layout: bpy.types.UILayout, entry) -> None:
+    layout.prop(entry, "equal_openings")
+    if not entry.equal_openings:
+        return
+    # Without something to measure from, the openings run from the path ends or the
+    # base and top, which include the members standing there.
+    if entry.kind == "V" and not entry.within.strip() and not entry.at_ends:
+        col = layout.column(align=True)
+        col.label(text="Openings are measured from the path ends.", icon="INFO")
+        col.label(text="Set Within to the entry with the end posts.", icon="BLANK1")
+    elif entry.kind == "H" and "MEMBER" not in (entry.bottom_type, entry.top_type):
+        col = layout.column(align=True)
+        col.label(text="Openings are measured from the base and top.", icon="INFO")
+        col.label(text="Set the bounds to the members there.", icon="BLANK1")
+
+
+def _draw_framing_void_role(layout: bpy.types.UILayout, props, entry) -> bool:
+    """Whether the entry frames openings, and if so its settings. True if it does."""
+    if entry.kind == "INFILL":
+        return False
+    row = layout.row(align=True)
+    row.label(text="Openings")
+    for role in ("NONE", "JAMB") if entry.kind == "V" else ("NONE", "HEAD", "SILL"):
+        row.prop_enum(entry, "void_role", role)
+    if entry.void_role not in (("JAMB",) if entry.kind == "V" else ("HEAD", "SILL")):
+        return False
+    row = layout.row(align=True)
+    row.label(text="For")
+    row.prop(entry, "void_for", expand=True)
+    layout.prop(entry, "void_layer")
+    if entry.kind == "V":
+        layout.prop(entry, "jamb_height", expand=True)
+        _draw_framing_bound(layout, props, entry, "top", "Top")
+        _draw_framing_bound(layout, props, entry, "bottom", "Bottom")
+        _draw_framing_breaks(layout, props, entry)
+    col = layout.column(align=True)
+    if entry.kind == "V":
+        col.label(text="Layer 1 sits against the opening. Sloped", icon="INFO")
+        col.label(text="openings use layer 1, and the joint at corners.", icon="BLANK1")
+    else:
+        col.label(text="Placed by each opening, so it has no level. Layers", icon="INFO")
+        col.label(text="stack away from it; a shared layer sits side by side.", icon="BLANK1")
+    return True
+
+
+def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
+    box = layout.box()
+    box.prop(entry, "kind")
+    if entry.kind in ("V", "H"):
+        prop_with_search(box, entry, "profile")
+        box.prop(entry, "rotation")
+    prop_with_search(box, entry, "material")
+    box.prop(entry, "offset")
+    if _draw_framing_void_role(box, props, entry):
+        return
+    row = box.row(align=True)
+    row.label(text="Cut by Openings")
+    row.prop(entry, "cut_by_edge_voids", text="Edge", toggle=True)
+    row.prop(entry, "cut_by_hole_voids", text="Hole", toggle=True)
+
+    if entry.kind == "V":
+        box.prop(entry, "spacing_mode")
+        if entry.spacing_mode == "COUNT":
+            box.prop(entry, "count")
+            _draw_framing_spacing_align(box, entry)
+        elif entry.spacing_mode != "NONE":
+            box.prop(entry, "spacing")
+            _draw_framing_spacing_align(box, entry)
+        row = box.row(align=True)
+        row.prop(entry, "at_ends", toggle=True)
+        row.prop(entry, "at_corners", toggle=True)
+        row.prop(entry, "square_cut", toggle=True)
+        row.prop(entry, "flush", toggle=True)
+        if entry.at_corners:
+            box.prop(entry, "butt_corners")
+        row = box.row(align=True)
+        row.prop_search(entry, "within", props, "entries")
+        row.operator("bim.add_framing_within", text="", icon="ADD")
+        for i, item in enumerate(entry.within_also):
+            row = box.row(align=True)
+            row.prop_search(item, "name", props, "entries", text="Also Within")
+            row.operator("bim.remove_framing_within", text="", icon="REMOVE").index = i
+        box.prop(entry, "bays")
+        _draw_framing_bound(box, props, entry, "top", "Top")
+        _draw_framing_bound(box, props, entry, "bottom", "Bottom")
+        _draw_framing_breaks(box, props, entry)
+    elif entry.kind == "H":
+        box.prop(entry, "spacing_mode", text="Repeat")
+        if entry.spacing_mode == "NONE":
+            _draw_framing_bound(box, props, entry, "level", "Level")
+            if entry.level_type != "HEIGHT":
+                box.prop(entry, "level_offset", text="Offset")
+        else:
+            if entry.spacing_mode == "COUNT":
+                box.prop(entry, "count")
+            else:
+                box.prop(entry, "spacing")
+            _draw_framing_spacing_align(box, entry)
+            box.prop_search(entry, "within", props, "entries")
+            box.prop(entry, "rows")
+            _draw_framing_bound(box, props, entry, "top", "Top")
+            _draw_framing_bound(box, props, entry, "bottom", "Bottom")
+        box.prop(entry, "flush")
+        _draw_framing_breaks(box, props, entry)
+        box.prop_search(entry, "between", props, "entries")
+        box.prop(entry, "bays")
+        row = box.row(align=True)
+        row.prop(entry, "extend_start", text="Extend Start")
+        row.prop(entry, "extend_end", text="End")
+        row = box.row(align=True)
+        row.prop(entry, "corner_joint", expand=True)
+    else:
+        box.prop_search(entry, "between", props, "entries")
+        box.prop(entry, "bays")
+        _draw_framing_breaks(box, props, entry)
+        box.prop_search(entry, "within", props, "entries")
+        box.prop(entry, "rows")
+        _draw_framing_bound(box, props, entry, "top", "Top")
+        _draw_framing_bound(box, props, entry, "bottom", "Bottom")
+        box.prop(entry, "thickness")
+        box.prop(entry, "gap")
+        box.prop(entry, "max_width")
+        if entry.max_width > 0:
+            box.prop(entry, "joint")
+
+
+class BIM_PT_framing(bpy.types.Panel):
+    bl_label = "Framing"
+    bl_idname = "BIM_PT_framing"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
+
+    @classmethod
+    def poll(cls, context):
+        from bonsai.bim.module.model.framing import is_framing_host
+
+        obj = context.active_object
+        return bool(obj and is_framing_host(tool.Ifc.get_entity(obj)))
+
+    def draw(self, context):
+        if not FramingData.is_loaded:
+            FramingData.load()
+        obj = context.active_object
+        assert obj
+        props = tool.Model.get_framing_props(obj)
+        layout = self.layout
+
+        if not FramingData.data["pset_data"]:
+            if refusal := FramingData.data["refusal"]:
+                layout.label(text=refusal, icon="INFO")
+                return
+            row = layout.row(align=True)
+            row.label(text="No Framing Found")
+            row.operator("bim.add_framing", text="Add Framing", icon="ADD")
+            return
+
+        if owner := FramingData.data["system_owner"]:
+            occurrences = FramingData.data["occurrences"]
+            layout.label(text=f"System from type: {owner} ({occurrences} occurrences)", icon="FILE_3D")
+        if error := FramingData.data["error"]:
+            layout.label(text=error, icon="ERROR")
+
+        if props.is_editing:
+            row = layout.row(align=True)
+            row.operator("bim.finish_editing_framing", icon="CHECKMARK", text="Finish Editing")
+            row.operator("bim.cancel_editing_framing", icon="CANCEL", text="")
+            from bonsai.bim.module.model.framing import get_preview_error
+
+            if preview_error := get_preview_error(tool.Ifc.get_entity(obj)):
+                layout.label(text=preview_error, icon="ERROR")
+            layout.prop(props, "height")
+            layout.prop(props, "scope")
+            row = layout.row()
+            row.template_list("BIM_UL_framing_entries", "", props, "entries", props, "active_entry_index", rows=5)
+            col = row.column(align=True)
+            col.operator_menu_enum("bim.add_framing_entry", "kind", text="", icon="ADD")
+            col.operator("bim.duplicate_framing_entry", text="", icon="DUPLICATE")
+            col.operator("bim.remove_framing_entry", text="", icon="REMOVE")
+            col.separator()
+            col.operator("bim.move_framing_entry", text="", icon="TRIA_UP").direction = "UP"
+            col.operator("bim.move_framing_entry", text="", icon="TRIA_DOWN").direction = "DOWN"
+            if 0 <= props.active_entry_index < len(props.entries):
+                draw_framing_entry(layout, props, props.entries[props.active_entry_index])
+            return
+
+        if props.is_editing_path:
+            row = layout.row(align=True)
+            row.label(text="Editing Path")
+            row.operator("bim.finish_editing_framing_path", icon="CHECKMARK", text="")
+            row.operator("bim.cancel_editing_framing_path", icon="CANCEL", text="")
+            return
+
+        row = layout.row(align=True)
+        row.label(text="Framing", icon="MOD_LATTICE")
+        row.operator("bim.enable_editing_framing", icon="GREASEPENCIL", text="")
+        row.operator("bim.enable_editing_framing_path", icon="ANIM", text="")
+        row.operator("bim.create_framing_type", icon="FILE_3D", text="")
+        row.operator("bim.remove_framing", icon="X", text="")
+        if (height := FramingData.data["height"]) is not None:
+            row = layout.row(align=True)
+            row.label(text=f"Height: {height}")
+            row.operator("bim.edit_framing_height", icon="GREASEPENCIL", text="")
+        box = layout.box()
+        for line in FramingData.data["summary"]:
+            box.label(text=line)
 
 
 class BIM_PT_roof(bpy.types.Panel):

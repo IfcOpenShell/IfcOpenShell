@@ -44,6 +44,10 @@ def assign_type(
         model.recalculate_walls([obj])
     elif usage == "LAYER3":
         model.regenerate_slab(obj)
+    elif model.is_framing(type):
+        # Framing types hold a system, not geometry: each occurrence builds its own body
+        # from the type's system, along its own path.
+        model.apply_framing_type(obj)
     else:
         type_data = type_tool.get_object_data(ifc.get_object(type))
         if type_data:

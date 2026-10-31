@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Union, get_args
 
 import bpy
 import ifcopenshell.util.element
+import ifcopenshell.util.unit
 from bpy.types import NodeTree, PropertyGroup
 from mathutils import Vector
 
@@ -93,6 +94,14 @@ def update_relating_type_id(self: "BIMModelProperties", context: bpy.types.Conte
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
     AuthoringData.data["relating_type_data"] = AuthoringData.relating_type_data()
     self.type_page = [e[0] for e in AuthoringData.data["relating_type_id"]].index(self.relating_type_id) // 9 + 1
+    # A framing type: start drawing at its default height, which the tool header shows.
+    relating_type_id = self.relating_type_id
+    relating_type = tool.Ifc.get().by_id(int(relating_type_id)) if relating_type_id.isdigit() else None
+    if relating_type and tool.Parametric.is_framing(relating_type):
+        from bonsai.bim.module.model.framing import read_system
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        self.framing_height = read_system(relating_type).get("default_height", 1.1 / unit_scale) * unit_scale
 
 
 def update_type_page(self: "BIMModelProperties", context: bpy.types.Context) -> None:
@@ -284,6 +293,13 @@ class BIMModelProperties(PropertyGroup):
     updating: bpy.props.BoolProperty(default=False)
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type_id}
     extrusion_depth: bpy.props.FloatProperty(name="Extrusion Depth", min=0.001, default=42.0, subtype="DISTANCE")
+    framing_height: bpy.props.FloatProperty(
+        name="Height",
+        description="The height of framing drawn with the active framing type, or applied to the selected framing",
+        min=0.001,
+        default=1.1,
+        subtype="DISTANCE",
+    )
     cardinal_point: bpy.props.EnumProperty(
         items=(
             # TODO: complain to buildingSMART
@@ -1612,6 +1628,399 @@ def to_percentage(angle: float) -> float:
 
 RoofType = Literal["HIP/GABLE ROOF"]
 RoofGenerationMethod = Literal["HEIGHT", "ANGLE"]
+
+
+FRAMING_BOUND_ITEMS = [
+    ("BASE", "Base", "The guide path"),
+    ("TOP", "Top", "The framing's height above the guide path"),
+    ("HEIGHT", "Height", "A height above the guide path"),
+    ("MEMBER", "Member", "A face of a horizontal member"),
+]
+
+
+def get_framing_profiles(self: "BIMFramingEntry", context: bpy.types.Context) -> list[tuple[str, str, str, str, int]]:
+    from bonsai.bim.module.model.data import FramingData
+
+    if not FramingData.is_loaded:
+        FramingData.load()
+    return FramingData.data["profiles"]
+
+
+def get_framing_materials(self: "BIMFramingEntry", context: bpy.types.Context) -> list[tuple[str, str, str, str, int]]:
+    from bonsai.bim.module.model.data import FramingData
+
+    if not FramingData.is_loaded:
+        FramingData.load()
+    return FramingData.data["materials"]
+
+
+def update_framing_preview(
+    self: Union["BIMFramingBreak", "BIMFramingEntry", "BIMFramingProperties"], context: bpy.types.Context
+) -> None:
+    from bonsai.bim.module.model.framing import update_framing_preview
+
+    if isinstance(obj := self.id_data, bpy.types.Object):
+        update_framing_preview(obj)
+
+
+class BIMFramingBreak(PropertyGroup):
+    name: bpy.props.StringProperty(
+        update=update_framing_preview,
+        name="Breaks At",
+        description="An entry that breaks this member or panel: a horizontal for verticals, else a vertical",
+    )
+
+    if TYPE_CHECKING:
+        name: str
+
+
+class BIMFramingWithin(PropertyGroup):
+    name: bpy.props.StringProperty(
+        update=update_framing_preview,
+        name="Within",
+        description="Another vertical entry whose members also bound the bays",
+    )
+
+    if TYPE_CHECKING:
+        name: str
+
+
+class BIMFramingEntry(PropertyGroup):
+    name: bpy.props.StringProperty(update=update_framing_preview, name="Name")
+    kind: bpy.props.EnumProperty(
+        update=update_framing_preview,
+        name="Kind",
+        items=[
+            ("V", "Vertical", "Posts, balusters, mullions", "SORT_DESC", 0),
+            ("H", "Horizontal", "Rails, cables, transoms", "FORWARD", 1),
+            ("INFILL", "Infill", "Glass, panels between members", "MESH_PLANE", 2),
+        ],
+    )
+    spacing_mode: bpy.props.EnumProperty(
+        update=update_framing_preview,
+        name="Spacing",
+        items=[
+            ("NONE", "None", "Verticals: only at ends and corners. Horizontals: a single level"),
+            ("FIXED", "Fixed", "Exact spacing, with the remainder split between both ends"),
+            ("MAX", "Max", "Equal bays no wider than the spacing"),
+            ("COUNT", "Count", "A fixed number of members"),
+        ],
+        default="NONE",
+    )
+    spacing: bpy.props.FloatProperty(
+        update=update_framing_preview, name="Spacing", default=1.0, min=0.001, subtype="DISTANCE"
+    )
+    count: bpy.props.IntProperty(update=update_framing_preview, name="Count", default=1, min=1)
+    spacing_align: bpy.props.EnumProperty(
+        update=update_framing_preview,
+        name="Align",
+        description="Where fixed spacing is measured from in each bay",
+        items=[
+            ("START", "Start", "From the start of each bay, or the bottom for horizontals"),
+            ("CENTER", "Centre", "Centred, with the remainder split between both ends"),
+            ("END", "End", "From the end of each bay, or the top for horizontals"),
+        ],
+        default="CENTER",
+    )
+    max_align: bpy.props.EnumProperty(
+        update=update_framing_preview,
+        name="Align",
+        description="Where a member is anchored before the bays are split equally",
+        items=[
+            ("EVEN", "Even", "Equal bays across the whole of each bay"),
+            ("START", "Start", "A member offset from the start, or the bottom for horizontals"),
+            ("CENTER", "Centre", "A member on the centre line, moved by the offset"),
+            ("END", "End", "A member offset from the end, or the top for horizontals"),
+        ],
+        default="EVEN",
+    )
+    equal_openings: bpy.props.BoolProperty(
+        update=update_framing_preview,
+        name="Equal Openings",
+        description=(
+            "Make the clear openings between member faces equal, instead of the centre-to-centre spacing. "
+            "With Max, the spacing is then the widest opening"
+        ),
+        default=False,
+    )
+    spacing_offset: bpy.props.FloatProperty(
+        update=update_framing_preview,
+        name="Offset",
+        description="From the aligned end to the first member, or along the path from the centre",
+        default=0.0,
+        subtype="DISTANCE",
+    )
+    at_ends: bpy.props.BoolProperty(update=update_framing_preview, name="At Ends", default=False)
+    at_corners: bpy.props.BoolProperty(update=update_framing_preview, name="At Corners", default=False)
+    corner_joint: bpy.props.EnumProperty(
+        update=update_framing_preview,
+        name="Corners",
+        description="How a horizontal meets itself where the path turns",
+        items=[
+            ("MITRE", "Mitre", "Both legs are cut on the corner's bisector"),
+            (
+                "BUTT_FIRST",
+                "First Through",
+                "The first leg runs through to the second leg's outside, which butts into it",
+            ),
+            (
+                "BUTT_SECOND",
+                "Second Through",
+                "The second leg runs through to the first leg's outside, which butts into it",
+            ),
+        ],
+        default="MITRE",
+    )
+    butt_corners: bpy.props.BoolProperty(
+        update=update_framing_preview,
+        name="Butt Corners",
+        description=(
+            "At corners, one member per leg instead of one on the corner: the first leg runs through, its member "
+            "flush with the second leg's outside, and the second leg's member stands against the first leg"
+        ),
+        default=False,
+    )
+    within: bpy.props.StringProperty(
+        update=update_framing_preview, name="Within", description="Space inside the bays of this vertical entry"
+    )
+    level_type: bpy.props.EnumProperty(
+        update=update_framing_preview, name="Level", items=FRAMING_BOUND_ITEMS, default="HEIGHT"
+    )
+    level: bpy.props.FloatProperty(update=update_framing_preview, name="Level", default=1.0, subtype="DISTANCE")
+    level_member: bpy.props.StringProperty(update=update_framing_preview, name="Level Member")
+    level_offset: bpy.props.FloatProperty(
+        update=update_framing_preview,
+        name="Level Offset",
+        description=(
+            "Up from the level, or down if negative. With a Top level, the member follows the top of the framing, "
+            "as a lower top plate"
+        ),
+        default=0.0,
+        subtype="DISTANCE",
+    )
+    bottom_type: bpy.props.EnumProperty(
+        update=update_framing_preview, name="Bottom", items=FRAMING_BOUND_ITEMS, default="BASE"
+    )
+    bottom: bpy.props.FloatProperty(update=update_framing_preview, name="Bottom", default=0.0, subtype="DISTANCE")
+    bottom_member: bpy.props.StringProperty(update=update_framing_preview, name="Bottom Member")
+    top_type: bpy.props.EnumProperty(
+        update=update_framing_preview, name="Top", items=FRAMING_BOUND_ITEMS, default="TOP"
+    )
+    top: bpy.props.FloatProperty(update=update_framing_preview, name="Top", default=1.0, subtype="DISTANCE")
+    top_member: bpy.props.StringProperty(update=update_framing_preview, name="Top Member")
+    breaks_at: bpy.props.CollectionProperty(type=BIMFramingBreak, name="Breaks At")
+    within_also: bpy.props.CollectionProperty(type=BIMFramingWithin, name="Also Within")
+    between: bpy.props.StringProperty(
+        update=update_framing_preview, name="Between", description="The vertical entry whose bays this runs in"
+    )
+    extend_start: bpy.props.FloatProperty(
+        update=update_framing_preview,
+        name="Extend Start",
+        description="How far the member carries on past the start of each run, in plan. Negative pulls it back",
+        default=0.0,
+        subtype="DISTANCE",
+    )
+    extend_end: bpy.props.FloatProperty(
+        update=update_framing_preview,
+        name="Extend End",
+        description="How far the member carries on past the end of each run, in plan. Negative pulls it back",
+        default=0.0,
+        subtype="DISTANCE",
+    )
+    square_cut: bpy.props.BoolProperty(
+        update=update_framing_preview,
+        name="Square Cut",
+        description="Cut the ends square instead of following the slope of the path",
+        default=False,
+    )
+    flush: bpy.props.BoolProperty(
+        update=update_framing_preview,
+        name="Flush",
+        description=(
+            "Keep the profile inside the boundary instead of centred on it: end verticals inside the path ends, "
+            "a Base or Top level on or under it, and spacing measured to the member's faces"
+        ),
+        default=False,
+    )
+    bays: bpy.props.StringProperty(
+        update=update_framing_preview,
+        name="Bays",
+        description="Which bays along the path, e.g. '2, 4' or '1, -1' (negatives count from the end). Blank for all",
+    )
+    rows: bpy.props.StringProperty(
+        update=update_framing_preview,
+        name="Rows",
+        description="Which gaps upwards, e.g. '1' or '-1' (negatives count from the top). Blank for all",
+    )
+    thickness: bpy.props.FloatProperty(
+        update=update_framing_preview, name="Thickness", default=0.012, min=0.0001, subtype="DISTANCE"
+    )
+    gap: bpy.props.FloatProperty(
+        update=update_framing_preview,
+        name="Gap",
+        default=0.0,
+        subtype="DISTANCE",
+        description="Clearance to the members around the panel. Negative runs the panel into them, e.g. into a glazing channel",
+    )
+    max_width: bpy.props.FloatProperty(
+        update=update_framing_preview,
+        name="Max Width",
+        default=0.0,
+        min=0.0,
+        subtype="DISTANCE",
+        description="Split wide bays. 0 to not split",
+    )
+    joint: bpy.props.FloatProperty(
+        update=update_framing_preview, name="Joint", default=0.0, min=0.0, subtype="DISTANCE"
+    )
+    profile: bpy.props.EnumProperty(update=update_framing_preview, name="Profile", items=get_framing_profiles)
+    rotation: bpy.props.FloatProperty(
+        update=update_framing_preview, name="Rotation", default=0.0, description="Degrees, in the profile's plane"
+    )
+    offset: bpy.props.FloatProperty(
+        update=update_framing_preview,
+        name="Offset",
+        default=0.0,
+        subtype="DISTANCE",
+        description="Out of the guide plane, to the path's left",
+    )
+    material: bpy.props.EnumProperty(update=update_framing_preview, name="Material", items=get_framing_materials)
+    cut_by_edge_voids: bpy.props.BoolProperty(
+        update=update_framing_preview,
+        name="Cut by Edge Openings",
+        description=(
+            "Cut the members around openings that reach a side of the framing (a path end, the base or the top), "
+            "such as a door, a rake or an angled end. Off, they run straight through"
+        ),
+        default=True,
+    )
+    cut_by_hole_voids: bpy.props.BoolProperty(
+        update=update_framing_preview,
+        name="Cut by Hole Openings",
+        description="Cut the members around openings inside the framing, such as a window. Off, they run straight through",
+        default=True,
+    )
+    void_role: bpy.props.EnumProperty(
+        update=update_framing_preview,
+        name="Openings",
+        description="Frame the openings instead of being laid out along the path",
+        items=[
+            ("NONE", "None", "Laid out along the path"),
+            ("JAMB", "Jamb", "Frames the sides of openings"),
+            ("HEAD", "Head", "Spans over openings"),
+            ("SILL", "Sill", "Spans under raised openings, and under sloped ones such as a rake"),
+        ],
+        default="NONE",
+    )
+    void_layer: bpy.props.IntProperty(
+        update=update_framing_preview,
+        name="Layer",
+        description=(
+            "Counted out from the opening: in wood framing, 1 is the jack and 2 the king. Heads stack up and "
+            "sills down by layer, and entries in one layer sit side by side, set apart by their offsets"
+        ),
+        default=1,
+        min=1,
+    )
+    jamb_height: bpy.props.EnumProperty(
+        update=update_framing_preview,
+        name="Joint",
+        description="How the jamb meets the head and sill",
+        items=[
+            ("FULL", "Jamb Through", "Runs between its bounds, and the head or sill butts into it"),
+            ("HEAD", "Head Through", "Stops under the head or sill, which runs over it"),
+            ("MITRE", "Mitre", "Mitres with the head and sill"),
+        ],
+        default="FULL",
+    )
+    void_for: bpy.props.EnumProperty(
+        update=update_framing_preview,
+        name="For",
+        description="Which openings it frames. None picked frames all of them",
+        items=[
+            ("IfcDoor", "Doors", "Openings filled by a door"),
+            ("IfcWindow", "Windows", "Openings filled by a window"),
+            ("IfcOpeningElement", "Bare", "Openings with nothing in them"),
+        ],
+        options={"ENUM_FLAG"},
+        default=set(),
+    )
+
+    if TYPE_CHECKING:
+        name: str
+        kind: Literal["V", "H", "INFILL"]
+        spacing_mode: Literal["NONE", "FIXED", "MAX", "COUNT"]
+        spacing: float
+        count: int
+        spacing_align: Literal["START", "CENTER", "END"]
+        max_align: Literal["EVEN", "START", "CENTER", "END"]
+        spacing_offset: float
+        equal_openings: bool
+        at_ends: bool
+        at_corners: bool
+        butt_corners: bool
+        corner_joint: Literal["MITRE", "BUTT_FIRST", "BUTT_SECOND"]
+        within: str
+        level_type: Literal["BASE", "TOP", "HEIGHT", "MEMBER"]
+        level: float
+        level_member: str
+        level_offset: float
+        bottom_type: Literal["BASE", "TOP", "HEIGHT", "MEMBER"]
+        bottom: float
+        bottom_member: str
+        top_type: Literal["BASE", "TOP", "HEIGHT", "MEMBER"]
+        top: float
+        top_member: str
+        breaks_at: bpy.types.bpy_prop_collection_idprop[BIMFramingBreak]
+        within_also: bpy.types.bpy_prop_collection_idprop[BIMFramingWithin]
+        between: str
+        square_cut: bool
+        flush: bool
+        extend_start: float
+        extend_end: float
+        bays: str
+        rows: str
+        thickness: float
+        gap: float
+        max_width: float
+        joint: float
+        profile: str
+        rotation: float
+        offset: float
+        material: str
+        cut_by_edge_voids: bool
+        cut_by_hole_voids: bool
+        void_role: Literal["NONE", "JAMB", "HEAD", "SILL"]
+        void_layer: int
+        jamb_height: Literal["FULL", "HEAD", "MITRE"]
+        void_for: set[str]
+
+
+class BIMFramingProperties(PropertyGroup):
+    is_editing: bpy.props.BoolProperty(default=False)
+    is_editing_path: bpy.props.BoolProperty(default=False)
+    entries: bpy.props.CollectionProperty(type=BIMFramingEntry)
+    active_entry_index: bpy.props.IntProperty()
+    height: bpy.props.FloatProperty(
+        update=update_framing_preview, name="Height", default=1.1, min=0.001, subtype="DISTANCE"
+    )
+    scope: bpy.props.EnumProperty(
+        update=update_framing_preview,
+        name="Spacing Scope",
+        items=[
+            ("SEGMENT", "Per Segment", "Restart vertical spacing at every path vertex"),
+            ("PATH", "Whole Path", "Space verticals along the whole path"),
+        ],
+        default="SEGMENT",
+    )
+
+    if TYPE_CHECKING:
+        is_editing: bool
+        is_editing_path: bool
+        entries: bpy.types.bpy_prop_collection_idprop[BIMFramingEntry]
+        active_entry_index: int
+        height: float
+        scope: Literal["SEGMENT", "PATH"]
 
 
 class BIMRoofProperties(PropertyGroup):
