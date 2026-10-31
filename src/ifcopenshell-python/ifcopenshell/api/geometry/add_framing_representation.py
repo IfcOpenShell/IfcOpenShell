@@ -37,7 +37,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
-from ifcopenshell.util.framing import TOLERANCE, FramingError, SpacingScope
+from ifcopenshell.util.framing import INLINE_TURN, TOLERANCE, FramingError, SpacingScope
 from ifcopenshell.util.shape_builder import SequenceOfVectors, ShapeBuilder
 
 _Z = np.array((0.0, 0.0, 1.0))
@@ -189,6 +189,28 @@ class _GuideMap:
         if length <= TOLERANCE:
             raise FramingError(f"Guide path segment {segment} is vertical.")
         return d / length
+
+    def plan_turn(self, segment: int) -> float:
+        """How far the path turns in plan at the start of ``segment``, in radians."""
+        before, after = self.direction(segment - 1), self.direction(segment)
+        return float(np.arctan2(abs(np.cross(before, after)[2]), before @ after))
+
+    def turn(self, segment: int) -> float:
+        """How far the path turns at the start of ``segment``, in radians: in plan, or where
+        it carries straight on in plan, in slope."""
+        turn = self.plan_turn(segment)
+        if turn > INLINE_TURN:
+            return turn
+        return abs(float(np.arctan(self.slope(segment)) - np.arctan(self.slope(segment - 1))))
+
+    def leg(self, segment: int) -> tuple[int, int]:
+        """The first and last segments of the straight run holding ``segment``."""
+        first, last = segment, segment
+        while first > 0 and self.turn(first) <= INLINE_TURN:
+            first -= 1
+        while last < len(self.lengths) - 1 and self.turn(last + 1) <= INLINE_TURN:
+            last += 1
+        return first, last
 
     def slope(self, segment: int) -> float:
         """Rise per unit of plan length."""
@@ -683,11 +705,12 @@ def _cut_normal(
 
 
 def _corner_at(guide: _GuideMap, u: float) -> Optional[tuple[int, int]]:
-    """The segments either side of the path corner at ``u``, or None if it is not on one."""
+    """The segments either side of the path corner at ``u``, or None if it is not on one.
+    A vertex where the path carries straight on in plan is not a corner."""
     last = len(guide.lengths) - 1
     for i, start in enumerate(guide.starts):
         if i > 0 and abs(u - start) <= TOLERANCE:
-            return i - 1, i
+            return (i - 1, i) if guide.plan_turn(i) > INLINE_TURN else None
     if guide.closed and last > 0 and (u <= TOLERANCE or abs(u - guide.length) <= TOLERANCE):
         return last, 0
     return None
@@ -814,7 +837,11 @@ def project_void(
         if hull.area < (u1 - u0) * (v1 - v0) * (1 - 1e-6) - TOLERANCE:
             ring = shapely.geometry.polygon.orient(hull, 1.0).exterior.coords[:-1]
             outline = tuple((float(a), float(b)) for a, b in ring)
-    t = np.clip(t, 0.0, guide_map.lengths[i])
+    # Kept to its straight run of the path, which inline vertices do not end.
+    first, last = guide_map.leg(i)
+    run_start = guide_map.starts[first] - guide_map.starts[i]
+    run_end = guide_map.starts[last] + guide_map.lengths[last] - guide_map.starts[i]
+    t = np.clip(t, run_start, run_end)
     u = guide_map.starts[i] + t
     v = pts[:, 2] - (guide_map.points[i][2] + guide_map.rises[i] * t / guide_map.lengths[i])
     return ifcopenshell.util.framing.Void(
@@ -924,10 +951,7 @@ def compute_framing_geometry(
         extents=extents,
         lateral=lateral,
         voids=voids,
-        turns=[
-            float(np.arccos(np.clip(guide_map.direction(i - 1) @ guide_map.direction(i), -1.0, 1.0)))
-            for i in range(1, len(guide_map.lengths))
-        ],
+        turns=[guide_map.turn(i) for i in range(1, len(guide_map.lengths))],
     )
 
     items: list[FramingItem] = []

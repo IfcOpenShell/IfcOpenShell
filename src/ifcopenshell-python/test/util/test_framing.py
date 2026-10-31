@@ -1287,8 +1287,8 @@ class TestSlopedVoids:
     def test_raked_top(self):
         layout = solve_frame([RAKED_TOP])
         (rake,) = layout.inclined
-        # The rake is framed under the opening, so as a sill: the lowest horizontal's profile.
-        assert (rake.entry, rake.kind) == ("Bottom", "H")
+        # The rake is framed under an opening reaching the top: the highest horizontal's profile.
+        assert (rake.entry, rake.kind) == ("Top", "H")
         # Its top face lies on the rake, and it runs to the path end, cut plumb there.
         assert rake.end[0] == pytest.approx(6.0)
         assert rake.start[1] + 0.05 * math.hypot(1, 0.1) == pytest.approx(rake_line(rake.start[0]))
@@ -1297,9 +1297,9 @@ class TestSlopedVoids:
         for stud in layout.by_entry("Stud"):
             assert stud.v_end == pytest.approx(rake_line(stud.u) - 0.1 * math.hypot(1, 0.1))
             assert parallel(stud.top_cut, (1, -0.1))
-        # The end posts are cut too, and the top rail is gone.
+        # The end posts are cut too, and the level top rail is gone.
         assert all(m.top_cut for m in layout.by_entry("Ends"))
-        assert not layout.by_entry("Top")
+        assert not [m for m in layout.horizontals if m.entry == "Top"]
 
     def test_angled_end(self):
         layout = solve_frame([ANGLED_END])
@@ -1616,3 +1616,62 @@ class TestSlopedMembersAtButtCorners:
         # The last leg's member, standing against the middle leg, runs whole.
         (last,) = [m for m in ends if isinstance(m, subject.VerticalMember) and abs(m.u - 6.12) < 1e-9]
         assert (last.v_start, last.v_end) == pytest.approx((0.1, 2.9))
+
+
+class TestInlineVertices:
+    """A path vertex where nothing turns: members stand on it, but it is no corner."""
+
+    def clearance(self, turn):
+        members = [
+            {"name": "Post", "kind": "V", "at_ends": True, "at_corners": True},
+            {
+                "name": "Next",
+                "kind": "V",
+                "within": "Post",
+                "spacing": {"mode": "MAX", "value": 100.0, "align": "START", "offset": 0.02},
+            },
+        ]
+        entries = subject.parse_system({"members": members})
+        extents, lateral = {"Post": (-0.05, 0.05), "Next": (-0.02, 0.02)}, {"Post": (-0.2, 0.2)}
+        layout = subject.solve(entries, [3.0, 3.0], 1.0, extents=extents, lateral=lateral, turns=[turn])
+        return max(us(layout, "Next")) - 3.0 - 0.02
+
+    def test_members_on_it_keep_clear_by_their_width_along_the_path(self):
+        assert self.clearance(0.0) == pytest.approx(0.05)
+
+    def test_a_corner_keeps_clear_by_the_footprint_turned_by_it(self):
+        assert self.clearance(math.pi / 2) == pytest.approx(0.2)
+        turn = 0.1
+        assert self.clearance(turn) == pytest.approx(0.05 * math.cos(turn) + 0.2 * math.sin(turn))
+
+    def solve_frame(self, voids, **ends):
+        members = frame()
+        next(m for m in members if m["name"] == "Ends").update(at_corners=True, **ends)
+        return subject.solve(
+            subject.parse_system({"members": members}),
+            [3.0, 3.0],
+            3.0,
+            extents=FRAME_EXTENTS,
+            lateral={"Ends": (-0.07, 0.07)},
+            voids=tuple(voids),
+            turns=[0.0],
+        )
+
+    def test_a_sloped_opening_spans_it(self):
+        layout = self.solve_frame([RAKED_TOP])
+        (rake,) = layout.inclined
+        assert (rake.start[0], rake.end[0]) == pytest.approx((0.0, 6.0))
+        # The member standing on the vertex is cut like any other, not kept whole as at a corner.
+        (post,) = [
+            m for m in layout.by_entry("Ends") if isinstance(m, subject.VerticalMember) and abs(m.u - 3.0) < 1e-9
+        ]
+        assert post.v_end == pytest.approx(rake_line(3.0) - 0.1 * math.hypot(1, 0.1)) and post.top_cut is not None
+
+    def test_a_rectangular_opening_spans_it(self):
+        window = subject.Void(2.5, 3.5, 1.0, 2.0)
+        layout = self.solve_frame([window])
+        assert [m.u for m in layout.by_entry("Ends") if m.address[1] < 0] == approx_list([2.45, 3.55])
+
+    def test_butt_corners_do_not_apply(self):
+        layout = self.solve_frame([], butt_corners=True)
+        assert us(layout, "Ends") == approx_list([0.05, 3.0, 5.95])

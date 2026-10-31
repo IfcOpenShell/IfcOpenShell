@@ -699,7 +699,7 @@ class TestSlopedOpenings:
     def test_members_along_sloped_edges_have_a_true_section(self):
         items = self.items()
         jamb = next(i for i in items if i.entry == "Ends" and not np.allclose(i.axis, (0, 0, 1)))
-        rake = next(i for i in items if i.entry == "Bottom" and isinstance(i, FramingExtrusion))
+        rake = next(i for i in items if i.entry == "Top" and isinstance(i, FramingExtrusion))
         assert jamb.axis == pytest.approx(np.array((1, 0, 3)) / np.sqrt(10))
         assert rake.axis == pytest.approx(np.array((1, 0, -0.1)) / np.sqrt(1.01))
         for item in (jamb, rake):
@@ -867,3 +867,39 @@ class TestRailCutOnACorner:
             "Rail", 3.0, 6.0, 1.0, guide_map, 0.0, 0.0, rectangle_points(0.1, 0.05), (0.0, 1.0), None, "MITRE"
         )
         assert mitred.start_mitre is not None
+
+
+class TestInlineVertex:
+    # Straight but for a hair of drift, as a path drawn by hand comes out.
+    GUIDE = [(0.0, 0.0, 0.0), (3.0, 0.000001, 0.0), (6.0, 0.000002, 0.000001)]
+
+    def test_a_rectangular_opening_spans_it(self):
+        box = [(x, y, z) for x in (2.5, 3.5) for y in (-0.1, 0.1) for z in (1.0, 2.0)]
+        void = project_void(self.GUIDE, box)
+        assert (void.u_start, void.u_end) == pytest.approx((2.5, 3.5))
+
+    def test_a_change_of_slope_is_no_inline_vertex(self):
+        guide = _GuideMap([(0.0, 0.0, 0.0), (3.0, 0.0, 0.0), (6.0, 0.0, 1.0)], False)
+        assert guide.turn(1) == pytest.approx(np.arctan(1 / 3))
+        assert guide.leg(0) == (0, 0)
+        assert _GuideMap(self.GUIDE, False).leg(1) == (0, 1)
+
+    def test_a_plumb_cut_on_it_is_plain(self):
+        guide = _GuideMap(self.GUIDE, False)
+        points = rectangle_points(0.1, 0.05)
+        (piece,) = _rail_pieces("Rail", 3.0, 6.0, 1.0, guide, 0.0, 0.0, points, (0.0, 1.0), None, "BUTT_FIRST")
+        # No reach past a corner that is not one: the plumb cut stays where it is.
+        assert (piece.origin - piece.direction * piece.start_extension)[0] == pytest.approx(3.0, abs=1e-3)
+
+    def test_a_rake_runs_across_it_in_one_piece(self):
+        items = compute_framing_geometry(
+            system=sloped_system(),
+            guide=self.GUIDE,
+            height=3.0,
+            profile_points={name: rectangle_points(*size) for name, size in SLOPED_PROFILES.items()},
+            voids=SLOPED_VOIDS[1:],
+        )
+        (rake,) = [i for i in items if isinstance(i, FramingExtrusion) and not np.allclose(i.axis, (0, 0, 1))]
+        assert rake.entry == "Top"
+        assert rake.origin[0] == pytest.approx(0.0, abs=1e-6)
+        assert (rake.origin + rake.axis * rake.depth)[0] == pytest.approx(6.0, abs=1e-6)

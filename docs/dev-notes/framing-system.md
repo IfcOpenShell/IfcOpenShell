@@ -166,6 +166,23 @@ depth out of the guide plane. `within` ranges keep its widest half (in-plane or 
 plane, from `lateral`) clear on both legs (`_parent_extent`), so studs next to a single
 corner stud do not overlap it (user report, 2x6 test wall).
 
+**Inline vertices** (user request, The Meadow `1zzD4eL3rFYQKKpefK$Yww`): a vertex between
+two segments in line, to stand a post mid-run.
+- It turns under `INLINE_TURN`, in plan and in slope; a path drawn by hand drifts a hair.
+  The writer passes the turns (`_GuideMap.turn`), and a slope change counts as a turn.
+- `at_corners` members still stand there, and bays and panels still split there.
+- Otherwise it is no corner (`_Guide.turning_corners`):
+  - members there keep clear by their width along the path, not their depth;
+  - they are cut by openings like any member;
+  - butt corners and rail corner joints do not apply.
+- Segments joined by inline vertices are one leg (`leg`), so sloped and rectangular
+  openings and their members span them.
+- At real corners, the clearance is the footprint turned by the corner, so a shallow turn
+  reaches less than the full depth.
+
+**Default sill under a top opening:** an opening reaching the top, as a rake, defaults
+to the highest horizontal, not the lowest: it is the framing's top member.
+
 **Butt corners** (`butt_corners`, user sketch): one member per leg instead of one on
 the corner.
 - The first leg runs through. Its member is flush with the second leg's outer face, at

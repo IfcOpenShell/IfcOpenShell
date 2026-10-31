@@ -43,6 +43,8 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, Optional, Union
 
 TOLERANCE = 1e-6
+# A path vertex turning less than this, in radians, is inline: the path carries straight on.
+INLINE_TURN = 1e-3
 
 SpacingMode = Literal["FIXED", "MAX", "COUNT"]
 SpacingAlign = Literal["START", "CENTER", "END"]
@@ -625,8 +627,10 @@ def solve(
         way of a jamb are left out. Jambs, heads and sills come from the entries with a
         ``void_role``. Without them, jambs default to the end vertical's profile, the
         head to the highest horizontal's and the sill to the lowest one's.
-    :param turns: How far the path turns at each vertex between segments, in radians, for
-        butt corners. Square corners are assumed without them.
+    :param turns: How far the path turns at each vertex between segments, in radians.
+        Square corners are assumed without them. At an inline vertex, one with no turn,
+        ``at_corners`` members still stand and bays still split, but the segments either side
+        are one leg: openings span them, and the members there are not corner members.
     """
     if not segment_lengths or any(length <= TOLERANCE for length in segment_lengths):
         raise FramingError("The guide path needs segments of non-zero length.")
@@ -687,7 +691,7 @@ def solve(
     # centred on the corner also runs unbroken from bound to bound; at a butt corner, the
     # member under a sloped opening of its own leg is cut by it, as an end member is.
     corners = {e.name: _corner_positions(e, guide, extents, lateral or {}) for e in verticals if e.at_corners}
-    centred = {e.name: guide.corners() for e in verticals if e.at_corners and not e.butt_corners}
+    centred = {e.name: guide.turning_corners() for e in verticals if e.at_corners and not e.butt_corners}
 
     def is_corner(m: VerticalMember) -> bool:
         return m.address[1] >= 0 and _near(m.u, centred.get(m.entry, []))
@@ -844,6 +848,29 @@ class _Guide:
     def corners(self) -> list[float]:
         corners = self.starts[1:]
         return [0.0] + corners if self.closed else corners
+
+    def is_inline(self, u: float) -> bool:
+        """Whether ``u`` is on a vertex where the path carries straight on."""
+        return any(abs(s - u) <= TOLERANCE and abs(t) <= INLINE_TURN for s, t in zip(self.starts[1:], self.turns))
+
+    def turning_corners(self) -> list[float]:
+        """The corners where the path really turns."""
+        return [c for c in self.corners() if not self.is_inline(c)]
+
+    def turn_at(self, corner: float) -> float:
+        for s, t in zip(self.starts[1:], self.turns):
+            if abs(s - corner) <= TOLERANCE:
+                return t
+        return math.pi / 2  # where a loop closes
+
+    def leg(self, segment: int) -> tuple[int, int]:
+        """The first and last segments of the straight run holding ``segment``."""
+        first, last = segment, segment
+        while first > 0 and abs(self.turns[first - 1]) <= INLINE_TURN:
+            first -= 1
+        while last < len(self.turns) and abs(self.turns[last]) <= INLINE_TURN:
+            last += 1
+        return first, last
 
 
 def _horizontal_deps(e: HorizontalEntry) -> list[Optional[str]]:
@@ -1065,7 +1092,7 @@ def _butt_corner(
         return None
     segment = next((i for i, s in enumerate(guide.starts) if i > 0 and abs(s - corner) <= TOLERANCE), None)
     half = max((abs(x) for x in lateral.get(entry.name, (0.0, 0.0))), default=0.0)
-    if segment is None or half <= TOLERANCE:
+    if segment is None or half <= TOLERANCE or guide.is_inline(corner):
         return None
     # Along either leg, the other leg's face is this far past the corner.
     reach = half / max(abs(math.sin(guide.turns[segment - 1])), 0.2)
@@ -1079,12 +1106,16 @@ def _parent_extent(
 ) -> tuple[float, float]:
     """How far a parent member reaches along the path either side of ``u``.
 
-    A member on a corner of the path faces along one leg, so across the other it reaches as
-    far as its depth out of the guide plane. Its widest half is kept clear on both legs."""
+    A member on a corner of the path faces along one leg, so along the other it reaches as
+    far as its footprint turned by the corner. Its widest half is kept clear on both legs.
+    Where the path carries straight on, it only reaches its own width."""
     lo, hi = extents.get(name, (0.0, 0.0))
-    if not _near(u, guide.corners()):
+    if not _near(u, guide.turning_corners()):
         return lo, hi
-    half = max(abs(lo), abs(hi), *(abs(x) for x in lateral.get(name, (0.0, 0.0))))
+    turn = guide.turn_at(u)
+    along = max(abs(lo), abs(hi))
+    across = max(abs(x) for x in lateral.get(name, (0.0, 0.0)))
+    half = max(along, along * abs(math.cos(turn)) + across * abs(math.sin(turn)))
     return -half, half
 
 
@@ -1385,7 +1416,7 @@ def _frame_void(
     sill are placed once the horizontals are known, see :meth:`_VoidFrame.place_head_and_sill`."""
     if void.u_end - void.u_start <= TOLERANCE or void.v_end - void.v_start <= TOLERANCE:
         raise FramingError(f"Opening {index + 1} has no size.")
-    if any(void.u_start + TOLERANCE < s < void.u_end - TOLERANCE for s in guide.starts[1:]):
+    if any(void.u_start + TOLERANCE < c < void.u_end - TOLERANCE for c in guide.turning_corners()):
         raise FramingError(f"Opening {index + 1} crosses a corner of the path.")
     segment = guide.segment_at((void.u_start + void.u_end) / 2)
     reaches_top = void.v_end >= height - TOLERANCE
@@ -1845,15 +1876,16 @@ def _frame_sloped_voids(
         lo, hi = extents.get(entry.name, (0.0, 0.0))
         return hi - lo
 
-    def on_leg(void: Void) -> tuple[Any, int]:
-        """An opening on the leg it is measured along: to its corners, or at a butt corner on
-        to the other leg's outer face, over the member there. It may reach past the path's ends."""
+    def on_leg(void: Void) -> tuple[Any, tuple[int, int]]:
+        """An opening on the straight leg it is measured along: to its corners, or at a butt
+        corner on to the other leg's outer face, over the member there. It may reach past the
+        path's ends."""
         polygon = shape(void)
-        segment = guide.segment_at(polygon.centroid.x)
-        last, far = len(guide.starts) - 1, 1e9
-        low = corner_bound(segment, 0) if segment > 0 or guide.closed else -far
-        high = corner_bound(segment, 1) if segment < last or guide.closed else far
-        return polygon.intersection(shapely.geometry.box(low, -far, high, far)), segment
+        first, last = guide.leg(guide.segment_at(polygon.centroid.x))
+        far = 1e9
+        low = corner_bound(first, 0) if first > 0 or guide.closed else -far
+        high = corner_bound(last, 1) if last < len(guide.starts) - 1 or guide.closed else far
+        return polygon.intersection(shapely.geometry.box(low, -far, high, far)), (first, last)
 
     domain = shapely.geometry.box(0.0, 0.0, guide.length, height)
     shapes = [(i, void, *on_leg(void)) for i, void in sloped_voids]
@@ -1865,12 +1897,12 @@ def _frame_sloped_voids(
 
     def on_boundary(a: Point, b: Point) -> bool:
         # The framing's sides, and the corners of the path, where the other leg frames it.
-        lines = [(0, 0.0), (0, guide.length), (1, 0.0), (1, height)] + [(0, s) for s in guide.starts[1:]]
+        lines = [(0, 0.0), (0, guide.length), (1, 0.0), (1, height)] + [(0, c) for c in guide.turning_corners()]
         return any(abs(a[axis] - value) <= TOLERANCE and abs(b[axis] - value) <= TOLERANCE for axis, value in lines)
 
     for part in parts:
-        index, void, part_segment = next(
-            ((i, v, seg) for i, v, s, seg in shapes if s.intersects(part)), (*sloped_voids[0], 0)
+        index, void, (first_segment, last_segment) = next(
+            ((i, v, leg) for i, v, s, leg in shapes if s.intersects(part)), (*sloped_voids[0], (0, 0))
         )
         u0, v0, u1, v1 = part.bounds
         edge = u0 <= TOLERANCE or u1 >= guide.length - TOLERANCE or v0 <= TOLERANCE or v1 >= height - TOLERANCE
@@ -1890,7 +1922,9 @@ def _frame_sloped_voids(
             heads = [[max(singles, key=lambda e: levels[e.name][0])]]
         sills = _void_layers(entries, "SILL", void.filling)
         if not sills and singles:
-            sills = [[min(singles, key=lambda e: levels[e.name][0])]]
+            # Under an opening reaching the top, as a rake, it is the framing's top member.
+            lowest_or_highest = max if v1 >= height - TOLERANCE else min
+            sills = [[lowest_or_highest(singles, key=lambda e: levels[e.name][0])]]
 
         # Counter-clockwise, so the opening is on each edge's left, without collinear points.
         ring = list(shapely.geometry.polygon.orient(part, 1.0).exterior.coords)[:-1]
@@ -1961,10 +1995,9 @@ def _frame_sloped_voids(
         for k, x in enumerate(edges):
             if x.entry is None:
                 continue
-            # A member stays on its own segment of the path, cut plumb at its ends, and at a
-            # butt corner square, see corner_bound.
-            segment = part_segment
-            segment_ends = (guide.starts[segment], guide.ends[segment])
+            # A member stays on its own straight leg of the path, cut plumb at its ends, and
+            # at a butt corner square, see corner_bound.
+            segment_ends = (guide.starts[first_segment], guide.ends[last_segment])
             outward = 1.0 if _dot(x.out, x.p) > 0 else -1.0
             offset = 0.0  # of this layer's face nearest the opening, from the edge
             for n_layer, layer in enumerate(x.layers):
@@ -1983,12 +2016,12 @@ def _frame_sloped_voids(
                         u = _along(origin, x.t, at)[0]
                         bound = None
                         if u < segment_ends[0] + TOLERANCE:
-                            bound = corner_bound(segment, 0) if segment > 0 or guide.closed else None
+                            bound = corner_bound(first_segment, 0) if first_segment > 0 or guide.closed else None
                             if bound is None and u < segment_ends[0] - TOLERANCE:
                                 bound = segment_ends[0]
                         elif u > segment_ends[1] - TOLERANCE:
                             last = len(guide.starts) - 1
-                            bound = corner_bound(segment, 1) if segment < last or guide.closed else None
+                            bound = corner_bound(last_segment, 1) if last_segment < last or guide.closed else None
                             if bound is None and u > segment_ends[1] + TOLERANCE:
                                 bound = segment_ends[1]
                         if bound is not None and (plumb := _meet(origin, x.t, (bound, 0.0), (0.0, 1.0))) is not None:
