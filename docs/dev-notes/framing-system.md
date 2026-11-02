@@ -119,6 +119,21 @@ The type holds an ordered list. Each entry is an array of one of three kinds.
   off whose end posts come from another entry (a window wall's mid posts and its end
   posts): within the mid posts alone, the end bays would run to the path ends, inside
   the end posts. Bays are numbered as before. Saved as a string when there is one.
+- `bay_ends`, with `within`: members at the ends of those bays, as `at_ends` is to the
+  path. `EVERY` stands one against the parent's face at each end of each selected bay:
+  a window frame's jambs either side of every mid post. They count as the entry's own
+  end members for equal openings. `REMOVED` stands one only in
+  what an opening removed of a parent, cut or left out by a jamb, so an array keeps its
+  rhythm across a hole: mullions either side of a mid post carry on where the post is
+  gone. It uses the parent's position and the entry's own bounds, is cut like any other
+  member (so nothing stays if the opening cuts this entry too), makes way for a jamb,
+  and does not follow `bays`. An element with no openings gets nothing from it, which is
+  why it suits a definition shared by a type. Either can stand with no spacing of its own.
+  A horizontal `within` another takes `REMOVED` too (not `EVERY`): it runs along what an
+  opening removed of the parent's rows, between the verticals still there, so a grid
+  stays whole across a hole. The `within` of an infill works from the same idea: a panel
+  spans a row only where an opening has removed all of it in that bay, so glass left in
+  a hole has no gap where the rail was. A stub of the rail still splits the panel.
 - `bottom` / `top` bound: `BASE` (v = 0), `TOP` (occurrence height), an absolute `v`, or
   `{"member": name}`.
 - Square or raked cut at sloped bounds.

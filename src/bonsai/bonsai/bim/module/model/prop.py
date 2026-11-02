@@ -1810,6 +1810,17 @@ class BIMFramingEntry(PropertyGroup):
     top_member: bpy.props.StringProperty(update=update_framing_preview, name="Top Member")
     breaks_at: bpy.props.CollectionProperty(type=BIMFramingBreak, name="Breaks At")
     within_also: bpy.props.CollectionProperty(type=BIMFramingWithin, name="Also Within")
+    bay_ends: bpy.props.EnumProperty(
+        update=update_framing_preview,
+        name="At Bay Ends",
+        description="Stand members at the ends of the Within bays",
+        items=[
+            ("NONE", "Off", "Only spacing places members in the bays"),
+            ("EVERY", "Every End", "A member against the parent's face at each end of each bay"),
+            ("REMOVED", "Removed Parents", "A member where an opening removed a parent, if it does not cut this entry"),
+        ],
+        default="NONE",
+    )
     between: bpy.props.StringProperty(
         update=update_framing_preview, name="Between", description="The vertical entry whose bays this runs in"
     )
@@ -1963,6 +1974,7 @@ class BIMFramingEntry(PropertyGroup):
         butt_corners: bool
         corner_joint: Literal["MITRE", "BUTT_FIRST", "BUTT_SECOND"]
         within: str
+        bay_ends: Literal["NONE", "EVERY", "REMOVED"]
         level_type: Literal["BASE", "TOP", "HEIGHT", "MEMBER"]
         level: float
         level_member: str

@@ -653,6 +653,7 @@ def _load_props(obj: bpy.types.Object) -> None:
         entry.within_also.clear()
         for name in within[1:]:
             entry.within_also.add().name = name
+        entry.bay_ends = member.get("bay_ends") or "NONE"
         if "v" in member:
             _bound_to_props(entry, "level", member["v"], unit_scale)
         entry.level_offset = member.get("level_offset", 0.0) * unit_scale
@@ -722,13 +723,17 @@ def system_from_props(props, previous: dict[str, Any]) -> dict[str, Any]:
                 member["square_cut"] = True
         if entry.flush and entry.kind in ("V", "H"):
             member["flush"] = True
-        repeats = entry.kind == "INFILL" or entry.spacing_mode != "NONE"
+        at_bay_ends = entry.kind == "V" and entry.bay_ends != "NONE"
+        at_removed_rows = entry.kind == "H" and entry.bay_ends == "REMOVED"
+        repeats = entry.kind == "INFILL" or entry.spacing_mode != "NONE" or at_bay_ends
         within = [entry.within.strip()]
         if entry.kind == "V":
             within += [w.name.strip() for w in entry.within_also]
         within = list(dict.fromkeys(w for w in within if w))
         if within and repeats:
             member["within"] = within[0] if len(within) == 1 else within
+            if at_bay_ends or at_removed_rows:
+                member["bay_ends"] = entry.bay_ends
         if entry.between and entry.kind in ("H", "INFILL"):
             member["between"] = entry.between
         if bays := _selection_from_props(entry, "bays"):
@@ -788,6 +793,7 @@ def _void_role_from_props(member: dict[str, Any], entry) -> None:
         "butt_corners",
         "within",
         "bays",
+        "bay_ends",
         "rows",
         "between",
         "v",

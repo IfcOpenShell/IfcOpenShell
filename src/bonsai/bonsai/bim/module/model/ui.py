@@ -759,6 +759,8 @@ def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
             row = box.row(align=True)
             row.prop_search(item, "name", props, "entries", text="Also Within")
             row.operator("bim.remove_framing_within", text="", icon="REMOVE").index = i
+        if entry.within.strip():
+            box.row(align=True).prop(entry, "bay_ends", expand=True)
         box.prop(entry, "bays")
         _draw_framing_bound(box, props, entry, "top", "Top")
         _draw_framing_bound(box, props, entry, "bottom", "Bottom")
@@ -776,6 +778,10 @@ def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
                 box.prop(entry, "spacing")
             _draw_framing_spacing_align(box, entry)
             box.prop_search(entry, "within", props, "entries")
+            if entry.within.strip():
+                row = box.row(align=True)
+                row.prop_enum(entry, "bay_ends", "NONE")
+                row.prop_enum(entry, "bay_ends", "REMOVED")
             box.prop(entry, "rows")
             _draw_framing_bound(box, props, entry, "top", "Top")
             _draw_framing_bound(box, props, entry, "bottom", "Bottom")

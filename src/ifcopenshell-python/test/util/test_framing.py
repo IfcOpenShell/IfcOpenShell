@@ -1740,3 +1740,162 @@ class TestRailsThroughOpenings:
     def test_still_break_where_the_post_stands(self):
         runs = self.runs(subject.Void(1.0, 2.0, 1.0, 2.0))
         assert (2.1, 2.95) in runs and (3.05, 5.95) in runs
+
+
+class TestBayEnds:
+    EXTENTS = {"Post": (-0.05, 0.05), "Mullion": (-0.02, 0.02)}
+
+    def solve(self, voids=(), **mullion):
+        members = [
+            {"name": "Post", "kind": "V", "spacing": {"mode": "COUNT", "value": 1}, "at_ends": True},
+            {"name": "Mullion", "kind": "V", "within": "Post", **mullion},
+        ]
+        return solve(members, segments=(6.0,), height=3.0, extents=self.EXTENTS, voids=voids)
+
+    def spans(self, layout):
+        return [(round(m.u, 3), round(m.v_start, 3), round(m.v_end, 3)) for m in layout.by_entry("Mullion")]
+
+    def test_every_end_stands_against_the_parent_faces(self):
+        assert us(self.solve(bay_ends="EVERY"), "Mullion") == approx_list([0.07, 2.93, 3.07, 5.93])
+
+    def test_every_end_follows_the_bay_selection(self):
+        assert us(self.solve(bay_ends="EVERY", bays=[2]), "Mullion") == approx_list([3.07, 5.93])
+
+    def test_every_end_adds_to_spacing(self):
+        layout = self.solve(bay_ends="EVERY", bays=[1], spacing={"mode": "COUNT", "value": 1})
+        assert us(layout, "Mullion") == approx_list([0.07, 1.5, 2.93])
+
+    def test_removed_parents_add_nothing_without_openings(self):
+        layout = self.solve(bay_ends="REMOVED", spacing={"mode": "COUNT", "value": 1})
+        assert us(layout, "Mullion") == approx_list([1.5, 4.5])
+
+    def test_removed_parent_is_filled_where_the_hole_took_it(self):
+        layout = self.solve([subject.Void(2.0, 4.0, 1.0, 2.0)], bay_ends="REMOVED", cut_by_hole_voids=False)
+        assert self.spans(layout) == [(3.0, 1.0, 2.0)]
+        assert [(m.v_start, m.v_end) for m in layout.by_entry("Post") if m.u == 3.0] == [(0.0, 1.0), (2.0, 3.0)]
+
+    def test_fills_the_whole_height_for_an_edge_opening(self):
+        layout = self.solve([subject.Void(2.0, 4.0, 0.0, 3.0)], bay_ends="REMOVED", cut_by_edge_voids=False)
+        assert self.spans(layout) == [(3.0, 0.0, 3.0)]
+
+    def test_nothing_stays_if_the_opening_cuts_the_entry_too(self):
+        assert self.spans(self.solve([subject.Void(2.0, 4.0, 1.0, 2.0)], bay_ends="REMOVED")) == []
+
+    def test_keeps_to_its_own_bounds(self):
+        members = [
+            {"name": "Post", "kind": "V", "spacing": {"mode": "COUNT", "value": 1}, "at_ends": True},
+            {"name": "Rail", "kind": "H", "v": 2.5},
+            {
+                "name": "Mullion",
+                "kind": "V",
+                "within": "Post",
+                "bay_ends": "REMOVED",
+                "cut_by_edge_voids": False,
+                "top": {"member": "Rail"},
+            },
+        ]
+        layout = solve(
+            members,
+            segments=(6.0,),
+            height=3.0,
+            extents={**self.EXTENTS, "Rail": (-0.02, 0.02)},
+            voids=[subject.Void(2.0, 4.0, 0.0, 3.0)],
+        )
+        assert self.spans(layout) == [(3.0, 0.0, 2.48)]
+
+    def test_makes_way_for_a_jamb(self):
+        layout = self.solve([subject.Void(3.0, 4.0, 1.0, 2.0)], bay_ends="REMOVED", cut_by_hole_voids=False)
+        assert self.spans(layout) == []
+
+    def test_fills_where_a_sloped_hole_took_the_parent(self):
+        hole = subject.Void(2.0, 4.0, 1.0, 2.0, outline=((2.0, 1.0), (4.0, 1.0), (4.0, 2.0), (2.5, 2.0)))
+        spans = self.spans(self.solve([hole], bay_ends="REMOVED", cut_by_hole_voids=False))
+        assert len(spans) == 1 and spans[0][0] == 3.0 and spans[0][1] <= 1.0 and spans[0][2] >= 2.0
+
+    def test_needs_within(self):
+        with pytest.raises(subject.FramingError, match="needs 'within'"):
+            subject.parse_system({"members": [{"name": "M", "kind": "V", "bay_ends": "EVERY"}]})
+
+    def test_unknown_value(self):
+        with pytest.raises(subject.FramingError, match="unknown bay ends"):
+            subject.parse_system({"members": [{"name": "M", "kind": "V", "within": "P", "bay_ends": "SOME"}]})
+
+    def test_jamb_cannot_have_them(self):
+        with pytest.raises(subject.FramingError, match="bay_ends"):
+            subject.parse_system({"members": [{"name": "J", "kind": "V", "void_role": "JAMB", "bay_ends": "EVERY"}]})
+
+
+class TestPanelsAcrossRemovedRails:
+    EXTENTS = {"Post": (-0.05, 0.05), "Mid": (-0.02, 0.02), "Grid": (-0.01, 0.01)}
+
+    def solve(self, void, mid=None, framed=False, **grid):
+        members = [
+            {"name": "Post", "kind": "V", "at_ends": True, "at_corners": True},
+            {
+                "name": "Mid",
+                "kind": "H",
+                "spacing": {"mode": "COUNT", "value": 1},
+                "breaks_at": ["Post"],
+                **(mid or {}),
+            },
+            {"name": "Glass", "kind": "INFILL", "within": "Mid", "breaks_at": ["Post"], "cut_by_hole_voids": False},
+        ]
+        if framed:
+            members.append({"name": "Frame", "kind": "V", "void_role": "JAMB"})
+        if grid:
+            spacing = {"mode": "COUNT", "value": 1}
+            members.append(
+                {"name": "Grid", "kind": "H", "within": "Mid", "spacing": spacing, "breaks_at": ["Post"], **grid}
+            )
+        return solve(members, segments=(3.0, 3.0), height=3.0, extents=self.EXTENTS, voids=[void] if void else [])
+
+    def panes(self, layout):
+        return [(round(p.u_start, 3), round(p.v_start, 3), round(p.v_end, 3)) for p in layout.infills if p.u_start > 3]
+
+    def test_a_panel_spans_a_rail_the_opening_removed(self):
+        assert self.panes(self.solve(subject.Void(3.05, 5.95, 0.5, 2.5))) == [(3.05, 0.0, 3.0)]
+
+    def test_only_in_that_bay(self):
+        layout = self.solve(subject.Void(3.05, 5.95, 0.5, 2.5))
+        assert len([p for p in layout.infills if p.u_start < 3]) == 2
+
+    def test_a_jamb_that_splits_the_glass_makes_its_own_bay(self):
+        panes = self.panes(self.solve(subject.Void(3.05, 4.0, 0.5, 2.5)))
+        assert panes == [(3.05, 0.0, 3.0), (4.1, 0.0, 1.48), (4.1, 1.52, 3.0)]
+
+    def test_a_stub_of_the_rail_still_splits_it(self):
+        assert len(self.panes(self.solve(subject.Void(3.05, 4.0, 0.5, 2.5), framed=True))) == 2
+
+    def test_a_rail_the_opening_runs_through_still_splits_it(self):
+        layout = self.solve(subject.Void(3.05, 5.95, 0.5, 2.5), mid={"cut_by_hole_voids": False})
+        assert len(self.panes(layout)) == 2
+
+    def test_nor_does_it_change_without_an_opening(self):
+        assert len(self.panes(self.solve(None))) == 2
+
+    def grid(self, layout):
+        return [(round(m.v, 3), round(m.u_start, 3), round(m.u_end, 3)) for m in layout.by_entry("Grid")]
+
+    def test_a_horizontal_fills_the_removed_row(self):
+        layout = self.solve(subject.Void(3.05, 5.95, 0.5, 2.5), bay_ends="REMOVED", cut_by_hole_voids=False)
+        assert (1.5, 3.05, 5.95) in self.grid(layout)
+
+    def test_not_without_an_opening(self):
+        assert 1.5 not in [row[0] for row in self.grid(self.solve(None, bay_ends="REMOVED"))]
+
+    def test_nor_if_the_opening_cuts_it_too(self):
+        layout = self.solve(subject.Void(3.05, 5.95, 0.5, 2.5), bay_ends="REMOVED")
+        assert 1.5 not in [row[0] for row in self.grid(layout)]
+
+    def test_only_along_what_was_removed(self):
+        layout = self.solve(subject.Void(3.5, 5.0, 0.5, 2.5), bay_ends="REMOVED", cut_by_hole_voids=False)
+        filled = [row for row in self.grid(layout) if row[0] == 1.5]
+        assert filled == [(1.5, 3.5, 5.0)]
+
+    def test_horizontals_cannot_stand_at_every_end(self):
+        with pytest.raises(subject.FramingError, match="unknown bay ends"):
+            subject.parse_system({"members": [{"name": "H", "kind": "H", "within": "R", "bay_ends": "EVERY"}]})
+
+    def test_they_need_within(self):
+        with pytest.raises(subject.FramingError, match="needs 'within'"):
+            subject.parse_system({"members": [{"name": "H", "kind": "H", "v": 1.0, "bay_ends": "REMOVED"}]})
