@@ -317,7 +317,7 @@ class IfcDiff:
                         math_epsilon=self.precision,
                         ignore_string_type_changes=True,
                         ignore_numeric_type_changes=True,
-                        exclude_regex_paths=[r".*id$"],
+                        exclude_regex_paths=[r"\['id'\]$"],
                     )
                 except:
                     diff = True
