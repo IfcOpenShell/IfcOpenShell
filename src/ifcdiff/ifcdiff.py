@@ -281,9 +281,13 @@ class IfcDiff:
         return 1e-4
 
     def diff_element(self, old, new):
+        old_attributes = [a for a in old if not isinstance(a, (ifcopenshell.entity_instance, tuple))]
+        new_attributes = [a for a in new if not isinstance(a, (ifcopenshell.entity_instance, tuple))]
+        if old_attributes == new_attributes:
+            return
         diff = DeepDiff(
-            [a for a in old if not isinstance(a, (ifcopenshell.entity_instance, tuple))],
-            [a for a in new if not isinstance(a, (ifcopenshell.entity_instance, tuple))],
+            old_attributes,
+            new_attributes,
             math_epsilon=self.precision,
             ignore_string_type_changes=True,
             ignore_numeric_type_changes=True,
@@ -310,6 +314,8 @@ class IfcDiff:
             elif relationship == "property":
                 old_psets = ifcopenshell.util.element.get_psets(old)
                 new_psets = ifcopenshell.util.element.get_psets(new)
+                if old_psets == new_psets:
+                    continue
                 try:
                     diff = DeepDiff(
                         old_psets,
