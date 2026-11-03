@@ -10,7 +10,7 @@ Build and run the examples
 --------------------------
 
 Run these commands from the extracted SDK directory. A C++17 compiler, CMake
-3.21 or newer, and a build tool are required; Python is not required.
+3.24 or newer, and a build tool are required; Python is not required.
 
 .. code-block:: sh
 
@@ -34,7 +34,7 @@ The package locates its bundled dependencies automatically.
 
 .. code-block:: cmake
 
-   cmake_minimum_required(VERSION 3.21)
+   cmake_minimum_required(VERSION 3.24)
    project(MyIfcApplication LANGUAGES CXX)
    find_package(IfcOpenShell CONFIG REQUIRED)
    add_executable(my_app main.cpp)

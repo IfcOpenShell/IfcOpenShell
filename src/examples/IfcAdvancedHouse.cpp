@@ -50,7 +50,7 @@
 #include "ifcparse/hierarchy_helper.h"
 #include "plugin/plugin.h"
 
-#include "../ifcgeom/serialization/serialization.h"
+#include "ifcgeom/serialization/serialization.h"
 
 #if USE_VLD
 #include <vld.h>
