@@ -731,6 +731,14 @@ class CreateDrawing(bpy.types.Operator):
         y_offset = raw_height / 2
         svg_scale = self.scale * 1000  # IFC is in meters, SVG is in mm
 
+        # Elements the serializer already projected with hidden line removal.
+        # Only elements it excludes from HLR (e.g. IfcSpace) need projecting here.
+        hlr_projected_guids = {
+            g.get("{http://www.ifcopenshell.org/ns}guid")
+            for g in root.iter("{http://www.w3.org/2000/svg}g")
+            if g.get("id", "").startswith("product-") and "projection" in g.get("class", "").split()
+        }
+
         for obj in context.visible_objects:
             if obj.type != "MESH":
                 continue
@@ -754,7 +762,7 @@ class CreateDrawing(bpy.types.Operator):
                     path = etree.SubElement(g, "{http://www.w3.org/2000/svg}path")
                     path.attrib["d"] = d
                 group.append(g)
-            elif element.is_a("IfcSpatialElement"):
+            elif element.is_a("IfcSpatialElement") and element.GlobalId not in hlr_projected_guids:
                 bm = bmesh.new()
                 bm.from_mesh(obj.data)
                 bm.transform(obj.matrix_world)
