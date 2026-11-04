@@ -126,7 +126,7 @@ jobs:
         run: npm run lint
         continue-on-error: true
 
-      - name: zizmor
+      - name: zizmor (GitHub workflows security check)
         id: zizmor
         run: |
           # Once for the GitHub annotations, once for the readable output in the log.
