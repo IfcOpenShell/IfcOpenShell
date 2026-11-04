@@ -50,9 +50,10 @@ class TypeData:
     @classmethod
     def relating_type_classes(cls):
         results = []
+        # The active object can be None here; the items callback must always return a list.
         obj = bpy.context.active_object
         if not obj:
-            return
+            return []
         element = tool.Ifc.get_entity(obj)
         if not element:
             return []
