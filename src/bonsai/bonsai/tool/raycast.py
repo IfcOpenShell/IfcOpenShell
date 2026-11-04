@@ -960,7 +960,19 @@ class Raycast(bonsai.core.tool.Raycast):
             is_visible = cls.point_is_visible_in_clipping_plane(vertex)
 
         if obj.type == "CURVE":
-            obj = bpy.data.objects.new("new_object", obj.to_mesh().copy())
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            eval_obj = obj.evaluated_get(depsgraph)
+            mesh = eval_obj.to_mesh()
+            if mesh:
+                try:
+                    for v in mesh.vertices:
+                        vertex = obj.matrix_world @ v.co
+                        is_visible = cls.point_is_visible_in_clipping_plane(vertex)
+                        if is_visible:
+                            break
+                finally:
+                    eval_obj.to_mesh_clear()
+            return is_visible
 
         if obj.type == "MESH":
             for v in obj.data.vertices:
@@ -1221,21 +1233,29 @@ class Raycast(bonsai.core.tool.Raycast):
                 }
                 points.append(snap_point)
             return points
+        eval_obj = None
+        eval_mesh = None
         if obj and obj.type == "CURVE":
-            mw = obj.matrix_world.copy()
-            obj = bpy.data.objects.new("new_object", obj.to_mesh().copy())
-            obj.matrix_world = mw @ obj.matrix_world
+            depsgraph = context.evaluated_depsgraph_get()
+            eval_obj = obj.evaluated_get(depsgraph)
+            eval_mesh = eval_obj.to_mesh()
 
-        if not custom_bmesh:
-            bm = bmesh.new()
-            if face is None:  # Object without faces
-                bm.from_mesh(obj.data)
-            else:  # Object with faces
-                verts = [bm.verts.new(obj.data.vertices[i].co) for i in face.vertices]
-                bm.faces.new(verts)
-        else:
-            # Measure polylines
-            bm = custom_bmesh
+        try:
+            if not custom_bmesh:
+                bm = bmesh.new()
+                if eval_mesh:
+                    bm.from_mesh(eval_mesh)
+                elif face is None:  # Object without faces
+                    bm.from_mesh(obj.data)
+                else:  # Object with faces
+                    verts = [bm.verts.new(obj.data.vertices[i].co) for i in face.vertices]
+                    bm.faces.new(verts)
+            else:
+                # Measure polylines
+                bm = custom_bmesh
+        finally:
+            if eval_obj:
+                eval_obj.to_mesh_clear()
 
         for vertex in bm.verts:
             v = vertex.co
