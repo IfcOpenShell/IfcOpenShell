@@ -1215,6 +1215,11 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         type_element = ifcopenshell.util.element.get_type(element)
 
         inverted_type = tool.Blender.Modifier.has_mirrored_type(type_element)
+        # Validate the back-link: duplicate_type copies all psets including BBIM_MirroredType,
+        # so a newly duplicated type inherits the original's mirror link.  If the back-link
+        # on the cached mirror doesn't point to this type, the pset is stale — create a fresh mirror.
+        if inverted_type and tool.Blender.Modifier.has_mirrored_type(inverted_type) != type_element:
+            inverted_type = None
         if not inverted_type:
             old_to_new, _ = tool.Geometry.duplicate_ifc_objects([tool.Ifc.get_object(type_element)])
             inverted_type = old_to_new[type_element][0]
