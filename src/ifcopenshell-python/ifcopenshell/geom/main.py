@@ -324,6 +324,9 @@ class iterator(ifcopenshell_wrapper.iterator):
         geometry_library: GEOMETRY_LIBRARY = "opencascade",
         logger=None,
     ):
+        if not hasattr(ifcopenshell_wrapper.iterator, "settings"):
+            # compatibility
+            self.settings = settings
         self.use_python_opencascade = getattr(settings, "use_python_opencascade", False)
         logger = ifcopenshell.logger_or_root(logger)
         if isinstance(file_or_filename, file):
@@ -372,12 +375,14 @@ class iterator(ifcopenshell_wrapper.iterator):
             args = (geometry_library, settings, file_or_filename, num_threads)
             self.this = ifcopenshell_wrapper.construct_iterator(*args, *ifcopenshell.optional_logger_args(logger))
 
-    @property
-    def settings(self):
-        native = ifcopenshell_wrapper.iterator.settings(self)
-        result = settings()
-        result.this = native.this
-        return result
+    if hasattr(ifcopenshell_wrapper.iterator, "settings"):
+
+        @property
+        def settings(self):
+            native = ifcopenshell_wrapper.iterator.settings(self)
+            result = settings()
+            result.this = native.this
+            return result
 
     if has_occ:
 
