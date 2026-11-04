@@ -128,6 +128,8 @@ jobs:
 
       - name: zizmor (GitHub workflows security check)
         id: zizmor
+        env:
+          ZIZMOR_GITHUB_TOKEN: ${{ github.token }}
         run: |
           # Once for the GitHub annotations, once for the readable output in the log.
           poe zizmor --format=github || true
