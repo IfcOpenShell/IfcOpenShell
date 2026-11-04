@@ -190,6 +190,7 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download $(BUNDLED_WHEELS) $(PIP_DOWNLOAD_ARGS)
 
 	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
+	# See https://github.com/eea/odfpy/issues/132
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy $(PIP_COOLDOWN_ARGS) --wheel-dir=./wheels
 	# jQuery is required for web UI functionality
 	cd build/bonsai/bim/data/webui/static/js/ && wget --no-verbose https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
