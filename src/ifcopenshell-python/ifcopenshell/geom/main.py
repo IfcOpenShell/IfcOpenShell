@@ -42,7 +42,7 @@ ShapeElementType = Union[
 ShapeType = Union[ifcopenshell_wrapper.native, ifcopenshell_wrapper.triangulation, ifcopenshell_wrapper.serialization]
 
 
-def wrap_shape_creation(settings, shape):
+def wrap_shape_creation(use_python_opencascade: bool, shape):
     return shape
 
 
@@ -54,8 +54,8 @@ if has_occ:
     except ImportError:
         from OCC import TopoDS  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
-    def wrap_shape_creation(settings: settings, shape: ifcopenshell_wrapper.element):
-        if getattr(settings, "use_python_opencascade", False):
+    def wrap_shape_creation(use_python_opencascade: bool, shape: ifcopenshell_wrapper.element):
+        if use_python_opencascade:
             return utils.create_shape_from_serialization(shape)
         else:
             return shape
@@ -324,7 +324,7 @@ class iterator(ifcopenshell_wrapper.iterator):
         geometry_library: GEOMETRY_LIBRARY = "opencascade",
         logger=None,
     ):
-        self.settings = settings
+        self.use_python_opencascade = getattr(settings, "use_python_opencascade", False)
         logger = ifcopenshell.logger_or_root(logger)
         if isinstance(file_or_filename, file):
             self.file = file
@@ -361,7 +361,7 @@ class iterator(ifcopenshell_wrapper.iterator):
 
             args = (
                 geometry_library,
-                self.settings,
+                settings,
                 file_or_filename,
                 include_or_exclude,
                 include is not None,
@@ -369,13 +369,20 @@ class iterator(ifcopenshell_wrapper.iterator):
             )
             self.this = initializer(*args, *ifcopenshell.optional_logger_args(logger))
         else:
-            args = (geometry_library, self.settings, file_or_filename, num_threads)
+            args = (geometry_library, settings, file_or_filename, num_threads)
             self.this = ifcopenshell_wrapper.construct_iterator(*args, *ifcopenshell.optional_logger_args(logger))
+
+    @property
+    def settings(self):
+        native = ifcopenshell_wrapper.iterator.settings(self)
+        result = settings()
+        result.this = native.this
+        return result
 
     if has_occ:
 
         def get(self):
-            return wrap_shape_creation(self.settings, ifcopenshell_wrapper.iterator.get(self))
+            return wrap_shape_creation(self.use_python_opencascade, ifcopenshell_wrapper.iterator.get(self))
 
     def __iter__(self) -> Generator[IteratorOutput]:
         if self.initialize():
@@ -531,7 +538,7 @@ def create_shape(
                     print("Shape creation failed")
     """
     return wrap_shape_creation(
-        settings,
+        getattr(settings, "use_python_opencascade", False),
         (
             ifcopenshell_wrapper.create_shape(
                 settings,
@@ -603,7 +610,7 @@ class kernel:
         geometry library bound at construction are used for every call.
         """
         return wrap_shape_creation(
-            self.settings,
+            getattr(self.settings, "use_python_opencascade", False),
             self.wrapped.create_shape(inst, repr) if repr else self.wrapped.create_shape(inst),
         )
 
