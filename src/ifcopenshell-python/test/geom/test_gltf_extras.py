@@ -60,8 +60,8 @@ def test_glb_iterator_offset_applied(tmp_path):
     settings.set("use-world-coords", True)
     iterator = ifcopenshell.geom.iterator(settings, model)
     assert iterator.initialize()
-    # The Python iterator's settings attribute holds the original input settings.
-    effective_settings = ifcopenshell.ifcopenshell_wrapper.iterator.settings(iterator)
+    effective_settings = iterator.settings
+    assert effective_settings.get("offset-applied") == pytest.approx([-1e6, -2e6, -3e6])
     path = tmp_path / "offset.glb"
     serializer = ifcopenshell.geom.serializers.glb(str(path), effective_settings)
     serializer.setFile(model)
