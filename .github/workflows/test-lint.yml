@@ -14,6 +14,8 @@ jobs:
     env:
       MIN_IOS_PY_VERSION: "3.11"
       MIN_BLENDER_PY_VERSION: "3.11"
+      # Needed for colored ty output.
+      FORCE_COLOR: "1"
     steps:
       - name: Action - checkout repository
         uses: actions/checkout@v7.0.1
