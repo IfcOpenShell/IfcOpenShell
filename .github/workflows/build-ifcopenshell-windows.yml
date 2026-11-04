@@ -113,9 +113,8 @@ jobs:
       # AWS CLI is preinstalled on the runner image.
       - name: Upload .zip Archives to S3
         env:
-          AWS_DEBUG: 1
           AWS_RETRY_MODE: standard
-          AWS_MAX_ATTEMPTS: 3
+          AWS_MAX_ATTEMPTS: "10"
         run: |
           dir "$env:USERPROFILE\output"
           foreach ($zip in Get-ChildItem -Path "$env:USERPROFILE\output" -Filter *.zip) {
