@@ -134,6 +134,15 @@ jobs:
           poe zizmor
         continue-on-error: true
 
+      - name: gh actions-lock (GitHub Actions lockfile check)
+        id: actions-lock
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          poe actions-lock-setup
+          poe actions-lock
+        continue-on-error: true
+
       - name: Check VERSION
         id: check-version
         run: poe version
@@ -165,6 +174,10 @@ jobs:
           fi
           if [ "${{ steps.zizmor.outcome }}" != "success" ]; then
             echo "::error::zizmor (GitHub workflows security check) failed, see 'zizmor' step for the details." && ERROR=1
+          fi
+          if [ "${{ steps.actions-lock.outcome }}" != "success" ]; then
+            echo "::error::gh actions-lock (GitHub Actions lockfile check) failed, see 'gh actions-lock' step for the details.%0A" \
+              "Run 'gh actions-lock' to update the lockfile." && ERROR=1
           fi
           if [ "${{ steps.check-version.outcome }}" != "success" ]; then
             echo "::error::VERSION check failed, see 'Check VERSION' step for the details." && ERROR=1
