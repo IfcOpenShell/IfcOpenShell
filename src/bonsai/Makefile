@@ -68,7 +68,8 @@ endif
 
 endif # def PLATFORM
 
-PIP_DOWNLOAD_ARGS=$(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+PIP_COOLDOWN_ARGS=--uploaded-prior-to=P7D
+PIP_DOWNLOAD_ARGS=$(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: $(PIP_COOLDOWN_ARGS) --dest=./wheels
 
 # Wheels bundled with Bonsai, downloaded for the target platform in one pip call.
 BUNDLED_WHEELS :=
@@ -189,7 +190,7 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download $(BUNDLED_WHEELS) $(PIP_DOWNLOAD_ARGS)
 
 	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy --wheel-dir=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy $(PIP_COOLDOWN_ARGS) --wheel-dir=./wheels
 	# jQuery is required for web UI functionality
 	cd build/bonsai/bim/data/webui/static/js/ && wget --no-verbose https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
 
