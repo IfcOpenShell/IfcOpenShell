@@ -193,8 +193,7 @@ ruff = "ruff check"
 
 check-whitespace = "uv run .github/scripts/check-whitespace.py"
 
-# Not `zizmor ` to avoid flagging submodules.
-zizmor.cmd = "zizmor .github/"
+zizmor.cmd = "zizmor ."
 zizmor.help = "GitHub workflows security check"
 
 version = "uv run .github/scripts/version.py"
