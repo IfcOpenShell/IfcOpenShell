@@ -378,7 +378,7 @@ class iterator(ifcopenshell_wrapper.iterator):
     if hasattr(ifcopenshell_wrapper.iterator, "settings"):
 
         @property
-        def settings(self):
+        def settings(self):  # ty: ignore[invalid-property-type-override]
             native = ifcopenshell_wrapper.iterator.settings(self)
             result = settings()
             result.this = native.this
