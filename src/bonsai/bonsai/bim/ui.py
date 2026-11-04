@@ -52,10 +52,12 @@ if TYPE_CHECKING:
 
 
 class IFCFileSelector:
-    layout: bpy.types.UILayout
-
     # Avoid overriding blender prop annotations at runtime.
     if TYPE_CHECKING:
+
+        @property
+        def layout(self) -> bpy.types.UILayout | None: ...
+
         filepath: str
         use_relative_path: bool
 
