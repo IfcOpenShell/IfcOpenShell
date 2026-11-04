@@ -159,5 +159,8 @@ jobs:
 
       # AWS CLI is preinstalled on the runner image.
       - name: Upload .zip archives to S3
+        env:
+          AWS_RETRY_MODE: standard
+          AWS_MAX_ATTEMPTS: "10"
         run: |
           aws s3 cp ~/output s3://ifcopenshell-builds/ --recursive
