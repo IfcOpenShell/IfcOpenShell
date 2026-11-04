@@ -2708,7 +2708,9 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             type_elem = ifcopenshell.util.element.get_type(representation_elem)
             if type_elem and (mirrored_type := tool.Blender.Modifier.has_mirrored_type(type_elem)):
                 # object has mirror, update it as well
-                for map_index, repr_map in enumerate(type_elem.RepresentationMaps):
+                for repr_map, mirrored_repr_map in zip(
+                    type_elem.RepresentationMaps, mirrored_type.RepresentationMaps
+                ):
                     new_items = []
                     for item in repr_map.MappedRepresentation.Items:
                         new_mirrored_repr = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), item)
@@ -2716,8 +2718,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                         builder.mirror(new_mirrored_repr, (1, 0), create_copy=False)
                         new_items.append(new_mirrored_repr)
 
-                    old_items = mirrored_type.RepresentationMaps[map_index].MappedRepresentation.Items
-                    mirrored_type.RepresentationMaps[map_index].MappedRepresentation.Items = new_items
+                    old_items = mirrored_repr_map.MappedRepresentation.Items
+                    mirrored_repr_map.MappedRepresentation.Items = new_items
                     for old_item in old_items:
                         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_item)
 
