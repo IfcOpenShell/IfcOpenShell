@@ -148,3 +148,21 @@ jobs:
           git add readme.md
           git commit -m "Update index.json"
           git push
+
+  prune:
+    needs: [publish]
+    runs-on: ubuntu-latest
+    permissions:
+      # Delete old alpha releases and their tags.
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@v10.3.2
+
+      - name: Delete old alpha releases
+        run: uv run .github/scripts/prune-bonsai-alphas.py --keep 10
+        env:
+          GH_TOKEN: ${{ github.token }}
