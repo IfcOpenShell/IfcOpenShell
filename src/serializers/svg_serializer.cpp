@@ -2430,8 +2430,12 @@ void svg_serializer::finalize() {
 		addTextAnnotations(p.first);
 	}
 
-	for (auto& p : storey_hlr) {
-		draw_hlr(drawing_metadata[{p.first, ""}].pln_3d, { p.first, "" });
+	// Each entry holds that storey's shapes and its HLR engine, which are not
+	// referenced again once the drawing has been emitted. Releasing them here
+	// keeps peak memory at one storey rather than the whole model.
+	for (auto it = storey_hlr.begin(); it != storey_hlr.end();) {
+		draw_hlr(drawing_metadata[{it->first, ""}].pln_3d, { it->first, "" });
+		it = storey_hlr.erase(it);
 	}
 
 	auto m = resize();
