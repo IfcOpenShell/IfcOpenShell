@@ -1,10 +1,9 @@
 #include "file_reader.h"
 
 #include <algorithm>
-#include <cstring>
 #include <cstdio>
-#include <filesystem>
-#include <fstream>
+#include <cstring>
+#include <limits>
 #include <stdexcept>
 
 #ifdef USE_MMAP
@@ -28,6 +27,24 @@ inline void file_seek_abs(FILE* f, std::uint64_t off) {
     }
 }
 #endif
+
+size_t file_size(FILE* f) {
+#if defined(_WIN32)
+    const int result = _fseeki64(f, 0, SEEK_END);
+    const auto size = _ftelli64(f);
+#else
+    const int result = fseeko(f, 0, SEEK_END);
+    const auto size = ftello(f);
+#endif
+    if (result != 0 || size < 0) {
+        throw std::runtime_error("Failed to determine file size");
+    }
+    if (static_cast<std::uintmax_t>(size) > std::numeric_limits<size_t>::max()) {
+        throw std::runtime_error("File size exceeds addressable range");
+    }
+    file_seek_abs(f, 0);
+    return static_cast<size_t>(size);
+}
 
 } // namespace
 
@@ -59,11 +76,12 @@ full_buffer_impl::full_buffer_impl(const std::string& fn) {
     if (!stream) {
         throw std::runtime_error("Failed to open file");
     }
-    fseek(stream, 0, SEEK_END);
-    size_ = (size_t)ftell(stream);
+    size_ = file_size(stream);
     buf_.resize(size_);
-    rewind(stream);
-    buf_.resize((size_t)fread(buf_.data(), 1, buf_.capacity(), stream));
+    if (std::fread(buf_.data(), 1, size_, stream) != size_) {
+        fclose(stream);
+        throw std::runtime_error("Failed to read file into buffer");
+    }
     fclose(stream);
 }
 
@@ -97,9 +115,7 @@ paged_file_impl::paged_file_impl(const std::string& fn, size_t page_size, size_t
     if (!fp_) {
         throw std::runtime_error("Failed to open file");
     }
-    fseek(fp_, 0, SEEK_END);
-    file_size_ = (size_t)ftell(fp_);
-    rewind(fp_);
+    file_size_ = file_size(fp_);
 }
 
 paged_file_impl::~paged_file_impl() {
