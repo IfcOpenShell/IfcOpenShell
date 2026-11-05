@@ -783,6 +783,8 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         mirrored_type = tool.Blender.Modifier.has_mirrored_type(type_element)
         if not mirrored_type:
             return
+        if tool.Blender.Modifier.has_mirrored_type(mirrored_type) != type_element:
+            return  # stale pset inherited from duplicate_type — not a real mirror pair
         mirrored_body = ifcopenshell.util.representation.get_representation(mirrored_type, "Model", "Body", "MODEL_VIEW")
         if not mirrored_body:
             return

@@ -1318,7 +1318,10 @@ class SwapToMirrorType(bpy.types.Operator):
             if not element:
                 continue
             type_element = ifcopenshell.util.element.get_type(element)
-            if type_element and tool.Blender.Modifier.has_mirrored_type(type_element):
+            if not type_element:
+                continue
+            mirrored_type = tool.Blender.Modifier.has_mirrored_type(type_element)
+            if mirrored_type and tool.Blender.Modifier.has_mirrored_type(mirrored_type) == type_element:
                 return True
         return False
 
@@ -1332,7 +1335,7 @@ class SwapToMirrorType(bpy.types.Operator):
             if not type_element:
                 continue
             mirrored_type = tool.Blender.Modifier.has_mirrored_type(type_element)
-            if not mirrored_type:
+            if not mirrored_type or tool.Blender.Modifier.has_mirrored_type(mirrored_type) != type_element:
                 continue
             bpy.ops.bim.assign_type(relating_type=mirrored_type.id(), related_object=obj.name)
             count += 1
@@ -1353,7 +1356,10 @@ class SelectMirrorInstances(bpy.types.Operator):
             if not element:
                 continue
             type_element = ifcopenshell.util.element.get_type(element)
-            if type_element and tool.Blender.Modifier.has_mirrored_type(type_element):
+            if not type_element:
+                continue
+            mirrored_type = tool.Blender.Modifier.has_mirrored_type(type_element)
+            if mirrored_type and tool.Blender.Modifier.has_mirrored_type(mirrored_type) == type_element:
                 return True
         return False
 
@@ -1367,7 +1373,7 @@ class SelectMirrorInstances(bpy.types.Operator):
             if not type_element:
                 continue
             mirrored_type = tool.Blender.Modifier.has_mirrored_type(type_element)
-            if mirrored_type:
+            if mirrored_type and tool.Blender.Modifier.has_mirrored_type(mirrored_type) == type_element:
                 mirrored_types.add(mirrored_type)
         for selected_obj in context.selected_objects:
             selected_obj.select_set(False)

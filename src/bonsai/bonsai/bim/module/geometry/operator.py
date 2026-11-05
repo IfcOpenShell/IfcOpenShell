@@ -2706,8 +2706,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         # apply changes to mirrored object, if it exists
         if props.representation_obj and (representation_elem := tool.Ifc.get_entity(props.representation_obj)):
             type_elem = ifcopenshell.util.element.get_type(representation_elem)
-            if type_elem and (mirrored_type := tool.Blender.Modifier.has_mirrored_type(type_elem)):
-                # object has mirror, update it as well
+            if type_elem and (mirrored_type := tool.Blender.Modifier.has_mirrored_type(type_elem)) and tool.Blender.Modifier.has_mirrored_type(mirrored_type) == type_elem:
+                # object has a valid (non-stale) mirror pair, update it as well
                 for repr_map, mirrored_repr_map in zip(
                     type_elem.RepresentationMaps, mirrored_type.RepresentationMaps
                 ):

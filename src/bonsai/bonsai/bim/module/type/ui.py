@@ -110,7 +110,8 @@ class BIM_PT_type(Panel):
 
         element = tool.Ifc.get_entity(obj)
         type_element = ifcopenshell.util.element.get_type(element) if element else None
-        if type_element and tool.Blender.Modifier.has_mirrored_type(type_element):
+        mirrored_type = tool.Blender.Modifier.has_mirrored_type(type_element) if type_element else None
+        if mirrored_type and tool.Blender.Modifier.has_mirrored_type(mirrored_type) == type_element:
             row = layout.row(align=True)
             row.operator("bim.select_mirror_instances", icon="MOD_MIRROR")
             row.operator("bim.swap_to_mirror_type", icon="ARROW_LEFTRIGHT", text="")
