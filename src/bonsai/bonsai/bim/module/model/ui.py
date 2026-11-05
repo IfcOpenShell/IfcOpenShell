@@ -189,6 +189,12 @@ class LaunchTypeManager(bpy.types.Operator):
             op.relating_type = relating_type["id"]
 
 
+def object_menu(self, context):
+    if context.active_object and tool.Ifc.get_entity(context.active_object):
+        self.layout.separator()
+        self.layout.operator("bim.mirror_geometry", icon="MOD_MIRROR")
+
+
 class BIM_PT_authoring(Panel):
     bl_label = "Architectural"
     bl_idname = "BIM_PT_authoring"

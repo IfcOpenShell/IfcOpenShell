@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell.util.element
 from bpy.types import Panel
 
 import bonsai.bim.module.type.prop as type_prop
@@ -107,6 +108,18 @@ class BIM_PT_type(Panel):
                 row.label(text="No Relating Type")
                 row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
 
+        element = tool.Ifc.get_entity(obj)
+        type_element = ifcopenshell.util.element.get_type(element) if element else None
+        mirrored_type = tool.Blender.Modifier.has_mirrored_type(type_element) if type_element else None
+        if mirrored_type and tool.Blender.Modifier.has_mirrored_type(mirrored_type) == type_element:
+            row = layout.row(align=True)
+            row.operator("bim.select_mirror_instances", icon="MOD_MIRROR")
+            row.operator("bim.swap_to_mirror_type", icon="ARROW_LEFTRIGHT", text="")
+
+        # Length checkbox: ticked = per-instance editable length, unticked = typed/shared length.
+        # The checkbox state is read from the IFC (get/set property); ticking runs the conversion.
+        if TypeData.data.get("is_typed_length_profile") or TypeData.data.get("can_make_length_type_driven"):
+            layout.row(align=True).prop(props, "length_per_instance", text="Per-instance Length")
 
 class BIM_PT_type_attributes(Panel):
     bl_label = "Type Attributes"
