@@ -84,6 +84,7 @@ classes = (
     product.LoadTypeThumbnails,
     product.MirrorElements,
     product.TrueMirrorElements,
+    product.SelectMirrorInstances,
     product.SetActiveType,
     workspace.Hotkey,
     workspace.BIM_MT_add_representation_item,

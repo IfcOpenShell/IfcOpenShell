@@ -1303,3 +1303,45 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
                 obj=obj,
                 representation=representation,
             )
+
+
+class SelectMirrorInstances(bpy.types.Operator):
+    bl_idname = "bim.select_mirror_instances"
+    bl_label = "Select Mirror Instances"
+    bl_description = "Add all instances of the mirrored type to the current selection"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            type_element = ifcopenshell.util.element.get_type(element)
+            if type_element and tool.Blender.Modifier.has_mirrored_type(type_element):
+                return True
+        return False
+
+    def execute(self, context):
+        mirrored_types = set()
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            type_element = ifcopenshell.util.element.get_type(element)
+            if not type_element:
+                continue
+            mirrored_type = tool.Blender.Modifier.has_mirrored_type(type_element)
+            if mirrored_type:
+                mirrored_types.add(mirrored_type)
+        for selected_obj in context.selected_objects:
+            selected_obj.select_set(False)
+        count = 0
+        for mirrored_type in mirrored_types:
+            for occurrence in ifcopenshell.util.element.get_types(mirrored_type):
+                occurrence_obj = tool.Ifc.get_object(occurrence)
+                if occurrence_obj:
+                    occurrence_obj.select_set(True)
+                    count += 1
+        self.report({"INFO"}, f"Selected {count} mirror instance(s)")
+        return {"FINISHED"}
