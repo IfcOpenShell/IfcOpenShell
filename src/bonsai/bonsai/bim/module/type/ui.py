@@ -113,6 +113,7 @@ class BIM_PT_type(Panel):
         if type_element and tool.Blender.Modifier.has_mirrored_type(type_element):
             row = layout.row(align=True)
             row.operator("bim.select_mirror_instances", icon="MOD_MIRROR")
+            row.operator("bim.swap_to_mirror_type", icon="ARROW_LEFTRIGHT", text="")
 
         # Length checkbox: ticked = per-instance editable length, unticked = typed/shared length.
         # The checkbox state is read from the IFC (get/set property); ticking runs the conversion.

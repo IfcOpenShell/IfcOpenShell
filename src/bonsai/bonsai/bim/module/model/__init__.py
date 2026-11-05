@@ -84,6 +84,7 @@ classes = (
     product.LoadTypeThumbnails,
     product.MirrorElements,
     product.TrueMirrorElements,
+    product.SwapToMirrorType,
     product.SelectMirrorInstances,
     product.SetActiveType,
     workspace.Hotkey,

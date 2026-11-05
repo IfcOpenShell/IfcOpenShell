@@ -1305,6 +1305,41 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
             )
 
 
+class SwapToMirrorType(bpy.types.Operator):
+    bl_idname = "bim.swap_to_mirror_type"
+    bl_label = "Swap to Mirror Type"
+    bl_description = "Reassign selected instances to their corresponding mirrored type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            type_element = ifcopenshell.util.element.get_type(element)
+            if type_element and tool.Blender.Modifier.has_mirrored_type(type_element):
+                return True
+        return False
+
+    def execute(self, context):
+        count = 0
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            type_element = ifcopenshell.util.element.get_type(element)
+            if not type_element:
+                continue
+            mirrored_type = tool.Blender.Modifier.has_mirrored_type(type_element)
+            if not mirrored_type:
+                continue
+            bpy.ops.bim.assign_type(relating_type=mirrored_type.id(), related_object=obj.name)
+            count += 1
+        self.report({"INFO"}, f"Swapped {count} instance(s) to mirror type")
+        return {"FINISHED"}
+
+
 class SelectMirrorInstances(bpy.types.Operator):
     bl_idname = "bim.select_mirror_instances"
     bl_label = "Select Mirror Instances"
