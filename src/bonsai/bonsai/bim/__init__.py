@@ -267,7 +267,15 @@ def unregister_classes(classes_to_unregister):
 def register():
     register_classes(classes)
 
+    # Imported here rather than at module scope: bonsai.tool pulls in
+    # bonsai.bim.ifc, which is only fully initialised once this module has
+    # finished importing. At module scope it deadlocks the bim.ifc/bim.handler
+    # import cycle and add-on registration fails outright.
+    import bonsai.tool.model as model_tool
+
     bpy.app.handlers.depsgraph_update_post.append(on_register)
+    # Lets deferred type previews tell whether the scene is still being authored.
+    bpy.app.handlers.depsgraph_update_post.append(model_tool.note_scene_change)
     bpy.app.handlers.undo_post.append(handler.undo_post)
     bpy.app.handlers.redo_post.append(handler.redo_post)
     # Must follow the two appends above so regenerators see restored IFC state.
@@ -329,7 +337,11 @@ def unregister():
 
     unregister_classes(classes)
 
+    import bonsai.tool.model as model_tool
+
     parametric_lifecycle.uninstall_parametric_lifecycle_handlers()
+    if model_tool.note_scene_change in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.remove(model_tool.note_scene_change)
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
     del bpy.types.Scene.BIMProperties
