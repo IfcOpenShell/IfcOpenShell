@@ -2719,9 +2719,14 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                         new_items.append(new_mirrored_repr)
 
                     old_items = mirrored_repr_map.MappedRepresentation.Items
+                    ifc_file = tool.Ifc.get()
+                    for new_item, old_item in zip(new_items, old_items):
+                        for styled in ifc_file.get_inverse(old_item):
+                            if styled.is_a("IfcStyledItem"):
+                                styled.Item = new_item
                     mirrored_repr_map.MappedRepresentation.Items = new_items
                     for old_item in old_items:
-                        ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_item)
+                        ifcopenshell.util.element.remove_deep2(ifc_file, old_item)
 
                 tool.Geometry.reload_representation(tool.Ifc.get_object(mirrored_type))
 
