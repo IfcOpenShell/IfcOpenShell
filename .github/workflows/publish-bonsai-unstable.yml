@@ -56,6 +56,7 @@ jobs:
         TAG="bonsai-$VERSION-alpha$(date +'%y%m%d%H%M')"
         echo "tag=$TAG" >> $GITHUB_OUTPUT
         gh release view "$TAG" || gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG (unstable)" \
+          --prerelease \
           --notes "See README in https://github.com/IfcOpenShell/bonsai_unstable_repo/ on how to setup autoupdates for daily Bonsai builds."
 
   build:
