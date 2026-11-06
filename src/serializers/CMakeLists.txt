@@ -151,6 +151,12 @@ endif()
 # (no Qt, no wgpu) so it writes exactly the layout the viewer/loader expect.
 if(NOT WASM_BUILD)
     find_package(zstd ${ZSTD_MIN_VERSION} CONFIG REQUIRED)
+    # Shared-only zstd packages (e.g. conda-forge) export no static target.
+    if(TARGET zstd::libzstd_static)
+        set(ifcview_zstd_target zstd::libzstd_static)
+    else()
+        set(ifcview_zstd_target zstd::libzstd_shared)
+    endif()
     # The imported Eigen target is directory-scoped (created by ifcgeom), so
     # this directory needs its own lookup before it can link against it.
     find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
@@ -166,7 +172,7 @@ if(NOT WASM_BUILD)
             ${ifcviewer_src_dir}/IfcViewLayout.cpp
             ${ifcviewer_src_dir}/ChunkPlanner.cpp
             ${ifcviewer_src_dir}/LodBuilder.cpp
-        LIBRARIES Eigen3::Eigen zstd::libzstd_static
+        LIBRARIES Eigen3::Eigen ${ifcview_zstd_target}
     )
     target_include_directories(geometry_serializer_ifcview PRIVATE ${ifcviewer_src_dir})
     if(WITH_MESH_OPTIMIZER)
