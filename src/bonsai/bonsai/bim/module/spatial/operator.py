@@ -174,6 +174,10 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
         core.assign_container(
             tool.Ifc, tool.Collector, tool.Spatial, container=container, objs=tool.Blender.get_selected_objects()
         )
+        # Refresh the Placement panel's storey-relative fields for the new container.
+        for area in context.screen.areas:
+            if area.type == "PROPERTIES":
+                area.tag_redraw()
 
 
 class EnableEditingContainer(bpy.types.Operator):
@@ -204,6 +208,10 @@ class RemoveContainer(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         for obj in context.selected_objects:
             core.remove_container(tool.Ifc, tool.Collector, obj=obj)
+        # Refresh the Placement panel's storey-relative fields now the container is gone.
+        for area in context.screen.areas:
+            if area.type == "PROPERTIES":
+                area.tag_redraw()
 
 
 class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
