@@ -558,6 +558,9 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             mesh = None
         elif representation_template == "OBJ" and not props.representation_obj:
             mesh = None
+        elif representation_template == "FRAMING" and props.ifc_class.endswith("Type"):
+            # A framing type holds the system only; each occurrence builds its own body.
+            mesh = None
         else:
             mesh = bpy.data.meshes.new("Mesh")
 
@@ -789,6 +792,9 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         elif representation_template == "RAILING":
             with context.temp_override(active_object=obj, selected_objects=[]):
                 bpy.ops.bim.add_railing()
+        elif representation_template == "FRAMING":
+            with context.temp_override(active_object=obj, selected_objects=[]):
+                bpy.ops.bim.add_framing()
         elif representation_template == "ROOF":
             with context.temp_override(active_object=obj, selected_objects=[]):
                 bpy.ops.bim.add_roof()

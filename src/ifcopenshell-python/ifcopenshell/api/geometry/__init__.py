@@ -28,6 +28,7 @@ from .add_axis_representation import add_axis_representation
 from .add_boolean import add_boolean
 from .add_door_representation import add_door_representation
 from .add_footprint_representation import add_footprint_representation
+from .add_framing_representation import add_framing_representation
 from .add_mesh_representation import add_mesh_representation
 from .add_profile_representation import add_profile_representation
 
@@ -83,6 +84,7 @@ __all__ = [
     "add_boolean",
     "add_door_representation",
     "add_footprint_representation",
+    "add_framing_representation",
     "add_mesh_representation",
     "add_profile_representation",
     "add_railing_representation",
