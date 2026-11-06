@@ -746,6 +746,20 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
         styles = self.file.by_type("IfcSurfaceStyle")
         assert len(styles) == 1 and styles[0].Name == "TestStyle"
 
+    def test_not_deduplicating_assets_with_a_blank_name(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        profiles = []
+        for radius in (1.0, 2.0):
+            profile = ifcopenshell.api.profile.add_parameterized_profile(library, "IfcCircleProfileDef")
+            profile.ProfileName = ""
+            profile.Radius = radius
+            profiles.append(profile)
+        materials = [library.createIfcMaterial(Name=""), library.createIfcMaterial(Name="  ")]
+        for element in profiles + materials:
+            ifcopenshell.api.project.append_asset(self.file, library, element)
+        assert len(self.file.by_type("IfcProfileDef")) == 2
+        assert len(self.file.by_type("IfcMaterial")) == 2
+
     def test_duplicate_profiles_materials_styles_based_on_name_if_uniqueness_is_not_assumed(self):
         # Setup library.
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
