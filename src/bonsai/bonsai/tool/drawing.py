@@ -3004,10 +3004,18 @@ class Drawing(bonsai.core.tool.Drawing):
         finalize_dxf()
 
     @classmethod
-    def remove_drawing_from_sheet(cls, reference: ifcopenshell.entity_instance) -> None:
+    def remove_drawing_from_sheet(
+        cls, reference: ifcopenshell.entity_instance, operator: Optional[bpy.types.Operator] = None
+    ) -> None:
         import bonsai.bim.module.drawing.sheeter as sheeter
 
         sheet = tool.Drawing.get_reference_document(reference)
+
+        # Layout SVG edits bypass Blender undo, so snapshot it to disk for undo/redo (#7275).
+        layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT") if sheet else None
+        previous_layout_path: Optional[str] = None
+        if layout_path and os.path.exists(layout_path):
+            previous_layout_path = cls.snapshot_layout_svg(layout_path)
 
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.remove_drawing(reference, sheet)
@@ -3015,6 +3023,31 @@ class Drawing(bonsai.core.tool.Drawing):
         ifcopenshell.api.document.remove_reference(tool.Ifc.get(), reference=reference)
 
         tool.Drawing.import_sheets()
+
+        if operator is not None and previous_layout_path is not None and layout_path and os.path.exists(layout_path):
+            new_layout_path = cls.snapshot_layout_svg(layout_path)
+
+            def rollback(data: Any, path: str = layout_path, snapshot: str = previous_layout_path) -> None:
+                shutil.copyfile(snapshot, path)
+
+            def commit(data: Any, path: str = layout_path, snapshot: str = new_layout_path) -> None:
+                shutil.copyfile(snapshot, path)
+
+            from bonsai.bim.ifc import IfcStore
+
+            IfcStore.add_transaction_operation(operator, rollback=rollback, commit=commit)
+
+    @classmethod
+    def snapshot_layout_svg(cls, layout_path: str) -> str:
+        """Copy a sheet layout SVG into a temp file and return its path."""
+        # Imported here, not with the module imports: the line after
+        # `import subprocess` is where #9557 adds its own import.
+        import tempfile
+
+        fd, snapshot_path = tempfile.mkstemp(prefix="bonsai_sheet_layout_", suffix=".svg")
+        os.close(fd)
+        shutil.copyfile(layout_path, snapshot_path)
+        return snapshot_path
 
     @classmethod
     def hide_all_drawing_collections(cls) -> None:
