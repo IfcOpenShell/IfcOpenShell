@@ -7,19 +7,19 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'actions/download-artifact@v8.0.2'
         - 'actions/upload-artifact@v7.0.2'
-        - 'astral-sh/setup-uv@v10.3.2'
+        - 'astral-sh/setup-uv@v10.3.3'
         - 'hendrikmuhs/ccache-action@v1.2.24'
     '.github/workflows/build-ifcopenshell-linux.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/upload-artifact@v7.0.2'
-        - 'astral-sh/setup-uv@v10.3.2'
+        - 'astral-sh/setup-uv@v10.3.3'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'dtolnay/rust-toolchain@v1'
         - 'hendrikmuhs/ccache-action@v1.2.24'
     '.github/workflows/build-ifcopenshell-macos.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/upload-artifact@v7.0.2'
-        - 'astral-sh/setup-uv@v10.3.2'
+        - 'astral-sh/setup-uv@v10.3.3'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'dtolnay/rust-toolchain@v1'
         - 'hendrikmuhs/ccache-action@v1.2.24'
@@ -28,18 +28,18 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
         - 'actions/upload-artifact@v7.0.2'
-        - 'astral-sh/setup-uv@v10.3.2'
+        - 'astral-sh/setup-uv@v10.3.3'
         - 'hendrikmuhs/ccache-action@v1.2.24'
     '.github/workflows/build-ifcopenshell-wasm.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
         - 'actions/upload-artifact@v7.0.2'
-        - 'astral-sh/setup-uv@v10.3.2'
+        - 'astral-sh/setup-uv@v10.3.3'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'hendrikmuhs/ccache-action@v1.2.24'
     '.github/workflows/build-ifcopenshell-windows.yml':
         - 'actions/checkout@v7.0.1'
-        - 'astral-sh/setup-uv@v10.3.2'
+        - 'astral-sh/setup-uv@v10.3.3'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'hendrikmuhs/ccache-action@v1.2.24'
     '.github/workflows/build-ifcopenshell.yml': []
@@ -52,16 +52,16 @@ workflows:
         - 'pypa/gh-action-pypi-publish@v1.14.3'
     '.github/workflows/publish-bonsai-releases.yml':
         - 'actions/checkout@v7.0.1'
-        - 'astral-sh/setup-uv@v10.3.2'
+        - 'astral-sh/setup-uv@v10.3.3'
     '.github/workflows/publish-bonsai-unstable.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-python@v7.1.0'
-        - 'astral-sh/setup-uv@v10.3.2'
+        - 'astral-sh/setup-uv@v10.3.3'
         - 'svenstaro/upload-release-action@2.11.5'
     '.github/workflows/publish-bonsai.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-python@v7.1.0'
-        - 'astral-sh/setup-uv@v10.3.2'
+        - 'astral-sh/setup-uv@v10.3.3'
         - 'svenstaro/upload-release-action@2.11.5'
     '.github/workflows/publish-bonsaiviewer.yml':
         - 'actions/checkout@v7.0.1'
@@ -115,7 +115,7 @@ workflows:
         - 'pypa/gh-action-pypi-publish@v1.14.3'
     '.github/workflows/publish-ifcopenshell-conda.yml':
         - 'actions/checkout@v7.0.1'
-        - 'astral-sh/setup-uv@v10.3.2'
+        - 'astral-sh/setup-uv@v10.3.3'
         - 'hendrikmuhs/ccache-action@v1.2.24'
         - 'mamba-org/setup-micromamba@v3.2.1'
     '.github/workflows/publish-ifcopenshell-docker.yml':
@@ -143,7 +143,7 @@ workflows:
         - 'actions/setup-node@v7.1.0'
     '.github/workflows/publish-ifcopenshell-wasm-wheel.yml':
         - 'actions/checkout@v7.0.1'
-        - 'astral-sh/setup-uv@v10.3.2'
+        - 'astral-sh/setup-uv@v10.3.3'
     '.github/workflows/publish-ifcpatch-pypi.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-python@v7.1.0'
@@ -169,7 +169,7 @@ workflows:
     '.github/workflows/test-bonsai.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-python@v7.1.0'
-        - 'astral-sh/setup-uv@v10.3.2'
+        - 'astral-sh/setup-uv@v10.3.3'
         - 'dorny/paths-filter@v4.0.3'
     '.github/workflows/test-bonsaiviewer-autodesk.yml':
         - 'actions/checkout@v7.0.1'
@@ -188,7 +188,7 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
         - 'actions/setup-python@v7.1.0'
-        - 'astral-sh/setup-uv@v10.3.2'
+        - 'astral-sh/setup-uv@v10.3.3'
 dependencies:
     'actions/cache@v6.1.0':
         ref: 'v6.1.0'
@@ -230,9 +230,9 @@ dependencies:
         commit: 'sha1-cf430e030ddbb5b0abf93d22962f4752f3646cd9'
         owner_id: 44036562
         repo_id: 192625955
-    'astral-sh/setup-uv@v10.3.2':
-        ref: 'v10.3.2'
-        commit: 'sha1-07a047e608db84b3d8c06cd9a7c7dcc9c355c18e'
+    'astral-sh/setup-uv@v10.3.3':
+        ref: 'v10.3.3'
+        commit: 'sha1-68559e99cc807c1eb7e9238fd43a15bba460eec2'
         owner_id: 115962839
         repo_id: 846733598
     'aws-actions/configure-aws-credentials@v6.3.0':
