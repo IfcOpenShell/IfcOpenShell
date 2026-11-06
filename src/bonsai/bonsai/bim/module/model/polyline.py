@@ -96,7 +96,7 @@ class PolylineOperator:
         self.tool_state = tool.Polyline.create_tool_state()
 
     def recalculate_inputs(self, context: bpy.types.Context) -> Union[bool, None]:
-        if self.number_input:
+        if self.number_input and self.number_output != "":
             is_valid, self.number_output = tool.Polyline.validate_input(self.number_output, self.input_type)
             self.input_ui.set_value(self.input_type, self.number_output)
             if not is_valid:
@@ -112,6 +112,10 @@ class PolylineOperator:
                     self.input_ui.set_value(self.input_type, self.number_output)
             tool.Blender.update_viewport()
             return is_valid
+        else:
+            tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
+            tool.Blender.update_viewport()
+            return True
 
     def set_initial_plane_method(self, context: bpy.types.Context, event: bpy.types.Event, plane_method: str) -> None:
         self.tool_state.plane_method = plane_method
@@ -241,8 +245,8 @@ class PolylineOperator:
             self.tool_state.input_type = self.input_options[((index + 1) % size)]
             self.tool_state.mode = "Select"
             self.is_typing = False
-            self.number_input = self.input_ui.get_formatted_value(self.input_type)
-            self.number_input = list(self.number_input)
+            formatted_value = self.input_ui.get_formatted_value(self.input_type)
+            self.number_input = list(formatted_value) if formatted_value else []
             self.number_output = "".join(self.number_input)
             self.input_ui.set_value(self.input_type, self.number_output)
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
@@ -255,8 +259,8 @@ class PolylineOperator:
             self.input_type = "D"
             self.tool_state.input_type = "D"
             self.is_typing = False
-            self.number_input = self.input_ui.get_formatted_value(self.input_type)
-            self.number_input = list(self.number_input)
+            formatted_value = self.input_ui.get_formatted_value(self.input_type)
+            self.number_input = list(formatted_value) if formatted_value else []
             self.number_output = "".join(self.number_input)
             self.input_ui.set_value(self.input_type, self.number_output)
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
@@ -298,9 +302,6 @@ class PolylineOperator:
                         self.number_input.insert(0, "=")
                 else:
                     self.number_input.append(event.ascii)
-
-                if not self.number_input:
-                    self.number_output = "0"
 
                 self.tool_state.mode = "Edit"
                 self.is_typing = True
