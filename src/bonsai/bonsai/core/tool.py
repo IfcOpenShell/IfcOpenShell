@@ -374,6 +374,7 @@ class Drawing:
     def get_default_drawing_path(cls, name): pass
     def get_default_drawing_resource_path(cls, resource): pass
     def get_default_layout_path(cls, identification, name): pass
+    def get_default_metadata(cls): pass
     def get_default_shading_style(cls): pass
     def get_default_sheet_path(cls, identification, name): pass
     def get_default_titleblock_path(cls, name): pass
