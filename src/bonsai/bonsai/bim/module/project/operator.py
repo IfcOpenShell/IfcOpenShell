@@ -188,6 +188,70 @@ class CreateProject(bpy.types.Operator):
         IfcStore.file = data["file"]
 
 
+class ReloadGeometry(bpy.types.Operator):
+    bl_idname = "bim.reload_geometry"
+    bl_label = "Reload Geometry"
+    bl_description = "Rebuild geometry from IFC with this project's geometry loading settings"
+    bl_options = {"REGISTER", "UNDO"}
+    should_reload_all: bpy.props.BoolProperty(name="Reload All", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project is loaded.")
+            return False
+        return True
+
+    def execute(self, context):
+        objs = context.scene.objects if self.should_reload_all else context.selected_objects
+        objs = [
+            o
+            for o in objs
+            if (e := tool.Ifc.get_entity(o)) and isinstance(o.data, bpy.types.Mesh) and not e.is_a("IfcTypeObject")
+        ]
+        if not objs:
+            self.report({"INFO"}, "No IFC objects with geometry to reload.")
+            return {"CANCELLED"}
+        start = time.time()
+        tool.Geometry.reload_representation(objs)
+        library = tool.Project.get_project_props().geometry_library
+        self.report({"INFO"}, f"Reloaded {len(objs)} object(s) with {library} in {time.time() - start:.1f}s.")
+        return {"FINISHED"}
+
+
+class UseGeometryDefaults(bpy.types.Operator):
+    bl_idname = "bim.use_geometry_defaults"
+    bl_label = "Use My Default"
+    bl_description = "Set this project's geometry loading settings to your defaults from the preferences"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        pprops = tool.Project.get_project_props()
+        tool.Project.apply_geometry_defaults(pprops)
+        pprops["has_geometry_settings"] = True
+        self.report({"INFO"}, "Reload Geometry to rebuild what is already loaded.")
+        return {"FINISHED"}
+
+
+class SaveGeometryDefaults(bpy.types.Operator):
+    bl_idname = "bim.save_geometry_defaults"
+    bl_label = "Use as My Default"
+    bl_description = "Make this project's geometry loading settings your defaults for new projects"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+        pprops = tool.Project.get_project_props()
+        preferences = tool.Blender.get_addon_preferences()
+        preferences.geometry_library = pprops.geometry_library
+        preferences.deflection_tolerance = pprops.deflection_tolerance
+        preferences.angular_tolerance = pprops.angular_tolerance
+        if context.preferences.use_preferences_save:
+            self.report({"INFO"}, "Saved as your default for new projects.")
+        else:
+            self.report({"WARNING"}, "Set as your default. Save Preferences to keep it after Blender closes.")
+        return {"FINISHED"}
+
+
 class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     bl_idname = "bim.select_library_file"
     bl_label = "Select Library File"
