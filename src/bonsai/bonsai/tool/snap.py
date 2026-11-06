@@ -61,7 +61,9 @@ def _process_gpu_object_snaps(
                         detected_snaps.append(point)
 
                 # Get wireframe snaps that are not occluded by face snap
-                ray_origin = tool.Raycast.get_viewport_ray_data(context, (event.mouse_region_x, event.mouse_region_y))[0]
+                ray_origin = tool.Raycast.get_viewport_ray_data(context, (event.mouse_region_x, event.mouse_region_y))[
+                    0
+                ]
                 occl_dist = (snap["point"] - ray_origin).length + 1e-4
                 visible_wireframe_snaps = [w for w in wireframe_snaps if (w["point"] - ray_origin).length <= occl_dist]
                 detected_snaps.extend(visible_wireframe_snaps)

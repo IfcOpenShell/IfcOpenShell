@@ -983,9 +983,7 @@ class Raycast(bonsai.core.tool.Raycast):
         return True
 
     @classmethod
-    def get_viewport_ray_data(
-        cls, context: bpy.types.Context, mouse_pos: tuple[int, int] = None
-    ):
+    def get_viewport_ray_data(cls, context: bpy.types.Context, mouse_pos: tuple[int, int] = None):
         region = context.region
         rv3d = context.region_data
         assert rv3d and region
@@ -1031,9 +1029,7 @@ class Raycast(bonsai.core.tool.Raycast):
         obj: bpy.types.Object,
         mouse_pos: tuple[int, int] = None,
     ):
-        ray_origin_obj, _, ray_direction_obj = cls.get_object_ray_data(
-                context, obj.matrix_world.copy(), mouse_pos
-            )
+        ray_origin_obj, _, ray_direction_obj = cls.get_object_ray_data(context, obj.matrix_world.copy(), mouse_pos)
         success, location, normal, face_index = obj.ray_cast(ray_origin_obj, ray_direction_obj)
         if success:
             return location, normal, face_index
@@ -1498,6 +1494,7 @@ class Raycast(bonsai.core.tool.Raycast):
         best_hit = None
         best_face_index = None
 
+        mouse_pos = (int(event.mouse_region_x), int(event.mouse_region_y))
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, mouse_pos)
 
         for snap_obj in objs_to_raycast:
