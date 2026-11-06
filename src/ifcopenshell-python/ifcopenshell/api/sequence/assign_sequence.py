@@ -127,5 +127,5 @@ def assign_sequence(
             "SequenceType": sequence_type,
         },
     )
-    ifcopenshell.api.sequence.cascade_schedule(file, task=relating_process)
+    ifcopenshell.api.sequence.cascade_schedule(file, task=relating_process, recalculate_start_task=False)
     return rel

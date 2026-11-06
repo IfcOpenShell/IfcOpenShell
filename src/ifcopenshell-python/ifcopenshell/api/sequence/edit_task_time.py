@@ -112,7 +112,7 @@ class Usecase:
             or "ScheduleFinish" in attributes.keys()
             or "ScheduleDuration" in attributes.keys()
         ):
-            ifcopenshell.api.sequence.cascade_schedule(self.file, task=self.task)
+            ifcopenshell.api.sequence.cascade_schedule(self.file, task=self.task, recalculate_start_task=False)
         if task_time.ScheduleDuration:
             self.handle_resource_calculation()
 
