@@ -1031,8 +1031,10 @@ class CreateDrawing(bpy.types.Operator):
 
         bim_props = tool.Blender.get_bim_props()
         prefs = tool.Blender.get_addon_preferences()
-        # Map ifc_path → (ifc_file, link_matrix); main file has no link_matrix (None)
-        files: dict[str, tuple[ifcopenshell.file, Optional[Matrix]]] = {bim_props.ifc_file: (tool.Ifc.get(), None)}
+        # Map ifc_path → (ifc_file, link_matrix, link); main file has no link_matrix/link (None)
+        files: dict[str, tuple[ifcopenshell.file, Optional[Matrix], Optional[Link]]] = {
+            bim_props.ifc_file: (tool.Ifc.get(), None, None)
+        }
 
         props = tool.Project.get_project_props()
         for link in props.get_loaded_links_for_drawings():
@@ -1040,7 +1042,7 @@ class CreateDrawing(bpy.types.Operator):
                 link_matrix = tool.Project.calculate_link_matrix(link)
             except Exception:
                 link_matrix = None
-            files[link.filepath] = (self.get_linked_file(link), link_matrix)
+            files[link.filepath] = (self.get_linked_file(link), link_matrix, link)
 
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
         self.setup_serialiser(target_view)
@@ -1051,22 +1053,29 @@ class CreateDrawing(bpy.types.Operator):
         # Accumulated across every file in the loop below (main model plus any
         # linked models) so the SHAPELY fill pass after the loop covers all of
         # them, not just whichever file happened to be processed last.
-        raycast_objs = set()
+        # Maps each raycast object to the world matrix to raycast it with (link matrix included).
+        raycast_objs: dict[bpy.types.Object, Matrix] = {}
         elements_with_faces = set()
 
-        for ifc_path, (ifc, link_matrix) in files.items():
+        for ifc_path, (ifc, link_matrix, link) in files.items():
             # Don't use draw.main() just whilst we're prototyping and experimenting
             self.serialiser.setFile(ifc)
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
 
-            if self.cprops.fill_mode == "SHAPELY":
+            if self.cprops.fill_mode == "SHAPELY" and link is None:
                 for element in drawing_elements.copy():
                     if element.is_a("IfcAnnotation"):
                         continue
                     obj = tool.Ifc.get_object(element)
                     if obj and obj.type == "MESH" and len(obj.data.polygons):
                         elements_with_faces.add(element.GlobalId)
-                        raycast_objs.add(obj)
+                        raycast_objs[obj] = obj.matrix_world
+            elif self.cprops.fill_mode == "SHAPELY":
+                guids = {e.GlobalId for e in drawing_elements if not e.is_a("IfcAnnotation")}
+                for chunk in tool.Project.get_link_empty_handle(link).instance_collection.objects:
+                    if chunk_guids := guids.intersection(chunk["guids"]):
+                        elements_with_faces.update(chunk_guids)
+                        raycast_objs[chunk] = (link_matrix or Matrix()) @ chunk.matrix_world
 
             # Get all representation contexts to see what we're dealing with.
             # Drawings only draw bodies and annotations (and facetation, due to a Revit bug).
@@ -1180,7 +1189,11 @@ class CreateDrawing(bpy.types.Operator):
                         raycast_results = self.cast_rays_and_get_best_object(raycast_objs, centroid3d, camera_dir)
                         raycast_element = None
                         if raycast_obj := raycast_results[0]:
-                            raycast_element = tool.Ifc.get_entity(raycast_obj)
+                            if tool.Project.Link.is_linked_element(raycast_obj):
+                                if guid := tool.Project.Link.get_guid_by_face_index(raycast_obj, raycast_results[2]):
+                                    raycast_element = self.get_element_by_guid(guid)
+                            else:
+                                raycast_element = tool.Ifc.get_entity(raycast_obj)
 
                         if raycast_element:
                             path = etree.Element("path")
@@ -1742,7 +1755,7 @@ class CreateDrawing(bpy.types.Operator):
         return tuple(map(float, arr))
 
     def cast_rays_and_get_best_object(
-        self, objs_to_raycast: list[bpy.types.Object], ray_origin, ray_direction
+        self, objs_to_raycast: dict[bpy.types.Object, Matrix], ray_origin, ray_direction
     ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
         # This could be optimised even further with 2D box culling
         best_length_squared = 1.0
@@ -1750,8 +1763,8 @@ class CreateDrawing(bpy.types.Operator):
         best_hit = None
         best_face_index = None
 
-        for obj in objs_to_raycast:
-            matrix_inv = obj.matrix_world.inverted()
+        for obj, matrix_world in objs_to_raycast.items():
+            matrix_inv = matrix_world.inverted()
             ray_origin_obj = matrix_inv @ ray_origin
             ray_direction_obj = ray_direction.to_4d()
             ray_direction_obj[3] = 0.0
@@ -1760,7 +1773,7 @@ class CreateDrawing(bpy.types.Operator):
             success, location, normal, face_index = obj.ray_cast(ray_origin_obj, ray_direction_obj)
 
             if success:
-                hit = obj.matrix_world @ location
+                hit = matrix_world @ location
                 length_squared = (hit - ray_origin).length_squared
                 if best_obj is None or length_squared < best_length_squared:
                     best_length_squared = length_squared
