@@ -784,7 +784,18 @@ def draw_filter(
                 op.group_index = i
                 op.index = j
                 op.module = module
-            op = row.operator("bim.remove_filter", text="", icon="X")
+            # Created before row.active is set, so the toggle stays legible on a
+            # disabled facet.
+            sub = row.row(align=True)
+            sub.prop(
+                ifc_filter,
+                "enabled",
+                text="",
+                icon="CHECKBOX_HLT" if ifc_filter.enabled else "CHECKBOX_DEHLT",
+                emboss=False,
+            )
+            op = sub.operator("bim.remove_filter", text="", icon="X")
             op.group_index = i
             op.index = j
             op.module = module
+            row.active = ifc_filter.enabled
