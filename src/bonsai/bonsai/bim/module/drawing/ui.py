@@ -697,7 +697,15 @@ class BIM_PT_text(Panel):
             box = self.layout.box()
             if len(literal_props.attributes):
                 row = box.row(align=True)
-                bonsai.bim.helper.draw_attribute(literal_props.attributes[0], row, enable_search=True)
+                literal_value = literal_props.attributes[0].string_value
+                if "\n" in literal_value:
+                    column = row.column(align=True)
+                    for line in literal_value.split("\n"):
+                        column.label(text=line or " ")
+                else:
+                    bonsai.bim.helper.draw_attribute(literal_props.attributes[0], row, enable_search=True)
+                op = row.operator("bim.edit_text_literal_multiline", icon="GREASEPENCIL", text="")
+                op.literal_prop_id = i
                 if i > 0:
                     row.operator("bim.order_text_literal_up", icon="TRIA_UP", text="").literal_prop_id = i
                 if i < len(props.literals) - 1:
@@ -716,7 +724,9 @@ class BIM_PT_text(Panel):
                 )
                 row = box.row(align=True)
                 row.label(text="CurrentValue:")
-                row.label(text=str(resolved_value))
+                column = row.column(align=True)
+                for line in str(resolved_value).split("\n"):
+                    column.label(text=line or " ")
 
             # Show the element values panel if expanded
             if getattr(literal_props, "show_element_values", False):
