@@ -3,6 +3,7 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.pset
 from xmlschema.validators.exceptions import XMLSchemaValidationError
 
+from ifctester.facet import Restriction
 from ifctester.ids import Ids, IdsXmlValidationError, get_schema
 
 # https://github.com/buildingSMART/IDS/blob/9914d568c7ac037acd97e58a0d16e9f93c3e3416/Schema/ids.xsd#L232
@@ -181,6 +182,19 @@ def get_standard_classification_systems():
         "Uniformat": {"source": "UniFormat", "tokens": ["."]},
         "VMSW": {"source": "VMSW", "tokens": ["."]},
     }
+
+
+def test_pattern(pattern, values):
+    """Test an XSD pattern against sample values using ifctester's restriction logic."""
+
+    restriction = Restriction(options={"pattern": pattern})
+    results = []
+    for value in values:
+        try:
+            results.append(bool(restriction == value))
+        except Exception as e:
+            return {"error": str(e), "results": []}
+    return {"error": None, "results": results}
 
 
 def ids_from_xml_string(xml: str, validate: bool = False) -> Ids:
