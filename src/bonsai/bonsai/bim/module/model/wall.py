@@ -502,15 +502,13 @@ class ExtendWallsToWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.If
         if target_obj and objs:
             if tool.Ifc.is_moved(target_obj):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=target_obj)
-            joiner = DumbWallJoiner()
+            joiner = DumbWallJoiner(keep_clicked_side=True)
             target_element = tool.Ifc.get_entity(target_obj)
             for obj in objs:
                 if tool.Ifc.is_moved(obj):
                     bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
                 element = tool.Ifc.get_entity(obj)
-                ifcopenshell.api.geometry.connect_wall(
-                    tool.Ifc.get(), wall1=element, wall2=target_element, is_atpath=True
-                )
+                joiner.connect_path(obj, target_obj, is_atpath=True)
                 tool.Model.recreate_wall(element, obj)
             tool.Model.recreate_wall(target_element, target_obj)
             _resync_walls_after_mutation([target_obj, *objs])
@@ -1519,7 +1517,10 @@ def _add_void_copy(building_element, source_opening):
 
 
 class DumbWallJoiner:
-    def __init__(self):
+    def __init__(self, keep_clicked_side: bool = False):
+        # Off by default: only the user's own join/extend commands should be steered by
+        # where elements were clicked, not tools that join elements they just drew.
+        self.keep_clicked_side = keep_clicked_side
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
@@ -1813,7 +1814,12 @@ class DumbWallJoiner:
         target = (wall1.matrix_world.inverted() @ target).to_2d() / unit_scale
         intersect, intersection_point = mathutils.geometry.intersect_point_line(target, p1, p2)
         if not connection:
-            connection = "ATEND" if intersection_point > 0.5 else "ATSTART"
+            connection = (
+                self.keep_clicked_side
+                and tool.Model.get_clicked_connection(
+                    wall1, *self.get_world_reference_line(wall1, element1), intersection_point
+                )
+            ) or ("ATEND" if intersection_point > 0.5 else "ATSTART")
 
         ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element1, connection_type=connection)
 
@@ -1844,9 +1850,50 @@ class DumbWallJoiner:
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj1)
         if tool.Ifc.is_moved(obj2):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj2)
-        ifcopenshell.api.geometry.connect_wall(tool.Ifc.get(), wall1=wall1, wall2=wall2)
+        self.connect_path(obj1, obj2)
         tool.Model.recreate_wall(wall1, obj1)
         tool.Model.recreate_wall(wall2, obj2)
+
+    def get_world_reference_line(self, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> list[Vector]:
+        return [
+            obj.matrix_world @ Vector((p[0] * self.unit_scale, p[1] * self.unit_scale, 0.0))
+            for p in ifcopenshell.util.representation.get_reference_line(element)
+        ]
+
+    def connect_path(self, obj1: bpy.types.Object, obj2: bpy.types.Object, is_atpath: bool = False) -> None:
+        """Connect wall 1 to wall 2 like ``connect_wall``, but keep the side of each wall the user clicked."""
+        wall1 = tool.Ifc.get_entity(obj1)
+        wall2 = tool.Ifc.get_entity(obj2)
+        if self.keep_clicked_side and (ends := self.get_clicked_ends(obj1, wall1, obj2, wall2, is_atpath)):
+            ifcopenshell.api.geometry.connect_path(
+                tool.Ifc.get(),
+                relating_element=wall1,
+                related_element=wall2,
+                relating_connection=ends[0],
+                related_connection=ends[1],
+            )
+            return
+        ifcopenshell.api.geometry.connect_wall(tool.Ifc.get(), wall1=wall1, wall2=wall2, is_atpath=is_atpath)
+
+    def get_clicked_ends(self, obj1, wall1, obj2, wall2, is_atpath: bool) -> Optional[tuple[str, str]]:
+        """The ends to connect so each clicked wall keeps its clicked side, or None if neither was clicked."""
+        line1 = self.get_world_reference_line(obj1, wall1)
+        line2 = self.get_world_reference_line(obj2, wall2)
+        flat1 = [Vector((p.x, p.y, 0.0)) for p in line1]
+        flat2 = [Vector((p.x, p.y, 0.0)) for p in line2]
+        points = mathutils.geometry.intersect_line_line(*flat1, *flat2)
+        if not points or (points[0] - points[1]).length > 1e-6:
+            return None  # Parallel: connect_wall declines it as before.
+        percent1 = mathutils.geometry.intersect_point_line(points[0], *flat1)[1]
+        percent2 = mathutils.geometry.intersect_point_line(points[0], *flat2)[1]
+        end1 = tool.Model.get_clicked_connection(obj1, *line1, percent1)
+        end2 = None if is_atpath else tool.Model.get_clicked_connection(obj2, *line2, percent2)
+        if end1 is None and end2 is None:
+            return None
+        # Whichever wall had no click falls back to connect_wall's own rule.
+        end1 = end1 or ("ATEND" if percent1 > 0.5 else "ATSTART")
+        end2 = "ATPATH" if is_atpath else end2 or ("ATEND" if percent2 > 0.5 else "ATSTART")
+        return end1, end2
 
     def create_matrix(self, p, x, y, z):
         return Matrix([x, y, z, p]).to_4x4().transposed()
@@ -2573,7 +2620,7 @@ class ExtendWallToCursor(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc,
             tool.Blender,
             tool.Geometry,
-            DumbWallJoiner(),
+            DumbWallJoiner(keep_clicked_side=True),
             tool.Model,
             context.scene.cursor.location,
         )
@@ -4758,7 +4805,9 @@ class JoinWallsIntersection(_CommitWallDraftsFirstMixin, bpy.types.Operator, too
 
     def _perform(self, context: bpy.types.Context) -> set[str]:
         try:
-            core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
+            core.join_walls_LV(
+                tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(keep_clicked_side=True), tool.Model
+            )
         except core.RequireTwoWallsError as e:
             self.report({"ERROR"}, str(e))
             return {"CANCELLED"}

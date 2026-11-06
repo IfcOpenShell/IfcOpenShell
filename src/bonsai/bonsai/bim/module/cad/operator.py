@@ -263,6 +263,7 @@ class CadSelect(bpy.types.Operator):
         # Only after the selection has happened do we know which edge was picked.
         if pos and region.type == "WINDOW" and rv3d:
             record_clicked_end(context, region, rv3d, pos)
+            tool.Model.record_clicked_object(context, pos)
         return result
 
 

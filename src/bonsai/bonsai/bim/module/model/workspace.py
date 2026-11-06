@@ -70,7 +70,10 @@ class BimTool(WorkSpaceTool):
     bl_description = "Create and edit elements by construction class"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.bim")
     bl_widget = None
-    bl_keymap = tool.Blender.get_default_selection_keypmap() + (
+    # bim.cad_select records where an element was clicked, so joins and extends keep
+    # that side. With Cross Select on, bim.cross_select records it instead.
+    bim_select_operators = ("bim.cad_select", "view3d.select_box")
+    bl_keymap = tool.Blender.get_default_selection_keypmap(*bim_select_operators) + (
         # ("bim.wall_tool_op", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
         # ("mesh.add_wall", {"type": 'LEFTMOUSE', "value": 'PRESS'}, {"properties": []}),
         # ("bim.sync_modeling", {"type": 'MOUSEMOVE', "value": 'ANY'}, {"properties": []}),
@@ -1261,7 +1264,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Ifc,
                     tool.Blender,
                     tool.Geometry,
-                    DumbWallJoiner(),
+                    DumbWallJoiner(keep_clicked_side=True),
                     tool.Model,
                     bpy.context.scene.cursor.location,
                 )
@@ -1378,7 +1381,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             try:
-                core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
+                core.join_walls_LV(
+                    tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(keep_clicked_side=True), tool.Model
+                )
             except core.RequireTwoWallsError as e:
                 self.report({"ERROR"}, str(e))
         elif self.active_material_usage == "PROFILE":
@@ -1816,6 +1821,8 @@ class CrossSelect(bpy.types.Operator):
         bpy.ops.object.select_all(action="DESELECT")
         for obj in final_selected:
             obj.select_set(True)
+        # A box picks no particular side, so an older click must not decide it.
+        tool.Model.forget_clicked_objects(valid_selection)
 
     # --- Edit mesh mode ------------------------------------------------------
     def _process_selection_edit(self, context):
@@ -1938,6 +1945,7 @@ class CrossSelect(bpy.types.Operator):
         except Exception:
             pass
         self._record_cad_click(context, event)
+        tool.Model.record_clicked_object(context, (event.mouse_region_x, event.mouse_region_y))
 
     @staticmethod
     def _record_cad_click(context, event) -> None:
