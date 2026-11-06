@@ -608,9 +608,9 @@ namespace ifcopenshell {
             typedef map_transformer<entity_instance_by_name_storage, std::function<express::base(shared_pointer_type)>> entity_instance_by_name;
             typedef std::unordered_map<uint32_t, shared_pointer_type> type_instance_by_name;
             // The GlobalId index, keyed by the 22 characters of a GlobalId held
-            // inline so a lookup allocates nothing. Only a 22-character key can
-            // be stored or found; guid_key() says whether a string is one, and
-            // variant_map converts from std::string at the file's interface.
+            // inline so a lookup allocates nothing. A shorter GlobalId is padded
+            // with NUL characters and a longer one is not stored or found;
+            // guid_key() and variant_map share to_padded_key() for that.
             struct guid_key_hash {
                 size_t operator()(const std::array<char, 22>& key) const {
                     return std::hash<std::string_view>()(std::string_view(key.data(), key.size()));
@@ -618,11 +618,7 @@ namespace ifcopenshell {
             };
             typedef std::unordered_map<std::array<char, 22>, express::base, guid_key_hash> entity_instance_by_guid;
             static bool guid_key(const std::string& text, std::array<char, 22>& key) {
-                if (text.size() != key.size()) {
-                    return false;
-                }
-                std::memcpy(key.data(), text.data(), key.size());
-                return true;
+                return to_padded_key(text, key);
             }
             typedef inverse_index entities_by_ref;
             typedef entity_instance_by_name::iterator iterator;
