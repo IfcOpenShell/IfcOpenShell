@@ -1560,6 +1560,7 @@ class Raycast(bonsai.core.tool.Raycast):
         closest_hit = None
         closest_face_index = None
 
+        mouse_pos = (int(event.mouse_region_x), int(event.mouse_region_y))
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, mouse_pos)
 
         space = context.space_data

@@ -503,7 +503,8 @@ class PolylineDecorator(tool.Blender.ViewportDecorator):
             "Z": "Z coord:",
             "AREA": "Area:",
         }
-        mouse_pos = self.mouse_pos[0], self.mouse_pos[1]
+        if self.mouse_pos:
+            mouse_pos = self.mouse_pos[0], self.mouse_pos[1]
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
