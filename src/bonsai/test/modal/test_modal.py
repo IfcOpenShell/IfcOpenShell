@@ -19,7 +19,6 @@
 
 import inspect
 import os
-import time
 
 import bpy
 import ifcopenshell.util.element
@@ -139,7 +138,7 @@ def test_snap_object_detection(window):
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
     with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
         bpy.ops.view3d.view_selected()
-        
+
     bpy.ops.object.select_all(action="DESELECT")
 
     measure_settings = tool.Project.get_measure_tool_settings()
