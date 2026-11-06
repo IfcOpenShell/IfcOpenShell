@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ids xmlns="http://standards.buildingsmart.org/IDS" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd">
+    <info>
+        <title>Equality tolerance has an absolute component</title>
+        <description>Reals must be compared against v +/- (abs(v) * 1e-6 + 1e-6).</description>
+    </info>
+    <specifications>
+        <specification name="Reals are equal within the documented tolerance" ifcVersion="IFC4">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCWALL</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCREAL">
+                    <propertySet>
+                        <simpleValue>Foo_Bar</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>NearOne</simpleValue>
+                    </baseName>
+                    <value>
+                        <simpleValue>1.</simpleValue>
+                    </value>
+                </property>
+                <property dataType="IFCREAL">
+                    <propertySet>
+                        <simpleValue>Foo_Bar</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>NearZero</simpleValue>
+                    </baseName>
+                    <value>
+                        <simpleValue>0.</simpleValue>
+                    </value>
+                </property>
+            </requirements>
+        </specification>
+    </specifications>
+</ids>
