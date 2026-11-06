@@ -18,15 +18,23 @@ import pytest
 PACKAGE_DIR = Path(ifcopenshell.__file__).parent
 CONDA = "CONDA_PREFIX" in os.environ
 SKIP_ON_CONDA = pytest.mark.skipif(CONDA, reason="plug-in is not registered in the conda package")
+MINIMAL_SCHEMAS = {"IFC2X3", "IFC4", "IFC4X3_ADD2"}
+# Packages may include additional schemas. Exercise those plug-ins too, while
+# keeping the minimal schemas required even when their libraries are missing.
+SCHEMAS = sorted(
+    MINIMAL_SCHEMAS
+    | {
+        path.name.split(".")[0].removeprefix(prefix).upper()
+        for path in PACKAGE_DIR.iterdir()
+        for prefix in ("ifcopenshell_parse_schema_", "ifcopenshell_geometry_mapping_")
+        if path.name.startswith(prefix) and path.suffix in (".so", ".dylib", ".dll")
+    }
+)
 
 
 @pytest.mark.parametrize(
     "schema",
-    [
-        pytest.param("IFC2X3", id="ifcopenshell_parse_schema_ifc2x3"),
-        pytest.param("IFC4", id="ifcopenshell_parse_schema_ifc4"),
-        pytest.param("IFC4X3_ADD2", id="ifcopenshell_parse_schema_ifc4x3_add2"),
-    ],
+    [pytest.param(schema, id=f"ifcopenshell_parse_schema_{schema.lower()}") for schema in SCHEMAS],
 )
 def test_schema_loads(schema: str):
     ifcopenshell.schema_by_name(schema)
@@ -34,11 +42,7 @@ def test_schema_loads(schema: str):
 
 @pytest.mark.parametrize(
     "schema",
-    [
-        pytest.param("IFC2X3", id="ifcopenshell_geometry_mapping_ifc2x3"),
-        pytest.param("IFC4", id="ifcopenshell_geometry_mapping_ifc4"),
-        pytest.param("IFC4X3_ADD2", id="ifcopenshell_geometry_mapping_ifc4x3_add2"),
-    ],
+    [pytest.param(schema, id=f"ifcopenshell_geometry_mapping_{schema.lower()}") for schema in SCHEMAS],
 )
 def test_geometry_mapping_loads(schema: str):
     ifcopenshell.geom.kernel(ifcopenshell.geom.settings(), ifcopenshell.file(schema=schema), "passthrough")

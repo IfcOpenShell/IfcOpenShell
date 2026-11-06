@@ -4,6 +4,11 @@ permissions: {}
 
 on:
   workflow_dispatch:
+    inputs:
+      only-common-schemas:
+        description: Build only common IFC schemas
+        type: boolean
+        default: true
 
 jobs:
   dispatch:
@@ -15,6 +20,7 @@ jobs:
       - name: Trigger binary build workflows
         env:
           GH_TOKEN: ${{ github.token }}
+          ONLY_COMMON_SCHEMAS: ${{ inputs.only-common-schemas }}
         run: |
           workflows=(
             build-ifcopenshell-linux.yml
@@ -23,5 +29,5 @@ jobs:
             build-ifcopenshell-windows.yml
           )
           for workflow in "${workflows[@]}"; do
-            gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME"
+            gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f only-common-schemas="$ONLY_COMMON_SCHEMAS"
           done
