@@ -268,8 +268,11 @@ def _read_headers_into_props(obj, element):
         props.x_angle = x_angle
 
     elif AuthoringData.data["active_material_usage"] == "LAYER3":
-        x_angle = get_x_angle(extrusion)
-        props.x_angle = x_angle
+        if props.slope_method == "ROTATION":
+            props.x_angle = obj.rotation_euler.x
+        else:
+            x_angle = get_x_angle(extrusion)
+            props.x_angle = x_angle
 
     elif AuthoringData.data["active_material_usage"] == "PROFILE":
         props.extrusion_depth = extrusion.Depth * si_conversion

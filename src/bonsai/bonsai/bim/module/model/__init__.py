@@ -155,6 +155,7 @@ classes = (
     profile.Rotate90,
     profile.PatchNonParametricMepSegment,
     roof.GenerateHippedRoof,
+    slab.ChangeSlabRotationXAngle,
     slab.DisableEditingExtrusionProfile,
     slab.DisableEditingSketchExtrusionProfile,
     slab.AddSlabFromWall,
