@@ -41,6 +41,9 @@ def remove_filling(file: ifcopenshell.file, element: ifcopenshell.entity_instanc
         # acoustic requirements.
         opening = ifcopenshell.api.root.create_entity(model, ifc_class="IfcOpeningElement")
 
+        # The opening voids the wall.
+        ifcopenshell.api.feature.add_feature(model, feature=opening, element=wall)
+
         # Create a door
         door = ifcopenshell.api.root.create_entity(model, ifc_class="IfcDoor")
 
