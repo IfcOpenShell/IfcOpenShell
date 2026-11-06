@@ -29,6 +29,7 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper
 import bonsai.bim.handler
 import bonsai.core.patch as core
 import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import AttributeDataType
@@ -119,7 +120,8 @@ class ExecuteIfcPatch(bpy.types.Operator):
             log=tool.Blender.get_data_dir_path("process.log").__str__(),
         )
 
-        if props.should_load_from_memory and tool.Ifc.get():
+        patched_in_memory = bool(props.should_load_from_memory and tool.Ifc.get())
+        if patched_in_memory:
             args["file"] = tool.Ifc.get()
         else:
             args["input"] = props.ifc_patch_input
@@ -131,8 +133,47 @@ class ExecuteIfcPatch(bpy.types.Operator):
         output = ifcpatch.execute(args)
         if tool.Patch.does_patch_has_output(recipe_name):
             ifcpatch.write(output, ifc_patch_output)
+        if patched_in_memory:
+            self.purge_deleted_elements()
+            bonsai.bim.handler.refresh_ui_data()
+            self.reload_drawing_lists()
         self.report({"INFO"}, f"{recipe_name} patch executed successfully")
         return {"FINISHED"}
+
+    def reload_drawing_lists(self) -> None:
+        """Reload the drawing, schedule, reference and sheet lists if they are open
+
+        Their entries hold element ids, so a recipe that removed or replaced
+        these documents would leave them listing elements that are gone.
+        """
+        props = tool.Drawing.get_document_props()
+        if props.is_editing_drawings:
+            tool.Drawing.import_drawings()
+        if props.is_editing_schedules:
+            tool.Drawing.import_documents("SCHEDULE")
+        if props.is_editing_references:
+            tool.Drawing.import_documents("REFERENCE")
+        if props.is_editing_sheets:
+            tool.Drawing.import_sheets()
+
+    def purge_deleted_elements(self) -> None:
+        """Remove Blender objects whose elements the recipe deleted
+
+        A recipe run on the loaded model can remove elements that Blender
+        objects are linked to. Those objects would be left pointing at ids
+        that no longer exist, which empties UI lists and makes saving the
+        project fail. The element maps are then rebuilt, which also picks up
+        any GlobalIds the recipe changed.
+        """
+        for ifc_definition_id, obj in list(IfcStore.id_map.items()):
+            if tool.Ifc.get_entity_by_id(ifc_definition_id) is not None:
+                continue
+            if not tool.Blender.is_valid_data_block(obj):
+                continue
+            IfcStore.unlink_element(obj=obj)
+            if isinstance(obj, bpy.types.Object):
+                tool.Blender.remove_object(obj)
+        tool.Ifc.rebuild_element_maps()
 
 
 class UpdateIfcPatchArguments(bpy.types.Operator):
