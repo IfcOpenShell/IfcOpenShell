@@ -104,7 +104,7 @@ SpatialHierarchyPanelView::SpatialHierarchyPanelView(SpatialHierarchyPanel* widg
     connect(widget_, &SpatialHierarchyPanel::visibilityToggleRequested, this, [this](const NodePath& path) {
         if (auto* node = findNode(path)) {
             node->visible = !node->visible;
-            reload();
+            widget_->setNodeVisibility(path, node->visible);
             session_state_->setStatusMessage("Spatial", node->visible ? "Item shown" : "Item hidden");
         }
     });

@@ -25,6 +25,7 @@
 
 #include <QHeaderView>
 #include <QMenu>
+#include <QSet>
 #include <QShowEvent>
 #include <QSizePolicy>
 #include <QTreeWidget>
@@ -38,6 +39,26 @@ void setSubtreeExpanded(QTreeWidgetItem* item, bool expanded) {
     item->setExpanded(expanded);
     for (int i = 0; i < item->childCount(); ++i) {
         setSubtreeExpanded(item->child(i), expanded);
+    }
+}
+
+void collectExpandedPaths(QTreeWidgetItem* item, const QString& current_path, QSet<QString>& expanded) {
+    const QString path = current_path.isEmpty() ? item->text(0) : (current_path + QLatin1Char('\x1f') + item->text(0));
+    if (item->isExpanded()) {
+        expanded.insert(path);
+    }
+    for (int i = 0; i < item->childCount(); ++i) {
+        collectExpandedPaths(item->child(i), path, expanded);
+    }
+}
+
+void restoreExpandedPaths(QTreeWidgetItem* item, const QString& current_path, const QSet<QString>& expanded) {
+    const QString path = current_path.isEmpty() ? item->text(0) : (current_path + QLatin1Char('\x1f') + item->text(0));
+    if (expanded.contains(path)) {
+        item->setExpanded(true);
+    }
+    for (int i = 0; i < item->childCount(); ++i) {
+        restoreExpandedPaths(item->child(i), path, expanded);
     }
 }
 
@@ -104,11 +125,63 @@ void SpatialHierarchyPanel::showEvent(QShowEvent* event) {
 }
 
 void SpatialHierarchyPanel::setNodes(const QList<TreeNode>& nodes) {
+    const bool was_empty = tree_->topLevelItemCount() == 0;
+    QSet<QString> expanded_paths;
+    if (!was_empty) {
+        for (int i = 0; i < tree_->topLevelItemCount(); ++i) {
+            collectExpandedPaths(tree_->topLevelItem(i), QString(), expanded_paths);
+        }
+    }
+
     tree_->clear();
     for (const auto& node : nodes) {
         addNode(tree_->invisibleRootItem(), node);
     }
-    tree_->expandAll();
+
+    if (was_empty) {
+        tree_->expandAll();
+    } else {
+        for (int i = 0; i < tree_->topLevelItemCount(); ++i) {
+            restoreExpandedPaths(tree_->topLevelItem(i), QString(), expanded_paths);
+        }
+    }
+}
+
+void SpatialHierarchyPanel::setNodeVisibility(const NodePath& path, bool visible) {
+    if (auto* item = findItem(path)) {
+        item->setData(2, Qt::UserRole, visible);
+        item->setIcon(2, components::icons::makeSvgIcon(visible ? ":/icons/eye.svg" : ":/icons/eye-closed.svg"));
+    }
+}
+
+QTreeWidgetItem* SpatialHierarchyPanel::findItem(const NodePath& path) const {
+    if (path.isEmpty()) {
+        return nullptr;
+    }
+    QTreeWidgetItem* current = nullptr;
+    for (int i = 0; i < tree_->topLevelItemCount(); ++i) {
+        if (tree_->topLevelItem(i)->text(0) == path.first()) {
+            current = tree_->topLevelItem(i);
+            break;
+        }
+    }
+    if (!current) {
+        return nullptr;
+    }
+    for (int p = 1; p < path.size(); ++p) {
+        QTreeWidgetItem* next = nullptr;
+        for (int i = 0; i < current->childCount(); ++i) {
+            if (current->child(i)->text(0) == path.at(p)) {
+                next = current->child(i);
+                break;
+            }
+        }
+        if (!next) {
+            return nullptr;
+        }
+        current = next;
+    }
+    return current;
 }
 
 void SpatialHierarchyPanel::addNode(QTreeWidgetItem* parent, const TreeNode& node) {
