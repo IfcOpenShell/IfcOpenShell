@@ -74,6 +74,8 @@ class BIM_PT_camera(Panel):
         row.prop(props, "has_annotation", icon="MOD_EDGESPLIT")
         row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
 
+        row = col.row(align=True)
+        row.prop(props, "show_sheet_references")
         # Drawing linked projects.
         row = col.row(align=True)
         row.prop(dprops, "should_draw_linked_projects")
@@ -113,6 +115,9 @@ class BIM_PT_camera(Panel):
             row.prop(props, "fill_mode")
             row = self.layout.row()
             row.prop(props, "cut_mode")
+        elif props.linework_mode == "FREESTYLE":
+            row = self.layout.row()
+            row.prop(props, "freestyle_ifc_only")
 
         row = self.layout.row()
         row.prop(props, "use_edge_classification")
