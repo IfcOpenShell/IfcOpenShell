@@ -17,7 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional
+import copy
+import json
+from pathlib import Path
+from typing import Any, Optional
 
 
 class bSDDClientStub:
@@ -276,3 +279,76 @@ class bSDDClientStub:
             "versionNumber": 1,
         }
         return result
+
+
+def bsdd_response_key(method: str, args: tuple, kwargs: dict) -> str:
+    return json.dumps([method, list(args), dict(sorted(kwargs.items()))])
+
+
+class bSDDReplayClient:
+    """Serves bSDD API responses recorded with bSDDRecordingClient, so tests don't depend on the live service."""
+
+    def __init__(self, path: Path):
+        # Mirrors bsdd.Client so tool.Bsdd.identifier_url() works against the stub.
+        self.baseurl = "https://api.bsdd.buildingsmart.org/api/"
+        self.path = path
+        self.responses: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+
+    def __getattr__(self, name: str):
+        if name.startswith("_"):
+            raise AttributeError(name)
+
+        def call(*args, **kwargs):
+            key = bsdd_response_key(name, args, kwargs)
+            if key not in self.responses:
+                raise AssertionError(
+                    f"No recorded bSDD response for {key} in {self.path.name}. "
+                    "Re-record it from the live API by running the tests with BONSAI_BSDD_RECORD=1."
+                )
+            return copy.deepcopy(self.responses[key])
+
+        return call
+
+
+class bSDDRecordingClient:
+    """Wraps the real bsdd.Client and records its responses, to be saved for bSDDReplayClient."""
+
+    def __init__(self, client):
+        self.client = client
+        self.responses: dict[str, Any] = {}
+
+    def __getattr__(self, name: str):
+        attribute = getattr(self.client, name)
+        if name.startswith("_") or not callable(attribute):
+            return attribute
+
+        def call(*args, **kwargs):
+            result = attribute(*args, **kwargs)
+            self.responses[bsdd_response_key(name, args, kwargs)] = result
+            return result
+
+        return call
+
+    def __setattr__(self, name: str, value) -> None:
+        if name in ("client", "responses"):
+            super().__setattr__(name, value)
+        else:
+            setattr(self.client, name, value)  # E.g. tool.Bsdd sets baseurl.
+
+    def save(self, path: Path) -> None:
+        """Add the recorded responses to the file, keeping what other tests recorded there."""
+        responses = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        responses.update(self.responses)
+        self.keep_used_dictionaries(responses)
+        path.write_text(json.dumps(responses, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def keep_used_dictionaries(responses: dict[str, Any]) -> None:
+        """Trim dictionary listings to the dictionaries the other recorded calls use: bSDD lists hundreds."""
+        used = " ".join(key for key in responses if json.loads(key)[0] != "get_dictionary")
+        for key, response in responses.items():
+            if json.loads(key)[0] != "get_dictionary" or "dictionaries" not in response:
+                continue
+            dictionaries = [d for d in response["dictionaries"] if d["uri"] in used]
+            response["dictionaries"] = dictionaries
+            response["totalCount"] = response["count"] = len(dictionaries)
