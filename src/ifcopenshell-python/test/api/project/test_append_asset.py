@@ -59,6 +59,15 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         ifcopenshell.api.project.append_asset(self.file, library=library, element=profile)
         assert len(self.file.by_type("IfcWallType")) == 1
 
+    def test_append_element_with_empty_aggregate_attribute(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
+        layer_set = ifcopenshell.api.material.add_material_set(library, set_type="IfcMaterialLayerSet")
+        ifcopenshell.api.material.assign_material(library, products=[element], material=layer_set)
+        layer_set.MaterialLayers = ()
+        ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+        assert len(self.file.by_type("IfcWallType")) == 1
+
     def test_append_a_type_product(self):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
         element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
