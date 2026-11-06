@@ -346,9 +346,9 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
     frame_height = window_lining_height - lining_to_panel_offset_x * 2
     glass_thickness = 0.01
 
-    # handle dimensions (hardcoded)
-    handle_size = V_(120, 40, 20) * 0.001
-    handle_offset = V_(60, 0, 1000) * 0.001  # to the handle center
+    # handle dimensions
+    handle_size = Vector(tuple(props.handle_size))
+    handle_offset = Vector((props.handle_inset_from_edge, 0.0, props.handle_height_above_floor))
     handle_center_offset = V_(handle_size.y / 2, 0, handle_size.z) / 2
 
     if transfom_offset:
