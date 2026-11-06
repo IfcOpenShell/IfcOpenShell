@@ -19,6 +19,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.group
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import pytest
@@ -88,3 +89,24 @@ class TestAssignStatus(NewFile):
 
         bpy.ops.bim.assign_status(status="EXISTING", should_unassign_status=True)
         assert subject.get_element_status(element) == set()
+
+
+class TestSaveAnimationColorScheme(NewFile):
+    def test_run(self):
+        bpy.ops.bim.create_project()
+        group = subject.save_animation_color_scheme("Scheme")
+        assert group.is_a("IfcGroup")
+        assert tool.Group.get_description_type(group) == "BBIM_AnimationColorScheme"
+
+    def test_updating_an_existing_scheme(self):
+        bpy.ops.bim.create_project()
+        group = subject.save_animation_color_scheme("Scheme")
+        assert subject.save_animation_color_scheme("Scheme") == group
+
+    def test_not_reusing_a_user_group_with_the_same_name(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        user_group = ifcopenshell.api.group.add_group(ifc, name="Scheme", description="Not JSON")
+        group = subject.save_animation_color_scheme("Scheme")
+        assert group != user_group
+        assert user_group.Description == "Not JSON"
