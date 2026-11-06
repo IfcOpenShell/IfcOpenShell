@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from math import degrees, pi
 from typing import TYPE_CHECKING, Any
 
 import bpy
@@ -205,6 +206,97 @@ class BIM_PT_authoring(Panel):
         row.operator("bim.toggle_space_visibility")
 
 
+def summarise_array_layer(array: dict) -> str:
+    """One-line description of a collapsed array layer.
+
+    Radial layers report their sweep in degrees and, past a full turn, the
+    number of turns — the fact a spiral stair wraps 1.75 times is exactly what
+    a bare "630" hides."""
+    count = array["count"]
+    method = array.get("method", "OFFSET").capitalize()
+    if array.get("type", "LINEAR") != "RADIAL":
+        return f"{count} Items ({method})"
+    sweep = array.get("angle", 0.0)
+    if array.get("method") != "DISTRIBUTE":
+        sweep *= max(count - 1, 0)
+    label = f"{count} Items (Radial {round(degrees(sweep), 1)}°"
+    turns = abs(sweep) / (2 * pi)
+    if turns > 1.0:
+        label += f", {round(turns, 2)} turns"
+    return label + ")"
+
+
+def draw_derived_value(col: bpy.types.UILayout, label: str, value: str) -> None:
+    """One right-aligned read-only readout under the field it is derived from.
+
+    Deliberately a label rather than a disabled property: it is a computed
+    consequence of two other fields, and rendering it as an input invites the
+    user to try to type into it."""
+    row = col.row(align=True)
+    row.alignment = "RIGHT"
+    row.label(text=f"{label}: {value}")
+
+
+def format_riser(props, layer: dict) -> str:
+    """The half of the (per-copy, total) climb pair the user did not type."""
+    per_copy, total = tool.Array.resolved_rise(layer)
+    derived = per_copy if props.rise_method == "DISTRIBUTE" else total
+    return tool.Unit.format_distance(derived)
+
+
+def format_sweep(props, layer: dict) -> str:
+    """The half of the (per-copy, total) sweep pair the user did not type.
+
+    A total past one turn is reported with its turn count — "630° (1.75
+    turns)" — because the bare angle is exactly what hides the wrap."""
+    per_copy, total = tool.Array.resolved_angle(layer)
+    if props.method == "DISTRIBUTE":
+        return f"{round(degrees(per_copy), 2)}°"
+    label = f"{round(degrees(total), 2)}°"
+    turns = abs(total) / (2 * pi)
+    if turns > 1.0:
+        label += f" ({round(turns, 2)} turns)"
+    return label
+
+
+def draw_radial_array_params(col: bpy.types.UILayout, props) -> None:
+    """Radial half of the array edit body: sweep, helix rise, axis, pivot.
+
+    Each of the two quantities is followed by a read-only readout of its
+    derived counterpart. Whichever half the user typed, the other is the one
+    they usually need: a stair given as a floor-to-floor total still has to
+    clear a code-limited riser, and a stair given per tread still has to reach
+    the next floor. Both only exist as computed numbers, so showing them here
+    saves a rebuild-and-measure round trip."""
+    # Both readouts are derived through tool.Array from the same layer dict the
+    # regenerator consumes, so they cannot disagree with what Finish will build.
+    layer = tool.Array.layer_from_props(props)
+    row = col.row(align=True)
+    row.prop(props, "angle")
+    row.prop(props, "method", text="")
+    draw_derived_value(col, "Sweep" if props.method != "DISTRIBUTE" else "Per Copy", format_sweep(props, layer))
+    row = col.row(align=True)
+    row.prop(props, "rise")
+    row.prop(props, "rise_method", text="")
+    draw_derived_value(col, "Total" if props.rise_method != "DISTRIBUTE" else "Per Copy", format_riser(props, layer))
+    row = col.row(align=True)
+    row.prop(props, "axis", expand=True)
+    if props.axis == "CUSTOM":
+        col.row(align=True).prop(props, "custom_axis", text="")
+    row = col.row(align=True)
+    row.prop(props, "center", text="Centre")
+    row = col.row(align=True)
+    row.operator("bim.input_cursor_center_array", icon="CURSOR", text="3D Cursor")
+    row.operator("bim.center_array_on_selected", icon="OBJECT_DATA", text="Selected")
+    row = col.row(align=True)
+    row.prop(props, "rotate_children")
+    row = col.row(align=True)
+    row.prop(props, "full_circle")
+    # A helix never closes back on itself, so the flag would be a no-op — grey
+    # it out rather than letting it silently drop a real instance.
+    row.enabled = not props.rise
+
+
 class BIM_PT_array(bpy.types.Panel):
     bl_label = "Array"
     bl_idname = "BIM_PT_array"
@@ -244,25 +336,33 @@ class BIM_PT_array(bpy.types.Panel):
                     row.operator("bim.finish_editing_array", icon="CHECKMARK", text="")
                     row.operator("bim.cancel_editing_array", icon="CANCEL", text="")
                     row = box.row(align=True)
-                    row.prop(props, "method")
+                    row.prop(props, "array_type", expand=True)
+                    if props.array_type == "LINEAR":
+                        # Radial draws ``method`` beside the angle it governs,
+                        # paired with the rise's own mode — see
+                        # ``draw_radial_array_params``.
+                        row = box.row(align=True)
+                        row.prop(props, "method")
                     row = box.row(align=True)
                     row.prop(props, "use_local_space")
                     col = box.column()
-                    row = col.row(align=True)
-                    row.prop(props, "x")
-                    row.operator("bim.input_cursor_x_array", icon="CURSOR", text="")
-                    row = col.row(align=True)
-                    row.prop(props, "y")
-                    row.operator("bim.input_cursor_y_array", icon="CURSOR", text="")
-                    row = col.row(align=True)
-                    row.prop(props, "z")
-                    row.operator("bim.input_cursor_z_array", icon="CURSOR", text="")
+                    if props.array_type == "RADIAL":
+                        draw_radial_array_params(col, props)
+                    else:
+                        row = col.row(align=True)
+                        row.prop(props, "x")
+                        row.operator("bim.input_cursor_x_array", icon="CURSOR", text="")
+                        row = col.row(align=True)
+                        row.prop(props, "y")
+                        row.operator("bim.input_cursor_y_array", icon="CURSOR", text="")
+                        row = col.row(align=True)
+                        row.prop(props, "z")
+                        row.operator("bim.input_cursor_z_array", icon="CURSOR", text="")
                     row = col.row(align=True)
                     row.prop(props, "relating_array_object", icon="COPYDOWN")
                 else:
                     row = box.row(align=True)
-                    name = f"{array['count']} Items ({array.get('method', 'OFFSET').capitalize()})"
-                    row.label(text=name, icon="MOD_ARRAY")
+                    row.label(text=summarise_array_layer(array), icon="MOD_ARRAY")
                     row.operator("bim.enable_editing_array", icon="GREASEPENCIL", text="").item = i
                     apply_button = row.row(align=True)
                     apply_button.operator("bim.apply_array", text="", icon="CHECKMARK")
@@ -270,9 +370,14 @@ class BIM_PT_array(bpy.types.Panel):
                     row.operator("bim.remove_array", icon="X", text="").item = i
                     row = box.row(align=True)
                     icon = "EMPTY_ARROWS" if array.get("use_local_space", False) else "EMPTY_AXIS"
-                    row.label(text=f"X: {array['x']}", icon=icon)
-                    row.label(text=f"Y: {array['y']}")
-                    row.label(text=f"Z: {array['z']}")
+                    if array.get("type", "LINEAR") == "RADIAL":
+                        row.label(text=f"Angle: {round(degrees(array.get('angle', 0.0)), 2)}", icon=icon)
+                        if array.get("rise"):
+                            row.label(text=f"Rise: {array['rise']}")
+                    else:
+                        row.label(text=f"X: {array['x']}", icon=icon)
+                        row.label(text=f"Y: {array['y']}")
+                        row.label(text=f"Z: {array['z']}")
         else:
             row = self.layout.row()
             row.label(text="No Array Found")
