@@ -28,15 +28,27 @@ class ConnectToWebsocketServer(bpy.types.Operator):
     bl_label = "Connect/Start websocket server"
     bl_description = "Start/Connect to a Websocket server"
     page: bpy.props.StringProperty(default="")
+    open_browser: bpy.props.BoolProperty(
+        name="Open Browser",
+        description="Open the web UI when this starts the server. Off for tools that only need the connection",
+        default=True,
+        options={"SKIP_SAVE"},
+    )
 
     def execute(self, context):
+        # Already connected - possibly from before a project load, which resets the
+        # scene's port to 0. Picking a new port here would start a second server.
+        if tool.Web.is_connected():
+            tool.Web.restore_connection_state()
+            return {"FINISHED"}
+
         props = tool.Web.get_web_props()
         port = props.webserver_port
         if port == 0:
             props.webserver_port = core.generate_port_number(tool.Web)
 
         port = props.webserver_port
-        core.connect_websocket_server(tool.Web, port, self.page)
+        core.connect_websocket_server(tool.Web, port, self.page, self.open_browser)
         return {"FINISHED"}
 
 

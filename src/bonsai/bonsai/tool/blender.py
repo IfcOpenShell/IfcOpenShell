@@ -871,6 +871,25 @@ class Blender(bonsai.core.tool.Blender):
                 area.tag_redraw()
 
     @classmethod
+    def redraw_all_areas(cls) -> None:
+        """Tag every area of every window for redraw.
+
+        For changes made outside an event - from a timer, say, as the web
+        handlers are. Blender redraws in response to events, so a panel keeps
+        drawing what it last drew however much the model has changed. Silent
+        no-op with no window manager, as in background mode.
+        """
+        window_manager = getattr(bpy.context, "window_manager", None)
+        if window_manager is None:
+            return
+        for window in window_manager.windows:
+            screen = getattr(window, "screen", None)
+            if screen is None:
+                continue
+            for area in screen.areas:
+                area.tag_redraw()
+
+    @classmethod
     def force_depsgraph_update(cls) -> None:
         """useful if you need to trigger callbacks like `depsgraph_update_pre`"""
         # blender is requiring some ID to be changed
