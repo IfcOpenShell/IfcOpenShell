@@ -146,13 +146,16 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def activate_camera(cls, obj: bpy.types.Object) -> None:
-
         area = cls.get_view3d_area()
         assert area
-        assert isinstance((space := area.spaces[0]), bpy.types.SpaceView3D)
+        assert isinstance((space := area.spaces.active), bpy.types.SpaceView3D)
         is_local_view = space.local_view is not None
 
         assert bpy.context.screen and bpy.context.scene
+        previous_camera = bpy.context.scene.camera
+        if previous_camera and previous_camera != obj:
+            # Other camera views would otherwise follow the global scene camera change.
+            cls.pin_scene_camera_to_other_viewports(previous_camera, space)
         if is_local_view:
             # Turn off local view before activating drawing, and then turn it on again.
             for a in bpy.context.screen.areas:
@@ -373,11 +376,39 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_view3d_area(cls) -> Union[bpy.types.Area, None]:
+        if (area := bpy.context.area) and area.type == "VIEW_3D":
+            return area
         assert (wm := bpy.context.window_manager)
         for window in wm.windows:
             for area in window.screen.areas:
                 if area.type == "VIEW_3D":
                     return area
+
+    @classmethod
+    def get_view3d_spaces(cls) -> Iterator[bpy.types.SpaceView3D]:
+        assert (wm := bpy.context.window_manager)
+        scene = bpy.context.scene
+        for window in wm.windows:
+            if window.scene != scene:
+                continue
+            for area in window.screen.areas:
+                if area.type != "VIEW_3D":
+                    continue
+                space = area.spaces.active
+                assert isinstance(space, bpy.types.SpaceView3D)
+                yield space
+
+    @classmethod
+    def pin_scene_camera_to_other_viewports(
+        cls, camera: bpy.types.Object, active_space: bpy.types.SpaceView3D
+    ) -> None:
+        for space in cls.get_view3d_spaces():
+            if space == active_space or space.use_local_camera:
+                continue
+            if not (region_3d := space.region_3d) or region_3d.view_perspective != "CAMERA":
+                continue
+            space.camera = camera
+            space.use_local_camera = True
 
     @classmethod
     def operator_idname_to_py(cls, idname: str) -> str:
