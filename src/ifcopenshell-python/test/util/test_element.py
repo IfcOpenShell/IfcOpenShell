@@ -1334,6 +1334,33 @@ class TestRemoveDeep2IFC4(test.bootstrap.IFC4):
         assert self.file.by_id(1)
         assert self.file.by_guid("0YvctVUKr0kugbFTf53O9L")
 
+    def test_removing_a_large_aggregate_without_recording_it_per_member(self):
+        # See #3052. Faces must not be removed while their face set still
+        # lists them, or a transaction re-serialises the whole list per face.
+        ctx = self.file.createIfcGeometricRepresentationContext(None, "Model", 3, 1e-5)
+        points = self.file.createIfcCartesianPointList3D([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)])
+        faces = [self.file.createIfcIndexedPolygonalFace((1, 2, 3)) for _ in range(50)]
+        face_set = self.file.createIfcPolygonalFaceSet(points, None, faces)
+        representation = self.file.createIfcShapeRepresentation(ctx, "Body", "Tessellation", [face_set])
+        face_ids = [face.id() for face in faces]
+        face_set_id = face_set.id()
+        faces_index = face_set.get_argument_index("Faces")
+        removed_ids = face_ids + [face_set_id, points.id(), representation.id()]
+
+        self.file.begin_transaction()
+        subject.remove_deep2(self.file, representation)
+        self.file.end_transaction()
+
+        for removed_id in removed_ids:
+            with pytest.raises(RuntimeError):
+                self.file.by_id(removed_id)
+        for operation in self.file.history[-1].operations:
+            for index, _ in operation.get("inverses", {}).get(face_set_id, []):
+                assert index != faces_index
+
+        self.file.undo()
+        assert [face.id() for face in self.file.by_id(face_set_id).Faces] == face_ids
+
     def test_keeping_what_a_kept_subgraph_member_still_references(self):
         # Two walls map the same representation map; wall 1's own polyline
         # shares a point with the polyline inside the map. Removing wall 1's
