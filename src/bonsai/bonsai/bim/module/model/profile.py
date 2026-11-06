@@ -24,6 +24,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
+import ifcopenshell.api.style
 import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -156,13 +157,23 @@ class DumbProfileGenerator:
                 tool.Ifc.get(), product=element, representation=representation
             )
 
-        representation = ifcopenshell.api.geometry.add_profile_representation(
-            tool.Ifc.get(),
-            context=self.body_context,
-            profile=self.profile_set.CompositeProfile or self.profile_set.MaterialProfiles[0].Profile,
-            cardinal_point=self.cardinal_point,
-            depth=self.depth,
-        )
+        material_profiles = list(self.profile_set.MaterialProfiles or [])
+        # A composite profile keeps priority. Without one, several material profiles
+        # become one item each so every profile keeps its own material.
+        is_multi_material = not self.profile_set.CompositeProfile and len(material_profiles) > 1
+
+        items: list[ifcopenshell.entity_instance] = []
+        if is_multi_material:
+            representation, items = self.create_multi_material_profile_items(material_profiles)
+        else:
+            representation = ifcopenshell.api.geometry.add_profile_representation(
+                tool.Ifc.get(),
+                context=self.body_context,
+                profile=self.profile_set.CompositeProfile or self.profile_set.MaterialProfiles[0].Profile,
+                cardinal_point=self.cardinal_point,
+                depth=self.depth,
+            )
+
         ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), product=element, representation=representation)
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
@@ -171,12 +182,66 @@ class DumbProfileGenerator:
             representation=representation,
         )
 
+        if is_multi_material:
+            self.tag_material_profile_items(element, representation, items, material_profiles)
+
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Engine": "Bonsai.DumbProfile"})
 
         tool.Blender.select_object(obj)
 
         return obj
+
+    def create_multi_material_profile_items(
+        self, material_profiles: list[ifcopenshell.entity_instance]
+    ) -> tuple[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
+        """Build one Body representation with an extruded item per material profile, sharing one placement."""
+        file = tool.Ifc.get()
+        reference_representation = ifcopenshell.api.geometry.add_profile_representation(
+            file,
+            context=self.body_context,
+            profile=material_profiles[0].Profile,
+            cardinal_point=self.cardinal_point,
+            depth=self.depth,
+        )
+        reference_item = reference_representation.Items[0]
+        items = [reference_item]
+        for material_profile in material_profiles[1:]:
+            items.append(
+                file.create_entity(
+                    "IfcExtrudedAreaSolid",
+                    material_profile.Profile,
+                    reference_item.Position,
+                    reference_item.ExtrudedDirection,
+                    reference_item.Depth,
+                )
+            )
+        reference_representation.Items = items
+        return reference_representation, items
+
+    def tag_material_profile_items(
+        self,
+        element: ifcopenshell.entity_instance,
+        representation: ifcopenshell.entity_instance,
+        items: list[ifcopenshell.entity_instance],
+        material_profiles: list[ifcopenshell.entity_instance],
+    ) -> None:
+        """Tag each item with a shape aspect named after its material profile and apply the material style."""
+        file = tool.Ifc.get()
+        if not (part_of_product := ifcopenshell.util.representation.get_part_of_product(element, self.body_context)):
+            return
+        for index, (item, material_profile) in enumerate(zip(items, material_profiles)):
+            material = material_profile.Material
+            aspect_name = material_profile.Name or (material and material.Name) or f"Profile {index + 1}"
+            ifcopenshell.api.geometry.add_shape_aspect(
+                file,
+                aspect_name,
+                items=[item],
+                representation=representation,
+                part_of_product=part_of_product,
+            )
+            if material and (style := ifcopenshell.util.representation.get_material_style(material, self.body_context)):
+                ifcopenshell.api.style.assign_item_style(file, item=item, style=style)
 
     def create_profile_from_2_points(
         self, coords: tuple[Vector, Vector], should_round: bool = False
