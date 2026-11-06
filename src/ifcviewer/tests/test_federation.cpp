@@ -462,6 +462,33 @@ TEST_CASE("composeFederatedFalseOrigin scales by federation unit",
     Eigen::Matrix4d M = composeFederatedFalseOrigin(org, cfg);
     // Translation column should be -1 ft = -0.3048 m.
     REQUIRE(std::abs(M(0, 3) - (-0.3048)) < 1e-9);
+    REQUIRE(surveyPointMetres(M).isApprox(Eigen::Vector3d(0.3048, 0.0, 0.0), 1e-9));
+}
+
+TEST_CASE("surveyPointMetres recovers the false origin through grid north",
+          "[federation][compose]") {
+    FederationConfig cfg;
+    FederatedFalseOrigin org;
+    org.xyz    = Eigen::Vector3d(10.0, 20.0, 5.0);
+    org.rz_deg = 30.0;
+    const Eigen::Matrix4d M = composeFederatedFalseOrigin(org, cfg);
+    REQUIRE(surveyPointMetres(M).isApprox(org.xyz, 1e-9));
+    REQUIRE(surveyPointMetres(Eigen::Matrix4d::Identity()).isApprox(Eigen::Vector3d::Zero(), 1e-12));
+}
+
+TEST_CASE("worldOriginInViewer is world 0,0,0 through the false origin",
+          "[federation][compose]") {
+    FederationConfig cfg;
+    FederatedFalseOrigin org;
+    org.xyz    = Eigen::Vector3d(10.0, 20.0, 5.0);
+    org.rz_deg = 30.0;
+    const Eigen::Matrix4d M = composeFederatedFalseOrigin(org, cfg);
+    const Eigen::Vector3d expected = (M * Eigen::Vector4d(0.0, 0.0, 0.0, 1.0)).head<3>();
+    REQUIRE(worldOriginInViewer(M).isApprox(expected, 1e-9));
+    // The false origin itself is the one drawn at viewer zero.
+    const Eigen::Vector3d fo = (M * Eigen::Vector4d(10.0, 20.0, 5.0, 1.0)).head<3>();
+    REQUIRE(fo.norm() < 1e-9);
+    REQUIRE(worldOriginInViewer(Eigen::Matrix4d::Identity()).isApprox(Eigen::Vector3d::Zero(), 1e-12));
 }
 
 TEST_CASE("helmert metres transform consumes Scale through map unit scale",

@@ -57,10 +57,19 @@
   #progress-loaded { background: #3182ce; }
   #example-link { position: fixed; top: 8px; left: 12px; z-index: 10;
     font-size: 12px; color: #7f9bd6; text-decoration: none; }
+  /* Pinned on the survey marker once it is clicked. position is written each frame. */
+  #origin-readout { position: fixed; z-index: 12; pointer-events: none;
+    transform: translate(10px, -50%);
+    font: 11px/1.2 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+    color: #d7dbe3; background: rgba(15, 17, 23, .72);
+    border-radius: 3px; padding: 2px 6px; white-space: pre; }
+  #origin-readout.moved { color: #f6e05e; }
+  #origin-readout.docked { transform: none; }
 </style>
 </head>
 <body>
 <canvas id="viewer-canvas" width="1280" height="800"></canvas>
+<div id="origin-readout" hidden></div>
 <div id="marquee"></div>
 <a id="example-link" href="embedded.html">↗ embedded / JS-integration example</a>
 <div id="progress"><div id="progress-fill"></div></div>
@@ -91,6 +100,9 @@
   <button data-act="isolate" title="Isolate selected (Shift+H)">Isolate</button>
   <button data-act="showall" title="Show all (Alt+H)">Show all</button>
   <button data-act="xray"    id="xray-btn" title="X-ray — translucent everything (Alt+X)">X-ray</button>
+  <button data-act="grid"    id="grid-btn" title="Toggle ground grid">Grid</button>
+  <button data-act="origin"  id="origin-btn" title="X and Y through world 0, 0, 0. The amber survey marker is the false origin: click it for its coordinates.">Axes</button>
+  <button data-act="fog"     id="fog-btn" title="Fade the grid and axes into the background">Fog</button>
   <span class="sep"></span>
   <button data-act="section" id="section-btn" title="Section tool — click a surface to cut (K)">Section</button>
   <button data-act="clearcut" title="Clear all section cuts (Shift+K)">Clear cuts</button>
@@ -175,8 +187,14 @@
     if (el) el.classList.toggle('active', !!active);
   }
 
+  // Sidecar format this page will load. Must match IFCVIEW_VERSION.
+  var SIDECAR_FORMAT_VERSION = 19;
+  document.getElementById('open-btn').textContent =
+    'Open .ifcview v' + SIDECAR_FORMAT_VERSION + '…';
+
   IfcViewer.create({
     canvas: viewerCanvas,
+    sidecarFormatVersion: SIDECAR_FORMAT_VERSION,
     exposeAsModuleGlobal: true,          // window.Module — used by the smoke tests
     print: function (t) { console.log(t); },
     // The wasm logs (incl. [info]) come through stderr; only redden the status
@@ -184,6 +202,8 @@
     printErr: function (t) { console.warn(t); routeStatus(t); },
     onReady: function (viewer) {
       statusEl.classList.add('ready');
+      viewer.setOriginAxesVisible(true);
+      viewer.bindOriginReadout(document.getElementById('origin-readout'));
 
       // Auto-load ?model= / ?models= .ifcview files as a federation (one-shot).
       var qs = new URLSearchParams(location.search);
@@ -203,6 +223,9 @@
       var M = viewer.module;
       syncButton('fly-btn', M._fly_is_active_c && M._fly_is_active_c());
       syncButton('xray-btn', M._xray_is_active_c && M._xray_is_active_c());
+      syncButton('grid-btn', viewer.gridVisible());
+      syncButton('origin-btn', viewer.originAxesVisible());
+      syncButton('fog-btn', viewer.fogVisible());
       syncButton('section-btn', M._section_is_active_c && M._section_is_active_c());
     },
   }).then(function (viewer) {
@@ -219,7 +242,9 @@
       var existing = pendingMode === 'add' ? viewer.modelCount() : 0;
       if (pendingMode === 'replace') viewer.clearScene();
       beginLoadProgress(existing + files.length);
-      for (var i = 0; i < files.length; i++) viewer.addFile(files[i]);
+      for (var i = 0; i < files.length; i++) {
+        viewer.addFile(files[i]).catch(function (e) { routeStatus(e.message || String(e), true); });
+      }
       fileInput.value = '';
     });
 
@@ -237,6 +262,9 @@
         else if (act === 'isolate') M._isolate_selected_c();
         else if (act === 'showall') M._show_all_c();
         else if (act === 'xray')    M._toggle_xray_c();
+        else if (act === 'grid')    viewer.toggleGrid();
+        else if (act === 'origin')  viewer.toggleOriginAxes();
+        else if (act === 'fog')     viewer.toggleFog();
         else if (act === 'section') M._toggle_section_c();
         else if (act === 'clearcut') M._clear_section_c();
         else if (view !== null)     M._standard_view_c(parseInt(view, 10));
