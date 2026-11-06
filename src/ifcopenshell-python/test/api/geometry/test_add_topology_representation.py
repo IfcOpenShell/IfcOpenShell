@@ -77,6 +77,33 @@ class TestAddTopologyRepresentation(test.bootstrap.IFC4):
         )
         assert rep.RepresentationType == "Undefined"
 
+    # The types the WHERE rule of IfcTopologyRepresentation (IfcTopologyRepresentationTypes) allows
+    def test_infers_shell_representation_type(self):
+        context = self.setup_context()
+        for ifc_class in ("IfcClosedShell", "IfcOpenShell"):
+            shell = self.file.create_entity(ifc_class)
+            rep = ifcopenshell.api.geometry.add_topology_representation(self.file, context=context, item=shell)
+            assert rep.RepresentationType == "Shell"
+
+    def test_infers_path_representation_type(self):
+        context = self.setup_context()
+        path = self.file.create_entity("IfcPath")
+        rep = ifcopenshell.api.geometry.add_topology_representation(self.file, context=context, item=path)
+        assert rep.RepresentationType == "Path"
+
+    def test_infers_no_edge_representation_type_for_an_edge_loop(self):
+        # An IfcEdgeLoop is an IfcLoop, not an IfcEdge; only 'Undefined' admits it
+        context = self.setup_context()
+        loop = self.file.create_entity("IfcEdgeLoop")
+        rep = ifcopenshell.api.geometry.add_topology_representation(self.file, context=context, item=loop)
+        assert rep.RepresentationType == "Undefined"
+
+    def test_infers_no_face_representation_type_for_a_connected_face_set(self):
+        context = self.setup_context()
+        face_set = self.file.create_entity("IfcConnectedFaceSet")
+        rep = ifcopenshell.api.geometry.add_topology_representation(self.file, context=context, item=face_set)
+        assert rep.RepresentationType == "Undefined"
+
 
 class TestAddTopologyRepresentationIFC2X3(test.bootstrap.IFC2X3, TestAddTopologyRepresentation):
     pass
