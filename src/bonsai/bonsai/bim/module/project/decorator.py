@@ -99,6 +99,7 @@ class ProjectDecorator:
 
         if geom.selected_edges:
             self.draw_batch("LINES", selected_vertices, selected_elements_color, geom.selected_edges)
+        if geom.selected_tris:
             self.draw_batch(
                 "TRIS", selected_vertices, tool.Blender.transparent_color(selected_elements_color), geom.selected_tris
             )
