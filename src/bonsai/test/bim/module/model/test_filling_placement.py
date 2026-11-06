@@ -1,0 +1,100 @@
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2026
+#
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Bonsai is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was generated with the assistance of an AI coding tool.
+
+import bpy
+import ifcopenshell.util.placement
+import numpy as np
+import pytest
+from mathutils import Vector
+
+import bonsai.tool as tool
+from bonsai.bim.module.model.wall import DumbWallGenerator
+from test.bim.bootstrap import NewFile
+
+pytestmark = pytest.mark.model
+
+
+def _set_blender_offset():
+    props = tool.Georeference.get_georeference_props()
+    props.has_blender_offset = True
+    props.blender_offset_x = "1000"
+    props.blender_offset_y = "2000"
+    props.blender_offset_z = "0"
+    props.blender_x_axis_abscissa = "1"
+    props.blender_x_axis_ordinate = "0"
+
+
+def _add_wall(start, end):
+    ifc = tool.Ifc.get()
+    bpy.ops.bim.add_default_type(ifc_element_type="IfcWallType")
+    wall_type = ifc.by_type("IfcWallType")[-1]
+    polyline_props = tool.Model.get_polyline_props()
+    polyline_data = polyline_props.insertion_polyline.add()
+    for co in (start, end):
+        point = polyline_data.polyline_points.add()
+        point.x, point.y, point.z = co
+    walls, _ = DumbWallGenerator(wall_type).generate(insertion_type="POLYLINE")
+    polyline_props.insertion_polyline.clear()
+    bpy.context.view_layer.update()
+    return walls[0]["obj"] if isinstance(walls[0], dict) else walls[0]
+
+
+def _add_door_type():
+    rprops = tool.Root.get_root_props()
+    rprops.ifc_product = "IfcElementType"
+    rprops.ifc_class = "IfcDoorType"
+    rprops.ifc_predefined_type = "DOOR"
+    rprops.representation_template = "DOOR"
+    bpy.ops.bim.add_element()
+    return tool.Ifc.get().by_type("IfcDoorType")[-1]
+
+
+def _place_door(wall_obj, door_type, location):
+    tool.Blender.select_and_activate_single_object(bpy.context, wall_obj)
+    bpy.context.scene.cursor.location = location
+    bpy.ops.bim.add_occurrence(relating_type_id=door_type.id())
+    return tool.Ifc.get().by_type("IfcDoor")[-1]
+
+
+class TestOpeningPlacementWithBlenderOffset(NewFile):
+    def test_opening_is_written_where_the_door_is(self):
+        bpy.ops.bim.create_project()
+        _set_blender_offset()
+        wall_obj = _add_wall(Vector((0.0, 0.0, 0.0)), Vector((5.0, 0.0, 0.0)))
+        door = _place_door(wall_obj, _add_door_type(), Vector((2.0, 0.0, 0.0)))
+
+        opening = door.FillsVoids[0].RelatingOpeningElement
+        door_matrix = ifcopenshell.util.placement.get_local_placement(door.ObjectPlacement)
+        opening_matrix = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
+        np.testing.assert_allclose(opening_matrix, door_matrix, atol=1e-6)
+
+    @pytest.mark.parametrize("operator", ["recalculate_fill", "flip_fill"])
+    def test_opening_follows_the_door_after_an_edit(self, operator):
+        bpy.ops.bim.create_project()
+        _set_blender_offset()
+        wall_obj = _add_wall(Vector((0.0, 0.0, 0.0)), Vector((5.0, 0.0, 0.0)))
+        door = _place_door(wall_obj, _add_door_type(), Vector((2.0, 0.0, 0.0)))
+        door_obj = tool.Ifc.get_object(door)
+        tool.Blender.select_and_activate_single_object(bpy.context, door_obj)
+        getattr(bpy.ops.bim, operator)()
+
+        opening = door.FillsVoids[0].RelatingOpeningElement
+        opening_matrix = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
+        np.testing.assert_allclose(opening_matrix, tool.Surveyor.get_absolute_matrix(door_obj), atol=1e-6)
