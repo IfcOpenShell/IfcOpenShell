@@ -190,10 +190,9 @@ def regenerate_wall_to_underside(
         # reading face geometry, so a changed profile is picked up correctly.
         model.reload_body_representation(slab_objs)
         model.remove_wall_to_underside_booleans(wall)
-        for slab_obj in slab_objs:
-            clip = model.get_slab_clipping_bmesh(slab_obj)
-            if clip:
-                model.clip_wall_to_slab(wall, clip)
+        clips = [clip for slab_obj in slab_objs if (clip := model.get_slab_clipping_bmesh(slab_obj))]
+        if clips:
+            model.clip_wall_to_slabs(wall, clips)
         clipped_objs.append(obj)
     refresh_objs = clipped_objs + reverted_objs
     if refresh_objs:
@@ -227,15 +226,17 @@ def extend_wall_to_slab(
         all_slab_objs = list(existing) + [s for s in slab_objs if id(s) not in seen]
         # Remove stale booleans once, then re-clip against the full set.
         model.remove_wall_to_underside_booleans(wall)
-        did_clip = False
+        # Clip against all slabs in one go so their clip solids are fused into a
+        # single tool (see Model.clip_wall_to_slabs).
+        clips = []
         for slab_obj in all_slab_objs:
             clip = model.get_slab_clipping_bmesh(slab_obj)
             if not clip:
                 continue
-            model.clip_wall_to_slab(wall, clip)
+            clips.append(clip)
             model.connect_wall_to_slab(wall, ifc.get_entity(slab_obj))
-            did_clip = True
-        if did_clip:
+        if clips:
+            model.clip_wall_to_slabs(wall, clips)
             clipped_walls.append(obj)
     if clipped_walls:
         model.reload_body_representation(clipped_walls)
