@@ -760,6 +760,23 @@ def set_element_value(
                 if current_value == value:
                     return
                 else:
+                    if (
+                        value is not None
+                        and not isinstance(value, bool)
+                        and ifcopenshell.util.attribute.get_primitive_type(
+                            element.declaration.attribute_by_index(element.get_argument_index(key))
+                        )
+                        == "boolean"
+                    ):
+                        normalised_value = value.lower() if isinstance(value, str) else value
+                        if normalised_value in ("true", "yes", "1"):
+                            value = True
+                        elif normalised_value in ("false", "no", "0"):
+                            value = False
+                        else:
+                            value = bool(value)
+                        if current_value == value:
+                            return
                     # check if key is not last
                     try:
                         # Try our luck
@@ -775,13 +792,6 @@ def set_element_value(
                             value = float(value)
                         elif data_type == "integer":
                             value = int(value)
-                        elif data_type == "boolean":
-                            if value in ("True", "true", "TRUE", "Yes", "1"):
-                                value = True
-                            elif value in ("False", "false", "FALSE", "No", "0"):
-                                value = False
-                            else:
-                                value = bool(value)
                         elif data_type == "entity":
                             value = ifc_file.by_guid(value)
                         if current_value == value:
