@@ -96,7 +96,8 @@ def add_reference(
     .. code:: python
 
         # Option 1: adding and assigning a new reference from scratch
-        wall_type = model.by_type("IfcWallType")[0]
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        wall_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWallType")
         classification = ifcopenshell.api.classification.add_classification(
             model, classification="MyCustomClassification")
         ifcopenshell.api.classification.add_reference(model,
@@ -104,8 +105,11 @@ def add_reference(
             identification="W_01", name="Interior Walls")
 
         # Option 2: adding a popular classification from a library
-        library = ifcopenshell.open("/path/to/Uniclass.ifc")
-        lib_classification = library.by_type("IfcClassification")[0]
+        # (a minimal library is built here instead of opening a Uniclass file)
+        library = ifcopenshell.file()
+        lib_classification = library.createIfcClassification(Name="Uniclass")
+        library.createIfcClassificationReference(
+            Identification="XYZ", Name="Walls", ReferencedSource=lib_classification)
         classification = ifcopenshell.api.classification.add_classification(
             model, classification=lib_classification)
         reference = [r for r in library.by_type("IfcClassificationReference")
