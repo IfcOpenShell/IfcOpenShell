@@ -33,7 +33,7 @@ jobs:
           python-version: ${{ env.MIN_BLENDER_PY_VERSION }}
 
       - name: Action - setup uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@v10.3.3
 
       - name: Action - setup node
         uses: actions/setup-node@v7.1.0
