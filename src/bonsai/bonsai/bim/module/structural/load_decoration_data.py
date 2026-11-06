@@ -439,15 +439,34 @@ class ShaderInfo:
         return rotation
 
     def get_curve_member_rotation(self, curve_member: ifcopenshell.entity_instance) -> np.ndarray:
-        """returns the rotation matrix of a structural surface member"""
-        z = curve_member.Axis.DirectionRatios
-        edge = curve_member.Representation.Representations[0].Items[0]
-        origin = edge.EdgeStart.VertexGeometry.Coordinates
-        end = edge.EdgeEnd.VertexGeometry.Coordinates
-        x = [c2 - c1 for c1, c2 in zip(origin, end)]
-        placement = ifcopenshell.util.placement.a2p(origin, z, x)
-        rotation = placement[0:3, 0:3]
-        return rotation
+        """returns the rotation matrix of a structural curve member"""
+        edge = None
+        if getattr(curve_member, "Representation", None):
+            for rep in curve_member.Representation.Representations or ():
+                for item in getattr(rep, "Items", None) or ():
+                    if (
+                        item.is_a("IfcEdge")
+                        and getattr(item, "EdgeStart", None)
+                        and getattr(item.EdgeStart, "VertexGeometry", None)
+                        and getattr(item, "EdgeEnd", None)
+                        and getattr(item.EdgeEnd, "VertexGeometry", None)
+                    ):
+                        edge = item
+                        break
+                if edge:
+                    break
+        if edge and getattr(curve_member, "Axis", None):
+            z = curve_member.Axis.DirectionRatios
+            origin = edge.EdgeStart.VertexGeometry.Coordinates
+            end = edge.EdgeEnd.VertexGeometry.Coordinates
+            x = [c2 - c1 for c1, c2 in zip(origin, end)]
+            if any(x):
+                placement = ifcopenshell.util.placement.a2p(origin, z, x)
+                return placement[0:3, 0:3]
+        if getattr(curve_member, "ObjectPlacement", None):
+            placement = ifcopenshell.util.placement.get_local_placement(curve_member.ObjectPlacement)
+            return placement[0:3, 0:3]
+        return np.eye(3)
 
     def get_activity_transform_matrix(
         self, activity: ifcopenshell.entity_instance, element_rotation_matrix: np.ndarray
@@ -599,6 +618,12 @@ class ShaderInfo:
                 continue
 
             blender_object = tool.Ifc.get_object_by_identifier(getattr(member, "GlobalId", None))
+            if (
+                not blender_object
+                or not getattr(blender_object, "data", None)
+                or len(getattr(blender_object.data, "vertices", ())) < 2
+            ):
+                continue
 
             start_co = blender_object.matrix_world @ blender_object.data.vertices[0].co
             end_co = blender_object.matrix_world @ blender_object.data.vertices[1].co
