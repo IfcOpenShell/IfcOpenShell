@@ -2595,6 +2595,8 @@ class Drawing(bonsai.core.tool.Drawing):
         subcontexts = cls.get_drawing_subcontexts(target_view)
 
         # Switch representations
+        # Elements with no representation in the drawing's subcontexts aren't printed, so hide them too.
+        elements_without_context: set[ifcopenshell.entity_instance] = set()
         for element in filtered_elements:
             obj = tool.Ifc.get_object(element)
             if not obj:
@@ -2622,6 +2624,9 @@ class Drawing(bonsai.core.tool.Drawing):
                     )
                     has_context = True
                     break
+            # Annotations print through the drawing group, not linework contexts, so leave them visible.
+            if not has_context and getattr(element, "Representation", None) and not element.is_a("IfcAnnotation"):
+                elements_without_context.add(element)
 
         linked_handles: set[bpy.types.Object] = set()
         for link in tool.Project.get_project_props().get_loaded_links_for_drawings():
@@ -2635,7 +2640,7 @@ class Drawing(bonsai.core.tool.Drawing):
         visible_objects = []
         for obj in bpy.context.view_layer.objects:
             if element := tool.Ifc.get_entity(obj):
-                if element in filtered_elements or obj in linked_handles:
+                if (element in filtered_elements and element not in elements_without_context) or obj in linked_handles:
                     visible_objects.append(obj)
             else:
                 if obj.hide_get() is False:
