@@ -13649,7 +13649,7 @@ def IfcMakeArrayOfArray(lis, low1, u1, low2, u2):
         return None
     if u2 - low2 + 1 != sizeof(express_getitem(lis, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
         return None
-    res = [IfcListToArray(express_getitem(lis, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), low2, u2)] * u1 - low1 + 1
+    res = ([IfcListToArray(express_getitem(lis, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), low2, u2)] * (u1 - low1 + 1))
     for i in range(2, hiindex(lis) + 1):
         if u2 - low2 + 1 != sizeof(express_getitem(lis, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
             return None
