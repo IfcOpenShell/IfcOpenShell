@@ -577,6 +577,16 @@ class Snap(bonsai.core.tool.Snap):
             if cut_snaps:
                 detected_snaps = cut_snaps
 
+        # Edit mode: obj.ray_cast() has no valid BVH for the active edit-mesh, so
+        # use BMesh proximity directly to snap to its current vertices and edges.
+        if context.mode == "EDIT_MESH" and context.edit_object:
+            edit_obj = context.edit_object
+            bm = bmesh.from_edit_mesh(edit_obj.data)
+            snap_points = tool.Raycast.ray_cast_by_proximity(context, event, edit_obj, custom_bmesh=bm.copy())
+            for point in snap_points:
+                point["group"] = "Object"
+                detected_snaps.append(point)
+
         # Axis and Plane
         if tool.Ifc.get():
             elevation = tool.Root.get_default_container_elevation()
