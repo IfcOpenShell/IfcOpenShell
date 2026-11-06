@@ -572,7 +572,7 @@ class Regenerator:
         results = []
         if override_priorities:
             for i, priority in enumerate(override_priorities[: len(layers)]):
-                layers[i][0] = priority
+                layers[i] = layers[i]._replace(priority=priority)
         if not layers:
             return []
         results = [layers.pop(0)]
