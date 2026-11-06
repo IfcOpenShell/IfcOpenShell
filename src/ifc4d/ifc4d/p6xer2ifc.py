@@ -114,10 +114,9 @@ class P6XER2Ifc:
         # print(self.wbs)
 
     def parse_calendar_xer(self):
-        standard_work_week = []
-        exceptions = {}
         for cal in self.model.calendars:
             standard_work_week = cal.working_hours
+            exceptions = {}
             except_lst = cal.exceptions
             for exception in except_lst:
                 month = exceptions.setdefault(exception.year, {}).setdefault(exception.month, {})
