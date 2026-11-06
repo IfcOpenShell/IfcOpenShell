@@ -159,6 +159,15 @@ class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Fit Flow Segments"
     bl_options = {"REGISTER", "UNDO"}
 
+    def _call_fitting_op(self, op) -> bool:
+        """Call a nested operator, reporting the RuntimeError Blender raises for its error. See #5450."""
+        try:
+            op()
+        except RuntimeError as e:
+            self.report({"ERROR"}, str(e).removeprefix("Error: ").strip())
+            return False
+        return True
+
     def _execute(self, context):
         # TODO: need to add ui for parameters:
         # - obstruction cap thickness
@@ -184,7 +193,8 @@ class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
 
         if total_selected_objs == 1:
             fitting_type = "OBSTRUCTION"
-            bpy.ops.bim.mep_add_obstruction()
+            if not self._call_fitting_op(bpy.ops.bim.mep_add_obstruction):
+                return
 
         elif total_selected_objs == 2:
             # Shorten the axis by the profile size to allow for fuzzy intersections
@@ -211,7 +221,8 @@ class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
                 is_on_axis2 = tool.Cad.is_point_on_edge(intersect2, axis2)
                 if not is_on_axis1 and not is_on_axis2:
                     fitting_type = "BEND"
-                    bpy.ops.bim.mep_add_bend()
+                    if not self._call_fitting_op(bpy.ops.bim.mep_add_bend):
+                        return
                 elif is_on_axis1 and is_on_axis2:
                     fitting_type = "CROSS"
                 else:
@@ -219,7 +230,8 @@ class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
             elif total_profiles == 2:
                 if is_parallel:
                     fitting_type = "TRANSITION"
-                    bpy.ops.bim.mep_add_transition()
+                    if not self._call_fitting_op(bpy.ops.bim.mep_add_transition):
+                        return
 
         elif total_selected_objs == 3:
             if total_profiles > 1:
