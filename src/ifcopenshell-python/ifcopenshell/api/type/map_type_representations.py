@@ -63,7 +63,7 @@ def map_type_representations(
             context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d)
 
         # Let's create a mesh representation of an arbitrary 2m cube.
-        representation = ifcopenshell.api.geometry.add_sverchok_representation(model, context=body,
+        representation = ifcopenshell.api.geometry.add_mesh_representation(model, context=body,
             vertices=[[(-1.0, -1.0, 0.0), (-1.0, -1.0, 2.0), (-1.0, 1.0, 0.0), (-1.0, 1.0, 2.0),
                 (1.0, -1.0, 0.0), (1.0, -1.0, 2.0), (1.0, 1.0, 0.0), (1.0, 1.0, 2.0)]],
             faces=[[[0, 1, 3, 2], [2, 3, 7, 6], [6, 7, 5, 4], [4, 5, 1, 0], [2, 6, 4, 0], [7, 3, 1, 5]]])
