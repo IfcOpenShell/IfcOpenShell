@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import tempfile
 from pathlib import Path
 
 import pytest
 import tabulate
 
+import ifcopenshell
 import ifcopenshell.validate
 
 from .fixture_generate import FailObj, Result, parse_result
@@ -61,6 +63,21 @@ def test_file(filepath: Path, expected_result: Result):
             assert len(results) == expected_count
         case "pass":
             assert len(results) == 0
+
+
+def test_validate_rejects_sqlite_file_instead_of_crashing():
+    from ifcpatch.recipes import Ifc2Sql
+
+    ifc_path = Path(__file__).parent / "files" / "basic.ifc"
+    ifc_file = ifcopenshell.open(ifc_path)
+    with tempfile.NamedTemporaryFile(suffix=".ifcsqlite") as tmp:
+        Ifc2Sql.Patcher(ifc_file, database=tmp.name).patch()
+        ifc_sqlite = ifcopenshell.open(tmp.name)
+        assert isinstance(ifc_sqlite, ifcopenshell.sqlite)
+
+        logger = ifcopenshell.validate.json_logger()
+        with pytest.raises(NotImplementedError):
+            ifcopenshell.validate.validate(ifc_sqlite, logger)
 
 
 if __name__ == "__main__":
