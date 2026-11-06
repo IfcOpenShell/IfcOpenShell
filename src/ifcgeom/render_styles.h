@@ -30,8 +30,12 @@
 #include <sstream>
 #include <memory>
 
+namespace ifcopenshell {
+	class declaration;
+}
+
 namespace ifcopenshell::geom {
-	IFC_GEOM_API const ifcopenshell::geom::taxonomy::style::ptr& get_default_style(const std::string& ifc_type);
+	IFC_GEOM_API const ifcopenshell::geom::taxonomy::style::ptr& get_default_style(const std::string& ifc_type, const ifcopenshell::declaration* decl = nullptr);
 
 	IFC_GEOM_API ifcopenshell::geom::taxonomy::style::ptr& update_default_style(const std::string& ifc_type);
 
