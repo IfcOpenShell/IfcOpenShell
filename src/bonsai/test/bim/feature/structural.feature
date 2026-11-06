@@ -38,7 +38,7 @@ Scenario: Add element - a structural surface member
     And I make the collection "IfcStructuralItem" visible
     And I select the object "IfcStructuralSurfaceMember/Foo"
     And I toggle edit mode
-    Then the object "Item/IfcFace/70" exists
+    Then the object "Item/IfcFaceSurface/87" exists
 
 Scenario: Load structural analysis models
     Given an empty IFC project

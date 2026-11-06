@@ -1014,6 +1014,49 @@ class ShapeBuilder:
         verts = [self.file.createIfcCartesianPoint(p) for p in ifc_safe_vector_type(points)]
         return self.file.createIfcFace([self.file.createIfcFaceOuterBound(self.file.createIfcPolyLoop(verts), True)])
 
+    def face_surface(self, points: SequenceOfVectors) -> ifcopenshell.entity_instance:
+        """Create a planar topological face on an explicit surface
+
+        This is the face that structural surface members and surface
+        connections require: an IfcFaceSurface whose IfcPlane is the reference
+        surface and gives the local axes, bounded by an IfcEdgeLoop of edges
+        between IfcVertexPoints, as for structural curve items.
+
+        The plane is placed at the first point, its normal (local z) follows
+        the winding of the points by the right hand rule, and its local x runs
+        along the first edge.
+
+        :param points: ordered list of 3d coordinates representing the outer
+            boundary, which must lie in one plane
+        :return: IfcFaceSurface
+        """
+        coordinates = np.array(points, dtype="d")
+        if len(coordinates) < 3:
+            raise ValueError("A face needs at least 3 points")
+        # Newell's method, which is exact for a planar polygon and does not depend on which corners are convex
+        normal = np.sum(np.cross(coordinates, np.roll(coordinates, -1, axis=0)), axis=0)
+        if np.linalg.norm(normal) == 0.0:
+            raise ValueError("The points of a face must not all lie on one line")
+        normal = normal / np.linalg.norm(normal)
+        x_axis = coordinates[1] - coordinates[0]
+        x_axis = x_axis - np.dot(x_axis, normal) * normal
+        x_axis = x_axis / np.linalg.norm(x_axis)
+
+        vertices = [self.vertex(p) for p in coordinates]
+        edges = [
+            self.file.createIfcOrientedEdge(None, None, self.file.createIfcEdge(start, end), True)
+            for start, end in zip(vertices, vertices[1:] + vertices[:1])
+        ]
+        plane = self.file.createIfcPlane(
+            self.file.createIfcAxis2Placement3D(
+                self.file.createIfcCartesianPoint(ifc_safe_vector_type(coordinates[0])),
+                self.file.createIfcDirection(ifc_safe_vector_type(normal)),
+                self.file.createIfcDirection(ifc_safe_vector_type(x_axis)),
+            )
+        )
+        bound = self.file.createIfcFaceOuterBound(self.file.createIfcEdgeLoop(edges), True)
+        return self.file.createIfcFaceSurface([bound], plane, True)
+
     def mirror(
         self,
         curve_or_item: Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]],
