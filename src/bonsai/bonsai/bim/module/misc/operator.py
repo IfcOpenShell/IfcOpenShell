@@ -247,6 +247,9 @@ class GetConnectedSystemElements(bpy.types.Operator, tool.Ifc.Operator):
             return "{} ({})".format(e.Name, e.GlobalId)
 
         start = tool.Ifc.get_entity(bpy.context.active_object)
+        if not start:
+            self.report({"ERROR"}, "Active object is not an IFC element.")
+            return {"CANCELLED"}
 
         connected_elements = []
 
