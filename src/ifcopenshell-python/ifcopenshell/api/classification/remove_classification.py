@@ -34,7 +34,8 @@ def remove_classification(file: ifcopenshell.file, classification: ifcopenshell.
 
     .. code:: python
 
-        classification = model.by_type("IfcClassification")[0]
+        classification = ifcopenshell.api.classification.add_classification(model,
+            classification="MyCustomClassification")
         ifcopenshell.api.classification.remove_classification(model,
             classification=classification)
     """
