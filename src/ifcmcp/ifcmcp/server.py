@@ -11,10 +11,17 @@ from ifcmcp.core import IfcSession
 try:
     from mcp.server.mcpserver import MCPServer  # type: ignore
     from mcp.server.mcpserver.exceptions import ToolError  # type: ignore
+except ImportError:
+    # mcp 1.x, which Linux distributions still ship, has the same API under its old name.
+    try:
+        from mcp.server.fastmcp import FastMCP as MCPServer  # type: ignore
+        from mcp.server.fastmcp.exceptions import ToolError  # type: ignore
+    except ImportError:  # pragma: no cover
+        MCPServer = None  # type: ignore
+        ToolError = None  # type: ignore
+try:
     from mcp.types import ImageContent  # type: ignore
 except ImportError:  # pragma: no cover
-    MCPServer = None  # type: ignore
-    ToolError = None  # type: ignore
     ImageContent = None  # type: ignore
 
 
@@ -227,7 +234,7 @@ def build_server() -> Any:
             else:
                 with open(output_path, "wb") as f:
                     f.write(png_bytes)
-        return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mime_type="image/png")]
+        return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mimeType="image/png")]
 
     @server.tool(structured_output=False)
     @_keep_reason
@@ -256,6 +263,6 @@ def build_server() -> Any:
         if output_path:
             with open(output_path, "wb") as f:
                 f.write(png_bytes)
-        return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mime_type="image/png")]
+        return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mimeType="image/png")]
 
     return server
