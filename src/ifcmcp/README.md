@@ -22,6 +22,11 @@ ifcmcp
 This starts the server on stdio transport, suitable for use with Claude Code
 or any MCP client.
 
+Over stdio the server offers `ifc_execute`, which runs any Python the client
+sends. Start it with `ifcmcp --no-execute` to leave that tool out. It is never
+offered over the `sse` or `streamable-http` transports, where anyone who can
+reach the port could use it.
+
 ### Claude Code configuration
 
 Use the `claude mcp add` command:
@@ -405,6 +410,28 @@ Does NOT auto-save -- call `ifc_save()` when ready to write changes to disk.
 | `dict` | `'{"key": "val"}'` | parsed JSON object |
 | `bool` | `"true"` | `True` |
 | `Optional[X]` | `"none"` | `None` |
+
+#### ifc_execute
+
+Run Python against the loaded model, for loops, bulk changes and
+`ifcopenshell.util` queries that would otherwise take many tool calls. The
+code sees `model`, `ifcopenshell`, `ifcopenshell.api` and the common
+`ifcopenshell.util` modules. Assign what you want back to `result`; anything
+printed is returned as `stdout`.
+
+```
+ifc_execute(code="""
+for wall in model.by_type("IfcWall"):
+    ifcopenshell.api.pset.edit_pset(model, pset=ifcopenshell.api.pset.add_pset(model, product=wall, name="Pset_WallCommon"), properties={"IsExternal": True})
+result = len(model.by_type("IfcWall"))
+""")
+-> {"ok": true, "result": 42, "stdout": ""}
+```
+
+The whole call is one undo step, and code that raises is rolled back with its
+traceback returned as `error`. Only offered over stdio, and not with
+`ifcmcp --no-execute`. In the embedded (Pyodide) session it is off unless the
+session is created with `IfcSession(allow_execute=True)`.
 
 ## Typical workflow
 

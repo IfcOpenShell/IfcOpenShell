@@ -92,6 +92,7 @@ Available tools
 - ``ifc_docs(function_path)`` — documentation for an API function
 - ``ifc_edit(function_path, params="{}")`` — execute an ``ifcopenshell.api`` mutation
 - ``ifc_quantify(rule, selector="")`` — run quantity take-off; writes ``IfcElementQuantity`` psets in-place
+- ``ifc_execute(code)`` — run Python against the model; stdio only, and left out with ``ifcmcp --no-execute``
 
 Typical workflow
 ----------------
