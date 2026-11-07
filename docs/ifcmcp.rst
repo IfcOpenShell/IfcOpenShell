@@ -63,7 +63,7 @@ Available tools
 
 - ``ifc_summary()`` — schema version, entity counts, project metadata
 - ``ifc_tree()`` — full spatial hierarchy
-- ``ifc_info(element_id)`` — deep inspection by step ID
+- ``ifc_info(element_id)`` — deep inspection by step ID or GlobalId
 - ``ifc_select(query)`` — filter elements by IFC class
 - ``ifc_relations(element_id, traverse="")`` — relationships for an element
 - ``ifc_clash(element_id, ...)`` — geometric intersection and clearance checks

@@ -130,11 +130,12 @@ and contained elements.
 
 #### ifc_info
 
-Deep inspection of an entity by step ID: attributes, property sets, type,
+Deep inspection of an entity by step ID or GlobalId: attributes, property sets, type,
 material, container, and 4x4 placement matrix.
 
 ```
 ifc_info(element_id=10)
+ifc_info(element_id="2O2Fr$t4X7Zf8NOew3FLOH")
 ```
 
 #### ifc_select

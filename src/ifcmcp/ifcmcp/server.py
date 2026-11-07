@@ -129,7 +129,7 @@ def build_server() -> Any:
         return session.ifc_tree()
 
     @_tool
-    def ifc_info(element_id: int) -> dict[str, Any]:
+    def ifc_info(element_id: int | str) -> dict[str, Any]:
         return session.ifc_info(element_id)
 
     @_tool
@@ -137,12 +137,12 @@ def build_server() -> Any:
         return session.ifc_select(query)
 
     @_tool
-    def ifc_relations(element_id: int, traverse: str = "") -> dict[str, Any] | list[dict[str, Any]]:
+    def ifc_relations(element_id: int | str, traverse: str = "") -> dict[str, Any] | list[dict[str, Any]]:
         return session.ifc_relations(element_id, traverse=traverse)
 
     @_tool
     def ifc_clash(
-        element_id: int,
+        element_id: int | str,
         clearance: float = 0.0,
         tolerance: float = 0.002,
         scope: str = "storey",

@@ -56,6 +56,9 @@ def _use_doc(source: Callable, extra: str = "") -> Callable:
     return decorator
 
 
+ELEMENT_ID_DOC = '\n\nPass the element as ``element_id``: its STEP id (``42`` or ``"#42"``), or its GlobalId.'
+
+
 def _jsonify(x: Any) -> Any:
     """Convert IfcOpenShell objects / iterables into JSON-safe primitives."""
     if x is None or isinstance(x, (str, int, float, bool)):
@@ -251,6 +254,22 @@ class IfcSession:
             raise IfcSessionError("No model loaded. Call ifc_load() or ifc_new() first.")
         return self.model
 
+    def _get_element(self, element_id: int | str) -> ifcopenshell.entity_instance:
+        """Look an element up by its STEP id (``42`` or ``"#42"``), or by its 22-character GlobalId."""
+        model = self._require_model()
+        if isinstance(element_id, str):
+            text = element_id.strip()
+            # A GlobalId is 22 characters and never contains "#".
+            if not text.startswith("#") and (len(text) == 22 or not text.isdecimal()):
+                return model.by_guid(text)
+            if not text.removeprefix("#").isdecimal():
+                raise IfcSessionError(f"Not a STEP id or GlobalId: {element_id!r}")
+            element_id = int(text.removeprefix("#"))
+        try:
+            return model.by_id(element_id)
+        except OverflowError:
+            raise IfcSessionError(f"Instance #{element_id} not found") from None
+
     def ifc_new(self, schema: str = "IFC4") -> dict[str, Any]:
         """Create a new empty IFC model in memory.
 
@@ -321,24 +340,20 @@ class IfcSession:
     def ifc_tree(self) -> dict[str, Any] | list[dict[str, Any]]:
         return tree.tree(self._require_model())
 
-    @_use_doc(info.info)
-    def ifc_info(self, element_id: int) -> dict[str, Any]:
+    @_use_doc(info.info, extra=ELEMENT_ID_DOC)
+    def ifc_info(self, element_id: int | str) -> dict[str, Any]:
         model = self._require_model()
-        element = model.by_id(element_id)
-        if element is None:
-            raise IfcSessionError(f"Element #{element_id} not found.")
+        element = self._get_element(element_id)
         return info.info(model, element)
 
     @_use_doc(select.select)
     def ifc_select(self, query: str) -> list[dict[str, Any]]:
         return select.select(self._require_model(), query)
 
-    @_use_doc(relations.relations)
-    def ifc_relations(self, element_id: int, traverse: str = "") -> dict[str, Any] | list[dict[str, Any]]:
+    @_use_doc(relations.relations, extra=ELEMENT_ID_DOC)
+    def ifc_relations(self, element_id: int | str, traverse: str = "") -> dict[str, Any] | list[dict[str, Any]]:
         model = self._require_model()
-        element = model.by_id(element_id)
-        if element is None:
-            raise IfcSessionError(f"Element #{element_id} not found.")
+        element = self._get_element(element_id)
         return relations.relations(model, element, traverse=traverse if traverse else None)
 
     @_use_doc(
@@ -347,19 +362,18 @@ class IfcSession:
             "\n\nNote: this method takes a plain ``clearance: float`` rather than\n"
             '``clearance: float | None`` — ``0.0`` (the default) means "skip the\n'
             'clearance check", matching ``None`` in ``ifcquery.clash.clash()``.'
-        ),
+        )
+        + ELEMENT_ID_DOC,
     )
     def ifc_clash(
         self,
-        element_id: int,
+        element_id: int | str,
         clearance: float = 0.0,
         tolerance: float = 0.002,
         scope: str = "storey",
     ) -> dict[str, Any]:
         model = self._require_model()
-        element = model.by_id(element_id)
-        if element is None:
-            raise IfcSessionError(f"Element #{element_id} not found.")
+        element = self._get_element(element_id)
         return clash_mod.clash(
             model,
             element,
@@ -648,7 +662,7 @@ class IfcSession:
                 "description": "Inspect an entity by STEP id.",
                 "parameters": {
                     "type": "object",
-                    "properties": {"element_id": {"type": "integer"}},
+                    "properties": {"element_id": {"type": ["integer", "string"], "description": "STEP id or GlobalId"}},
                     "required": ["element_id"],
                     "additionalProperties": False,
                 },
@@ -659,7 +673,10 @@ class IfcSession:
                 "description": "Get relationships for an element. traverse='up' walks to IfcProject.",
                 "parameters": {
                     "type": "object",
-                    "properties": {"element_id": {"type": "integer"}, "traverse": {"type": "string"}},
+                    "properties": {
+                        "element_id": {"type": ["integer", "string"], "description": "STEP id or GlobalId"},
+                        "traverse": {"type": "string"},
+                    },
                     "required": ["element_id"],
                     "additionalProperties": False,
                 },
@@ -671,7 +688,7 @@ class IfcSession:
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "element_id": {"type": "integer"},
+                        "element_id": {"type": ["integer", "string"], "description": "STEP id or GlobalId"},
                         "clearance": {"type": "number"},
                         "tolerance": {"type": "number"},
                         "scope": {"type": "string", "description": "storey or all"},
