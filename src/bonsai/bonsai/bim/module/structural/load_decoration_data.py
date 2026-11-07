@@ -290,38 +290,39 @@ class ShaderInfo:
                 relationship = [rel for rel in group.IsGroupedBy]
                 coef = getattr(group, "Coefficient", 1.0)
                 group_coef = coef if coef is not None else 1.0
-                rel_factor = 1.0
 
                 for rel in relationship:
-                    if rel.is_a("IfcRelAssignsToGroupByFactor"):
-                        rel_factor = rel.Factor if rel.Factor is not None else 1.0
+                    if rel.is_a("IfcRelAssignsToGroupByFactor") and rel.Factor is not None:
+                        rel_factor = rel.Factor
+                    else:
+                        rel_factor = 1.0
                     objects = rel.RelatedObjects
                     subgorups = [sg for sg in objects if sg.is_a("IfcStructuralLoadGroup")]
                     activities = [a for a in objects if a.is_a("IfcStructuralActivity")]
-                    factor = factor * group_coef * rel_factor
+                    total_factor = factor * group_coef * rel_factor
                     for activity in activities:
                         if len(activity.AssignedToStructuralItem):
                             element = activity.AssignedToStructuralItem[0].RelatingElement
                             if element is not None:
                                 if activity_type == "Action":
                                     if element.is_a("IfcStructuralCurveMember"):
-                                        populate_members_dict("curve_members", element, activity, factor)
+                                        populate_members_dict("curve_members", element, activity, total_factor)
                                     elif element.is_a("IfcStructuralPointConnection"):
-                                        populate_members_dict("point_members", element, activity, factor)
+                                        populate_members_dict("point_members", element, activity, total_factor)
                                     elif element.is_a("IfcStructuralSurfaceMember"):
-                                        populate_members_dict("surface_members", element, activity, factor)
+                                        populate_members_dict("surface_members", element, activity, total_factor)
 
                                 elif (
                                     activity_type == "External Reaction"
                                     and getattr(element, "AppliedCondition", None) is not None
                                 ):
                                     if element.is_a("IfcStructuralCurveMember"):
-                                        populate_members_dict("curve_members", element, activity, factor)
+                                        populate_members_dict("curve_members", element, activity, total_factor)
                                     elif element.is_a("IfcStructuralPointConnection"):
-                                        populate_members_dict("point_members", element, activity, factor)
+                                        populate_members_dict("point_members", element, activity, total_factor)
                                     elif element.is_a("IfcStructuralSurfaceMember"):
-                                        populate_members_dict("surface_members", element, activity, factor)
-                    recursive_subgroups(subgorups, rec_limit - 1, activity_type, factor=factor)
+                                        populate_members_dict("surface_members", element, activity, total_factor)
+                    recursive_subgroups(subgorups, rec_limit - 1, activity_type, factor=total_factor)
 
         props = tool.Structural.get_structural_props()
         group_definition_id = int(props.load_group_to_show)
