@@ -148,6 +148,30 @@ class TestCsv2Ifc:
             parent_row = next(row for row in worksheet.iter_rows(min_row=2) if row[0].value == "DB.1")
             assert parent_row[4].value.startswith("=SUM(")
 
+    def test_ods_formulas_use_openformula_syntax(self):
+        """ODS formulas are OpenFormula: [.E8] references separated by ";". With
+        the XLSX syntax LibreOffice reads =SUM(E8,E9) as SUM([.E8],e9) and shows
+        Err:508 in every sum row. See #10130."""
+        from odf.opendocument import load
+        from odf.table import TableCell
+
+        ifc_file = self.setup_ifc_file()
+        csv_filepath = Path(__file__).parent.parent / "sample_cost_schedule_house_FR.csv"
+        ifc5d.csv2ifc.Csv2Ifc(str(csv_filepath), ifc_file).execute()
+
+        with tempfile.TemporaryDirectory("w") as temp_dir:
+            writer = ifc5d.ifc5Dspreadsheet.Ifc5DOdsWriter(ifc_file, temp_dir)
+            writer.write()
+            document = load(str(next(Path(temp_dir).glob("*.ods"))))
+            cells = document.spreadsheet.getElementsByType(TableCell)
+            formulas = [formula for cell in cells if (formula := cell.getAttribute("formula"))]
+
+        assert formulas
+        assert all(formula.startswith("of:=") and "," not in formula for formula in formulas)
+        # Data starts at row 6: DB, then DB.1 summing its three leaves DB.1.1 to DB.1.3.
+        assert "of:=SUM([.E8];[.E9];[.E10])" in formulas
+        assert "of:=[.C8]*[.D8]" in formulas
+
 
 class TestSerialiseCostQuantities:
     def test_quantity_name_with_special_characters_round_trips_as_json(self):
