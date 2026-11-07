@@ -128,6 +128,14 @@ and contained elements.
 }
 ```
 
+`max_depth` limits how many levels are expanded, counting the project as
+level 1; contained elements are one level below their container. Past the
+cutoff, `children` and `elements` are replaced with `{"truncated": true, "count": N}`.
+
+```
+ifc_tree(max_depth=4)   # down to the storeys, with element counts
+```
+
 #### ifc_info
 
 Deep inspection of an entity by step ID or GlobalId: attributes, property sets, type,
@@ -144,10 +152,15 @@ Filter elements using ifcopenshell selector syntax.
 
 ```
 ifc_select(query="IfcWall")
-ifc_select(query="IfcWindow")
+ifc_select(query="IfcWindow", limit=50, offset=50)
 ```
 
-Returns a sorted list of `{"id", "type", "name"}` references.
+Returns one page of the sorted `{"id", "type", "name"}` references, at most
+`limit` (default 200) starting at `offset`, with the total number of matches:
+
+```json
+{"total": 120, "offset": 50, "elements": [{"id": 42, "type": "IfcWindow", "name": "W01"}]}
+```
 
 #### ifc_relations
 

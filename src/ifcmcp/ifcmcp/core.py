@@ -337,8 +337,8 @@ class IfcSession:
         return summary.summary(self._require_model())
 
     @_use_doc(tree.tree)
-    def ifc_tree(self) -> dict[str, Any] | list[dict[str, Any]]:
-        return tree.tree(self._require_model())
+    def ifc_tree(self, max_depth: int | None = None) -> dict[str, Any] | list[dict[str, Any]]:
+        return tree.tree(self._require_model(), max_depth=max_depth)
 
     @_use_doc(info.info, extra=ELEMENT_ID_DOC)
     def ifc_info(self, element_id: int | str) -> dict[str, Any]:
@@ -346,9 +346,20 @@ class IfcSession:
         element = self._get_element(element_id)
         return info.info(model, element)
 
-    @_use_doc(select.select)
-    def ifc_select(self, query: str) -> list[dict[str, Any]]:
-        return select.select(self._require_model(), query)
+    @_use_doc(
+        select.select,
+        extra=(
+            '\n\nResults come a page at a time, as ``{"total": N, "offset": K, "elements": [...]}``:\n'
+            "``total`` counts every match, ``elements`` holds at most ``limit`` of them\n"
+            "starting at ``offset``. Ask for the next page with a larger ``offset``;\n"
+            "``limit=0`` returns only the count."
+        ),
+    )
+    def ifc_select(self, query: str, limit: int = 200, offset: int = 0) -> dict[str, Any]:
+        if limit < 0 or offset < 0:
+            raise IfcSessionError("limit and offset cannot be negative.")
+        elements = select.select(self._require_model(), query)
+        return {"total": len(elements), "offset": offset, "elements": elements[offset : offset + limit]}
 
     @_use_doc(relations.relations, extra=ELEMENT_ID_DOC)
     def ifc_relations(self, element_id: int | str, traverse: str = "") -> dict[str, Any] | list[dict[str, Any]]:
@@ -637,8 +648,18 @@ class IfcSession:
             {
                 "type": "function",
                 "name": "ifc_tree",
-                "description": "Get the full spatial hierarchy tree.",
-                "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
+                "description": "Get the spatial hierarchy tree.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "max_depth": {
+                            "type": "integer",
+                            "description": "Levels to expand, the project being level 1; omit for all",
+                        }
+                    },
+                    "required": [],
+                    "additionalProperties": False,
+                },
             },
             {
                 "type": "function",
@@ -651,7 +672,11 @@ class IfcSession:
                 ),
                 "parameters": {
                     "type": "object",
-                    "properties": {"query": {"type": "string"}},
+                    "properties": {
+                        "query": {"type": "string"},
+                        "limit": {"type": "integer", "description": "Most elements to return (default 200)"},
+                        "offset": {"type": "integer", "description": "Index of the first element to return"},
+                    },
                     "required": ["query"],
                     "additionalProperties": False,
                 },
