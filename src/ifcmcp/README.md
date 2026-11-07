@@ -91,6 +91,19 @@ ifc_save()
 ifc_save(path="/path/to/output.ifc")
 ```
 
+#### ifc_undo / ifc_redo
+
+Undo the last change, or redo the last undone one. Each `ifc_edit`,
+`ifc_shape` and `ifc_quantify` call is one undo step; a call that fails is
+rolled back and is not a step. Loading or creating a model starts a new
+history.
+
+```
+ifc_undo()
+-> {"ok": true, "undo_available": 2, "redo_available": 1}
+ifc_redo()
+```
+
 ### Query tools
 
 All query tools require a model to be loaded first via `ifc_load`.
@@ -403,7 +416,7 @@ Does NOT auto-save -- call `ifc_save()` when ready to write changes to disk.
 6. **Find** the right API function: `ifc_list`, `ifc_docs`
 7. **Edit** the model: `ifc_edit`
 8. **Quantify** elements: `ifc_quantify` (writes QTO psets in-place)
-9. **Verify** changes with query tools
+9. **Verify** changes with query tools, and `ifc_undo` any mistake
 10. **Save** when satisfied: `ifc_save`
 
 The model stays in memory across all calls, so multi-step editing sessions

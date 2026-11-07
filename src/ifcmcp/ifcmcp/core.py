@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # inside ifcmcp/core.py
+import functools
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -57,6 +58,33 @@ def _use_doc(source: Callable, extra: str = "") -> Callable:
 
 
 ELEMENT_ID_DOC = '\n\nPass the element as ``element_id``: its STEP id (``42`` or ``"#42"``), or its GlobalId.'
+
+
+def _undoable(fn: Callable) -> Callable:
+    """Decorator: run a model-changing method as one undo step.
+
+    A call that raises or returns ``{"ok": False}`` is rolled back, so a
+    failed edit leaves no partial change behind; a call that changes nothing
+    adds no undo step.
+    """
+
+    @functools.wraps(fn)
+    def call(self: IfcSession, *args: Any, **kwargs: Any) -> Any:
+        model = self._require_model()
+        model.begin_transaction()
+        try:
+            result = fn(self, *args, **kwargs)
+        except BaseException:
+            model.discard_transaction()
+            raise
+        failed = isinstance(result, dict) and result.get("ok") is False
+        if failed or not (model.transaction and model.transaction.operations):
+            model.discard_transaction()
+        else:
+            model.end_transaction()
+        return result
+
+    return call
 
 
 def _jsonify(x: Any) -> Any:
@@ -329,6 +357,37 @@ class IfcSession:
         self.model_path = None
         return {"ok": True}
 
+    def ifc_undo(self) -> dict[str, Any]:
+        """Undo the last change made by ``ifc_edit``, ``ifc_shape`` or ``ifc_quantify``.
+
+        Each of those calls is one undo step. A failed call changes nothing and
+        is not a step. Fails when there is nothing to undo. Returns how many
+        steps can still be undone and redone. Loading or creating a model
+        starts a new history.
+        """
+        model = self._require_model()
+        if not model.history:
+            raise IfcSessionError("Nothing to undo.")
+        model.undo()
+        return self._history_state()
+
+    def ifc_redo(self) -> dict[str, Any]:
+        """Redo the last change undone by ``ifc_undo``.
+
+        Any new change after an undo discards what could be redone. Fails when
+        there is nothing to redo. Returns how many steps can still be undone
+        and redone.
+        """
+        model = self._require_model()
+        if not model.future:
+            raise IfcSessionError("Nothing to redo.")
+        model.redo()
+        return self._history_state()
+
+    def _history_state(self) -> dict[str, Any]:
+        model = self._require_model()
+        return {"ok": True, "undo_available": len(model.history), "redo_available": len(model.future)}
+
     # -------------
     # Query tools
     # -------------
@@ -424,6 +483,7 @@ class IfcSession:
         module, function = function_path.split(".", 1)
         return function_docs(module, function)
 
+    @_undoable
     def ifc_edit(self, function_path: str, params: Any = "{}") -> dict:
         """Run an ifcopenshell.api function to modify the model.
 
@@ -571,6 +631,7 @@ class IfcSession:
         """
         return _shape_method_docs(method)
 
+    @_undoable
     def ifc_shape(self, method: str, params: Any = "{}") -> dict:
         """Call a ShapeBuilder method to build geometry in the model.
 
@@ -610,6 +671,7 @@ class IfcSession:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
     @_use_doc(run_quantify, extra="\n\nCall ``ifc_save`` afterwards to persist the result.")
+    @_undoable
     def ifc_quantify(self, rule: str, selector: str = "") -> dict[str, Any]:
         model = self._require_model()
         return run_quantify(model, rule, selector=selector if selector else None)
@@ -638,6 +700,18 @@ class IfcSession:
                     "required": [],
                     "additionalProperties": False,
                 },
+            },
+            {
+                "type": "function",
+                "name": "ifc_undo",
+                "description": "Undo the last ifc_edit, ifc_shape or ifc_quantify change.",
+                "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
+            },
+            {
+                "type": "function",
+                "name": "ifc_redo",
+                "description": "Redo the last change undone by ifc_undo.",
+                "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
             },
             {
                 "type": "function",
