@@ -1,10 +1,13 @@
 # This file was generated with the assistance of an AI coding tool.
 import asyncio
+import importlib
+import re
 from unittest.mock import patch
 
 import pytest
 
 from ifcmcp.__main__ import execute_allowed
+from ifcmcp.instructions import EXECUTE_INSTRUCTIONS, INSTRUCTIONS
 from ifcmcp.server import READ_ONLY_TOOLS, build_server
 
 try:
@@ -46,6 +49,32 @@ class TestServerRegistration:
         tools = server._tool_manager.list_tools()
         missing = [t.name for t in tools if not (t.description or "").strip()]
         assert not missing, f"Tools with no description: {missing}"
+
+
+class TestInstructions:
+    """The instructions name tools and API functions; keep them from going stale."""
+
+    def test_server_sends_the_instructions(self):
+        assert build_server().instructions == INSTRUCTIONS
+        assert build_server(allow_execute=True).instructions == INSTRUCTIONS + EXECUTE_INSTRUCTIONS
+
+    def test_every_tool_named_exists(self):
+        tools = {t.name for t in build_server(allow_execute=True)._tool_manager.list_tools()}
+        named = set(re.findall(r"\bifc_[a-z_]+", INSTRUCTIONS + EXECUTE_INSTRUCTIONS))
+        assert named, "expected the instructions to name some tools"
+        assert named <= tools, named - tools
+
+    def test_execute_is_only_described_when_offered(self):
+        assert "ifc_execute" not in INSTRUCTIONS
+        assert "ifc_execute" in EXECUTE_INSTRUCTIONS
+
+    def test_every_api_function_named_exists(self):
+        named = set(re.findall(r"\b([a-z]+)\.([a-z_]+)\b", INSTRUCTIONS + EXECUTE_INSTRUCTIONS))
+        named = {(m, f) for m, f in named if m != "ifcopenshell"}
+        assert named, "expected the instructions to name some API functions"
+        for module, function in named:
+            api = importlib.import_module(f"ifcopenshell.api.{module}")
+            assert hasattr(api, function), f"{module}.{function}"
 
 
 class TestToolAnnotations:
