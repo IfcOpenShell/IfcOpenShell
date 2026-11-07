@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import ifcopenshell
-from ifcedit.discover import function_docs, list_functions, list_modules
+from ifcedit.discover import function_docs, list_functions, list_modules, search_functions
 from ifcedit.quantify import run_quantify
 from ifcedit.run import run_api
 from ifcquery import clash as clash_mod
@@ -478,6 +478,10 @@ class IfcSession:
         """
         return list_functions(module) if module else list_modules()
 
+    @_use_doc(search_functions)
+    def ifc_search(self, query: str, limit: int = 20) -> list[dict]:
+        return search_functions(query, limit=limit)
+
     @_use_doc(function_docs)
     def ifc_docs(self, function_path: str) -> dict:
         module, function = function_path.split(".", 1)
@@ -816,6 +820,20 @@ class IfcSession:
                     "type": "object",
                     "properties": {"module": {"type": "string"}},
                     "required": [],
+                    "additionalProperties": False,
+                },
+            },
+            {
+                "type": "function",
+                "name": "ifc_search",
+                "description": (
+                    "Find ifcopenshell.api functions by keyword, best match first. "
+                    "Search in the API's own terms, e.g. 'assign container', 'edit attributes'."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {"query": {"type": "string"}, "limit": {"type": "integer"}},
+                    "required": ["query"],
                     "additionalProperties": False,
                 },
             },

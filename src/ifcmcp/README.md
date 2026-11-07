@@ -369,6 +369,18 @@ ifc_list()              # all modules
 ifc_list(module="root") # functions in the root module
 ```
 
+#### ifc_search
+
+Find API functions by keyword when you don't know the function name, best
+match first. Search in the API's own terms.
+
+```
+ifc_search(query="assign container")
+ifc_search(query="property set", limit=5)
+```
+
+Returns `[{"function": "spatial.assign_container", "description": "...", "score": 31.1}, ...]`.
+
 #### ifc_docs
 
 Show full documentation for an API function including parameters, types,
@@ -413,7 +425,7 @@ Does NOT auto-save -- call `ifc_save()` when ready to write changes to disk.
 3. **Validate** if needed: `ifc_validate`
 4. **Browse schedules / costs**: `ifc_schedule`, `ifc_cost` (use `max_depth=1` first on large projects)
 5. **Look up IFC classes**: `ifc_schema`
-6. **Find** the right API function: `ifc_list`, `ifc_docs`
+6. **Find** the right API function: `ifc_search`, `ifc_list`, `ifc_docs`
 7. **Edit** the model: `ifc_edit`
 8. **Quantify** elements: `ifc_quantify` (writes QTO psets in-place)
 9. **Verify** changes with query tools, and `ifc_undo` any mistake
