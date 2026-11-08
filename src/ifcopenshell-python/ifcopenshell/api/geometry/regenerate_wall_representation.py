@@ -343,7 +343,13 @@ class Regenerator:
 
         item = builder.polyline([self.reference_p1, self.reference_p2], position_offset=offset)
         axis_rep = builder.get_representation(self.axis, items=[item])
-        if old_rep := ifcopenshell.util.representation.get_representation(wall, self.axis):
+        if old_rep := (
+            ifcopenshell.util.representation.get_representation(wall, self.axis)
+            or ifcopenshell.util.representation.get_representation(wall, "Plan", "Axis", "GRAPH_VIEW")
+            or ifcopenshell.util.representation.get_representation(wall, "Model", "Axis", "GRAPH_VIEW")
+            or ifcopenshell.util.representation.get_representation(wall, "Plan", "Axis")
+            or ifcopenshell.util.representation.get_representation(wall, "Model", "Axis")
+        ):
             ifcopenshell.util.element.replace_element(old_rep, axis_rep)
             ifcopenshell.util.element.remove_deep2(self.file, old_rep)
         else:
