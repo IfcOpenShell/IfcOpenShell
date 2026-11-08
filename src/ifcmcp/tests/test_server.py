@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
+from ifcmcp.__main__ import execute_allowed
 from ifcmcp.server import READ_ONLY_TOOLS, build_server
 
 try:
@@ -97,6 +98,32 @@ class TestElementLookup:
         wall = model.by_type("IfcWall")[0]
         for element_id in (wall.GlobalId, wall.id()):
             asyncio.run(server.call_tool(tool, {"element_id": element_id}))
+
+
+class TestExecuteOption:
+    def test_off_by_default(self):
+        assert "ifc_execute" not in [t.name for t in build_server()._tool_manager.list_tools()]
+
+    def test_offered_when_allowed(self):
+        assert "ifc_execute" in [t.name for t in build_server(allow_execute=True)._tool_manager.list_tools()]
+
+    def test_not_callable_when_not_offered(self, model_file):
+        server = build_server()
+        asyncio.run(server.call_tool("ifc_load", {"path": model_file}))
+        with pytest.raises(Exception, match="ifc_execute"):
+            asyncio.run(server.call_tool("ifc_execute", {"code": "result = 1"}))
+
+    @pytest.mark.parametrize(
+        "transport, no_execute, allowed",
+        [
+            ("stdio", False, True),
+            ("stdio", True, False),
+            ("sse", False, False),
+            ("streamable-http", False, False),
+        ],
+    )
+    def test_only_offered_over_stdio(self, transport, no_execute, allowed):
+        assert execute_allowed(transport, no_execute) is allowed
 
 
 class TestToolErrorsKeepTheirReason:

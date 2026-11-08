@@ -58,14 +58,18 @@ def _annotations(name: str) -> Any:
     return ToolAnnotations(readOnlyHint=False, destructiveHint=True, openWorldHint=False)
 
 
-def build_server() -> Any:
-    """Create the MCP server if the dependency is available."""
+def build_server(allow_execute: bool = False) -> Any:
+    """Create the MCP server if the dependency is available.
+
+    :param allow_execute: Offer ``ifc_execute``, which runs arbitrary Python
+        sent by the client.
+    """
     if MCPServer is None:
         raise ImportError(
             "The mcp package is not installed. Install with: pip install ifcmcp[mcp] (or add 'mcp' to your environment)."
         )
 
-    session = IfcSession()
+    session = IfcSession(allow_execute=allow_execute)
 
     def _keep_reason(fn):
         """Raise a tool's failure as ToolError so its reason reaches the agent.
@@ -208,6 +212,12 @@ def build_server() -> Any:
     @_tool
     def ifc_quantify(rule: str, selector: str = "") -> dict[str, Any]:
         return session.ifc_quantify(rule=rule, selector=selector)
+
+    if allow_execute:
+
+        @_tool
+        def ifc_execute(code: str) -> dict[str, Any]:
+            return session.ifc_execute(code=code)
 
     # ---- Shape builder ----
     @_tool

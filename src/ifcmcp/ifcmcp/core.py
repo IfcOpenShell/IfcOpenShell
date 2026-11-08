@@ -2,8 +2,12 @@
 from __future__ import annotations
 
 # inside ifcmcp/core.py
+import contextlib
 import functools
+import importlib
+import io
 import json
+import traceback
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -273,6 +277,8 @@ class IfcSession:
 
     model: ifcopenshell.file | None = None
     model_path: str | None = None
+    # ifc_execute runs arbitrary Python, so a session must opt in to it.
+    allow_execute: bool = False
 
     # -----------------
     # Session lifecycle
@@ -673,6 +679,44 @@ class IfcSession:
             return {"ok": True, "result": _jsonify(result)}
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    @_undoable
+    def ifc_execute(self, code: str) -> dict[str, Any]:
+        """Run Python code against the loaded model.
+
+        Use it for what the other tools make slow or impossible: loops, bulk
+        changes, and ``ifcopenshell.util`` queries. Prefer the dedicated tools
+        when one does the job. The code runs with ``model`` (the loaded
+        ``ifcopenshell.file``), ``ifcopenshell``, ``ifcopenshell.api`` and
+        ``ifcopenshell.util.element``, ``.placement``, ``.selector``,
+        ``.shape_builder`` and ``.unit`` already imported. To return data, assign
+        it to a variable named ``result``; entity instances in it are returned as
+        summaries with their ``id``, ``type`` and ``name``.
+
+        The whole call is one undo step. If the code raises, every change it
+        made is rolled back and the traceback is returned. Returns
+        ``{"ok": True, "result": ..., "stdout": "..."}`` or
+        ``{"ok": False, "error": "<traceback>", "stdout": "..."}``.
+
+        :param code: Python source to run.
+        """
+        if not self.allow_execute:
+            raise IfcSessionError("ifc_execute is disabled in this session.")
+        model = self._require_model()
+        # Imported for the code to use, as ifcopenshell.api, ifcopenshell.util.element and so on.
+        for name in ("api", "util.element", "util.placement", "util.selector", "util.shape_builder", "util.unit"):
+            importlib.import_module(f"ifcopenshell.{name}")
+        namespace = {"model": model, "ifcopenshell": ifcopenshell, "result": None}
+        # Capture print(): over stdio, stdout carries the MCP protocol itself.
+        stdout = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(stdout):
+                exec(compile(code, "<ifc_execute>", "exec"), namespace)
+        # Not only Exception: sys.exit(), KeyboardInterrupt and the like in the
+        # code must end the code, not the server.
+        except BaseException:
+            return {"ok": False, "error": traceback.format_exc(), "stdout": stdout.getvalue()}
+        return {"ok": True, "result": _jsonify(namespace["result"]), "stdout": stdout.getvalue()}
 
     @_use_doc(run_quantify, extra="\n\nCall ``ifc_save`` afterwards to persist the result.")
     @_undoable
