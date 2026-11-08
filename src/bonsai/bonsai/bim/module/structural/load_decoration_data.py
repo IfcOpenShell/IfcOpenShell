@@ -465,7 +465,7 @@ class ShaderInfo:
                 placement = ifcopenshell.util.placement.a2p(origin, z, x)
                 return placement[0:3, 0:3]
         if getattr(curve_member, "ObjectPlacement", None):
-            placement = ifcopenshell.util.placement.get_local_placement(curve_member.ObjectPlacement)
+            placement = ifcopenshell.util.placement.get_placement(curve_member.ObjectPlacement)
             return placement[0:3, 0:3]
         return np.eye(3)
 

@@ -144,8 +144,9 @@ def test_recreate_profile_preserves_structural_curve_member_edge_topology():
         import bonsai.bim.module.model.profile as profile_mod
         import bonsai.tool as tool
 
-        with patch.object(tool.Ifc, "get", return_value=ifc_file), patch.object(
-            tool.Ifc, "get_entity", return_value=member
+        with (
+            patch.object(tool.Ifc, "get", return_value=ifc_file),
+            patch.object(tool.Ifc, "get_entity", return_value=member),
         ):
             obj = MagicMock()
             joiner = profile_mod.DumbProfileJoiner()
@@ -205,9 +206,11 @@ def test_add_structural_member_connection_noop_when_member_unset():
         oprops = types.SimpleNamespace(ifc_definition_id=conn.id())
         props = types.SimpleNamespace(relating_structural_member=None)
 
-        with patch.object(tool.Blender, "get_object_bim_props", return_value=oprops), patch.object(
-            tool.Structural, "get_object_structural_props", return_value=props
-        ), patch.object(tool.Ifc, "get", return_value=ifc_file):
+        with (
+            patch.object(tool.Blender, "get_object_bim_props", return_value=oprops),
+            patch.object(tool.Structural, "get_object_structural_props", return_value=props),
+            patch.object(tool.Ifc, "get", return_value=ifc_file),
+        ):
             op = structural_op.AddStructuralMemberConnection()
             result = op._execute(context)
             assert result == {"FINISHED"}
