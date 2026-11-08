@@ -125,16 +125,16 @@ def build_server() -> Any:
         return session.ifc_summary()
 
     @_tool
-    def ifc_tree() -> dict[str, Any] | list[dict[str, Any]]:
-        return session.ifc_tree()
+    def ifc_tree(max_depth: int | None = None) -> dict[str, Any] | list[dict[str, Any]]:
+        return session.ifc_tree(max_depth=max_depth)
 
     @_tool
     def ifc_info(element_id: int | str) -> dict[str, Any]:
         return session.ifc_info(element_id)
 
     @_tool
-    def ifc_select(query: str) -> list[dict[str, Any]]:
-        return session.ifc_select(query)
+    def ifc_select(query: str, limit: int = 200, offset: int = 0) -> dict[str, Any]:
+        return session.ifc_select(query, limit=limit, offset=offset)
 
     @_tool
     def ifc_relations(element_id: int | str, traverse: str = "") -> dict[str, Any] | list[dict[str, Any]]:
