@@ -14,27 +14,29 @@ jobs:
     env:
       MIN_IOS_PY_VERSION: "3.11"
       MIN_BLENDER_PY_VERSION: "3.11"
+      # Needed for colored ty output.
+      FORCE_COLOR: "1"
     steps:
       - name: Action - checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
       - name: Action - install python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version: ${{ env.MIN_IOS_PY_VERSION }}
 
       - name: Action - install python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version: ${{ env.MIN_BLENDER_PY_VERSION }}
 
       - name: Action - setup uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        uses: astral-sh/setup-uv@v10.3.2
 
       - name: Action - setup node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: actions/setup-node@v7.1.0
         with:
           node-version: "24"
           cache: npm
@@ -126,12 +128,23 @@ jobs:
         run: npm run lint
         continue-on-error: true
 
-      - name: zizmor
+      - name: zizmor (GitHub workflows security check)
         id: zizmor
+        env:
+          ZIZMOR_GITHUB_TOKEN: ${{ github.token }}
         run: |
           # Once for the GitHub annotations, once for the readable output in the log.
           poe zizmor --format=github || true
           poe zizmor
+        continue-on-error: true
+
+      - name: gh actions-lock (GitHub Actions lockfile check)
+        id: actions-lock
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          poe actions-lock-setup
+          poe actions-lock
         continue-on-error: true
 
       - name: Check VERSION
@@ -165,6 +178,10 @@ jobs:
           fi
           if [ "${{ steps.zizmor.outcome }}" != "success" ]; then
             echo "::error::zizmor (GitHub workflows security check) failed, see 'zizmor' step for the details." && ERROR=1
+          fi
+          if [ "${{ steps.actions-lock.outcome }}" != "success" ]; then
+            echo "::error::gh actions-lock (GitHub Actions lockfile check) failed, see 'gh actions-lock' step for the details.%0A" \
+              "Run 'gh actions-lock' to update the lockfile." && ERROR=1
           fi
           if [ "${{ steps.check-version.outcome }}" != "success" ]; then
             echo "::error::VERSION check failed, see 'Check VERSION' step for the details." && ERROR=1

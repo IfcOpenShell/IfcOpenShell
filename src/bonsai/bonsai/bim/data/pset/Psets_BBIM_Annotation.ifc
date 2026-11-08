@@ -38,5 +38,7 @@ DATA;
 #31=IFCPROPERTYENUMERATION('CustomUnit',(IFCTEXT('Feet and Inches - Fractional'),IFCTEXT('Feet - Decimal'),IFCTEXT('Inches - Fractional'),IFCTEXT('Inches - Decimal'),IFCTEXT('Meters'),IFCTEXT('Decimeters'),IFCTEXT('Centimeters'),IFCTEXT('Millimeters')),$);
 #32=IFCSIMPLEPROPERTYTEMPLATE('0gjJzDYBX8P85qn1xcAOOo',$,'Reverse_List','',.P_SINGLEVALUE.,'IfcBoolean',$,$,$,$,$,.READWRITE.);
 #33=IFCSIMPLEPROPERTYTEMPLATE('22TrcxF8jFNB4buSmzjGEF',$,'List_Separator','',.P_SINGLEVALUE.,'IfcText',$,$,$,$,$,.READWRITE.);
+#34=IFCPROPERTYSETTEMPLATE('0SfhzW0EjDk91NOMwxF2NQ',$,'BBIM_RevisionCloud','',.PSET_TYPEDRIVENOVERRIDE.,'IfcAnnotation/REVISION_CLOUD,IfcTypeProduct',(#35));
+#35=IFCSIMPLEPROPERTYTEMPLATE('0LHF_IWqL4deoSmYseP7fD',$,'BubbleSize','Width of each revision cloud bubble, in paper millimetres (by default = 15). Constant regardless of drawing scale.',.P_SINGLEVALUE.,'IfcReal',$,$,$,$,$,.READWRITE.);
 ENDSEC;
 END-ISO-10303-21;
