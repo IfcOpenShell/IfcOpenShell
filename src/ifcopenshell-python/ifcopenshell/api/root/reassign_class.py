@@ -191,13 +191,9 @@ class Usecase:
             if self.occurrence_class:
                 occurrence_class = self.occurrence_class
             else:
-                # NOTE: in theory we can skip reassignment in IFC2X3 in some cases
-                # e.g. if occurrence is IfcRoof and we're reassigning to IfcBuildingElementProxyType
-                # but currently type_to_entity_map doesn't completely match entity_to_type_map,
-                # see type.py for more details.
-                occurrence_class = next(
-                    iter(ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema))
-                )
+                occurrence_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[
+                    0
+                ].ifc_class
             assert not self.schema.declaration_by_name(occurrence_class)._is("IfcTypeProduct"), (
                 f"Unexpected occurrence_class: '{occurrence_class}' / '{self.occurrence_class}'."
             )

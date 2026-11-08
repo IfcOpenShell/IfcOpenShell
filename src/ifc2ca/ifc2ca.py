@@ -397,7 +397,7 @@ class Ifc2CA:
             )
 
         elif element.is_a("IfcStructuralSurfaceMember"):
-            placement = ifcopenshell.util.placement.get_axis2placement(repr_item.FaceSurface.Position)
+            placement = ifcopenshell.util.placement.get_placement(repr_item.FaceSurface.Position)
 
         else:
             assert False, element
@@ -433,7 +433,7 @@ class Ifc2CA:
 
         if connection.is_a("IfcStructuralPointConnection"):
             if connection.ConditionCoordinateSystem is not None:
-                placement = ifcopenshell.util.placement.get_axis2placement(connection.ConditionCoordinateSystem)
+                placement = ifcopenshell.util.placement.get_placement(connection.ConditionCoordinateSystem)
             else:
                 placement = np.eye(4)
                 for i, v in enumerate(placement[:3]):
@@ -447,7 +447,7 @@ class Ifc2CA:
             )
 
         elif connection.is_a("IfcStructuralSurfaceConnection"):
-            placement = ifcopenshell.util.placement.get_axis2placement(repr_item.FaceSurface.Position)
+            placement = ifcopenshell.util.placement.get_placement(repr_item.FaceSurface.Position)
 
         else:
             assert False, connection
@@ -475,7 +475,7 @@ class Ifc2CA:
             if rel.ConditionCoordinateSystem is None:
                 data[i]["orientation"] = element["orientation"]
             else:
-                placement = ifcopenshell.util.placement.get_axis2placement(rel.ConditionCoordinateSystem)
+                placement = ifcopenshell.util.placement.get_placement(rel.ConditionCoordinateSystem)
                 _, orientation = self.parse_transformation_matrix(placement)
                 data[i]["orientation"] = element["orientation"].dot(orientation)
 
@@ -735,7 +735,7 @@ class Ifc2CA:
         if model.HasResults:
             data["model"]["HasResults"] = [item.Name for item in model.HasResults]
         data["model"]["ref_id"] = self.get_ref_id(model)
-        placement = ifcopenshell.util.placement.get_local_placement(model.SharedPlacement)
+        placement = ifcopenshell.util.placement.get_placement(model.SharedPlacement)
         origin, orientation = self.parse_transformation_matrix(placement)
         data["model"]["origin"] = origin
         data["model"]["orientation"] = orientation

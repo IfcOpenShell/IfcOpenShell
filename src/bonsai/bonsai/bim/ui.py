@@ -52,10 +52,12 @@ if TYPE_CHECKING:
 
 
 class IFCFileSelector:
-    layout: bpy.types.UILayout
-
     # Avoid overriding blender prop annotations at runtime.
     if TYPE_CHECKING:
+
+        @property
+        def layout(self) -> bpy.types.UILayout | None: ...
+
         filepath: str
         use_relative_path: bool
 
@@ -2050,4 +2052,4 @@ class BIM_PT_snappping(Panel):
         row.prop(groups, "measure", toggle=True)
         layout.separator()
         row = layout.row(align=True)
-        row.prop(prop, "use_gpu_snapping", toggle=True)
+        row.prop(groups, "use_gpu_snapping", toggle=True)

@@ -128,9 +128,9 @@ class DumbSlabGenerator:
         return self.create_slab()
 
     def create_slab(self):
-        ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
-        # Standard cases are deprecated, so let's cull them
-        ifc_class = next(c for c in ifc_classes if "StandardCase" not in c)
+        ifc_class = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)[
+            0
+        ].ifc_class
 
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
@@ -248,7 +248,8 @@ class DumbSlabPlaner:
 
     def change_thickness(self, element: ifcopenshell.entity_instance, thickness: float) -> None:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        if tool.Model.get_usage_type(element) != "LAYER3":
+        usage_type = tool.Model.get_usage_type(element)
+        if usage_type != "LAYER3":
             return
         layer_params = tool.Model.get_material_layer_parameters(element)
         ifc_file = tool.Ifc.get()
@@ -304,11 +305,15 @@ class DumbSlabPlaner:
                 ifc_position = extrusion.Position
                 position = offset_direction * perpendicular_offset
                 material = ifcopenshell.util.element.get_material(element)
-                if material:
-                    if material.is_a("IfcMaterialLayerSetUsage"):
-                        material.OffsetFromReferenceLine = position.z
                 if ifc_position:
-                    ifc_position.Location.Coordinates = position
+                    orig = Vector(ifc_position.Location.Coordinates)
+                    layer_normal = offset_direction.normalized()
+                    perp = orig - orig.dot(layer_normal) * layer_normal
+                    new_coords = perp + layer_normal * perpendicular_offset
+                    ifc_position.Location.Coordinates = new_coords
+                    if material:
+                        if material.is_a("IfcMaterialLayerSetUsage"):
+                            material.OffsetFromReferenceLine = new_coords.z
                 else:
                     tool.Model.add_extrusion_position(extrusion, position)
 
@@ -380,8 +385,9 @@ class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator)
         extrusion = tool.Model.get_extrusion(body)
         profile = extrusion.SweptArea
         if extrusion.Position:
-            position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-            position.matrix_world.translation *= self.unit_scale
+            position = Matrix(
+                ifcopenshell.util.placement.get_placement(extrusion.Position, should_return_si=True).tolist()
+            )
         else:
             position = Matrix()
 
@@ -466,9 +472,9 @@ class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator)
             self.edges.extend([(i, i + 1) for i in range(offset, len(self.vertices))])
             self.edges[-1] = (len(self.vertices) - 1, offset)  # Close the loop
         elif curve.is_a("IfcCircle"):
-            center = self.convert_unit_to_si(
-                Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).translation
-            )
+            center = Matrix(
+                ifcopenshell.util.placement.get_placement(curve.Position, should_return_si=True).tolist()
+            ).translation
             radius = self.convert_unit_to_si(curve.Radius)
             self.vertices.extend(
                 [
@@ -497,7 +503,7 @@ class EditSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         extrusion = tool.Model.get_extrusion(representation)
         if extrusion.Position:
-            position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+            position = Matrix(ifcopenshell.util.placement.get_placement(extrusion.Position).tolist())
         else:
             position = Matrix()
         position_i = position.inverted()
@@ -641,8 +647,9 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         # TODO: review #7537 properly, this is a quick fix but something doesn't seem right.
         original_rotation_x = 0
         if extrusion.Position:
-            position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-            position.translation *= self.unit_scale
+            position = Matrix(
+                ifcopenshell.util.placement.get_placement(extrusion.Position, should_return_si=True).tolist()
+            )
 
             # Restore the position to before it was changed by the offset and x_angle
             rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")
@@ -691,8 +698,9 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         layer_params = tool.Model.get_material_layer_parameters(element)
 
         if extrusion.Position:
-            position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-            position.translation *= self.unit_scale
+            position = Matrix(
+                ifcopenshell.util.placement.get_placement(extrusion.Position, should_return_si=True).tolist()
+            )
 
             # Restore the position to after it was changed by the offset and x_angle
             rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")

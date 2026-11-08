@@ -85,6 +85,7 @@ modules = {
     "covetool": None,
     "augin": None,
     "debug": None,
+    "ifc_graph": None,
     "ifcgit": None,
     "covering": None,
     "web": None,
@@ -120,6 +121,7 @@ classes = [
     operator.EditBlenderCollection,
     operator.FileAssociate,
     operator.FileUnassociate,
+    operator.OpenIfcFileFolder,
     operator.OpenPath,
     operator.OpenUpstream,
     operator.OpenUri,
@@ -153,7 +155,7 @@ classes = [
     prop.BIMMeshProperties,
     prop.BIMFacet,
     prop.BIMFilterGroup,
-    prop.BIMSnapProperties,
+    prop.BIMSnapTarget,
     prop.BIMSnapGroups,
     ui.BIM_UL_clipping_plane,
     ui.BIM_UL_generic,
@@ -273,7 +275,7 @@ def register():
     bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
-    bpy.types.Scene.BIMSnapProperties = bpy.props.PointerProperty(type=prop.BIMSnapProperties)
+    bpy.types.Scene.BIMSnapProperties = bpy.props.PointerProperty(type=prop.BIMSnapTarget)
     bpy.types.Scene.BIMSnapGroups = bpy.props.PointerProperty(type=prop.BIMSnapGroups)
     bpy.types.Screen.BIMAreaProperties = bpy.props.CollectionProperty(type=prop.BIMAreaProperties)
     bpy.types.Screen.BIMTabProperties = bpy.props.PointerProperty(type=prop.BIMTabProperties)

@@ -34,7 +34,7 @@ namespace ifcopenshell {
 
 #ifdef IFOPSH_SAFE_INSTANCE
 using pointer_type = std::weak_ptr<instance_data>;
-using shared_pointer_type = shared_pointer_type;
+using shared_pointer_type = std::shared_ptr<instance_data>;
 template <typename T, typename... Args>
 shared_pointer_type make_pointer_type(Args&&... args) {
     return std::make_shared<T>(std::forward<Args>(args)...);
@@ -72,7 +72,7 @@ class IFC_PARSE_API base {
     const ifcopenshell::instance_data* data() const;
     ifcopenshell::instance_data* data();
   public:
-    operator bool() const {
+    explicit operator bool() const {
 #ifdef IFOPSH_SAFE_INSTANCE
         return !data_.expired();
 #else
@@ -81,11 +81,19 @@ class IFC_PARSE_API base {
     }
 
     bool operator<(const base& other) const {
-        return data() < other.data();
+#ifdef IFOPSH_SAFE_INSTANCE
+        return data_.owner_before(other.data_);
+#else
+        return data_ < other.data_;
+#endif
     }
 
     bool operator==(const base& other) const {
-        return data() == other.data();
+#ifdef IFOPSH_SAFE_INSTANCE
+        return !data_.owner_before(other.data_) && !other.data_.owner_before(data_);
+#else
+        return data_ == other.data_;
+#endif
     }
 
     bool operator!=(const base& other) const {
@@ -206,14 +214,14 @@ namespace std {
 template <>
 struct hash<express::base> {
     std::size_t operator()(const express::base& value) const noexcept {
-        return std::hash<uint32_t>{}(value.identity());
+        return value ? std::hash<uint32_t>{}(value.identity()) : 0;
     }
 };
 
 template <>
 struct hash<express::entity> {
     std::size_t operator()(const express::entity& value) const noexcept {
-        return std::hash<uint32_t>{}(value.identity());
+        return value ? std::hash<uint32_t>{}(value.identity()) : 0;
     }
 };
 
@@ -224,14 +232,14 @@ namespace boost {
 template <>
 struct hash<express::base> {
     std::size_t operator()(const express::base& value) const noexcept {
-        return std::hash<uint32_t>{}(value.identity());
+        return value ? std::hash<uint32_t>{}(value.identity()) : 0;
     }
 };
 
 template <>
 struct hash<express::entity> {
     std::size_t operator()(const express::entity& value) const noexcept {
-        return std::hash<uint32_t>{}(value.identity());
+        return value ? std::hash<uint32_t>{}(value.identity()) : 0;
     }
 };
 

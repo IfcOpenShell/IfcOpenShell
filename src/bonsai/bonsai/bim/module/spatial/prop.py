@@ -20,10 +20,13 @@ from typing import TYPE_CHECKING, Literal, Union
 
 import bpy
 import ifcopenshell.api.attribute
+import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
+    FloatProperty,
     IntProperty,
     PointerProperty,
     StringProperty,
@@ -78,7 +81,14 @@ def update_elevation(self: "BIMContainer", context: bpy.types.Context) -> None:
             elevation = float(self.elevation)
         except Exception as e:
             print(f"Elevation parsing failed for '{self.elevation}': {e}")
-            elevation = 0
+            # Restore the field to the elevation stored in IFC and leave the placement untouched. See #8545.
+            if ifc_definition_id := self.ifc_definition_id:
+                entity = tool.Ifc.get().by_id(ifc_definition_id)
+                if hasattr(entity, "ObjectPlacement"):
+                    elevation = ifcopenshell.util.placement.get_storey_elevation(entity)
+                    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                    self["elevation"] = tool.Unit.format_distance(elevation * unit_scale)
+            return
 
     # Update the object's position in the 3D scene
     if ifc_definition_id := self.ifc_definition_id:
@@ -277,6 +287,17 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
     should_include_children: BoolProperty(
         name="Should Include Children", default=True, update=update_should_include_children
     )
+    space_height: FloatProperty(
+        name="Space Height",
+        default=3,
+        subtype="DISTANCE",
+        description="Space height in meters. Auto-detected on generation unless forced. Used as fallback.",
+    )
+    force_space_height: BoolProperty(
+        name="Force Height",
+        default=False,
+        description="If enabled, uses the height value directly and skips auto-detection",
+    )
 
     if TYPE_CHECKING:
         is_locked: bool
@@ -294,6 +315,8 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
         subelement_class: str
         default_container: int
         should_include_children: bool
+        space_height: float
+        force_space_height: bool
 
     @property
     def active_container(self) -> Union[BIMContainer, None]:

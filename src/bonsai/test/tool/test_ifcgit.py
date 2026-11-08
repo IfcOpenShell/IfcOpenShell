@@ -20,7 +20,11 @@
 import os
 import tempfile
 
+import ifcopenshell
+import ifcopenshell.guid
+
 import bonsai.core.tool
+import bonsai.tool as tool
 from bonsai.tool.ifcgit import IfcGit, IfcGitRepo
 from test.bim.bootstrap import NewFile
 
@@ -454,6 +458,51 @@ class TestIfcDiffIds(NewFile):
             result = IfcGit.ifc_diff_ids(repo, sha_a, sha_b, ifc_path)
             assert 1 in result["modified"]
             assert 2 in result["modified"]
+
+
+class TestGetModifiedStepIds(NewFile):
+    @staticmethod
+    def _make_model(schema):
+        model = ifcopenshell.file(schema=schema)
+        wall = model.create_entity("IfcWall", GlobalId=ifcopenshell.guid.new(), Name="Wall")
+        wall_type = model.create_entity("IfcWallType", GlobalId=ifcopenshell.guid.new(), Name="Type")
+        prop = model.create_entity("IfcPropertySingleValue", Name="FireRating")
+        pset = model.create_entity(
+            "IfcPropertySet", GlobalId=ifcopenshell.guid.new(), Name="Pset_WallCommon", HasProperties=[prop]
+        )
+        model.create_entity(
+            "IfcRelDefinesByProperties",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedObjects=[wall],
+            RelatingPropertyDefinition=pset,
+        )
+        model.create_entity(
+            "IfcRelDefinesByType", GlobalId=ifcopenshell.guid.new(), RelatedObjects=[wall], RelatingType=wall_type
+        )
+        tool.Ifc.set(model)
+        return wall, wall_type, pset, prop
+
+    @staticmethod
+    def _step_ids(entity):
+        return {"modified": {entity.id()}, "added": set(), "removed": set()}
+
+    @pytest.mark.parametrize("schema", ["IFC2X3", "IFC4"])
+    def test_changed_property_marks_the_element_with_the_property_set(self, schema):
+        wall, wall_type, pset, prop = self._make_model(schema)
+        result = IfcGit.get_modified_step_ids(self._step_ids(prop))
+        assert result == {"modified": {wall.id()}}
+
+    @pytest.mark.parametrize("schema", ["IFC2X3", "IFC4"])
+    def test_changed_property_set_marks_the_element_it_is_applied_to(self, schema):
+        wall, wall_type, pset, prop = self._make_model(schema)
+        result = IfcGit.get_modified_step_ids(self._step_ids(pset))
+        assert result == {"modified": {wall.id()}}
+
+    @pytest.mark.parametrize("schema", ["IFC2X3", "IFC4"])
+    def test_changed_type_marks_the_elements_of_that_type(self, schema):
+        wall, wall_type, pset, prop = self._make_model(schema)
+        result = IfcGit.get_modified_step_ids(self._step_ids(wall_type))
+        assert result == {"modified": {wall.id()}}
 
 
 # ---------------------------------------------------------------------------

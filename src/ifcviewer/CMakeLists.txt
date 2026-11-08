@@ -129,9 +129,9 @@ else()  # EMSCRIPTEN — Dawn's webgpu.h via the emdawnwebgpu port instead.
 endif()
 
 # IfcViewerCore: the Qt-free, OpenCASCADE-free runtime subset. Buffer
-# pool, chunk planner, instance composition, sidecar cache, streaming
+# pool, chunk planner, instance composition, .ifcview cache, streaming
 # I/O, LOD builder, vertex quantisation — everything needed to load a
-# pre-baked .ifcview sidecar, manage GPU memory, and feed the cull/draw
+# pre-baked .ifcview, manage GPU memory, and feed the cull/draw
 # loop without dragging Qt, IfcGeom, OpenCASCADE, CGAL, or Boost into
 # the build. The Emscripten/web target (src/ifcviewer-web) links only
 # IfcViewerCore; the desktop IfcViewer library below adds Qt-coupled
@@ -143,14 +143,13 @@ set(IFCVIEWER_CORE_SOURCES
     BufferPool.cpp
     ChunkPlanner.cpp
     InstanceCompose.cpp
+    ModelLookup.cpp
     LodBuilder.cpp
     FederationMath.cpp
     GpuAllocScope.cpp
     GpuBudget.cpp
     GpuMemory.cpp
-    SidecarCache.cpp
-    SidecarCompress.cpp
-    StreamingLoader.cpp
+    IfcViewReader.cpp
     StreamingThread.cpp
     SectionGizmoRenderer.cpp
     ViewportCore.cpp
@@ -199,6 +198,7 @@ set(IFCVIEWER_CORE_HEADERS
     InstanceCompose.h
     InstancedGeometry.h
     Log.h
+    ModelLookup.h
     LodBuilder.h
     Stopwatch.h
     ModelGpuData.h
@@ -208,9 +208,8 @@ set(IFCVIEWER_CORE_HEADERS
     SectionPlane.h
     SelectionState.h
     FederationMath.h
-    SidecarCache.h
-    SidecarCompress.h
-    StreamingLoader.h
+    IfcViewFormat.h
+    IfcViewReader.h
     StreamingThread.h
     VertexQuantization.h
     ViewportCore.h
@@ -243,7 +242,7 @@ if(UNIX AND NOT APPLE)
     find_package(Threads REQUIRED)
     target_link_libraries(IfcViewerCore PUBLIC Threads::Threads)
 endif()
-# Sidecar (de)compression. Web compiles the vendored single-file decoder (added
+# .ifcview (de)compression. Web compiles the vendored single-file decoder (added
 # to the sources above) + uses the vendored zstd.h; desktop links the full
 # libzstd (compress + decompress) and takes zstd.h from the system.
 if(EMSCRIPTEN)

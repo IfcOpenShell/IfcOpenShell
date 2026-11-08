@@ -479,7 +479,7 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
     if TYPE_CHECKING:
         element: int
         name: str
-        description: str
+        description: str  # ty: ignore[invalid-attribute-override]
         assign_selected_objects: bool
 
     def _execute(self, context):

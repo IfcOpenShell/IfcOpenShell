@@ -139,7 +139,7 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
         state.quantity_sets = toPropertySets(get_psets(*entity, /*psets_only=*/false, /*qtos_only=*/true));
     } else if (registry) {
         // No live IFC source for this object — typical when a pure-geometry
-        // .ifcview sidecar was loaded without its .ifc/.rdb sibling.  Fall back
+        // .ifcview was loaded without its .ifc/.rdb sibling.  Fall back
         // to the basic info cached in the element registry so the panel still
         // shows class / GlobalId / Name for visible elements.
         auto info = registry->findBasicElementInfo(object_id);

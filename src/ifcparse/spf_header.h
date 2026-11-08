@@ -39,6 +39,8 @@ class IFC_PARSE_API spf_header {
   public:
     explicit spf_header(ifcopenshell::file* file = nullptr, ifcopenshell::logger* logger = nullptr);
     ~spf_header();
+    spf_header(const spf_header&) = delete;
+    spf_header& operator=(const spf_header&) = delete;
 
     void write(std::ostream& stream) const;
 

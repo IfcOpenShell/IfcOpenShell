@@ -1,34 +1,7 @@
-SHELL := sh
-IS_STABLE:=FALSE
-VERSION:=$(shell cat ../../VERSION)
-VERSION_BASE:=$(shell sed -E 's/[[:alpha:]]+[0-9]+$$//' ../../VERSION)
-VERSION_PYTHON:=$(shell sed 's/alpha/a/' ../../VERSION)
-VERSION_DATE:=$(shell date '+%y%m%d')
-VERSION_DAILY:=$(VERSION_BASE)a$(VERSION_DATE)
+include ../vars.mk
+
 PYVERSION:=py311
 PLATFORM:=linux64
-
-PYTHON:=python3
-PIP:=pip3
-SED:=sed -i
-VENV_ACTIVATE:=bin/activate
-
-ifeq ($(OS),Windows_NT)
-HOSTOS:=win
-PYTHON:=python
-VENV_ACTIVATE:=Scripts/activate
-else
-UNAME_S:=$(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-HOSTOS:=linux
-endif
-ifeq ($(UNAME_S),Darwin)
-HOSTOS:=macos
-PYTHON:=python3
-PATCH:=patch -d
-SED:=sed -i '' -e
-endif
-endif
 
 SUPPORTED_PYVERSIONS := py311 py312 py313 py314 py315
 
@@ -61,7 +34,7 @@ PLATFORMTAG:=win_arm64
 endif
 
 BINARY_VERSION:=0.9.1
-BUILD_COMMIT:=6022a6d
+BUILD_COMMIT:=7b8f129
 IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 BONSAIVIEWER_URL:=https://s3.amazonaws.com/ifcopenshell-builds/BonsaiViewer-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
@@ -130,7 +103,7 @@ endif
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell/*ifcopenshell_wrapper* dist/ifcopenshell/
 	# v0.9.0 splits IfcOpenShell into shared libraries loaded from next to the
-	# wrapper (libifcopenshell.parse, ifcopenshell_document_rdb, ...). Copy
+	# wrapper (libifcopenshell_parse, ifcopenshell_document_rdb, ...). Copy
 	# them too, otherwise the wrapper fails to import. See #9364.
 	find dist/working/ifcopenshell -maxdepth 1 \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.dll' \) -exec cp {} dist/ifcopenshell/ \;
 	rm -rf dist/working
@@ -152,7 +125,7 @@ endif
 	cd build/botbuild && wget --no-verbose $(IOS_URL) && unzip ifcopenshell-python*
 	cp -r build/botbuild/ifcopenshell/*ifcopenshell_wrapper* build/ifcopenshell/
 	# v0.9.0 splits IfcOpenShell into shared libraries loaded from next to the
-	# wrapper (libifcopenshell.parse, ifcopenshell_document_rdb, ...). Copy
+	# wrapper (libifcopenshell_parse, ifcopenshell_document_rdb, ...). Copy
 	# them too, otherwise the wrapper fails to import. See #9364.
 	find build/botbuild/ifcopenshell -maxdepth 1 \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.dll' \) -exec cp {} build/ifcopenshell/ \;
 	cp ../../README.md build/
@@ -165,10 +138,13 @@ else
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/ifcopenshell/__init__.py
 endif
 
+	# Older pip trusts the compromised TLS certificates.
 	cd build && if command -v uv >/dev/null 2>&1; then \
 		uv build --wheel; \
 	else \
-		$(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build && \
+		$(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && \
+		$(PYTHON) -m pip install --upgrade pip && \
+		$(PIP) install build && \
 		$(PYTHON) -m build --wheel; \
 	fi
 
