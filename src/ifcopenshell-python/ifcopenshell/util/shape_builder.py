@@ -1083,7 +1083,7 @@ class ShapeBuilder:
                     c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
 
                 elif c.is_a("IfcExtrudedAreaSolid"):
-                    placement_matrix_ = ifcopenshell.util.placement.get_axis2placement(c.Position)[:3, :3]
+                    placement_matrix_ = ifcopenshell.util.placement.get_placement(c.Position)[:3, :3]
                     base_position = c.Position.Location.Coordinates
                     # TODO: add support for Z-axis too
                     new_position = self.mirror_2d_point(base_position[np_XY], mirror_axes, mirror_point)
@@ -1938,7 +1938,7 @@ class ShapeBuilder:
 
         body = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
         assert body
-        representation = self.get_representation(body, transition_items, "Tesselation")
+        representation = self.get_representation(body, transition_items, "Tessellation")
 
         transition_data = {
             "start_length": start_length,

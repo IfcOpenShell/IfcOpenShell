@@ -58,6 +58,7 @@ class Args(NamedTuple):
     blender_version: str | None
     binaries_source: str | None
     repo_path: str | None
+    yes: bool
 
 
 def parse_args() -> Args:
@@ -77,6 +78,12 @@ def parse_args() -> Args:
     arg_parser.add_argument(
         "--repo-path",
         help="Path to your local IfcOpenShell repository. Deduced from this script's location if not set.",
+    )
+    arg_parser.add_argument(
+        "-y",
+        "--yes",
+        action="store_true",
+        help="Skip the confirmation prompts.",
     )
     namespace = arg_parser.parse_args()
     return Args(**vars(namespace))
@@ -173,7 +180,8 @@ def main() -> None:
         )
     )
 
-    input("Confirm the settings above and press Enter to continue or Ctrl-C to cancel...")
+    if not ARGS.yes:
+        input("Confirm the settings above and press Enter to continue or Ctrl-C to cancel...")
 
     # Handle symlinks
     # (they could be disabled by default on Windows).
@@ -261,7 +269,9 @@ def main() -> None:
         print(f"Downloading {url} -> {filepath}")
         urllib.request.urlretrieve(url, filepath)
 
-    input("Dev environment is all set!! \nPress Enter to continue...")
+    print("Dev environment is all set!!")
+    if not ARGS.yes:
+        input("Press Enter to continue...")
 
 
 if __name__ == "__main__":

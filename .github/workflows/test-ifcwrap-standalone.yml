@@ -1,6 +1,8 @@
 # This file was generated with the assistance of an AI coding tool.
 name: Test IfcWrap Standalone
 
+permissions: {}
+
 on:
   workflow_dispatch:
   pull_request:
@@ -26,9 +28,10 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Install C++ dependencies
         run: |
@@ -59,11 +62,24 @@ jobs:
             tk-dev
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.24
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           key: ci-ifcwrap-standalone-ubuntu-22.04-${{ runner.arch }}
           # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
           install: binary
+
+      - name : Build zstd
+        run: |
+          git clone https://github.com/facebook/zstd --depth 1 --branch v1.5.7
+          cd zstd
+          # `build` already exists.
+          mkdir build_ && cd build_
+          cmake ../build/cmake \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          sudo cmake --build . --target install -j $(nproc)
 
       - name: Build SWIG
         # IfcOpenShell requires SWIG 4.1+, ubuntu-22.04 ships 4.0.2.
@@ -97,13 +113,13 @@ jobs:
           cmake --build build-ifcopenshell --target install -j "$(nproc)"
 
       - name: Build and install standalone IfcPython for Python 3.11
-        uses: ./.github/actions/build-ifcwrap-python
+        uses: $/.github/actions/build-ifcwrap-python
         with:
           python-version: "3.11"
           ifcopenshell-prefix: ${{ env.IFCOPENSHELL_PREFIX }}
 
       - name: Build and install standalone IfcPython for Python 3.12
-        uses: ./.github/actions/build-ifcwrap-python
+        uses: $/.github/actions/build-ifcwrap-python
         with:
           python-version: "3.12"
           ifcopenshell-prefix: ${{ env.IFCOPENSHELL_PREFIX }}

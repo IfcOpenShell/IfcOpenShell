@@ -120,6 +120,7 @@ classes = [
     operator.EditBlenderCollection,
     operator.FileAssociate,
     operator.FileUnassociate,
+    operator.OpenIfcFileFolder,
     operator.OpenPath,
     operator.OpenUpstream,
     operator.OpenUri,

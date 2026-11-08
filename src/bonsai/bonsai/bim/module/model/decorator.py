@@ -627,7 +627,7 @@ class PolylineDecorator(tool.Blender.ViewportDecorator):
 
         # Length
         if self.measure_type in {"POLYLINE", "POLY_AREA"}:
-            if len(polyline_verts) < 3:
+            if len(polyline_verts) < 2:
                 blf.disable(self.font_id, blf.SHADOW)
                 return
             total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])

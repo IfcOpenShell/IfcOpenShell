@@ -1,5 +1,7 @@
 name: Build IfcOpenShell WASM
 
+permissions: {}
+
 on:
   workflow_dispatch:
 
@@ -15,20 +17,27 @@ jobs:
         # Installs latest Python version so it's preferred by uv over system Python.
         run: uv python install
 
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
       - name: Checkout Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           path: IfcOpenShell
+          persist-credentials: false
 
       - name: Checkout Build Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: IfcOpenShell/build-outputs
           path: ifcopenshell_build
           ref: wasm
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
+          persist-credentials: true
 
       - name: Unpack Dependencies
         run: |
@@ -36,7 +45,7 @@ jobs:
           uv run ../IfcOpenShell/nix/cache_dependencies.py unpack
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.24
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           key: ubuntu-22.04-${{ runner.arch }}
           # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
@@ -51,11 +60,11 @@ jobs:
 
       - name: Upload Build Logs
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-logs-pyodide
           path: |
-            ifcopenshell_build/*/*/logs/*.log
+            ifcopenshell_build/*/*/logs/latest.log
           retention-days: 30
 
       - name: Pack Dependencies
@@ -84,6 +93,12 @@ jobs:
           cd dist-modular
           zip -r -qq ifcopenshell-modular-${VERSION}-${GITHUB_SHA:0:7}-pyodide.zip *.whl
 
+      - name: Verify create_shape in monolithic and modular wheels
+        run: |
+          source .venv/bin/activate
+          PYODIDE_ROOT=$(pyodide config get pyodide_root)
+          node IfcOpenShell/pyodide/verify_wheels.mjs "$PYODIDE_ROOT/dist" dist dist-modular
+
       - name: Run wheel tests
         run: |
           # venv set up in build_pyodide.sh.
@@ -95,12 +110,13 @@ jobs:
           ./run_pytest.py run
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      # AWS CLI is preinstalled on the runner image.
       - name: Upload .zip archives to S3
         run: |
           aws s3 cp dist s3://ifcopenshell-builds/ --recursive --exclude "*" --include "*.whl"

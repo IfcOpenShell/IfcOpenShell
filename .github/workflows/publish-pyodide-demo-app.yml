@@ -1,8 +1,6 @@
 name: Publish Pyodide Demo App
 
-permissions:
-  id-token: write
-  pages: write
+permissions: {}
 
 on:
   push:
@@ -27,17 +25,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (recursive)
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           fetch-depth: 0
+          persist-credentials: false
       - name: Checkout intermediate Pages repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: IfcOpenShell/wasm_ifcopenshell_org_static_html
           ref: gh-pages
           path: output
           token: ${{ secrets.WEBSITE_PUBLISH }}
+          persist-credentials: true
       - name: Sync demo app into target subfolder
         run: |
           rsync -av --delete --exclude='.git/' src/pyodide/demo-app/ output/

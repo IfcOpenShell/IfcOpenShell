@@ -1,0 +1,6 @@
+{
+  "emsdk": {
+    "url": "https://github.com/emscripten-core/emsdk.git",
+    "version": "5.0.7"
+  }
+}

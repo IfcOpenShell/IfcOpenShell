@@ -1,0 +1,156 @@
+name: Build IfcOpenShell C++ SDK (Linux)
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+
+jobs:
+  documentation:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - name: Install documentation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz
+          uv python install 3.13
+          uv venv --python 3.13 docs/.venv
+          uv pip install --python docs/.venv/bin/python -r docs/requirements.txt
+      - name: Build offline C++ documentation
+        working-directory: docs
+        env:
+          CPP_ONLY: '1'
+          PROJECT_NUMBER: ${{ github.sha }}
+        run: |
+          .venv/bin/sphinx-build -j 2 -b html . _build/cpp
+          test -s _build/cpp/cpp-sdk.html
+          test -s _build/cpp/output/api/library_root.html
+          # Sphinx writes its root document as cpp-sdk.html. Supply an offline
+          # entry point without copying that page (which has relative assets).
+          printf '%s\n' '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=cpp-sdk.html"><a href="cpp-sdk.html">IfcOpenShell C++ SDK</a>' > _build/cpp/index.html
+          test ! -d _build/cpp/autoapi
+          test ! -d _build/cpp/output/typescript-api
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cpp-sdk-documentation
+          path: docs/_build/cpp
+          retention-days: 7
+
+  sdk:
+    needs: documentation
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: linux64
+            machine: x86_64
+            runner: ubuntu-22.04
+          - arch: linuxarm64
+            machine: aarch64
+            runner: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runner }}
+    # No Qt is needed for the SDK, so both architectures can use the glibc
+    # 2.34 baseline (unlike the GUI build's Qt6 ARM binaries).
+    container:
+      image: rockylinux/rockylinux:9
+      env:
+        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    env:
+      IFCOS_SCHEMAS: '2x3;4;4x3_add2'
+      IFCOS_NUM_BUILD_PROCS: '2'
+      # Debian-family consumers do not search lib64 for package configs.
+      IFCOS_CMAKE_ARGS: '-DCMAKE_INSTALL_LIBDIR=lib'
+    steps:
+      - name: Install build tools
+        run: |
+          dnf install -y epel-release
+          dnf install -y --enablerepo=crb gcc gcc-c++ git autoconf automake bison byacc \
+            make cmake ninja-build patch bzip2 xz zip unzip findutils binutils patchelf \
+            zlib-devel libxml2-devel openssl-devel libffi-devel
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - run: uv python install 3.13
+      - name: Check SDK packaging helpers
+        run: uv run --python 3.13 python -B -m unittest discover -s test/package -p test_cpp_sdk.py -v
+      - uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          key: cpp-sdk-rockylinux9-${{ runner.arch }}
+          install: ${{ matrix.arch == 'linuxarm64' && 'detect' || 'binary' }}
+      # Build dependencies from source: binary caches omit source license
+      # notices. Keep the sources until packaging has collected those notices.
+      # An explicit target excludes Python, SWIG, Qt, and BonsaiViewer.
+      - name: Build C++ libraries, dependencies, tools, and examples
+        shell: bash
+        run: |
+          set -o pipefail
+          CFLAGS="-O3" CXXFLAGS="-O3" uv run --python 3.13 nix/build-all.py \
+            IfcConvert --shared --build-examples --use-ninja --build-cfg Release \
+            2>&1 | tee cpp-sdk-build.log
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cpp-sdk-documentation
+          path: cpp-documentation
+      - name: Package SDK zip and checksum
+        run: |
+          uv run --python 3.13 nix/package-cpp-sdk.py \
+            --install-dir "build/Linux/${{ matrix.machine }}/install" \
+            --docs cpp-documentation --output dist --arch "${{ matrix.arch }}"
+      - name: Test extracted SDK with original install hidden
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd dist && sha256sum --check ./*.zip.sha256)
+          test_root="$(mktemp -d)/relocated sdk"
+          mkdir -p "$test_root"
+          unzip -q dist/*.zip -d "$test_root"
+          sdk_root="$(find "$test_root" -mindepth 1 -maxdepth 1 -type d)"
+          install_root="$GITHUB_WORKSPACE/build/Linux/${{ matrix.machine }}/install"
+          mv "$install_root" "${install_root}.hidden"
+          trap 'mv "${install_root}.hidden" "$install_root"' EXIT
+          unset LD_LIBRARY_PATH CMAKE_PREFIX_PATH
+          cmake -S "$sdk_root/examples" -B "$test_root/examples-build" -G Ninja \
+            -DCMAKE_PREFIX_PATH="$sdk_root" -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$test_root/examples-build" --parallel 2
+          mkdir "$test_root/run"
+          cd "$test_root/run"
+          for binary_dir in "$sdk_root/bin" "$test_root/examples-build"; do
+            "$binary_dir/IfcOpenHouse"
+            test -s IfcOpenHouse.ifc
+            "$binary_dir/IfcParseExamples" IfcOpenHouse.ifc
+            "$binary_dir/IfcAdvancedHouse"
+            test -s IfcAdvancedHouse.ifc
+            "$binary_dir/IfcAlignment"
+            test -s FHWA_Bridge_Geometry_Alignment_Example.ifc
+            "$binary_dir/IfcSimplifiedAlignment"
+            test -s FHWA_Bridge_Geometry_Alignment_Example_Simplified.ifc
+            rm -f ./*.ifc
+          done
+          "$sdk_root/bin/IfcOpenHouse"
+          "$sdk_root/bin/IfcConvert" --yes IfcOpenHouse.ifc model.obj
+          test -s model.obj
+      - name: Upload SDK
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ifcopenshell-cpp-${{ matrix.arch }}
+          path: |
+            dist/*.zip
+            dist/*.zip.sha256
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cpp-sdk-build-log-${{ matrix.arch }}
+          path: cpp-sdk-build.log
+          retention-days: 7

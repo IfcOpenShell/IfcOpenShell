@@ -425,14 +425,14 @@ class ShaderInfo:
         """returns the rotation matrix of a structural surface member"""
         representation = ifcopenshell.util.representation.get_representation(surface_member, "Model")
         repr_item = representation.Items[0]
-        placement = ifcopenshell.util.placement.get_axis2placement(repr_item.FaceSurface.Position)
+        placement = ifcopenshell.util.placement.get_placement(repr_item.FaceSurface.Position)
         rotation = placement[0:3, 0:3]
         return rotation
 
     def get_point_connection_rotation(self, point_connection: ifcopenshell.entity_instance) -> np.ndarray:
         """returns the rotation matrix of a structural point connection"""
         if point_connection.ConditionCoordinateSystem is not None:
-            placement = ifcopenshell.util.placement.get_axis2placement(point_connection.ConditionCoordinateSystem)
+            placement = ifcopenshell.util.placement.get_placement(point_connection.ConditionCoordinateSystem)
         else:
             placement = np.eye(4)
         rotation = placement[0:3, 0:3]

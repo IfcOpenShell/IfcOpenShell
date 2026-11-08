@@ -1,5 +1,7 @@
 name: Test Lint
 
+permissions: {}
+
 on:
   push:
     branches: [v0.9.0]
@@ -14,20 +16,33 @@ jobs:
       MIN_BLENDER_PY_VERSION: "3.11"
     steps:
       - name: Action - checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Action - install python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ env.MIN_IOS_PY_VERSION }}
 
       - name: Action - install python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ env.MIN_BLENDER_PY_VERSION }}
 
       - name: Action - setup uv
         uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
+      - name: Action - setup node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: src/ts/ifcopenshell-js/package-lock.json
+
+      - name: Install TypeScript dependencies
+        working-directory: src/ts/ifcopenshell-js
+        run: npm ci
 
       - name: Install dependencies
         run: cat requirements-tools.txt | xargs -L1 uv tool install
@@ -105,6 +120,25 @@ jobs:
         run: poe check-whitespace --check
         continue-on-error: true
 
+      - name: ESLint (TypeScript)
+        id: ts-eslint
+        working-directory: src/ts/ifcopenshell-js
+        run: npm run lint
+        continue-on-error: true
+
+      - name: zizmor
+        id: zizmor
+        run: |
+          # Once for the GitHub annotations, once for the readable output in the log.
+          poe zizmor --format=github || true
+          poe zizmor
+        continue-on-error: true
+
+      - name: Check VERSION
+        id: check-version
+        run: poe version
+        continue-on-error: true
+
       - name: Final check
         run: |
           ERROR=0
@@ -125,5 +159,14 @@ jobs:
           fi
           if [ "${{ steps.check-whitespace.outcome }}" != "success" ]; then
             echo "::error::Whitespace check failed, see 'Check whitespace' step for the details." && ERROR=1
+          fi
+          if [ "${{ steps.ts-eslint.outcome }}" != "success" ]; then
+            echo "::error::ESLint (TypeScript) failed, see 'ESLint (TypeScript)' step for the details." && ERROR=1
+          fi
+          if [ "${{ steps.zizmor.outcome }}" != "success" ]; then
+            echo "::error::zizmor (GitHub workflows security check) failed, see 'zizmor' step for the details." && ERROR=1
+          fi
+          if [ "${{ steps.check-version.outcome }}" != "success" ]; then
+            echo "::error::VERSION check failed, see 'Check VERSION' step for the details." && ERROR=1
           fi
           exit $ERROR

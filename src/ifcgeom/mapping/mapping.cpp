@@ -874,6 +874,13 @@ void mapping::initialize_units_() {
 
 #ifdef SCHEMA_HAS_IfcContext
     auto projects = file_->instances_by_type<IfcSchema::IfcContext>();
+    // Bug #9926: More of a work-around, but we filter out IfcProjectLibrary
+    // instances that have no units defined before the size check, as they
+    // cannot conflict with project-wide unit setup.
+    auto has_no_units = [](IfcSchema::IfcContext& p) {
+        return p.as<IfcSchema::IfcProjectLibrary>() && (!p.UnitsInContext() || p.UnitsInContext().Units().empty());
+    };
+    projects.erase(std::remove_if(projects.begin(), projects.end(), has_no_units), projects.end());
 #else
     auto projects = file_->instances_by_type<IfcSchema::IfcProject>();
 #endif

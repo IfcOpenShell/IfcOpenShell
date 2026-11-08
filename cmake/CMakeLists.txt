@@ -77,6 +77,19 @@ endif()
 option(MINIMAL_BUILD "The build is to make a minimal version of IFC converter from OCCT into IFC." OFF)
 option(WASM_BUILD "Build a WebAssembly binary." OFF)
 
+if(WASM_BUILD)
+    set(CMAKE_SHARED_LIBRARY_SUFFIX ".wasm")
+    set(BUILD_SHARED_LIBS OFF)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fwasm-exceptions>)
+    # Emscripten optimization level used when linking the main module and the
+    # plugins, which is what drives wasm-opt. `-Oz` keeps the side modules small,
+    # `-O1` trades size for a considerably shorter link stage.
+    set(
+        IFCOPENSHELL_WASM_LINK_OPTIMIZATION "-Oz" CACHE STRING
+        "Emscripten optimization level used when linking WASM modules and plugins."
+    )
+endif()
+
 option(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
 option(BUILD_SHARED_LIBS "Build IfcOpenShell as shared libraries (required)." ON)
 option(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" OFF)
@@ -86,7 +99,13 @@ option(NO_WARN "Disable all warnings" OFF)
 option(CREATE_BUNDLE "Copy .so files and don't create RPATHS or SOVERSION symlinks" OFF)
 
 option(BUILD_IFCGEOM "Build IfcGeom." ON)
+option(BUILD_IFCAPI "Build the generated low-level C API." OFF)
+option(IFCAPI_REGENERATE_BINDINGS "Regenerate the C API during the build." OFF)
+if(IFCAPI_REGENERATE_BINDINGS AND NOT BUILD_IFCAPI)
+    message(FATAL_ERROR "IFCAPI_REGENERATE_BINDINGS requires BUILD_IFCAPI=ON")
+endif()
 option(BUILD_IFCPYTHON "Build IfcPython." ON)
+option(IFOPSH_SAFE_INSTANCE "Use checked weak instance handles (must match across all libraries and plug-ins)." ON)
 option(BUILD_IFCPARSE_EXPERIMENTAL_WRAPPER "Build the experimental Clang-generated ifcparse Python wrapper." OFF)
 option(BUILD_CONVERT "Build IfcConvert executable." ON)
 option(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
@@ -134,6 +153,18 @@ option(
     OFF
 )
 
+if(WASM_BUILD)
+    if(NOT DEFINED CACHE{WITH_OPENCASCADE})
+        set(WITH_OPENCASCADE OFF CACHE BOOL "Enable geometry interpretation using Open CASCADE")
+    endif()
+    if(NOT DEFINED CACHE{WITH_CGAL})
+        set(WITH_CGAL OFF CACHE BOOL "Enable geometry interpretation using CGAL")
+    endif()
+    if(NOT DEFINED CACHE{WITH_MANIFOLD})
+        set(WITH_MANIFOLD OFF CACHE BOOL "Enable geometry interpretation using Manifold")
+    endif()
+endif()
+
 option(WITH_OPENCASCADE "Enable geometry interpretation using Open CASCADE" ON)
 option(WITH_CGAL "Enable geometry interpretation using CGAL" ON)
 option(WITH_MANIFOLD "Enable geometry interpretation using Manifold" OFF)
@@ -157,6 +188,10 @@ set(
 )
 
 project(IfcOpenShell VERSION ${PROJECT_VERSION_NUMERIC})
+
+if(WASM_BUILD)
+    set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
+endif()
 
 # Make sure CMake modules in this project are found first
 list(PREPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
@@ -188,7 +223,7 @@ if(MINIMAL_BUILD)
     set(USD_SUPPORT OFF)
 endif()
 
-if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM))
+if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON OR BUILD_IFCAPI) AND(NOT BUILD_IFCGEOM))
     message(STATUS "'IfcGeom' is required with current outputs")
     set(BUILD_IFCGEOM ON)
 endif()
@@ -273,6 +308,9 @@ foreach(option_flag IN LISTS option_flags)
 endforeach()
 
 set(SWIG_DEFINES "")
+if(IFOPSH_SAFE_INSTANCE)
+    list(APPEND SWIG_DEFINES -DIFOPSH_SAFE_INSTANCE)
+endif()
 
 if(WITH_CGAL)
     # 5.4 is the version shipped with Ubuntu 22.04.
@@ -294,6 +332,10 @@ if(BUILD_IFCGEOM AND WITH_OPENCASCADE)
     check_min_version(OpenCASCADE "${OpenCASCADE_VERSION}" "${OPENCASCADE_MIN_VERSION}")
     # Map OpenCASCADE_LIBRARIES variable from OpenCASCADEConfig.cmake to OpenCASCADE_LIBRARIES used by kernel generic cmake file
     set(OpenCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES})
+    # Set legacy OCC_INCLUDE_DIR from OpenCASCADE config variable
+    if(NOT OCC_INCLUDE_DIR AND OpenCASCADE_INCLUDE_DIR)
+        set(OCC_INCLUDE_DIR "${OpenCASCADE_INCLUDE_DIR}")
+    endif()
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_OPENCASCADE)
     list(APPEND GEOMETRY_KERNELS opencascade)
 endif()
@@ -646,9 +688,9 @@ elseif(BUILD_IFCOPENSHELL_GEOMETRY_TESTS)
     message(FATAL_ERROR "BUILD_IFCOPENSHELL_GEOMETRY_TESTS requires BUILD_IFCGEOM=ON.")
 endif(BUILD_IFCGEOM)
 
-if(BUILD_CONVERT OR BUILD_IFCPYTHON OR BUILD_BONSAIVIEWER)
+if(BUILD_CONVERT OR BUILD_IFCPYTHON OR BUILD_BONSAIVIEWER OR (BUILD_IFCAPI AND BUILD_IFCGEOM))
     add_subdirectory(../src/serializers serializers)
-endif(BUILD_CONVERT OR BUILD_IFCPYTHON OR BUILD_BONSAIVIEWER)
+endif()
 
 if(BUILD_CONVERT)
     add_subdirectory(../src/ifcconvert ifcconvert)
@@ -721,7 +763,7 @@ endif()
 
 # Documentation
 if(BUILD_DOCUMENTATION)
-    add_subdirectory(../docs/cpp-api docs/cpp-api)
+    add_subdirectory(../docs docs)
 endif()
 
 if(BUILD_EXAMPLES)
@@ -736,7 +778,7 @@ if(WITH_CGAL)
     add_subdirectory(../src/svgfill svgfill)
 endif()
 
-if(BUILD_IFCPYTHON)
+if(BUILD_IFCPYTHON OR BUILD_IFCAPI)
     add_subdirectory(../src/ifcwrap ifcwrap)
 endif()
 

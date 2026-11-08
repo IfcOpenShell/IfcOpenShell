@@ -1,5 +1,7 @@
 name: Test IfcOpenShell
 
+permissions: {}
+
 on:
   push:
     branches: [v0.9.0]
@@ -18,11 +20,12 @@ jobs:
     steps:
       # A push has no pull request to ask the API about, so paths-filter
       # diffs the pushed commits with git and needs the history for that.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: github.event_name == 'push'
         with:
           fetch-depth: 0
-      - uses: dorny/paths-filter@v4
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         if: github.event_name != 'workflow_dispatch'
         with:
@@ -44,7 +47,6 @@ jobs:
               - 'src/ifcedit/**'
               - 'src/ifcmcp/**'
               - 'src/ifcopenshell-python/**'
-              - '!src/ifcopenshell-python/docs/**'
               - 'src/ifcparse/**'
               - 'src/ifcpatch/**'
               - 'src/ifcquery/**'
@@ -80,12 +82,13 @@ jobs:
       # Colored output for pytest.
       FORCE_COLOR: "1"
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
             submodules: recursive
+            persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: 3.11
 
@@ -117,7 +120,7 @@ jobs:
           libcgal-dev libeigen3-dev
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.24
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           key: ubuntu-22.04-${{ runner.arch }}
           # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
@@ -322,6 +325,8 @@ jobs:
           ERROR=0
           cd test
           python tests.py || fail "tests.py"
+          pytest -vv package/test_ifcopenshell_python_shared_libraries.py --not-bundled \
+            || fail "test_ifcopenshell_python_shared_libraries.py"
           cd ../src/ifcopenshell-python
           pip install -e ../ifcpatch --no-deps # Needed for sql.py tests.
           make test-parallel || fail "ifcopenshell-python"

@@ -29,6 +29,7 @@ import ifcopenshell.api.owner
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
+import ifcopenshell.api.structural
 import ifcopenshell.api.system
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
@@ -463,6 +464,16 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         )
         ifcopenshell.api.root.remove_product(self.file, product=flow_element)
         assert not self.file.by_type("IfcRelFlowControlElements")
+
+    def test_removing_structural_activity_relationships_but_not_the_activity(self):
+        point = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        load = ifcopenshell.api.structural.add_structural_load(self.file, ifc_class="IfcStructuralLoadSingleForce")
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            self.file, applied_load=load, structural_member=point, ifc_class="IfcStructuralPointAction"
+        )
+        ifcopenshell.api.root.remove_product(self.file, product=point)
+        assert not self.file.by_type("IfcRelConnectsStructuralActivity")
+        assert list(self.file.by_type("IfcStructuralPointAction")) == [activity]
 
 
 class TestRemoveProductIFC2X3(TestRemoveProduct, test.bootstrap.IFC2X3):

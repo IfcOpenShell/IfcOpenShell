@@ -49,20 +49,6 @@ std::istream& ifcopenshell::geom::settings_detail::operator>>(std::istream& in, 
 	return in;
 }
 
-std::istream& ifcopenshell::geom::settings_detail::operator>>(std::istream& in, FunctionStepMethod& ioo) {
-    std::string token;
-    in >> token;
-    boost::to_upper(token);
-    if (token == "MAXSTEPSIZE") {
-        ioo = MAXSTEPSIZE;
-    } else if (token == "MINSTEPS") {
-        ioo = MINSTEPS;
-    } else {
-        in.setstate(std::ios_base::failbit);
-    }
-    return in;
-}
-
 std::istream& ifcopenshell::geom::settings_detail::operator>>(std::istream& in, OutputDimensionalityTypes& v) {
 	std::string token;
 	in >> token;

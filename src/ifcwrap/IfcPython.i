@@ -194,10 +194,9 @@
 %ignore KeepBoundingBoxes;
 %ignore SurfaceColour;
 %ignore ComputeCurvature;
-%ignore FunctionStepType;
-%ignore FunctionStepParam;
 %ignore ModelOffset;
 %ignore ModelRotation;
+%ignore VertexRebaseDistance;
 %ignore TriangulationType;
 %ignore CgalEmitOriginalEdges;
 %ignore OcctNoCleanTriangulation;
@@ -213,6 +212,7 @@
 %ignore SvgUseEdgeClassification;
 %ignore SvgRenderCreaseEdges;
 %ignore SvgRenderSharpEdges;
+%ignore LoftUseRuledSurfaces;
 
 %ignore filetype;
 %ignore guess_file_type;
@@ -247,7 +247,6 @@
 %{
 	#include "../ifcgeom/iterator.h"
 	#include "../ifcgeom/tree.h"
-	#include "../ifcgeom/serialization/serialization.h"
 	#include "../ifcgeom/taxonomy.h"
 	#include "../ifcgeom/function_item_evaluator.h"
 
@@ -283,7 +282,6 @@
 %module ifcopenshell_wrapper %{
 	#include "../ifcgeom/converter.h"
 	#include "../ifcgeom/tree.h"
-	#include "../ifcgeom/serialization/serialization.h"
 	#include "../ifcgeom/taxonomy.h"
 	#include "../ifcgeom/function_item_evaluator.h"
 	#include "../ifcgeom/iterator.h"

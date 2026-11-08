@@ -71,7 +71,9 @@ def refresh_classes(self: "BIMRootProperties", context: bpy.types.Context) -> No
     ifc_file = tool.Ifc.get()
     # When switching between ElementType and Element, keep the same class and predefined type if possible
     if self.ifc_product == "IfcElement":
-        ifc_class = next(iter(ifcopenshell.util.type.get_applicable_entities(old_class, ifc_file.schema)), None)
+        ifc_class = next(
+            (o.ifc_class for o in ifcopenshell.util.type.get_applicable_entities(old_class, ifc_file.schema)), None
+        )
     elif self.ifc_product == "IfcElementType":
         ifc_class = next(iter(ifcopenshell.util.type.get_applicable_types(old_class, ifc_file.schema)), None)
     else:

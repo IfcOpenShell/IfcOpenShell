@@ -129,12 +129,12 @@ class TestFixArchiCADToRevitSpaces(test.bootstrap.IFC4):
         self.create_project()
         space = self.create_space(3500.0, angle=np.radians(30.0))
         self.assign_brep(space)
-        matrix = ifcopenshell.util.placement.get_local_placement(space.ObjectPlacement)
+        matrix = ifcopenshell.util.placement.get_placement(space.ObjectPlacement)
         self.run()
 
         assert self.get_geometry(space) == pytest.approx((L_SHAPE_AREA * 3.0, 3.0))
         # The rotation belongs to the placement and must survive untouched.
-        assert np.allclose(ifcopenshell.util.placement.get_local_placement(space.ObjectPlacement), matrix)
+        assert np.allclose(ifcopenshell.util.placement.get_placement(space.ObjectPlacement), matrix)
 
     def test_falling_back_to_the_space_height_if_the_storey_is_above_the_space(self):
         self.create_project()

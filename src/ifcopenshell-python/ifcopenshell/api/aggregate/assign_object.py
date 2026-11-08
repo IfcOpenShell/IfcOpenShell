@@ -153,7 +153,7 @@ def assign_object(
             ifcopenshell.api.geometry.edit_object_placement(
                 file,
                 product=product,
-                matrix=ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement),
+                matrix=ifcopenshell.util.placement.get_placement(product.ObjectPlacement),
                 is_si=False,
             )
 

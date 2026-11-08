@@ -4,6 +4,11 @@ version = "0.0.0"
 # Don't provide requires-python explicitly
 # allowing pyprojects to set their own (e.g. bonsai and general ifcopenshell version differ).
 
+[project.optional-dependencies]
+bindgen = [
+    "clang==21.1.7",
+]
+
 [tool.pyright]
 reportInvalidTypeForm = false
 disableBytesTypePromotions = true
@@ -111,6 +116,7 @@ unsupported-operator = "ignore"
 redundant-condition = "ignore"
 redundant-condition-strict = "ignore"
 truthiness-test-of-iterable = "ignore"
+truthiness-test-of-none-union = "ignore"
 # `@persistent` is incorrectly annotated as `Any` in fake-bpy, needs to be resolved upstream.
 dynamic-function-decorator-return = "ignore"
 
@@ -186,6 +192,11 @@ dev-setup.help = "Install repo packages in editable mode"
 ruff = "ruff check"
 
 check-whitespace = "uv run .github/scripts/check-whitespace.py"
+
+# Not `zizmor ` to avoid flagging submodules.
+zizmor = "zizmor .github/"
+
+version = "uv run .github/scripts/version.py"
 
 ruff-format = "ruff format"
 

@@ -1,0 +1,106 @@
+name: Publish IfcOpenShell Linux Packages
+
+permissions: {}
+
+on:
+  push:
+    tags:
+      - 'v[0-9].[0-9].[0-9]*'
+  workflow_dispatch:
+
+jobs:
+  upstream-only:
+    if: github.repository == 'IfcOpenShell/IfcOpenShell'
+    runs-on: ubuntu-22.04
+    steps:
+    - run: echo ok go
+  release:
+    needs: upstream-only
+    runs-on: ubuntu-22.04
+    permissions:
+      # upload-release-action creates the release and uploads assets
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Install C++ dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install --no-install-recommends \
+          git cmake gcc g++ \
+          libboost-iostreams-dev \
+          libboost-program-options-dev \
+          libboost-regex-dev \
+          python3-all-dev python3-pip \
+          swig libpcre3-dev libxml2-dev \
+          libtbb-dev nlohmann-json3-dev \
+          libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
+          occt-misc libocct-draw-dev tcl-dev tk-dev libxi-dev \
+          libcgal-dev libeigen3-dev
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
+          install: binary
+
+      # TODO: reuse nix/build-all.py for this.
+      - name: build swig
+        run: |
+          # Remove default swig to avoid conflicts.
+          sudo apt remove --purge swig swig4.0
+          sudo apt-get install -y libpcre2-dev bison
+          git clone https://github.com/swig/swig --branch v4.2.1 --depth 1
+          cd swig
+          mkdir build && cd build
+          cmake .. \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          sudo cmake --build . --target install -j $(nproc)
+
+      - name: Build
+        run: |
+          mkdir build && cd build
+          cmake ../cmake \
+           -G Ninja \
+           -DCMAKE_INSTALL_PREFIX=$PWD/install/ \
+           -DCMAKE_BUILD_TYPE=Release \
+           -DBUILD_ONLY_COMMON_SCHEMAS=ON \
+           -DUSE_CCACHE=ON \
+           -DBUILD_PACKAGE=On \
+           -DPYTHON_EXECUTABLE:FILEPATH=$(which python) \
+           -DPYTHON_INCLUDE_DIR:PATH=$(python -c "import sysconfig; print(sysconfig.get_path('include'))") \
+           -DCOLLADA_SUPPORT=Off \
+           -DBUILD_EXAMPLES=OFF \
+           -DGLTF_SUPPORT=ON
+          cmake --build . --target install -j $(nproc)
+      - name: Package
+        id: package
+        run: |
+          cmake --build . --target package
+          echo "tgz=$( ls assets/*.tar.gz | head -n 1 | xargs basename )" >> "$GITHUB_OUTPUT"
+          echo "deb=$( ls assets/*.deb | head -n 1 | xargs basename )" >> "$GITHUB_OUTPUT"
+        working-directory: build
+
+      - name: Create release and upload TGZ
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # 2.11.5
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          prerelease: true
+          file: build/assets/${{ steps.package.outputs.tgz }}
+          asset_name: ${{ steps.package.outputs.tgz }}
+
+      - name: Upload DEB
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # 2.11.5
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          file: build/assets/${{ steps.package.outputs.deb }}
+          asset_name: ${{ steps.package.outputs.deb }}

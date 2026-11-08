@@ -17,21 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import pytest
-
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
+import test.bootstrap
 from ifcopenshell.api.alignment._add_segment_to_layout import _add_segment_to_layout
 
-try:
-    ifcopenshell.file(schema="IFC4X3_ADD2")
-    IFC4X3_AVAILABLE = True
-except RuntimeError:
-    IFC4X3_AVAILABLE = False
 
-
-@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
+@test.bootstrap.requires_ifc4x3
 def test_add_segment_to_layout():
     file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")

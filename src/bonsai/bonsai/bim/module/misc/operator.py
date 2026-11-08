@@ -306,7 +306,7 @@ class DrawSystemArrows(bpy.types.Operator, tool.Ifc.Operator):
             sinks_current = []
 
             for port in tool.System.get_ports(element):
-                local_placement = ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement)
+                local_placement = ifcopenshell.util.placement.get_placement(port.ObjectPlacement)
                 m = self.get_absolute_matrix(local_placement)
                 if port.FlowDirection == "SOURCE":
                     sources_current.append(m)

@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Optional, Union
-
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.guid
@@ -28,12 +26,12 @@ import ifcopenshell.util.schema
 def add_reference(
     file: ifcopenshell.file,
     products: list[ifcopenshell.entity_instance],
-    reference: Optional[ifcopenshell.entity_instance] = None,
-    identification: Optional[str] = None,
-    name: Optional[str] = None,
-    classification: Optional[ifcopenshell.entity_instance] = None,
-    is_lightweight=True,
-) -> Union[ifcopenshell.entity_instance, None]:
+    reference: ifcopenshell.entity_instance | None = None,
+    identification: str | None = None,
+    name: str | None = None,
+    classification: ifcopenshell.entity_instance | None = None,
+    is_lightweight: bool = True,
+) -> ifcopenshell.entity_instance | None:
     """Adds a new classification reference and assigns it to the list of products
 
     A classification reference is a single entry such as "Pr_12_23_34" that
@@ -118,34 +116,35 @@ def add_reference(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "products": products,
-        "reference": reference,
-        "identification": identification,
-        "name": name,
-        "classification": classification,
-        "is_lightweight": is_lightweight,
-    }
-    return usecase.execute()
+    return usecase.execute(products, reference, identification, name, classification, is_lightweight)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
+    rooted_products: set[ifcopenshell.entity_instance]
+    non_rooted_products: set[ifcopenshell.entity_instance]
 
-    def execute(self):
-        if not self.settings["products"]:
+    def execute(
+        self,
+        products: list[ifcopenshell.entity_instance],
+        reference: ifcopenshell.entity_instance | None,
+        identification: str | None,
+        name: str | None,
+        classification: ifcopenshell.entity_instance | None,
+        is_lightweight: bool,
+    ) -> ifcopenshell.entity_instance | None:
+        if not products:
             return
 
-        if self.settings["reference"]:
-            referenced = ifcopenshell.util.element.get_referenced_elements(self.settings["reference"])
-            if set(self.settings["products"]).issubset(referenced):
+        if reference:
+            referenced = ifcopenshell.util.element.get_referenced_elements(reference)
+            if set(products).issubset(referenced):
                 # nothing to do, all elements already have this reference assigned
-                return self.settings["reference"]
+                return reference
 
-        self.rooted_products: set[ifcopenshell.entity_instance] = set()
-        self.non_rooted_products: set[ifcopenshell.entity_instance] = set()
-        for product in self.settings["products"]:
+        self.rooted_products = set()
+        self.non_rooted_products = set()
+        for product in products:
             if product.is_a("IfcRoot"):
                 self.rooted_products.add(product)
             else:
@@ -154,29 +153,36 @@ class Usecase:
         if self.non_rooted_products and self.file.schema == "IFC2X3":
             raise TypeError(f"Cannot add reference to non-IfcRoot element in IFC2X3: {self.non_rooted_products}.")
 
-        if self.settings["reference"]:
-            return self.add_from_library()
-        return self.add_from_identification()
+        if reference:
+            return self.add_from_library(reference, classification, is_lightweight)
+        return self.add_from_identification(identification, name, classification)
 
-    def add_from_identification(self):
-        reference = self.get_existing_reference(self.settings["identification"])
+    def add_from_identification(
+        self, identification: str | None, name: str | None, classification: ifcopenshell.entity_instance | None
+    ) -> ifcopenshell.entity_instance:
+        reference = self.get_existing_reference(identification)
         if not reference:
-            reference = self.file.createIfcClassificationReference(
-                Name=self.settings["name"], ReferencedSource=self.settings["classification"]
+            reference = self.file.create_entity(
+                "IfcClassificationReference", Name=name, ReferencedSource=classification
             )
             if self.file.schema == "IFC2X3":
-                reference.ItemReference = self.settings["identification"]
+                reference.ItemReference = identification
             else:
-                reference.Identification = self.settings["identification"]
+                reference.Identification = identification
 
         self.update_relationships(reference)
         return reference
 
-    def add_from_library(self) -> ifcopenshell.entity_instance:
-        if hasattr(self.settings["reference"], "ItemReference"):
-            identification = self.settings["reference"].ItemReference  # IFC2X3
+    def add_from_library(
+        self,
+        library_reference: ifcopenshell.entity_instance,
+        classification: ifcopenshell.entity_instance | None,
+        is_lightweight: bool,
+    ) -> ifcopenshell.entity_instance:
+        if hasattr(library_reference, "ItemReference"):
+            identification = library_reference.ItemReference  # IFC2X3
         else:
-            identification = self.settings["reference"].Identification
+            identification = library_reference.Identification
 
         reference = self.get_existing_reference(identification)
         if not reference:
@@ -184,21 +190,22 @@ class Usecase:
 
             old_referenced_source = ...
             existing_classification = None
-            if self.settings["is_lightweight"]:
-                old_referenced_source = self.settings["reference"].ReferencedSource
-                self.settings["reference"].ReferencedSource = None
+            if is_lightweight:
+                old_referenced_source = library_reference.ReferencedSource
+                library_reference.ReferencedSource = None
             else:
-                classification_name = self.settings["classification"].Name
+                assert classification
+                classification_name = classification.Name
                 existing_classification = [
                     c for c in self.file.by_type("IfcClassification") if c.Name == classification_name
                 ]
 
-            reference = migrator.migrate(self.settings["reference"], self.file)
+            reference = migrator.migrate(library_reference, self.file)
 
-            if self.settings["is_lightweight"]:
+            if is_lightweight:
                 assert old_referenced_source is not ...
-                reference.ReferencedSource = self.settings["classification"]
-                self.settings["reference"].ReferencedSource = old_referenced_source
+                reference.ReferencedSource = classification
+                library_reference.ReferencedSource = old_referenced_source
             elif existing_classification:
                 to_delete = set()
                 for traversed_reference in self.file.traverse(reference):
@@ -212,7 +219,7 @@ class Usecase:
         self.update_relationships(reference)
         return reference
 
-    def get_existing_reference(self, identification: Optional[str] = None) -> Union[ifcopenshell.entity_instance, None]:
+    def get_existing_reference(self, identification: str | None = None) -> ifcopenshell.entity_instance | None:
         for reference in self.file.by_type("IfcClassificationReference"):
             if self.file.schema == "IFC2X3":
                 if reference.ItemReference == identification:

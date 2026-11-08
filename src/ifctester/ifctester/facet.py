@@ -48,6 +48,7 @@ def cast_to_value(from_value, to_value):
                 return True
             elif from_value in ("false", "0"):
                 return False
+            return None
         return builtins.__dict__[target_type](from_value)
     except ValueError:
         pass
