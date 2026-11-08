@@ -119,6 +119,14 @@ def build_server() -> Any:
     def ifc_reset() -> dict[str, Any]:
         return session.ifc_reset()
 
+    @_tool
+    def ifc_undo() -> dict[str, Any]:
+        return session.ifc_undo()
+
+    @_tool
+    def ifc_redo() -> dict[str, Any]:
+        return session.ifc_redo()
+
     # ---- Query ----
     @_tool
     def ifc_summary() -> dict[str, Any]:

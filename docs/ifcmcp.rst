@@ -58,6 +58,7 @@ Available tools
 - ``ifc_load(path)`` — open an IFC file into memory
 - ``ifc_reset()`` — unload the current model, freeing all session state
 - ``ifc_save(path="")`` — write model to disk; empty path overwrites the original
+- ``ifc_undo()`` / ``ifc_redo()`` — undo or redo the last ``ifc_edit``, ``ifc_shape`` or ``ifc_quantify`` call
 
 **Query tools**
 
