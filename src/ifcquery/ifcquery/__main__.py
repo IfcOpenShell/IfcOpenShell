@@ -121,7 +121,10 @@ def main():
 
     subparsers.add_parser("summary", help="Model overview: schema, element counts, project info")
 
-    subparsers.add_parser("tree", help="Spatial hierarchy tree")
+    tree_parser = subparsers.add_parser("tree", help="Spatial hierarchy tree")
+    tree_parser.add_argument(
+        "--depth", type=int, default=None, metavar="N", help="Limit expansion to N levels (default: unlimited)"
+    )
 
     info_parser = subparsers.add_parser("info", help="Deep inspection of a specific element")
     info_parser.add_argument("element_id", help="Element step ID (e.g. 123 or #123)")
@@ -262,7 +265,7 @@ def main():
     if args.command == "summary":
         result = summary.summary(model)
     elif args.command == "tree":
-        result = tree.tree(model)
+        result = tree.tree(model, max_depth=args.depth)
     elif args.command == "info":
         try:
             element_id = parse_element_id(args.element_id)

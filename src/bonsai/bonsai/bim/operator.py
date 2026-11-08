@@ -213,6 +213,36 @@ class BIM_OT_multiple_file_selector(bpy.types.Operator, ImportHelper):
         return ImportHelper.invoke(self, context, event)
 
 
+class OpenIfcFileFolder(bpy.types.Operator):
+    bl_idname = "bim.open_ifc_file_folder"
+    bl_label = "Open IFC File Folder"
+    bl_description = (
+        "Open the folder containing the IFC file in the OS file browser, with the file selected.\n"
+        "Hold Shift to copy the full file path to the clipboard instead"
+    )
+    copy_path: bpy.props.BoolProperty(name="Copy Path", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        return bool(tool.Ifc.get_path())
+
+    def invoke(self, context, event):
+        self.copy_path = event.shift
+        return self.execute(context)
+
+    def execute(self, context):
+        path = tool.Ifc.get_path()
+        if self.copy_path:
+            context.window_manager.clipboard = path
+            self.report({"INFO"}, f"Copied to clipboard: {path}")
+            return {"FINISHED"}
+        if not os.path.isfile(path):
+            self.report({"ERROR"}, f"IFC file not found: {path}")
+            return {"CANCELLED"}
+        tool.Blender.reveal_file_in_folder(path)
+        return {"FINISHED"}
+
+
 class SelectIfcFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     bl_idname = "bim.select_ifc_file"
     bl_label = "Select IFC File"
