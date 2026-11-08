@@ -136,6 +136,18 @@ The type holds an ordered list. Each entry is an array of one of three kinds.
   a hole has no gap where the rail was. A stub of the rail still splits the panel.
 - `bottom` / `top` bound: `BASE` (v = 0), `TOP` (occurrence height), an absolute `v`, or
   `{"member": name}`.
+- `bottom_offset` / `top_offset`: move the resolved bound up, or down if negative. With
+  `"bottom": "TOP", "bottom_offset": -25` a member hangs 25 under the top at any height,
+  as a ceiling canopy over a pendant's cable; an absolute bottom would stay put when the
+  height changes. Lengths, so `scale_system` converts them. The panel shows the offset
+  beside any bound that isn't an absolute height.
+- `at_members_of: name or [names]` (verticals): stand where the members of those
+  vertical entries stand, once where several share a position, instead of being laid
+  out. A pendant's canopies and grippers are at the members of its cables, so changing
+  the cables' spacing moves them too; with separate but equal spacings they drifted apart
+  as soon as one was edited (user report). No spacing, `at_ends`, `at_corners`,
+  `within`, `bays` or `bay_ends` with it; bounds, `breaks_at` and profile are its own.
+  The panel replaces the layout fields with the list when it is set.
 - Square or raked cut at sloped bounds.
 - `breaks_at: [horizontal names]` cuts the member into pieces at the faces of those
   rows that cross it: every row of a repeating horizontal, and only where the row runs

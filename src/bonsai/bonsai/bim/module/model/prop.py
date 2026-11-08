@@ -1685,6 +1685,14 @@ class BIMFramingWithin(PropertyGroup):
         name: str
 
 
+class BIMFramingAtMembersOf(PropertyGroup):
+    name: bpy.props.StringProperty(
+        update=update_framing_preview,
+        name="At Members Of",
+        description="A vertical entry whose members this one stands at, wherever they are laid out",
+    )
+
+
 class BIMFramingEntry(PropertyGroup):
     name: bpy.props.StringProperty(update=update_framing_preview, name="Name")
     kind: bpy.props.EnumProperty(
@@ -1803,13 +1811,28 @@ class BIMFramingEntry(PropertyGroup):
     )
     bottom: bpy.props.FloatProperty(update=update_framing_preview, name="Bottom", default=0.0, subtype="DISTANCE")
     bottom_member: bpy.props.StringProperty(update=update_framing_preview, name="Bottom Member")
+    bottom_offset: bpy.props.FloatProperty(
+        update=update_framing_preview,
+        name="Bottom Offset",
+        description="Up from the bottom bound, or down if negative, so a member can stop a set distance under the top",
+        default=0.0,
+        subtype="DISTANCE",
+    )
     top_type: bpy.props.EnumProperty(
         update=update_framing_preview, name="Top", items=FRAMING_BOUND_ITEMS, default="TOP"
     )
     top: bpy.props.FloatProperty(update=update_framing_preview, name="Top", default=1.0, subtype="DISTANCE")
     top_member: bpy.props.StringProperty(update=update_framing_preview, name="Top Member")
+    top_offset: bpy.props.FloatProperty(
+        update=update_framing_preview,
+        name="Top Offset",
+        description="Up from the top bound, or down if negative, so a member can stop a set distance under the top",
+        default=0.0,
+        subtype="DISTANCE",
+    )
     breaks_at: bpy.props.CollectionProperty(type=BIMFramingBreak, name="Breaks At")
     within_also: bpy.props.CollectionProperty(type=BIMFramingWithin, name="Also Within")
+    at_members_of: bpy.props.CollectionProperty(type=BIMFramingAtMembersOf, name="At Members Of")
     bay_ends: bpy.props.EnumProperty(
         update=update_framing_preview,
         name="At Bay Ends",
@@ -1982,11 +2005,14 @@ class BIMFramingEntry(PropertyGroup):
         bottom_type: Literal["BASE", "TOP", "HEIGHT", "MEMBER"]
         bottom: float
         bottom_member: str
+        bottom_offset: float
         top_type: Literal["BASE", "TOP", "HEIGHT", "MEMBER"]
         top: float
         top_member: str
+        top_offset: float
         breaks_at: bpy.types.bpy_prop_collection_idprop[BIMFramingBreak]
         within_also: bpy.types.bpy_prop_collection_idprop[BIMFramingWithin]
+        at_members_of: bpy.types.bpy_prop_collection_idprop[BIMFramingAtMembersOf]
         between: str
         square_cut: bool
         flush: bool

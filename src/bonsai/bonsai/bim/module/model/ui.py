@@ -651,6 +651,8 @@ def _draw_framing_bound(layout: bpy.types.UILayout, props, entry, prefix: str, l
         row.prop(entry, prefix, text="")
     elif bound_type == "MEMBER":
         row.prop_search(entry, f"{prefix}_member", props, "entries", text="")
+    if prefix != "level" and bound_type != "HEIGHT":
+        row.prop(entry, f"{prefix}_offset", text="Offset")
 
 
 def _draw_framing_breaks(layout: bpy.types.UILayout, props, entry) -> None:
@@ -738,30 +740,38 @@ def draw_framing_entry(layout: bpy.types.UILayout, props, entry) -> None:
     row.prop(entry, "cut_by_hole_voids", text="Hole", toggle=True)
 
     if entry.kind == "V":
-        box.prop(entry, "spacing_mode")
-        if entry.spacing_mode == "COUNT":
-            box.prop(entry, "count")
-            _draw_framing_spacing_align(box, entry)
-        elif entry.spacing_mode != "NONE":
-            box.prop(entry, "spacing")
-            _draw_framing_spacing_align(box, entry)
         row = box.row(align=True)
-        row.prop(entry, "at_ends", toggle=True)
-        row.prop(entry, "at_corners", toggle=True)
-        row.prop(entry, "square_cut", toggle=True)
-        row.prop(entry, "flush", toggle=True)
-        if entry.at_corners:
-            box.prop(entry, "butt_corners")
-        row = box.row(align=True)
-        row.prop_search(entry, "within", props, "entries")
-        row.operator("bim.add_framing_within", text="", icon="ADD")
-        for i, item in enumerate(entry.within_also):
+        row.label(text="At Members Of")
+        row.operator("bim.add_framing_at_members_of", text="", icon="ADD")
+        for i, item in enumerate(entry.at_members_of):
             row = box.row(align=True)
-            row.prop_search(item, "name", props, "entries", text="Also Within")
-            row.operator("bim.remove_framing_within", text="", icon="REMOVE").index = i
-        if entry.within.strip():
-            box.row(align=True).prop(entry, "bay_ends", expand=True)
-        box.prop(entry, "bays")
+            row.prop_search(item, "name", props, "entries", text="")
+            row.operator("bim.remove_framing_at_members_of", text="", icon="REMOVE").index = i
+        if not entry.at_members_of:
+            box.prop(entry, "spacing_mode")
+            if entry.spacing_mode == "COUNT":
+                box.prop(entry, "count")
+                _draw_framing_spacing_align(box, entry)
+            elif entry.spacing_mode != "NONE":
+                box.prop(entry, "spacing")
+                _draw_framing_spacing_align(box, entry)
+            row = box.row(align=True)
+            row.prop(entry, "at_ends", toggle=True)
+            row.prop(entry, "at_corners", toggle=True)
+            row.prop(entry, "square_cut", toggle=True)
+            row.prop(entry, "flush", toggle=True)
+            if entry.at_corners:
+                box.prop(entry, "butt_corners")
+            row = box.row(align=True)
+            row.prop_search(entry, "within", props, "entries")
+            row.operator("bim.add_framing_within", text="", icon="ADD")
+            for i, item in enumerate(entry.within_also):
+                row = box.row(align=True)
+                row.prop_search(item, "name", props, "entries", text="Also Within")
+                row.operator("bim.remove_framing_within", text="", icon="REMOVE").index = i
+            if entry.within.strip():
+                box.row(align=True).prop(entry, "bay_ends", expand=True)
+            box.prop(entry, "bays")
         _draw_framing_bound(box, props, entry, "top", "Top")
         _draw_framing_bound(box, props, entry, "bottom", "Bottom")
         _draw_framing_breaks(box, props, entry)

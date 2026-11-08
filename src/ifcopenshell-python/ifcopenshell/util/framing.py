@@ -109,6 +109,10 @@ class VerticalEntry:
     spacing: Optional[Spacing]
     bottom: Bound
     top: Bound
+    # Up (or, negative, down) from where the bottom and top bounds resolve to, so a member
+    # can stop a set distance under the top, whatever height the framing is.
+    bottom_offset: float = 0.0
+    top_offset: float = 0.0
     at_ends: bool = False
     at_corners: bool = False
     # Space inside the bays between the members of these vertical entries, face to face.
@@ -119,6 +123,9 @@ class VerticalEntry:
     # Also stand members at the ends of those bays: "EVERY" against the parents' faces, or
     # "REMOVED" only where an opening has removed a parent.
     bay_ends: Optional[BayEnds] = None
+    # Stand where the members of these vertical entries stand, instead of being laid out:
+    # a cable's canopy and gripper follow the cable, whatever its spacing.
+    at_members_of: tuple[str, ...] = ()
     # Cut into pieces at the faces of these horizontal entries' rows, where they cross.
     breaks_at: tuple[str, ...] = ()
     # Keep the profile's faces inside the boundary instead of centring it on it: end
@@ -152,6 +159,10 @@ class HorizontalEntry:
     spacing: Optional[Spacing] = None
     bottom: Optional[Bound] = None
     top: Optional[Bound] = None
+    # Up (or, negative, down) from where the bottom and top bounds resolve to, so a member
+    # can stop a set distance under the top, whatever height the framing is.
+    bottom_offset: float = 0.0
+    top_offset: float = 0.0
     breaks_at: tuple[str, ...] = ()
     # A repeat fills each gap between the rows of this horizontal entry.
     within: Optional[str] = None
@@ -192,6 +203,10 @@ class InfillEntry:
     name: str
     bottom: Bound
     top: Bound
+    # Up (or, negative, down) from where the bottom and top bounds resolve to, so a member
+    # can stop a set distance under the top, whatever height the framing is.
+    bottom_offset: float = 0.0
+    top_offset: float = 0.0
     between: Optional[str] = None
     gap: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)  # left, right, bottom, top
     max_width: Optional[float] = None
@@ -343,6 +358,8 @@ _LENGTH_KEYS = (
     "extend_start",
     "extend_end",
     "level_offset",
+    "bottom_offset",
+    "top_offset",
 )
 
 
@@ -432,23 +449,32 @@ def _parse_entry(item: dict[str, Any], name: str) -> Entry:
     if void_role is not None:
         return _parse_void_framing(item, name, kind, void_role)
     if kind == "V":
+        at_members_of = _parse_names(item.get("at_members_of"), name, "at_members_of")
+        for key in ("spacing", "at_ends", "at_corners", "within", "bays", "bay_ends") if at_members_of else ():
+            if item.get(key):
+                raise FramingError(
+                    f"Vertical {name!r} stands at the members of other entries, so it cannot have {key!r}."
+                )
         bay_ends = item.get("bay_ends")
         if bay_ends not in (None, "EVERY", "REMOVED"):
             raise FramingError(f"Vertical {name!r} has unknown bay ends {bay_ends!r}.")
         if bay_ends and not item.get("within"):
             raise FramingError(f"Vertical {name!r} needs 'within' for bay ends.")
         if spacing is None and not item.get("at_ends") and not item.get("at_corners") and not bay_ends:
-            raise FramingError(f"Vertical {name!r} needs spacing, at_ends, at_corners or bay_ends.")
+            if not at_members_of:
+                raise FramingError(f"Vertical {name!r} needs spacing, at_ends, at_corners, bay_ends or at_members_of.")
         return VerticalEntry(
             name=name,
             spacing=spacing,
             bottom=_parse_bound(item.get("bottom", "BASE"), name),
             top=_parse_bound(item.get("top", "TOP"), name),
+            **_parse_bound_offsets(item, name),
             at_ends=bool(item.get("at_ends", False)),
             at_corners=bool(item.get("at_corners", False)),
             within=_parse_names(item.get("within"), name, "within"),
             bays=_parse_selection(item.get("bays"), name, "bays"),
             bay_ends=bay_ends,
+            at_members_of=at_members_of,
             breaks_at=tuple(item.get("breaks_at", ())),
             flush=bool(item.get("flush", False)),
             butt_corners=bool(item.get("butt_corners", False)),
@@ -485,6 +511,7 @@ def _parse_entry(item: dict[str, Any], name: str) -> Entry:
             spacing=spacing,
             bottom=_parse_bound(item.get("bottom", "BASE"), name),
             top=_parse_bound(item.get("top", "TOP"), name),
+            **_parse_bound_offsets(item, name),
             breaks_at=tuple(item.get("breaks_at", ())),
             within=item.get("within"),
             rows=_parse_selection(item.get("rows"), name, "rows"),
@@ -505,6 +532,7 @@ def _parse_entry(item: dict[str, Any], name: str) -> Entry:
             name=name,
             bottom=_parse_bound(item.get("bottom", "BASE"), name),
             top=_parse_bound(item.get("top", "TOP"), name),
+            **_parse_bound_offsets(item, name),
             between=item.get("between"),
             gap=_parse_gap(item.get("gap", 0.0), name),
             max_width=max_width,
@@ -527,7 +555,7 @@ def _parse_void_framing(item: dict[str, Any], name: str, kind: Any, void_role: A
     if kind == "V":
         if void_role != "JAMB":
             raise FramingError(f"Vertical {name!r} has unknown void role {void_role!r}.")
-        for key in ("spacing", "at_ends", "at_corners", "within", "bays", "bay_ends"):
+        for key in ("spacing", "at_ends", "at_corners", "within", "bays", "bay_ends", "at_members_of"):
             if item.get(key):
                 raise FramingError(f"Jamb {name!r} frames openings, so it cannot have {key!r}.")
         jamb_height = item.get("jamb_height", "FULL")
@@ -538,6 +566,7 @@ def _parse_void_framing(item: dict[str, Any], name: str, kind: Any, void_role: A
             spacing=None,
             bottom=_parse_bound(item.get("bottom", "BASE"), name),
             top=_parse_bound(item.get("top", "TOP"), name),
+            **_parse_bound_offsets(item, name),
             breaks_at=tuple(item.get("breaks_at", ())),
             void_role="JAMB",
             void_layer=layer,
@@ -562,6 +591,10 @@ def _parse_bound(value: Any, name: str) -> Bound:
     if isinstance(value, dict) and isinstance(value.get("member"), str):
         return {"member": value["member"]}
     raise FramingError(f"Entry {name!r} has an invalid bound {value!r}.")
+
+
+def _parse_bound_offsets(item: dict[str, Any], name: str) -> dict[str, float]:
+    return {key: _parse_length(item.get(key, 0.0), name, key) for key in ("bottom_offset", "top_offset")}
 
 
 def _parse_names(value: Any, name: str, key: str) -> tuple[str, ...]:
@@ -634,6 +667,8 @@ def _validate_references(entries: list[Entry]) -> None:
         if isinstance(e, VerticalEntry):
             for ref in e.within:
                 expect(ref, VerticalEntry, e.name, "'within'")
+            for ref in e.at_members_of:
+                expect(ref, VerticalEntry, e.name, "'at_members_of'")
             for ref in e.breaks_at:
                 expect(ref, HorizontalEntry, e.name, "'breaks_at'", allow_repeating=True)
                 if e.name in getattr(by_name[ref], "breaks_at", ()):
@@ -658,9 +693,9 @@ def _validate_references(entries: list[Entry]) -> None:
             expect(bound_ref(e.bottom), HorizontalEntry, e.name, "bottom bound", allow_repeating=True)
             expect(bound_ref(e.top), HorizontalEntry, e.name, "top bound", allow_repeating=True)
 
-    # Verticals depend on verticals through 'within', horizontals on horizontals through
+    # Verticals depend on verticals through 'within' and 'at_members_of', horizontals on horizontals through
     # their bounds and 'within'. Nothing else can form a cycle, see solve().
-    _topological_order([e for e in entries if isinstance(e, VerticalEntry)], lambda e: list(e.within))
+    _topological_order([e for e in entries if isinstance(e, VerticalEntry)], _vertical_deps)
     _topological_order([e for e in entries if isinstance(e, HorizontalEntry)], _horizontal_deps)
 
 
@@ -742,12 +777,12 @@ def solve(
 
     vertical_positions: dict[str, list[tuple[float, tuple[int, int, int]]]] = {}
     verticals = [e for e in entries if isinstance(e, VerticalEntry) and not e.void_role]
-    for entry in _topological_order(verticals, lambda e: list(e.within)):
+    for entry in _topological_order(verticals, _vertical_deps):
         positions = _solve_vertical_positions(
             entry, guide, scope, vertical_positions, extents, lateral or {}, {e.name: e for e in verticals}
         )
         vertical_positions[entry.name] = positions
-        v_start, v_end = _resolve_bounds(entry.name, entry.bottom, entry.top, height, levels, extents)
+        v_start, v_end = _entry_bounds(entry, height, levels, extents)
         if v_end - v_start <= TOLERANCE:
             raise FramingError(f"Vertical {entry.name!r} has no height between its bounds.")
         for u, address in positions:
@@ -826,7 +861,7 @@ def solve(
     for entry in verticals:
         if entry.bay_ends != "REMOVED":
             continue
-        v_start, v_end = _resolve_bounds(entry.name, entry.bottom, entry.top, height, levels, extents)
+        v_start, v_end = _entry_bounds(entry, height, levels, extents)
         positions = vertical_positions[entry.name]
         for parent in planned:
             if parent.entry not in entry.within or parent.address[1] < 0:
@@ -916,7 +951,7 @@ def solve(
     for entry in horizontals:
         if entry.bay_ends != "REMOVED":
             continue
-        v_start, v_end = _resolve_bounds(entry.name, entry.bottom, entry.top, height, levels, extents)
+        v_start, v_end = _entry_bounds(entry, height, levels, extents)
         lo, hi = extents.get(entry.name, (0.0, 0.0))
         for parent in uncut_horizontals:
             v = parent.v
@@ -1065,6 +1100,10 @@ class _Guide:
         return first, last
 
 
+def _vertical_deps(e: VerticalEntry) -> list[str]:
+    return [*e.within, *e.at_members_of]
+
+
 def _horizontal_deps(e: HorizontalEntry) -> list[Optional[str]]:
     return [b["member"] if isinstance(b, dict) else None for b in (e.v, e.bottom, e.top)] + [e.within]
 
@@ -1131,6 +1170,18 @@ def _resolve_bounds(
     return v_bottom, (above[0] if above else tops[-1])
 
 
+def _entry_bounds(
+    entry: Union["VerticalEntry", "HorizontalEntry", "InfillEntry"],
+    height: float,
+    levels: dict[str, list[float]],
+    extents: dict[str, tuple[float, float]],
+) -> tuple[float, float]:
+    """An entry's bounds, resolved and moved by its bottom and top offsets."""
+    assert entry.bottom is not None and entry.top is not None
+    v_start, v_end = _resolve_bounds(entry.name, entry.bottom, entry.top, height, levels, extents)
+    return v_start + entry.bottom_offset, v_end + entry.top_offset
+
+
 def _solve_levels(
     horizontals: list[HorizontalEntry], height: float, extents: dict[str, tuple[float, float]]
 ) -> dict[str, list[float]]:
@@ -1144,7 +1195,7 @@ def _solve_levels(
             levels[entry.name] = [v + entry.level_offset]
             continue
         assert entry.spacing and entry.bottom is not None and entry.top is not None
-        start, end = _resolve_bounds(entry.name, entry.bottom, entry.top, height, levels, extents)
+        start, end = _entry_bounds(entry, height, levels, extents)
         if end - start <= TOLERANCE:
             raise FramingError(f"Horizontal {entry.name!r} has no room between its bounds.")
         gaps = [(start, end)]
@@ -1311,6 +1362,22 @@ def _parent_extent(
     return -half, half
 
 
+def _positions_at_members_of(
+    entry: VerticalEntry, solved: dict[str, list[tuple[float, tuple[int, int, int]]]]
+) -> list[tuple[float, tuple[int, int, int]]]:
+    """Where the members of ``entry.at_members_of`` stand, once each where several share a
+    position, numbered along each segment."""
+    found = sorted((u, address[0]) for name in entry.at_members_of for u, address in solved[name])
+    positions: list[tuple[float, tuple[int, int, int]]] = []
+    count: dict[int, int] = {}
+    for u, segment in found:
+        if positions and abs(u - positions[-1][0]) <= TOLERANCE:
+            continue
+        positions.append((u, (segment, 0, count.get(segment, 0))))
+        count[segment] = count.get(segment, 0) + 1
+    return positions
+
+
 def _solve_vertical_positions(
     entry: VerticalEntry,
     guide: _Guide,
@@ -1320,6 +1387,8 @@ def _solve_vertical_positions(
     lateral: Optional[dict[str, tuple[float, float]]] = None,
     verticals: Optional[dict[str, VerticalEntry]] = None,
 ) -> list[tuple[float, tuple[int, int, int]]]:
+    if entry.at_members_of:
+        return _positions_at_members_of(entry, solved)
     # Flush, the member's own faces are what reach the path ends and the range ends.
     own_lo, own_hi = extents.get(entry.name, (0.0, 0.0)) if entry.flush else (0.0, 0.0)
     lateral = lateral or {}
@@ -1467,7 +1536,7 @@ def _solve_infill(
         ``within`` entry where an opening has removed all of that row in its bay.
     """
     gap_left, gap_right, gap_bottom, gap_top = entry.gap
-    v_start, v_end = _resolve_bounds(entry.name, entry.bottom, entry.top, height, levels, extents)
+    v_start, v_end = _entry_bounds(entry, height, levels, extents)
     if v_end - v_start - gap_bottom - gap_top <= TOLERANCE:
         raise FramingError(f"Infill {entry.name!r} has no height between its bounds.")
 
@@ -1674,7 +1743,7 @@ def _frame_void(
         for k, (entry, mode) in enumerate(layers):
             lo, hi = extents.get(entry.name, (0.0, 0.0))
             u = face - hi if side == 0 else face - lo
-            v_start, v_end = _resolve_bounds(entry.name, entry.bottom, entry.top, height, levels, extents)
+            v_start, v_end = _entry_bounds(entry, height, levels, extents)
             if mode == "HEAD" and not reaches_top:
                 v_end = void.v_end
             in_way = [
@@ -2210,7 +2279,7 @@ def _frame_sloped_voids(
                 line = (vertex, y.direction)
                 if on_boundary(y.a, y.b) and x.kind == "V" and abs(y.direction[1]) <= TOLERANCE:
                     # A jamb ending on the framing's base or top stops at its own bound.
-                    v_bottom, v_top = _resolve_bounds(entry.name, entry.bottom, entry.top, height, levels, extents)
+                    v_bottom, v_top = _entry_bounds(entry, height, levels, extents)
                     line = ((vertex[0], v_bottom if vertex[1] < height / 2 else v_top), (1.0, 0.0))
                 at = _meet(origin, x.t, *line)
                 if at is None or abs(_cross(x.t, line[1])) < 0.2:

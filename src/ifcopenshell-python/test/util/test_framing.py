@@ -1569,6 +1569,108 @@ class TestLevelOffset:
         assert solve(members).by_entry("Above")[0].v == pytest.approx(1.25)
 
 
+class TestBoundOffsets:
+    def test_a_member_hangs_a_set_distance_under_the_top_at_any_height(self):
+        members = [{"name": "Canopy", "kind": "V", "at_ends": True, "bottom": "TOP", "bottom_offset": -0.025}]
+        for height in (1.0, 2.0):
+            for canopy in solve(members, height=height).by_entry("Canopy"):
+                assert (canopy.v_start, canopy.v_end) == pytest.approx((height - 0.025, height))
+
+    def test_offsets_a_member_bound(self):
+        members = [
+            {"name": "Rail", "kind": "H", "v": 1.0},
+            {"name": "Post", "kind": "V", "at_ends": True, "top": {"member": "Rail"}, "top_offset": -0.1},
+        ]
+        post = solve(members).by_entry("Post")[0]
+        assert (post.v_start, post.v_end) == pytest.approx((0.0, 0.9))
+
+    def test_offsets_the_bounds_of_repeating_rows(self):
+        members = [
+            {"name": "Rail", "kind": "H", "spacing": {"mode": "COUNT", "value": 1}, "bottom_offset": 0.5},
+        ]
+        # One row, centred between the offset bottom (0.5) and the top (1.1).
+        assert solve(members).by_entry("Rail")[0].v == pytest.approx(0.8)
+
+    def test_must_be_numbers(self):
+        members = [{"name": "Canopy", "kind": "V", "at_ends": True, "bottom": "TOP", "bottom_offset": "-25"}]
+        with pytest.raises(FramingError, match="bottom_offset"):
+            solve(members)
+
+    def test_are_scaled_as_lengths(self):
+        system = {
+            "members": [{"name": "Canopy", "kind": "V", "bottom": "TOP", "bottom_offset": -25.0, "top_offset": 5}]
+        }
+        (canopy,) = subject.scale_system(system, 0.001)["members"]
+        assert canopy["bottom"] == "TOP"
+        assert (canopy["bottom_offset"], canopy["top_offset"]) == pytest.approx((-0.025, 0.005))
+
+
+class TestAtMembersOf:
+    CABLES = [
+        {"name": "End", "kind": "V", "spacing": {"mode": "MAX", "value": 1.0e6, "align": "START", "offset": 0.05}},
+        {"name": "Other End", "kind": "V", "spacing": {"mode": "MAX", "value": 1.0e6, "align": "END", "offset": 0.05}},
+        {"name": "Mid", "kind": "V", "within": ["End", "Other End"], "spacing": {"mode": "MAX", "value": 0.5}},
+    ]
+
+    def test_stands_where_the_members_of_other_entries_stand(self):
+        members = [*self.CABLES, {"name": "Canopy", "kind": "V", "at_members_of": ["End", "Other End", "Mid"]}]
+        layout = solve(members)
+        cables = sorted(m.u for m in layout.verticals if m.entry != "Canopy")
+        assert len(cables) == 7  # 2.9 between the ends, at most 0.5 apart: 6 bays
+        assert sorted(m.u for m in layout.by_entry("Canopy")) == pytest.approx(cables)
+
+    def test_follows_a_change_of_spacing(self):
+        canopy = {"name": "Canopy", "kind": "V", "at_members_of": "Mid"}
+        for value in (0.5, 1.0):
+            cables = [*self.CABLES[:2], dict(self.CABLES[2], spacing={"mode": "MAX", "value": value})]
+            layout = solve([*cables, canopy])
+            mids = [m.u for m in layout.by_entry("Mid")]
+            assert [m.u for m in layout.by_entry("Canopy")] == pytest.approx(mids)
+
+    def test_stands_once_where_members_share_a_position(self):
+        members = [
+            {"name": "A", "kind": "V", "at_ends": True},
+            {"name": "B", "kind": "V", "at_ends": True, "spacing": {"mode": "COUNT", "value": 1}},
+            {"name": "C", "kind": "V", "at_members_of": ["A", "B"]},
+        ]
+        layout = solve(members)
+        assert [m.u for m in layout.by_entry("C")] == pytest.approx([0.0, 1.5, 3.0])
+        assert len({m.address for m in layout.by_entry("C")}) == 3
+
+    def test_has_its_own_bounds(self):
+        members = [
+            {"name": "Post", "kind": "V", "at_ends": True},
+            {"name": "Cap", "kind": "V", "at_members_of": "Post", "bottom": "TOP", "bottom_offset": -0.1},
+        ]
+        caps = solve(members).by_entry("Cap")
+        assert len(caps) == 2
+        assert all((m.v_start, m.v_end) == pytest.approx((1.0, 1.1)) for m in caps)
+
+    @pytest.mark.parametrize(
+        "key, value", [("spacing", {"mode": "COUNT", "value": 2}), ("at_ends", True), ("within", "Post")]
+    )
+    def test_cannot_also_be_laid_out(self, key, value):
+        members = [
+            {"name": "Post", "kind": "V", "at_ends": True},
+            {"name": "Cap", "kind": "V", "at_members_of": "Post", key: value},
+        ]
+        with pytest.raises(FramingError, match=key):
+            solve(members)
+
+    def test_needs_vertical_entries(self):
+        members = [{"name": "Rail", "kind": "H", "v": 1.0}, {"name": "Cap", "kind": "V", "at_members_of": "Rail"}]
+        with pytest.raises(FramingError, match="vertical"):
+            solve(members)
+
+    def test_cannot_follow_each_other(self):
+        members = [
+            {"name": "A", "kind": "V", "at_members_of": "B"},
+            {"name": "B", "kind": "V", "at_members_of": "A"},
+        ]
+        with pytest.raises(FramingError):
+            solve(members)
+
+
 class TestCornerMembers:
     def test_keep_both_legs_clear(self):
         members = [

@@ -653,11 +653,17 @@ def _load_props(obj: bpy.types.Object) -> None:
         for name in within[1:]:
             entry.within_also.add().name = name
         entry.bay_ends = member.get("bay_ends") or "NONE"
+        at_members_of = member.get("at_members_of") or []
+        entry.at_members_of.clear()
+        for name in [at_members_of] if isinstance(at_members_of, str) else at_members_of:
+            entry.at_members_of.add().name = name
         if "v" in member:
             _bound_to_props(entry, "level", member["v"], unit_scale)
         entry.level_offset = member.get("level_offset", 0.0) * unit_scale
         _bound_to_props(entry, "bottom", member.get("bottom", "BASE"), unit_scale)
         _bound_to_props(entry, "top", member.get("top", "TOP"), unit_scale)
+        entry.bottom_offset = member.get("bottom_offset", 0.0) * unit_scale
+        entry.top_offset = member.get("top_offset", 0.0) * unit_scale
         entry.breaks_at.clear()
         for name in member.get("breaks_at", []):
             entry.breaks_at.add().name = name
@@ -746,6 +752,10 @@ def system_from_props(props, previous: dict[str, Any]) -> dict[str, Any]:
         else:
             member["bottom"] = _bound_from_props(entry, "bottom", unit_scale)
             member["top"] = _bound_from_props(entry, "top", unit_scale)
+            for prefix in ("bottom", "top"):
+                offset = getattr(entry, f"{prefix}_offset")
+                if offset and getattr(entry, f"{prefix}_type") != "HEIGHT":
+                    member[f"{prefix}_offset"] = offset / unit_scale
         if entry.kind == "H":
             if entry.corner_joint != "MITRE":
                 member["corner_joint"] = entry.corner_joint
@@ -775,6 +785,11 @@ def system_from_props(props, previous: dict[str, Any]) -> dict[str, Any]:
             member["cut_by_hole_voids"] = False
         if (entry.kind, entry.void_role) in (("V", "JAMB"), ("H", "HEAD"), ("H", "SILL")):
             _void_role_from_props(member, entry)
+        elif entry.kind == "V" and (at := [n for n in dict.fromkeys(m.name.strip() for m in entry.at_members_of) if n]):
+            # It stands where those members stand, so it has no layout of its own.
+            for key in ("spacing", "at_ends", "at_corners", "butt_corners", "within", "bays", "bay_ends"):
+                member.pop(key, None)
+            member["at_members_of"] = at[0] if len(at) == 1 else at
         members.append(member)
     system = {k: v for k, v in previous.items() if k not in ("members", "scope")}
     system["scope"] = props.scope
@@ -809,7 +824,7 @@ def _void_role_from_props(member: dict[str, Any], entry) -> None:
     ]
     if entry.kind == "H":
         # A head or sill is placed by its opening, so it has no bounds or breaks either.
-        layout_keys += ["bottom", "top", "breaks_at"]
+        layout_keys += ["bottom", "top", "bottom_offset", "top_offset", "breaks_at"]
     for key in layout_keys:
         member.pop(key, None)
     member["void_role"] = entry.void_role
@@ -1126,6 +1141,50 @@ class RemoveFramingWithin(bpy.types.Operator):
             entry = props.entries[props.active_entry_index]
             if 0 <= self.index < len(entry.within_also):
                 entry.within_also.remove(self.index)
+                update_framing_preview(obj)
+        return {"FINISHED"}
+
+
+class AddFramingAtMembersOf(bpy.types.Operator):
+    bl_idname = "bim.add_framing_at_members_of"
+    bl_label = "Add At Members Of"
+    bl_description = (
+        "Stand where the members of another vertical entry stand, instead of having a layout of its own, "
+        "so it follows that entry's spacing"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        global _is_loading_props
+        obj = context.active_object
+        props = tool.Model.get_framing_props(obj)
+        if 0 <= props.active_entry_index < len(props.entries):
+            entry = props.entries[props.active_entry_index]
+            taken = {entry.name} | {m.name for m in entry.at_members_of}
+            # Start with the first vertical entry not already listed.
+            choice = next((e.name for e in props.entries if e.kind == "V" and e.name not in taken), "")
+            _is_loading_props = True
+            try:
+                entry.at_members_of.add().name = choice
+            finally:
+                _is_loading_props = False
+            update_framing_preview(obj)
+        return {"FINISHED"}
+
+
+class RemoveFramingAtMembersOf(bpy.types.Operator):
+    bl_idname = "bim.remove_framing_at_members_of"
+    bl_label = "Remove At Members Of"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        props = tool.Model.get_framing_props(obj)
+        if 0 <= props.active_entry_index < len(props.entries):
+            entry = props.entries[props.active_entry_index]
+            if 0 <= self.index < len(entry.at_members_of):
+                entry.at_members_of.remove(self.index)
                 update_framing_preview(obj)
         return {"FINISHED"}
 
