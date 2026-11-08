@@ -712,6 +712,16 @@ Profile convention, for users drawing profiles:
     for walls clipped under roofs. An option to write those pieces as exact faceted
     solids instead was considered and parked.
 
+- **Profiles are read with `convert-back-units`** (`get_profile_points`,
+  `get_profile_mesh`), so they come back in the file's units whatever the kernel
+  detects. The kernel reads units only from a file's single `IfcContext`. An asset
+  library file also has an `IfcProjectLibrary`, so the kernel assumed metres and left
+  lengths unscaled, and dividing by the unit scale made millimetre profiles 1000 times
+  too large ("Vertical 'Gripper Start' has no height between its bounds", user report,
+  BIM_Objects linear pendant). The readers and the writer no longer take `unit_scale`.
+  `get_framing_voids` still mixes kernel output with an SI placement, so openings in
+  a framed element inside a library file are still affected.
+
 - **Pure solver** (no IFC, no Blender) returning dataclasses, shared by the viewport
   preview and the IFC writer. Suggested homes: the solver in
   `ifcopenshell.util.framing`, the IFC writer in

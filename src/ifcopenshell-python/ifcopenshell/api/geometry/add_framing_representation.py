@@ -250,23 +250,32 @@ def _rotate_2d(points: np.ndarray, angle: float) -> np.ndarray:
     return points @ np.array(((c, s), (-s, c)))
 
 
-def get_profile_points(profile: ifcopenshell.entity_instance, unit_scale: float) -> np.ndarray:
-    """2D vertices of a tessellated profile, in project units, for measuring its extents."""
+def _profile_shape(profile: ifcopenshell.entity_instance):
+    """A profile tessellated by the kernel, in the profile's own file units.
+
+    Converting back is what makes the units right in every file: the kernel only reads
+    units from a file with a single IfcContext. In a library file, which also has an
+    IfcProjectLibrary, it assumes metres, leaves lengths unscaled, and dividing them by
+    the file's unit scale would make every profile 1000 times too large in millimetres."""
     settings = ifcopenshell.geom.settings()
     settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-    shape = ifcopenshell.geom.create_shape(settings, profile)
+    settings.set("convert-back-units", True)
+    return ifcopenshell.geom.create_shape(settings, profile)
+
+
+def get_profile_points(profile: ifcopenshell.entity_instance) -> np.ndarray:
+    """2D vertices of a tessellated profile, in project units, for measuring its extents."""
+    shape = _profile_shape(profile)
     vertices = ifcopenshell.util.shape.get_vertices(shape)
     if vertices.size == 0:
         raise FramingError(f"Profile {profile.ProfileName!r} has no geometry.")
-    return vertices[:, :2] / unit_scale
+    return vertices[:, :2]
 
 
-def get_profile_mesh(profile: ifcopenshell.entity_instance, unit_scale: float) -> tuple[np.ndarray, np.ndarray]:
+def get_profile_mesh(profile: ifcopenshell.entity_instance) -> tuple[np.ndarray, np.ndarray]:
     """A profile's triangulated area, in project units: 2D points and counter-clockwise triangles."""
-    settings = ifcopenshell.geom.settings()
-    settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-    shape = ifcopenshell.geom.create_shape(settings, profile)
-    vertices = ifcopenshell.util.shape.get_vertices(shape)[:, :2] / unit_scale
+    shape = _profile_shape(profile)
+    vertices = ifcopenshell.util.shape.get_vertices(shape)[:, :2]
     edges = np.asarray(ifcopenshell.util.shape.get_edges(shape)).reshape(-1, 2)
     # The kernel returns faces for some profiles (circles, hollow sections) but only the
     # outline for others (rectangles, I-shapes), so the area is always rebuilt from the
@@ -864,7 +873,9 @@ def get_framing_voids(
     :param element: The framing occurrence.
     :param guide: The guide path's points, in the element's object coordinates.
     :param closed: Whether the guide path loops back to its first point.
-    :param unit_scale: See :func:`add_framing_representation`.
+    :param unit_scale: The unit scale as calculated by
+        ifcopenshell.util.unit.calculate_unit_scale. If not provided, it
+        will be automatically calculated for you.
     :return: One void per opening that reaches along the guide.
     """
     openings = [rel.RelatedOpeningElement for rel in getattr(element, "HasOpenings", None) or ()]
@@ -1048,7 +1059,6 @@ def add_framing_representation(
     scope: SpacingScope = "SEGMENT",
     part_of_product: Optional[ifcopenshell.entity_instance] = None,
     constituent_set: Optional[ifcopenshell.entity_instance] = None,
-    unit_scale: Optional[float] = None,
     voids: tuple[ifcopenshell.util.framing.Void, ...] = (),
 ) -> ifcopenshell.entity_instance:
     """Create a body representation for a framing system laid along a guide path.
@@ -1080,17 +1090,11 @@ def add_framing_representation(
         the constituent named after the entry. The geometry kernel does not
         resolve constituents through shape aspects, so without item styles
         viewers show every entry in one colour.
-    :param unit_scale: The unit scale as calculated by
-        ifcopenshell.util.unit.calculate_unit_scale. If not provided, it
-        will be automatically calculated for you.
     :param voids: Rough openings to frame, see :func:`get_framing_voids`. The
         element's IfcOpeningElements still cut its body as usual, including members
         that are not cut by them.
     :return: IfcShapeRepresentation for the framing system.
     """
-    if unit_scale is None:
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
-
     profiles: dict[str, ifcopenshell.entity_instance] = {}
     unresolved: list[str] = []
     for member in system.get("members", []):
@@ -1108,7 +1112,7 @@ def add_framing_representation(
         system=system,
         guide=guide,
         height=height,
-        profile_points={name: get_profile_points(p, unit_scale) for name, p in profiles.items()},
+        profile_points={name: get_profile_points(p) for name, p in profiles.items()},
         closed=closed,
         scope=scope,
         voids=voids,

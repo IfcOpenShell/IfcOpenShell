@@ -191,7 +191,7 @@ def update_framing_preview(obj: bpy.types.Object) -> None:
             if profile is None:
                 raise FramingError(f"Entry {member['name']!r} needs a profile.")
             profile_meshes[member["name"]] = _profile_meshes.get_or_compute(
-                profile.id(), lambda profile=profile: get_profile_mesh(profile, unit_scale)
+                profile.id(), lambda profile=profile: get_profile_mesh(profile)
             )
         guide = read_guide(element) or default_guide(props.height / unit_scale, unit_scale)
         closed = guide.get("closed", False)
@@ -377,7 +377,6 @@ def regenerate_framing(obj: bpy.types.Object) -> bool:
             scope=system.get("scope", "SEGMENT"),
             part_of_product=element.Representation,
             constituent_set=get_constituent_set(element),
-            unit_scale=unit_scale,
             voids=voids,
         )
     except FramingError as e:
@@ -1353,7 +1352,7 @@ def framing_ghost(
             if profile is None:
                 return None
             profile_meshes[member["name"]] = _profile_meshes.get_or_compute(
-                profile.id(), lambda profile=profile: get_profile_mesh(profile, unit_scale)
+                profile.id(), lambda profile=profile: get_profile_mesh(profile)
             )
         origin = points[0]
         items = compute_framing_geometry(

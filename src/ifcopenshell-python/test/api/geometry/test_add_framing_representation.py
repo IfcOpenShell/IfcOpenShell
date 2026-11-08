@@ -28,6 +28,7 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.root
 import ifcopenshell.api.style
+import ifcopenshell.api.unit
 import ifcopenshell.geom
 import ifcopenshell.util.framing
 import ifcopenshell.util.shape
@@ -41,6 +42,7 @@ from ifcopenshell.api.geometry.add_framing_representation import (
     compute_framing_mesh,
     get_framing_voids,
     get_profile_mesh,
+    get_profile_points,
     project_void,
 )
 from ifcopenshell.util.framing import FramingError, Void
@@ -377,7 +379,7 @@ class TestOffsetRailAroundAClimbingCorner:
         system = handrail_system(-0.1)
         system["members"][0]["profile"]["id"] = profile.id()
         representation = ifcopenshell.api.geometry.add_framing_representation(
-            f, context=body, system=system, guide=TURN_AND_CLIMB, height=1.1, unit_scale=1.0
+            f, context=body, system=system, guide=TURN_AND_CLIMB, height=1.1
         )
         settings = ifcopenshell.geom.settings()
         for item in representation.Items:
@@ -414,7 +416,6 @@ class TestAddFramingRepresentation:
             system=system or self.system(),
             guide=guide,
             height=1.1,
-            unit_scale=1.0,
             **kwargs,
         )
 
@@ -554,7 +555,7 @@ class TestAddFramingRepresentation:
         ],
     )
     def test_profile_mesh_area(self, make, expected_area):
-        points, triangles = get_profile_mesh(make(self.file), 1.0)
+        points, triangles = get_profile_mesh(make(self.file))
         a, b, c = points[triangles[:, 0]], points[triangles[:, 1]], points[triangles[:, 2]]
         area = ((b - a)[:, 0] * (c - a)[:, 1] - (b - a)[:, 1] * (c - a)[:, 0]) / 2
         assert (area > 0).all()
@@ -563,7 +564,7 @@ class TestAddFramingRepresentation:
     def test_profile_mesh_builds_a_closed_prism(self):
         profile = self.file.createIfcRectangleHollowProfileDef("AREA", "Tube", None, 0.1, 0.1, 0.01, None, None)
         items = [FramingExtrusion("Post", np.zeros(3), np.array((1.0, 0.0, 0.0)), 1.0)]
-        mesh = compute_framing_mesh(items, {"Post": get_profile_mesh(profile, 1.0)})
+        mesh = compute_framing_mesh(items, {"Post": get_profile_mesh(profile)})
         edge_uses = {}
         for face in mesh.faces:
             for a, b in zip(face, face[1:] + face[:1]):
@@ -576,6 +577,69 @@ class TestAddFramingRepresentation:
         system["members"][0]["profile"] = {"id": 0, "name": "Missing"}
         with pytest.raises(FramingError, match="No profile found for: Post"):
             self.add(system)
+
+
+class TestProjectUnits:
+    """Profiles are measured in project units, whatever units the geometry kernel detects.
+
+    The kernel reads units only from a file's single IfcContext, so in a library file (an
+    IfcProject and an IfcProjectLibrary) it leaves lengths unscaled."""
+
+    def make_file(self, prefix, library):
+        f = ifcopenshell.file(schema="IFC4")
+        ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(f, unit_type="LENGTHUNIT", prefix=prefix)
+        ifcopenshell.api.unit.assign_unit(f, units=[unit])
+        if library:
+            ifcopenshell.api.root.create_entity(f, ifc_class="IfcProjectLibrary")
+        return f
+
+    @pytest.mark.parametrize("library", [False, True])
+    @pytest.mark.parametrize("prefix, size", [("MILLI", 50.0), (None, 0.05)])
+    def test_profile_points_are_in_project_units(self, prefix, size, library):
+        f = self.make_file(prefix, library)
+        profile = f.createIfcRectangleProfileDef("AREA", "Post", None, size, 2 * size)
+        points = get_profile_points(profile)
+        assert points.min(axis=0) == pytest.approx((-size / 2, -size))
+        assert points.max(axis=0) == pytest.approx((size / 2, size))
+        mesh_points, _ = get_profile_mesh(profile)
+        assert mesh_points.max(axis=0) == pytest.approx((size / 2, size))
+
+    def test_a_member_standing_on_a_flush_rail_in_a_millimetre_library_file(self):
+        # A light fixture's cable gripper on its housing, in an asset library file.
+        f = self.make_file("MILLI", library=True)
+        model = ifcopenshell.api.context.add_context(f, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        housing = f.createIfcRectangleProfileDef("AREA", "Housing", None, 44.5, 90.5)
+        gripper = f.createIfcCircleProfileDef("AREA", "Gripper", None, 4.0)
+        system = {
+            "members": [
+                {
+                    "name": "Housing",
+                    "kind": "H",
+                    "v": "BASE",
+                    "flush": True,
+                    "profile": {"id": housing.id(), "name": "Housing"},
+                },
+                {
+                    "name": "Gripper",
+                    "kind": "V",
+                    "at_ends": True,
+                    "bottom": {"member": "Housing"},
+                    "top": 115.5,
+                    "profile": {"id": gripper.id(), "name": "Gripper"},
+                },
+            ]
+        }
+        representation = ifcopenshell.api.geometry.add_framing_representation(
+            f, context=body, system=system, guide=[(0.0, 0.0, 0.0), (1219.2, 0.0, 0.0)], height=1309.7
+        )
+        grippers = [i for i in representation.Items if i.SweptArea == gripper]
+        assert len(grippers) == 2
+        assert all(i.Position.Location.Coordinates[2] == pytest.approx(90.5) for i in grippers)
+        assert all(i.Depth == pytest.approx(25.0) for i in grippers)
 
 
 class TestProjectVoid:
@@ -720,7 +784,7 @@ class TestSlopedOpenings:
 
     def test_mesh_is_closed(self):
         items = self.items()
-        meshes = {name: get_profile_mesh(self.rectangle_profile(*size), 1.0) for name, size in SLOPED_PROFILES.items()}
+        meshes = {name: get_profile_mesh(self.rectangle_profile(*size)) for name, size in SLOPED_PROFILES.items()}
         assert closed_mesh(compute_framing_mesh(items, meshes))
         # Glass trimmed by the openings keeps its shape.
         assert any(isinstance(i, FramingPanel) and i.points is not None for i in items)
@@ -747,7 +811,6 @@ class TestSlopedOpenings:
             system=sloped_system(ids),
             guide=[(0.0, 0.0, 0.0), (6.0, 0.0, 0.0)],
             height=3.0,
-            unit_scale=1.0,
             voids=SLOPED_VOIDS,
         )
         settings = ifcopenshell.geom.settings()
