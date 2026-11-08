@@ -301,8 +301,22 @@ class StructuralAnalysisModelsData:
             "active_model_ids": cls.active_model_ids(),
             "current_model": cls.current_model(),
             "models": cls.models(),
+            "buildings": cls.buildings(),
+            "served_buildings": cls.served_buildings(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def buildings(cls) -> list[tuple[str, str, str]]:
+        return [(str(b.id()), b.Name or "Unnamed", "") for b in tool.Ifc.get().by_type("IfcBuilding")]
+
+    @classmethod
+    def served_buildings(cls) -> dict[int, list[tuple[int, str]]]:
+        results = {}
+        for model in tool.Ifc.get().by_type("IfcStructuralAnalysisModel"):
+            buildings = [b for rel in model.ServicesBuildings or () for b in rel.RelatedBuildings]
+            results[model.id()] = [(b.id(), b.Name or "Unnamed") for b in buildings]
+        return results
 
     @classmethod
     def total_models(cls):

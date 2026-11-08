@@ -444,9 +444,31 @@ class BIM_PT_structural_analysis_models(Panel):
                 self.props,
                 "active_structural_analysis_model_index",
             )
+            self.draw_served_buildings()
 
         if self.props.active_structural_analysis_model_id:
             draw_attributes(self.props.structural_analysis_model_attributes, self.layout)
+
+    def draw_served_buildings(self) -> None:
+        index = self.props.active_structural_analysis_model_index
+        if not 0 <= index < len(self.props.structural_analysis_models):
+            return
+        model_id = self.props.structural_analysis_models[index].ifc_definition_id
+        box = self.layout.box()
+        box.label(text="Serves Buildings", icon="HOME")
+        for building_id, name in StructuralAnalysisModelsData.data["served_buildings"].get(model_id, []):
+            row = box.row(align=True)
+            row.label(text=name)
+            op = row.operator("bim.unassign_structural_analysis_model_from_building", text="", icon="X")
+            op.structural_analysis_model = model_id
+            op.building = building_id
+        if StructuralAnalysisModelsData.data["buildings"]:
+            row = box.row(align=True)
+            prop_with_search(row, self.props, "building", text="")
+            op = row.operator("bim.assign_structural_analysis_model_to_building", text="", icon="ADD")
+            op.structural_analysis_model = model_id
+        else:
+            box.label(text="No building in the project", icon="INFO")
 
 
 class BIM_UL_structural_analysis_models(UIList):
