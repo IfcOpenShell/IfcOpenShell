@@ -7,6 +7,7 @@ import inspect
 from typing import Any
 
 from ifcmcp.core import IfcSession
+from ifcmcp.instructions import EXECUTE_INSTRUCTIONS, INSTRUCTIONS
 
 try:
     from mcp.server.mcpserver import MCPServer  # type: ignore
@@ -100,11 +101,7 @@ def build_server(allow_execute: bool = False) -> Any:
 
     server = MCPServer(
         name="ifc-mcp",
-        instructions=(
-            "MCP server for querying and editing IFC building models. "
-            "Load a file first with ifc_load, then use query/edit tools. "
-            "Save changes with ifc_save."
-        ),
+        instructions=INSTRUCTIONS + (EXECUTE_INSTRUCTIONS if allow_execute else ""),
     )
 
     # ---- Lifecycle ----
