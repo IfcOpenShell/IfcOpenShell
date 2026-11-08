@@ -88,24 +88,26 @@ def draw_boundary_condition_editable_ui(
             row = layout.row(align=True)
             bonsai.bim.helper.draw_attribute(attribute, row, enable_search=True)
         else:
-            row = layout.row(align=True)
-            row.prop(attribute, "enum_value", text=attribute["name"])
+            split = layout.split(factor=0.55, align=True)
+            split.prop(attribute, "enum_value", text=attribute["name"])
+            val_row = split.row(align=True)
             if attribute.enum_value == "IfcBoolean":
-                row.prop(attribute, "bool_value", text="")
+                val_row.prop(attribute, "bool_value", text="")
             else:
-                row.prop(attribute, "float_value", text="")
+                val_row.prop(attribute, "float_value", text="")
             if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+                val_row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
 
 def draw_boundary_condition_read_only_ui(layout: bpy.types.UILayout, boundary_condition: dict[str, Any]) -> None:
     for attribute in boundary_condition["attributes"]:
-        row = layout.row(align=True)
-        row.label(text=attribute["name"])
+        split = layout.split(factor=0.55, align=True)
+        split.label(text=attribute["name"])
+        val_row = split.row(align=True)
         if attribute["is_bool"]:
-            row.label(text="", icon="CHECKBOX_HLT" if attribute["value"] else "CHECKBOX_DEHLT")
+            val_row.label(text="", icon="CHECKBOX_HLT" if attribute["value"] else "CHECKBOX_DEHLT")
         else:
-            row.label(text=str(attribute["value"]))
+            val_row.label(text=str(attribute["value"]))
 
 
 class BIM_PT_structural_boundary_conditions(Panel):
