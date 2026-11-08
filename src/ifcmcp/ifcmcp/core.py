@@ -2,13 +2,18 @@
 from __future__ import annotations
 
 # inside ifcmcp/core.py
+import contextlib
+import functools
+import importlib
+import io
 import json
+import traceback
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
 import ifcopenshell
-from ifcedit.discover import function_docs, list_functions, list_modules
+from ifcedit.discover import function_docs, list_functions, list_modules, search_functions
 from ifcedit.quantify import run_quantify
 from ifcedit.run import run_api
 from ifcquery import clash as clash_mod
@@ -54,6 +59,36 @@ def _use_doc(source: Callable, extra: str = "") -> Callable:
         return fn
 
     return decorator
+
+
+ELEMENT_ID_DOC = '\n\nPass the element as ``element_id``: its STEP id (``42`` or ``"#42"``), or its GlobalId.'
+
+
+def _undoable(fn: Callable) -> Callable:
+    """Decorator: run a model-changing method as one undo step.
+
+    A call that raises or returns ``{"ok": False}`` is rolled back, so a
+    failed edit leaves no partial change behind; a call that changes nothing
+    adds no undo step.
+    """
+
+    @functools.wraps(fn)
+    def call(self: IfcSession, *args: Any, **kwargs: Any) -> Any:
+        model = self._require_model()
+        model.begin_transaction()
+        try:
+            result = fn(self, *args, **kwargs)
+        except BaseException:
+            model.discard_transaction()
+            raise
+        failed = isinstance(result, dict) and result.get("ok") is False
+        if failed or not (model.transaction and model.transaction.operations):
+            model.discard_transaction()
+        else:
+            model.end_transaction()
+        return result
+
+    return call
 
 
 def _jsonify(x: Any) -> Any:
@@ -233,15 +268,17 @@ class IfcSessionError(RuntimeError):
 
 @dataclass
 class IfcSession:
-    """In-memory IFC session (no FastMCP dependency).
+    """In-memory IFC session (no MCP SDK dependency).
 
     Designed to work in:
-      - FastMCP server (single global session)
+      - MCP server (MCPServer, single global session)
       - Embedded runtimes like Pyodide (one session per browser tab/worker)
     """
 
     model: ifcopenshell.file | None = None
     model_path: str | None = None
+    # ifc_execute runs arbitrary Python, so a session must opt in to it.
+    allow_execute: bool = False
 
     # -----------------
     # Session lifecycle
@@ -250,6 +287,22 @@ class IfcSession:
         if self.model is None:
             raise IfcSessionError("No model loaded. Call ifc_load() or ifc_new() first.")
         return self.model
+
+    def _get_element(self, element_id: int | str) -> ifcopenshell.entity_instance:
+        """Look an element up by its STEP id (``42`` or ``"#42"``), or by its 22-character GlobalId."""
+        model = self._require_model()
+        if isinstance(element_id, str):
+            text = element_id.strip()
+            # A GlobalId is 22 characters and never contains "#".
+            if not text.startswith("#") and (len(text) == 22 or not text.isdecimal()):
+                return model.by_guid(text)
+            if not text.removeprefix("#").isdecimal():
+                raise IfcSessionError(f"Not a STEP id or GlobalId: {element_id!r}")
+            element_id = int(text.removeprefix("#"))
+        try:
+            return model.by_id(element_id)
+        except OverflowError:
+            raise IfcSessionError(f"Instance #{element_id} not found") from None
 
     def ifc_new(self, schema: str = "IFC4") -> dict[str, Any]:
         """Create a new empty IFC model in memory.
@@ -310,6 +363,37 @@ class IfcSession:
         self.model_path = None
         return {"ok": True}
 
+    def ifc_undo(self) -> dict[str, Any]:
+        """Undo the last change made by ``ifc_edit``, ``ifc_shape`` or ``ifc_quantify``.
+
+        Each of those calls is one undo step. A failed call changes nothing and
+        is not a step. Fails when there is nothing to undo. Returns how many
+        steps can still be undone and redone. Loading or creating a model
+        starts a new history.
+        """
+        model = self._require_model()
+        if not model.history:
+            raise IfcSessionError("Nothing to undo.")
+        model.undo()
+        return self._history_state()
+
+    def ifc_redo(self) -> dict[str, Any]:
+        """Redo the last change undone by ``ifc_undo``.
+
+        Any new change after an undo discards what could be redone. Fails when
+        there is nothing to redo. Returns how many steps can still be undone
+        and redone.
+        """
+        model = self._require_model()
+        if not model.future:
+            raise IfcSessionError("Nothing to redo.")
+        model.redo()
+        return self._history_state()
+
+    def _history_state(self) -> dict[str, Any]:
+        model = self._require_model()
+        return {"ok": True, "undo_available": len(model.history), "redo_available": len(model.future)}
+
     # -------------
     # Query tools
     # -------------
@@ -318,27 +402,34 @@ class IfcSession:
         return summary.summary(self._require_model())
 
     @_use_doc(tree.tree)
-    def ifc_tree(self) -> dict[str, Any] | list[dict[str, Any]]:
-        return tree.tree(self._require_model())
+    def ifc_tree(self, max_depth: int | None = None) -> dict[str, Any] | list[dict[str, Any]]:
+        return tree.tree(self._require_model(), max_depth=max_depth)
 
-    @_use_doc(info.info)
-    def ifc_info(self, element_id: int) -> dict[str, Any]:
+    @_use_doc(info.info, extra=ELEMENT_ID_DOC)
+    def ifc_info(self, element_id: int | str) -> dict[str, Any]:
         model = self._require_model()
-        element = model.by_id(element_id)
-        if element is None:
-            raise IfcSessionError(f"Element #{element_id} not found.")
+        element = self._get_element(element_id)
         return info.info(model, element)
 
-    @_use_doc(select.select)
-    def ifc_select(self, query: str) -> list[dict[str, Any]]:
-        return select.select(self._require_model(), query)
+    @_use_doc(
+        select.select,
+        extra=(
+            '\n\nResults come a page at a time, as ``{"total": N, "offset": K, "elements": [...]}``:\n'
+            "``total`` counts every match, ``elements`` holds at most ``limit`` of them\n"
+            "starting at ``offset``. Ask for the next page with a larger ``offset``;\n"
+            "``limit=0`` returns only the count."
+        ),
+    )
+    def ifc_select(self, query: str, limit: int = 200, offset: int = 0) -> dict[str, Any]:
+        if limit < 0 or offset < 0:
+            raise IfcSessionError("limit and offset cannot be negative.")
+        elements = select.select(self._require_model(), query)
+        return {"total": len(elements), "offset": offset, "elements": elements[offset : offset + limit]}
 
-    @_use_doc(relations.relations)
-    def ifc_relations(self, element_id: int, traverse: str = "") -> dict[str, Any] | list[dict[str, Any]]:
+    @_use_doc(relations.relations, extra=ELEMENT_ID_DOC)
+    def ifc_relations(self, element_id: int | str, traverse: str = "") -> dict[str, Any] | list[dict[str, Any]]:
         model = self._require_model()
-        element = model.by_id(element_id)
-        if element is None:
-            raise IfcSessionError(f"Element #{element_id} not found.")
+        element = self._get_element(element_id)
         return relations.relations(model, element, traverse=traverse if traverse else None)
 
     @_use_doc(
@@ -347,19 +438,18 @@ class IfcSession:
             "\n\nNote: this method takes a plain ``clearance: float`` rather than\n"
             '``clearance: float | None`` — ``0.0`` (the default) means "skip the\n'
             'clearance check", matching ``None`` in ``ifcquery.clash.clash()``.'
-        ),
+        )
+        + ELEMENT_ID_DOC,
     )
     def ifc_clash(
         self,
-        element_id: int,
+        element_id: int | str,
         clearance: float = 0.0,
         tolerance: float = 0.002,
         scope: str = "storey",
     ) -> dict[str, Any]:
         model = self._require_model()
-        element = model.by_id(element_id)
-        if element is None:
-            raise IfcSessionError(f"Element #{element_id} not found.")
+        element = self._get_element(element_id)
         return clash_mod.clash(
             model,
             element,
@@ -394,11 +484,16 @@ class IfcSession:
         """
         return list_functions(module) if module else list_modules()
 
+    @_use_doc(search_functions)
+    def ifc_search(self, query: str, limit: int = 20) -> list[dict]:
+        return search_functions(query, limit=limit)
+
     @_use_doc(function_docs)
     def ifc_docs(self, function_path: str) -> dict:
         module, function = function_path.split(".", 1)
         return function_docs(module, function)
 
+    @_undoable
     def ifc_edit(self, function_path: str, params: Any = "{}") -> dict:
         """Run an ifcopenshell.api function to modify the model.
 
@@ -546,6 +641,7 @@ class IfcSession:
         """
         return _shape_method_docs(method)
 
+    @_undoable
     def ifc_shape(self, method: str, params: Any = "{}") -> dict:
         """Call a ShapeBuilder method to build geometry in the model.
 
@@ -584,7 +680,46 @@ class IfcSession:
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
+    @_undoable
+    def ifc_execute(self, code: str) -> dict[str, Any]:
+        """Run Python code against the loaded model.
+
+        Use it for what the other tools make slow or impossible: loops, bulk
+        changes, and ``ifcopenshell.util`` queries. Prefer the dedicated tools
+        when one does the job. The code runs with ``model`` (the loaded
+        ``ifcopenshell.file``), ``ifcopenshell``, ``ifcopenshell.api`` and
+        ``ifcopenshell.util.element``, ``.placement``, ``.selector``,
+        ``.shape_builder`` and ``.unit`` already imported. To return data, assign
+        it to a variable named ``result``; entity instances in it are returned as
+        summaries with their ``id``, ``type`` and ``name``.
+
+        The whole call is one undo step. If the code raises, every change it
+        made is rolled back and the traceback is returned. Returns
+        ``{"ok": True, "result": ..., "stdout": "..."}`` or
+        ``{"ok": False, "error": "<traceback>", "stdout": "..."}``.
+
+        :param code: Python source to run.
+        """
+        if not self.allow_execute:
+            raise IfcSessionError("ifc_execute is disabled in this session.")
+        model = self._require_model()
+        # Imported for the code to use, as ifcopenshell.api, ifcopenshell.util.element and so on.
+        for name in ("api", "util.element", "util.placement", "util.selector", "util.shape_builder", "util.unit"):
+            importlib.import_module(f"ifcopenshell.{name}")
+        namespace = {"model": model, "ifcopenshell": ifcopenshell, "result": None}
+        # Capture print(): over stdio, stdout carries the MCP protocol itself.
+        stdout = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(stdout):
+                exec(compile(code, "<ifc_execute>", "exec"), namespace)
+        # Not only Exception: sys.exit(), KeyboardInterrupt and the like in the
+        # code must end the code, not the server.
+        except BaseException:
+            return {"ok": False, "error": traceback.format_exc(), "stdout": stdout.getvalue()}
+        return {"ok": True, "result": _jsonify(namespace["result"]), "stdout": stdout.getvalue()}
+
     @_use_doc(run_quantify, extra="\n\nCall ``ifc_save`` afterwards to persist the result.")
+    @_undoable
     def ifc_quantify(self, rule: str, selector: str = "") -> dict[str, Any]:
         model = self._require_model()
         return run_quantify(model, rule, selector=selector if selector else None)
@@ -616,6 +751,18 @@ class IfcSession:
             },
             {
                 "type": "function",
+                "name": "ifc_undo",
+                "description": "Undo the last ifc_edit, ifc_shape or ifc_quantify change.",
+                "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
+            },
+            {
+                "type": "function",
+                "name": "ifc_redo",
+                "description": "Redo the last change undone by ifc_undo.",
+                "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
+            },
+            {
+                "type": "function",
                 "name": "ifc_summary",
                 "description": "Get a concise overview of the loaded IFC model.",
                 "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
@@ -623,8 +770,18 @@ class IfcSession:
             {
                 "type": "function",
                 "name": "ifc_tree",
-                "description": "Get the full spatial hierarchy tree.",
-                "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
+                "description": "Get the spatial hierarchy tree.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "max_depth": {
+                            "type": "integer",
+                            "description": "Levels to expand, the project being level 1; omit for all",
+                        }
+                    },
+                    "required": [],
+                    "additionalProperties": False,
+                },
             },
             {
                 "type": "function",
@@ -637,7 +794,11 @@ class IfcSession:
                 ),
                 "parameters": {
                     "type": "object",
-                    "properties": {"query": {"type": "string"}},
+                    "properties": {
+                        "query": {"type": "string"},
+                        "limit": {"type": "integer", "description": "Most elements to return (default 200)"},
+                        "offset": {"type": "integer", "description": "Index of the first element to return"},
+                    },
                     "required": ["query"],
                     "additionalProperties": False,
                 },
@@ -648,7 +809,7 @@ class IfcSession:
                 "description": "Inspect an entity by STEP id.",
                 "parameters": {
                     "type": "object",
-                    "properties": {"element_id": {"type": "integer"}},
+                    "properties": {"element_id": {"type": ["integer", "string"], "description": "STEP id or GlobalId"}},
                     "required": ["element_id"],
                     "additionalProperties": False,
                 },
@@ -659,7 +820,10 @@ class IfcSession:
                 "description": "Get relationships for an element. traverse='up' walks to IfcProject.",
                 "parameters": {
                     "type": "object",
-                    "properties": {"element_id": {"type": "integer"}, "traverse": {"type": "string"}},
+                    "properties": {
+                        "element_id": {"type": ["integer", "string"], "description": "STEP id or GlobalId"},
+                        "traverse": {"type": "string"},
+                    },
                     "required": ["element_id"],
                     "additionalProperties": False,
                 },
@@ -671,7 +835,7 @@ class IfcSession:
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "element_id": {"type": "integer"},
+                        "element_id": {"type": ["integer", "string"], "description": "STEP id or GlobalId"},
                         "clearance": {"type": "number"},
                         "tolerance": {"type": "number"},
                         "scope": {"type": "string", "description": "storey or all"},
@@ -700,6 +864,20 @@ class IfcSession:
                     "type": "object",
                     "properties": {"module": {"type": "string"}},
                     "required": [],
+                    "additionalProperties": False,
+                },
+            },
+            {
+                "type": "function",
+                "name": "ifc_search",
+                "description": (
+                    "Find ifcopenshell.api functions by keyword, best match first. "
+                    "Search in the API's own terms, e.g. 'assign container', 'edit attributes'."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {"query": {"type": "string"}, "limit": {"type": "integer"}},
+                    "required": ["query"],
                     "additionalProperties": False,
                 },
             },

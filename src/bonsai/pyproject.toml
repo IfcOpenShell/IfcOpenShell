@@ -26,7 +26,8 @@ Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 [dependency-groups]
 # Test tooling for `make test-*` (pytest runs inside Blender for tool/bim).
 dev = [
-  "pytest",
+  # pytest-bdd 9.0.0 uses FixtureManager._arg2fixturedefs, removed in pytest 9.2.
+  "pytest<9.2",
   "pytest-blender",
   "pytest-bdd",
   "fake-bpy-module-latest",
