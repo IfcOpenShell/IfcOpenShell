@@ -203,7 +203,7 @@ def update_framing_preview(obj: bpy.types.Object) -> None:
             closed=closed,
             scope=props.scope,
             voids=_preview_voids.get_or_compute(
-                (element.id(), str(guide)), lambda: get_framing_voids(element, guide["verts"], closed, unit_scale)
+                (element.id(), str(guide)), lambda: get_framing_voids(element, guide["verts"], closed)
             ),
         )
         mesh = compute_framing_mesh(items, profile_meshes)
@@ -366,7 +366,7 @@ def regenerate_framing(obj: bpy.types.Object) -> bool:
     if not element.Representation:
         element.Representation = ifc_file.createIfcProductDefinitionShape(None, None, ())
     try:
-        voids = get_framing_voids(element, guide["verts"], guide.get("closed", False), unit_scale)
+        voids = get_framing_voids(element, guide["verts"], guide.get("closed", False))
         representation = ifcopenshell.api.geometry.add_framing_representation(
             ifc_file,
             context=body,

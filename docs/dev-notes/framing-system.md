@@ -731,8 +731,11 @@ Profile convention, for users drawing profiles:
   lengths unscaled, and dividing by the unit scale made millimetre profiles 1000 times
   too large ("Vertical 'Gripper Start' has no height between its bounds", user report,
   BIM_Objects linear pendant). The readers and the writer no longer take `unit_scale`.
-  `get_framing_voids` still mixes kernel output with an SI placement, so openings in
-  a framed element inside a library file are still affected.
+  `get_framing_voids` reads openings, and the host's placement, the same way and no
+  longer takes `unit_scale`. The placement is not read with `util.placement`: this
+  branch's base still has the `map_shape` version, which divides kernel output by the
+  file's unit scale and so is 1000 times off in a millimetre library (current v0.9.0
+  reads it with `convert-back-units`). Test: `TestGetFramingVoidsInMillimetres`.
 
 - **Pure solver** (no IFC, no Blender) returning dataclasses, shared by the viewport
   preview and the IFC writer. Suggested homes: the solver in

@@ -693,7 +693,7 @@ class TestGetFramingVoids:
             ifcopenshell.api.feature.add_filling(self.file, opening=opening, element=element)
 
     def voids(self):
-        return get_framing_voids(self.host, [(0.0, 0.0, 0.0), (6.0, 0.0, 0.0)], unit_scale=1.0)
+        return get_framing_voids(self.host, [(0.0, 0.0, 0.0), (6.0, 0.0, 0.0)])
 
     def test_reads_each_opening_in_the_hosts_coordinates(self):
         self.add_opening(2.0, 1.0, 2.1, "IfcDoor")
@@ -741,6 +741,45 @@ SLOPED_VOIDS = (
     Void(-1, 2.4, -1, 4, outline=((-1, -1), (2 / 3, -1), (7 / 3, 4), (-1, 4))),
     Void(-1, 7, 2.1, 4, outline=((-1, 2.9), (7, 2.1), (7, 4), (-1, 4))),
 )
+
+
+class TestGetFramingVoidsInMillimetres:
+    def build(self):
+        self.file = ifcopenshell.file(schema="IFC4")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(self.file, length={"is_metric": True, "raw": "MILLIMETERS"})
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            self.file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        self.host = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcCurtainWall")
+        matrix = np.eye(4)
+        matrix[:3, 3] = (10000.0, 5000.0, 1000.0)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=self.host, matrix=matrix, is_si=False)
+        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+        matrix[:3, 3] = (12000.0, 4850.0, 1000.0)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=opening, matrix=matrix, is_si=False)
+        builder = ShapeBuilder(self.file)
+        solid = builder.extrude(builder.rectangle(size=(1000.0, 300.0)), 2100.0)
+        ifcopenshell.api.geometry.assign_representation(
+            self.file, product=opening, representation=builder.get_representation(body, [solid])
+        )
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=self.host)
+
+    def extents(self):
+        (void,) = get_framing_voids(self.host, [(0.0, 0.0, 0.0), (6000.0, 0.0, 0.0)])
+        return void.u_start, void.u_end, void.v_start, void.v_end
+
+    def test_are_in_file_units(self):
+        self.build()
+        assert self.extents() == pytest.approx((2000.0, 3000.0, 0.0, 2100.0))
+
+    def test_also_in_a_library_file(self):
+        # The kernel reads units only from a file's single IfcContext, so with a project
+        # library as well it assumes metres.
+        self.build()
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProjectLibrary")
+        assert self.extents() == pytest.approx((2000.0, 3000.0, 0.0, 2100.0))
 
 
 class TestSlopedOpenings:

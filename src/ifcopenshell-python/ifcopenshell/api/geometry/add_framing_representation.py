@@ -33,10 +33,8 @@ import ifcopenshell.api.geometry
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.util.framing
-import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
-import ifcopenshell.util.unit
 from ifcopenshell.util.framing import INLINE_TURN, TOLERANCE, FramingError, SpacingScope
 from ifcopenshell.util.shape_builder import SequenceOfVectors, ShapeBuilder
 
@@ -862,7 +860,6 @@ def get_framing_voids(
     element: ifcopenshell.entity_instance,
     guide: SequenceOfVectors,
     closed: bool = False,
-    unit_scale: Optional[float] = None,
 ) -> tuple[ifcopenshell.util.framing.Void, ...]:
     """The rough openings that an element's IfcOpeningElements make on its guide.
 
@@ -873,20 +870,17 @@ def get_framing_voids(
     :param element: The framing occurrence.
     :param guide: The guide path's points, in the element's object coordinates.
     :param closed: Whether the guide path loops back to its first point.
-    :param unit_scale: The unit scale as calculated by
-        ifcopenshell.util.unit.calculate_unit_scale. If not provided, it
-        will be automatically calculated for you.
     :return: One void per opening that reaches along the guide.
     """
     openings = [rel.RelatedOpeningElement for rel in getattr(element, "HasOpenings", None) or ()]
     if not openings or not element.ObjectPlacement:
         return ()
-    if unit_scale is None:
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(element.file)
-    to_element = np.linalg.inv(
-        ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=True)
-    )
+    # In file units, as profiles are read: see _profile_shape. The host's placement is read
+    # the same way, so it agrees with the openings whatever units the kernel assumed.
     settings = ifcopenshell.geom.settings()
+    settings.set("convert-back-units", True)
+    placement = ifcopenshell.geom.create_shape(settings, element.ObjectPlacement)
+    to_element = np.linalg.inv(np.array(placement.matrix).reshape((4, 4), order="F"))
     voids = []
     for opening in openings:
         try:
@@ -895,9 +889,8 @@ def get_framing_voids(
             continue
         matrix = ifcopenshell.util.shape.get_shape_matrix(shape)
         vertices = ifcopenshell.util.shape.get_vertices(shape.geometry)
-        # Both are in SI units, and the guide is in project units.
         world = vertices @ matrix[:3, :3].T + matrix[:3, 3]
-        local = (world @ to_element[:3, :3].T + to_element[:3, 3]) / unit_scale
+        local = world @ to_element[:3, :3].T + to_element[:3, 3]
         filling = None
         for rel in opening.HasFillings or ():
             filled = rel.RelatedBuildingElement
