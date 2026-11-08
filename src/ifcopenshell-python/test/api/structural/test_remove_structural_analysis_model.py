@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.root
 import ifcopenshell.api.structural
 import test.bootstrap
 
@@ -29,6 +30,14 @@ class TestRemoveStructuralAnalysisModel(test.bootstrap.IFC4):
         )
         models = self.file.by_type("IfcStructuralAnalysisModel")
         assert len(models) == 0
+
+    def test_removing_its_relationship_to_the_buildings_it_serves(self):
+        subject = ifcopenshell.api.structural.add_structural_analysis_model(self.file)
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        ifcopenshell.api.structural.assign_to_building(self.file, structural_analysis_model=subject, building=building)
+        ifcopenshell.api.structural.remove_structural_analysis_model(self.file, structural_analysis_model=subject)
+        assert not self.file.by_type("IfcRelServicesBuildings")
+        assert self.file.by_type("IfcBuilding") == (building,)
 
 
 class TestRemoveStructuralAnalysisModelIFC2X3(test.bootstrap.IFC2X3, TestRemoveStructuralAnalysisModel):
