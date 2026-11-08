@@ -102,7 +102,7 @@ struct ModelGeoref {
 
 // Build a FederatedFalseOrigin guess so that a model lands near the
 // federation origin instead of out at its surveyor coordinates.  Designed
-// to work without an open IFC file so it's usable from sidecar-only loads
+// to work without an open IFC file so it's usable from .ifcview-only loads
 // (the inputs are all derivable from the resident MeshInfo + InstanceInfo
 // data + ModelGeoref).
 //

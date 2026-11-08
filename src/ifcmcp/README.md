@@ -22,6 +22,11 @@ ifcmcp
 This starts the server on stdio transport, suitable for use with Claude Code
 or any MCP client.
 
+Over stdio the server offers `ifc_execute`, which runs any Python the client
+sends. Start it with `ifcmcp --no-execute` to leave that tool out. It is never
+offered over the `sse` or `streamable-http` transports, where anyone who can
+reach the port could use it.
+
 ### Claude Code configuration
 
 Use the `claude mcp add` command:
@@ -91,6 +96,19 @@ ifc_save()
 ifc_save(path="/path/to/output.ifc")
 ```
 
+#### ifc_undo / ifc_redo
+
+Undo the last change, or redo the last undone one. Each `ifc_edit`,
+`ifc_shape` and `ifc_quantify` call is one undo step; a call that fails is
+rolled back and is not a step. Loading or creating a model starts a new
+history.
+
+```
+ifc_undo()
+-> {"ok": true, "undo_available": 2, "redo_available": 1}
+ifc_redo()
+```
+
 ### Query tools
 
 All query tools require a model to be loaded first via `ifc_load`.
@@ -128,13 +146,22 @@ and contained elements.
 }
 ```
 
+`max_depth` limits how many levels are expanded, counting the project as
+level 1; contained elements are one level below their container. Past the
+cutoff, `children` and `elements` are replaced with `{"truncated": true, "count": N}`.
+
+```
+ifc_tree(max_depth=4)   # down to the storeys, with element counts
+```
+
 #### ifc_info
 
-Deep inspection of an entity by step ID: attributes, property sets, type,
+Deep inspection of an entity by step ID or GlobalId: attributes, property sets, type,
 material, container, and 4x4 placement matrix.
 
 ```
 ifc_info(element_id=10)
+ifc_info(element_id="2O2Fr$t4X7Zf8NOew3FLOH")
 ```
 
 #### ifc_select
@@ -143,10 +170,15 @@ Filter elements using ifcopenshell selector syntax.
 
 ```
 ifc_select(query="IfcWall")
-ifc_select(query="IfcWindow")
+ifc_select(query="IfcWindow", limit=50, offset=50)
 ```
 
-Returns a sorted list of `{"id", "type", "name"}` references.
+Returns one page of the sorted `{"id", "type", "name"}` references, at most
+`limit` (default 200) starting at `offset`, with the total number of matches:
+
+```json
+{"total": 120, "offset": 50, "elements": [{"id": 42, "type": "IfcWindow", "name": "W01"}]}
+```
 
 #### ifc_relations
 
@@ -342,6 +374,18 @@ ifc_list()              # all modules
 ifc_list(module="root") # functions in the root module
 ```
 
+#### ifc_search
+
+Find API functions by keyword when you don't know the function name, best
+match first. Search in the API's own terms.
+
+```
+ifc_search(query="assign container")
+ifc_search(query="property set", limit=5)
+```
+
+Returns `[{"function": "spatial.assign_container", "description": "...", "score": 31.1}, ...]`.
+
 #### ifc_docs
 
 Show full documentation for an API function including parameters, types,
@@ -379,6 +423,28 @@ Does NOT auto-save -- call `ifc_save()` when ready to write changes to disk.
 | `bool` | `"true"` | `True` |
 | `Optional[X]` | `"none"` | `None` |
 
+#### ifc_execute
+
+Run Python against the loaded model, for loops, bulk changes and
+`ifcopenshell.util` queries that would otherwise take many tool calls. The
+code sees `model`, `ifcopenshell`, `ifcopenshell.api` and the common
+`ifcopenshell.util` modules. Assign what you want back to `result`; anything
+printed is returned as `stdout`.
+
+```
+ifc_execute(code="""
+for wall in model.by_type("IfcWall"):
+    ifcopenshell.api.pset.edit_pset(model, pset=ifcopenshell.api.pset.add_pset(model, product=wall, name="Pset_WallCommon"), properties={"IsExternal": True})
+result = len(model.by_type("IfcWall"))
+""")
+-> {"ok": true, "result": 42, "stdout": ""}
+```
+
+The whole call is one undo step, and code that raises is rolled back with its
+traceback returned as `error`. Only offered over stdio, and not with
+`ifcmcp --no-execute`. In the embedded (Pyodide) session it is off unless the
+session is created with `IfcSession(allow_execute=True)`.
+
 ## Typical workflow
 
 1. **Load** a model: `ifc_load`
@@ -386,10 +452,10 @@ Does NOT auto-save -- call `ifc_save()` when ready to write changes to disk.
 3. **Validate** if needed: `ifc_validate`
 4. **Browse schedules / costs**: `ifc_schedule`, `ifc_cost` (use `max_depth=1` first on large projects)
 5. **Look up IFC classes**: `ifc_schema`
-6. **Find** the right API function: `ifc_list`, `ifc_docs`
+6. **Find** the right API function: `ifc_search`, `ifc_list`, `ifc_docs`
 7. **Edit** the model: `ifc_edit`
 8. **Quantify** elements: `ifc_quantify` (writes QTO psets in-place)
-9. **Verify** changes with query tools
+9. **Verify** changes with query tools, and `ifc_undo` any mistake
 10. **Save** when satisfied: `ifc_save`
 
 The model stays in memory across all calls, so multi-step editing sessions

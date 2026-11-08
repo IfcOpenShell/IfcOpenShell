@@ -30,7 +30,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis1Placement& inst) {
 	} catch (const std::exception&) {
 		logger_.warning("GEO", 232, "Placement with invalid Location:", inst);
 	}
-	const bool hasAxis = inst.Axis();
+	const bool hasAxis = static_cast<bool>(inst.Axis());
 	if (hasAxis) {
 		taxonomy::direction3::ptr v = taxonomy::cast<taxonomy::direction3>(map(inst.Axis()));
 		axis = *v->components_;

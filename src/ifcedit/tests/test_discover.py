@@ -1,5 +1,5 @@
 # This file was generated with the assistance of an AI coding tool.
-from ifcedit.discover import function_docs, list_functions, list_modules
+from ifcedit.discover import function_docs, list_functions, list_modules, search_functions
 
 
 class TestListModules:
@@ -102,3 +102,37 @@ class TestFunctionDocs:
         param_names = [p["name"] for p in result["params"]]
         assert "pset" in param_names
         assert "properties" in param_names
+
+
+class TestSearchFunctions:
+    def test_best_match_first(self):
+        assert search_functions("edit attributes")[0]["function"] == "attribute.edit_attributes"
+
+    def test_finds_by_api_terms(self):
+        found = [r["function"] for r in search_functions("assign container", limit=3)]
+        assert "spatial.assign_container" in found
+
+    def test_result_structure(self):
+        result = search_functions("remove product")[0]
+        assert result["function"] == "root.remove_product"
+        assert result["description"]
+        assert result["score"] > 0
+
+    def test_plurals_match(self):
+        assert search_functions("georeferencing")[0]["function"].startswith("georeference.")
+
+    def test_abbreviations_are_spelled_out(self):
+        assert search_functions("add a property set")[0]["function"] == "pset.add_pset"
+
+    def test_limit(self):
+        assert len(search_functions("add", limit=3)) == 3
+
+    def test_sorted_by_score(self):
+        scores = [r["score"] for r in search_functions("material layer")]
+        assert scores == sorted(scores, reverse=True)
+
+    def test_no_match(self):
+        assert search_functions("xyzzy plugh") == []
+
+    def test_stopwords_alone_match_nothing(self):
+        assert search_functions("how do i") == []

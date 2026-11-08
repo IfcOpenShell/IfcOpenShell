@@ -1,0 +1,59 @@
+<!-- This file was generated with the assistance of an AI coding tool. -->
+<!-- Scratch page for inspecting the locally built native WASM module in a browser. -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>IfcOpenShell native WASM inspector</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; }
+      pre { background: #f4f4f4; padding: 1rem; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>IfcOpenShell native WASM inspector</h1>
+    <p>
+      Open the devtools console. The module's exports are printed below and bound to
+      <code>window.wasm</code>, and the IFC4 fixture used by the TypeScript tests is in
+      <code>window.fixture</code>.
+    </p>
+    <pre id="out">loading…</pre>
+    <script type="module">
+      const out = document.getElementById('out');
+      const lines = [];
+      const log = (...args) => {
+        const text = args
+          .map((a) => (typeof a === 'string' ? a : String(a)))
+          .join(' ');
+        lines.push(text);
+        out.textContent = lines.join('\n');
+        console.log(...args);
+      };
+
+      try {
+        const wasm = await import('./wasm/ifcopenshell_wasm.mjs');
+        window.wasm = wasm;
+        log('exports:', Object.keys(wasm).join(', '));
+      } catch (error) {
+        log('failed to load ./wasm/ifcopenshell_wasm.mjs:', error.message);
+        log('try ./wasm/ifcopenshell_wasm.node.mjs or inspect the declarations in wasm/ifcopenshell_api.d.ts');
+      }
+
+      window.fixture = [
+        "ISO-10303-21;",
+        "HEADER;",
+        "FILE_DESCRIPTION((''),'2;1');",
+        "FILE_NAME('','',(''),(''),'','','');",
+        "FILE_SCHEMA(('IFC4'));",
+        "ENDSEC;",
+        "DATA;",
+        "#1=IFCCARTESIANPOINT((0.,0.,0.));",
+        "#2=IFCWALL('0j$1cJ2rL4$v8Z1y4X9w2',$,'Wall',$,$,$,$,$,$);",
+        "#3=IFCPROPERTYSINGLEVALUE('FireRating',$,IFCLABEL('F30'),$);",
+        "ENDSEC;",
+        "END-ISO-10303-21;",
+      ].join('\n');
+      log('fixture ready: window.fixture (IFCWALL GUID 0j$1cJ2rL4$v8Z1y4X9w2)');
+    </script>
+  </body>
+</html>

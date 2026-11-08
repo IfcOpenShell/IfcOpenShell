@@ -21,7 +21,7 @@
 #                                                                             #
 ###############################################################################
 #
-import datetime
+import functools
 import os
 import re
 import shutil
@@ -100,7 +100,7 @@ def extract_file(log_dependency_name: str, filename: Path, destination_dir: Path
         return
 
     logger.info(f"Extracting {log_dependency_name} into '{destination_dir}' from '{filename}'.")
-    sevenzip = require_command("7z")
+    sevenzip = ensure_7z()
     subprocess.check_call([sevenzip, "x", "-bso0", "-bsp0", str(filename), f"-o{destination_dir}"])
     # TODO: assert that dir_after_extraction exists
 
@@ -262,6 +262,23 @@ def install_nuget(deps_dir: Path) -> Path:
         nuget_exe,
     )
     return nuget_exe
+
+
+@functools.cache
+def ensure_7z() -> Path:
+    SEVENZIP_VERSION = "25.1.0"
+    DEPENDENCY_NAME = "7-Zip.CommandLine"
+    deps_dir = REPO_ROOT / "_deps"
+    # `7za` is just standalone `7z`, it has other dlls ("a" stands for "alone").
+    sevenzip_exe = deps_dir / f"{DEPENDENCY_NAME}.{SEVENZIP_VERSION}" / "tools" / "x64" / "7za.exe"
+
+    if sevenzip_exe.exists():
+        logger.info(f"Found existing '{sevenzip_exe}', skipping")
+        return sevenzip_exe
+
+    nuget_exe = install_nuget(deps_dir)
+    run(str(nuget_exe), "install", DEPENDENCY_NAME, "-Version", SEVENZIP_VERSION, "-OutputDirectory", str(deps_dir))
+    return sevenzip_exe
 
 
 def install_ccache(deps_dir: Path, nuget_exe: Path, build_deps_cache: BuildDepsCache) -> Path:
@@ -929,14 +946,6 @@ def install_qt6(
             sys.exit(1)
 
 
-def python_consider_rc(python_version: str) -> str:
-    # TODO: remove after Python 3.15 release.
-    # Python 3.15.0 final was postponed to ~2026-10-09, before that only rc builds are available.
-    if python_version == "3.15.0" and datetime.date.today() < datetime.date(2026, 11, 1):
-        python_version += "-rc2"
-    return python_version
-
-
 def install_python(
     vs_cfg_vars: VsCfgResult,
     ifcos_install_python: bool,
@@ -957,8 +966,6 @@ def install_python(
     if not ifcos_install_python:
         logger.info("IFCOS_INSTALL_PYTHON not 'TRUE', skipping installation of Python.")
         return None
-
-    python_version = python_consider_rc(python_version)
 
     if not vs_cfg_vars.is_vs_platform("ARM64") and not vs_cfg_vars.is_vs_platform("x64"):
         # nuget doesn't support providing architecture for packages.

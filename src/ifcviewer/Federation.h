@@ -215,7 +215,7 @@ public:
     const FederationConfig& config() const { return config_; }
     const FederatedFalseOrigin& federatedFalseOrigin() const { return federated_false_origin_; }
 
-    // .ifcfed.manifest sidecar — present iff this project came from a
+    // .ifcfed.manifest .ifcview — present iff this project came from a
     // cloud connector. Read best-effort during load() (no warning if
     // absent); the connector owns writing. setManifest is called after
     // push_ifcfed[_interactive] returns a fresh manifest.

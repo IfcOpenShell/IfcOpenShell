@@ -187,7 +187,7 @@ def get_vert_centroid(geometry: W.triangulation) -> tuple[float, float, float]:
 
 
 def get_element_bbox_centroid(
-    element: ifcopenshell.entity_instance, geometry: W.triangulation
+    element: ifcopenshell.entity_instance, geometry: W.triangulation, is_si: bool = True
 ) -> npt.NDArray[np.float64]:
     """Calculates the element's bounding box centroid
 
@@ -196,12 +196,15 @@ def get_element_bbox_centroid(
 
     :param element: The element occurrence
     :param geometry: Geometry output calculated by IfcOpenShell
+    :param is_si: Whether the geometry is in SI metres (the default kernel
+        output) or in the file's length unit (the ``convert-back-units``
+        setting). The placement is applied in the same unit.
     :return: A tuple representing the XYZ centroid
     """
     centroid = get_bbox_centroid(geometry)
     if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
         return np.array(centroid)
-    mat = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+    mat = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=is_si)
     return (mat @ np.array([*centroid, 1.0]))[0:3]
 
 
@@ -333,7 +336,9 @@ def get_shape_vertices(shape: ShapeElementType, geometry: W.triangulation) -> np
     return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 
-def get_element_vertices(element: ifcopenshell.entity_instance, geometry: W.triangulation) -> npt.NDArray[np.float64]:
+def get_element_vertices(
+    element: ifcopenshell.entity_instance, geometry: W.triangulation, is_si: bool = True
+) -> npt.NDArray[np.float64]:
     """Get the element's vertices as a numpy array
 
     Vertices are in global coordinates. Note that if you have the shape, it is
@@ -343,12 +348,15 @@ def get_element_vertices(element: ifcopenshell.entity_instance, geometry: W.tria
 
     :param element: The element occurrence
     :param geometry: Geometry output calculated by IfcOpenShell
+    :param is_si: Whether the geometry is in SI metres (the default kernel
+        output) or in the file's length unit (the ``convert-back-units``
+        setting). The placement is applied in the same unit.
     :return: A numpy array listing all the vertices. Each vertex is a numpy array with XYZ coordinates.
     """
     verts = get_vertices(geometry)
     if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
         return verts
-    mat = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+    mat = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=is_si)
     return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 
@@ -398,7 +406,9 @@ def get_shape_top_elevation(shape: ShapeElementType, geometry: W.triangulation) 
     return max([v[2] for v in get_shape_vertices(shape, geometry)])
 
 
-def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry: W.triangulation) -> float:
+def get_element_bottom_elevation(
+    element: ifcopenshell.entity_instance, geometry: W.triangulation, is_si: bool = True
+) -> float:
     """Gets the lowest global Z ordinate of the element
 
     Note that if you have the shape, it is more efficient to use
@@ -406,12 +416,15 @@ def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry
 
     :param element: The element occurrence
     :param geometry: Geometry output calculated by IfcOpenShell
+    :param is_si: Whether the geometry is in SI metres, see :func:`get_element_vertices`
     :return: The Z value
     """
-    return min([v[2] for v in get_element_vertices(element, geometry)])
+    return min([v[2] for v in get_element_vertices(element, geometry, is_si)])
 
 
-def get_element_top_elevation(element: ifcopenshell.entity_instance, geometry: W.triangulation) -> float:
+def get_element_top_elevation(
+    element: ifcopenshell.entity_instance, geometry: W.triangulation, is_si: bool = True
+) -> float:
     """Gets the highest global Z ordinate of the element
 
     Note that if you have the shape, it is more efficient to use
@@ -419,9 +432,10 @@ def get_element_top_elevation(element: ifcopenshell.entity_instance, geometry: W
 
     :param element: The element occurrence
     :param geometry: Geometry output calculated by IfcOpenShell
+    :param is_si: Whether the geometry is in SI metres, see :func:`get_element_vertices`
     :return: The Z value
     """
-    return max([v[2] for v in get_element_vertices(element, geometry)])
+    return max([v[2] for v in get_element_vertices(element, geometry, is_si)])
 
 
 def get_bbox(vertices: npt.NDArray[np.float64]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
@@ -751,3 +765,279 @@ def get_total_edge_length(geometry: W.triangulation) -> float:
     vertices = get_vertices(geometry)
     vertices = vertices[get_edges(geometry)]
     return np.linalg.norm(vertices[:, 1] - vertices[:, 0], axis=1).sum().item()
+
+
+def _extend_line(start: np.ndarray, end: np.ndarray, distance: float) -> tuple[np.ndarray, np.ndarray]:
+    """Extend a line segment by a fixed distance on both ends.
+
+    :param start: (x, y) or (x, y, z) array.
+    :param end: (x, y) or (x, y, z) array.
+    :param distance: Distance to extend on each end.
+    :return: (new_start, new_end) arrays.
+    """
+    direction = end - start
+    norm = np.linalg.norm(direction)
+    if norm == 0:
+        return start, end
+    offset = distance * (direction / norm)
+    return start - offset, end + offset
+
+
+def bisect_mesh_plane_vf(
+    verts: npt.NDArray[np.float64],
+    faces: npt.NDArray[np.int32],
+    plane_z: float,
+    *,
+    precision: int = 3,
+    extend: float = 0.0,
+) -> list:
+    """Intersect a triangulated mesh with a horizontal Z plane.
+
+    All faces are processed at once via numpy broadcasting for performance.
+
+    :param verts: (n, 3) array of vertices in world coordinates.
+    :param faces: (m, 3) array of triangle vertex indices.
+    :param plane_z: Z elevation of the horizontal cutting plane.
+    :param precision: Decimal places to round intersection point coordinates to.
+    :param extend: Distance to extend each segment on both ends, to ensure
+        overlap with neighbouring segments for polygon closure.
+    :return: List of (start_xy, end_xy) tuples where each coordinate is (x, y).
+    """
+    if len(faces) == 0:
+        return []
+    v0 = verts[faces[:, 0]]
+    v1 = verts[faces[:, 1]]
+    v2 = verts[faces[:, 2]]
+    d0 = v0[:, 2] - plane_z
+    d1 = v1[:, 2] - plane_z
+    d2 = v2[:, 2] - plane_z
+    straddle = ~((np.minimum(np.minimum(d0, d1), d2) > 0) | (np.maximum(np.maximum(d0, d1), d2) < 0))
+    if not np.any(straddle):
+        return []
+    idx = np.where(straddle)[0]
+    d0s, d1s, d2s = d0[idx], d1[idx], d2[idx]
+    v0s, v1s, v2s = v0[idx], v1[idx], v2[idx]
+
+    def _edge_intersections(va, vb, da, db):
+        mask = da * db < 0
+        diff = da - db
+        diff = np.where(diff == 0, 1.0, diff)
+        t = np.where(mask, da / diff, 0.0)
+        pts = va + t[:, np.newaxis] * (vb - va)
+        return pts, mask
+
+    p01, m01 = _edge_intersections(v0s, v1s, d0s, d1s)
+    p12, m12 = _edge_intersections(v1s, v2s, d1s, d2s)
+    p20, m20 = _edge_intersections(v2s, v0s, d2s, d0s)
+
+    segments = []
+    for i in range(len(idx)):
+        pts_xy = []
+        for pt, mask in ((p01[i], m01[i]), (p12[i], m12[i]), (p20[i], m20[i])):
+            if mask:
+                pts_xy.append((round(float(pt[0]), precision), round(float(pt[1]), precision)))
+        if len(pts_xy) == 2 and pts_xy[0] != pts_xy[1]:
+            if extend > 0:
+                s, e = _extend_line(np.array(pts_xy[0]), np.array(pts_xy[1]), extend)
+                segments.append((s.tolist(), e.tolist()))
+            else:
+                segments.append(pts_xy)
+    return segments
+
+
+def dissolve_faces(
+    verts: npt.NDArray[np.float64],
+    faces: npt.NDArray[np.int32],
+    edges: npt.NDArray[np.int32],
+    merge_coplanar: bool = False,
+    angle_tolerance: float = 0.017453292519943295,
+) -> list[list[int]]:
+    """Reconstruct polygonal faces from triangulated mesh data.
+
+    Uses the original (pre-triangulation) edges from ``get_edges`` to
+    identify which triangle edges are internal (to be merged) vs external
+    (ngon boundaries). Triangles connected by internal edges are grouped
+    into polygonal faces.
+
+    When ``merge_coplanar`` is True, a second pass merges adjacent ngons
+    whose face normals are parallel within ``angle_tolerance`` radians.
+    This mirrors ``bmesh.ops.dissolve_limit`` behavior where coplanar
+    faces sharing an edge are merged regardless of the original face
+    structure. This is needed when the IFC representation splits a single
+    planar face into multiple faces (e.g. an L-shaped top face split into
+    triangles + quads).
+
+    :param verts: (n, 3) array of vertices.
+    :param faces: (m, 3) array of triangle vertex indices.
+    :param edges: (e, 2) array of original (pre-triangulation) edge vertex
+        indices, as returned by :func:`get_edges`.
+    :param merge_coplanar: If True, merge adjacent coplanar ngons.
+    :param angle_tolerance: Angle in radians for coplanar merge (default 1°).
+    :return: List of polygonal faces, each as an ordered list of vertex indices
+        forming a closed polygon (last vertex connects back to first).
+    """
+    if len(faces) == 0:
+        return []
+    if len(edges) == 0:
+        return [list(f) for f in faces]
+
+    original_edges = {frozenset((int(e[0]), int(e[1]))) for e in edges}
+
+    tri_edges = []
+    for f in faces:
+        tri_edges.append(
+            (
+                frozenset((int(f[0]), int(f[1]))),
+                frozenset((int(f[1]), int(f[2]))),
+                frozenset((int(f[2]), int(f[0]))),
+            )
+        )
+
+    internal_edge_to_tris: dict[frozenset, list[int]] = {}
+    for tri_idx, edges_3 in enumerate(tri_edges):
+        for e in edges_3:
+            if e not in original_edges:
+                internal_edge_to_tris.setdefault(e, []).append(tri_idx)
+
+    parent = list(range(len(faces)))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(x, y):
+        px, py = find(x), find(y)
+        if px != py:
+            parent[px] = py
+
+    for tri_indices in internal_edge_to_tris.values():
+        if len(tri_indices) == 2:
+            union(tri_indices[0], tri_indices[1])
+
+    ngons: dict[int, list[int]] = {}
+    for tri_idx in range(len(faces)):
+        root = find(tri_idx)
+        ngons.setdefault(root, []).append(tri_idx)
+
+    if merge_coplanar:
+        _merge_coplanar_ngons(ngons, faces, verts, tri_edges, parent, find, union, angle_tolerance)
+
+    result = []
+    for tri_indices in ngons.values():
+        tri_edge_set = set()
+        edge_count: dict[frozenset, int] = {}
+        for tri_idx in tri_indices:
+            for e in tri_edges[tri_idx]:
+                tri_edge_set.add(e)
+                edge_count[e] = edge_count.get(e, 0) + 1
+
+        if merge_coplanar:
+            boundary_edges = [e for e in tri_edge_set if edge_count.get(e, 0) == 1]
+        else:
+            boundary_edges = [e for e in tri_edge_set if e in original_edges]
+
+        if not boundary_edges:
+            result.append(list(faces[tri_indices[0]]))
+            continue
+
+        edge_adjacency: dict[int, int] = {}
+        for e in boundary_edges:
+            v_list = list(e)
+            for tri_idx in tri_indices:
+                f = faces[tri_idx]
+                f_edges = [(int(f[0]), int(f[1])), (int(f[1]), int(f[2])), (int(f[2]), int(f[0]))]
+                for fe in f_edges:
+                    if frozenset(fe) == e:
+                        edge_adjacency[fe[0]] = fe[1]
+                        break
+                else:
+                    continue
+                break
+
+        if not edge_adjacency:
+            result.append(list(faces[tri_indices[0]]))
+            continue
+
+        start = next(iter(edge_adjacency))
+        polygon = [start]
+        current = edge_adjacency[start]
+        while current != start and current in edge_adjacency:
+            polygon.append(current)
+            current = edge_adjacency[current]
+
+        if len(polygon) >= 3:
+            result.append(polygon)
+        else:
+            result.append(list(faces[tri_indices[0]]))
+
+    return result
+
+
+def _merge_coplanar_ngons(
+    ngons: dict[int, list[int]],
+    faces: npt.NDArray[np.int32],
+    verts: npt.NDArray[np.float64],
+    tri_edges: list,
+    parent: list[int],
+    find,
+    union,
+    angle_tolerance: float,
+) -> None:
+    """Merge adjacent ngons whose face normals are parallel within tolerance.
+
+    Modifies ``ngons`` and ``parent`` in place.
+    """
+    from math import acos
+
+    # Compute normal for each ngon
+    ngon_normals: dict[int, np.ndarray] = {}
+    ngon_edge_to_ngons: dict[frozenset, list[int]] = {}
+    ngon_roots = list(ngons.keys())
+
+    for root in ngon_roots:
+        tri_indices = ngons[root]
+        f0 = faces[tri_indices[0]]
+        v0, v1, v2 = verts[f0[0]], verts[f0[1]], verts[f0[2]]
+        edge1 = v1 - v0
+        edge2 = v2 - v0
+        normal = np.cross(edge1, edge2)
+        norm = np.linalg.norm(normal)
+        if norm > 1e-8:
+            normal = normal / norm
+        ngon_normals[root] = normal
+
+        # Collect all edges of this ngon
+        ngon_edges = set()
+        for tri_idx in tri_indices:
+            for e in tri_edges[tri_idx]:
+                ngon_edges.add(e)
+        for e in ngon_edges:
+            ngon_edge_to_ngons.setdefault(e, []).append(root)
+
+    # Find shared edges between different ngons and check coplanarity
+    for edge, root_list in ngon_edge_to_ngons.items():
+        if len(root_list) != 2:
+            continue
+        root_a, root_b = root_list[0], root_list[1]
+        if root_a == root_b:
+            continue
+        # Check if already merged
+        ra, rb = find(root_a), find(root_b)
+        if ra == rb:
+            continue
+        # Compare normals
+        na, nb = ngon_normals[root_a], ngon_normals[root_b]
+        dot = max(min(float(np.dot(na, nb)), 1.0), -1.0)
+        angle = acos(dot)
+        if angle < angle_tolerance:
+            union(root_a, root_b)
+
+    # Rebuild ngons dict with merged groups
+    new_ngons: dict[int, list[int]] = {}
+    for root in ngon_roots:
+        new_root = find(root)
+        new_ngons.setdefault(new_root, []).extend(ngons[root])
+    ngons.clear()
+    ngons.update(new_ngons)

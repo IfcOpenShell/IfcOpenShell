@@ -179,6 +179,7 @@ classes = (
     covering.RegenSelectedCoveringObject,
     space.ToggleSpaceVisibility,
     space.ToggleHideSpaces,
+    space.ApplySpaceHeightToSelection,
     mep.FitFlowSegments,
     mep.RegenerateDistributionElement,
     prop.SnapMousePoint,
