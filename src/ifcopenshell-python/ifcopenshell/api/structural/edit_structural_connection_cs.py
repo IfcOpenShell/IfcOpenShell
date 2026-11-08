@@ -27,7 +27,13 @@ def edit_structural_connection_cs(
 ) -> None:
     """Edits the coordinate system of a structural connection
 
-    :param structural_item: The IfcStructuralItem you want to modify.
+    A new coordinate system is placed at the reference point of the
+    connection, the IfcVertexPoint of its topology representation, which is
+    where IFC implies it when there is none. It is placed at the origin of
+    the ObjectPlacement if the connection has no such vertex.
+
+    :param structural_item: The IfcStructuralPointConnection you want to
+        modify.
     :param axis: The unit Z axis vector defined as a list of 3 floats.
         Defaults to (0., 0., 1.).
     :param ref_direction: The unit X axis vector defined as a list of 3
@@ -35,7 +41,7 @@ def edit_structural_connection_cs(
     :return: None
     """
     if structural_item.ConditionCoordinateSystem is None:
-        point = file.createIfcCartesianPoint((0.0, 0.0, 0.0))
+        point = file.createIfcCartesianPoint(_get_reference_point(structural_item))
         ccs = file.createIfcAxis2Placement3D(point, None, None)
         structural_item.ConditionCoordinateSystem = ccs
 
@@ -46,3 +52,15 @@ def edit_structural_connection_cs(
     if (prev_ref_direction := ccs.RefDirection) and file.get_total_inverses(prev_ref_direction) == 1:
         file.remove(prev_ref_direction)
     ccs.RefDirection = file.create_entity("IfcDirection", ifc_safe_vector_type(ref_direction))
+
+
+def _get_reference_point(structural_item: ifcopenshell.entity_instance) -> tuple[float, float, float]:
+    """The coordinates of the vertex of a structural item's topology representation, else the origin"""
+    for representation in structural_item.Representation.Representations if structural_item.Representation else ():
+        if not representation.is_a("IfcTopologyRepresentation"):
+            continue
+        for item in representation.Items:
+            if item.is_a("IfcVertexPoint") and item.VertexGeometry.is_a("IfcCartesianPoint"):
+                coordinates = tuple(float(c) for c in item.VertexGeometry.Coordinates)
+                return (coordinates + (0.0, 0.0, 0.0))[:3]
+    return (0.0, 0.0, 0.0)
