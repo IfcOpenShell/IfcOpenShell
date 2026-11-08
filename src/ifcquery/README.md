@@ -60,7 +60,15 @@ storeys, and their contained elements.
 
 ```bash
 ifcquery model.ifc tree
+ifcquery model.ifc tree --depth 4
 ```
+
+Options:
+
+- `--depth N` -- expand at most N levels, counting the project as level 1 and
+  contained elements as one level below their container (default: unlimited).
+  At the cutoff, `children` and `elements` are replaced with
+  `{"truncated": true, "count": N}`.
 
 ```json
 {
