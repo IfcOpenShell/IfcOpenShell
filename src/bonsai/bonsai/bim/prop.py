@@ -859,18 +859,19 @@ class BIMFilterGroup(PropertyGroup):
 
 
 class BIMSnapGroups(PropertyGroup):
+    use_gpu_snapping: BoolProperty(name="Use GPU Snapping", default=False)
     object: BoolProperty(name="Object", default=True)
     polyline: BoolProperty(name="Polyline", default=True)
     measure: BoolProperty(name="Measure", default=True)
 
     if TYPE_CHECKING:
+        use_gpu_snapping: bool
         object: bool
         polyline: bool
         measure: bool
 
 
-class BIMSnapProperties(PropertyGroup):
-    use_gpu_snapping: BoolProperty(name="Use GPU Snapping", default=False)
+class BIMSnapTarget(PropertyGroup):
     vertex: BoolProperty(name="Vertex", default=True)
     edge: BoolProperty(name="Edge", default=True)
     edge_center: BoolProperty(name="Edge Center", default=True)
@@ -878,7 +879,6 @@ class BIMSnapProperties(PropertyGroup):
     face: BoolProperty(name="Face", default=True)
 
     if TYPE_CHECKING:
-        use_gpu_snapping: bool
         vertex: bool
         edge: bool
         edge_center: bool
