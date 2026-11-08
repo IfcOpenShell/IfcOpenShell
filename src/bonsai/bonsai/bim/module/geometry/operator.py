@@ -2153,7 +2153,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
 
                     if item.is_a("IfcSweptAreaSolid"):
                         if copied_item.Position:
-                            position = ifcopenshell.util.placement.get_axis2placement(copied_item.Position)
+                            position = ifcopenshell.util.placement.get_placement(copied_item.Position)
                         else:
                             position = np.eye(4, dtype=float)
                         position = apply_placement(position, placement)
@@ -3761,7 +3761,8 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
 
         matrix = props.representation_obj.matrix_world.copy()
         matrix.translation = context.scene.cursor.location
-        local_matrix = props.representation_obj.matrix_world.inverted() @ matrix
+        rep_matrix = tool.Geometry.get_true_matrix_world(props.representation_obj)
+        local_matrix = np.linalg.inv(rep_matrix) @ np.array(matrix)
 
         obj.show_in_front = True
         obj.matrix_world = matrix
@@ -3778,9 +3779,9 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         item = builder.extrude(
             curve,
             magnitude=0.5 / unit_scale,
-            position=local_matrix.translation,
-            position_x_axis=local_matrix.col[0].to_3d(),
-            position_z_axis=local_matrix.col[2].to_3d(),
+            position=local_matrix[:3, 3],
+            position_x_axis=local_matrix[:3, 0],
+            position_z_axis=local_matrix[:3, 2],
         )
 
         representation = tool.Geometry.get_active_representation(props.representation_obj)
@@ -3826,7 +3827,8 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
 
         matrix = props.representation_obj.matrix_world.copy()
         matrix.translation = context.scene.cursor.location
-        local_matrix = props.representation_obj.matrix_world.inverted() @ matrix
+        rep_matrix = tool.Geometry.get_true_matrix_world(props.representation_obj)
+        local_matrix = np.linalg.inv(rep_matrix) @ np.array(matrix)
 
         obj.show_in_front = True
         obj.matrix_world = matrix
@@ -3836,9 +3838,9 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
 
-        offset = local_matrix.translation.to_2d() / unit_scale
+        offset = local_matrix[:2, 3] / unit_scale
         if not is_2d:
-            offset = offset.to_3d()
+            offset = np.append(offset, 0.0)
 
         if self.shape == "LINE":
             if is_2d:
@@ -3894,7 +3896,8 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
 
         matrix = props.representation_obj.matrix_world.copy()
         matrix.translation = context.scene.cursor.location
-        local_matrix = props.representation_obj.matrix_world.inverted() @ matrix
+        rep_matrix = tool.Geometry.get_true_matrix_world(props.representation_obj)
+        local_matrix = np.linalg.inv(rep_matrix) @ np.array(matrix)
 
         obj.show_in_front = True
         obj.matrix_world = matrix
@@ -3902,7 +3905,7 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-        location = np.array(local_matrix.translation) / unit_scale
+        location = local_matrix[:3, 3] / unit_scale
         item = builder.half_space_solid(builder.plane(location=location))
         props.add_item_object(obj, item)
 

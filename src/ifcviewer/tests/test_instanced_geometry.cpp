@@ -17,11 +17,11 @@
  *                                                                              *
  ********************************************************************************/
 
-// Tier-1 coverage of the instanced-geometry GPU/sidecar layout and the
+// Tier-1 coverage of the instanced-geometry GPU/.ifcview layout and the
 // vertex quantization used to fill it.
 //
 // quantizeVertex / octEncodeNormal (VertexQuantization.h) are the shared
-// production helpers: ViewportWindow::uploadStreamedMesh and SidecarBuilder both
+// production helpers: ViewportWindow::uploadStreamedMesh and IfcViewAssembler both
 // route through them so the rendered VBO and the on-disk .ifcview record are
 // byte-identical.  The tests exercise that real implementation directly:
 //   - runtime size/alignment assertions (defense in depth for the static_asserts)
@@ -248,13 +248,13 @@ TEST_CASE("quantizeVertex passes the packed color through unchanged", "[instgeom
 TEST_CASE("StreamedMesh and StreamedInstance default-init to zeroed metadata", "[instgeom]") {
     StreamedMesh mc;
     REQUIRE(mc.session_model_id == 0);
-    REQUIRE(mc.local_mesh_id == 0);
+    REQUIRE(mc.mesh_id == 0);
     REQUIRE(mc.vertices.empty());
     REQUIRE(mc.indices.empty());
 
     StreamedInstance ic;
     REQUIRE(ic.session_model_id == 0);
-    REQUIRE(ic.local_mesh_id == 0);
+    REQUIRE(ic.mesh_id == 0);
     REQUIRE(ic.object_id == 0);
     REQUIRE(ic.color_override_rgba8 == 0);
 }

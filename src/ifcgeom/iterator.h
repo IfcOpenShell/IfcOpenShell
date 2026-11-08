@@ -196,9 +196,9 @@ namespace ifcopenshell::geom {
 			, num_threads_(num_threads)
 			, geometry_library_(geometry_library->geometry_library())
 			, logger_(logger)
-			// @todo verify whether settings are correctly passed on
 			, converter_(new ifcopenshell::geom::converter(std::move(geometry_library), ifc_file, settings_, logger_))
 		{
+			settings_ = converter_->settings();
 		}
 
 		iterator(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::file* file, ifcopenshell::logger& logger = ifcopenshell::logger::root())
@@ -209,6 +209,7 @@ namespace ifcopenshell::geom {
 			, logger_(logger)
 			, converter_(new ifcopenshell::geom::converter(std::move(geometry_library), ifc_file, settings_, logger_))
 		{
+			settings_ = converter_->settings();
 		}
 
 		iterator(std::unique_ptr<ifcopenshell::geom::kernels::abstract_kernel>&& geometry_library, const ifcopenshell::geom::settings& settings, ifcopenshell::file* file, int num_threads, ifcopenshell::logger& logger = ifcopenshell::logger::root())
@@ -219,9 +220,12 @@ namespace ifcopenshell::geom {
 			, logger_(logger)
 			, converter_(new ifcopenshell::geom::converter(std::move(geometry_library), ifc_file, settings_, logger_))
 		{
+			settings_ = converter_->settings();
 		}
 
 		~iterator();
+
+		const ifcopenshell::geom::settings& settings() const { return settings_; }
 
 		std::vector<ifcopenshell::geom::taxonomy::item::ptr> get_task_items() const {
 			std::vector<ifcopenshell::geom::taxonomy::item::ptr> items;

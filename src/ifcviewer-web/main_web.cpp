@@ -19,7 +19,7 @@
 
 // Web entry point. Wires a WebViewportHost to a ViewportCore, brings up
 // wgpu via emdawnwebgpu (the spec-compatible WebGPU header set that
-// shipped with Dawn), loads the embedded sample sidecar, and drives
+// shipped with Dawn), loads the embedded sample .ifcview, and drives
 // render() per requestAnimationFrame from JS (the host page (web/ifcviewer.js)).
 //
 // The RAF loop lives in the host page (web/ifcviewer.js) — NOT here — because any call into
@@ -553,21 +553,21 @@ extern "C" EMSCRIPTEN_KEEPALIVE void raf_tick_c(void* user) {
     }
 }
 
-// Stream a sidecar from a registered JS byte-source and APPEND it to the scene
+// Stream a .ifcview from a registered JS byte-source and APPEND it to the scene
 // (federation). the host page (web/ifcviewer.js) registers the source first — a picked File or a
 // remote URL, sized up front — into Module.__ifcvSources[source_id], then calls
 // this. Byte-range: the file is never copied whole into the wasm heap; metadata
-// is read via ranges and chunks stream per-chunk, so a 500 MB sidecar stays in
+// is read via ranges and chunks stream per-chunk, so a 500 MB .ifcview stays in
 // the File / on the server. Asynchronous; the model frames itself from the JS
 // completion callback. Call clear_scene_c first to replace instead of append.
-extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_source_c(int source_id) {
+extern "C" EMSCRIPTEN_KEEPALIVE void load_ifcview_from_source_c(int source_id) {
     if (!g_app || !g_app->ready) return;
     // Label the model with whatever name the host page set for this source, so
     // logs identify it rather than saying "source" five times over.
     std::string label = g_app->federation.modelName(source_id);
     if (label.empty()) label = "source " + std::to_string(source_id);
 
-    g_app->core.loadSidecarMetadataWeb(source_id, std::move(label),
+    g_app->core.loadIfcViewMetadataWeb(source_id, std::move(label),
         [source_id](std::uint32_t session_model_id) {
             if (!g_app) return;
             // Binds source -> session model, applies any transform staged
@@ -798,7 +798,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_model_name_c(int source_id, const 
     if (g_app && name) g_app->federation.setModelName(source_id, name);
 }
 
-// The model's CoordinateOperation as baked into its sidecar, so a host can see
+// The model's CoordinateOperation as baked into its .ifcview, so a host can see
 // what georeferencing a model actually carries: out[0] is 1 when the model has
 // one, out[1..16] the 4x4 in metres (column-major), out[17] the project length
 // unit scale and out[18] the map unit scale. Returns 0 when the source has not
@@ -1031,18 +1031,18 @@ int main(int /*argc*/, char** /*argv*/) {
         g_app->core.buildPickPipeline();
         g_app->core.buildSelectionOutlinePipelines();
 
-        // Load the embedded sample sidecar (mounted into MEMFS via
+        // Load the embedded sample .ifcview (mounted into MEMFS via
         // --embed-file in CMakeLists.txt). The sample stays on the
         // synchronous MEMFS read; user-picked files go through the
-        // Blob.slice byte-range path (load_sidecar_from_blob_c) so large
-        // sidecars never enter the wasm heap.
-        if (const std::uint32_t sample_id = g_app->core.loadSidecarFromPath("/sample.ifcview")) {
+        // Blob.slice byte-range path (load_ifcview_from_blob_c) so large
+        // .ifcview files never enter the wasm heap.
+        if (const std::uint32_t sample_id = g_app->core.loadIfcViewFromPath("/sample.ifcview")) {
             // Bypasses the source registry, so tell the federation directly —
             // otherwise the first-model false-origin guess never runs for a
             // page that only ever shows the sample.
             g_app->federation.onModelLoadedWithoutSource(sample_id);
         } else {
-            Log::warn() << "ifcviewer-web: sample sidecar load failed";
+            Log::warn() << "ifcviewer-web: sample .ifcview load failed";
         }
 
         g_app->ready = true;

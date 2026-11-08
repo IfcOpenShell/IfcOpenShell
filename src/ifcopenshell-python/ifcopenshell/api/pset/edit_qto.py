@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Optional, Union, assert_never
+from typing import Any, assert_never
 
 import ifcopenshell
 import ifcopenshell.api.pset
@@ -30,15 +30,15 @@ FLOAT_TYPE_KEYWORDS = (
     ("Time", ("time", "duration")),
 )
 
-PROP_VALUE_TYPE = Union[ifcopenshell.entity_instance, float, int, dict[str, "PROP_VALUE_TYPE"]]
+PROP_VALUE_TYPE = ifcopenshell.entity_instance | float | int | dict[str, "PROP_VALUE_TYPE"]
 
 
 def edit_qto(
     file: ifcopenshell.file,
     qto: ifcopenshell.entity_instance,
-    name: Optional[str] = None,
-    properties: Optional[dict[str, PROP_VALUE_TYPE]] = None,
-    pset_template: Optional[ifcopenshell.entity_instance] = None,
+    name: str | None = None,
+    properties: dict[str, PROP_VALUE_TYPE] | None = None,
+    pset_template: ifcopenshell.entity_instance | None = None,
 ) -> None:
     """Edits a quantity set and its quantities
 
@@ -130,8 +130,7 @@ def edit_qto(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"qto": qto, "name": name, "properties": properties or {}, "pset_template": pset_template}
-    return usecase.execute()
+    return usecase.execute(qto, name, properties or {}, pset_template)
 
 
 # Sentinel distinguishing "no Unit dict was passed at all" from "a Unit dict was passed
@@ -141,10 +140,9 @@ _NO_UNIT = object()
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
     @staticmethod
-    def unpack_unit_value(value_candidate):
+    def unpack_unit_value(value_candidate: Any) -> tuple[Any, Any]:
         """
         Returns tuple of the format: (Unit, NominalValue)
 
@@ -160,36 +158,50 @@ class Usecase:
             return (value_candidate["Unit"], value_candidate["NominalValue"])
         return (_NO_UNIT, value_candidate)
 
-    def execute(self):
-        self.qto_idx = 5
-        if self.settings["qto"].is_a("IfcPhysicalComplexQuantity"):
-            self.qto_idx = 2
+    def execute(
+        self,
+        qto: ifcopenshell.entity_instance,
+        name: str | None,
+        properties: dict[str, PROP_VALUE_TYPE],
+        pset_template: ifcopenshell.entity_instance | None,
+    ) -> None:
+        qto_idx = 5
+        if qto.is_a("IfcPhysicalComplexQuantity"):
+            qto_idx = 2
 
-        self.update_qto_name()
-        self.load_qto_template()
-        self.update_existing_properties()
-        new_properties = self.add_new_properties()
-        self.extend_qto_with_new_properties(new_properties)
+        # Don't mutate the caller's dict.
+        properties = properties.copy()
 
-    def update_qto_name(self) -> None:
-        if self.settings["name"]:
-            self.settings["qto"].Name = self.settings["name"]
+        self.update_qto_name(qto, name)
+        qto_template = self.load_qto_template(qto, pset_template)
+        self.update_existing_properties(qto, qto_idx, properties)
+        new_properties = self.add_new_properties(properties, qto_template)
+        self.extend_qto_with_new_properties(qto, qto_idx, new_properties)
 
-    def load_qto_template(self) -> None:
-        if self.settings["pset_template"]:
-            self.pset_template = self.settings["pset_template"]
-        else:
-            self.psetqto = ifcopenshell.util.pset.get_template(self.file.schema_identifier)
-            self.qto_template = self.psetqto.get_by_name(self.settings["qto"].Name)
+    def update_qto_name(self, qto: ifcopenshell.entity_instance, name: str | None) -> None:
+        if name:
+            qto.Name = name
 
-    def update_existing_properties(self) -> None:
-        for prop in self.settings["qto"][self.qto_idx] or []:
-            self.update_existing_property(prop)
+    def load_qto_template(
+        self, qto: ifcopenshell.entity_instance, pset_template: ifcopenshell.entity_instance | None
+    ) -> ifcopenshell.entity_instance | None:
+        if pset_template:
+            return pset_template
+        psetqto = ifcopenshell.util.pset.get_template(self.file.schema_identifier)
+        return psetqto.get_by_name(qto.Name)
 
-    def update_existing_property(self, prop: ifcopenshell.entity_instance) -> None:
-        if prop.Name not in self.settings["properties"]:
+    def update_existing_properties(
+        self, qto: ifcopenshell.entity_instance, qto_idx: int, properties: dict[str, PROP_VALUE_TYPE]
+    ) -> None:
+        for prop in qto[qto_idx] or []:
+            self.update_existing_property(prop, properties)
+
+    def update_existing_property(
+        self, prop: ifcopenshell.entity_instance, properties: dict[str, PROP_VALUE_TYPE]
+    ) -> None:
+        if prop.Name not in properties:
             return
-        value = self.settings["properties"][prop.Name]
+        value = properties[prop.Name]
         name = prop.Name
         if value is None:
             self.file.remove(prop)
@@ -206,35 +218,44 @@ class Usecase:
                 prop[3] = float(value)
             if unit is not _NO_UNIT:
                 prop.Unit = unit
-        del self.settings["properties"][name]
+        del properties[name]
 
-    def add_new_properties(self) -> list[ifcopenshell.entity_instance]:
-        properties = []
-        for name, value in self.settings["properties"].items():
+    def add_new_properties(
+        self, properties: dict[str, PROP_VALUE_TYPE], qto_template: ifcopenshell.entity_instance | None
+    ) -> list[ifcopenshell.entity_instance]:
+        new_properties = []
+        for name, value in properties.items():
             if value is None:
                 continue
             if isinstance(value, dict) and "Unit" not in value:
                 complex_qto = self.file.create_entity(
                     "IfcPhysicalComplexQuantity", Name=name, Discrimination=value["Discrimination"]
                 )
-                properties.append(complex_qto)
+                new_properties.append(complex_qto)
                 ifcopenshell.api.pset.edit_qto(self.file, qto=complex_qto, properties=value["HasQuantities"])
             else:
                 unit, value = self.unpack_unit_value(value)
-                property_type = self.get_canonical_property_type(name, value)
+                property_type = self.get_canonical_property_type(name, value, qto_template)
                 value = value.wrappedValue if isinstance(value, ifcopenshell.entity_instance) else value
                 kwargs = {"Name": name, "{}Value".format(property_type): value}
                 if unit is not None and unit is not _NO_UNIT:
                     kwargs["Unit"] = unit
-                properties.append(self.file.create_entity("IfcQuantity{}".format(property_type), **kwargs))
-        return properties
+                new_properties.append(self.file.create_entity("IfcQuantity{}".format(property_type), **kwargs))
+        return new_properties
 
-    def extend_qto_with_new_properties(self, new_properties: list[ifcopenshell.entity_instance]) -> None:
-        props = list(self.settings["qto"][self.qto_idx]) if self.settings["qto"][self.qto_idx] else []
+    def extend_qto_with_new_properties(
+        self, qto: ifcopenshell.entity_instance, qto_idx: int, new_properties: list[ifcopenshell.entity_instance]
+    ) -> None:
+        props = list(qto[qto_idx]) if qto[qto_idx] else []
         props.extend(new_properties)
-        self.settings["qto"][self.qto_idx] = props
+        qto[qto_idx] = props
 
-    def get_canonical_property_type(self, name: str, value: Union[ifcopenshell.entity_instance, float, int]) -> str:
+    def get_canonical_property_type(
+        self,
+        name: str,
+        value: ifcopenshell.entity_instance | float | int,
+        qto_template: ifcopenshell.entity_instance | None,
+    ) -> str:
         if isinstance(value, ifcopenshell.entity_instance):
             result = value.is_a().replace("Ifc", "").replace("Measure", "")
             # Sigh, IFC inconsistencies
@@ -243,15 +264,15 @@ class Usecase:
             elif result == "Mass":
                 result = "Weight"
             return result
-        if self.qto_template:
-            for prop_template in self.qto_template.HasPropertyTemplates:
+        if qto_template:
+            for prop_template in qto_template.HasPropertyTemplates:
                 if prop_template.Name != name:
                     continue
                 return prop_template.TemplateType[2:].lower().capitalize()
         return infer_property_type(name, value)
 
 
-def infer_property_type(name: str, value: Union[float, int]) -> str:
+def infer_property_type(name: str, value: float | int) -> str:
     name_lower = name.lower()
     # Only undetected type is IfcQuantityNumber (IFC4X3),
     # not sure when it's appropriate.

@@ -187,6 +187,9 @@ void logger::set_product(std::optional<express::base> product) {
         message(LOG_DEBUG, "SYS", 3, "Begin processing", *product);
     }
     if (!product && print_perf_stats_on_element_) {
+        if (current_product_) {
+            message(LOG_DEBUG, "SYS", 3, "Finished processing", current_product_);
+        }
         print_performance_stats();
         performance_statistics_.clear();
     }
@@ -320,6 +323,11 @@ void logger::append(logger& other) {
     if (other.max_severity_ > max_severity_) {
         max_severity_ = other.max_severity_;
     }
+
+    for (const auto& stat : other.performance_statistics_) {
+        performance_statistics_[stat.first] += stat.second;
+    }
+    other.performance_statistics_.clear();
 
     if (format_ == FMT_INMEMORY) {
         log_messages_.insert(log_messages_.end(), other.log_messages_.begin(), other.log_messages_.end());

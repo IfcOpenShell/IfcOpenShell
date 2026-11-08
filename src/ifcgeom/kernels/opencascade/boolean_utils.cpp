@@ -26,9 +26,53 @@
 #include <BRepCheck.hxx>
 #include <ShapeAnalysis_Edge.hxx>
 #include <Bnd_OBB.hxx>
+#include <BRepAdaptor_Surface.hxx>
+#include <BRepAdaptor_Curve.hxx>
+#include <BRepAlgoAPI_Common.hxx>
+#include <BRepAlgoAPI_Cut.hxx>
+#include <BRepBndLib.hxx>
 
 #include <vector>
 #include <thread>
+#include <cmath>
+#include <sstream>
+#include <optional>
+
+namespace {
+	// A degenerate or nearly planar solid can make AddOBB fall back to an
+	// axis-aligned box. Retain the polygonal shell test in native coordinates:
+	// use the support plane of the face with the largest vertex bounding box.
+	std::optional<double> polyhedral_plane_deviation(const TopoDS_Shape& shape) {
+		std::optional<gp_Pln> reference;
+		double largest_box = -1.;
+		for (TopExp_Explorer f(shape, TopAbs_FACE); f.More(); f.Next()) {
+			BRepAdaptor_Surface surface(TopoDS::Face(f.Current()));
+			if (surface.GetType() != GeomAbs_Plane) return std::nullopt;
+			Bnd_Box box;
+			for (TopExp_Explorer v(f.Current(), TopAbs_VERTEX); v.More(); v.Next()) {
+				box.Add(BRep_Tool::Pnt(TopoDS::Vertex(v.Current())));
+			}
+			if (box.IsVoid()) return std::nullopt;
+			if (box.SquareExtent() > largest_box) {
+				largest_box = box.SquareExtent();
+				reference = surface.Plane();
+			}
+		}
+		if (!reference) return std::nullopt;
+		for (TopExp_Explorer e(shape, TopAbs_EDGE); e.More(); e.Next()) {
+			const auto edge = TopoDS::Edge(e.Current());
+			if (!BRep_Tool::Degenerated(edge) && BRepAdaptor_Curve(edge).GetType() != GeomAbs_Line) return std::nullopt;
+		}
+		if (!ifcopenshell::geom::util::is_manifold(shape)) return std::nullopt;
+		double deviation = 0.;
+		for (TopExp_Explorer v(shape, TopAbs_VERTEX); v.More(); v.Next()) {
+			const double distance = reference->Distance(BRep_Tool::Pnt(TopoDS::Vertex(v.Current())));
+			if (!std::isfinite(distance)) return std::nullopt;
+			deviation = (std::max)(deviation, distance);
+		}
+		return deviation;
+	}
+}
 
 void ifcopenshell::geom::util::copy_operand(const NCollection_List<TopoDS_Shape>& l, NCollection_List<TopoDS_Shape>& r) {
 #if OCC_VERSION_HEX < 0x70000
@@ -408,22 +452,32 @@ bool ifcopenshell::geom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape
 int ifcopenshell::geom::util::eliminate_narrow_operands(double prec, const NCollection_List<TopoDS_Shape>& bs, NCollection_List<TopoDS_Shape> & c, ifcopenshell::logger& logger) {
 	int N = 0;
 	NCollection_List<TopoDS_Shape>::Iterator it(bs);
-	for (; it.More(); it.Next()) {
+	for (int index = 0; it.More(); it.Next(), ++index) {
 
 		Bnd_OBB box;
 		BRepBndLib::AddOBB(it.Value(), box, false, false, false);
+		if (box.IsVoid()) {
+			c.Append(it.Value());
+			continue;
+		}
 
 		auto min_dimension = box.XHSize() < box.YHSize() ? box.XHSize() : box.YHSize();
 		min_dimension = min_dimension < box.ZHSize() ? min_dimension : box.ZHSize();
 
-		bool is_narrow = min_dimension < prec;
+		const auto plane_deviation = polyhedral_plane_deviation(it.Value());
+		bool is_narrow = min_dimension < prec || (plane_deviation && *plane_deviation <= prec);
 
-		logger.notice("GEO", 122, "Min OBB dimension of operand = " + std::to_string(min_dimension));
+		std::ostringstream message;
+		message << "operand " << index << ": minimum OBB half-size=" << min_dimension
+			<< " m, narrow-operand tolerance=" << prec << " m";
+		if (plane_deviation) message << ", maximum point-to-plane distance=" << *plane_deviation << " m";
+		logger.message(ifcopenshell::logger::LOG_DEBUG, "GEO", 122, "Subtraction " + message.str());
 
 		if (!is_narrow) {
 			c.Append(it.Value());
 		} else {
 			++N;
+			logger.notice("GEO", 405, "Eliminating narrow subtraction " + message.str());
 		}
 	}
 	return N;
@@ -838,7 +892,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 	const bool do_unify = true;
 	const bool do_subtraction_eliminate_disjoint_bbox = true;
 	const bool do_subtraction_eliminate_touching = true;
-	const bool do_eliminate_narrow_obb = true;
+	const bool do_subtraction_eliminate_narrow = true;
 	const bool do_attempt_2d_boolean = settings.attempt_2d;
 	const bool debug = settings.debug;
 
@@ -880,7 +934,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
     NCollection_List<TopoDS_Shape> b;
 
 	if (do_unify) {
-		PERF("boolean operation: unifying operands");
+		PERF("boolean operation: unifying operands", settings.log());
 
 		a = unify(a_input, fuzziness * 1000.);
 
@@ -920,7 +974,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 		builder.reset(new BRepAlgoAPI_Cut());
 
 		if (do_subtraction_eliminate_disjoint_bbox) {
-			PERF("boolean subtraction: eliminate disjoint bbox");
+			PERF("boolean subtraction: eliminate disjoint bbox", settings.log());
 
 			auto N = bounding_box_overlap(fuzziness, a, b, b_tmp);
 			if (N) {
@@ -930,7 +984,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 		}
 
 		if (!is_2d && do_subtraction_eliminate_touching) {
-			PERF("boolean subtraction: eliminate touching");
+			PERF("boolean subtraction: eliminate touching", settings.log());
 
 			b_tmp.Clear();
 			auto N = eliminate_touching_operands(fuzziness, a, b, b_tmp);
@@ -940,11 +994,14 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 			}
 		}
 
-		if (!is_2d && do_eliminate_narrow_obb) {
-			PERF("boolean subtraction: eliminate narrow");
+		if (!is_2d && do_subtraction_eliminate_narrow) {
+			PERF("boolean subtraction: eliminate narrow", settings.log());
 
 			b_tmp.Clear();
-			auto N = eliminate_narrow_operands(fuzziness, b, b_tmp, settings.log());
+			// Boolean fuzziness starts at precision / 100. Start the geometric
+			// sliver threshold at model precision and increase both tenfold on
+			// every retry. Filter before computing the remaining feature limit.
+			auto N = eliminate_narrow_operands(fuzziness * 100., b, b_tmp, settings.log());
 			if (N) {
 				settings.log().notice("GEO", 131, "Eliminated " + std::to_string(N) + " narrow operands");
 				std::swap(b, b_tmp);
@@ -966,7 +1023,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 	}
 
 	if (!is_2d && ifcopenshell::logger::LOG_NOTICE >= settings.log().verbosity()) {
-		PERF("preliminary manifoldness check");
+		PERF("preliminary manifoldness check", settings.log());
 
 		if (!a.IsNull()) {
 			settings.log().notice("GEO", 133, "Operand A is " + (is_manifold(a) ? ""s : "non-"s) + "manifold");
@@ -983,7 +1040,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 	double min_length_orig;
 
 	{
-		PERF("boolean operation: min edge length");
+		PERF("boolean operation: min edge length", settings.log());
 
 		min_length_orig = min_edge_length(a);
 		NCollection_List<TopoDS_Shape>::Iterator it(b);
@@ -996,7 +1053,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 	}
 
 	{
-		PERF("boolean operation: min vertex-edge dist");
+		PERF("boolean operation: min vertex-edge dist", settings.log());
 
 		double d = min_vertex_edge_distance(a, settings.precision, min_length_orig);
 		if (d < min_length_orig) {
@@ -1014,7 +1071,12 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 
 	const double fuzz = (std::min)(min_length_orig / 3., fuzziness);
 
-	settings.log().notice("GEO", 135, "Used fuzziness: " + std::to_string(fuzz));
+	{
+		std::ostringstream message;
+		message << "Used fuzziness: " << fuzz << ", requested fuzziness=" << fuzziness
+			<< ", minimum operand feature=" << min_length_orig;
+		settings.log().notice("GEO", 135, message.str());
+	}
 
 	const double new_fuzziness = fuzziness * 10.;
 	const bool allow_retry = new_fuzziness - 1e-15 <= settings.precision * 10000. && new_fuzziness < min_length_orig;
@@ -1042,7 +1104,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 
 		bool is_extrusion_a = false;
 		if (do_attempt_2d_boolean) {
-			PERF("boolean subtraction: extrusion check");
+			PERF("boolean subtraction: extrusion check", settings.log());
 
 			is_extrusion_a = is_extrusion(gp::DY(), a, a_face, a_interval);
 		}
@@ -1058,7 +1120,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 
 				bool is_extrusion_b;
 				{
-					PERF("boolean subtraction: extrusion check");
+					PERF("boolean subtraction: extrusion check", settings.log());
 
 					is_extrusion_b = is_extrusion(gp::DY(), it.Value(), b_face, b_interval);
 				}
@@ -1088,21 +1150,21 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 
 				bool boolean_op_2d_success;
 				{
-					PERF("boolean operation: 2d builder");
+					PERF("boolean operation: 2d builder", settings.log());
 					// First try using face builder
 
 					boolean_op_2d_success = boolean_subtraction_2d_using_builder(a_face, b_faces, face_result, fuzziness, settings.log());
 				}
 
 				if (!boolean_op_2d_success) {
-					PERF("boolean operation: 2d");
+					PERF("boolean operation: 2d", settings.log());
 					// Retry using generic 2d using boolean algo on faces
 
 					boolean_op_2d_success = boolean_operation(settings, a_face, b_faces, op, face_result, fuzziness);
 				}
 
 				if (boolean_op_2d_success) {
-					PERF("boolean operation: 2d to 3d");
+					PERF("boolean operation: 2d to 3d", settings.log());
 
 					BRepPrimAPI_MakePrism mp(face_result, gp_Vec(gp::DY()) * (a_interval.second - a_interval.first));
 					if (mp.IsDone()) {
@@ -1139,7 +1201,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 	std::swap(b, b_tmp);
 	builder->SetTools(b);
 	{
-		PERF("boolean operation: build");
+		PERF("boolean operation: build", settings.log());
 
 		builder->Build();
 	}
@@ -1151,7 +1213,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 			TopoDS_Shape r = *builder;
 
 			{
-				PERF("boolean operation: shape healing");
+				PERF("boolean operation: shape healing", settings.log());
 
 				ShapeFix_Shape fix(r);
 				try {
@@ -1164,7 +1226,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 			}
 
 			{
-				PERF("boolean operation: shape analysis");
+				PERF("boolean operation: shape analysis", settings.log());
 
 				BRepCheck_Analyzer ana(r);
 				success = ana.IsValid() != 0;
@@ -1207,13 +1269,13 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 			if (success) {
 
 				{
-					PERF("boolean operation: manifoldness check");
+					PERF("boolean operation: manifoldness check", settings.log());
 
 					success = !is_manifold(a) || is_manifold(r);
 				}
 
 				if (!success) {
-					PERF("boolean operation: manifoldness check exemption");
+					PERF("boolean operation: manifoldness check exemption", settings.log());
 
 					// An exemption for the requirement to be manifold: When the cut operands have overlapping edge belonging to faces that do not overlap.
 					bool operands_nonmanifold = false;
@@ -1270,6 +1332,10 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 						}
 					}
 					success = operands_nonmanifold;
+					if (success) {
+						settings.log().notice("GEO", 414,
+							"Accepting non-manifold boolean result under the overlapping-input-edges exemption");
+					}
 				}
 
 				if (success) {
@@ -1278,7 +1344,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 					bool has_open_shells = false;
 
 					if (op == BOPAlgo_CUT) {
-						PERF("boolean operation: open shell face addition check");
+						PERF("boolean operation: open shell face addition check", settings.log());
 
 						for (TopExp_Explorer exp(a, TopAbs_SHELL); exp.More(); exp.Next()) {
 							if (!exp.Current().Closed()) {
@@ -1328,7 +1394,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 						double v;
 
 						{
-							PERF("boolean operation: result min edge length check");
+							PERF("boolean operation: result min edge length check", settings.log());
 
 							if ((v = min_edge_length(r)) < fuzziness * 3.) {
 								reason = 0;
@@ -1339,7 +1405,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 						}
 
 						{
-							PERF("boolean operation: result min vertex-edge dist check");
+							PERF("boolean operation: result min vertex-edge dist check", settings.log());
 
 							if ((v = min_vertex_edge_distance(r, settings.precision, fuzziness * 3.)) < fuzziness * 3.) {
 								reason = 1;
@@ -1350,7 +1416,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 						}
 
 						{
-							PERF("boolean operation: result min face-face dist check");
+							PERF("boolean operation: result min face-face dist check", settings.log());
 
 							if ((v = min_face_face_distance(r, 1.e-4)) < 1.e-4) {
 								// #2095 Check if this distance wasn't already realized in the input first operand.
@@ -1376,6 +1442,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 
 				} else {
 					settings.log().notice("GEO", 151, "Boolean operation yields non-manifold result");
+					if (debug) BRepTools::Write(r, (debug_identifier + "-nonmanifold-result.brep").c_str());
 				}
 			}
 		}
@@ -1405,9 +1472,13 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 		if (allow_retry) {
 			return boolean_operation(settings, a, b, op, result, new_fuzziness);
 		} else {
-			settings.log().notice("GEO", 154, "No longer attempting boolean operation with higher fuzziness");
+			std::ostringstream message;
+			message << "No longer attempting boolean operation with higher fuzziness: next fuzziness=" << new_fuzziness
+				<< ", precision limit=" << settings.precision * 10000. << ", minimum operand feature=" << min_length_orig;
+			settings.log().notice("GEO", 154, message.str());
 		}
 	}
+	if (debug && success && !result.IsNull()) BRepTools::Write(result, (debug_identifier + "-result.brep").c_str());
 	return success && !result.IsNull();
 }
 

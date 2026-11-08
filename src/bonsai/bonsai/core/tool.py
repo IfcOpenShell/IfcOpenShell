@@ -782,6 +782,7 @@ class Owner:
 @interface
 class Project:
     def append_all_types_from_template(cls, template): pass
+    def append_structure_from_template(cls, template): pass
     def create_empty(cls, name): pass
     def load_default_thumbnails(cls): pass
     def run_aggregate_assign_object(cls, relating_obj=None, related_obj=None): pass
@@ -1081,6 +1082,7 @@ class Spatial:
     def create_mesh_from_shape(cls, shape): pass
     def get_x_y_z_h_mat_from_obj(cls, obj): pass
     def get_x_y_z_h_mat_from_cursor(cls): pass
+    def get_space_reference_point(cls, obj): pass
     def get_union_shape_from_selected_objects(cls): pass
     def get_boundary_elements(cls, selected_objects): pass
     def get_polygons(cls, boundary_elements): pass
@@ -1223,6 +1225,7 @@ class Unit:
     def enable_editing_units(cls): pass
     def export_unit_attributes(cls): pass
     def get_currency_name(cls): pass
+    def get_assigned_unit_of_type(cls, unit): pass
     def get_project_currency_unit(cls): pass
     def get_scene_unit_name(cls, unit_type): pass
     def get_scene_unit_si_prefix(cls, name): pass

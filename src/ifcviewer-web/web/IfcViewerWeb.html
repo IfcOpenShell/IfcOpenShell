@@ -185,7 +185,7 @@
     onReady: function (viewer) {
       statusEl.classList.add('ready');
 
-      // Auto-load ?model= / ?models= sidecars as a federation (one-shot).
+      // Auto-load ?model= / ?models= .ifcview files as a federation (one-shot).
       var qs = new URLSearchParams(location.search);
       var urls = qs.getAll('model');
       var csv = qs.get('models');
