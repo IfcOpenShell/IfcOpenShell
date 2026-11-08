@@ -70,6 +70,26 @@ ifcedit list root
 ]
 ```
 
+### search
+
+Find API functions by keyword when you don't know the function name. Each
+word scores most in the function or module name, less in the one-line
+summary, least elsewhere in the docstring, and a word few functions use
+counts for more. Search in the API's own terms ("remove", "edit attributes",
+"assign container").
+
+```bash
+ifcedit search "assign container"
+ifcedit search "property set" --limit 5
+```
+
+```json
+[
+  {"function": "spatial.unassign_container", "description": "Unassigns a container from products.", "score": 32.5},
+  {"function": "spatial.assign_container", "description": "Assigns products to be contained hierarchically in a space", "score": 31.1}
+]
+```
+
 ### docs
 
 Show full documentation for a specific function, including parameter

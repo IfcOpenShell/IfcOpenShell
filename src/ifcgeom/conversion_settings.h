@@ -86,7 +86,8 @@ namespace ifcopenshell {
 						if constexpr (HasDefault<Derived>()) {
 							return Derived::defaultvalue;
 						} else {
-						    throw std::runtime_error("Setting not set");
+                            auto message = std::string("Setting '") + Derived::name + "' is not set and has no default";
+                            throw std::runtime_error(message.c_str());
 						}
 					}
 				}
@@ -245,6 +246,14 @@ namespace ifcopenshell {
 				CURVES_SURFACES_AND_SOLIDS
 			};
 
+			inline constexpr std::array<const char* const, 3> output_dimensionality_names = {
+				"CURVES", "SURFACES_AND_SOLIDS", "CURVES_SURFACES_AND_SOLIDS"
+			};
+
+			inline const char* to_string(OutputDimensionalityTypes value) {
+				return output_dimensionality_names.at(static_cast<std::size_t>(value));
+			}
+
 			IFC_GEOM_API std::istream& operator>>(std::istream& in, OutputDimensionalityTypes& ioo);
 
 			struct OutputDimensionality : public SettingBase<OutputDimensionality, OutputDimensionalityTypes> {
@@ -258,6 +267,14 @@ namespace ifcopenshell {
 				NATIVE,
 				SERIALIZED
 			};
+
+			inline constexpr std::array<const char* const, 3> iterator_output_names = {
+				"TRIANGULATED", "NATIVE", "SERIALIZED"
+			};
+
+			inline const char* to_string(IteratorOutputOptions value) {
+				return iterator_output_names.at(static_cast<std::size_t>(value));
+			}
 
 			IFC_GEOM_API std::istream& operator>>(std::istream& in, IteratorOutputOptions& ioo);
 
@@ -439,6 +456,14 @@ namespace ifcopenshell {
 				POLYHEDRON_WITH_HOLES
 			};
 
+			inline constexpr std::array<const char* const, 3> triangulation_method_names = {
+				"TRIANGLE_MESH", "POLYHEDRON_WITHOUT_HOLES", "POLYHEDRON_WITH_HOLES"
+			};
+
+			inline const char* to_string(TriangulationMethod value) {
+				return triangulation_method_names.at(static_cast<std::size_t>(value));
+			}
+
 			IFC_GEOM_API std::istream& operator>>(std::istream& in, TriangulationMethod& ioo);
 
 			struct TriangulationType : public SettingBase<TriangulationType, TriangulationMethod> {
@@ -490,6 +515,11 @@ namespace ifcopenshell {
 			struct ApplyOffset : public SettingBase<ApplyOffset, std::vector<double>> {
 				static constexpr const char* const name = "apply-offset";
 				static constexpr const char* const description = "Slight variation of --model-offset where large offsets are applied by negating existing large offsets to retain maximum precision. Requires --no-parallel-mapping.";
+			};
+
+			struct OffsetApplied : public SettingBase<OffsetApplied, std::vector<double>, true> {
+				static constexpr const char* const name = "offset-applied";
+				static constexpr const char* const description = "Offset applied to the model after taking into account MaxOffset or ApplyOffset.";
 			};
 		}
 
@@ -573,6 +603,22 @@ namespace ifcopenshell {
 			}
 
 			template <std::size_t Index>
+			void to_dictionary_(std::map<std::string, value_variant_t>& dictionary) const {
+				using setting_type = std::tuple_element_t<Index, settings_t>;
+				const auto& setting = std::get<Index>(settings);
+				if (setting.has() || settings_detail::HasDefault<setting_type>()) {
+					if constexpr (std::is_enum_v<typename setting_type::base_type>) {
+						dictionary.emplace(setting_type::name, std::string(settings_detail::to_string(setting.get())));
+					} else {
+						dictionary.emplace(setting_type::name, setting.get());
+					}
+				}
+				if constexpr (Index + 1 < std::tuple_size_v<settings_t>) {
+					to_dictionary_<Index + 1>(dictionary);
+				}
+			}
+
+			template <std::size_t Index>
 			value_variant_t get_option_(const std::string& name) const {
 				if (std::tuple_element_t<Index, settings_t>::name == name) {
 					return std::get<Index>(settings).get();
@@ -631,6 +677,14 @@ namespace ifcopenshell {
 
 			void define_options(po::options_description& desc) {
 				define_options_<0>(desc);
+			}
+
+			std::map<std::string, value_variant_t> to_dictionary() const {
+				std::map<std::string, value_variant_t> dictionary;
+				if constexpr (std::tuple_size_v<settings_t> > 0) {
+					to_dictionary_<0>(dictionary);
+				}
+				return dictionary;
 			}
 
 			template <typename T>
@@ -954,6 +1008,7 @@ using geometry_setting_types = std::tuple<
 			settings_detail::MaxOffset,
 			settings_detail::MaxOffsetDeviation,
 			settings_detail::ApplyOffset,
+			settings_detail::OffsetApplied,
 			settings_detail::MakeVolume,
 			settings_detail::UseElementNames,
 			settings_detail::UseElementGuids,
@@ -1058,6 +1113,7 @@ using geometry_setting_types = std::tuple<
 			using MaxOffset = settings_detail::MaxOffset;
 			using MaxOffsetDeviation = settings_detail::MaxOffsetDeviation;
 			using ApplyOffset = settings_detail::ApplyOffset;
+			using OffsetApplied = settings_detail::OffsetApplied;
 			using MakeVolume = settings_detail::MakeVolume;
 
 			using UseElementNames = settings_detail::UseElementNames;
