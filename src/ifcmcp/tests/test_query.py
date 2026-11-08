@@ -74,6 +74,39 @@ class TestInfo:
         with pytest.raises(Exception):
             loaded_session.ifc_info(999999)
 
+    def test_by_global_id(self, loaded_session):
+        wall = loaded_session.model.by_type("IfcWall")[0]
+        assert loaded_session.ifc_info(wall.GlobalId)["id"] == wall.id()
+
+    def test_by_step_id_as_string(self, loaded_session):
+        wall = loaded_session.model.by_type("IfcWall")[0]
+        assert loaded_session.ifc_info(str(wall.id()))["id"] == wall.id()
+
+    def test_by_step_id_with_hash(self, loaded_session):
+        wall = loaded_session.model.by_type("IfcWall")[0]
+        assert loaded_session.ifc_info(f"#{wall.id()}")["id"] == wall.id()
+
+    def test_step_id_with_hash_is_never_a_global_id(self, loaded_session):
+        with pytest.raises(Exception, match="#111111111111111111111 not found"):
+            loaded_session.ifc_info("#" + "1" * 21)
+
+    def test_surrounding_whitespace(self, loaded_session):
+        wall = loaded_session.model.by_type("IfcWall")[0]
+        assert loaded_session.ifc_info(f" {wall.id()} ")["id"] == wall.id()
+        assert loaded_session.ifc_info(f" {wall.GlobalId}\n")["id"] == wall.id()
+
+    def test_hash_without_a_number(self, loaded_session):
+        with pytest.raises(IfcSessionError, match="Not a STEP id or GlobalId"):
+            loaded_session.ifc_info("#abc")
+
+    def test_unknown_global_id(self, loaded_session):
+        with pytest.raises(Exception, match="0000000000000000000000"):
+            loaded_session.ifc_info("0000000000000000000000")
+
+    def test_neither_id_nor_global_id(self, loaded_session):
+        with pytest.raises(Exception, match="Wall001"):
+            loaded_session.ifc_info("Wall001")
+
 
 class TestSelect:
     def test_select_walls(self, loaded_session):
@@ -99,6 +132,10 @@ class TestRelations:
         assert result["id"] == wall.id()
         assert result["type"] == "IfcWall"
         assert "hierarchy" in result
+
+    def test_by_global_id(self, loaded_session):
+        wall = loaded_session.model.by_type("IfcWall")[0]
+        assert loaded_session.ifc_relations(wall.GlobalId)["id"] == wall.id()
 
     def test_traverse_up(self, loaded_session):
         wall = loaded_session.model.by_type("IfcWall")[0]

@@ -87,6 +87,18 @@ class TestToolAnnotations:
         assert name not in READ_ONLY_TOOLS
 
 
+class TestElementLookup:
+    """The server accepts a GlobalId or a STEP id wherever it takes element_id."""
+
+    @pytest.mark.parametrize("tool", ["ifc_info", "ifc_relations", "ifc_clash"])
+    def test_by_global_id(self, tool, model, model_file):
+        server = build_server()
+        asyncio.run(server.call_tool("ifc_load", {"path": model_file}))
+        wall = model.by_type("IfcWall")[0]
+        for element_id in (wall.GlobalId, wall.id()):
+            asyncio.run(server.call_tool(tool, {"element_id": element_id}))
+
+
 class TestToolErrorsKeepTheirReason:
     """MCPServer replaces the text of any exception but ToolError with a bare
     "Error executing tool <name>". Each tool raises ToolError, so the agent is told
