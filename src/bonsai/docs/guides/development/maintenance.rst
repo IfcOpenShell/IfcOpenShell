@@ -71,8 +71,6 @@ When Blender ships with a new Python version:
      - ``--python-version`` arguments, ``only_py311`` input
    * - ``src/bonsai/Makefile``
      - ``SUPPORTED_PYVERSIONS``, ``blender_version_min`` / ``blender_version_max`` per ``PYVERSION``
-   * - ``src/bonsai/scripts/dev_environment.py``
-     - ``PYTHON_VERSION`` mapping (Blender version, bundled Python version)
 
 Release
 -------
