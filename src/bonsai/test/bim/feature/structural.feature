@@ -65,7 +65,7 @@ Scenario: Enable editing structural load group activities
     And the variable "load_group" is "ifcopenshell.api.structural.add_structural_load_group({ifc}, name='Wind').id()"
     And I evaluate expression "ifcopenshell.api.group.assign_group({ifc}, products=[{ifc}.by_id({activity})], group={ifc}.by_id({load_group}))"
     When I press "bim.enable_editing_structural_load_group_activities(load_group={load_group})"
-    Then "scene.BIMStructuralProperties.load_group_activities[0].name" is "Beam"
+    Then "scene.BIMStructuralProperties.load_group_activities[0].name" is "Wind on Beam"
     And "scene.BIMStructuralProperties.load_group_activities[0].applied_load_class" is "IfcStructuralLoadLinearForce"
 
 Scenario: Enable editing structural load group activities - an activity assigned to no item
@@ -76,4 +76,4 @@ Scenario: Enable editing structural load group activities - an activity assigned
     And the variable "load_group" is "ifcopenshell.api.structural.add_structural_load_group({ifc}, name='Wind').id()"
     And I evaluate expression "ifcopenshell.api.group.assign_group({ifc}, products=[{ifc}.by_id({activity})], group={ifc}.by_id({load_group}))"
     When I press "bim.enable_editing_structural_load_group_activities(load_group={load_group})"
-    Then "scene.BIMStructuralProperties.load_group_activities[0].name" is "Unnamed"
+    Then "scene.BIMStructuralProperties.load_group_activities[0].name" is "Wind on Unnamed"
