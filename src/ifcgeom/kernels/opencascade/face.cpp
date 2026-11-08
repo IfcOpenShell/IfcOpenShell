@@ -425,7 +425,7 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 				}
 			} else {
 				gp_Pln pln;
-				if (approximate_plane_through_wire(wire, pln, settings_.get<settings::Precision>().get())) {
+				if (approximate_plane_through_wire(wire, pln, settings_.get<settings::Precision>().get(), logger())) {
 					fd.surface() = new Geom_Plane(pln);
 				}
 			}
@@ -459,12 +459,12 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 
 	if (fd.surface().IsNull()) {
 		// The set of wires is triangulated in case no surface can be found
-		ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_WARNING, "GEO", 163, "Triangulating face boundaries for face", face->instance);
+		logger().message(ifcopenshell::logger::LOG_WARNING, "GEO", 163, "Triangulating face boundaries for face", face->instance);
 
 		if (fd.all_outer()) {
 			for (const auto& w : fd.wires()) {
 				NCollection_List<TopoDS_Shape> fl;
-				auto r = triangulate_wire({ w }, fl);
+				auto r = triangulate_wire({ w }, fl, logger());
 				if (r == util::TRIANGULATE_WIRE_FAIL) {
 					continue;
 				}
@@ -474,7 +474,7 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 				}
 			}
 		} else {
-			auto r = triangulate_wire(fd.wires(), face_list);
+			auto r = triangulate_wire(fd.wires(), face_list, logger());
 			if (r != util::TRIANGULATE_WIRE_FAIL) {
 				if (faceset_helper_ && r == util::TRIANGULATE_WIRE_NON_MANIFOLD) {
 					faceset_helper_->non_manifold() = true;
@@ -499,6 +499,10 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 				}
 
 				ShapeFix_Shape sfs(mf.Face());
+				// The wires were already checked for self-intersections with a BVH
+				// (util::wire_intersections). OpenCASCADE's fixer is cubic in the
+				// number of edges and never finishes on loops of ten thousand edges (#337).
+				sfs.FixFaceTool()->FixWireTool()->FixSelfIntersectionMode() = Standard_False;
 				Handle(ShapeExtend_MsgRegistrator) msg;
 				msg = new ShapeExtend_MsgRegistrator;
 				sfs.SetMsgRegistrator(msg);
@@ -632,6 +636,7 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 	}
 
 	if (face_list.Extent() == 0) {
+		logger().warning("GEO", 411, "Face conversion produced no faces after supporting-surface construction or boundary triangulation", face->instance);
 		return false;
 	} else if (face_list.Extent() > 1) {
 		TopoDS_Compound compound;
