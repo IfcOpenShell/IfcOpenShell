@@ -1731,6 +1731,38 @@ class TestPartOf:
         facet = PartOf(relation="IFCRELNESTS", name="IFCFURNITURE")
         run("Nesting may be indirect", facet=facet, inst=subsubelement, expected=True)
 
+    def test_to_string_with_a_relation(self):
+        spec = ifctester.ids.Specification(name="Foo")
+        facet = PartOf(name="IFCSITE", relation="IFCRELAGGREGATES")
+        assert facet.to_string("applicability", spec) == (
+            "An element with an IFCRELAGGREGATES relationship with an IFCSITE"
+        )
+        assert facet.to_string("requirement", spec, facet) == (
+            "An element must have an IFCRELAGGREGATES relationship with an IFCSITE"
+        )
+
+    def test_to_string_without_a_relation(self):
+        spec = ifctester.ids.Specification(name="Foo")
+        facet = PartOf(name="IFCSITE")
+        assert facet.to_string("applicability", spec) == "An element that is part of an IFCSITE"
+        assert facet.to_string("requirement", spec, facet) == "An element must be part of an IFCSITE"
+        facet = PartOf(name="IFCBRIDGE", predefinedType="GIRDER")
+        assert facet.to_string("applicability", spec) == (
+            "An element that is part of an IFCBRIDGE of predefined type GIRDER"
+        )
+        assert facet.to_string("requirement", spec, facet) == (
+            "An element must be part of an IFCBRIDGE of predefined type GIRDER"
+        )
+        facet = PartOf(name="IFCSITE", cardinality="optional")
+        assert facet.to_string("requirement", spec, facet) == "An element may be part of an IFCSITE"
+        facet = PartOf(name="IFCSITE", cardinality="prohibited")
+        assert facet.to_string("requirement", spec, facet) == "An element must not be part of an IFCSITE"
+
+    def test_to_string_without_a_relation_in_a_prohibited_specification(self):
+        spec = ifctester.ids.Specification(name="Foo", minOccurs=0, maxOccurs=0)
+        facet = PartOf(name="IFCSITE")
+        assert facet.to_string("applicability", spec) == "An element must not be part of an IFCSITE"
+
 
 class TestRestriction:
     def test_creating_a_restriction(self):
