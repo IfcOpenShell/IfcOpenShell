@@ -93,6 +93,7 @@ class ShaderInfo:
         self.text_info = []
         self.info = []
         self.pickables = []
+        self.tagging_object = None
         self.force_unit = ""
         self.moment_unit = ""
         self.linear_force_unit = ""
