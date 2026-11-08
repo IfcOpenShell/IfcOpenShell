@@ -24,15 +24,6 @@ import ifcopenshell.util.element
 
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bonsai.bim.helper import (
-    SELECT_FILTER_TOOLTIP,
-    SELECT_REMOVE_TOOLTIP,
-    SELECT_UNHIDE_TOOLTIP,
-    RegexSelectMixin,
-    decode_select_click,
-    select_regex_tooltip,
-    selection_mode,
-)
 
 
 class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
@@ -238,17 +229,17 @@ class UnassignGroup(bpy.types.Operator, tool.Ifc.Operator):
         self.report({"INFO"}, f"Unassigned {len(products)} objects from group.")
 
 
-class SelectGroupElements(RegexSelectMixin, bpy.types.Operator):
+class SelectGroupElements(bonsai.bim.helper.RegexSelectMixin, bpy.types.Operator):
     bl_idname = "bim.select_group_elements"
     bl_label = "Select Group elements"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = (
         "Select objects assigned to the selected group and all nested groups"
-        + f"\n{SELECT_REMOVE_TOOLTIP}"
-        + f"\n{SELECT_FILTER_TOOLTIP}"
+        + f"\n{bonsai.bim.helper.SELECT_REMOVE_TOOLTIP}"
+        + f"\n{bonsai.bim.helper.SELECT_FILTER_TOOLTIP}"
         + "\nCTRL+SHIFT+Click to exclude children"
-        + f"\n{select_regex_tooltip('group names')}"
-        + f"\n{SELECT_UNHIDE_TOOLTIP}"
+        + f"\n{bonsai.bim.helper.select_regex_tooltip('group names')}"
+        + f"\n{bonsai.bim.helper.SELECT_UNHIDE_TOOLTIP}"
     )
     group: bpy.props.IntProperty()
     is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=True, options={"SKIP_SAVE"})
@@ -260,7 +251,7 @@ class SelectGroupElements(RegexSelectMixin, bpy.types.Operator):
     regex_count_noun = "groups"
 
     def invoke(self, context, event):
-        mods = decode_select_click(event)
+        mods = bonsai.bim.helper.decode_select_click(event)
         if mods.regex_dialog:
             return self.invoke_regex_dialog(context)
         self.is_recursive = not mods.legacy
@@ -291,7 +282,7 @@ class SelectGroupElements(RegexSelectMixin, bpy.types.Operator):
         tool.Spatial.select_products(
             ifcopenshell.util.element.get_grouped_by(tool.Ifc.get().by_id(self.group), is_recursive=self.is_recursive),
             unhide=self.should_unhide,
-            mode=selection_mode(self.remove_from_selection, self.filter_selection),
+            mode=bonsai.bim.helper.selection_mode(self.remove_from_selection, self.filter_selection),
         )
         return {"FINISHED"}
 
