@@ -643,12 +643,15 @@ halfway along its arm, and as the arms share one line, each landed beside anothe
 
 ## Next
 
-Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
-`IfcRelAssignsToGroupByFactor`), then analysis, as in Decisions. Show Loads already reads
-the factors, so combinations need a panel to create them, add cases with factors and assign
-them to the current model; PyNite takes them as `add_load_combo`. When combinations come, fix
-`recursive_subgroups` in `load_decoration_data.py`, which multiplies factors cumulatively
-across a group's relationships, so that 1.2 D + 1.6 L would draw the live load at 1.92.
+Load combinations, then analysis, as in Decisions. The library side is in v0.9.0: #10171 added
+`structural.add_structural_load_combination`, `assign_structural_load_combination` (a load case
+in with a factor, cases sharing a factor sharing one `IfcRelAssignsToGroupByFactor`) and
+`unassign_structural_load_combination`, and fixed removing a combination or one of its cases.
+#10172 fixed `recursive_subgroups` in `load_decoration_data.py`, which drew 1.35 D + 1.5 L's
+live load at 2.025. So Show Loads already draws a combination's factored loads. What is left is
+the panel: create a combination, add cases with factors, assign it to the current model, and
+list it with the load cases. A combination is already offered in Show Loads' choice, marked
+"(combination)", once the model is loaded by it. PyNite takes them as `add_load_combo`.
 
 Later, for rigid bodies: **ΣFx, ΣFz and ΣM_A solved together.** Edit Resultant solves the two
 force equations for two unknowns, and a resultant moment the moment equation for one. Together
