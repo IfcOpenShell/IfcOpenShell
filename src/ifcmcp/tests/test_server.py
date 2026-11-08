@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from ifcmcp.server import build_server
+from ifcmcp.server import READ_ONLY_TOOLS, build_server
 
 try:
     from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
@@ -45,6 +45,46 @@ class TestServerRegistration:
         tools = server._tool_manager.list_tools()
         missing = [t.name for t in tools if not (t.description or "").strip()]
         assert not missing, f"Tools with no description: {missing}"
+
+
+class TestToolAnnotations:
+    """Clients use these hints to decide which calls need the user's approval."""
+
+    @pytest.fixture
+    def hints(self):
+        server = build_server()
+        return {
+            t.name: t.annotations.model_dump(by_alias=True, exclude_none=True)
+            for t in server._tool_manager.list_tools()
+        }
+
+    def test_every_read_only_name_is_a_tool(self, hints):
+        assert READ_ONLY_TOOLS <= hints.keys()
+
+    def test_read_only_tools(self, hints):
+        for name in READ_ONLY_TOOLS:
+            assert hints[name] == {"readOnlyHint": True, "openWorldHint": False}, name
+
+    def test_every_other_tool_is_destructive(self, hints):
+        for name in hints.keys() - READ_ONLY_TOOLS:
+            assert hints[name] == {"readOnlyHint": False, "destructiveHint": True, "openWorldHint": False}, name
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "ifc_edit",
+            "ifc_shape",
+            "ifc_quantify",
+            "ifc_save",
+            "ifc_load",
+            "ifc_new",
+            "ifc_reset",
+            "ifc_plot",
+            "ifc_render",
+        ],
+    )
+    def test_tools_that_change_state_are_not_read_only(self, name):
+        assert name not in READ_ONLY_TOOLS
 
 
 class TestToolErrorsKeepTheirReason:

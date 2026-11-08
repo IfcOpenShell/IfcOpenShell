@@ -20,9 +20,41 @@ except ImportError:
         MCPServer = None  # type: ignore
         ToolError = None  # type: ignore
 try:
-    from mcp.types import ImageContent  # type: ignore
+    from mcp.types import ImageContent, ToolAnnotations  # type: ignore
 except ImportError:  # pragma: no cover
     ImageContent = None  # type: ignore
+    ToolAnnotations = None  # type: ignore
+
+# Tools that change neither the model nor any file, so a client may run them
+# without asking. Every other tool can discard unsaved edits, change the model
+# or overwrite a file, and is marked destructive.
+READ_ONLY_TOOLS = frozenset(
+    {
+        "ifc_summary",
+        "ifc_tree",
+        "ifc_info",
+        "ifc_select",
+        "ifc_relations",
+        "ifc_clash",
+        "ifc_contexts",
+        "ifc_materials",
+        "ifc_list",
+        "ifc_docs",
+        "ifc_validate",
+        "ifc_schedule",
+        "ifc_cost",
+        "ifc_schema",
+        "ifc_shape_list",
+        "ifc_shape_docs",
+    }
+)
+
+
+def _annotations(name: str) -> Any:
+    # camelCase arguments, because mcp 1.x accepts no other spelling.
+    if name in READ_ONLY_TOOLS:
+        return ToolAnnotations(readOnlyHint=True, openWorldHint=False)
+    return ToolAnnotations(readOnlyHint=False, destructiveHint=True, openWorldHint=False)
 
 
 def build_server() -> Any:
@@ -56,7 +88,10 @@ def build_server() -> Any:
     def _tool(fn):
         """Register a tool, taking its MCP description from the identically-named
         IfcSession method rather than duplicating it here."""
-        return server.tool(description=inspect.getdoc(getattr(IfcSession, fn.__name__)))(_keep_reason(fn))
+        return server.tool(
+            description=inspect.getdoc(getattr(IfcSession, fn.__name__)),
+            annotations=_annotations(fn.__name__),
+        )(_keep_reason(fn))
 
     server = MCPServer(
         name="ifc-mcp",
@@ -174,7 +209,7 @@ def build_server() -> Any:
     def ifc_shape(method: str, params: str = "{}") -> dict:
         return session.ifc_shape(method=method, params=params)
 
-    @server.tool(structured_output=False)
+    @server.tool(structured_output=False, annotations=_annotations("ifc_plot"))
     @_keep_reason
     def ifc_plot(
         selector: str = "",
@@ -236,7 +271,7 @@ def build_server() -> Any:
                     f.write(png_bytes)
         return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mimeType="image/png")]
 
-    @server.tool(structured_output=False)
+    @server.tool(structured_output=False, annotations=_annotations("ifc_render"))
     @_keep_reason
     def ifc_render(
         selector: str = "",
