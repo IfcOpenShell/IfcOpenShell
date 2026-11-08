@@ -16,19 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
-VERSION:=`date '+%y%m%d'`
-IS_STABLE:=FALSE
-VERSION:=$(shell cat ../../VERSION)
-VERSION_BASE:=$(shell sed -E 's/[[:alpha:]]+[0-9]+$$//' ../../VERSION)
+include ../vars.mk
+
 VERSION_MAJOR:=$(shell echo '$(VERSION_BASE)' | cut -d '.' -f 1)
 VERSION_MINOR:=$(shell echo '$(VERSION_BASE)' | cut -d '.' -f 2)
 VERSION_PATCH:=$(shell echo '$(VERSION_BASE)' | cut -d '.' -f 3)
-VERSION_DATE:=$(shell date '+%y%m%d')
-
-SED:=sed -i
-ifeq ($(UNAME_S),Darwin)
-SED:=sed -i '' -e
-endif
 
 .PHONY: dist
 dist:

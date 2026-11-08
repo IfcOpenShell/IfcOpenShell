@@ -136,8 +136,8 @@ private:
     bool show_stats_ = false;
     bool backface_culling_ = true;
     int void_limit_ = 30;
-    double deflection_tolerance_ = 0.001;
-    double angular_tolerance_ = 0.5;
+    double deflection_tolerance_ = 0.002;
+    double angular_tolerance_ = 1.0;
     double min_pixel_radius_ = 2.0;
     double motion_min_pixel_radius_ = 10.0;
     double lod1_pixel_threshold_ = 30.0;

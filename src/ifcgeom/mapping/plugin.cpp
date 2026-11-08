@@ -25,7 +25,9 @@
 namespace ifcopenshell {
 	namespace geom {
 		namespace impl {
-			namespace mapping_plugin {
+			// Keep registration function symbols distinct when several schema
+			// side modules share Emscripten's function-address table.
+			namespace POSTFIX_SCHEMA(mapping_plugin) {
 
 				namespace {
 					struct POSTFIX_SCHEMA(factory_t) {
@@ -53,6 +55,18 @@ namespace ifcopenshell {
 	}
 }
 
-BOOST_DLL_ALIAS(ifcopenshell::geom::impl::mapping_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
-BOOST_DLL_ALIAS(ifcopenshell::geom::impl::mapping_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
-BOOST_DLL_ALIAS(ifcopenshell::geom::impl::mapping_plugin::register_plugin, ifcopenshell_register_mapping_plugin_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::impl::POSTFIX_SCHEMA(mapping_plugin)::plugin_abi, ifcopenshell_plugin_abi_v2)
+BOOST_DLL_ALIAS(ifcopenshell::geom::impl::POSTFIX_SCHEMA(mapping_plugin)::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::impl::POSTFIX_SCHEMA(mapping_plugin)::register_plugin, ifcopenshell_register_mapping_plugin_v1)
+
+#ifdef __EMSCRIPTEN__
+#define CAT(a, b) a##b
+#define EXPAND_AND_CAT(a, b) CAT(a, b)
+#define emscripten_register_mapping_plugin EXPAND_AND_CAT(ifcopenshell_emscripten_register_mapping_, IFCOPENSHELL_WASM_PLUGIN_ID)
+
+extern "C" void emscripten_register_mapping_plugin(ifcopenshell::geom::impl::mapping_registry* registry) {
+	ifcopenshell::geom::impl::POSTFIX_SCHEMA(mapping_plugin)::register_plugin(
+		*registry,
+		ifcopenshell::plugin::module::builtin(ifcopenshell::geom::impl::POSTFIX_SCHEMA(mapping_plugin)::plugin_metadata()));
+}
+#endif

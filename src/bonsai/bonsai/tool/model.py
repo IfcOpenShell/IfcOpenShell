@@ -567,8 +567,9 @@ class Model(bonsai.core.tool.Model):
         cls.circles = []
 
         if surface.is_a("IfcCurveBoundedPlane"):
-            position = Matrix(ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position).tolist())
-            position.translation *= cls.unit_scale
+            position = Matrix(
+                ifcopenshell.util.placement.get_placement(surface.BasisSurface.Position, should_return_si=True).tolist()
+            )
 
             cls.convert_curve_to_mesh(obj, position, surface.OuterBoundary)
             for inner_boundary in surface.InnerBoundaries:
@@ -618,7 +619,7 @@ class Model(bonsai.core.tool.Model):
 
             cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices) - 1)])
             if is_closed:
-                cls.edges[-1] = (len(cls.vertices) - 1, offset)  # Close the loop
+                cls.edges.append((len(cls.vertices) - 1, offset))  # Close the loop
 
         elif curve.is_a("IfcCompositeCurve"):
             # This is a first pass incomplete implementation only for simple polylines, and misses many details.
@@ -649,8 +650,9 @@ class Model(bonsai.core.tool.Model):
                 if is_closed:
                     cls.edges.append([len(cls.vertices) - 1, offset])  # Close the loop
         elif curve.is_a("IfcCircle"):
-            circle_position = Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist())
-            circle_position.translation *= cls.unit_scale
+            circle_position = Matrix(
+                ifcopenshell.util.placement.get_placement(curve.Position, should_return_si=True).tolist()
+            )
             radius = cls.convert_unit_to_si(curve.Radius)
             cls.vertices.extend(
                 [
@@ -666,8 +668,9 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def import_rectangle(cls, obj: bpy.types.Object, position: Matrix, profile: ifcopenshell.entity_instance) -> None:
         if profile.Position:
-            p_position = Matrix(ifcopenshell.util.placement.get_axis2placement(profile.Position).tolist())
-            p_position.translation *= cls.unit_scale
+            p_position = Matrix(
+                ifcopenshell.util.placement.get_placement(profile.Position, should_return_si=True).tolist()
+            )
         else:
             p_position = Matrix()
 
@@ -1703,9 +1706,9 @@ class Model(bonsai.core.tool.Model):
     def get_element_matrix(cls, element: ifcopenshell.entity_instance, keep_local: bool = False) -> Matrix:
         placement = element.ObjectPlacement
         if keep_local:
-            placement = ifcopenshell.util.placement.get_axis2placement(placement.RelativePlacement)
+            placement = ifcopenshell.util.placement.get_placement(placement.RelativePlacement)
         else:
-            placement = ifcopenshell.util.placement.get_local_placement(placement)
+            placement = ifcopenshell.util.placement.get_placement(placement)
         return Matrix(placement)
 
     @classmethod
@@ -2361,8 +2364,9 @@ class Model(bonsai.core.tool.Model):
                 if group_index in v[deform_layer]:
                     return group_index
 
-        # Convert all loops into IFC curves
+        # Convert all loops into IFC curves. closed_curves: loops authored closed (or circles).
         curves: list[ifcopenshell.entity_instance] = []
+        closed_curves: set[ifcopenshell.entity_instance] = set()
         for loop in loops:
             if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
                 v1, v2 = loop[0].verts
@@ -2373,6 +2377,7 @@ class Model(bonsai.core.tool.Model):
                 curves.append(
                     tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
                 )
+                closed_curves.add(curves[-1])
             else:
                 loop_verts: list[bmesh.types.BMVert] = []
                 for i, edge in enumerate(loop):
@@ -2448,6 +2453,8 @@ class Model(bonsai.core.tool.Model):
                         coord_list.append(coord_list[0])
                     points = tmp.createIfcCartesianPointList2D(coord_list)
                     curves.append(tmp.createIfcIndexedPolyCurve(points))
+                if is_closed:
+                    closed_curves.add(curves[-1])
 
         # Sort IFC curves into either closed, or closed with void profile defs
         profile_defs: list[ifcopenshell.entity_instance] = []
@@ -2464,10 +2471,13 @@ class Model(bonsai.core.tool.Model):
             edges = ifcopenshell.util.shape.get_edges(geometry)
             boundary_lines = [shapely.LineString([v[e[0]], v[e[1]]]) for e in edges]
             unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
-            closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
-            for polygon in closed_polygons.geoms:
-                polygons[curve] = polygon
-                break
+            # GEOS >= 3.14 returns a scalar LineString for a single closed ring, so use get_parts() (#9230).
+            closed_polygons = list(shapely.polygonize(shapely.get_parts(unioned_boundaries)).geoms)
+            # A closed curve must resolve to exactly one polygon (#8983).
+            if len(closed_polygons) == 1:
+                polygons[curve] = closed_polygons[0]
+            elif curve in closed_curves:
+                return (False, "INVALID_LOOP")
 
         # Check for contains properly (IFC doesn't allow common boundary points)
         outer_inner = {}
@@ -2480,9 +2490,9 @@ class Model(bonsai.core.tool.Model):
                     outer_inner.setdefault(curve, []).append(curve2)
                     inner_outer.setdefault(curve2, []).append(curve)
 
-        # Odd-even rule for nested curves
-        nested_level = {c: len(inner_outer[c]) if c in inner_outer else 0 for c in curves}
-        for curve in sorted(curves, key=lambda c: nested_level[c]):
+        # Odd-even rule for nested curves; only resolved curves are candidates.
+        nested_level = {c: len(inner_outer[c]) if c in inner_outer else 0 for c in polygons}
+        for curve in sorted(polygons, key=lambda c: nested_level[c]):
             level = nested_level[curve]
             if level % 2 == 0:
                 if curve in outer_inner:
@@ -2809,7 +2819,7 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def clip_wall_to_slab(cls, wall: ifcopenshell.entity_instance, clipping_bm: bmesh.types.BMesh) -> None:
-        matrix_i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement))
+        matrix_i = np.linalg.inv(ifcopenshell.util.placement.get_placement(wall.ObjectPlacement))
         bm = clipping_bm.copy()
         bmesh.ops.transform(bm, matrix=Matrix(matrix_i.tolist()), verts=bm.verts)
 
@@ -2868,7 +2878,7 @@ class Model(bonsai.core.tool.Model):
 
         for extrusion in ifcopenshell.util.shape.get_base_extrusions(wall) or []:
             if extrusion.Position:
-                position = ifcopenshell.util.placement.get_axis2placement(extrusion.Position)
+                position = ifcopenshell.util.placement.get_placement(extrusion.Position)
             else:
                 position = np.eye(4)
 
@@ -3162,9 +3172,7 @@ class Model(bonsai.core.tool.Model):
         )
         tool.Geometry.record_object_materials(obj)
 
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-        matrix[:, 3] *= unit_scale
+        matrix = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=True)
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix)
         tool.Geometry.record_object_position(obj)
 

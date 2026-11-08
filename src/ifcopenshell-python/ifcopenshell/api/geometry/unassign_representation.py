@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any
-
 import ifcopenshell.api.geometry
 import ifcopenshell.util.element
 
@@ -27,21 +25,17 @@ def unassign_representation(
 ) -> None:
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"product": product, "representation": representation}
-    return usecase.execute()
+    return usecase.execute(product, representation)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self) -> None:
-        product: ifcopenshell.entity_instance = self.settings["product"]
-        representation: ifcopenshell.entity_instance = self.settings["representation"]
+    def execute(self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance) -> None:
         if product.is_a("IfcProduct"):
             self.unassign_product_representation(product, representation)
         elif product.is_a("IfcTypeProduct"):
-            self.unassign_type_representation()
+            self.unassign_type_representation(product, representation)
 
     def unassign_product_representation(
         self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
@@ -60,18 +54,20 @@ class Usecase:
         else:
             product_def.Representations = representations
 
-    def unassign_type_representation(self) -> None:
+    def unassign_type_representation(
+        self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> None:
         matching_representation_map = None
 
-        for representation_map in self.settings["product"].RepresentationMaps or []:
-            if representation_map.MappedRepresentation == self.settings["representation"]:
+        for representation_map in product.RepresentationMaps or []:
+            if representation_map.MappedRepresentation == representation:
                 matching_representation_map = representation_map
                 break
 
         if matching_representation_map:
             self.unassign_products_using_mapped_representation(matching_representation_map)
-            self.settings["product"].RepresentationMaps = [
-                rm for rm in self.settings["product"].RepresentationMaps if rm != matching_representation_map
+            product.RepresentationMaps = [
+                rm for rm in product.RepresentationMaps if rm != matching_representation_map
             ] or None
             self.process_shape_aspects(matching_representation_map)
             self.remove_representation_map_only(matching_representation_map)

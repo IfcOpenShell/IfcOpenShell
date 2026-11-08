@@ -46,60 +46,85 @@ if(WITH_MESH_OPTIMIZER)
     target_compile_definitions(test_lod_builder PRIVATE -DWITH_MESH_OPTIMIZER)
 endif()
 
-# SidecarCompress: zstd compress/decompress wrappers. Links the system libzstd.
-# SidecarCache now (de)compresses geometry + metadata, so every test that
-# compiles SidecarCache.cpp needs SidecarCompress.cpp + libzstd too.
-find_library(ZSTD_LIBRARY NAMES zstd libzstd)
-add_ifcviewer_unit_test(test_sidecar_compress
-    SOURCES ${IFCVIEWER_SRC}/SidecarCompress.cpp
-    LIBS ${ZSTD_LIBRARY}
+# The .ifcview writer and reader are tested against each other: the writer's
+# tests read back through the production reader, the reader's tests lay down
+# fixtures with the writer. Both link zstd (the imported config target where
+# it exists, since it carries include dirs on Windows/pixi builds; else the
+# distro library) and InstanceCompose for the transforms the reader derives
+# from the instance records.
+find_package(zstd QUIET)
+if(TARGET zstd::libzstd_static)
+    set(ZSTD_LIBRARY zstd::libzstd_static)
+else()
+    find_library(ZSTD_LIBRARY NAMES zstd libzstd)
+endif()
+set(IFCVIEW_TEST_SOURCES
+    ${IFCVIEWER_SRC}/IfcViewReader.cpp
+    ${IFCVIEWER_SRC}/IfcViewWriter.cpp
+    ${IFCVIEWER_SRC}/InstanceCompose.cpp
 )
-
-add_ifcviewer_unit_test(test_sidecar_cache
-    SOURCES ${IFCVIEWER_SRC}/SidecarCache.cpp ${IFCVIEWER_SRC}/SidecarCompress.cpp
-    LIBS ${ZSTD_LIBRARY}
+add_ifcviewer_unit_test(test_ifcview_writer
+    SOURCES ${IFCVIEW_TEST_SOURCES}
+    LIBS ${ZSTD_LIBRARY} Eigen3::Eigen
 )
-
-# StreamingLoader: metadata-only read + range readers + the pure buffer-based
-# parse / read-plan helpers shared with the web (Blob.slice) path. Needs
-# SidecarCache.cpp for writeSidecar (to lay down on-disk fixtures).
-add_ifcviewer_unit_test(test_streaming_loader
-    SOURCES
-        ${IFCVIEWER_SRC}/StreamingLoader.cpp
-        ${IFCVIEWER_SRC}/SidecarCache.cpp
-        ${IFCVIEWER_SRC}/SidecarCompress.cpp
-    LIBS ${ZSTD_LIBRARY}
+add_ifcviewer_unit_test(test_ifcview_reader
+    SOURCES ${IFCVIEW_TEST_SOURCES}
+    LIBS ${ZSTD_LIBRARY} Eigen3::Eigen
 )
 
 add_ifcviewer_unit_test(test_instanced_geometry)
+
+add_ifcviewer_unit_test(test_mesh_dedup
+    SOURCES ${IFCVIEWER_SRC}/MeshDedup.cpp
+    LIBS Eigen3::Eigen
+)
 
 # ChunkPlanner: Morton sort + greedy-pack — pure CPU, no Qt / no wgpu.
 add_ifcviewer_unit_test(test_chunk_planner
     SOURCES ${IFCVIEWER_SRC}/ChunkPlanner.cpp
 )
 
-# SidecarLayout: bake-time reorder of geometry into the loader's chunk order
-# for streaming locality. Needs ChunkPlanner (Morton sort) + SidecarCache
-# (SidecarData). Pure.
-add_ifcviewer_unit_test(test_sidecar_layout
+# IfcViewLayout: bake-time reorder of geometry into the loader's chunk order
+# for streaming locality. Needs ChunkPlanner (Morton sort). Pure.
+add_ifcviewer_unit_test(test_ifcview_layout
     SOURCES
-        ${IFCVIEWER_SRC}/SidecarLayout.cpp
+        ${IFCVIEWER_SRC}/IfcViewLayout.cpp
         ${IFCVIEWER_SRC}/ChunkPlanner.cpp
-        ${IFCVIEWER_SRC}/SidecarCache.cpp
-        ${IFCVIEWER_SRC}/SidecarCompress.cpp
-    LIBS ${ZSTD_LIBRARY}
 )
 
-# InstanceCompose: matrix composition + cross-model object_id lookup.
-# Pulls in wgpu_native for the WGPUBuffer typedef via ModelGpuData.h
-# (never touched at runtime). Eigen for Matrix4d.
+# IfcViewAssembler: the Qt-free assembly shared by SceneLoader, IfcViewBuilder and the
+# ifcconvert .ifcview serializer plugin. finalize() also runs LodBuilder and
+# the IfcViewLayout Morton pass, so those sources are pulled in too.
 find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
+add_ifcviewer_unit_test(test_ifcview_assembler
+    SOURCES
+        ${IFCVIEWER_SRC}/IfcViewAssembler.cpp
+        ${IFCVIEW_TEST_SOURCES}
+        ${IFCVIEWER_SRC}/IfcViewLayout.cpp
+        ${IFCVIEWER_SRC}/ChunkPlanner.cpp
+        ${IFCVIEWER_SRC}/LodBuilder.cpp
+    LIBS ${ZSTD_LIBRARY} Eigen3::Eigen
+)
+if(WITH_MESH_OPTIMIZER)
+    target_compile_definitions(test_ifcview_assembler PRIVATE -DWITH_MESH_OPTIMIZER)
+    target_link_libraries(test_ifcview_assembler PRIVATE meshoptimizer::meshoptimizer)
+endif()
+
+# InstanceCompose: matrix composition + world AABB derivation. Eigen only.
 add_ifcviewer_unit_test(test_instance_compose
     SOURCES ${IFCVIEWER_SRC}/InstanceCompose.cpp
+    LIBS Eigen3::Eigen
+)
+
+# ModelLookup: cross-model object_id lookup + scene / per-model AABBs.
+# Pulls in wgpu_native for the WGPUBuffer typedef via ModelGpuData.h
+# (never touched at runtime). Eigen for ModelGpuData's Matrix4d members.
+add_ifcviewer_unit_test(test_model_lookup
+    SOURCES ${IFCVIEWER_SRC}/ModelLookup.cpp
     LIBS wgpu_native Eigen3::Eigen
 )
 if(UNIX AND NOT APPLE AND WGPU_NATIVE_LIB_DIR)
-    set_target_properties(test_instance_compose PROPERTIES
+    set_target_properties(test_model_lookup PROPERTIES
         BUILD_RPATH "${WGPU_NATIVE_LIB_DIR}"
     )
 endif()

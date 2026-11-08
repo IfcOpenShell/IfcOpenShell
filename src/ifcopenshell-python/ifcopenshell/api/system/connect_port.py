@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Optional
-
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.guid
@@ -29,7 +27,7 @@ def connect_port(
     port1: ifcopenshell.entity_instance,
     port2: ifcopenshell.entity_instance,
     direction: str = "NOTDEFINED",
-    element: Optional[ifcopenshell.entity_instance] = None,
+    element: ifcopenshell.entity_instance | None = None,
 ) -> None:
     """Connects two ports together
 
@@ -97,20 +95,19 @@ def connect_port(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "port1": port1,
-        "port2": port2,
-        "direction": direction,
-        "element": element,
-    }
-    return usecase.execute()
+    return usecase.execute(port1, port2, direction, element)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
+    def execute(
+        self,
+        port1: ifcopenshell.entity_instance,
+        port2: ifcopenshell.entity_instance,
+        direction: str,
+        element: ifcopenshell.entity_instance | None,
+    ) -> None:
         # Note: there are a number of ambiguities with port connectivity. We
         # assume system topology is represented by a directed graph. In other
         # words, SOURCEANDSINK and NOTDEFINED implies a two way connection, with
@@ -120,99 +117,103 @@ class Usecase:
         # determined yet by the engineer. None is not allowed as a direction as
         # we assume None means that no connection is made.
 
-        if self.settings["port1"] == self.settings["port2"]:
+        if port1 == port2:
             return
 
-        self.purge_existing_connections_to_other_ports()
+        self.purge_existing_connections_to_other_ports(port1, port2)
 
-        if self.settings["direction"] == "SOURCE":
-            self.settings["port1"].FlowDirection = "SOURCE"
-            self.settings["port2"].FlowDirection = "SINK"
-        elif self.settings["direction"] == "SINK":
-            self.settings["port1"].FlowDirection = "SINK"
-            self.settings["port2"].FlowDirection = "SOURCE"
+        if direction == "SOURCE":
+            port1.FlowDirection = "SOURCE"
+            port2.FlowDirection = "SINK"
+        elif direction == "SINK":
+            port1.FlowDirection = "SINK"
+            port2.FlowDirection = "SOURCE"
         else:
-            self.settings["port1"].FlowDirection = self.settings["direction"]
-            self.settings["port2"].FlowDirection = self.settings["direction"]
+            port1.FlowDirection = direction
+            port2.FlowDirection = direction
 
-        if self.settings["direction"] in ["SOURCE", "SOURCEANDSINK", "NOTDEFINED"]:
-            self.set_connected_to()
+        if direction in ["SOURCE", "SOURCEANDSINK", "NOTDEFINED"]:
+            self.set_connected_to(port1, port2)
         else:
-            self.purge_connected_to()
+            self.purge_connected_to(port1)
 
-        if self.settings["direction"] in ["SINK", "SOURCEANDSINK", "NOTDEFINED"]:
-            self.set_connected_from()
+        if direction in ["SINK", "SOURCEANDSINK", "NOTDEFINED"]:
+            self.set_connected_from(port1, port2)
         else:
-            self.purge_connected_from()
+            self.purge_connected_from(port1)
 
-        self.set_realising_element()
+        self.set_realising_element(port1, element)
 
-    def purge_existing_connections_to_other_ports(self):
-        for rel in self.settings["port1"].ConnectedTo or []:
-            if rel.RelatedPort != self.settings["port2"]:
+    def purge_existing_connections_to_other_ports(
+        self, port1: ifcopenshell.entity_instance, port2: ifcopenshell.entity_instance
+    ) -> None:
+        for rel in port1.ConnectedTo or []:
+            if rel.RelatedPort != port2:
                 history = rel.OwnerHistory
                 self.file.remove(rel)
                 if history:
                     ifcopenshell.util.element.remove_deep2(self.file, history)
-        for rel in self.settings["port1"].ConnectedFrom or []:
-            if rel.RelatingPort != self.settings["port2"]:
+        for rel in port1.ConnectedFrom or []:
+            if rel.RelatingPort != port2:
                 history = rel.OwnerHistory
                 self.file.remove(rel)
                 if history:
                     ifcopenshell.util.element.remove_deep2(self.file, history)
-        for rel in self.settings["port2"].ConnectedTo or []:
-            if rel.RelatedPort != self.settings["port1"]:
+        for rel in port2.ConnectedTo or []:
+            if rel.RelatedPort != port1:
                 history = rel.OwnerHistory
                 self.file.remove(rel)
                 if history:
                     ifcopenshell.util.element.remove_deep2(self.file, history)
-        for rel in self.settings["port2"].ConnectedFrom or []:
-            if rel.RelatingPort != self.settings["port1"]:
+        for rel in port2.ConnectedFrom or []:
+            if rel.RelatingPort != port1:
                 history = rel.OwnerHistory
                 self.file.remove(rel)
                 if history:
                     ifcopenshell.util.element.remove_deep2(self.file, history)
 
-    def set_connected_to(self):
-        if self.settings["port1"].ConnectedTo:
-            return
-
-        self.file.create_entity(
-            "IfcRelConnectsPorts",
-            GlobalId=ifcopenshell.guid.new(),
-            OwnerHistory=ifcopenshell.api.owner.create_owner_history(self.file),
-            RelatingPort=self.settings["port1"],
-            RelatedPort=self.settings["port2"],
-        )
-
-    def set_connected_from(self):
-        if self.settings["port1"].ConnectedFrom:
+    def set_connected_to(self, port1: ifcopenshell.entity_instance, port2: ifcopenshell.entity_instance) -> None:
+        if port1.ConnectedTo:
             return
 
         self.file.create_entity(
             "IfcRelConnectsPorts",
             GlobalId=ifcopenshell.guid.new(),
             OwnerHistory=ifcopenshell.api.owner.create_owner_history(self.file),
-            RelatingPort=self.settings["port2"],
-            RelatedPort=self.settings["port1"],
+            RelatingPort=port1,
+            RelatedPort=port2,
         )
 
-    def purge_connected_to(self):
-        for rel in self.settings["port1"].ConnectedTo or []:
+    def set_connected_from(self, port1: ifcopenshell.entity_instance, port2: ifcopenshell.entity_instance) -> None:
+        if port1.ConnectedFrom:
+            return
+
+        self.file.create_entity(
+            "IfcRelConnectsPorts",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=ifcopenshell.api.owner.create_owner_history(self.file),
+            RelatingPort=port2,
+            RelatedPort=port1,
+        )
+
+    def purge_connected_to(self, port1: ifcopenshell.entity_instance) -> None:
+        for rel in port1.ConnectedTo or []:
             history = rel.OwnerHistory
             self.file.remove(rel)
             if history:
                 ifcopenshell.util.element.remove_deep2(self.file, history)
 
-    def purge_connected_from(self):
-        for rel in self.settings["port1"].ConnectedFrom or []:
+    def purge_connected_from(self, port1: ifcopenshell.entity_instance) -> None:
+        for rel in port1.ConnectedFrom or []:
             history = rel.OwnerHistory
             self.file.remove(rel)
             if history:
                 ifcopenshell.util.element.remove_deep2(self.file, history)
 
-    def set_realising_element(self):
-        for rel in self.settings["port1"].ConnectedTo or []:
-            rel.RealizingElement = self.settings["element"]
-        for rel in self.settings["port1"].ConnectedFrom or []:
-            rel.RealizingElement = self.settings["element"]
+    def set_realising_element(
+        self, port1: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance | None
+    ) -> None:
+        for rel in port1.ConnectedTo or []:
+            rel.RealizingElement = element
+        for rel in port1.ConnectedFrom or []:
+            rel.RealizingElement = element

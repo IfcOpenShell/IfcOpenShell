@@ -23,15 +23,10 @@ import pytest
 
 import ifcopenshell.api.alignment
 import ifcopenshell.api.unit
+import test.bootstrap
 from ifcopenshell.api.alignment._map_alignment_horizontal_segment import (
     _map_alignment_horizontal_segment,
 )
-
-try:
-    ifcopenshell.file(schema="IFC4X3")
-    IFC4X3_AVAILABLE = True
-except RuntimeError:
-    IFC4X3_AVAILABLE = False
 
 
 def _BlossCurve_100_0_300_1000_1_Meter(file):
@@ -1226,16 +1221,16 @@ def _HelmertCurve_100_0_300_1000_1_Meter(file):
     assert "DISCONTINUOUS" == mapped_segment.Transition
     assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.7998035122387, 3.91603145329256))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
-        (0.9892460407218963, 0.146260968532457)
+        (0.9891823686249708, 0.14669097314249616)
     )
     assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (-0.009321141429516372, 0.46831933573745577)
+        (-0.010524348550173035, 0.48574588124651097)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
-        (0.9992574637140321, -0.03852948496670688)
+        (0.9992439224552503, -0.03887908738956891)
     )
     assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(128.92319893893)
     assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(-103.509833901353)
@@ -1274,16 +1269,16 @@ def _HelmertCurve_100_0__300__1000_1_Meter(file):
     assert "DISCONTINUOUS" == mapped_segment.Transition
     assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.7998035122387, -3.91603145329256))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
-        (0.9892460407218963, -0.146260968532457)
+        (0.9891823686249708, -0.14669097314249616)
     )
     assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (-0.009321141429516372, -0.46831933573745577)
+        (-0.010524348550173035, -0.48574588124651097)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
-        (0.9992574637140321, 0.03852948496670688)
+        (0.9992439224552503, 0.03887908738956891)
     )
     assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(-128.92319893893)
     assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(103.509833901353)
@@ -1322,16 +1317,16 @@ def _HelmertCurve_100_0_300_inf_1_Meter(file):
     assert "DISCONTINUOUS" == mapped_segment.Transition
     assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.8122545525202, 3.81263503030693))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
-        (0.9904138664989948, 0.1381317235341378)
+        (0.9903704328415154, 0.13844278873711527)
     )
     assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (-0.010305467756443198, 0.6738837916692928)
+        (-0.011564238478118383, 0.6939305108314464)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
-        (0.9984794480380026, -0.05512523782919828)
+        (0.9984571869987445, -0.05552698200473387)
     )
     assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(114.471424255333)
     assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(-86.6025403784439)
@@ -1370,16 +1365,16 @@ def _HelmertCurve_100_0__300__inf_1_Meter(file):
     assert "DISCONTINUOUS" == mapped_segment.Transition
     assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.8122545525202, -3.81263503030693))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
-        (0.9904138664989948, -0.1381317235341378)
+        (0.9903704328415154, -0.13844278873711527)
     )
     assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (-0.010305467756443198, -0.6738837916692928)
+        (-0.011564238478118383, -0.6939305108314464)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
-        (0.9984794480380026, 0.05512523782919828)
+        (0.9984571869987445, 0.05552698200473387)
     )
     assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(-114.471424255333)
     assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(86.6025403784439)
@@ -1418,16 +1413,16 @@ def _HelmertCurve_100_0_1000_300_1_Meter(file):
     assert "DISCONTINUOUS" == mapped_segment.Transition
     assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.9681012468824, 1.49252747074135))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
-        (0.997594495159641, 0.0693197174487962)
+        (0.9975897034456389, 0.06938864157225103)
     )
     assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (0.010408767953926904, -0.4828832446956578)
+        (0.010531212884270074, -0.4859797773332513)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
-        (0.9992463304688143, 0.03881714884698913)
+        (0.9992439224552503, 0.038879087389568884)
     )
     assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(-128.92319893893)
     assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(103.509833901353)
@@ -1466,16 +1461,16 @@ def _HelmertCurve_100_0__1000__300_1_Meter(file):
     assert "DISCONTINUOUS" == mapped_segment.Transition
     assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.9681012468824, -1.49252747074135))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
-        (0.997594495159641, -0.0693197174487962)
+        (0.9975897034456389, -0.06938864157225103)
     )
     assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (0.010408767953926904, 0.4828832446956578)
+        (0.010531212884270074, 0.4859797773332513)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
-        (0.9992463304688143, -0.03881714884698913)
+        (0.9992439224552503, -0.038879087389568884)
     )
     assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(128.92319893893)
     assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(-103.509833901353)
@@ -1514,16 +1509,16 @@ def _HelmertCurve_100_0_inf_300_1_Meter(file):
     assert "DISCONTINUOUS" == mapped_segment.Transition
     assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.9972443634885, 0.347204361427475))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
-        (0.999614222337484, 0.027769614722351524)
+        (0.9996142223374836, 0.02777420567050875)
     )
     assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (0.011625841243773832, -0.6968669147609581)
+        (0.01157252775554056, -0.6942977411122)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
-        (0.9984543318840984, 0.05557829739996359)
+        (0.9984571869987445, 0.05552698200473389)
     )
     assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(-114.471424255333)
     assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(86.6025403784439)
@@ -1562,16 +1557,16 @@ def _HelmertCurve_100_0__inf__300_1_Meter(file):
     assert "DISCONTINUOUS" == mapped_segment.Transition
     assert mapped_segment.Placement.Location.Coordinates == pytest.approx((49.9972443634885, -0.347204361427475))
     assert mapped_segment.Placement.RefDirection.DirectionRatios == pytest.approx(
-        (0.999614222337484, -0.027769614722351524)
+        (0.9996142223374836, -0.02777420567050875)
     )
     assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(50.0)
     assert mapped_segment.ParentCurve.is_a("IfcSecondOrderPolynomialSpiral")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx(
-        (0.011625841243773832, 0.6968669147609581)
+        (0.01157252775554056, 0.6942977411122)
     )
     assert mapped_segment.ParentCurve.Position.RefDirection.DirectionRatios == pytest.approx(
-        (0.9984543318840984, -0.05557829739996359)
+        (0.9984571869987445, -0.05552698200473389)
     )
     assert mapped_segment.ParentCurve.QuadraticTerm == pytest.approx(114.471424255333)
     assert mapped_segment.ParentCurve.LinearTerm == pytest.approx(-86.6025403784439)
@@ -2564,7 +2559,7 @@ def _VienneseBend_100_0__inf__300_1_Meter(file):
     assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(None)
 
 
-@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
+@test.bootstrap.requires_ifc4x3
 def test_map_alignment_horizontal_segment():
     file = ifcopenshell.file(schema="IFC4X3")
     _BlossCurve_100_0_300_1000_1_Meter(file)

@@ -154,6 +154,14 @@ class TestAddMonetaryUnit:
 class TestAddSIUnit:
     def test_run(self, ifc, unit):
         ifc.run("unit.add_si_unit", unit_type="unit_type").should_be_called().will_return("unit")
+        unit.get_assigned_unit_of_type("unit").should_be_called().will_return("assigned_unit")
+        unit.import_units().should_be_called()
+        assert subject.add_si_unit(ifc, unit, unit_type="unit_type") == "unit"
+
+    def test_assigning_the_unit_if_no_unit_of_its_type_is_assigned(self, ifc, unit):
+        ifc.run("unit.add_si_unit", unit_type="unit_type").should_be_called().will_return("unit")
+        unit.get_assigned_unit_of_type("unit").should_be_called().will_return(None)
+        ifc.run("unit.assign_unit", units=["unit"]).should_be_called()
         unit.import_units().should_be_called()
         assert subject.add_si_unit(ifc, unit, unit_type="unit_type") == "unit"
 
@@ -163,6 +171,16 @@ class TestAddContextDependentUnit:
         ifc.run("unit.add_context_dependent_unit", unit_type="unit_type", name="name").should_be_called().will_return(
             "unit"
         )
+        unit.get_assigned_unit_of_type("unit").should_be_called().will_return("assigned_unit")
+        unit.import_units().should_be_called()
+        assert subject.add_context_dependent_unit(ifc, unit, unit_type="unit_type", name="name") == "unit"
+
+    def test_assigning_the_unit_if_no_unit_of_its_type_is_assigned(self, ifc, unit):
+        ifc.run("unit.add_context_dependent_unit", unit_type="unit_type", name="name").should_be_called().will_return(
+            "unit"
+        )
+        unit.get_assigned_unit_of_type("unit").should_be_called().will_return(None)
+        ifc.run("unit.assign_unit", units=["unit"]).should_be_called()
         unit.import_units().should_be_called()
         assert subject.add_context_dependent_unit(ifc, unit, unit_type="unit_type", name="name") == "unit"
 
@@ -170,6 +188,14 @@ class TestAddContextDependentUnit:
 class TestAddConversionBasedUnit:
     def test_run(self, ifc, unit):
         ifc.run("unit.add_conversion_based_unit", name="name").should_be_called().will_return("unit")
+        unit.get_assigned_unit_of_type("unit").should_be_called().will_return("assigned_unit")
+        unit.import_units().should_be_called()
+        assert subject.add_conversion_based_unit(ifc, unit, name="name") == "unit"
+
+    def test_assigning_the_unit_if_no_unit_of_its_type_is_assigned(self, ifc, unit):
+        ifc.run("unit.add_conversion_based_unit", name="name").should_be_called().will_return("unit")
+        unit.get_assigned_unit_of_type("unit").should_be_called().will_return(None)
+        ifc.run("unit.assign_unit", units=["unit"]).should_be_called()
         unit.import_units().should_be_called()
         assert subject.add_conversion_based_unit(ifc, unit, name="name") == "unit"
 

@@ -73,6 +73,8 @@ def add_monetary_unit(ifc: type[tool.Ifc], unit: type[tool.Unit]) -> ifcopenshel
 
 def add_si_unit(ifc: type[tool.Ifc], unit: type[tool.Unit], unit_type: str) -> ifcopenshell.entity_instance:
     result = ifc.run("unit.add_si_unit", unit_type=unit_type)
+    if not unit.get_assigned_unit_of_type(result):
+        ifc.run("unit.assign_unit", units=[result])
     unit.import_units()
     return result
 
@@ -81,12 +83,16 @@ def add_context_dependent_unit(
     ifc: type[tool.Ifc], unit: type[tool.Unit], unit_type: str, name: str
 ) -> ifcopenshell.entity_instance:
     result = ifc.run("unit.add_context_dependent_unit", unit_type=unit_type, name=name)
+    if not unit.get_assigned_unit_of_type(result):
+        ifc.run("unit.assign_unit", units=[result])
     unit.import_units()
     return result
 
 
 def add_conversion_based_unit(ifc: type[tool.Ifc], unit: type[tool.Unit], name: str) -> ifcopenshell.entity_instance:
     result = ifc.run("unit.add_conversion_based_unit", name=name)
+    if not unit.get_assigned_unit_of_type(result):
+        ifc.run("unit.assign_unit", units=[result])
     unit.import_units()
     return result
 

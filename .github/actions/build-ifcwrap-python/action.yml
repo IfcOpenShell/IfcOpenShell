@@ -13,7 +13,10 @@ runs:
   using: composite
   steps:
     - name: Set up Python ${{ inputs.python-version }}
-      uses: actions/setup-python@v7
+      # Actions inside composite actions should be locked by hash,
+      # currently there's a bug in `actions-lock` that drops that hash.
+      # See https://github.com/github/gh-actions-lock/issues/264
+      uses: actions/setup-python@v7.0.0  # zizmor: ignore[unpinned-uses]
       with:
         python-version: ${{ inputs.python-version }}
 
@@ -25,14 +28,17 @@ runs:
 
     - name: Configure standalone IfcPython
       shell: bash
+      env:
+        PYTHON_VERSION: ${{ inputs.python-version }}
+        IFCOPENSHELL_PREFIX: ${{ inputs.ifcopenshell-prefix }}
       run: |
         PYTHON_EXECUTABLE="$(python -c 'import sys; print(sys.executable)')"
         PYTHON_INCLUDE_DIR="$(python -c 'import sysconfig; print(sysconfig.get_path("include"))')"
 
-        cmake -S src/ifcwrap -B "build-ifcwrap-${{ inputs.python-version }}" \
+        cmake -S src/ifcwrap -B "build-ifcwrap-${PYTHON_VERSION}" \
           -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_PREFIX_PATH="${{ inputs.ifcopenshell-prefix }};/usr" \
+          -DCMAKE_PREFIX_PATH="${IFCOPENSHELL_PREFIX};/usr" \
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
           -DPython_EXECUTABLE:FILEPATH="${PYTHON_EXECUTABLE}" \
           -DPython_INCLUDE_DIR:PATH="${PYTHON_INCLUDE_DIR}" \
@@ -41,8 +47,10 @@ runs:
 
     - name: Build and install standalone IfcPython
       shell: bash
+      env:
+        PYTHON_VERSION: ${{ inputs.python-version }}
       run: |
-        cmake --build "build-ifcwrap-${{ inputs.python-version }}" --target install -j "$(nproc)"
+        cmake --build "build-ifcwrap-${PYTHON_VERSION}" --target install -j "$(nproc)"
 
     - name: Import installed IfcPython
       shell: bash
