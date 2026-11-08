@@ -68,6 +68,8 @@ path.flush { stroke: blue; stroke-width: 0.1; stroke-opacity: 0.4; }
 .PredefinedType-DIAMETER { marker-start: url(#diameter-marker-start); marker-end: url(#diameter-marker-end); }
 .PredefinedType-STAIRARROW { marker-start: url(#stair-marker-start); marker-end: url(#stair-marker-end); }
 .PredefinedType-BOUNDARY { fill: none; stroke: red; stroke-width: 1; stroke-dasharray: 12, 4, 3, 4, 3, 4; }
+.PredefinedType-BATTING { fill: none; stroke: black; stroke-width: 0.18; }
+.PredefinedType-REVISIONCLOUD { fill: none; stroke: red; stroke-width: 0.20; }
 .PredefinedType-SEALANT { fill: url(#crosshatch1); stroke-width: 0.25; }
 .PredefinedType-FILLAREA { fill: white; stroke: black; }
 .PredefinedType-BREAKLINE { fill: none; stroke: black; stroke-width: 0.25; marker-mid: url(#breakline-marker); }

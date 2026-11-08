@@ -11,7 +11,7 @@ if((NOT WIN32) AND BUILD_SHARED_LIBS AND NOT WASM_BUILD AND NOT CREATE_BUNDLE AN
     SET_INSTALL_SELF_RPATH(geometry_serializer)
 endif()
 set_target_properties(geometry_serializer PROPERTIES
-    OUTPUT_NAME "ifcopenshell.geometry.writer"
+    OUTPUT_NAME "ifcopenshell_geometry_writer"
     COMPILE_FLAGS "-DIFC_GEOMSERIALIZATION_EXPORTS"
     RUNTIME_OUTPUT_DIRECTORY "${geometry_serialization_plugin_runtime_dir}"
     LIBRARY_OUTPUT_DIRECTORY "${geometry_serialization_plugin_runtime_dir}"

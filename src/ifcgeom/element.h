@@ -197,7 +197,7 @@ namespace ifcopenshell::geom {
 		triangulation_element(const ifcopenshell::geom::native_element& shape_model)
 			: triangulation_element(shape_model, std::make_shared<ifcopenshell::geom::triangulation>(shape_model.geometry()))
 		{}
-		triangulation_element(const ifcopenshell::geom::native_element& source, const std::shared_ptr<ifcopenshell::geom::triangulation>& geometry)
+		triangulation_element(const ifcopenshell::geom::element& source, const std::shared_ptr<ifcopenshell::geom::triangulation>& geometry)
 			: element(source)
 			, _geometry(geometry)
 		{

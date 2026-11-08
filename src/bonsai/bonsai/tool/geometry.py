@@ -2459,6 +2459,8 @@ class Geometry(bonsai.core.tool.Geometry):
             new_item = builder.vertex(verts[0])
         elif item.is_a("IfcEdge"):
             new_item = builder.edge(start=verts[0], end=verts[1])
+        elif item.is_a("IfcFaceSurface"):
+            new_item = builder.face_surface([verts[i] for i in faces[0]])
         elif item.is_a("IfcFace"):
             new_item = builder.face([verts[i] for i in faces[0]])
         else:
