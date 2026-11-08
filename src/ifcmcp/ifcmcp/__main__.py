@@ -34,6 +34,17 @@ def main():
         help="MCP transport to use (default: stdio)",
     )
     parser.add_argument(
+        "--bonsai",
+        nargs="?",
+        type=int,
+        const=9877,
+        metavar="PORT",
+        help=(
+            "Query the model open in Bonsai instead of a file, through its MCP bridge "
+            "(default port 9877). Offers only the read-only tools"
+        ),
+    )
+    parser.add_argument(
         "--no-execute",
         action="store_true",
         help="Don't offer ifc_execute, which runs arbitrary Python sent by the client (only offered over stdio)",
@@ -52,7 +63,7 @@ def main():
 
     from ifcmcp.server import build_server
 
-    server = build_server(allow_execute=execute_allowed(args.transport, args.no_execute))
+    server = build_server(allow_execute=execute_allowed(args.transport, args.no_execute), bonsai_port=args.bonsai)
     server.run(transport=args.transport)
 
 

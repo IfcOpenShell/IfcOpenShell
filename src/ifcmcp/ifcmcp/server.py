@@ -7,7 +7,7 @@ import inspect
 from typing import Any
 
 from ifcmcp.core import IfcSession
-from ifcmcp.instructions import EXECUTE_INSTRUCTIONS, INSTRUCTIONS
+from ifcmcp.instructions import BONSAI_INSTRUCTIONS, EXECUTE_INSTRUCTIONS, INSTRUCTIONS
 
 try:
     from mcp.server.mcpserver import MCPServer  # type: ignore
@@ -60,18 +60,28 @@ def _annotations(name: str) -> Any:
     return ToolAnnotations(readOnlyHint=False, destructiveHint=True, openWorldHint=False)
 
 
-def build_server(allow_execute: bool = False) -> Any:
+def build_server(allow_execute: bool = False, bonsai_port: int | None = None) -> Any:
     """Create the MCP server if the dependency is available.
 
     :param allow_execute: Offer ``ifc_execute``, which runs arbitrary Python
         sent by the client.
+    :param bonsai_port: Query the model open in Bonsai, through the MCP bridge
+        listening on this port, instead of a model held here. Only the
+        read-only tools are offered, and never ``ifc_execute``.
     """
     if MCPServer is None:
         raise ImportError(
             "The mcp package is not installed. Install with: pip install ifcmcp[mcp] (or add 'mcp' to your environment)."
         )
 
-    session = IfcSession(allow_execute=allow_execute)
+    if bonsai_port is None:
+        session = IfcSession(allow_execute=allow_execute)
+        instructions = INSTRUCTIONS + (EXECUTE_INSTRUCTIONS if allow_execute else "")
+    else:
+        from ifcmcp.bonsai import BonsaiSession
+
+        session = BonsaiSession(port=bonsai_port)
+        instructions = BONSAI_INSTRUCTIONS
 
     def _keep_reason(fn):
         """Raise a tool's failure as ToolError so its reason reaches the agent.
@@ -94,7 +104,10 @@ def build_server(allow_execute: bool = False) -> Any:
 
     def _tool(fn):
         """Register a tool, taking its MCP description from the identically-named
-        IfcSession method rather than duplicating it here."""
+        IfcSession method rather than duplicating it here. Bonsai is offered
+        only the read-only tools."""
+        if bonsai_port is not None and fn.__name__ not in READ_ONLY_TOOLS:
+            return fn
         return server.tool(
             description=inspect.getdoc(getattr(IfcSession, fn.__name__)),
             annotations=_annotations(fn.__name__),
@@ -102,7 +115,7 @@ def build_server(allow_execute: bool = False) -> Any:
 
     server = MCPServer(
         name="ifc-mcp",
-        instructions=INSTRUCTIONS + (EXECUTE_INSTRUCTIONS if allow_execute else ""),
+        instructions=instructions,
     )
 
     # ---- Lifecycle ----
@@ -215,7 +228,7 @@ def build_server(allow_execute: bool = False) -> Any:
     def ifc_quantify(rule: str, selector: str = "") -> dict[str, Any]:
         return session.ifc_quantify(rule=rule, selector=selector)
 
-    if allow_execute:
+    if allow_execute and bonsai_port is None:
 
         @_tool
         def ifc_execute(code: str) -> dict[str, Any]:
@@ -324,5 +337,10 @@ def build_server(allow_execute: bool = False) -> Any:
             with open(output_path, "wb") as f:
                 f.write(png_bytes)
         return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mimeType="image/png")]
+
+    if bonsai_port is not None:
+        # These draw the model held here, and can write files.
+        server.remove_tool("ifc_plot")
+        server.remove_tool("ifc_render")
 
     return server

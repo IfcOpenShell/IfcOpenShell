@@ -27,6 +27,19 @@ sends. Start it with `ifcmcp --no-execute` to leave that tool out. It is never
 offered over the `sse` or `streamable-http` transports, where anyone who can
 reach the port could use it.
 
+### Querying the model open in Bonsai
+
+```bash
+ifcmcp --bonsai
+```
+
+In Bonsai, open the Quality and Coordination tab, then Collaboration > MCP
+Bridge, and press Start MCP Bridge. The server then answers each query from the model open in
+Bonsai, including changes not yet saved. Only the read-only query tools are
+offered: nothing is loaded, edited or saved. The bridge listens on
+`localhost:9877`; to use another port, set it in the panel and pass it as
+`ifcmcp --bonsai PORT`.
+
 ### Claude Code configuration
 
 Use the `claude mcp add` command:

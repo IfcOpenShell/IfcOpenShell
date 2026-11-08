@@ -1,11 +1,13 @@
 # This file was generated with the assistance of an AI coding tool.
 """Instructions the MCP server sends to the client when it connects."""
 
-INSTRUCTIONS = """\
+_INTRO = """\
 MCP server for querying and editing IFC building models. Load a file with \
 ifc_load, or start an empty model with ifc_new, then use the query and edit \
 tools. Edits stay in memory until ifc_save writes them to disk.
+"""
 
+_WORKING = """
 # Working with a model
 
 Respect the existing structure and naming in a model. Inspect before you \
@@ -17,9 +19,10 @@ counts, and page through ifc_select results with limit and offset.
 
 Elements are identified by their STEP id, the integer `id` that query and \
 edit results return. ifc_info, ifc_relations and ifc_clash also accept a \
-GlobalId. Pass entity arguments to ifc_edit as STEP ids, written as \
-strings: "42", or "5,6,7" for a list.
+GlobalId.
+"""
 
+_EDITING = """
 # Editing
 
 Find the right function with ifc_search, in the API's own terms ("assign \
@@ -30,6 +33,11 @@ the result of each edit with the query tools. Each ifc_edit, ifc_shape and \
 ifc_quantify call is one undo step: ifc_undo reverts it and ifc_redo \
 reapplies it. A call that fails changes nothing.
 
+Pass entity arguments to ifc_edit as STEP ids, written as strings: "42", \
+or "5,6,7" for a list.
+"""
+
+_CONCEPTS = """
 # IFC concepts
 
 * Spatial structure: IfcProject > IfcSite > IfcBuilding > \
@@ -51,7 +59,9 @@ pset.edit_pset); quantities in quantity sets.
 part of the spatial structure, so ifc_tree does not show it. ifc_structural \
 lists each one with its members, connections, load cases and load \
 combinations.
+"""
 
+_UNITS = """
 # Units, placement and geometry
 
 * A model's length unit is whatever its IfcUnitAssignment says: millimetres \
@@ -71,7 +81,9 @@ its container's placement.
 * Geometry belongs to a representation context. A new model needs a Model \
 context and a Body subcontext (context.add_context) before any geometry can \
 be added; ifc_contexts lists those in the model.
+"""
 
+_SCHEMAS = """
 # Schemas
 
 ifc_new defaults to IFC4. IFC2X3 requires owner history on every rooted \
@@ -82,6 +94,27 @@ else, or creating entities fails.
 Use ifc_schema to look up what an IFC class means and which attributes and \
 predefined types it has.
 """
+
+INSTRUCTIONS = _INTRO + _WORKING + _EDITING + _CONCEPTS + _UNITS + _SCHEMAS
+
+# ifcmcp --bonsai serves only the read-only tools, on the model open in Bonsai.
+BONSAI_INSTRUCTIONS = (
+    """\
+MCP server for querying the IFC model open in Bonsai, the Blender add-on. \
+It reads the live session, so each call sees the user's latest changes, \
+including unsaved ones. Only the query tools are available: to change the \
+model, describe the change for the user to make in Bonsai.
+"""
+    + _WORKING
+    + _CONCEPTS
+    + """
+# Units and schema
+
+Check the model's length unit with ifc_select(query="IfcSIUnit"); ifc_info \
+reports placements in that unit. Use ifc_schema to look up what an IFC \
+class means and which attributes and predefined types it has.
+"""
+)
 
 EXECUTE_INSTRUCTIONS = """
 # Running code
