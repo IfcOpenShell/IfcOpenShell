@@ -28,7 +28,7 @@ jobs:
       # upload-release-action creates the release and uploads assets
       contents: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: Get current version
@@ -42,7 +42,7 @@ jobs:
           cd src/ifcsverchok
           make dist
       - name: Upload zip file to release
-        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # 2.11.5
+        uses: svenstaro/upload-release-action@2.11.5
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: src/ifcsverchok/dist/ifcsverchok-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}.zip
@@ -50,4 +50,5 @@ jobs:
           release_name: "ifcsverchok-${{steps.version.outputs.version}}.${{steps.date.outputs.date}} (unstable)"
           tag: "ifcsverchok-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}"
           target_commit: ${{ github.sha }}
+          prerelease: true
           overwrite: true

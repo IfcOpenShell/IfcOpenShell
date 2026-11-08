@@ -2,6 +2,15 @@ find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 
 ifcopenshell_wasm_plugin_dependency(plugin_when_not_wasm)
 
+if(WASM_BUILD)
+    # Emscripten supports RPATH but its CMake platform does not define these.
+    set(CMAKE_SHARED_LIBRARY_RUNTIME_CXX_FLAG "-Wl,-rpath,")
+    set(CMAKE_SHARED_LIBRARY_RUNTIME_CXX_FLAG_SEP ":")
+    # emcc's response-file parser preserves CMake's escape before '$ORIGIN'.
+    # Keep the short library list on the command line so it is unescaped there.
+    set(CMAKE_CXX_USE_RESPONSE_FILE_FOR_LIBRARIES FALSE)
+endif()
+
 foreach(schema ${SCHEMA_VERSIONS})
     file(GLOB IFCGEOM_I_FILES *.i)
     file(GLOB IFCGEOM_H_FILES *.h)
@@ -23,16 +32,20 @@ foreach(schema ${SCHEMA_VERSIONS})
             ID "ifc${schema}"
             SYMBOL_ID "ifc${schema}"
             EXPORT_SYMBOL "ifcopenshell_emscripten_register_mapping_ifc${schema}"
+            DEPENDS "schema:ifc${schema}"
+        )
+        # Pyodide loads side modules with RTLD_LOCAL. Record the schema as a
+        # dynamic dependency and resolve it beside the mapping module, rather
+        # than relying on exports from a previously loaded global module.
+        set_target_properties(geometry_mapping_ifc${schema} PROPERTIES
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "$ORIGIN"
         )
     endif()
 
     ifcopenshell_wasm_plugin_link_options(geometry_mapping_ifc${schema} ifcopenshell_register_mapping_plugin_v1)
 
-    if(NOT WASM_BUILD)
-        set(schema_plugin_library parse_schema_ifc${schema})
-    else()
-        set(schema_plugin_library)
-    endif()
+    set(schema_plugin_library parse_schema_ifc${schema})
 
     ifcopenshell_wasm_plugin_target_link(geometry_mapping_ifc${schema}
         MAIN_TARGETS IfcGeom IfcParse
