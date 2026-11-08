@@ -32,53 +32,35 @@ std::istream& std::operator>>(istream& in, vector<double>& ds) {
 	return in;
 }
 
-std::istream& ifcopenshell::geom::settings_detail::operator>>(std::istream& in, IteratorOutputOptions& ioo)
-{
-	std::string token;
-	in >> token;
-	boost::to_upper(token);
-	if (token == "TRIANGULATED") {
-		ioo = TRIANGULATED;
-	} else if (token == "NATIVE") {
-		ioo = NATIVE;
-	} else if (token == "SERIALIZED") {
-		ioo = SERIALIZED;
-	} else {
+namespace {
+	template <typename Enum, std::size_t N>
+	std::istream& read_enum(std::istream& in, Enum& value, const std::array<const char* const, N>& names) {
+		std::string token;
+		if (!(in >> token)) {
+			return in;
+		}
+		boost::to_upper(token);
+		for (std::size_t i = 0; i < N; ++i) {
+			if (token == names[i]) {
+				value = static_cast<Enum>(i);
+				return in;
+			}
+		}
 		in.setstate(std::ios_base::failbit);
+		return in;
 	}
-	return in;
 }
 
-std::istream& ifcopenshell::geom::settings_detail::operator>>(std::istream& in, OutputDimensionalityTypes& v) {
-	std::string token;
-	in >> token;
-	boost::to_upper(token);
-	if (token == "CURVES") {
-		v = CURVES;
-	} else if (token == "SURFACES_AND_SOLIDS") {
-		v = SURFACES_AND_SOLIDS;
-	} else if (token == "CURVES_SURFACES_AND_SOLIDS") {
-		v = CURVES_SURFACES_AND_SOLIDS;
-	} else {
-		in.setstate(std::ios_base::failbit);
-	}
-	return in;
+std::istream& ifcopenshell::geom::settings_detail::operator>>(std::istream& in, IteratorOutputOptions& value) {
+	return read_enum(in, value, iterator_output_names);
 }
 
-std::istream& ifcopenshell::geom::settings_detail::operator>>(std::istream& in, TriangulationMethod& v) {
-	std::string token;
-	in >> token;
-	boost::to_upper(token);
-	if (token == "TRIANGLE_MESH") {
-		v = TRIANGLE_MESH;
-	} else if (token == "POLYHEDRON_WITHOUT_HOLES") {
-		v = POLYHEDRON_WITHOUT_HOLES;
-	} else if (token == "POLYHEDRON_WITH_HOLES") {
-		v = POLYHEDRON_WITH_HOLES;
-	} else {
-		in.setstate(std::ios_base::failbit);
-	}
-	return in;
+std::istream& ifcopenshell::geom::settings_detail::operator>>(std::istream& in, OutputDimensionalityTypes& value) {
+	return read_enum(in, value, output_dimensionality_names);
+}
+
+std::istream& ifcopenshell::geom::settings_detail::operator>>(std::istream& in, TriangulationMethod& value) {
+	return read_enum(in, value, triangulation_method_names);
 }
 
 ifcopenshell::geom::geometry_exception::~geometry_exception() = default;

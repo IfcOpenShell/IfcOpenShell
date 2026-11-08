@@ -59,20 +59,20 @@ class BIM_PT_units(Panel):
             row.operator("bim.assign_scene_units", text="", icon="TOOL_SETTINGS")
             row.operator("bim.disable_unit_editing_ui", text="", icon="CANCEL")
         else:
+            row.operator("bim.convert_units", text="", icon="FILE_REFRESH")
             row.operator("bim.load_units", text="", icon="GREASEPENCIL")
 
         if not self.props.is_editing:
-            row = self.layout.row(align=True)
-            row.label(text="Length Unit", icon="ARROW_LEFTRIGHT")
-            row.label(text=str(UnitsData.data["length_unit"]))
-
-            row = self.layout.row(align=True)
-            row.label(text="Area Unit", icon="ORIENTATION_VIEW")
-            row.label(text=str(UnitsData.data["area_unit"]))
-
-            row = self.layout.row(align=True)
-            row.label(text="Volume Unit", icon="EMPTY_ARROWS")
-            row.label(text=str(UnitsData.data["volume_unit"]))
+            labels = {
+                "LENGTHUNIT": ("Length Unit", "ARROW_LEFTRIGHT"),
+                "AREAUNIT": ("Area Unit", "ORIENTATION_VIEW"),
+                "VOLUMEUNIT": ("Volume Unit", "EMPTY_ARROWS"),
+            }
+            for unit_type, name, ifc_class in UnitsData.data["assigned_units"]:
+                row = self.layout.row(align=True)
+                label, icon = labels.get(unit_type, (unit_type, tool.Unit.get_icon_for_unit_class(ifc_class)))
+                row.label(text=label, icon=icon)
+                row.label(text=str(name))
             return
 
         row = self.layout.row(align=True)

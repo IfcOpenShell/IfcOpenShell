@@ -468,6 +468,22 @@ public:
 		serializer_->write(element);
 	}
 
+	void setExtras(const std::string& key, const std::string& value) override {
+		serializer_->setExtras(key, value);
+	}
+
+	void setExtras(const std::string& key, int value) override {
+		serializer_->setExtras(key, value);
+	}
+
+	void setExtras(const std::string& key, double value) override {
+		serializer_->setExtras(key, value);
+	}
+
+	void setExtras(const std::string& key, const std::vector<std::string>& value) override {
+		serializer_->setExtras(key, value);
+	}
+
 	void setUnitNameAndMagnitude(const std::string& name, float magnitude) override {
 		serializer_->setUnitNameAndMagnitude(name, magnitude);
 	}
