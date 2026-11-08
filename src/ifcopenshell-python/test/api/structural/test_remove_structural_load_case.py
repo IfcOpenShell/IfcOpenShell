@@ -46,3 +46,28 @@ class TestRemoveStructuralLoadCase(test.bootstrap.IFC4):
         model.LoadedBy = [dead, live]
         ifcopenshell.api.structural.remove_structural_load_case(self.file, load_case=dead)
         assert model.LoadedBy == (live,)
+
+    def test_removing_a_load_case_from_its_combinations(self):
+        dead = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Dead")
+        live = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Live")
+        uls = ifcopenshell.api.structural.add_structural_load_combination(self.file, name="ULS")
+        ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=dead, load_combination=uls, factor=1.35
+        )
+        live_rel = ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=live, load_combination=uls, factor=1.5
+        )
+        ifcopenshell.api.structural.remove_structural_load_case(self.file, load_case=dead)
+        assert self.file.by_type("IfcRelAssignsToGroupByFactor") == (live_rel,)
+
+    def test_keeping_a_combination_relationship_shared_with_another_load_case(self):
+        dead = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Dead")
+        live = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Live")
+        sls = ifcopenshell.api.structural.add_structural_load_combination(self.file, name="SLS")
+        ifcopenshell.api.structural.assign_structural_load_combination(self.file, load_case=dead, load_combination=sls)
+        rel = ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=live, load_combination=sls
+        )
+        ifcopenshell.api.structural.remove_structural_load_case(self.file, load_case=dead)
+        assert rel.RelatedObjects == (live,)
+        assert rel.RelatingGroup == sls
