@@ -282,8 +282,6 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         selected_objs = context.selected_objects
         joiner = DumbProfileJoiner()
-
-        # Handle unjoin
         if self.join_type == "-":
             for obj in selected_objs:
                 joiner.unjoin(obj)
