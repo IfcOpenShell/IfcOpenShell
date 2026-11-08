@@ -468,6 +468,22 @@ public:
 		serializer_->write(element);
 	}
 
+	void setExtras(const std::string& key, const std::string& value) override {
+		serializer_->setExtras(key, value);
+	}
+
+	void setExtras(const std::string& key, int value) override {
+		serializer_->setExtras(key, value);
+	}
+
+	void setExtras(const std::string& key, double value) override {
+		serializer_->setExtras(key, value);
+	}
+
+	void setExtras(const std::string& key, const std::vector<std::string>& value) override {
+		serializer_->setExtras(key, value);
+	}
+
 	void setUnitNameAndMagnitude(const std::string& name, float magnitude) override {
 		serializer_->setUnitNameAndMagnitude(name, magnitude);
 	}
@@ -609,9 +625,6 @@ assign_matrix_access(revolve);
 		return $self->set(name, val);
 	}
 	void set_(const std::string& name, ifcopenshell::geom::settings::IteratorOutputOptions val) {
-		return $self->set(name, val);
-	}
-	void set_(const std::string& name, ifcopenshell::geom::settings::FunctionStepMethod val) {
 		return $self->set(name, val);
 	}
 	void set_(const std::string& name, ifcopenshell::geom::settings::OutputDimensionalityTypes val) {
@@ -863,6 +876,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
         item_ids = property(item_ids)
         uvs = property(uvs)
         edges_item_ids = property(edges_item_ids)
+        rebase_offset = property(rebase_offset)
 
         faces_buffer = property(faces_buffer)
         edges_buffer = property(edges_buffer)
@@ -1045,7 +1059,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 			} else {
 				return brep;
 			}
-		} else if (instance.declaration().is("IfcPlacement") || instance.declaration().is("IfcObjectPlacement")) {
+		} else if (instance.declaration().is("IfcPlacement") || instance.declaration().is("IfcObjectPlacement") || instance.declaration().is("IfcCartesianTransformationOperator")) {
 			auto item = ifcopenshell::geom::taxonomy::cast<ifcopenshell::geom::taxonomy::matrix4>(kernel.mapping()->map(instance));
 			if (item == nullptr) {
 				throw ifcopenshell::exception("Failed to convert placement");

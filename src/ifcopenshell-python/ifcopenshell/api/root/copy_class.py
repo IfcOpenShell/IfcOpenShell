@@ -52,6 +52,8 @@ def copy_class(file: ifcopenshell.file, product: ifcopenshell.entity_instance) -
       will also be copied.
     * Path connectivity is not copied, as there is no guarantee that the
       connections are still valid.
+    * Structural activities, such as applied loads, are not copied: an
+      activity acts on one structural item, so the copy has none.
     * Annotations assigned to the product are not copied. They stay assigned to
       the original only, so the copy starts with no annotations. Sharing them
       would leave one annotation labelling two products, which is invalid.
@@ -126,7 +128,7 @@ class Usecase:
                 for port in new_ports:
                     ifcopenshell.api.system.unassign_port(self.file, element=from_element, port=port)
                     ifcopenshell.api.system.disconnect_port(self.file, port=port)
-                    matrix = ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement)
+                    matrix = ifcopenshell.util.placement.get_placement(port.ObjectPlacement)
                     ifcopenshell.api.geometry.edit_object_placement(
                         self.file,
                         product=port,
@@ -169,6 +171,9 @@ class Usecase:
             elif inverse.is_a("IfcRelFillsElement"):
                 continue
             elif inverse.is_a("IfcRelConnectsPathElements"):
+                continue
+            elif inverse.is_a("IfcRelConnectsStructuralActivity"):
+                # An applied load acts on one structural item: a copy sharing it would load both, so it has none.
                 continue
             elif inverse.is_a("IfcRelAssociatesMaterial") and "Usage" in inverse.RelatingMaterial.is_a():
                 inverse = ifcopenshell.util.element.copy(self.file, inverse)

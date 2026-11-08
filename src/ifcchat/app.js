@@ -13,40 +13,16 @@ const PROVIDERS = {
         baseUrlDefault: "https://api.openai.com/v1",
         models: [
             {
-                value: "gpt-5.2",
-                label: "gpt-5.2"
+                value: "gpt-6-astra",
+                label: "gpt-6-astra"
             },
             {
-                value: "gpt-5.2-chat-latest",
-                label: "gpt-5.2-chat-latest"
+                value: "gpt-5.5",
+                label: "gpt-5.5"
             },
             {
-                value: "gpt-5",
-                label: "gpt-5"
-            },
-            {
-                value: "gpt-5-chat-latest",
-                label: "gpt-5-chat-latest"
-            },
-            {
-                value: "gpt-5-mini",
-                label: "gpt-5-mini"
-            },
-            {
-                value: "gpt-5-nano",
-                label: "gpt-5-nano"
-            },
-            {
-                value: "gpt-4.1",
-                label: "gpt-4.1"
-            },
-            {
-                value: "gpt-4.1-mini",
-                label: "gpt-4.1-mini"
-            },
-            {
-                value: "gpt-4.1-nano",
-                label: "gpt-4.1-nano"
+                value: "gpt-5.4-mini",
+                label: "gpt-5.4-mini"
             },
         ],
     },
@@ -56,16 +32,16 @@ const PROVIDERS = {
         apiKeyPlaceholder: "sk-ant-...",
         models: [
             {
-                value: "claude-sonnet-4-6",
-                label: "claude-sonnet-4-6"
+                value: "claude-sonnet-5-5",
+                label: "claude-sonnet-5-5"
             },
             {
-                value: "claude-opus-4-6",
-                label: "claude-opus-4-6"
+                value: "claude-opus-5-5",
+                label: "claude-opus-5-5"
             },
             {
-                value: "claude-haiku-4-5-20251001",
-                label: "claude-haiku-4-5"
+                value: "claude-haiku-5-5",
+                label: "claude-haiku-5-5"
             },
         ],
     },
@@ -78,16 +54,12 @@ const PROVIDERS = {
         baseUrlDefault: "https://generativelanguage.googleapis.com/v1beta/openai/",
         models: [
             {
-                value: "gemini-3-flash-preview",
-                label: "gemini-3-flash-preview"
+                value: "gemini-3.8-flash",
+                label: "gemini-3.8-flash"
             },
             {
-                value: "gemini-2.5-flash",
-                label: "gemini-2.5-flash"
-            },
-            {
-                value: "gemini-2.5-pro",
-                label: "gemini-2.5-pro"
+                value: "gemini-3.5-flash-lite",
+                label: "gemini-3.5-flash-lite"
             },
         ],
     },
@@ -100,28 +72,20 @@ const PROVIDERS = {
         baseUrlDefault: "https://openrouter.ai/api/v1",
         models: [
             {
-                value: "openai/gpt-oss-20b",
-                label: "gpt-oss-20b"
+                value: "openai/gpt-6-astra",
+                label: "gpt-6-astra"
+            },
+            {
+                value: "anthropic/claude-sonnet-5.5",
+                label: "claude-sonnet-5-5"
+            },
+            {
+                value: "google/gemini-3.8-flash",
+                label: "gemini-3.8-flash"
             },
             {
                 value: "openai/gpt-oss-120b",
                 label: "gpt-oss-120b"
-            },
-            {
-                value: "mistralai/mistral-small-3.2-24b-instruct",
-                label: "mistral-small-3.2"
-            },
-            {
-                value: "openai/gpt-4.1",
-                label: "gpt-4.1"
-            },
-            {
-                value: "anthropic/claude-sonnet-4-5",
-                label: "claude-sonnet-4-5"
-            },
-            {
-                value: "google/gemini-2.5-pro-preview",
-                label: "gemini-2.5-pro"
             },
         ],
     },

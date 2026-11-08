@@ -5,6 +5,14 @@ import importlib.util
 from ifcmcp import __version__
 
 
+def execute_allowed(transport: str, no_execute: bool) -> bool:
+    """Offer ifc_execute only over stdio, where the client is the process that started the server.
+
+    Over the network transports anyone who can reach the port could run code.
+    """
+    return transport == "stdio" and not no_execute
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="python3 -m ifcmcp",
@@ -25,10 +33,15 @@ def main():
         default="stdio",
         help="MCP transport to use (default: stdio)",
     )
+    parser.add_argument(
+        "--no-execute",
+        action="store_true",
+        help="Don't offer ifc_execute, which runs arbitrary Python sent by the client (only offered over stdio)",
+    )
 
     args = parser.parse_args()
 
-    if importlib.util.find_spec("mcp.server.fastmcp") is None:
+    if importlib.util.find_spec("mcp") is None:
         import sys
 
         print(
@@ -39,7 +52,7 @@ def main():
 
     from ifcmcp.server import build_server
 
-    server = build_server()
+    server = build_server(allow_execute=execute_allowed(args.transport, args.no_execute))
     server.run(transport=args.transport)
 
 

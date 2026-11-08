@@ -342,8 +342,8 @@ class IfcDiff:
                     return True
 
     def diff_element_basic_geometry(self, old, new):
-        old_placement = ifcopenshell.util.placement.get_local_placement(old.ObjectPlacement)
-        new_placement = ifcopenshell.util.placement.get_local_placement(new.ObjectPlacement)
+        old_placement = ifcopenshell.util.placement.get_placement(old.ObjectPlacement)
+        new_placement = ifcopenshell.util.placement.get_placement(new.ObjectPlacement)
         if not np.allclose(old_placement[:, 3], new_placement[:, 3], atol=self.precision):
             return True
         if not np.allclose(old_placement[0:3, 0:3], new_placement[0:3, 0:3], atol=1e-2):

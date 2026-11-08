@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Author the demo model the web viewer embeds (sample.ifcview).
 
-The web build bakes one small sidecar into MEMFS (--embed-file in
+The web build bakes one small .ifcview into MEMFS (--embed-file in
 CMakeLists.txt) so every example page renders something before the user picks a
 file. This script is how that fixture is produced, so it can be regenerated
 rather than being an opaque committed blob:
@@ -13,7 +13,7 @@ Also authors georef-a and georef-b: a pair that pins the federation behaviour.
 The two carry DIFFERENT IfcMapConversions over DIFFERENT local coordinates,
 chosen so both resolve to the same real-world point. A viewer that applies each
 model's coordinate operation draws them on top of each other; one that ignores
-it (as the web viewer did before it seeded georef from the sidecar) draws them
+it (as the web viewer did before it seeded georef from the .ifcview) draws them
 ~707 m apart. They are small single-box models — the assertion is about where
 they land, not what they look like.
 
@@ -45,7 +45,7 @@ import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
 
 HERE = Path(__file__).parent
-# The sidecar baker. Override with SIDECAR_BAKE when it lives outside the
+# The .ifcview baker. Override with SIDECAR_BAKE when it lives outside the
 # desktop build tree — there is currently no in-tree `sidecar_bake` target, so
 # the default below only resolves if one has been added locally.
 BAKE = Path(os.environ.get("SIDECAR_BAKE", HERE / "../../build-viewer/ifcviewer/sidecar_bake"))
@@ -161,8 +161,8 @@ def build_georef_ifc(path: Path, local_xy: tuple, map_en: tuple) -> None:
     )
 
     # TWO boxes, deliberately different sizes so they are two distinct meshes.
-    # reorderSidecarByMorton bails out at fewer than two meshes and then writes
-    # no chunk table at all, and a sidecar with no chunk table can never stream
+    # reorderIfcViewByMorton bails out at fewer than two meshes and then writes
+    # no chunk table at all, and a .ifcview with no chunk table can never stream
     # over the web byte-range path — the loader has no locator to fetch with.
     # A one-box model here would load and simply never draw.
     for i, (w, d) in enumerate([(2.0, 2.0), (1.0, 3.0)]):

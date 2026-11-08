@@ -34,7 +34,6 @@ import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import ifcopenshell.util.unit
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
 import bonsai.bim.handler
@@ -533,13 +532,14 @@ class PrintObjectPlacement(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
-        placement = ifcopenshell.util.placement.get_local_placement(tool.Ifc.get().by_id(self.step_id))
+        step = tool.Ifc.get().by_id(self.step_id)
+        placement = ifcopenshell.util.placement.get_placement(step)
         if self.create_empty_object:
             bpy.ops.object.empty_add(type="ARROWS")
-            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             assert context.active_object
-            context.active_object.matrix_world = placement.transpose()
-            context.active_object.matrix_world.translation *= si_conversion
+            context.active_object.matrix_world = ifcopenshell.util.placement.get_placement(
+                step, should_return_si=True
+            ).transpose()
             context.active_object.empty_display_size = self.arrow_size
         print(placement)
         return {"FINISHED"}

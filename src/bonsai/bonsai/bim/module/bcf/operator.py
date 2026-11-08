@@ -1178,6 +1178,9 @@ class AddBcfComment(bpy.types.Operator):
 class ActivateBcfViewpoint(bpy.types.Operator):
     bl_idname = "bim.activate_bcf_viewpoint"
     bl_label = "Activate BCF Viewpoint"
+    bl_description = (
+        "Activate the BCF viewpoint.\n\nViewpoint colours are only visible in Solid shading with Object colour"
+    )
     bl_options = {"REGISTER", "UNDO"}
     viewpoint_guid: bpy.props.StringProperty(
         name="Viewpoint GUID",
@@ -1223,6 +1226,35 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                 return {"CANCELLED"}
 
         viewpoint = topic.viewpoints[viewpoint_guid]
+
+        if self.file:
+            self.set_viewpoint_components(viewpoint, context)
+
+        gp = bpy.data.grease_pencils.get("BCF")
+        if gp:
+            bpy.data.grease_pencils.remove(gp)
+        if viewpoint.visualization_info.lines:
+            self.draw_lines(viewpoint, context)
+
+        self.delete_clipping_planes(context)
+        if viewpoint.visualization_info.clipping_planes:
+            self.create_clipping_planes(viewpoint)
+
+        self.delete_bitmaps(context)
+        if tool.Bcf.get_viewpoint_bitmaps(viewpoint):
+            self.create_bitmaps(bcfxml, viewpoint, topic)
+
+        self.setup_camera(viewpoint, context)
+        return {"FINISHED"}
+
+    def setup_camera(
+        self, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler, context: bpy.types.Context
+    ) -> None:
+        visualization_info = viewpoint.visualization_info
+        if not (visualization_info.orthogonal_camera or visualization_info.perspective_camera or viewpoint.snapshot):
+            self.report({"INFO"}, "Viewpoint has no camera or snapshot, keeping the current view.")
+            return
+
         obj = bpy.data.objects.get("Viewpoint")
         if not obj:
             obj = bpy.data.objects.new("Viewpoint", bpy.data.cameras.new("Viewpoint"))
@@ -1256,35 +1288,6 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         assert (space := tool.Blender.get_view3d_space())
         space.region_3d.view_perspective = "CAMERA"
 
-        if self.file:
-            self.set_viewpoint_components(viewpoint, context)
-
-        gp = bpy.data.grease_pencils.get("BCF")
-        if gp:
-            bpy.data.grease_pencils.remove(gp)
-        if viewpoint.visualization_info.lines:
-            self.draw_lines(viewpoint, context)
-
-        self.delete_clipping_planes(context)
-        if viewpoint.visualization_info.clipping_planes:
-            self.create_clipping_planes(viewpoint)
-
-        self.delete_bitmaps(context)
-        if tool.Bcf.get_viewpoint_bitmaps(viewpoint):
-            self.create_bitmaps(bcfxml, viewpoint, topic)
-
-        self.setup_camera(viewpoint, obj, cam_aspect, context, cam_height, cam_width)
-        return {"FINISHED"}
-
-    def setup_camera(
-        self,
-        viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler,
-        obj: bpy.types.Object,
-        cam_aspect: float,
-        context: bpy.types.Context,
-        cam_height: float,
-        cam_width: float,
-    ) -> None:
         assert isinstance(obj.data, bpy.types.Camera)
         if viewpoint.visualization_info.orthogonal_camera:
             camera = viewpoint.visualization_info.orthogonal_camera
@@ -1386,7 +1389,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
 
                 # hide_view_set is checking actually selected objects, not context.selected objects.
                 bpy.ops.object.hide_view_set(unselected=True)
-                bpy.data.objects["Viewpoint"].hide_set(False)
+                if viewpoint_obj := bpy.data.objects.get("Viewpoint"):
+                    viewpoint_obj.hide_set(False)
                 for obj in unselectable:
                     obj.hide_select = True
 
@@ -1421,6 +1425,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             if obj:
                 obj.select_set(True)
                 obj.hide_set(False)
+                bpy.context.view_layer.objects.active = obj
 
     def set_colours(self, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler) -> None:
         if not viewpoint.visualization_info.components or not viewpoint.visualization_info.components.coloring:
