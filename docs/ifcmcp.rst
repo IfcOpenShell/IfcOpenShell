@@ -58,13 +58,14 @@ Available tools
 - ``ifc_load(path)`` — open an IFC file into memory
 - ``ifc_reset()`` — unload the current model, freeing all session state
 - ``ifc_save(path="")`` — write model to disk; empty path overwrites the original
+- ``ifc_undo()`` / ``ifc_redo()`` — undo or redo the last ``ifc_edit``, ``ifc_shape`` or ``ifc_quantify`` call
 
 **Query tools**
 
 - ``ifc_summary()`` — schema version, entity counts, project metadata
-- ``ifc_tree()`` — full spatial hierarchy
-- ``ifc_info(element_id)`` — deep inspection by step ID
-- ``ifc_select(query)`` — filter elements by IFC class
+- ``ifc_tree(max_depth=None)`` — spatial hierarchy, optionally only to a given depth
+- ``ifc_info(element_id)`` — deep inspection by step ID or GlobalId
+- ``ifc_select(query, limit=200, offset=0)`` — filter elements by IFC class, a page at a time
 - ``ifc_relations(element_id, traverse="")`` — relationships for an element
 - ``ifc_clash(element_id, ...)`` — geometric intersection and clearance checks
 - ``ifc_validate(express_rules=False)`` — schema and constraint validation
@@ -88,9 +89,11 @@ Available tools
 **Edit tools**
 
 - ``ifc_list(module="")`` — list API modules or functions
+- ``ifc_search(query, limit=20)`` — find API functions by keyword
 - ``ifc_docs(function_path)`` — documentation for an API function
 - ``ifc_edit(function_path, params="{}")`` — execute an ``ifcopenshell.api`` mutation
 - ``ifc_quantify(rule, selector="")`` — run quantity take-off; writes ``IfcElementQuantity`` psets in-place
+- ``ifc_execute(code)`` — run Python against the model; stdio only, and left out with ``ifcmcp --no-execute``
 
 Typical workflow
 ----------------

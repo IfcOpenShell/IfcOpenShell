@@ -1473,6 +1473,34 @@ class Blender(bonsai.core.tool.Blender):
             subprocess.Popen(["xdg-open", path])
 
     @classmethod
+    def reveal_file_in_folder(cls, path: str) -> None:
+        """Open the folder containing ``path`` in the OS file browser, with the file selected where supported."""
+        path = os.path.normpath(path)
+        if platform.system() == "Windows":
+            subprocess.Popen(["explorer", "/select,", path])
+        elif platform.system() == "Darwin":
+            subprocess.Popen(["open", "-R", path])
+        else:
+            try:
+                subprocess.run(
+                    [
+                        "dbus-send",
+                        "--session",
+                        "--print-reply",
+                        "--dest=org.freedesktop.FileManager1",
+                        "/org/freedesktop/FileManager1",
+                        "org.freedesktop.FileManager1.ShowItems",
+                        f"array:string:{Path(path).as_uri()}",
+                        "string:",
+                    ],
+                    check=True,
+                    capture_output=True,
+                    timeout=5,
+                )
+            except (OSError, subprocess.SubprocessError):
+                subprocess.Popen(["xdg-open", os.path.dirname(path)])
+
+    @classmethod
     def operator_invoke_filepath_hotkeys(
         cls, operator: bpy.types.Operator, context: bpy.types.Context, event: bpy.types.Event, filepath: Path
     ) -> Union[set, None]:
