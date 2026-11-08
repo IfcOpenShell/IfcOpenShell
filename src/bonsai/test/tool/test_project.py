@@ -284,15 +284,21 @@ class TestLoadLinkedModels(NewFile):
         reference2 = ifcopenshell.api.document.add_reference(ifc, document)
         reference2.Location = "test2.ifc"
         reference2.Identification = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
+        reference3 = ifcopenshell.api.document.add_reference(ifc, document)
+        reference3.Location = "test3.ifc"
+        reference3.Identification = "C10-CONTEXT"
         tool.Ifc.set(ifc)
         subject.load_linked_models_from_ifc()
-        assert len(props.links) == 2
+        assert len(props.links) == 3
         assert props.links[0].name == "test.ifc"
         assert props.links[0].ifc_definition_id == reference.id()
         assert props.links[0].has_transformation is False
         assert props.links[1].name == "test2.ifc"
         assert props.links[1].ifc_definition_id == reference2.id()
         assert props.links[1].has_transformation is True
+        assert props.links[2].name == "test3.ifc"
+        assert props.links[2].ifc_definition_id == reference3.id()
+        assert props.links[2].has_transformation is False
 
     def test_load_linked_models_restores_query_from_cache_json(self):
         """The selector query used at link time is persisted only in the
@@ -413,6 +419,30 @@ class TestCalculateLinkMatrix(NewFile):
             assert np.allclose(subject.calculate_link_matrix(link), m)
         finally:
             json_path.unlink(missing_ok=True)
+
+    def test_linking_a_model_with_invalid_transformation(self):
+        props = tool.Project.get_project_props()
+        gprops = tool.Georeference.get_georeference_props()
+        json_path = self._write_cache_json({"model_project_north": "0", "model_origin_si": "0,0,0"})
+        try:
+            link = props.links.add()
+            link.filepath = str(json_path).replace(".ifc.cache.json", ".ifc")
+            link.transformation = "C10-CONTEXT"
+            gprops.model_project_north = "0"
+            gprops.model_origin_si = "0,0,0"
+            assert np.allclose(subject.calculate_link_matrix(link), np.eye(4))
+        finally:
+            json_path.unlink(missing_ok=True)
+
+    def test_parse_link_transformation(self):
+        assert subject.parse_link_transformation(None) is None
+        assert subject.parse_link_transformation("") is None
+        assert subject.parse_link_transformation("invalid") is None
+        assert subject.parse_link_transformation("1,2,3") is None
+        mat_str = ",".join(map(str, np.eye(4).reshape(-1)))
+        parsed = subject.parse_link_transformation(mat_str)
+        assert parsed is not None
+        assert np.allclose(parsed, np.eye(4))
 
 
 class TestLoadingIfcSqlite(NewFile):
