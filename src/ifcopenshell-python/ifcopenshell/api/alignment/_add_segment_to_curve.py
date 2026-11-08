@@ -166,3 +166,48 @@ def _add_segment_to_curve(
 
     assert end_point is not ...
     return end_point
+
+
+def _add_segments_to_curve(
+    file: ifcopenshell.file,
+    layout_segments: list[entity_instance],
+    curve: entity_instance,
+    end_point: np.ndarray,
+) -> None:
+    """
+    Adds the IfcCurveSegments of several IfcAlignmentSegments to the representation curve, as
+    _add_segment_to_curve does for each in turn, but assigns the curve's Segments once: adding them one
+    at a time copies the whole list each time, which is quadratic in the number of segments.
+
+    :param layout_segments: The segments to be added, in order
+    :param curve: The representation curve receiving the segments
+    :param end_point: The end point of the last layout segment
+    """
+    new_segments = []
+    for layout_segment in layout_segments:
+        if layout_segment.DesignParameters.is_a("IfcAlignmentHorizontalSegment"):
+            mapped_segments = _map_alignment_horizontal_segment(file, layout_segment)
+        elif layout_segment.DesignParameters.is_a("IfcAlignmentVerticalSegment"):
+            mapped_segments = _map_alignment_vertical_segment(file, layout_segment)
+        else:
+            cant_layout = layout_segment.Nests[0].RelatingObject
+            mapped_segments = _map_alignment_cant_segment(file, layout_segment, cant_layout.RailHeadDistance)
+        new_segments.extend(s for s in mapped_segments if s)
+    if not new_segments:
+        return
+
+    segments = list(curve.Segments or ())
+    zero_length_segment = (
+        segments.pop() if segments and ifcopenshell.api.alignment.has_zero_length_segment(curve) else None
+    )
+    previous = segments[-1:]
+    for curve_segment in new_segments:
+        curve_segment.Transition = "DISCONTINUOUS"
+    curve.Segments = tuple(segments + new_segments) + ((zero_length_segment,) if zero_length_segment else ())
+
+    chain = previous + new_segments
+    for prev_segment, curve_segment in zip(chain, chain[1:]):
+        _update_curve_segment_transition_code(prev_segment, curve_segment)
+    if zero_length_segment:
+        _update_zero_length_segment_placement(file, zero_length_segment, end_point)
+        _update_curve_segment_transition_code(new_segments[-1], zero_length_segment)

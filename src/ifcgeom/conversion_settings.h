@@ -86,7 +86,8 @@ namespace ifcopenshell {
 						if constexpr (HasDefault<Derived>()) {
 							return Derived::defaultvalue;
 						} else {
-						    throw std::runtime_error("Setting not set");
+                            auto message = std::string("Setting '") + Derived::name + "' is not set and has no default";
+                            throw std::runtime_error(message.c_str());
 						}
 					}
 				}
@@ -118,6 +119,12 @@ namespace ifcopenshell {
 			struct ReorientShells : public SettingBase<ReorientShells, bool> {
 				static constexpr const char* const name = "reorient-shells";
 				static constexpr const char* const description = "Specifies whether to orient the faces of IfcConnectedFaceSets. This is a potentially time consuming operation, but guarantees a consistent orientation of surface normals, even if the faces are not properly oriented in the IFC file.";
+				static constexpr bool defaultvalue = false;
+			};
+
+			struct LoftUseRuledSurfaces : public SettingBase<LoftUseRuledSurfaces, bool> {
+				static constexpr const char* const name = "loft-use-ruled-surfaces";
+				static constexpr const char* const description = "Use OpenCascade ruled surfaces between curved sections of interpolated lofts. By default profiles are tessellated using the taxonomy curve sampling settings.";
 				static constexpr bool defaultvalue = false;
 			};
 
@@ -239,6 +246,14 @@ namespace ifcopenshell {
 				CURVES_SURFACES_AND_SOLIDS
 			};
 
+			inline constexpr std::array<const char* const, 3> output_dimensionality_names = {
+				"CURVES", "SURFACES_AND_SOLIDS", "CURVES_SURFACES_AND_SOLIDS"
+			};
+
+			inline const char* to_string(OutputDimensionalityTypes value) {
+				return output_dimensionality_names.at(static_cast<std::size_t>(value));
+			}
+
 			IFC_GEOM_API std::istream& operator>>(std::istream& in, OutputDimensionalityTypes& ioo);
 
 			struct OutputDimensionality : public SettingBase<OutputDimensionality, OutputDimensionalityTypes> {
@@ -252,6 +267,14 @@ namespace ifcopenshell {
 				NATIVE,
 				SERIALIZED
 			};
+
+			inline constexpr std::array<const char* const, 3> iterator_output_names = {
+				"TRIANGULATED", "NATIVE", "SERIALIZED"
+			};
+
+			inline const char* to_string(IteratorOutputOptions value) {
+				return iterator_output_names.at(static_cast<std::size_t>(value));
+			}
 
 			IFC_GEOM_API std::istream& operator>>(std::istream& in, IteratorOutputOptions& ioo);
 
@@ -346,7 +369,7 @@ namespace ifcopenshell {
 
 			struct CircleSegments : public SettingBase<CircleSegments, int> {
 				static constexpr const char* const name = "circle-segments";
-				static constexpr const char* const description = "Number of segments to approximate full circles in the CGAL kernel. When 0 (the default) the segment count is derived from mesher-linear-deflection and mesher-angular-deflection instead, whichever is stricter, so curves stay within tolerance regardless of radius.";
+				static constexpr const char* const description = "Number of segments to approximate full circles in taxonomy polygonal geometry. When 0 (the default) the segment count is derived from mesher-linear-deflection and mesher-angular-deflection instead, whichever is stricter, so curves stay within tolerance regardless of radius.";
 				static constexpr int defaultvalue = 0;
 			};
 
@@ -411,24 +434,6 @@ namespace ifcopenshell {
                 static constexpr bool defaultvalue = false;
             };
 
-			enum FunctionStepMethod  {
-				MAXSTEPSIZE,
-				MINSTEPS };
-
-			IFC_GEOM_API std::istream& operator>>(std::istream& in, FunctionStepMethod& ioo);
-
-         struct FunctionStepType : public SettingBase<FunctionStepType, FunctionStepMethod> {
-               static constexpr const char* const name = "function-step-type";
-               static constexpr const char* const description = "Indicates the method used for defining step size when evaluating function-based curves. Provides interpretation of function-step-param";
-               static constexpr FunctionStepMethod defaultvalue = MAXSTEPSIZE;
-         };
-
-			struct FunctionStepParam : public SettingBase<FunctionStepParam, double> {
-               static constexpr const char* const name = "function-step-param";
-               static constexpr const char* const description = "Indicates the parameter value for defining step size when evaluating function-based curves.";
-               static constexpr double defaultvalue = 0.5; // ceiling of this value is used when FunctionStepMethod is MinSteps
-         };
-
 			struct ModelOffset : public SettingBase<ModelOffset, std::vector<double>> {
 				static constexpr const char* const name = "model-offset";
 				static constexpr const char* const description = "Applies an arbitrary offset of form x,y,z to all placements.";
@@ -439,11 +444,25 @@ namespace ifcopenshell {
 				static constexpr const char* const description = "Applies an arbitrary quaternion rotation of form x,y,z,w to all placements.";
 			};
 
+			struct VertexRebaseDistance : public SettingBase<VertexRebaseDistance, double> {
+				static constexpr const char* const name = "vertex-rebase-distance";
+				static constexpr const char* const description = "Distance in meters from the origin beyond which a representation's vertices are shifted onto their bounding box centre, with the shift folded into the element placement so world positions are unchanged. 0 disables.";
+				static constexpr double defaultvalue = 0.0;
+			};
+
 			enum TriangulationMethod {
 				TRIANGLE_MESH,
 				POLYHEDRON_WITHOUT_HOLES,
 				POLYHEDRON_WITH_HOLES
 			};
+
+			inline constexpr std::array<const char* const, 3> triangulation_method_names = {
+				"TRIANGLE_MESH", "POLYHEDRON_WITHOUT_HOLES", "POLYHEDRON_WITH_HOLES"
+			};
+
+			inline const char* to_string(TriangulationMethod value) {
+				return triangulation_method_names.at(static_cast<std::size_t>(value));
+			}
 
 			IFC_GEOM_API std::istream& operator>>(std::istream& in, TriangulationMethod& ioo);
 
@@ -496,6 +515,11 @@ namespace ifcopenshell {
 			struct ApplyOffset : public SettingBase<ApplyOffset, std::vector<double>> {
 				static constexpr const char* const name = "apply-offset";
 				static constexpr const char* const description = "Slight variation of --model-offset where large offsets are applied by negating existing large offsets to retain maximum precision. Requires --no-parallel-mapping.";
+			};
+
+			struct OffsetApplied : public SettingBase<OffsetApplied, std::vector<double>, true> {
+				static constexpr const char* const name = "offset-applied";
+				static constexpr const char* const description = "Offset applied to the model after taking into account MaxOffset or ApplyOffset.";
 			};
 		}
 
@@ -551,11 +575,6 @@ namespace ifcopenshell {
 			};
 
 			template <>
-			struct readable_name<settings_detail::FunctionStepMethod> {
-				static constexpr const char* name = "FunctionStepMethod";
-			};
-
-			template <>
 			struct readable_name<settings_detail::OutputDimensionalityTypes> {
 				static constexpr const char* name = "OutputDimensionalityTypes";
 			};
@@ -570,7 +589,7 @@ namespace ifcopenshell {
 		class settings_container {
 		public:
 			typedef std::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>,
-				std::vector<double>, std::vector<std::string>, settings_detail::IteratorOutputOptions, settings_detail::FunctionStepMethod,
+				std::vector<double>, std::vector<std::string>, settings_detail::IteratorOutputOptions,
 				settings_detail::OutputDimensionalityTypes, settings_detail::TriangulationMethod> value_variant_t;
 		private:
 			settings_t settings;
@@ -580,6 +599,22 @@ namespace ifcopenshell {
 				std::get<Index>(settings).defineOption(desc);
 				if constexpr (Index + 1 < std::tuple_size_v<settings_t>) {
 					define_options_<Index + 1>(desc);
+				}
+			}
+
+			template <std::size_t Index>
+			void to_dictionary_(std::map<std::string, value_variant_t>& dictionary) const {
+				using setting_type = std::tuple_element_t<Index, settings_t>;
+				const auto& setting = std::get<Index>(settings);
+				if (setting.has() || settings_detail::HasDefault<setting_type>()) {
+					if constexpr (std::is_enum_v<typename setting_type::base_type>) {
+						dictionary.emplace(setting_type::name, std::string(settings_detail::to_string(setting.get())));
+					} else {
+						dictionary.emplace(setting_type::name, setting.get());
+					}
+				}
+				if constexpr (Index + 1 < std::tuple_size_v<settings_t>) {
+					to_dictionary_<Index + 1>(dictionary);
 				}
 			}
 
@@ -642,6 +677,14 @@ namespace ifcopenshell {
 
 			void define_options(po::options_description& desc) {
 				define_options_<0>(desc);
+			}
+
+			std::map<std::string, value_variant_t> to_dictionary() const {
+				std::map<std::string, value_variant_t> dictionary;
+				if constexpr (std::tuple_size_v<settings_t> > 0) {
+					to_dictionary_<0>(dictionary);
+				}
+				return dictionary;
 			}
 
 			template <typename T>
@@ -907,6 +950,7 @@ using geometry_setting_types = std::tuple<
 			settings_detail::MesherLinearDeflection,
 			settings_detail::MesherAngularDeflection,
 			settings_detail::ReorientShells,
+			settings_detail::LoftUseRuledSurfaces,
 			settings_detail::LengthUnit,
 			settings_detail::PlaneUnit,
 			settings_detail::Precision,
@@ -951,12 +995,11 @@ using geometry_setting_types = std::tuple<
 			settings_detail::SvgRenderSharpEdges,
 			settings_detail::KeepBoundingBoxes,
 			settings_detail::ComputeCurvature,
-			settings_detail::FunctionStepType,
-			settings_detail::FunctionStepParam,
 			settings_detail::NoParallelMapping,
 			settings_detail::PermissiveShapeReuse,
 			settings_detail::ModelOffset,
 			settings_detail::ModelRotation,
+			settings_detail::VertexRebaseDistance,
 			settings_detail::TriangulationType,
 			settings_detail::CgalEmitOriginalEdges,
 			settings_detail::OcctNoCleanTriangulation,
@@ -965,6 +1008,7 @@ using geometry_setting_types = std::tuple<
 			settings_detail::MaxOffset,
 			settings_detail::MaxOffsetDeviation,
 			settings_detail::ApplyOffset,
+			settings_detail::OffsetApplied,
 			settings_detail::MakeVolume,
 			settings_detail::UseElementNames,
 			settings_detail::UseElementGuids,
@@ -1011,6 +1055,7 @@ using geometry_setting_types = std::tuple<
 			using MesherLinearDeflection = settings_detail::MesherLinearDeflection;
 			using MesherAngularDeflection = settings_detail::MesherAngularDeflection;
 			using ReorientShells = settings_detail::ReorientShells;
+			using LoftUseRuledSurfaces = settings_detail::LoftUseRuledSurfaces;
 			using LengthUnit = settings_detail::LengthUnit;
 			using PlaneUnit = settings_detail::PlaneUnit;
 			using Precision = settings_detail::Precision;
@@ -1055,12 +1100,11 @@ using geometry_setting_types = std::tuple<
 			using SvgRenderSharpEdges = settings_detail::SvgRenderSharpEdges;
 			using KeepBoundingBoxes = settings_detail::KeepBoundingBoxes;
 			using ComputeCurvature = settings_detail::ComputeCurvature;
-			using FunctionStepType = settings_detail::FunctionStepType;
-			using FunctionStepParam = settings_detail::FunctionStepParam;
 			using NoParallelMapping = settings_detail::NoParallelMapping;
 			using PermissiveShapeReuse = settings_detail::PermissiveShapeReuse;
 			using ModelOffset = settings_detail::ModelOffset;
 			using ModelRotation = settings_detail::ModelRotation;
+			using VertexRebaseDistance = settings_detail::VertexRebaseDistance;
 			using TriangulationType = settings_detail::TriangulationType;
 			using CgalEmitOriginalEdges = settings_detail::CgalEmitOriginalEdges;
 			using OcctNoCleanTriangulation = settings_detail::OcctNoCleanTriangulation;
@@ -1069,6 +1113,7 @@ using geometry_setting_types = std::tuple<
 			using MaxOffset = settings_detail::MaxOffset;
 			using MaxOffsetDeviation = settings_detail::MaxOffsetDeviation;
 			using ApplyOffset = settings_detail::ApplyOffset;
+			using OffsetApplied = settings_detail::OffsetApplied;
 			using MakeVolume = settings_detail::MakeVolume;
 
 			using UseElementNames = settings_detail::UseElementNames;
@@ -1113,7 +1158,6 @@ using geometry_setting_types = std::tuple<
 
 			using OutputDimensionalityTypes = settings_detail::OutputDimensionalityTypes;
 			using IteratorOutputOptions = settings_detail::IteratorOutputOptions;
-			using FunctionStepMethod = settings_detail::FunctionStepMethod;
 			using TriangulationMethod = settings_detail::TriangulationMethod;
 
 			static constexpr auto CURVES = settings_detail::CURVES;
@@ -1122,8 +1166,6 @@ using geometry_setting_types = std::tuple<
 			static constexpr auto TRIANGULATED = settings_detail::TRIANGULATED;
 			static constexpr auto NATIVE = settings_detail::NATIVE;
 			static constexpr auto SERIALIZED = settings_detail::SERIALIZED;
-			static constexpr auto MAXSTEPSIZE = settings_detail::MAXSTEPSIZE;
-			static constexpr auto MINSTEPS = settings_detail::MINSTEPS;
 			static constexpr auto TRIANGLE_MESH = settings_detail::TRIANGLE_MESH;
 			static constexpr auto POLYHEDRON_WITHOUT_HOLES = settings_detail::POLYHEDRON_WITHOUT_HOLES;
 			static constexpr auto POLYHEDRON_WITH_HOLES = settings_detail::POLYHEDRON_WITH_HOLES;

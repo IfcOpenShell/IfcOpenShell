@@ -1,6 +1,8 @@
 # This file was generated with the assistance of an AI coding tool.
 name: Test IfcWrap Standalone
 
+permissions: {}
+
 on:
   workflow_dispatch:
   pull_request:
@@ -26,9 +28,10 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Install C++ dependencies
         run: |
@@ -110,13 +113,13 @@ jobs:
           cmake --build build-ifcopenshell --target install -j "$(nproc)"
 
       - name: Build and install standalone IfcPython for Python 3.11
-        uses: ./.github/actions/build-ifcwrap-python
+        uses: $/.github/actions/build-ifcwrap-python
         with:
           python-version: "3.11"
           ifcopenshell-prefix: ${{ env.IFCOPENSHELL_PREFIX }}
 
       - name: Build and install standalone IfcPython for Python 3.12
-        uses: ./.github/actions/build-ifcwrap-python
+        uses: $/.github/actions/build-ifcwrap-python
         with:
           python-version: "3.12"
           ifcopenshell-prefix: ${{ env.IFCOPENSHELL_PREFIX }}

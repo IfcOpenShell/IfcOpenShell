@@ -4,6 +4,8 @@
 # bundles dist/autodesk/ into the Bonsai Viewer archive.
 name: Test Bonsai Viewer Autodesk
 
+permissions: {}
+
 on:
   workflow_dispatch:
   push:
@@ -23,7 +25,9 @@ jobs:
         working-directory: src/bonsaiviewer-autodesk
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install system dependencies
         run: |
@@ -44,11 +48,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y "${pkgs[@]}"
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
 
       # cargo-target reuse across runs. Massive cold-build speedup,
       # cheap on the GitHub Actions cache budget.
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2.9.3
         with:
           workspaces: src/bonsaiviewer-autodesk
 

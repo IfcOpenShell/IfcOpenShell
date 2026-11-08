@@ -244,10 +244,12 @@ class Root(bonsai.core.tool.Root):
         return element.is_a(ifc_class)
 
     @classmethod
+    def get_spatial_element_class(cls) -> str:
+        return "IfcSpatialStructureElement" if tool.Ifc.get().schema == "IFC2X3" else "IfcSpatialElement"
+
+    @classmethod
     def is_spatial_element(cls, element: ifcopenshell.entity_instance) -> bool:
-        if tool.Ifc.get().schema == "IFC2X3":
-            return element.is_a("IfcSpatialStructureElement")
-        return element.is_a("IfcSpatialElement")
+        return element.is_a(cls.get_spatial_element_class())
 
     @classmethod
     def is_grid_axis(cls, element: ifcopenshell.entity_instance) -> bool:
