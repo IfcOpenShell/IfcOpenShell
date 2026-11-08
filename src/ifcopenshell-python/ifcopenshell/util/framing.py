@@ -329,6 +329,81 @@ def resolve_profile(ifc_file: Any, reference: Optional[dict[str, Any]]) -> Optio
     return by_name
 
 
+# Entry keys whose numbers are lengths in project units. Bounds and levels may also be
+# "BASE", "TOP" or a member reference, which are left alone.
+_LENGTH_KEYS = (
+    "v",
+    "bottom",
+    "top",
+    "offset",
+    "thickness",
+    "gap",
+    "max_width",
+    "joint",
+    "extend_start",
+    "extend_end",
+    "level_offset",
+)
+
+
+def _scale_length(value: Any, factor: float) -> Any:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value * factor
+    if isinstance(value, list):
+        return [_scale_length(v, factor) for v in value]
+    return value
+
+
+def scale_system(data: dict[str, Any], factor: float) -> dict[str, Any]:
+    """A copy of a system's JSON with its lengths multiplied by ``factor``.
+
+    The JSON holds lengths in project units, so a system copied into a file with other
+    units, as by :func:`ifcopenshell.api.project.append_asset`, needs them converted.
+    Counts, angles, bay and row picks and profile references are unchanged.
+
+    :param data: The system's JSON data, with a ``members`` list.
+    :param factor: The source file's unit scale divided by the target file's.
+    :return: The scaled copy.
+    """
+    result = dict(data)
+    if "default_height" in result:
+        result["default_height"] = _scale_length(result["default_height"], factor)
+    members = []
+    for member in data.get("members", []):
+        member = dict(member)
+        for key in _LENGTH_KEYS:
+            if key in member:
+                member[key] = _scale_length(member[key], factor)
+        if isinstance(spacing := member.get("spacing"), dict):
+            spacing = dict(spacing)
+            if spacing.get("mode") != "COUNT" and "value" in spacing:
+                spacing["value"] = _scale_length(spacing["value"], factor)
+            if "offset" in spacing:
+                spacing["offset"] = _scale_length(spacing["offset"], factor)
+            member["spacing"] = spacing
+        members.append(member)
+    if "members" in data:
+        result["members"] = members
+    return result
+
+
+def scale_guide(guide: dict[str, Any], factor: float) -> dict[str, Any]:
+    """A copy of an occurrence's guide JSON (path and height) with its lengths multiplied by ``factor``.
+
+    :param guide: The guide's JSON data, with ``verts`` and ``height``.
+    :param factor: The source file's unit scale divided by the target file's.
+    :return: The scaled copy.
+    """
+    result = dict(guide)
+    if "verts" in result:
+        result["verts"] = _scale_length(result["verts"], factor)
+    if "height" in result:
+        result["height"] = _scale_length(result["height"], factor)
+    return result
+
+
 def parse_system(data: dict[str, Any]) -> list[Entry]:
     """Parse and validate the ``members`` list of a framing system's JSON data."""
     members = data.get("members")

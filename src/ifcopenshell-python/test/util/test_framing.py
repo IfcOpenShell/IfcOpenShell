@@ -541,6 +541,59 @@ class TestResolveProfile:
         assert subject.resolve_profile(self.file, None) is None
 
 
+class TestScale:
+    def test_scales_lengths_but_not_counts_angles_or_references(self):
+        system = {
+            "default_height": 1100.0,
+            "scope": "SEGMENT",
+            "members": [
+                {
+                    "name": "Post",
+                    "kind": "V",
+                    "spacing": {"mode": "MAX", "value": 1500.0, "align": "START", "offset": 50.0},
+                    "bottom": "BASE",
+                    "top": {"member": "Rail"},
+                    "flush": True,
+                    "rotation": 90,
+                    "bays": [1, -1],
+                    "profile": {"id": 5, "name": "SHS 50"},
+                },
+                {"name": "Rail", "kind": "H", "v": 1070.0, "extend_start": 100, "level_offset": -10.0},
+                {"name": "Baluster", "kind": "V", "spacing": {"mode": "COUNT", "value": 3}, "top": 900.0},
+                {"name": "Glass", "kind": "INFILL", "thickness": 12.0, "gap": [20.0, 20.0, 10.0, 10.0], "joint": 5},
+            ],
+        }
+        result = subject.scale_system(system, 0.001)
+        post, rail, baluster, glass = result["members"]
+        assert result["default_height"] == pytest.approx(1.1)
+        assert result["scope"] == "SEGMENT"
+        assert post["spacing"] == {"mode": "MAX", "value": pytest.approx(1.5), "align": "START", "offset": 0.05}
+        assert post["bottom"] == "BASE" and post["top"] == {"member": "Rail"}
+        assert post["flush"] is True and post["rotation"] == 90 and post["bays"] == [1, -1]
+        assert post["profile"] == {"id": 5, "name": "SHS 50"}
+        assert rail["v"] == pytest.approx(1.07)
+        assert rail["extend_start"] == pytest.approx(0.1)
+        assert rail["level_offset"] == pytest.approx(-0.01)
+        assert baluster["spacing"]["value"] == 3
+        assert baluster["top"] == pytest.approx(0.9)
+        assert glass["thickness"] == pytest.approx(0.012)
+        assert glass["gap"] == pytest.approx([0.02, 0.02, 0.01, 0.01])
+        assert glass["joint"] == pytest.approx(0.005)
+
+    def test_does_not_change_the_original(self):
+        system = {"members": [{"name": "Rail", "kind": "H", "v": 1000.0, "spacing": None}]}
+        subject.scale_system(system, 0.001)
+        assert system["members"][0]["v"] == 1000.0
+
+    def test_scales_a_guide(self):
+        guide = {"verts": [[0.0, 0.0, 0.0], [3000.0, 0.0, 500.0]], "closed": False, "height": 1100.0}
+        assert subject.scale_guide(guide, 0.001) == {
+            "verts": [[0.0, 0.0, 0.0], [3.0, 0.0, 0.5]],
+            "closed": False,
+            "height": pytest.approx(1.1),
+        }
+
+
 def solve(members, segments=(3.0,), height=1.1, extents=None, voids=()):
     return subject.solve(
         subject.parse_system({"members": members}), list(segments), height, extents=extents, voids=tuple(voids)

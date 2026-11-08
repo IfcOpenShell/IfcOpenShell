@@ -484,8 +484,18 @@ Decision: keep both rooted in the .ifc, so the JSON holds only layout.
   from JSON, so purging would delete them. Options: teach the purge about
   `BBIM_Framing`, or, in IFC4X3 projects, also write `IfcRelAssociatesProfileDef` from the
   type. To decide when the writer exists.
-- **Append-asset of a type** must bring its framing profiles along. Check what
-  `api/project/append_asset.py` copies for a type with no representation maps.
+- **Append-asset** (done): `append_asset` copies a type's psets, so `BBIM_Framing.Data`
+  comes along, but traversal cannot see profiles named only in JSON, and a framing type
+  has no representation maps to carry them. `Usecase.append_framing` runs after a type
+  or product is newly added:
+  - It appends each profile the element's own `Data` references, resolved in the library,
+    or reuses one of the same name (`assume_asset_uniqueness_by_name`) or one the
+    occurrence's body already brought. It then writes the new id and name into the JSON.
+  - If the files' units differ, it converts the JSON's lengths (`util.framing.scale_system`,
+    `scale_guide`), as `file_add` does for IFC length attributes.
+  - It does nothing when the element was already in the project, so a second append does
+    not convert twice.
+  - Tests: `TestAppendFramingAsset`, `TestScale`.
 
 ## Solver (`ifcopenshell.util.framing`)
 
