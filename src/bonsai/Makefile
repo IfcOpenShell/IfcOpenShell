@@ -68,7 +68,8 @@ endif
 
 endif # def PLATFORM
 
-PIP_DOWNLOAD_ARGS=$(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+PIP_COOLDOWN_ARGS=--uploaded-prior-to=P7D
+PIP_DOWNLOAD_ARGS=$(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: $(PIP_COOLDOWN_ARGS) --dest=./wheels
 
 # Wheels bundled with Bonsai, downloaded for the target platform in one pip call.
 BUNDLED_WHEELS :=
@@ -83,7 +84,9 @@ BUNDLED_WHEELS += "cjio >=0.8, <0.10"
 # Required in general for sorting all sorts of stuff in a nice way
 BUNDLED_WHEELS += natsort
 # Provides express rule validation for ifcopenshell.validate
-BUNDLED_WHEELS += pytest
+# Blender's extension wheels take precedence over its Python site-packages.
+# Keep this cap in sync with pyproject.toml and scripts/setup_pytest.py for pytest-bdd.
+BUNDLED_WHEELS += "pytest<9.2"
 # Provides Brickschema functionality
 # Is not platform specific but has platform specific dependencies.
 # The SQLAlchemy store must be 0.7.1 or later (SQLAlchemy 2.1, rdflib 7, and the
@@ -161,7 +164,10 @@ endif
 	cp -r bonsai build/
 
 	# To scope any build-time dependencies
-	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
+	cd build && $(PYTHON) -m venv env
+	# Must bump pip as older versions trust some stale compromised CA certificates (see eMudhra CA incident).
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m pip install --upgrade pip
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) install build
 
 	mkdir -p build/wheels
 	# Provides IfcOpenShell Python functionality
@@ -184,7 +190,8 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download $(BUNDLED_WHEELS) $(PIP_DOWNLOAD_ARGS)
 
 	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy --wheel-dir=./wheels
+	# See https://github.com/eea/odfpy/issues/132
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy $(PIP_COOLDOWN_ARGS) --wheel-dir=./wheels
 	# jQuery is required for web UI functionality
 	cd build/bonsai/bim/data/webui/static/js/ && wget --no-verbose https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
 
@@ -328,7 +335,7 @@ endif
 
 .PHONY: test-modal
 test-modal:
-	blender --enable-event-simulate --python test/modal/test_modal.py --window-maximized
+	blender --window-geometry 0 0 1920 1080 --enable-event-simulate --python test/modal/test_modal.py
 
 # Reregistering test is not added to the standard test suite because during unregister
 # Blender removes all Bonsai dependencies breaking dev-environment symlinks.
