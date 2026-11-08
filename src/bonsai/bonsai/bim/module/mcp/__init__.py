@@ -25,6 +25,7 @@ from . import operator, prop, server, ui
 classes = (
     operator.StartMcpBridge,
     operator.StopMcpBridge,
+    operator.McpEdit,
     prop.BIMMcpProperties,
     ui.BIM_PT_mcp_bridge,
 )

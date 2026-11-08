@@ -27,11 +27,12 @@ import time
 import bpy
 import ifcopenshell
 import ifcopenshell.api.root
+import ifcopenshell.util.representation
 import pytest
 
 import bonsai.tool as tool
 from bonsai.bim.module.mcp import server
-from test.bim.bootstrap import NewFile
+from test.bim.bootstrap import NewFile, NewIfc
 
 pytestmark = pytest.mark.mcp
 
@@ -92,13 +93,12 @@ class TestMcpBridge(NewFile):
         ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
         assert tool_call("ifc_select", query="IfcWall")["result"]["total"] == 1
 
-    def test_refuses_tools_that_change_the_model(self):
-        ifc = ifcopenshell.file(schema="IFC4")
-        tool.Ifc.set(ifc)
-        reply = tool_call("ifc_edit", function_path="root.create_entity", params='{"ifc_class": "IfcWall"}')
-        assert reply["status"] == "error"
-        assert "read-only" in reply["message"]
-        assert not ifc.by_type("IfcWall")
+    def test_refuses_tools_that_load_save_or_run_code(self):
+        tool.Ifc.set(ifcopenshell.file(schema="IFC4"))
+        for name in ("ifc_execute", "ifc_save", "ifc_load", "ifc_new"):
+            reply = tool_call(name)
+            assert reply["status"] == "error"
+            assert "not available" in reply["message"]
 
     def test_reports_that_no_project_is_open(self):
         reply = tool_call("ifc_summary")
@@ -128,3 +128,134 @@ class TestMcpBridge(NewFile):
         assert server.port() == port
         assert bpy.ops.bim.stop_mcp_bridge() == {"FINISHED"}
         assert not server.is_running()
+
+
+def edit(function_path: str, **params) -> dict:
+    reply = tool_call("ifc_edit", function_path=function_path, params=json.dumps(params))
+    assert reply["status"] == "ok", reply
+    return reply["result"]
+
+
+def objects() -> set[str]:
+    return {obj.name for obj in bpy.data.objects}
+
+
+class TestMcpEdits(NewIfc):
+    @pytest.fixture(autouse=True)
+    def bridge(self, setup):
+        server.start(0)
+        # Background mode starts with undo off, and loading the new file turns it off again.
+        bpy.ops.ed.undo_push(message="Start")
+        yield
+        server.stop()
+
+    def create_wall(self, name: str = "Bridged") -> int:
+        return edit("root.create_entity", ifc_class="IfcWall", name=name)["result"]["id"]
+
+    def test_a_new_product_gets_an_object(self):
+        self.create_wall()
+        assert "IfcWall/Bridged" in objects()
+
+    def test_a_new_container_moves_the_object_to_its_collection(self):
+        wall = self.create_wall()
+        storey = tool.Ifc.get().by_type("IfcBuildingStorey")[0]
+        edit("spatial.assign_container", products=str(wall), relating_structure=str(storey.id()))
+        collections = bpy.data.objects["IfcWall/Bridged"].users_collection
+        assert [c.name for c in collections] == ["IfcBuildingStorey/My Storey"]
+
+    def test_new_geometry_and_placement_are_shown(self):
+        wall = self.create_wall()
+        body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        rep = edit("geometry.add_wall_representation", context=str(body.id()), length=3, height=2.5, thickness=0.2)[
+            "result"
+        ]["id"]
+        edit("geometry.assign_representation", product=str(wall), representation=str(rep))
+        assert len(bpy.data.objects["IfcWall/Bridged"].data.vertices) == 8
+        matrix = [[1, 0, 0, 5], [0, 1, 0, 2], [0, 0, 1, 0], [0, 0, 0, 1]]
+        edit("geometry.edit_object_placement", product=str(wall), matrix=matrix)
+        assert tuple(bpy.data.objects["IfcWall/Bridged"].matrix_world.translation) == (5, 2, 0)
+
+    def test_a_renamed_product_renames_its_object(self):
+        wall = self.create_wall()
+        edit("attribute.edit_attributes", product=str(wall), attributes=json.dumps({"Name": "Renamed"}))
+        assert "IfcWall/Renamed" in objects()
+        assert "IfcWall/Bridged" not in objects()
+
+    def test_a_removed_product_loses_its_object(self):
+        wall = self.create_wall()
+        edit("root.remove_product", product=str(wall))
+        assert "IfcWall/Bridged" not in objects()
+        assert tool.Ifc.get_object_by_identifier(wall) is None
+
+    def test_a_storey_gets_a_collection_that_goes_with_it(self):
+        building = tool.Ifc.get().by_type("IfcBuilding")[0]
+        storey = edit("root.create_entity", ifc_class="IfcBuildingStorey", name="Level 2")["result"]["id"]
+        edit("aggregate.assign_object", products=str(storey), relating_object=str(building.id()))
+        wall = self.create_wall()
+        edit("spatial.assign_container", products=str(wall), relating_structure=str(storey))
+        assert [c.name for c in bpy.data.objects["IfcWall/Bridged"].users_collection] == ["IfcBuildingStorey/Level 2"]
+        edit("root.remove_product", product=str(storey))
+        assert "IfcBuildingStorey/Level 2" not in bpy.data.collections
+        assert [c.name for c in bpy.data.objects["IfcWall/Bridged"].users_collection] == ["Unsorted"]
+
+    def test_a_failed_edit_changes_nothing(self):
+        before = len(list(tool.Ifc.get()))
+        result = edit("nosuchmodule.nosuchfunction")
+        assert result["ok"] is False
+        assert len(list(tool.Ifc.get())) == before
+        assert "not made through MCP" in tool_call("ifc_undo")["message"]
+
+    def test_a_failed_edit_keeps_redo(self):
+        self.create_wall()
+        tool_call("ifc_undo")
+        edit("nosuchmodule.nosuchfunction")
+        assert tool_call("ifc_redo")["status"] == "ok"
+        assert "IfcWall/Bridged" in objects()
+
+    def test_an_edit_bonsai_cannot_record_is_reverted(self, monkeypatch):
+        def fail():
+            raise RuntimeError("no undo step")
+
+        monkeypatch.setattr(server, "adopt_edit", fail)
+        reply = tool_call("ifc_edit", function_path="root.create_entity", params='{"ifc_class": "IfcWall"}')
+        assert reply["status"] == "error"
+        assert "could not run the edit" in reply["message"]
+        assert not tool.Ifc.get().by_type("IfcWall")
+
+    def test_undo_and_redo_an_edit(self):
+        self.create_wall()
+        reply = tool_call("ifc_undo")
+        assert reply == {"status": "ok", "result": {"ok": True, "undo_available": 0, "redo_available": 1}}
+        assert not tool.Ifc.get().by_type("IfcWall")
+        assert "IfcWall/Bridged" not in objects()
+        reply = tool_call("ifc_redo")
+        assert reply == {"status": "ok", "result": {"ok": True, "undo_available": 1, "redo_available": 0}}
+        assert tool.Ifc.get().by_type("IfcWall")
+        assert "IfcWall/Bridged" in objects()
+
+    def test_undo_leaves_a_change_made_in_bonsai(self):
+        self.create_wall()
+        bpy.data.objects["IfcSite/My Site"].location.x += 7
+        bpy.ops.ed.undo_push(message="Move the site")
+        reply = tool_call("ifc_undo")
+        assert reply["status"] == "error"
+        assert "not made through MCP" in reply["message"]
+        assert bpy.data.objects["IfcSite/My Site"].location.x == 7
+        assert tool.Ifc.get().by_type("IfcWall")
+
+    def test_undo_refuses_an_ifc_change_made_in_bonsai(self):
+        assert tool_call("ifc_undo")["status"] == "error"
+        assert tool.Ifc.get().by_type("IfcProject")
+
+    def test_redo_leaves_a_change_made_in_bonsai_after_the_undo(self):
+        self.create_wall()
+        assert tool_call("ifc_undo")["status"] == "ok"
+        bpy.data.objects["IfcSite/My Site"].location.x += 7
+        bpy.ops.ed.undo_push(message="Move the site")
+        reply = tool_call("ifc_redo")
+        assert reply == {
+            "status": "error",
+            "message": "Nothing to redo: a change made in Bonsai since the undo discarded it.",
+        }
+        assert bpy.data.objects["IfcSite/My Site"].location.x == 7
+        assert not tool.Ifc.get().by_type("IfcWall")

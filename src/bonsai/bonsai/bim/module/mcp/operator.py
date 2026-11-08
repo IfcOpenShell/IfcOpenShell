@@ -20,13 +20,15 @@
 
 import bpy
 
+import bonsai.tool as tool
+
 from . import server
 
 
 class StartMcpBridge(bpy.types.Operator):
     bl_idname = "bim.start_mcp_bridge"
     bl_label = "Start MCP Bridge"
-    bl_description = "Let ifcmcp --bonsai query the open IFC model over a local socket"
+    bl_description = "Let ifcmcp --bonsai query and edit the open IFC model over a local socket"
 
     def execute(self, context):
         port = context.scene.BIMMcpProperties.port
@@ -46,4 +48,16 @@ class StopMcpBridge(bpy.types.Operator):
 
     def execute(self, context):
         server.stop()
+        return {"FINISHED"}
+
+
+class McpEdit(bpy.types.Operator, tool.Ifc.Operator):
+    """Make an edit sent by ifcmcp one undo step, and update objects to match it."""
+
+    bl_idname = "bim.mcp_edit"
+    bl_label = "MCP Edit"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+
+    def _execute(self, context):
+        server.adopt_edit()
         return {"FINISHED"}
