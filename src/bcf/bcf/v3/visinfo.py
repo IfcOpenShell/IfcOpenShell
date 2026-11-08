@@ -4,7 +4,6 @@ from collections.abc import Iterable
 from typing import Literal, Optional, Union
 
 import ifcopenshell.util.placement
-import ifcopenshell.util.unit
 import numpy as np
 from ifcopenshell import entity_instance
 from numpy.typing import NDArray
@@ -316,10 +315,7 @@ def build_viewpoint(element: entity_instance) -> mdl.VisualizationInfo:
     Returns:
         The BCF viewpoint definition.
     """
-    ifc_file = element.file
-    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-    elem_placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-    elem_placement[:3, 3] *= unit_scale
+    elem_placement = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=True)
 
     return mdl.VisualizationInfo(
         guid=str(uuid.uuid4()),

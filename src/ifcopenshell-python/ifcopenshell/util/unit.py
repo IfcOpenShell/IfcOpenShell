@@ -1132,3 +1132,86 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
         ifcopenshell.util.element.remove_deep2(file_patched, old_length)
 
     return file_patched
+
+
+CONVERTIBLE_FILE_UNIT_TYPES = ("AREAUNIT", "VOLUMEUNIT", "FORCEUNIT", "MASSUNIT", "PRESSUREUNIT", "TIMEUNIT")
+"""Unit types supported by :func:`convert_file_units`. Their values only need scaling."""
+
+
+def convert_file_units(
+    ifc_file: ifcopenshell.file, unit_type: str, name: str, prefix: Optional[str] = None
+) -> ifcopenshell.file:
+    """Converts all values of a unit type in an IFC file to a new project unit. Returns a new file.
+
+    Values that specify their own unit (e.g. a property or quantity with a Unit) are left as they are.
+    For length units, use :func:`convert_file_length_units`, which also handles geometry precision and
+    georeferencing.
+
+    :param unit_type: One of AREAUNIT, VOLUMEUNIT, FORCEUNIT, MASSUNIT, PRESSUREUNIT or TIMEUNIT.
+    :param name: An IfcSIUnitName (e.g. "SQUARE_METRE") or a conversion based unit name (e.g. "square foot").
+    :param prefix: An optional IfcSIPrefix (e.g. "MILLI") for SI units.
+    :return: The converted file.
+
+    Example:
+
+    .. code:: python
+
+        output = ifcopenshell.util.unit.convert_file_units(model, "AREAUNIT", "square foot")
+        output = ifcopenshell.util.unit.convert_file_units(model, "VOLUMEUNIT", "CUBIC_METRE", prefix="MILLI")
+    """
+    import ifcopenshell.api.unit
+    import ifcopenshell.util.element
+
+    if unit_type not in CONVERTIBLE_FILE_UNIT_TYPES:
+        raise ValueError(
+            f"Unsupported unit type {unit_type}. Supported types: {', '.join(CONVERTIBLE_FILE_UNIT_TYPES)}."
+        )
+
+    file_patched = ifcopenshell.file.from_string(ifc_file.to_string())
+
+    old_unit = get_project_unit(file_patched, unit_type)
+    if name.upper() in unit_names:
+        new_unit = ifcopenshell.api.unit.add_si_unit(file_patched, unit_type=unit_type, prefix=prefix)
+    elif imperial_types.get(name) == unit_type:
+        new_unit = ifcopenshell.api.unit.add_conversion_based_unit(file_patched, name=name)
+    else:
+        raise ValueError(f'Couldn\'t identify {unit_type} "{name}".')
+
+    # Without an assigned unit, values are in SI units. Unit scales are relative to the gram, not the kilogram.
+    default_scale = 1000.0 if unit_type == "MASSUNIT" else 1.0
+    scale = (get_unit_scale(old_unit) if old_unit else default_scale) / get_unit_scale(new_unit)
+
+    def convert_value(value: FloatOrSequenceOfFloats) -> FloatOrSequenceOfFloats:
+        if not isinstance(value, tuple):
+            return value * scale
+        return tuple(convert_value(v) for v in value)
+
+    def has_own_unit(element: ifcopenshell.entity_instance) -> bool:
+        if element.is_a("IfcMeasureWithUnit"):
+            return True
+        if element.is_a("IfcPropertyTableValue"):
+            return bool(element.DefiningUnit or element.DefinedUnit)
+        if element.is_a("IfcPropertyEnumeratedValue"):
+            return bool(element.EnumerationReference and element.EnumerationReference.Unit)
+        return bool(getattr(element, "Unit", None))
+
+    for element, attr, val in iter_element_and_attributes_per_type(file_patched, get_unit_measure_class(unit_type)):
+        if has_own_unit(element):
+            continue
+        if isinstance(val, ifcopenshell.entity_instance):
+            val.wrappedValue = convert_value(val.wrappedValue)
+        else:
+            setattr(element, attr.name(), convert_value(val))
+
+    if not (unit_assignment := get_unit_assignment(file_patched)):
+        ifcopenshell.api.unit.assign_unit(file_patched, units=[new_unit])
+        return file_patched
+    # UnitType not available on IfcMonetaryUnit
+    unit_assignment.Units = [
+        new_unit,
+        *(u for u in unit_assignment.Units if getattr(u, "UnitType", None) != unit_type),
+    ]
+    if old_unit and not file_patched.get_total_inverses(old_unit):
+        ifcopenshell.util.element.remove_deep2(file_patched, old_unit)
+
+    return file_patched

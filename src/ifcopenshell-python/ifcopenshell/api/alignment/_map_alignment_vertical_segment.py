@@ -199,7 +199,12 @@ def _map_alignment_vertical_segment(file: ifcopenshell.file, segment: entity_ins
 
     predefined_type = segment.DesignParameters.PredefinedType
 
-    if predefined_type == "CONSTANTGRADIENT":
+    if predefined_type == "CONSTANTGRADIENT" or (
+        predefined_type in ("PARABOLICARC", "CIRCULARARC")
+        and segment.DesignParameters.StartGradient == segment.DesignParameters.EndGradient
+    ):
+        # an arc whose gradient doesn't change is a constant gradient, and its parabola or circle
+        # can't be written because their terms divide by the change in gradient
         result = _map_constant_gradient(file, segment.DesignParameters)
 
     elif predefined_type == "PARABOLICARC":

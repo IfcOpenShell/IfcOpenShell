@@ -18,6 +18,7 @@
 
 import os
 
+import bpy
 import ifcopenshell
 import ifcopenshell.api.style
 import ifcopenshell.util.schema
@@ -72,6 +73,27 @@ class TestMergeIdenticalObject(NewFile):
 
         merge_data = subject.merge_identical_objects("STYLE")
         assert merge_data == {style_type: [style_type] for style_type in style_types}
+
+    def test_merge_stale_style_materials(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        style = ifc.create_entity("IfcSurfaceStyle", Name="Foo.003")
+        unlinked = bpy.data.materials.new("Foo")
+        linked = bpy.data.materials.new("Foo")  # Blender names it Foo.001.
+        double_linked = bpy.data.materials.new("Foo")
+        bpy.data.materials.new("Bar")
+        tool.Ifc.link(style, linked)
+        tool.Style.get_material_style_props(linked).ifc_definition_id = style.id()
+        tool.Style.get_material_style_props(double_linked).ifc_definition_id = style.id()
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        obj.data.materials.append(unlinked)
+
+        merge_data = subject.merge_identical_objects("STYLE")
+        assert sorted(merge_data["Blender Material"]) == ["Foo", "Foo.002"]
+        assert obj.data.materials[0] == linked
+        assert linked.name == "Foo"
+        assert style.Name == "Foo"
+        assert "Bar" in bpy.data.materials
+        assert not {"Foo.001", "Foo.002"} & set(bpy.data.materials.keys())
 
     def test_merge_identical_materials(self):
         tool.Ifc.set(ifc := ifcopenshell.file())

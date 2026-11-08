@@ -64,6 +64,6 @@ namespace ifcopenshell::geom {
 	}
 }
 
-BOOST_DLL_ALIAS(ifcopenshell::geom::opencascade_geometry_ifc_writer_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::opencascade_geometry_ifc_writer_plugin::plugin_abi, ifcopenshell_plugin_abi_v2)
 BOOST_DLL_ALIAS(ifcopenshell::geom::opencascade_geometry_ifc_writer_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
 BOOST_DLL_ALIAS(ifcopenshell::geom::opencascade_geometry_ifc_writer_plugin::register_plugin, ifcopenshell_register_opencascade_geometry_ifc_writer_plugin_v1)

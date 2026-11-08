@@ -16,11 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Union
-
 import ifcopenshell.util.unit
 
-COORD = Union[tuple[float, float], tuple[float, float, float]]
+COORD = tuple[float, float] | tuple[float, float, float]
 
 
 def add_axis_representation(
@@ -72,21 +70,17 @@ def add_axis_representation(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "context": context,
-        "axis": axis or [],
-    }
-    return usecase.execute()
+    return usecase.execute(context, axis)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
+    unit_scale: float
 
-    def execute(self):
-        self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        is_2d = len(self.settings["axis"][0]) == 2
-        points = [self.convert_si_to_unit(p) for p in self.settings["axis"]]
+    def execute(self, context: ifcopenshell.entity_instance, axis: tuple[COORD, COORD]) -> ifcopenshell.entity_instance:
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        is_2d = len(axis[0]) == 2
+        points = [self.convert_si_to_unit(p) for p in axis]
         if self.file.schema == "IFC2X3":
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
@@ -99,13 +93,11 @@ class Usecase:
                     self.file.createIfcCartesianPointList3D(points), None, False
                 )
         return self.file.createIfcShapeRepresentation(
-            self.settings["context"],
-            self.settings["context"].ContextIdentifier,
+            context,
+            context.ContextIdentifier,
             "Curve2D" if is_2d else "Curve3D",
             [curve],
         )
 
-    def convert_si_to_unit(self, co):
-        if isinstance(co, (tuple, list)):
-            return [self.convert_si_to_unit(o) for o in co]
-        return co / self.settings["unit_scale"]
+    def convert_si_to_unit(self, co: COORD) -> list[float]:
+        return [o / self.unit_scale for o in co]

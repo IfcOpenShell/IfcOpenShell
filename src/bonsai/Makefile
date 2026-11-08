@@ -16,44 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-SHELL := sh
-PYTHON:=python3
-PIP:=pip3
-PATCH:=patch
-SED:=sed -i
-VENV_ACTIVATE:=bin/activate
+include ../vars.mk
 
-ifeq ($(OS),Windows_NT)
-HOSTOS:=win
-PYTHON:=python
-VENV_ACTIVATE:=Scripts/activate
-else
-UNAME_S:=$(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-HOSTOS:=linux
-endif
-ifeq ($(UNAME_S),Darwin)
-HOSTOS:=macos
-PYTHON:=python3
-PATCH:=patch -d
-SED:=sed -i '' -e
-endif
-endif
-
-IS_STABLE:=FALSE
-VERSION:=$(shell cat ../../VERSION)
-VERSION_BASE:=$(shell sed -E 's/[[:alpha:]]+[0-9]+$$//' ../../VERSION)
-VERSION_PYTHON:=$(shell sed 's/alpha/a/' ../../VERSION)
-VERSION_SEMVER:=$(shell sed -E 's/([[:alpha:]]+)([0-9]+)$$/-\\1\\2/' ../../VERSION)
-VERSION_DATE:=$(shell date '+%y%m%d')
-VERSION_DAILY:=$(VERSION_BASE)a$(VERSION_DATE)
-VERSION_SEMVER_DAILY:=$(VERSION_BASE)-alpha$(VERSION_DATE)
 LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
 LAST_COMMIT_DATE:=$(shell git show -s --format=%cI)
 LAST_GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD)
 PYPI_IMP:=cp
 
 SUPPORTED_PYVERSIONS := py311 py313
+# Blender extensions platform allows just one build per platform per version,
+# so we add suffix for different Python versions builds.
+SEMVER_SUFFIX:=
 
 ifdef PYVERSION
 ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
@@ -95,7 +68,8 @@ endif
 
 endif # def PLATFORM
 
-PIP_DOWNLOAD_ARGS=$(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+PIP_COOLDOWN_ARGS=--uploaded-prior-to=P7D
+PIP_DOWNLOAD_ARGS=$(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: $(PIP_COOLDOWN_ARGS) --dest=./wheels
 
 # Wheels bundled with Bonsai, downloaded for the target platform in one pip call.
 BUNDLED_WHEELS :=
@@ -110,7 +84,9 @@ BUNDLED_WHEELS += "cjio >=0.8, <0.10"
 # Required in general for sorting all sorts of stuff in a nice way
 BUNDLED_WHEELS += natsort
 # Provides express rule validation for ifcopenshell.validate
-BUNDLED_WHEELS += pytest
+# Blender's extension wheels take precedence over its Python site-packages.
+# Keep this cap in sync with pyproject.toml and scripts/setup_pytest.py for pytest-bdd.
+BUNDLED_WHEELS += "pytest<9.2"
 # Provides Brickschema functionality
 # Is not platform specific but has platform specific dependencies.
 # The SQLAlchemy store must be 0.7.1 or later (SQLAlchemy 2.1, rdflib 7, and the
@@ -162,7 +138,7 @@ BUNDLED_WHEELS += pyradiance
 BUNDLED_WHEELS += flask
 
 # Current build commit hash.
-OLD:=6022a6d
+OLD:=7b8f129
 .PHONY: bump
 bump:
 ifndef NEW
@@ -188,7 +164,10 @@ endif
 	cp -r bonsai build/
 
 	# To scope any build-time dependencies
-	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
+	cd build && $(PYTHON) -m venv env
+	# Must bump pip as older versions trust some stale compromised CA certificates (see eMudhra CA incident).
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m pip install --upgrade pip
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) install build
 
 	mkdir -p build/wheels
 	# Provides IfcOpenShell Python functionality
@@ -211,7 +190,8 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download $(BUNDLED_WHEELS) $(PIP_DOWNLOAD_ARGS)
 
 	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy --wheel-dir=./wheels
+	# See https://github.com/eea/odfpy/issues/132
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy $(PIP_COOLDOWN_ARGS) --wheel-dir=./wheels
 	# jQuery is required for web UI functionality
 	cd build/bonsai/bim/data/webui/static/js/ && wget --no-verbose https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
 
@@ -251,7 +231,7 @@ endif
 
 	cp pyproject.toml build/
 ifeq ($(IS_STABLE), TRUE)
-	$(SED) "s/0.0.0/$(VERSION_SEMVER)/" build/bonsai/blender_manifest.toml
+	$(SED) "s/0.0.0/$(VERSION_SEMVER)$(SEMVER_SUFFIX)/" build/bonsai/blender_manifest.toml
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/pyproject.toml
 else
 	$(SED) "s/0.0.0/$(VERSION_SEMVER_DAILY)/" build/bonsai/blender_manifest.toml
@@ -265,15 +245,13 @@ endif
 ifeq ($(PYVERSION), py313)
 	$(SED) 's/blender_version_min = "4\.2\.0"/blender_version_min = "5.1.0"/' build/bonsai/blender_manifest.toml
 endif
+ifeq ($(PYVERSION), py311)
+	$(SED) 's/^# blender_version_max = /blender_version_max = /' build/bonsai/blender_manifest.toml
+endif
 
 	$(SED) "s/os-arch/$(BLENDER_PLATFORM)/" build/bonsai/blender_manifest.toml
 
 	# Provides bonsai Add-on functionality
-ifeq ($(IS_STABLE), TRUE)
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/pyproject.toml
-else
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/pyproject.toml
-endif
 	cd build && if command -v uv >/dev/null 2>&1; then \
 		uv build --wheel; \
 	else \
@@ -310,7 +288,7 @@ endif
 	rm -rf build/bonsai/libs/
 
 ifeq ($(IS_STABLE), TRUE)
-	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION_SEMVER)-$(BLENDER_PLATFORM).zip ./bonsai
+	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION_SEMVER)$(SEMVER_SUFFIX)-$(BLENDER_PLATFORM).zip ./bonsai
 else
 	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION_SEMVER_DAILY)-$(BLENDER_PLATFORM).zip ./bonsai
 endif
@@ -357,7 +335,7 @@ endif
 
 .PHONY: test-modal
 test-modal:
-	blender --enable-event-simulate --python test/modal/test_modal.py --window-maximized
+	blender --window-geometry 0 0 1920 1080 --enable-event-simulate --python test/modal/test_modal.py
 
 # Reregistering test is not added to the standard test suite because during unregister
 # Blender removes all Bonsai dependencies breaking dev-environment symlinks.

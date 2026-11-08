@@ -19,6 +19,8 @@
 
 #include "representation.h"
 
+
+
 ifcopenshell::geom::serialization::serialization(const native& native_geometry)
 	: representation(native_geometry.settings(), native_geometry.entity(), native_geometry.id())
 {
@@ -149,6 +151,26 @@ ifcopenshell::geom::triangulation::triangulation(const native& shape_model)
 
 		iit->shape()->triangulate(settings(), *iit->placement(), this, iit->ItemId(), surface_style_id);
 	}
+	rebase_vertices_();
+}
+
+void ifcopenshell::geom::triangulation::rebase_vertices_() {
+	const double distance = settings().get<ifcopenshell::geom::settings::VertexRebaseDistance>().get();
+	if (distance <= 0.0 || verts_.size() < 3) {
+		return;
+	}
+	// The threshold is in meters; verts are in file units when ConvertBackUnits is set.
+	const double to_meters = settings().get<ifcopenshell::geom::settings::ConvertBackUnits>().get()
+		? settings().get<ifcopenshell::geom::settings::LengthUnit>().get()
+		: 1.0;
+	Eigen::Map<Eigen::Matrix<double, 3, Eigen::Dynamic>> verts(verts_.data(), 3, verts_.size() / 3);
+	if (verts.cwiseAbs().maxCoeff() * to_meters <= distance) {
+		return;
+	}
+	// Pivot on the bounding box centre so the shifted vertices are as small as they can be.
+	const Eigen::Vector3d pivot = (verts.rowwise().minCoeff() + verts.rowwise().maxCoeff()) / 2.0;
+	verts.colwise() -= pivot;
+	rebase_offset_ = { pivot.x(), pivot.y(), pivot.z() };
 }
 
 /// Generates UVs for a single mesh using box projection.

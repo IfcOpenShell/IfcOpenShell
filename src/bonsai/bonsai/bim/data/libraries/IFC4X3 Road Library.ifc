@@ -1,0 +1,18 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition[DesignTransferView]'),'2;1');
+FILE_NAME('/dev/null','2026-09-15T10:02:10-07:00',(''),(''),'IfcOpenShell 0.0.0','IfcOpenShell 0.0.0','Nobody');
+FILE_SCHEMA(('IFC4X3_ADD2'));
+ENDSEC;
+DATA;
+#1=IFCPROJECT('0q_9GKN4rF9RKH$9Nc10$B',$,'Project',$,$,$,$,$,#3);
+#2=IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);
+#3=IFCUNITASSIGNMENT((#2));
+#4=IFCSITE('1$QGuHZivBVRASQoh$OAqp',$,'Site',$,$,$,$,$,$,$,$,$,$,$);
+#5=IFCRELAGGREGATES('1LT_iQPof5medNHFsgB9OB',$,$,$,#1,(#4));
+#6=IFCROAD('1NWF1PKfL6qAYcaz9EoRrr',$,'Road',$,$,$,$,$,$,$);
+#7=IFCRELAGGREGATES('3a960mrh17xhbe56cZldzo',$,$,$,#4,(#6));
+#8=IFCROADPART('1J_UuIcIX4BuHYm6QH2yJA',$,'Road Part',$,$,$,$,$,$,$,$);
+#9=IFCRELAGGREGATES('05nszwWrTAPR4LG7gTXaD$',$,$,$,#6,(#8));
+ENDSEC;
+END-ISO-10303-21;
