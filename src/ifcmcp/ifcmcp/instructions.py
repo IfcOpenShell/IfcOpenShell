@@ -54,9 +54,14 @@ pset.edit_pset); quantities in quantity sets.
 are common, and unit.assign_unit with no arguments assigns millimetres. \
 Check with ifc_select(query="IfcSIUnit") before reading or writing \
 dimensions.
-* ifcopenshell.api geometry functions take lengths in metres and convert \
-them to the project unit; so does geometry.edit_object_placement, unless \
-is_si is false. ifc_info reports placements in project units.
+* Most ifcopenshell.api geometry functions take lengths in metres and \
+convert them to the project unit: geometry.add_wall_representation, \
+geometry.add_slab_representation, geometry.add_profile_representation, \
+and geometry.edit_object_placement unless is_si is false. \
+geometry.add_door_representation, geometry.add_window_representation and \
+geometry.add_railing_representation take project units instead. Check a \
+function's ifc_docs before passing lengths. ifc_info reports placements in \
+project units.
 * Placements are relative: an element's placement is usually relative to \
 its container's placement.
 * Geometry belongs to a representation context. A new model needs a Model \
