@@ -90,6 +90,18 @@ class Project(bonsai.core.tool.Project):
             link.empty_handle = empty
 
     @classmethod
+    def parse_link_transformation(cls, value: str) -> np.ndarray | None:
+        if not value or not isinstance(value, str):
+            return None
+        try:
+            arr = np.fromstring(value, sep=",", dtype=np.float64)
+            if arr.size == 16:
+                return arr.reshape(4, 4)
+        except (ValueError, AttributeError):
+            pass
+        return None
+
+    @classmethod
     def calculate_link_matrix(cls, link: Link) -> Matrix:
         filepath = Path(tool.Ifc.resolve_uri(link.filepath))
         with open(filepath.with_suffix(".ifc.cache.json"), "r") as f:
@@ -106,10 +118,10 @@ class Project(bonsai.core.tool.Project):
         else:
             transformation = link.transformation
 
-        if transformation:
-            transformation = np.fromstring(transformation, sep=",", dtype=np.float64).reshape(4, 4)
-            if not np.allclose(transformation, np.eye(4)):
-                global_matrix = transformation @ global_matrix
+        trans_matrix = cls.parse_link_transformation(transformation)
+        if trans_matrix is not None:
+            if not np.allclose(trans_matrix, np.eye(4)):
+                global_matrix = trans_matrix @ global_matrix
 
         gprops = tool.Georeference.get_georeference_props()
         rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
@@ -331,8 +343,8 @@ class Project(bonsai.core.tool.Project):
                 link.filepath = filepath
                 link.ifc_definition_id = reference.id()
                 link.has_transformation = False
-                if reference[1]:
-                    m = np.fromstring(reference[1], sep=",", dtype=np.float64).reshape(4, 4)
+                m = cls.parse_link_transformation(reference[1])
+                if m is not None:
                     link.has_transformation = not np.allclose(m, np.eye(4))
                 # The selector query used at link time is persisted only in the
                 # sidecar cache JSON; restore it so Reload/Load replay the filter.
