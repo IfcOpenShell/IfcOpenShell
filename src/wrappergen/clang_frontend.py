@@ -433,6 +433,8 @@ def _discover_constructors(
     scalar_adapters: dict[str, str],
     enum_cursors: dict[str, object],
 ) -> list[CallableModel]:
+    if owner.handle_kind == "borrowed_ptr":
+        return []
     cindex = _require_clang()
     constructors: list[CallableModel] = []
     for child in class_cursor.get_children():

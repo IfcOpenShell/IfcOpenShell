@@ -52,9 +52,6 @@ def a2p(o: Iterable[float], z: Iterable[float], x: Iterable[float]) -> MatrixTyp
     return r.T
 
 
-_settings: dict[bool, ifcopenshell.geom.settings] = {}
-
-
 def get_placement(
     placement: Optional[ifcopenshell.entity_instance] = None, should_return_si: bool = False
 ) -> MatrixType:
@@ -86,16 +83,12 @@ def get_placement(
     """
     if placement is None:
         return np.eye(4)
-    # TODO: delete this branch and _operator_placement once BUILD_COMMIT in
-    # src/ifcopenshell-python/Makefile includes 870f06412, which teaches
-    # create_shape to map operators itself. Packaged builds pair this module
-    # with an older wrapper that raises "Failed to process shape" on them.
-    if placement.is_a("IfcCartesianTransformationOperator"):
-        return _operator_placement(placement, should_return_si)
-    if (settings := _settings.get(should_return_si)) is None:
-        settings = _settings[should_return_si] = ifcopenshell.geom.settings()
-        settings.set("convert-back-units", not should_return_si)
-    return np.array(ifcopenshell.geom.create_shape(settings, placement).matrix).reshape((4, 4), order="F")
+    mat4 = np.array(ifcopenshell.geom.map_shape(ifcopenshell.geom.settings(), placement).components)
+    if not should_return_si:
+        # map_shape does not respect the "convert-back-units" setting, so we need to apply the unit scale ourselves
+        factor = ifcopenshell.util.unit.calculate_unit_scale(placement.file)
+        mat4[:3, 3] /= factor
+    return mat4
 
 
 def _operator_placement(inst: ifcopenshell.entity_instance, should_return_si: bool) -> MatrixType:

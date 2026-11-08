@@ -329,13 +329,6 @@ CLI Manual
                                             that behaviour
       --compute-curvature                   Specifies whether function_item_evaluat
                                             or.evaluate() computes curvature.
-      --function-step-type arg (= 0)        Indicates the method used for defining 
-                                            step size when evaluating 
-                                            function-based curves. Provides 
-                                            interpretation of function-step-param
-      --function-step-param arg (= 0.5)     Indicates the parameter value for 
-                                            defining step size when evaluating 
-                                            function-based curves.
       --no-parallel-mapping                 Perform mapping upfront 
                                             (single-threaded) as opposed to in 
                                             parallel. May decrease performance, but

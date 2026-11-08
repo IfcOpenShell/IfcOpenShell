@@ -261,7 +261,7 @@ class BIMObjectGeometryProperties(PropertyGroup):
         is_adding_representation_layer: bool
         representation_layer: str
         is_editing: bool
-        items: bpy.types.bpy_prop_collection_idprop[RepresentationItem]
+        items: bpy.types.bpy_prop_collection_idprop[RepresentationItem]  # ty: ignore[invalid-attribute-override]
         active_item_index: int
         is_editing_item_style: bool
         representation_item_style: str
