@@ -171,13 +171,14 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
         else:
             return
 
-        core.assign_container(
-            tool.Ifc, tool.Collector, tool.Spatial, container=container, objs=tool.Blender.get_selected_objects()
-        )
         # Refresh the Placement panel's storey-relative fields for the new container.
+        # tag_redraw only marks the area; it redraws after the container changes.
         for area in context.screen.areas:
             if area.type == "PROPERTIES":
                 area.tag_redraw()
+        core.assign_container(
+            tool.Ifc, tool.Collector, tool.Spatial, container=container, objs=tool.Blender.get_selected_objects()
+        )
 
 
 class EnableEditingContainer(bpy.types.Operator):
@@ -206,12 +207,13 @@ class RemoveContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        for obj in context.selected_objects:
-            core.remove_container(tool.Ifc, tool.Collector, obj=obj)
-        # Refresh the Placement panel's storey-relative fields now the container is gone.
+        # Refresh the Placement panel's storey-relative fields once the container is gone.
+        # tag_redraw only marks the area; it redraws after the container changes.
         for area in context.screen.areas:
             if area.type == "PROPERTIES":
                 area.tag_redraw()
+        for obj in context.selected_objects:
+            core.remove_container(tool.Ifc, tool.Collector, obj=obj)
 
 
 class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
