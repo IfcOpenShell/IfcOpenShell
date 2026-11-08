@@ -89,6 +89,7 @@ Available tools
 **Edit tools**
 
 - ``ifc_list(module="")`` — list API modules or functions
+- ``ifc_search(query, limit=20)`` — find API functions by keyword
 - ``ifc_docs(function_path)`` — documentation for an API function
 - ``ifc_edit(function_path, params="{}")`` — execute an ``ifcopenshell.api`` mutation
 - ``ifc_quantify(rule, selector="")`` — run quantity take-off; writes ``IfcElementQuantity`` psets in-place

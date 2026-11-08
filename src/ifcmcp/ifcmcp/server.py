@@ -40,6 +40,7 @@ READ_ONLY_TOOLS = frozenset(
         "ifc_materials",
         "ifc_list",
         "ifc_docs",
+        "ifc_search",
         "ifc_validate",
         "ifc_schedule",
         "ifc_cost",
@@ -174,6 +175,10 @@ def build_server() -> Any:
     @_tool
     def ifc_list(module: str = "") -> list[dict]:
         return session.ifc_list(module=module)
+
+    @_tool
+    def ifc_search(query: str, limit: int = 20) -> list[dict]:
+        return session.ifc_search(query=query, limit=limit)
 
     @_tool
     def ifc_docs(function_path: str) -> dict:
