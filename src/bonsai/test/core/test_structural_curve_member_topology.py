@@ -102,7 +102,7 @@ def _mock_blender_modules():
     mock_polyline = MagicMock()
     mock_polyline.PolylineOperator = type("PolylineOperator", (), {})
 
-    return {
+    mocks = {
         "bpy": mock_bpy,
         "bpy.types": mock_bpy.types,
         "bpy.props": mock_bpy.props,
@@ -135,18 +135,26 @@ def _mock_blender_modules():
         "bonsai.bim.module.structural.shader": MagicMock(),
         "bonsai.tool": mock_tool,
     }
+    return {k: v for k, v in mocks.items() if k not in sys.modules}
 
 
 def test_recreate_profile_preserves_structural_curve_member_edge_topology():
     ifc_file, member, topo_rep, edge = _create_structural_curve_member_with_edge()
+    beam = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBeam")
+    column = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcColumn")
+    profile_def = ifc_file.by_type("IfcIShapeProfileDef")[0]
+    material_set = ifc_file.by_type("IfcMaterialProfileSet")[0]
+    ifcopenshell.api.material.assign_material(ifc_file, products=[beam, column], type="IfcMaterialProfileSetUsage")
+    for product in (beam, column):
+        product.HasAssociations[0].RelatingMaterial.ForProfileSet = material_set
 
     with patch.dict(sys.modules, _mock_blender_modules()):
         import bonsai.bim.module.model.profile as profile_mod
-        import bonsai.tool as tool
 
         with (
-            patch.object(tool.Ifc, "get", return_value=ifc_file),
-            patch.object(tool.Ifc, "get_entity", return_value=member),
+            patch.object(profile_mod.tool.Ifc, "get", return_value=ifc_file),
+            patch.object(profile_mod.tool.Ifc, "get_entity", return_value=member),
+            patch.object(profile_mod.tool.Model, "get_manual_booleans", return_value=[]),
         ):
             obj = MagicMock()
             joiner = profile_mod.DumbProfileJoiner()
@@ -157,17 +165,41 @@ def test_recreate_profile_preserves_structural_curve_member_edge_topology():
 
             regenerator = profile_mod.DumbProfileRegenerator()
             regenerator.file = ifc_file
-            profile_def = ifc_file.by_type("IfcIShapeProfileDef")[0]
-            assert member not in regenerator.get_elements_using_profile(profile_def)
+            elements_using_profile = regenerator.get_elements_using_profile(profile_def)
+            assert member not in elements_using_profile
+            assert beam in elements_using_profile
+            assert column in elements_using_profile
+
+            # Verify ordinary IfcBeam still regenerates its swept profile representation
+            beam_obj = MagicMock()
+            beam_obj.matrix_world.copy.return_value = MagicMock()
+            axis_start = MagicMock()
+            axis_start.__iter__.return_value = iter((0.0, 0.0, 0.0))
+            axis_end = MagicMock()
+            diff_vec = MagicMock()
+            diff_vec.length = 3.0
+            axis_end.__sub__.return_value = diff_vec
+            joiner.axis_context = None
+            joiner.body_context = topo_rep.ContextOfItems
+            with (
+                patch.object(profile_mod.tool.Ifc, "is_moved", return_value=False),
+                patch("bonsai.core.geometry.switch_representation"),
+            ):
+                joiner.recreate_profile(beam, beam_obj, axis=[axis_start, axis_end], body=[axis_start, axis_end])
 
     assert len(member.Representation.Representations) == 1
     assert member.Representation.Representations[0] == topo_rep
     assert member.Representation.Representations[0].is_a("IfcTopologyRepresentation")
     assert member.Representation.Representations[0].Items[0] == edge
 
+    beam_body = ifcopenshell.util.representation.get_representation(beam, "Model", "Body", "MODEL_VIEW")
+    assert beam_body is not None
+    assert beam_body.RepresentationType == "SweptSolid"
 
-def test_get_curve_member_rotation_handles_edge_and_non_edge_representations():
-    ifc_file, member, topo_rep, _ = _create_structural_curve_member_with_edge()
+
+def test_get_curve_member_rotation_handles_edge_and_non_edge_representations(capsys):
+    ifc_file, member, topo_rep, edge = _create_structural_curve_member_with_edge()
+    member.Name = "C1"
 
     with patch.dict(sys.modules, _mock_blender_modules()):
         from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
@@ -179,7 +211,15 @@ def test_get_curve_member_rotation_handles_edge_and_non_edge_representations():
         assert rot.shape == (3, 3)
         assert np.allclose(rot, np.eye(3))
 
-        # 2. Corrupted representation (e.g. IfcExtrudedAreaSolid in first slot) does not raise AttributeError
+        # 2. Curve member with Axis parallel to its edge (e.g. vertical column along Z with Axis = Z)
+        edge.EdgeEnd.VertexGeometry.Coordinates = (0.0, 0.0, 3.0)
+        member.Axis.DirectionRatios = (0.0, 0.0, 1.0)
+        parallel_rot = data.get_curve_member_rotation(member)
+        assert parallel_rot.shape == (3, 3)
+        assert not np.isnan(parallel_rot).any()
+        assert np.allclose(parallel_rot.T @ parallel_rot, np.eye(3), atol=1e-6)
+
+        # 3. Corrupted representation (e.g. IfcExtrudedAreaSolid in first slot) warns and falls back cleanly
         profile_def = ifc_file.by_type("IfcIShapeProfileDef")[0]
         body_ctx = topo_rep.ContextOfItems
         swept_rep = ifcopenshell.api.geometry.add_profile_representation(
@@ -188,15 +228,19 @@ def test_get_curve_member_rotation_handles_edge_and_non_edge_representations():
         member.Representation.Representations = [swept_rep]
         ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=member, matrix=np.eye(4))
 
+        if not hasattr(ifcopenshell.util.placement, "get_placement"):
+            ifcopenshell.util.placement.get_placement = ifcopenshell.util.placement.get_local_placement
         fallback_rot = data.get_curve_member_rotation(member)
         assert fallback_rot.shape == (3, 3)
         assert np.allclose(fallback_rot, np.eye(3))
+        captured = capsys.readouterr()
+        assert "C1" in captured.out
+        assert "WARNING" in captured.out
 
 
 def test_add_structural_member_connection_noop_when_member_unset():
     with patch.dict(sys.modules, _mock_blender_modules()):
         import bonsai.bim.module.structural.operator as structural_op
-        import bonsai.tool as tool
 
         ifc_file = ifcopenshell.file(schema="IFC4")
         conn = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralPointConnection")
@@ -207,10 +251,12 @@ def test_add_structural_member_connection_noop_when_member_unset():
         props = types.SimpleNamespace(relating_structural_member=None)
 
         with (
-            patch.object(tool.Blender, "get_object_bim_props", return_value=oprops),
-            patch.object(tool.Structural, "get_object_structural_props", return_value=props),
-            patch.object(tool.Ifc, "get", return_value=ifc_file),
+            patch.object(structural_op.tool.Blender, "get_object_bim_props", return_value=oprops),
+            patch.object(structural_op.tool.Structural, "get_object_structural_props", return_value=props),
+            patch.object(structural_op.tool.Ifc, "get", return_value=ifc_file),
         ):
             op = structural_op.AddStructuralMemberConnection()
+            op.report = MagicMock()
             result = op._execute(context)
             assert result == {"FINISHED"}
+            op.report.assert_called_once_with({"WARNING"}, "Select a structural member first.")

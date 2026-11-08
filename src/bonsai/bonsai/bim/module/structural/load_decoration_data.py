@@ -456,14 +456,36 @@ class ShaderInfo:
                         break
                 if edge:
                     break
-        if edge and getattr(curve_member, "Axis", None):
-            z = curve_member.Axis.DirectionRatios
+        if edge:
             origin = edge.EdgeStart.VertexGeometry.Coordinates
             end = edge.EdgeEnd.VertexGeometry.Coordinates
             x = [c2 - c1 for c1, c2 in zip(origin, end)]
-            if any(x):
+            x_norm = float(np.linalg.norm(x))
+            if x_norm > 1e-9:
+                x_unit = np.asarray(x, dtype=float) / x_norm
+                axis_dir = getattr(curve_member, "Axis", None)
+                z = axis_dir.DirectionRatios if axis_dir else None
+                if z is not None:
+                    z_norm = float(np.linalg.norm(z))
+                    if (
+                        z_norm <= 1e-9
+                        or float(np.linalg.norm(np.cross(np.asarray(z, dtype=float) / z_norm, x_unit))) < 1e-6
+                    ):
+                        z = None
+                if z is None:
+                    for candidate in ((0.0, 1.0, 0.0), (1.0, 0.0, 0.0), (0.0, 0.0, 1.0)):
+                        if float(np.linalg.norm(np.cross(candidate, x_unit))) >= 1e-6:
+                            z = candidate
+                            break
                 placement = ifcopenshell.util.placement.a2p(origin, z, x)
                 return placement[0:3, 0:3]
+        member_name = (
+            getattr(curve_member, "Name", None) or getattr(curve_member, "GlobalId", None) or f"#{curve_member.id()}"
+        )
+        print(
+            f"WARNING: Structural curve member '{member_name}' (#{curve_member.id()}) has no valid IfcEdge topology; "
+            "falling back to placement rotation."
+        )
         if getattr(curve_member, "ObjectPlacement", None):
             placement = ifcopenshell.util.placement.get_placement(curve_member.ObjectPlacement)
             return placement[0:3, 0:3]
