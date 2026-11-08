@@ -1,10 +1,23 @@
 # This file was generated with the assistance of an AI coding tool.
 import asyncio
+import importlib
+import re
 from unittest.mock import patch
 
 import pytest
 
-from ifcmcp.server import build_server
+from ifcmcp.__main__ import execute_allowed
+from ifcmcp.instructions import EXECUTE_INSTRUCTIONS, INSTRUCTIONS
+from ifcmcp.server import READ_ONLY_TOOLS, build_server
+
+try:
+    from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
+except ImportError:
+    # mcp 1.x keeps every exception's reason, so it never raises the bare message.
+    from mcp.server.fastmcp.exceptions import ToolError
+
+    class UnexpectedToolError(ToolError):
+        pass
 
 
 class TestServerRegistration:
@@ -38,6 +51,110 @@ class TestServerRegistration:
         assert not missing, f"Tools with no description: {missing}"
 
 
+class TestInstructions:
+    """The instructions name tools and API functions; keep them from going stale."""
+
+    def test_server_sends_the_instructions(self):
+        assert build_server().instructions == INSTRUCTIONS
+        assert build_server(allow_execute=True).instructions == INSTRUCTIONS + EXECUTE_INSTRUCTIONS
+
+    def test_every_tool_named_exists(self):
+        tools = {t.name for t in build_server(allow_execute=True)._tool_manager.list_tools()}
+        named = set(re.findall(r"\bifc_[a-z_]+", INSTRUCTIONS + EXECUTE_INSTRUCTIONS))
+        assert named, "expected the instructions to name some tools"
+        assert named <= tools, named - tools
+
+    def test_execute_is_only_described_when_offered(self):
+        assert "ifc_execute" not in INSTRUCTIONS
+        assert "ifc_execute" in EXECUTE_INSTRUCTIONS
+
+    def test_every_api_function_named_exists(self):
+        named = set(re.findall(r"\b([a-z]+)\.([a-z_]+)\b", INSTRUCTIONS + EXECUTE_INSTRUCTIONS))
+        named = {(m, f) for m, f in named if m != "ifcopenshell"}
+        assert named, "expected the instructions to name some API functions"
+        for module, function in named:
+            api = importlib.import_module(f"ifcopenshell.api.{module}")
+            assert hasattr(api, function), f"{module}.{function}"
+
+
+class TestToolAnnotations:
+    """Clients use these hints to decide which calls need the user's approval."""
+
+    @pytest.fixture
+    def hints(self):
+        server = build_server()
+        return {
+            t.name: t.annotations.model_dump(by_alias=True, exclude_none=True)
+            for t in server._tool_manager.list_tools()
+        }
+
+    def test_every_read_only_name_is_a_tool(self, hints):
+        assert READ_ONLY_TOOLS <= hints.keys()
+
+    def test_read_only_tools(self, hints):
+        for name in READ_ONLY_TOOLS:
+            assert hints[name] == {"readOnlyHint": True, "openWorldHint": False}, name
+
+    def test_every_other_tool_is_destructive(self, hints):
+        for name in hints.keys() - READ_ONLY_TOOLS:
+            assert hints[name] == {"readOnlyHint": False, "destructiveHint": True, "openWorldHint": False}, name
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "ifc_edit",
+            "ifc_shape",
+            "ifc_quantify",
+            "ifc_save",
+            "ifc_load",
+            "ifc_new",
+            "ifc_reset",
+            "ifc_plot",
+            "ifc_render",
+        ],
+    )
+    def test_tools_that_change_state_are_not_read_only(self, name):
+        assert name not in READ_ONLY_TOOLS
+
+
+class TestElementLookup:
+    """The server accepts a GlobalId or a STEP id wherever it takes element_id."""
+
+    @pytest.mark.parametrize("tool", ["ifc_info", "ifc_relations", "ifc_clash"])
+    def test_by_global_id(self, tool, model, model_file):
+        server = build_server()
+        asyncio.run(server.call_tool("ifc_load", {"path": model_file}))
+        wall = model.by_type("IfcWall")[0]
+        for element_id in (wall.GlobalId, wall.id()):
+            asyncio.run(server.call_tool(tool, {"element_id": element_id}))
+
+
+class TestExecuteOption:
+    def test_off_by_default(self):
+        assert "ifc_execute" not in [t.name for t in build_server()._tool_manager.list_tools()]
+
+    def test_offered_when_allowed(self):
+        assert "ifc_execute" in [t.name for t in build_server(allow_execute=True)._tool_manager.list_tools()]
+
+    def test_not_callable_when_not_offered(self, model_file):
+        server = build_server()
+        asyncio.run(server.call_tool("ifc_load", {"path": model_file}))
+        with pytest.raises(Exception, match="ifc_execute"):
+            asyncio.run(server.call_tool("ifc_execute", {"code": "result = 1"}))
+
+    @pytest.mark.parametrize(
+        "transport, no_execute, allowed",
+        [
+            ("stdio", False, True),
+            ("stdio", True, False),
+            ("sse", False, False),
+            ("streamable-http", False, False),
+        ],
+    )
+    def test_only_offered_over_stdio(self, transport, no_execute, allowed):
+        assert execute_allowed(transport, no_execute) is allowed
+
+
 class TestToolErrorsKeepTheirReason:
     """MCPServer replaces the text of any exception but ToolError with a bare
     "Error executing tool <name>". Each tool raises ToolError, so the agent is told
@@ -54,8 +171,6 @@ class TestToolErrorsKeepTheirReason:
         ],
     )
     def test_reason_reaches_the_client(self, name, arguments, reason):
-        from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
-
         server = build_server()
         if name == "ifc_info":
             asyncio.run(server.call_tool("ifc_new", {}))
@@ -67,8 +182,6 @@ class TestToolErrorsKeepTheirReason:
     def test_no_tool_loses_its_reason(self):
         """Every registered tool, however it is registered: called with no model
         loaded, it either works or fails with its reason, never the bare message."""
-        from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
-
         server = build_server()
         dummy = {"string": "", "integer": 0, "number": 0, "boolean": False, "array": [], "object": {}}
         for tool in server._tool_manager.list_tools():

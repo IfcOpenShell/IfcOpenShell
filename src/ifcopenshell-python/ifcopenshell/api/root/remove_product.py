@@ -213,6 +213,19 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
             file.remove(inverse)
             if history:
                 ifcopenshell.util.element.remove_deep2(file, history)
+        elif inverse.is_a("IfcRelConnectsStructuralMember"):
+            # Both the member and the connection are mandatory. The relationship's own condition (a release),
+            # coordinate system and eccentricity go with it unless something else uses them.
+            owned = [inverse.AppliedCondition, inverse.ConditionCoordinateSystem]
+            if inverse.is_a("IfcRelConnectsWithEccentricity"):
+                owned.append(inverse.ConnectionConstraint)
+            history = inverse.OwnerHistory
+            file.remove(inverse)
+            for element in owned:
+                if element and not file.get_total_inverses(element):
+                    ifcopenshell.util.element.remove_deep2(file, element)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelFlowControlElements"):
             if inverse.RelatingFlowElement == product:
                 history = inverse.OwnerHistory

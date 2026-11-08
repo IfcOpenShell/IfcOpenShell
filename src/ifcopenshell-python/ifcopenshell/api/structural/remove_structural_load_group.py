@@ -28,7 +28,9 @@ def remove_structural_load_group(file: ifcopenshell.file, load_group: ifcopenshe
     """
     # TODO: do a deep purge
     for inverse in file.get_inverse(load_group):
-        if inverse.is_a("IfcRelAssignsToGroup") and len(inverse.RelatedObjects) == 1:
+        if inverse.is_a("IfcRelAssignsToGroup") and (
+            inverse.RelatingGroup == load_group or len(inverse.RelatedObjects) == 1
+        ):
             history = inverse.OwnerHistory
             file.remove(inverse)
             if history:

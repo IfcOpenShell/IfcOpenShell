@@ -199,7 +199,6 @@ class Args(NamedTuple):
     verbose: bool
     shared: bool
     split_instance_builds: bool
-    ifcopenshell_shared: bool
     occt_shared: bool
     mac_cross_compile_intel: bool
     wasm: bool
@@ -289,15 +288,15 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         "--shared",
         action="store_true",
         default=False,
-        help="Build shared libraries. By default will build static.",
+        help="Build dependencies as shared libraries too. By default they are static. "
+        "IfcOpenShell's own libraries are always shared.",
     )
     arg_parser.add_argument(
         "-ifcopenshell-shared",
         "--ifcopenshell-shared",
         action="store_true",
         default=False,
-        help="Build only IfcOpenShell's own libraries as shared (dependencies stay static). "
-        "Redundant if -shared is also passed.",
+        help="No effect, IfcOpenShell's own libraries are always shared. Kept for existing scripts.",
     )
     arg_parser.add_argument(
         "--split-instance-builds",
@@ -419,7 +418,6 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         verbose=namespace.verbose,
         shared=namespace.shared,
         split_instance_builds=namespace.split_instance_builds,
-        ifcopenshell_shared=namespace.ifcopenshell_shared or namespace.shared,
         # -shared implies a shared OCCT too, even overriding an explicit --no-occt-shared.
         occt_shared=namespace.shared
         or (
@@ -1800,7 +1798,7 @@ os.makedirs(ifcos_build_dir, exist_ok=True)
 cmake_args = [
     "-DUSE_MMAP=OFF",
     f"-DBUILD_EXAMPLES={OFF_ON[ARGS.build_examples]}",
-    "-DBUILD_SHARED_LIBS=" + OFF_ON[ARGS.ifcopenshell_shared],
+    "-DBUILD_SHARED_LIBS=" + OFF_ON[not WASM],
     "-DGLTF_SUPPORT=ON",
     "-DBoost_NO_BOOST_CMAKE=On",
     "-DCREATE_BUNDLE=On",

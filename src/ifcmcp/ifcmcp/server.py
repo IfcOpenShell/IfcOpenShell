@@ -7,25 +7,70 @@ import inspect
 from typing import Any
 
 from ifcmcp.core import IfcSession
+from ifcmcp.instructions import EXECUTE_INSTRUCTIONS, INSTRUCTIONS
 
 try:
     from mcp.server.mcpserver import MCPServer  # type: ignore
     from mcp.server.mcpserver.exceptions import ToolError  # type: ignore
-    from mcp.types import ImageContent  # type: ignore
+except ImportError:
+    # mcp 1.x, which Linux distributions still ship, has the same API under its old name.
+    try:
+        from mcp.server.fastmcp import FastMCP as MCPServer  # type: ignore
+        from mcp.server.fastmcp.exceptions import ToolError  # type: ignore
+    except ImportError:  # pragma: no cover
+        MCPServer = None  # type: ignore
+        ToolError = None  # type: ignore
+try:
+    from mcp.types import ImageContent, ToolAnnotations  # type: ignore
 except ImportError:  # pragma: no cover
-    MCPServer = None  # type: ignore
-    ToolError = None  # type: ignore
     ImageContent = None  # type: ignore
+    ToolAnnotations = None  # type: ignore
+
+# Tools that change neither the model nor any file, so a client may run them
+# without asking. Every other tool can discard unsaved edits, change the model
+# or overwrite a file, and is marked destructive.
+READ_ONLY_TOOLS = frozenset(
+    {
+        "ifc_summary",
+        "ifc_tree",
+        "ifc_info",
+        "ifc_select",
+        "ifc_relations",
+        "ifc_clash",
+        "ifc_contexts",
+        "ifc_materials",
+        "ifc_list",
+        "ifc_docs",
+        "ifc_search",
+        "ifc_validate",
+        "ifc_schedule",
+        "ifc_cost",
+        "ifc_schema",
+        "ifc_shape_list",
+        "ifc_shape_docs",
+    }
+)
 
 
-def build_server() -> Any:
-    """Create the MCP server if the dependency is available."""
+def _annotations(name: str) -> Any:
+    # camelCase arguments, because mcp 1.x accepts no other spelling.
+    if name in READ_ONLY_TOOLS:
+        return ToolAnnotations(readOnlyHint=True, openWorldHint=False)
+    return ToolAnnotations(readOnlyHint=False, destructiveHint=True, openWorldHint=False)
+
+
+def build_server(allow_execute: bool = False) -> Any:
+    """Create the MCP server if the dependency is available.
+
+    :param allow_execute: Offer ``ifc_execute``, which runs arbitrary Python
+        sent by the client.
+    """
     if MCPServer is None:
         raise ImportError(
             "The mcp package is not installed. Install with: pip install ifcmcp[mcp] (or add 'mcp' to your environment)."
         )
 
-    session = IfcSession()
+    session = IfcSession(allow_execute=allow_execute)
 
     def _keep_reason(fn):
         """Raise a tool's failure as ToolError so its reason reaches the agent.
@@ -49,15 +94,14 @@ def build_server() -> Any:
     def _tool(fn):
         """Register a tool, taking its MCP description from the identically-named
         IfcSession method rather than duplicating it here."""
-        return server.tool(description=inspect.getdoc(getattr(IfcSession, fn.__name__)))(_keep_reason(fn))
+        return server.tool(
+            description=inspect.getdoc(getattr(IfcSession, fn.__name__)),
+            annotations=_annotations(fn.__name__),
+        )(_keep_reason(fn))
 
     server = MCPServer(
         name="ifc-mcp",
-        instructions=(
-            "MCP server for querying and editing IFC building models. "
-            "Load a file first with ifc_load, then use query/edit tools. "
-            "Save changes with ifc_save."
-        ),
+        instructions=INSTRUCTIONS + (EXECUTE_INSTRUCTIONS if allow_execute else ""),
     )
 
     # ---- Lifecycle ----
@@ -77,30 +121,38 @@ def build_server() -> Any:
     def ifc_reset() -> dict[str, Any]:
         return session.ifc_reset()
 
+    @_tool
+    def ifc_undo() -> dict[str, Any]:
+        return session.ifc_undo()
+
+    @_tool
+    def ifc_redo() -> dict[str, Any]:
+        return session.ifc_redo()
+
     # ---- Query ----
     @_tool
     def ifc_summary() -> dict[str, Any]:
         return session.ifc_summary()
 
     @_tool
-    def ifc_tree() -> dict[str, Any] | list[dict[str, Any]]:
-        return session.ifc_tree()
+    def ifc_tree(max_depth: int | None = None) -> dict[str, Any] | list[dict[str, Any]]:
+        return session.ifc_tree(max_depth=max_depth)
 
     @_tool
-    def ifc_info(element_id: int) -> dict[str, Any]:
+    def ifc_info(element_id: int | str) -> dict[str, Any]:
         return session.ifc_info(element_id)
 
     @_tool
-    def ifc_select(query: str) -> list[dict[str, Any]]:
-        return session.ifc_select(query)
+    def ifc_select(query: str, limit: int = 200, offset: int = 0) -> dict[str, Any]:
+        return session.ifc_select(query, limit=limit, offset=offset)
 
     @_tool
-    def ifc_relations(element_id: int, traverse: str = "") -> dict[str, Any] | list[dict[str, Any]]:
+    def ifc_relations(element_id: int | str, traverse: str = "") -> dict[str, Any] | list[dict[str, Any]]:
         return session.ifc_relations(element_id, traverse=traverse)
 
     @_tool
     def ifc_clash(
-        element_id: int,
+        element_id: int | str,
         clearance: float = 0.0,
         tolerance: float = 0.002,
         scope: str = "storey",
@@ -124,6 +176,10 @@ def build_server() -> Any:
     @_tool
     def ifc_list(module: str = "") -> list[dict]:
         return session.ifc_list(module=module)
+
+    @_tool
+    def ifc_search(query: str, limit: int = 20) -> list[dict]:
+        return session.ifc_search(query=query, limit=limit)
 
     @_tool
     def ifc_docs(function_path: str) -> dict:
@@ -154,6 +210,12 @@ def build_server() -> Any:
     def ifc_quantify(rule: str, selector: str = "") -> dict[str, Any]:
         return session.ifc_quantify(rule=rule, selector=selector)
 
+    if allow_execute:
+
+        @_tool
+        def ifc_execute(code: str) -> dict[str, Any]:
+            return session.ifc_execute(code=code)
+
     # ---- Shape builder ----
     @_tool
     def ifc_shape_list() -> list[dict]:
@@ -167,7 +229,7 @@ def build_server() -> Any:
     def ifc_shape(method: str, params: str = "{}") -> dict:
         return session.ifc_shape(method=method, params=params)
 
-    @server.tool(structured_output=False)
+    @server.tool(structured_output=False, annotations=_annotations("ifc_plot"))
     @_keep_reason
     def ifc_plot(
         selector: str = "",
@@ -227,9 +289,9 @@ def build_server() -> Any:
             else:
                 with open(output_path, "wb") as f:
                     f.write(png_bytes)
-        return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mime_type="image/png")]
+        return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mimeType="image/png")]
 
-    @server.tool(structured_output=False)
+    @server.tool(structured_output=False, annotations=_annotations("ifc_render"))
     @_keep_reason
     def ifc_render(
         selector: str = "",
@@ -256,6 +318,6 @@ def build_server() -> Any:
         if output_path:
             with open(output_path, "wb") as f:
                 f.write(png_bytes)
-        return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mime_type="image/png")]
+        return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mimeType="image/png")]
 
     return server
