@@ -140,7 +140,7 @@ class BIM_PT_spatial_decomposition(Panel):
             op = col.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
             op.container = ifc_definition_id
 
-            if tool.Blender.get_addon_preferences().show_container_tools:
+            if tool.Blender.get_addon_preferences().container_hide_show_isolate:
                 op = row.operator("bim.set_container_visibility", icon="FULLSCREEN_EXIT", text="")
                 op.mode = "ISOLATE"
                 op.container = ifc_definition_id
@@ -155,8 +155,7 @@ class BIM_PT_spatial_decomposition(Panel):
             col = row.column(align=True)
             row_ = col.row(align=True)
             row_.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
-            if tool.Blender.get_addon_preferences().show_container_tools:
-                row_.operator("bim.select_similar_container", icon="RESTRICT_SELECT_OFF", text="").container = ifc_definition_id
+            row_.operator("bim.select_similar_container", icon="RESTRICT_SELECT_OFF", text="").container = ifc_definition_id
 
             col = row.column(align=True)
             op = col.operator("bim.delete_container", icon="X", text="")
