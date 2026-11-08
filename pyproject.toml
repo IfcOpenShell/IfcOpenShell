@@ -193,8 +193,16 @@ ruff = "ruff check"
 
 check-whitespace = "uv run .github/scripts/check-whitespace.py"
 
-# Not `zizmor ` to avoid flagging submodules.
-zizmor = "zizmor .github/"
+zizmor.cmd = "zizmor ."
+zizmor.help = "GitHub workflows security check"
+
+# `gh extension install --pin` has no effect if another version is already installed, so remove it first.
+actions-lock-setup.shell = "gh extension remove actions-lock; gh extension install github/gh-actions-lock --pin v0.4.1"
+actions-lock-setup.interpreter = ["posix", "pwsh"]
+actions-lock-setup.help = "Install pinned gh-actions-lock extension"
+
+actions-lock.cmd = "gh actions-lock --verify"
+actions-lock.help = "Verify GitHub Actions lockfile. Run 'gh actions-lock' to update it."
 
 version = "uv run .github/scripts/version.py"
 
