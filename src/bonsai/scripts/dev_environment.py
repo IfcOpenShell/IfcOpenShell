@@ -142,14 +142,6 @@ if binaries_source is None:
 should_copy_binaries = binaries_source == "installed"
 
 
-# ---------------------------
-
-# Never changed by user.
-BLENDER_VERSION_INT = tuple(map(int, BLENDER_VERSION.split(".")))
-PYTHON_VERSION = "3.13" if BLENDER_VERSION_INT >= (5, 1) else "3.11"
-PACKAGE_PATH = BLENDER_PATH / rf"extensions/.local/lib/python{PYTHON_VERSION}/site-packages"
-
-
 def main() -> None:
     REPO_PATH = Path(ARGS.repo_path) if ARGS.repo_path else None
 
@@ -163,6 +155,9 @@ def main() -> None:
         )
         REPO_PATH = repo_bonsai_path.parent.parent
 
+    lib_path = BLENDER_PATH / "extensions" / ".local" / "lib"
+    package_path = next(lib_path.glob("python*/site-packages"), None)
+
     print("-" * 10)
     print("Script settings:")
     print("(all paths are confirmed to be existing)")
@@ -173,7 +168,7 @@ def main() -> None:
 
     assert REPO_PATH.exists(), f"Path '{REPO_PATH=!s}' doesn't exist, ensure --repo-path is set correctly."
     assert BLENDER_PATH.exists(), f"Path '{BLENDER_PATH=!s}' doesn't exist, ensure variable is set correctly."
-    assert PACKAGE_PATH.exists(), f"Path '{PACKAGE_PATH=!s}' doesn't exist, ensure variable is set correctly."
+    assert package_path is not None, f"Couldn't find site-packages in '{lib_path}'."
     assert BONSAI_PATH is not None, (
         "Couldn't find BONSAI_PATH in any of the paths candidates. Example paths: {}".format(
             "\n".join(str(p) for p in BONSAI_PATH_CANDIDATES)
@@ -192,7 +187,7 @@ def main() -> None:
         path.unlink()
     subprocess.check_call(("git", "checkout", "--", symlinks_glob), cwd=REPO_PATH)
 
-    package_path = PACKAGE_PATH / "ifcopenshell"
+    installed_package_path = package_path / "ifcopenshell"
     repo_package_path = REPO_PATH / "src" / "ifcopenshell-python" / "ifcopenshell"
     if not should_copy_binaries:
         assert any(repo_package_path.glob("_ifcopenshell_wrapper*")), (
@@ -200,12 +195,12 @@ def main() -> None:
             "Compile IfcOpenShell first or let the script copy the binaries from the installed Bonsai."
         )
     # There is nothing to copy if the package is already linked to the repo.
-    elif not package_path.is_symlink():
+    elif not installed_package_path.is_symlink():
         print("Copying compiled dependencies to the repo...")
         # Anything the installed package has on top of the tracked Python code is a binary.
         output = subprocess.check_output(("git", "ls-files"), cwd=repo_package_path, text=True)
         tracked = {line.split("/")[0] for line in output.splitlines()}
-        for path in package_path.iterdir():
+        for path in installed_package_path.iterdir():
             if path.name in tracked or path.name == "__pycache__":
                 continue
             dest = repo_package_path / path.name
@@ -219,19 +214,19 @@ def main() -> None:
     # fmt: off
     symlinks = (
         (BONSAI_PATH / "__init__.py",  REPO_PATH / "src/bonsai/bonsai/__init__.py"),
-        (PACKAGE_PATH / "bonsai",       REPO_PATH / "src/bonsai/bonsai"),
-        (PACKAGE_PATH / "ifcopenshell", REPO_PATH / "src/ifcopenshell-python/ifcopenshell"),
-        (PACKAGE_PATH / "ifccsv.py",    REPO_PATH / "src/ifccsv/ifccsv.py"),
-        (PACKAGE_PATH / "ifcdiff.py",   REPO_PATH / "src/ifcdiff/ifcdiff.py"),
-        (PACKAGE_PATH / "bsdd.py",      REPO_PATH / "src/bsdd/bsdd.py"),
-        (PACKAGE_PATH / "bcf",          REPO_PATH / "src/bcf/bcf"),
-        (PACKAGE_PATH / "ifc4d",        REPO_PATH / "src/ifc4d/ifc4d"),
-        (PACKAGE_PATH / "ifc5d",        REPO_PATH / "src/ifc5d/ifc5d"),
-        (PACKAGE_PATH / "ifccityjson",  REPO_PATH / "src/ifccityjson/ifccityjson"),
-        (PACKAGE_PATH / "ifcclash",     REPO_PATH / "src/ifcclash/ifcclash"),
-        (PACKAGE_PATH / "ifcpatch",     REPO_PATH / "src/ifcpatch/ifcpatch"),
-        (PACKAGE_PATH / "ifctester",    REPO_PATH / "src/ifctester/ifctester"),
-        (PACKAGE_PATH / "ifcfm",        REPO_PATH / "src/ifcfm/ifcfm"),
+        (package_path / "bonsai",       REPO_PATH / "src/bonsai/bonsai"),
+        (package_path / "ifcopenshell", REPO_PATH / "src/ifcopenshell-python/ifcopenshell"),
+        (package_path / "ifccsv.py",    REPO_PATH / "src/ifccsv/ifccsv.py"),
+        (package_path / "ifcdiff.py",   REPO_PATH / "src/ifcdiff/ifcdiff.py"),
+        (package_path / "bsdd.py",      REPO_PATH / "src/bsdd/bsdd.py"),
+        (package_path / "bcf",          REPO_PATH / "src/bcf/bcf"),
+        (package_path / "ifc4d",        REPO_PATH / "src/ifc4d/ifc4d"),
+        (package_path / "ifc5d",        REPO_PATH / "src/ifc5d/ifc5d"),
+        (package_path / "ifccityjson",  REPO_PATH / "src/ifccityjson/ifccityjson"),
+        (package_path / "ifcclash",     REPO_PATH / "src/ifcclash/ifcclash"),
+        (package_path / "ifcpatch",     REPO_PATH / "src/ifcpatch/ifcpatch"),
+        (package_path / "ifctester",    REPO_PATH / "src/ifctester/ifctester"),
+        (package_path / "ifcfm",        REPO_PATH / "src/ifcfm/ifcfm"),
     )
     # fmt: on
 
@@ -245,7 +240,7 @@ def main() -> None:
         path.symlink_to(dest, dest.is_dir())
 
     print("Download third party dependencies...")
-    BONSAI_DATA = PACKAGE_PATH / "bonsai" / "bim" / "data"
+    BONSAI_DATA = package_path / "bonsai" / "bim" / "data"
     downloads = (
         (
             "https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js",

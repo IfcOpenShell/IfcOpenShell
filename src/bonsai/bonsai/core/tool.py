@@ -1082,6 +1082,7 @@ class Spatial:
     def create_mesh_from_shape(cls, shape): pass
     def get_x_y_z_h_mat_from_obj(cls, obj): pass
     def get_x_y_z_h_mat_from_cursor(cls): pass
+    def get_space_reference_point(cls, obj): pass
     def get_union_shape_from_selected_objects(cls): pass
     def get_boundary_elements(cls, selected_objects): pass
     def get_polygons(cls, boundary_elements): pass
