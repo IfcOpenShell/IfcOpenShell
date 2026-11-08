@@ -19,9 +19,9 @@ classifiers = [
 dependencies = ["ifcopenshell", "ifcquery", "ifcedit"]
 
 [project.optional-dependencies]
-# mcp 2.0.0 renamed mcp.server.fastmcp.FastMCP to mcp.server.mcpserver.MCPServer,
-# which the server is built on.
-mcp = ["mcp>=2,<3"]
+# The server is built on mcp 2.x's mcp.server.mcpserver.MCPServer, and falls back
+# to mcp 1.x's mcp.server.fastmcp.FastMCP, the same API under its old name.
+mcp = ["mcp>=1.26,<3"]
 
 [project.scripts]
 ifcmcp = "ifcmcp.__main__:main"

@@ -345,10 +345,13 @@ jobs:
           cd ../ifcquery && make test || fail "ifcquery"
           pip install -e ../ifcedit --no-deps
           cd ../ifcedit && make test || fail "ifcedit"
-          # ifcmcp is built on mcp.server.mcpserver.MCPServer (mcp 2.x).
+          # ifcmcp is built on mcp 2.x and falls back to mcp 1.x, which
+          # Linux distributions still ship, so test it against both.
           pip install "mcp>=2,<3"
           pip install -e ../ifcmcp --no-deps
-          cd ../ifcmcp && make test || fail "ifcmcp"
+          cd ../ifcmcp && make test || fail "ifcmcp (mcp 2.x)"
+          pip install "mcp>=1.26,<2"
+          make test || fail "ifcmcp (mcp 1.x)"
           pip install -e ../ifctester --no-deps
           cd ../ifctester && make test || fail "ifctester"
           make build-ids-docs || fail "build-ids-docs"

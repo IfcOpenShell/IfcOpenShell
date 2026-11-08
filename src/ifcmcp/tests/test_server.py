@@ -6,6 +6,15 @@ import pytest
 
 from ifcmcp.server import build_server
 
+try:
+    from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
+except ImportError:
+    # mcp 1.x keeps every exception's reason, so it never raises the bare message.
+    from mcp.server.fastmcp.exceptions import ToolError
+
+    class UnexpectedToolError(ToolError):
+        pass
+
 
 class TestServerRegistration:
     def test_server_name(self):
@@ -54,8 +63,6 @@ class TestToolErrorsKeepTheirReason:
         ],
     )
     def test_reason_reaches_the_client(self, name, arguments, reason):
-        from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
-
         server = build_server()
         if name == "ifc_info":
             asyncio.run(server.call_tool("ifc_new", {}))
@@ -67,8 +74,6 @@ class TestToolErrorsKeepTheirReason:
     def test_no_tool_loses_its_reason(self):
         """Every registered tool, however it is registered: called with no model
         loaded, it either works or fails with its reason, never the bare message."""
-        from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
-
         server = build_server()
         dummy = {"string": "", "integer": 0, "number": 0, "boolean": False, "array": [], "object": {}}
         for tool in server._tool_manager.list_tools():
