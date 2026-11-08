@@ -110,3 +110,57 @@ def test_svg_serializer(model, column, column_centre):
     svg = buf.get_value()
     assert "<svg" in svg
     assert "<path" in svg or "<polyline" in svg or "<polygon" in svg, svg
+
+
+def test_svg_serializer_elevation_ref_guid(column_centre):
+    """Bonsai's elevation path: the camera annotation's GlobalId is set as elevation-ref-guid.
+
+    finalize() then keys drawings on a null instance handle, which raised
+    "Trying to access deleted instance reference" in IFOPSH_SAFE_INSTANCE builds.
+    """
+    model = ifcopenshell.open(FIXTURE)
+    cx, cy, cz = column_centre
+    origin = model.createIfcAxis2Placement3D(model.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+    # A single straight edge defines a vertical elevation plane, here 5 units south of the column.
+    line = model.createIfcPolyline(
+        [
+            model.createIfcCartesianPoint((cx - 5.0, cy - 5.0, cz)),
+            model.createIfcCartesianPoint((cx + 5.0, cy - 5.0, cz)),
+        ]
+    )
+    axis_context = next(
+        c for c in model.by_type("IfcGeometricRepresentationSubContext") if c.ContextIdentifier == "Axis"
+    )
+    camera = model.createIfcAnnotation(
+        ifcopenshell.guid.new(),
+        Name="Test",
+        ObjectType="DRAWING",
+        ObjectPlacement=model.createIfcLocalPlacement(None, origin),
+        Representation=model.createIfcProductDefinitionShape(
+            None, None, [model.createIfcShapeRepresentation(axis_context, "Axis", "Curve3D", [line])]
+        ),
+    )
+
+    s = native_settings()
+    s.set("dimensionality", W.CURVES_SURFACES_AND_SOLIDS)
+    for key, value in [
+        ("svg-xmlns", True),
+        ("svg-project", True),
+        ("auto-elevation", False),
+        ("auto-section", False),
+        ("elevation-ref-guid", camera.GlobalId),
+    ]:
+        s.set(key, value)
+    buf = ifcopenshell.geom.serializers.buffer()
+    ser = ifcopenshell.geom.serializers.svg(buf, s)
+    ser.setFile(model)
+    ser.writeHeader()
+    it = ifcopenshell.geom.iterator(s, model, include=list(model.by_type("IfcColumn")) + [camera])
+    assert it.initialize()
+    while True:
+        ser.write(it.get())
+        if not it.next():
+            break
+    ser.finalize()
+    svg = buf.get_value()
+    assert "Elevation Test" in svg, svg

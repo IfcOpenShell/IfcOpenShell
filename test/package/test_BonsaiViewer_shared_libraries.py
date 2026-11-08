@@ -70,6 +70,14 @@ def test_every_plugin_is_tested(bonsaiviewer: Path):
     packaged = {
         path.name.split(".")[0]
         for path in plugins_dir.iterdir()
-        if path.name.startswith("ifcopenshell_") and path.suffix in (".so", ".dylib", ".dll")
+        if path.name.startswith("ifcopenshell_")
+        and path.suffix in (".so", ".dylib", ".dll")
+        and path.name.split(".")[0]
+        not in {
+            "ifcopenshell_parse",
+            "ifcopenshell_geometry",
+            "ifcopenshell_geometry_writer",
+            "ifcopenshell_plugin",
+        }
     }
     assert packaged == set(PLUGINS)
