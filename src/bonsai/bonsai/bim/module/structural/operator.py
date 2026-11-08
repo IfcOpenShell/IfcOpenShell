@@ -655,7 +655,10 @@ class EnableEditingStructuralLoadGroupActivities(bpy.types.Operator):
             for activity in rel.RelatedObjects:
                 new = self.props.load_group_activities.add()
                 new.ifc_definition_id = activity.id()
-                new.name = activity.AssignedToStructuralItem.Name or "Unnamed"
+                item = None
+                if activity.AssignedToStructuralItem:
+                    item = activity.AssignedToStructuralItem[0].RelatingElement
+                new.name = (item.Name if item else None) or "Unnamed"
                 new.applied_load_class = activity.AppliedLoad.is_a()
 
 
