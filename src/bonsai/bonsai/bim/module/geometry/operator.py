@@ -2791,17 +2791,17 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         if not obj:
             return {"CANCELLED"}
 
+        # Framing guide path editing
+        framing = tool.Ifc.get_entity(obj)
+        if tool.Parametric.is_framing(framing) and tool.Model.get_framing_props(obj).is_editing_path:
+            return bpy.ops.bim.finish_editing_framing_path()
+
         # Check if we're editing a representation item
         if tool.Geometry.is_representation_item(obj):
             return self.exit_item_edit_mode(context, obj)
 
-        element = tool.Ifc.get_entity(obj)
-
-        # Framing guide path editing
-        if tool.Parametric.is_framing(element) and tool.Model.get_framing_props(obj).is_editing_path:
-            return bpy.ops.bim.finish_editing_framing_path()
-
         # Check if we're editing an element-level profile or axis
+        element = tool.Ifc.get_entity(obj)
         if element and tool.Geometry.has_mesh_properties(obj.data):
             return self.exit_element_edit_mode(context, obj, element)
 
@@ -2966,6 +2966,11 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         if not obj:
             return {"CANCELLED"}
 
+        # Framing: edit its guide path. A pending edit of the system is committed first.
+        framing = tool.Ifc.get_entity(obj)
+        if tool.Parametric.is_framing(framing) and not framing.is_a("IfcTypeObject"):
+            return bpy.ops.bim.enable_editing_framing_path()
+
         # Check if object has mesh or curve data
         if not hasattr(obj, "data") or not obj.data:
             self.report({"INFO"}, "Object has no editable data")
@@ -2975,10 +2980,6 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         if not element:
             self.report({"INFO"}, "Active object is not an IFC element")
             return {"CANCELLED"}
-
-        # Framing: edit its guide path. A pending edit of the system is committed first.
-        if tool.Parametric.is_framing(element) and not element.is_a("IfcTypeObject"):
-            return bpy.ops.bim.enable_editing_framing_path()
 
         # Check if this is a LAYER2 element (wall, railing, etc.)
         try:

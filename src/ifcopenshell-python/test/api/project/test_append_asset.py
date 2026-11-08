@@ -651,6 +651,112 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         assert len(ifc_file.by_type("IfcActorRole")) == 2
 
 
+class TestAppendFramingAsset(test.bootstrap.IFC4):
+    """A framing type names its profiles in BBIM_Framing JSON and has no representation maps."""
+
+    def make_library(self, prefix="MILLI"):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(library, unit_type="LENGTHUNIT", prefix=prefix)
+        ifcopenshell.api.unit.assign_unit(library, units=[unit])
+        library.createIfcRectangleProfileDef("AREA", "Padding", None, 1.0, 1.0)  # so step ids differ
+        post = library.createIfcRectangleProfileDef("AREA", "Post 50", None, 50.0, 50.0)
+        rail = library.createIfcRectangleProfileDef("AREA", "Rail 40", None, 40.0, 40.0)
+        system = {
+            "default_height": 1100.0,
+            "members": [
+                {
+                    "name": "Post",
+                    "kind": "V",
+                    "spacing": {"mode": "MAX", "value": 1500.0},
+                    "at_ends": True,
+                    "profile": {"id": post.id(), "name": "Post 50"},
+                },
+                {"name": "Rail", "kind": "H", "v": 1070.0, "profile": {"id": rail.id(), "name": "Rail 40"}},
+            ],
+        }
+        railing_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcRailingType", name="Framed")
+        self.write(library, railing_type, Data=system)
+        return library, railing_type
+
+    def write(self, ifc_file, product, **values):
+        pset = ifcopenshell.api.pset.add_pset(ifc_file, product=product, name="BBIM_Framing")
+        ifcopenshell.api.pset.edit_pset(
+            ifc_file, pset=pset, properties={k: ifc_file.createIfcText(json.dumps(v)) for k, v in values.items()}
+        )
+
+    def read(self, element, name):
+        return json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Framing", name, should_inherit=False))
+
+    def make_project(self, prefix="MILLI"):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix=prefix)
+        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
+
+    def test_appending_a_type_brings_its_profiles_and_repoints_them(self):
+        library, railing_type = self.make_library()
+        self.make_project()
+        new_type = ifcopenshell.api.project.append_asset(self.file, library=library, element=railing_type)
+        members = self.read(new_type, "Data")["members"]
+        for member, name in zip(members, ("Post 50", "Rail 40")):
+            profile = self.file.by_id(member["profile"]["id"])
+            assert profile.is_a("IfcRectangleProfileDef")
+            assert profile.ProfileName == member["profile"]["name"] == name
+        assert len(self.file.by_type("IfcProfileDef")) == 2
+        # The library is unchanged.
+        assert library.by_id(self.read(railing_type, "Data")["members"][0]["profile"]["id"]).ProfileName == "Post 50"
+
+    def test_reusing_a_profile_of_the_same_name(self):
+        library, railing_type = self.make_library()
+        self.make_project()
+        existing = self.file.createIfcRectangleProfileDef("AREA", "Post 50", None, 50.0, 50.0)
+        new_type = ifcopenshell.api.project.append_asset(self.file, library=library, element=railing_type)
+        assert self.read(new_type, "Data")["members"][0]["profile"]["id"] == existing.id()
+        assert len(self.file.by_type("IfcProfileDef")) == 2
+
+    def test_converting_lengths_into_project_units(self):
+        library, railing_type = self.make_library(prefix="MILLI")
+        self.make_project(prefix=None)
+        new_type = ifcopenshell.api.project.append_asset(self.file, library=library, element=railing_type)
+        system = self.read(new_type, "Data")
+        assert system["default_height"] == pytest.approx(1.1)
+        assert system["members"][0]["spacing"]["value"] == pytest.approx(1.5)
+        assert system["members"][1]["v"] == pytest.approx(1.07)
+        assert self.file.by_id(system["members"][0]["profile"]["id"]).XDim == pytest.approx(0.05)
+
+    def test_appending_twice_does_not_convert_twice(self):
+        library, railing_type = self.make_library(prefix="MILLI")
+        self.make_project(prefix=None)
+        ifcopenshell.api.project.append_asset(self.file, library=library, element=railing_type)
+        new_type = ifcopenshell.api.project.append_asset(self.file, library=library, element=railing_type)
+        assert self.read(new_type, "Data")["default_height"] == pytest.approx(1.1)
+
+    def test_appending_an_occurrence_converts_its_guide_and_keeps_one_profile_each(self):
+        library, railing_type = self.make_library(prefix="MILLI")
+        railing = ifcopenshell.api.root.create_entity(library, ifc_class="IfcRailing")
+        ifcopenshell.api.type.assign_type(library, related_objects=[railing], relating_type=railing_type)
+        self.write(library, railing, Guide={"verts": [[0.0, 0.0, 0.0], [3000.0, 0.0, 0.0]], "height": 1200.0})
+        # The occurrence's body uses the post profile, as a framed occurrence's does.
+        model = ifcopenshell.api.context.add_context(library, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            library, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        post = next(p for p in library.by_type("IfcProfileDef") if p.ProfileName == "Post 50")
+        representation = ShapeBuilder(library).get_representation(body, [ShapeBuilder(library).extrude(post, 1000.0)])
+        ifcopenshell.api.geometry.assign_representation(library, product=railing, representation=representation)
+        self.make_project(prefix=None)
+
+        new_railing = ifcopenshell.api.project.append_asset(self.file, library=library, element=railing)
+        assert self.read(new_railing, "Guide") == {
+            "verts": [[0.0, 0.0, 0.0], [3.0, 0.0, 0.0]],
+            "height": pytest.approx(1.2),
+        }
+        new_type = ifcopenshell.util.element.get_type(new_railing)
+        members = self.read(new_type, "Data")["members"]
+        assert self.file.by_id(members[0]["profile"]["id"]).ProfileName == "Post 50"
+        assert sorted(p.ProfileName for p in self.file.by_type("IfcProfileDef")) == ["Post 50", "Rail 40"]
+
+
 class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
     # NOTE: breaks in IFC2X3 since IfcProfileDef doesn't have "HasProperties" inverse in ifc2x3
     # and we use it in whitelisted_inverse_attributes for appending IfcProfileDef
@@ -846,109 +952,3 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
         ifcopenshell.api.material.add_material_set(self.file, set_type="IfcMaterialProfileSet", name="TestProfileSet")
         ifcopenshell.api.project.append_asset(self.file, library, column_type, assume_asset_uniqueness_by_name=False)
         assert len(self.file.by_type("IfcMaterialProfileSet")) == 2
-
-
-class TestAppendFramingAsset(test.bootstrap.IFC4):
-    """A framing type names its profiles in BBIM_Framing JSON and has no representation maps."""
-
-    def make_library(self, prefix="MILLI"):
-        library = ifcopenshell.api.project.create_file(version=self.file.schema)
-        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
-        unit = ifcopenshell.api.unit.add_si_unit(library, unit_type="LENGTHUNIT", prefix=prefix)
-        ifcopenshell.api.unit.assign_unit(library, units=[unit])
-        library.createIfcRectangleProfileDef("AREA", "Padding", None, 1.0, 1.0)  # so step ids differ
-        post = library.createIfcRectangleProfileDef("AREA", "Post 50", None, 50.0, 50.0)
-        rail = library.createIfcRectangleProfileDef("AREA", "Rail 40", None, 40.0, 40.0)
-        system = {
-            "default_height": 1100.0,
-            "members": [
-                {
-                    "name": "Post",
-                    "kind": "V",
-                    "spacing": {"mode": "MAX", "value": 1500.0},
-                    "at_ends": True,
-                    "profile": {"id": post.id(), "name": "Post 50"},
-                },
-                {"name": "Rail", "kind": "H", "v": 1070.0, "profile": {"id": rail.id(), "name": "Rail 40"}},
-            ],
-        }
-        railing_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcRailingType", name="Framed")
-        self.write(library, railing_type, Data=system)
-        return library, railing_type
-
-    def write(self, ifc_file, product, **values):
-        pset = ifcopenshell.api.pset.add_pset(ifc_file, product=product, name="BBIM_Framing")
-        ifcopenshell.api.pset.edit_pset(
-            ifc_file, pset=pset, properties={k: ifc_file.createIfcText(json.dumps(v)) for k, v in values.items()}
-        )
-
-    def read(self, element, name):
-        return json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Framing", name, should_inherit=False))
-
-    def make_project(self, prefix="MILLI"):
-        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
-        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix=prefix)
-        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
-
-    def test_appending_a_type_brings_its_profiles_and_repoints_them(self):
-        library, railing_type = self.make_library()
-        self.make_project()
-        new_type = ifcopenshell.api.project.append_asset(self.file, library=library, element=railing_type)
-        members = self.read(new_type, "Data")["members"]
-        for member, name in zip(members, ("Post 50", "Rail 40")):
-            profile = self.file.by_id(member["profile"]["id"])
-            assert profile.is_a("IfcRectangleProfileDef")
-            assert profile.ProfileName == member["profile"]["name"] == name
-        assert len(self.file.by_type("IfcProfileDef")) == 2
-        # The library is unchanged.
-        assert library.by_id(self.read(railing_type, "Data")["members"][0]["profile"]["id"]).ProfileName == "Post 50"
-
-    def test_reusing_a_profile_of_the_same_name(self):
-        library, railing_type = self.make_library()
-        self.make_project()
-        existing = self.file.createIfcRectangleProfileDef("AREA", "Post 50", None, 50.0, 50.0)
-        new_type = ifcopenshell.api.project.append_asset(self.file, library=library, element=railing_type)
-        assert self.read(new_type, "Data")["members"][0]["profile"]["id"] == existing.id()
-        assert len(self.file.by_type("IfcProfileDef")) == 2
-
-    def test_converting_lengths_into_project_units(self):
-        library, railing_type = self.make_library(prefix="MILLI")
-        self.make_project(prefix=None)
-        new_type = ifcopenshell.api.project.append_asset(self.file, library=library, element=railing_type)
-        system = self.read(new_type, "Data")
-        assert system["default_height"] == pytest.approx(1.1)
-        assert system["members"][0]["spacing"]["value"] == pytest.approx(1.5)
-        assert system["members"][1]["v"] == pytest.approx(1.07)
-        assert self.file.by_id(system["members"][0]["profile"]["id"]).XDim == pytest.approx(0.05)
-
-    def test_appending_twice_does_not_convert_twice(self):
-        library, railing_type = self.make_library(prefix="MILLI")
-        self.make_project(prefix=None)
-        ifcopenshell.api.project.append_asset(self.file, library=library, element=railing_type)
-        new_type = ifcopenshell.api.project.append_asset(self.file, library=library, element=railing_type)
-        assert self.read(new_type, "Data")["default_height"] == pytest.approx(1.1)
-
-    def test_appending_an_occurrence_converts_its_guide_and_keeps_one_profile_each(self):
-        library, railing_type = self.make_library(prefix="MILLI")
-        railing = ifcopenshell.api.root.create_entity(library, ifc_class="IfcRailing")
-        ifcopenshell.api.type.assign_type(library, related_objects=[railing], relating_type=railing_type)
-        self.write(library, railing, Guide={"verts": [[0.0, 0.0, 0.0], [3000.0, 0.0, 0.0]], "height": 1200.0})
-        # The occurrence's body uses the post profile, as a framed occurrence's does.
-        model = ifcopenshell.api.context.add_context(library, context_type="Model")
-        body = ifcopenshell.api.context.add_context(
-            library, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
-        )
-        post = next(p for p in library.by_type("IfcProfileDef") if p.ProfileName == "Post 50")
-        representation = ShapeBuilder(library).get_representation(body, [ShapeBuilder(library).extrude(post, 1000.0)])
-        ifcopenshell.api.geometry.assign_representation(library, product=railing, representation=representation)
-        self.make_project(prefix=None)
-
-        new_railing = ifcopenshell.api.project.append_asset(self.file, library=library, element=railing)
-        assert self.read(new_railing, "Guide") == {
-            "verts": [[0.0, 0.0, 0.0], [3.0, 0.0, 0.0]],
-            "height": pytest.approx(1.2),
-        }
-        new_type = ifcopenshell.util.element.get_type(new_railing)
-        members = self.read(new_type, "Data")["members"]
-        assert self.file.by_id(members[0]["profile"]["id"]).ProfileName == "Post 50"
-        assert sorted(p.ProfileName for p in self.file.by_type("IfcProfileDef")) == ["Post 50", "Rail 40"]
