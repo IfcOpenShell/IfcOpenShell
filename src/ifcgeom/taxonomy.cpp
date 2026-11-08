@@ -4,6 +4,8 @@
 #include "function_item_evaluator.h"
 #include "profile_helper.h"
 
+#include <set>
+
 using namespace ifcopenshell::geom::taxonomy;
 namespace taxonomy = ifcopenshell::geom::taxonomy;
 
@@ -12,6 +14,27 @@ constexpr double polygon_pi = boost::math::constants::pi<double>();
 
 Eigen::Vector3d transform_point(const matrix4::ptr& m, const Eigen::Vector3d& p) {
     return m ? (m->ccomponents() * p.homogeneous()).head<3>().eval() : p;
+}
+
+// Resolve explicit polygon endpoints in the shell's coordinate system,
+// including placements on the shell, face, loop, and individual edge.
+bool shell_edge_points(const shell& sh, const face::ptr& f, const loop::ptr& l,
+                       const edge::ptr& e, Eigen::Vector3d& a, Eigen::Vector3d& b) {
+    auto start = std::get_if<point3::ptr>(&e->start);
+    auto end = std::get_if<point3::ptr>(&e->end);
+    if (!start || !end || !*start || !*end) {
+        return false;
+    }
+    auto place = [&](const point3::ptr& p) {
+        return transform_point(sh.matrix, transform_point(f->matrix,
+            transform_point(l->matrix, transform_point(e->matrix, p->ccomponents()))));
+    };
+    a = place(*start);
+    b = place(*end);
+    if (e->orientation.value_or(true) != (f->orientation.value_or(true) == l->orientation.value_or(true))) {
+        std::swap(a, b);
+    }
+    return a.allFinite() && b.allFinite();
 }
 
 double curve_parameter(const item::ptr& basis, const std::variant<boost::blank, point3::ptr, double>& trim) {
@@ -96,6 +119,150 @@ Eigen::Vector3d endpoint_tangent(const item::ptr& i, bool at_end) {
     return tangent.normalized();
 }
 } // namespace
+
+bool shell::is_polyhedral() const {
+    for (const auto& f : children) {
+        if (f->basis && f->basis->kind() != PLANE) {
+            return false;
+        }
+        for (const auto& l : f->children) {
+            if (!l->is_polyhedron()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool shell::is_manifold() const {
+    using point_key = std::array<double, 3>;
+    using edge_key = std::pair<point_key, point_key>;
+    std::set<edge_key> unmatched, paired;
+    if (children.empty()) {
+        return false;
+    }
+    for (const auto& f : children) {
+        if (f->children.empty()) {
+            return false;
+        }
+        for (const auto& l : f->children) {
+            if (l->children.size() < 3) {
+                return false;
+            }
+            for (const auto& e : l->children) {
+                Eigen::Vector3d a, b;
+                if (!shell_edge_points(*this, f, l, e, a, b)) {
+                    return false;
+                }
+                point_key p{a.x(), a.y(), a.z()}, q{b.x(), b.y(), b.z()};
+                if (p == q) {
+                    return false;
+                }
+                const edge_key key{p, q}, reverse{q, p};
+                const auto canonical = p < q ? key : reverse;
+                // A parity toggle alone would incorrectly accept four uses.
+                if (paired.count(canonical)) {
+                    return false;
+                }
+                auto opposite = unmatched.find(reverse);
+                if (opposite != unmatched.end()) {
+                    unmatched.erase(opposite);
+                    paired.insert(canonical);
+                } else if (!unmatched.insert(key).second) {
+                    return false; // Two uses in the same direction.
+                }
+            }
+        }
+    }
+    return unmatched.empty();
+}
+
+bool shell::is_coplanar(double linear_tolerance) const {
+    if (!std::isfinite(linear_tolerance) || linear_tolerance < 0.) {
+        return false;
+    }
+    face::ptr reference_face;
+    double largest_box = -1.;
+    for (const auto& f : children) {
+        if (f->children.empty()) {
+            return false;
+        }
+        Eigen::Vector3d low = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+        Eigen::Vector3d high = -low;
+        bool has_points = false;
+        for (const auto& l : f->children) {
+            for (const auto& e : l->children) {
+                Eigen::Vector3d a, b;
+                if (!shell_edge_points(*this, f, l, e, a, b)) {
+                    return false;
+                }
+                low = low.cwiseMin(a).cwiseMin(b);
+                high = high.cwiseMax(a).cwiseMax(b);
+                has_points = true;
+            }
+        }
+        if (!has_points) {
+            return false;
+        }
+        const double size = (high - low).squaredNorm();
+        if (size > largest_box) {
+            largest_box = size;
+            reference_face = f;
+        }
+    }
+    if (!reference_face) {
+        return false;
+    }
+    auto outer = reference_face->children.front();
+    for (const auto& l : reference_face->children) {
+        if (l->external.value_or(false)) {
+            outer = l;
+            break;
+        }
+    }
+    if (outer->children.size() < 3) {
+        return false;
+    }
+    Eigen::Vector3d origin, end;
+    if (!shell_edge_points(*this, reference_face, outer, outer->children.front(), origin, end)) {
+        return false;
+    }
+    Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+    Eigen::Vector3d center = Eigen::Vector3d::Zero();
+    double cross_magnitudes = 0.;
+    for (const auto& e : outer->children) {
+        Eigen::Vector3d a, b;
+        if (!shell_edge_points(*this, reference_face, outer, e, a, b)) {
+            return false;
+        }
+        // Newell's normal about a local origin, avoiding cancellation at
+        // large model coordinates. Reject an indeterminate normal independently
+        // of the distance tolerance, so coplanarity is monotone in tolerance.
+        const Eigen::Vector3d cross = (a - origin).cross(b - origin);
+        normal += cross;
+        cross_magnitudes += cross.norm();
+        center += a - origin;
+    }
+    const double magnitude = normal.norm();
+    if (!std::isfinite(magnitude) || magnitude <= std::numeric_limits<double>::epsilon() * cross_magnitudes) {
+        return false;
+    }
+    normal /= magnitude;
+    center /= static_cast<double>(outer->children.size());
+    for (const auto& f : children) {
+        for (const auto& l : f->children) {
+            for (const auto& e : l->children) {
+                Eigen::Vector3d a, b;
+                if (!shell_edge_points(*this, f, l, e, a, b) ||
+                    std::abs(((a - origin) - center).dot(normal)) > linear_tolerance ||
+                    std::abs(((b - origin) - center).dot(normal)) > linear_tolerance) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
 
 std::vector<point3> curve::to_polygon(const ifcopenshell::geom::settings& settings, double a, double b, int segments) const {
     if (kind() != LINE && a == -std::numeric_limits<double>::infinity() && b == std::numeric_limits<double>::infinity()) {

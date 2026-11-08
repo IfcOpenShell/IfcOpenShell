@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2026 Ryan Schultz
+# Copyright (C) 2026 Bruno Postle <bruno@postle.net>
 #
 # This file is part of IfcOpenShell.
 #
@@ -15,16 +15,42 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
-
 # This file was generated with the assistance of an AI coding tool.
 
 import ifcopenshell.api.group
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
+import ifcopenshell.guid
 import test.bootstrap
 
 
 class TestRemoveStructuralLoadGroup(test.bootstrap.IFC4):
+    def test_removing_a_load_combination_of_several_load_cases(self):
+        dead = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Dead")
+        live = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Live")
+        uls = ifcopenshell.api.structural.add_structural_load_combination(self.file, name="ULS")
+        ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=dead, load_combination=uls, factor=1.5
+        )
+        ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=live, load_combination=uls, factor=1.5
+        )
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=uls)
+        assert not self.file.by_type("IfcStructuralLoadGroup", include_subtypes=False)
+        assert not self.file.by_type("IfcRelAssignsToGroup")
+        assert set(self.file.by_type("IfcStructuralLoadCase")) == {dead, live}
+
+    def test_removing_a_load_group_from_a_load_case_with_other_groups(self):
+        dead = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Dead")
+        slab = ifcopenshell.api.structural.add_structural_load_group(self.file, name="Slab")
+        wall = ifcopenshell.api.structural.add_structural_load_group(self.file, name="Wall")
+        rel = self.file.createIfcRelAssignsToGroup(
+            ifcopenshell.guid.new(), RelatedObjects=[slab, wall], RelatingGroup=dead
+        )
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=slab)
+        assert rel.RelatedObjects == (wall,)
+        assert rel.RelatingGroup == dead
+
     def test_removing_a_load_group(self):
         group = ifcopenshell.api.structural.add_structural_load_group(self.file)
         ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=group)
@@ -65,5 +91,11 @@ class TestRemoveStructuralLoadGroup(test.bootstrap.IFC4):
         assert not self.file.by_type("IfcRelAssignsToGroup")
 
 
-class TestRemoveStructuralLoadGroupIFC2X3(test.bootstrap.IFC2X3, TestRemoveStructuralLoadGroup):
+class TestRemoveStructuralLoadGroupIFC4X3(test.bootstrap.IFC4X3, TestRemoveStructuralLoadGroup):
     pass
+
+
+class TestRemoveStructuralLoadGroupIFC2X3(test.bootstrap.IFC2X3, TestRemoveStructuralLoadGroup):
+    # IFC2X3 has no IfcStructuralLoadCase, which these build on.
+    test_removing_a_load_combination_of_several_load_cases = None
+    test_removing_a_load_group_from_a_load_case_with_other_groups = None

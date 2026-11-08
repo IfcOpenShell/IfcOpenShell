@@ -13,7 +13,10 @@ runs:
   using: composite
   steps:
     - name: Set up Python ${{ inputs.python-version }}
-      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      # Actions inside composite actions should be locked by hash,
+      # currently there's a bug in `actions-lock` that drops that hash.
+      # See https://github.com/github/gh-actions-lock/issues/264
+      uses: actions/setup-python@v7.0.0  # zizmor: ignore[unpinned-uses]
       with:
         python-version: ${{ inputs.python-version }}
 
