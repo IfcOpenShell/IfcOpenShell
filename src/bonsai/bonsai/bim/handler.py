@@ -60,6 +60,7 @@ from bonsai.bim.module.model.decorator import (
 from bonsai.bim.module.model.wall import WallGizmoPreviewDecorator
 from bonsai.bim.module.nest.decorator import NestDecorator
 from bonsai.bim.module.structural.decorator import LoadsDecorator, show_loads_after_load
+from bonsai.tool.spatial import install_geom_cache_handlers, uninstall_geom_cache_handlers
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 global_subscription_owner = object()
@@ -122,7 +123,23 @@ def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -
 def active_object_callback():
     refresh_ui_data()
     update_bim_tool_props()
+    update_spatial_tool_props()
     tool.Geometry.sync_item_positions()
+
+
+def update_spatial_tool_props():
+    """Sync ``BIMSpatialDecompositionProperties.space_height`` with the
+    active object's height when it is an ``IfcSpace``, otherwise reset to
+    the 3m default. Called from the msgbus active-object callback so Scene
+    property writes happen outside ``draw()``."""
+    obj = tool.Blender.get_active_object()
+    props = tool.Spatial.get_spatial_props()
+    if obj:
+        element = tool.Ifc.get_entity(obj)
+        if element and element.is_a("IfcSpace"):
+            props.space_height = obj.dimensions.z
+            return
+    props.space_height = 3
 
 
 def update_bim_tool_props():
@@ -526,6 +543,7 @@ def _install_viewport_overlays() -> None:
     LoadsDecorator.uninstall()
     LoadsDecorator.is_picking = False  # Loading a file ends running operators.
     uninstall_decorator_cache_handlers()
+    uninstall_geom_cache_handlers()
     try:
         # Shown after the load handlers, as the IFC may not be loaded yet.
         if tool.Structural.get_structural_props().show_loads:
@@ -571,6 +589,7 @@ def _install_viewport_overlays() -> None:
         ArrayPreviewDecorator.install(bpy.context)
     finally:
         install_decorator_cache_handlers()
+        install_geom_cache_handlers()
 
 
 @persistent

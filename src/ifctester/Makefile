@@ -105,10 +105,13 @@ else
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/pyproject.toml
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/$(PACKAGE_NAME)/__init__.py
 endif
+	# Older pip trusts the compromised TLS certificates.
 	cd $(WEBAPP_IFCTESTER_BUILD_DIR) && if command -v uv >/dev/null 2>&1; then \
 		uv build --wheel; \
 	else \
-		$(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && python -m pip install build && python -m build --wheel; \
+		$(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && \
+		python -m pip install --upgrade pip && \
+		python -m pip install build && python -m build --wheel; \
 	fi
 	mkdir -p $(WEBAPP_GENERATED_DIR)
 	wheel=$$(basename $(WEBAPP_IFCTESTER_BUILD_DIR)/dist/$(PACKAGE_NAME)-*.whl); \
