@@ -251,6 +251,51 @@ class TestFace(test.bootstrap.IFC4):
         assert np.allclose(face.Bounds[0].Bound.Polygon[3], (0, 1, 0))
 
 
+class TestFaceSurface(test.bootstrap.IFC4):
+    # IfcStructuralItem, Topology Representation: surface members and connections shall be an
+    # IfcFaceSurface whose surface is the reference surface, its bounds edges as for curve items
+    def test_run(self):
+        builder = ShapeBuilder(self.file)
+        points = ((0, 0, 0), (2, 0, 0), (2, 1, 0), (0, 1, 0))
+        face = builder.face_surface(points)
+        assert face.is_a("IfcFaceSurface")
+        assert face.FaceSurface.is_a("IfcPlane")
+        assert np.allclose(face.FaceSurface.Position.Location.Coordinates, (0, 0, 0))
+        assert np.allclose(face.FaceSurface.Position.Axis.DirectionRatios, (0, 0, 1))
+        loop = face.Bounds[0].Bound
+        assert loop.is_a("IfcEdgeLoop")
+        # EdgeStart and EdgeEnd of an IfcOrientedEdge are derived from its EdgeElement
+        ends_of = lambda e: (
+            (e.EdgeElement.EdgeStart, e.EdgeElement.EdgeEnd)[:: 1 if e.Orientation else -1]
+            if e.is_a("IfcOrientedEdge")
+            else (e.EdgeStart, e.EdgeEnd)
+        )
+        starts = [ends_of(e)[0] for e in loop.EdgeList]
+        ends = [ends_of(e)[1] for e in loop.EdgeList]
+        assert all(v.is_a("IfcVertexPoint") for v in starts)
+        assert np.allclose([v.VertexGeometry.Coordinates for v in starts], points)
+        # Neighbouring edges share their vertices
+        assert ends == starts[1:] + starts[:1]
+
+    def test_normal_follows_the_winding(self):
+        builder = ShapeBuilder(self.file)
+        face = builder.face_surface(((0, 0, 0), (0, 1, 0), (2, 1, 0), (2, 0, 0)))
+        assert np.allclose(face.FaceSurface.Position.Axis.DirectionRatios, (0, 0, -1))
+
+    def test_a_face_away_from_the_origin_and_out_of_the_horizontal(self):
+        builder = ShapeBuilder(self.file)
+        face = builder.face_surface(((1, 2, 3), (4, 2, 3), (4, 2, 5), (1, 2, 5)))
+        position = face.FaceSurface.Position
+        assert np.allclose(position.Location.Coordinates, (1, 2, 3))
+        assert np.allclose(position.Axis.DirectionRatios, (0, -1, 0))
+        assert np.allclose(position.RefDirection.DirectionRatios, (1, 0, 0))
+
+    def test_points_in_a_line_are_refused(self):
+        builder = ShapeBuilder(self.file)
+        with pytest.raises(ValueError):
+            builder.face_surface(((0, 0, 0), (1, 0, 0), (2, 0, 0)))
+
+
 class TestCalculateTransitions(test.bootstrap.IFC4):
     def calculate_and_test(self, params: dict[str, Any], length: Union[float, None]):
         np_X, np_Y = 0, 1

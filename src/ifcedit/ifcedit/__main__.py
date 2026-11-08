@@ -25,7 +25,7 @@ import sys
 
 import ifcopenshell
 
-from ifcedit.discover import function_docs, list_functions, list_modules
+from ifcedit.discover import function_docs, list_functions, list_modules, search_functions
 from ifcedit.foreach import run_foreach
 from ifcedit.quantify import list_rules, run_quantify
 from ifcedit.run import run_api
@@ -72,6 +72,10 @@ def cmd_list(args):
     else:
         modules = list_modules()
         print(format_output(modules, args.output_format))
+
+
+def cmd_search(args):
+    print(format_output(search_functions(args.query, limit=args.limit), args.output_format))
 
 
 def cmd_docs(args):
@@ -217,6 +221,11 @@ def main():
     list_parser = subparsers.add_parser("list", help="List API modules or functions in a module")
     list_parser.add_argument("module", nargs="?", help="Module name (omit to list all modules)")
 
+    # search
+    search_parser = subparsers.add_parser("search", help="Find API functions by keyword")
+    search_parser.add_argument("query", help="Words describing what you want to do (e.g. 'assign container')")
+    search_parser.add_argument("--limit", type=int, default=20, help="Most results to show (default: 20)")
+
     # docs
     docs_parser = subparsers.add_parser("docs", help="Show full documentation for an API function")
     docs_parser.add_argument("function_path", help="module.function (e.g. root.create_entity)")
@@ -253,6 +262,8 @@ def main():
 
     if args.command == "list":
         cmd_list(args)
+    elif args.command == "search":
+        cmd_search(args)
     elif args.command == "docs":
         cmd_docs(args)
     elif args.command == "run":
