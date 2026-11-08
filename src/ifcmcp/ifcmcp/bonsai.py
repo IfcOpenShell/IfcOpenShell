@@ -1,5 +1,5 @@
 # This file was generated with the assistance of an AI coding tool.
-"""Run ifcmcp's read-only tools on the model open in Bonsai.
+"""Run ifcmcp's tools on the model open in Bonsai.
 
 Bonsai's MCP bridge (Quality and Coordination > Collaboration > MCP Bridge)
 listens on a local port. Each tool call opens a connection, sends

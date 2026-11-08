@@ -40,8 +40,9 @@ def main():
         const=9877,
         metavar="PORT",
         help=(
-            "Query the model open in Bonsai instead of a file, through its MCP bridge "
-            "(default port 9877). Offers only the read-only tools"
+            "Work on the model open in Bonsai instead of a file, through its MCP bridge "
+            "(default port 9877). Offers the query tools and ifc_edit, ifc_shape, "
+            "ifc_quantify, ifc_undo and ifc_redo"
         ),
     )
     parser.add_argument(

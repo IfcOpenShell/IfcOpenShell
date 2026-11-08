@@ -52,6 +52,26 @@ READ_ONLY_TOOLS = frozenset(
     }
 )
 
+# Tools offered for the model open in Bonsai. Bonsai runs each edit as one of
+# its own undo steps, and ifc_undo and ifc_redo step through Bonsai's history.
+BONSAI_TOOLS = READ_ONLY_TOOLS | {"ifc_edit", "ifc_shape", "ifc_quantify", "ifc_undo", "ifc_redo"}
+
+# Descriptions for tools that behave differently on the model open in Bonsai.
+BONSAI_DESCRIPTIONS = {
+    "ifc_undo": """Undo the last change made by ``ifc_edit``, ``ifc_shape`` or ``ifc_quantify``.
+
+Each of those calls is one step in Bonsai's undo history, which it shares
+with the user's own changes. Fails, changing nothing, when the last step in
+Bonsai is not one of these calls, so the user's work is never undone.
+Returns how many of these steps can still be undone and redone in a row.""",
+    "ifc_redo": """Redo the last change undone by ``ifc_undo``.
+
+Any new change in Bonsai after an undo, made through these tools or by the
+user, discards what could be redone. Fails, changing nothing, when the next
+step in Bonsai's undo history is not one of these calls. Returns how many of
+these steps can still be undone and redone in a row.""",
+}
+
 
 def _annotations(name: str) -> Any:
     # camelCase arguments, because mcp 1.x accepts no other spelling.
@@ -65,9 +85,9 @@ def build_server(allow_execute: bool = False, bonsai_port: int | None = None) ->
 
     :param allow_execute: Offer ``ifc_execute``, which runs arbitrary Python
         sent by the client.
-    :param bonsai_port: Query the model open in Bonsai, through the MCP bridge
-        listening on this port, instead of a model held here. Only the
-        read-only tools are offered, and never ``ifc_execute``.
+    :param bonsai_port: Work on the model open in Bonsai, through the MCP
+        bridge listening on this port, instead of a model held here. Only
+        ``BONSAI_TOOLS`` are offered, and never ``ifc_execute``.
     """
     if MCPServer is None:
         raise ImportError(
@@ -105,11 +125,14 @@ def build_server(allow_execute: bool = False, bonsai_port: int | None = None) ->
     def _tool(fn):
         """Register a tool, taking its MCP description from the identically-named
         IfcSession method rather than duplicating it here. Bonsai is offered
-        only the read-only tools."""
-        if bonsai_port is not None and fn.__name__ not in READ_ONLY_TOOLS:
-            return fn
+        only BONSAI_TOOLS, with BONSAI_DESCRIPTIONS where they differ."""
+        description = inspect.getdoc(getattr(IfcSession, fn.__name__))
+        if bonsai_port is not None:
+            if fn.__name__ not in BONSAI_TOOLS:
+                return fn
+            description = BONSAI_DESCRIPTIONS.get(fn.__name__, description)
         return server.tool(
-            description=inspect.getdoc(getattr(IfcSession, fn.__name__)),
+            description=description,
             annotations=_annotations(fn.__name__),
         )(_keep_reason(fn))
 

@@ -27,16 +27,19 @@ sends. Start it with `ifcmcp --no-execute` to leave that tool out. It is never
 offered over the `sse` or `streamable-http` transports, where anyone who can
 reach the port could use it.
 
-### Querying the model open in Bonsai
+### Working on the model open in Bonsai
 
 ```bash
 ifcmcp --bonsai
 ```
 
 In Bonsai, open the Quality and Coordination tab, then Collaboration > MCP
-Bridge, and press Start MCP Bridge. The server then answers each query from the model open in
-Bonsai, including changes not yet saved. Only the read-only query tools are
-offered: nothing is loaded, edited or saved. The bridge listens on
+Bridge, and press Start MCP Bridge. The server then works on the model open in
+Bonsai, including changes not yet saved. The query tools are offered, and of
+the editing tools ifc_edit, ifc_shape, ifc_quantify, ifc_undo and ifc_redo.
+Each edit is one step in Bonsai's undo history, and ifc_undo and ifc_redo
+step through that history but refuse to undo the user's own changes. Nothing
+is loaded or saved: saving is left to the user. The bridge listens on
 `localhost:9877`; to use another port, set it in the panel and pass it as
 `ifcmcp --bonsai PORT`.
 

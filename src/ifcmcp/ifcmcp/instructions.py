@@ -29,9 +29,7 @@ Find the right function with ifc_search, in the API's own terms ("assign \
 container", "edit attributes"), or browse with ifc_list. Read its \
 parameters with ifc_docs before calling ifc_edit. Prefer ifcopenshell.api functions over creating raw \
 entities: they maintain the relationships that keep a model valid. Check \
-the result of each edit with the query tools. Each ifc_edit, ifc_shape and \
-ifc_quantify call is one undo step: ifc_undo reverts it and ifc_redo \
-reapplies it. A call that fails changes nothing.
+the result of each edit with the query tools. {undo}
 
 Pass entity arguments to ifc_edit as STEP ids, written as strings: "42", \
 or "5,6,7" for a list.
@@ -95,24 +93,40 @@ Use ifc_schema to look up what an IFC class means and which attributes and \
 predefined types it has.
 """
 
-INSTRUCTIONS = _INTRO + _WORKING + _EDITING + _CONCEPTS + _UNITS + _SCHEMAS
+INSTRUCTIONS = (
+    _INTRO
+    + _WORKING
+    + _EDITING.format(
+        undo="Each ifc_edit, ifc_shape and ifc_quantify call is one undo step: ifc_undo "
+        "reverts it and ifc_redo reapplies it. A call that fails changes nothing."
+    )
+    + _CONCEPTS
+    + _UNITS
+    + _SCHEMAS
+)
 
-# ifcmcp --bonsai serves only the read-only tools, on the model open in Bonsai.
+# ifcmcp --bonsai works on the model open in Bonsai, with BONSAI_TOOLS only.
 BONSAI_INSTRUCTIONS = (
     """\
-MCP server for querying the IFC model open in Bonsai, the Blender add-on. \
-It reads the live session, so each call sees the user's latest changes, \
-including unsaved ones. Only the query tools are available: to change the \
-model, describe the change for the user to make in Bonsai.
+MCP server for working on the IFC model open in Bonsai, the Blender add-on. \
+It works on the live session: each call sees the user's latest changes, \
+including unsaved ones, and the user sees each edit in Bonsai as soon as it \
+is made. Saving the model is left to the user.
 """
     + _WORKING
+    + _EDITING.format(
+        undo="Each ifc_edit, ifc_shape and ifc_quantify call is one step in Bonsai's "
+        "undo history, which it shares with the user's own changes. ifc_undo reverts "
+        "the last step only if it is one of these calls, and ifc_redo reapplies it; "
+        "they never undo the user's work. A call that fails changes nothing."
+    )
     + _CONCEPTS
+    + _UNITS
     + """
-# Units and schema
+# Schema
 
-Check the model's length unit with ifc_select(query="IfcSIUnit"); ifc_info \
-reports placements in that unit. Use ifc_schema to look up what an IFC \
-class means and which attributes and predefined types it has.
+Use ifc_schema to look up what an IFC class means and which attributes and \
+predefined types it has.
 """
 )
 

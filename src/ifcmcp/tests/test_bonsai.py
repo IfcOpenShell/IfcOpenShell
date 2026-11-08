@@ -10,7 +10,7 @@ import pytest
 from ifcmcp.bonsai import BonsaiSession
 from ifcmcp.core import IfcSession, IfcSessionError
 from ifcmcp.instructions import BONSAI_INSTRUCTIONS
-from ifcmcp.server import READ_ONLY_TOOLS, build_server
+from ifcmcp.server import BONSAI_TOOLS, build_server
 
 try:
     from mcp.server.mcpserver.exceptions import ToolError
@@ -91,9 +91,9 @@ class TestBonsaiSession:
 
 
 class TestBonsaiServer:
-    def test_offers_only_the_read_only_tools(self):
+    def test_offers_only_the_bonsai_tools(self):
         server = build_server(allow_execute=True, bonsai_port=free_port())
-        assert {t.name for t in server._tool_manager.list_tools()} == READ_ONLY_TOOLS
+        assert {t.name for t in server._tool_manager.list_tools()} == BONSAI_TOOLS
 
     def test_sends_the_bonsai_instructions(self):
         assert build_server(bonsai_port=free_port()).instructions == BONSAI_INSTRUCTIONS
@@ -103,11 +103,25 @@ class TestBonsaiServer:
         named = set(re.findall(r"\bifc_[a-z_]+", BONSAI_INSTRUCTIONS))
         assert named <= tools, named - tools
 
+    def test_undo_and_redo_describe_bonsai_history(self):
+        tools = {t.name: t for t in build_server(bonsai_port=free_port())._tool_manager.list_tools()}
+        for name in ("ifc_undo", "ifc_redo"):
+            assert "Bonsai" in tools[name].description
+            assert "Loading" not in tools[name].description
+
     def test_tool_calls_reach_bonsai(self, bonsai):
         server = build_server(bonsai_port=bonsai.port)
         asyncio.run(server.call_tool("ifc_summary", {}))
         asyncio.run(server.call_tool("ifc_select", {"query": "IfcSlab"}))
         assert [r["name"] for r in bonsai.requests] == ["ifc_summary", "ifc_select"]
+
+    def test_edits_reach_bonsai(self, bonsai):
+        server = build_server(bonsai_port=bonsai.port)
+        params = json.dumps({"ifc_class": "IfcWall", "name": "Bridged"})
+        asyncio.run(server.call_tool("ifc_edit", {"function_path": "root.create_entity", "params": params}))
+        asyncio.run(server.call_tool("ifc_undo", {}))
+        assert [r["name"] for r in bonsai.requests] == ["ifc_edit", "ifc_undo"]
+        assert bonsai.requests[0]["args"] == {"function_path": "root.create_entity", "params": params}
 
     def test_reason_reaches_the_client_when_bonsai_is_not_listening(self):
         server = build_server(bonsai_port=free_port())
