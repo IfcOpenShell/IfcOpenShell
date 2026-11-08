@@ -496,7 +496,12 @@ def get_reference_line(wall: ifcopenshell.entity_instance, fallback_length: floa
     :return: A list of two 2D coordinates representing the start and end of the
         axis. The axis always goes in the +X direction.
     """
-    if axis := ifcopenshell.util.representation.get_representation(wall, "Plan", "Axis", "GRAPH_VIEW"):
+    if axis := (
+        ifcopenshell.util.representation.get_representation(wall, "Plan", "Axis", "GRAPH_VIEW")
+        or ifcopenshell.util.representation.get_representation(wall, "Model", "Axis", "GRAPH_VIEW")
+        or ifcopenshell.util.representation.get_representation(wall, "Plan", "Axis")
+        or ifcopenshell.util.representation.get_representation(wall, "Model", "Axis")
+    ):
         for item in ifcopenshell.util.representation.resolve_representation(axis).Items:
             if item.is_a("IfcPolyline"):
                 points = [p[0] for p in item.Points]
@@ -505,11 +510,21 @@ def get_reference_line(wall: ifcopenshell.entity_instance, fallback_length: floa
             else:
                 continue
             if points[0][0] < points[1][0]:  # An axis always goes in the +X direction
-                return [np.array(points[0]), np.array(points[1])]
-            return [np.array(points[1]), np.array(points[0])]
-    elif extrusions := ifcopenshell.util.shape.get_base_extrusions(wall):
+                return [np.array(points[0][:2]), np.array(points[1][:2])]
+            return [np.array(points[1][:2]), np.array(points[0][:2])]
+    if extrusions := ifcopenshell.util.shape.get_base_extrusions(wall):
         for extrusion in extrusions:
             profile = extrusion.SweptArea
+            if profile.is_a("IfcRectangleProfileDef"):
+                half_x = profile.XDim / 2.0
+                if profile.Position:
+                    mat = ifcopenshell.util.placement.get_axis2placement(profile.Position)
+                    p1 = mat @ np.array((-half_x, 0.0, 0.0, 1.0))
+                    p2 = mat @ np.array((half_x, 0.0, 0.0, 1.0))
+                    x = [float(p1[0]), float(p2[0])]
+                else:
+                    x = [-half_x, half_x]
+                return [np.array((min(x), 0.0)), np.array((max(x), 0.0))]
             curve = getattr(profile, "OuterCurve", None)
             if not curve:
                 continue
@@ -517,6 +532,22 @@ def get_reference_line(wall: ifcopenshell.entity_instance, fallback_length: floa
                 x = [p[0][0] for p in curve.Points]
             elif curve.is_a("IfcIndexedPolyCurve"):
                 x = [p[0] for p in curve.Points.CoordList]
+            elif curve.is_a("IfcCompositeCurve"):
+                x = []
+                for segment in curve.Segments:
+                    parent = getattr(segment, "ParentCurve", None)
+                    if not parent:
+                        continue
+                    if parent.is_a("IfcPolyline"):
+                        x.extend(p[0][0] for p in parent.Points)
+                    elif parent.is_a("IfcIndexedPolyCurve"):
+                        x.extend(p[0] for p in parent.Points.CoordList)
+                    elif parent.is_a("IfcTrimmedCurve"):
+                        for trim in (*parent.Trim1, *parent.Trim2):
+                            if isinstance(trim, ifcopenshell.entity_instance) and trim.is_a("IfcCartesianPoint"):
+                                x.append(trim.Coordinates[0])
+                if not x:
+                    continue
             else:
                 continue
             return [np.array((min(x), 0.0)), np.array((max(x), 0.0))]
