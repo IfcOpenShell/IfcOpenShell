@@ -451,6 +451,19 @@ class TestGetBodyContext(NewFile):
         assert subject.get_body_context() == context
 
 
+class TestGetDefaultMetadata(NewFile):
+    def test_run(self):
+        prefs = tool.Blender.get_addon_preferences()
+        original = prefs.doc.metadata_default
+        try:
+            prefs.doc.metadata_default = " Name, id "
+            assert subject.get_default_metadata() == "Name, id"
+            prefs.doc.metadata_default = "  "
+            assert subject.get_default_metadata() is None
+        finally:
+            prefs.doc.metadata_default = original
+
+
 class TestGetDocumentUri(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -533,19 +546,6 @@ class TestGetDrawingTargetView(NewFile):
         pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="EPset_Drawing")
         ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"TargetView": "PLAN_VIEW"})
         assert subject.get_drawing_target_view(element) == "PLAN_VIEW"
-
-
-class TestGetDefaultMetadata(NewFile):
-    def test_run(self):
-        prefs = tool.Blender.get_addon_preferences()
-        original = prefs.doc.metadata_default
-        try:
-            prefs.doc.metadata_default = " Name, id "
-            assert subject.get_default_metadata() == "Name, id"
-            prefs.doc.metadata_default = "  "
-            assert subject.get_default_metadata() is None
-        finally:
-            prefs.doc.metadata_default = original
 
 
 class TestGetGroupElements(NewFile):
