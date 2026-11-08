@@ -6,26 +6,9 @@ using namespace ifcopenshell::geom;
 using namespace ifcopenshell::geom::kernels;
 using namespace ifcopenshell::geom::util;
 
-namespace {
-	// @todo move into taxonomy;
-	bool shell_polyhedral(const taxonomy::shell::ptr& sh) {
-		for (auto& f : sh->children) {
-			for (auto& w : f->children) {
-				if (!w->is_polyhedron()) {
-					return false;
-				}
-			}
-			if (f->basis && f->basis->kind() != taxonomy::PLANE) {
-				return false;
-			}
-		}
-		return true;
-	}
-}
-
 bool open_cascade_kernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shape) {
 	std::unique_ptr<faceset_helper> helper_scope;
-	if (shell_polyhedral(l)) {
+	if (l->is_polyhedral()) {
 		helper_scope.reset(new faceset_helper(this, l));
 	}
 
