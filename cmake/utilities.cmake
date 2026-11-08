@@ -144,7 +144,10 @@ endfunction()
 
 function(ifcopenshell_wasm_plugin_target_link TARGET)
     cmake_parse_arguments(PLUGIN "" "" "MAIN_TARGETS;PRIVATE" ${ARGN})
-    if(WASM_BUILD)
+    # The standalone WASM runtime owns globally visible core symbols. The
+    # Pyodide wrapper is itself a locally loaded side module, so its plugins
+    # must link the core archives rather than import symbols from that wrapper.
+    if(WASM_BUILD AND NOT BUILD_IFCPYTHON)
         if(PLUGIN_PRIVATE)
             target_link_libraries(${TARGET} PRIVATE ${PLUGIN_PRIVATE})
         endif()
@@ -270,12 +273,11 @@ function(ifcopenshell_wasm_plugin_link_options TARGET REGISTRATION_SYMBOL)
     target_compile_options(${TARGET} PRIVATE -fwasm-exceptions)
     target_link_options(${TARGET} PRIVATE "SHELL:-fwasm-exceptions" "SHELL:-s SIDE_MODULE=${PLUGIN_SIDE_MODULE}" "SHELL:-s ALLOW_TABLE_GROWTH=1" "SHELL:-s ERROR_ON_UNDEFINED_SYMBOLS=0" "SHELL:-sSUPPORT_LONGJMP=wasm" ${PLUGIN_OPTIMIZATION})
     if(PLUGIN_EXPORT_DYNAMIC)
-        # Export all symbols defined in this module so dependent side modules
-        # (tree/serializer plugins) can resolve them at runtime via
-        # allowUndefinedSymbols. Without this, wasm-ld dead-code-eliminates
-        # symbols that are only referenced by external side modules, not from
-        # within the module itself (e.g. OpenCascadeShape::shape()).
-        target_link_options(${TARGET} PRIVATE "LINKER:--export-dynamic")
+        # Export provider APIs used only by other side modules (schema methods,
+        # OpenCascadeShape::shape(), etc.). Emscripten appends --no-export-dynamic
+        # for SIDE_MODULE=2, overriding --export-dynamic; --export-all keeps these
+        # definitions without forcing every linked archive member into the DSO.
+        target_link_options(${TARGET} PRIVATE "LINKER:--export-all")
     endif()
     foreach(symbol IN LISTS plugin_symbols)
         target_link_options(${TARGET} PRIVATE "LINKER:--export=${symbol}")
@@ -383,7 +385,7 @@ endfunction()
 # Two flavours sit alongside each other in <prefix>/lib/ after install:
 #
 #   1. Linked core libs (lib*.dylib) — IfcParse, IfcGeom (output-named
-#      libifcopenshell.geometry.dylib), IfcViewer, plug-in / mapping /
+#      libifcopenshell_geometry.dylib), IfcViewer, plug-in / mapping /
 #      kernel shared libs. With --shared these are runtime @rpath deps
 #      of the app executable. macdeployqt is *supposed* to follow them
 #      but in practice misses non-Qt @rpath deps when the source lib
@@ -400,7 +402,7 @@ endfunction()
 # inside the bundle), so plug-ins and core libs both find each other
 # on the first probe.
 #
-# The geometry-writer filter drops libifcopenshell.geometry.writer.dylib
+# The geometry-writer filter drops libifcopenshell_geometry_writer.dylib
 # and the per-schema ifcopenshell_geometry_writer_*.dylib plug-ins
 # (OCCT -> IFC serialization, unused by the apps), and all document
 # serializers except rdb (json/xml are only used by IfcConvert). Mirrors
@@ -434,7 +436,7 @@ function(ifcopenshell_stage_app_bundle_dylibs APP_NAME)
     install(CODE [[
         set(_fw "${CMAKE_INSTALL_PREFIX}/${_app}/Contents/Frameworks")
         file(GLOB _ifc_dylibs "${CMAKE_INSTALL_PREFIX}/lib/*.dylib")
-        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell[._]geometry[._]writer")
+        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell_geometry_writer")
         # Geometry serializers (obj, svg, glb, ...) and svgfill are only used by IfcConvert and Python.
         list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell_geometry_[A-Za-z]+\\.dylib$")
         # Geometry trees are only used by Python (`ifcopenshell.geom.tree`).
