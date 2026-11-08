@@ -93,7 +93,7 @@ class AddPersonAttribute(bpy.types.Operator):
     )
 
     if TYPE_CHECKING:
-        name: tool.Owner.PersonAttributeType  # pyright: ignore[reportIncompatibleVariableOverride]
+        name: tool.Owner.PersonAttributeType  # ty: ignore[invalid-mutable-override]
 
     def execute(self, context) -> "set[rna_enums.OperatorReturnItems]":
         core.add_person_attribute(tool.Owner, name=self.name)
@@ -110,7 +110,7 @@ class RemovePersonAttribute(bpy.types.Operator):
     id: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
-        name: tool.Owner.PersonAttributeType  # pyright: ignore[reportIncompatibleVariableOverride]
+        name: tool.Owner.PersonAttributeType  # ty: ignore[invalid-mutable-override]
         id: int
 
     def execute(self, context) -> "set[rna_enums.OperatorReturnItems]":
@@ -203,7 +203,7 @@ class AddAddressAttribute(bpy.types.Operator):
     )
 
     if TYPE_CHECKING:
-        name: tool.Owner.AddressAttributeType  # pyright: ignore[reportIncompatibleVariableOverride]
+        name: tool.Owner.AddressAttributeType  # ty: ignore[invalid-mutable-override]
 
     def execute(self, context) -> "set[rna_enums.OperatorReturnItems]":
         core.add_address_attribute(tool.Owner, name=self.name)
@@ -220,7 +220,7 @@ class RemoveAddressAttribute(bpy.types.Operator):
     id: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
-        name: tool.Owner.AddressAttributeType  # pyright: ignore[reportIncompatibleVariableOverride]
+        name: tool.Owner.AddressAttributeType  # ty: ignore[invalid-mutable-override]
         id: int
 
     def execute(self, context) -> "set[rna_enums.OperatorReturnItems]":

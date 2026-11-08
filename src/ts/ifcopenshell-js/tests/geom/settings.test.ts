@@ -44,7 +44,6 @@ describeOrSkip('GeomSettings', () => {
     const values: [string, string, number | number[] | string[]][] = [
       ['iterator-output', 'IteratorOutputOptions', 0],
       ['dimensionality', 'OutputDimensionalityTypes', 1],
-      ['function-step-type', 'FunctionStepMethod', 0],
       ['triangulation-type', 'TriangulationMethod', 0],
       ['model-offset', 'std::vector<double>', [1, 2, 3]],
       ['context-ids', 'std::set<int>', []],

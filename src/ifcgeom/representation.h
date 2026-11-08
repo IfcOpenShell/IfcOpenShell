@@ -116,8 +116,12 @@ namespace ifcopenshell::geom {
 			std::vector<ifcopenshell::geom::taxonomy::style::ptr> materials_;
 			std::vector<int> item_ids_;
 			std::vector<int> edges_item_ids_;
+			// Translation subtracted from every vertex by rebase_vertices_(), in the same units as verts().
+			std::vector<double> rebase_offset_{0.0, 0.0, 0.0};
 			size_t weld_offset_;
 			vertex_key_map welds;
+
+			void rebase_vertices_();
 
 			triangulation(const ifcopenshell::geom::settings& settings, const std::string& entity,  const std::string& id)
 				: representation(settings, entity, id)
@@ -137,6 +141,7 @@ namespace ifcopenshell::geom {
 			const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& materials() const { return materials_; }
 			const std::vector<int>& item_ids() const { return item_ids_; }
 			const std::vector<int>& edges_item_ids() const { return edges_item_ids_; }
+			const std::vector<double>& rebase_offset() const { return rebase_offset_; }
 
 			triangulation(const native& shape_model);
 

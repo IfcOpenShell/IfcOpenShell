@@ -158,14 +158,15 @@ inline logger& logger_or_root(logger* logger) { return logger ? *logger : logger
 namespace detail {
 class performance_scope {
     std::string label_;
+    logger& logger_;
 
   public:
-    explicit performance_scope(const std::string& label) : label_(label) {
-        logger::root().message(logger::LOG_PERF, label_);
+    explicit performance_scope(const std::string& label, logger& log = logger::root()) : label_(label), logger_(log) {
+        logger_.message(logger::LOG_PERF, label_);
     }
 
     ~performance_scope() {
-        logger::root().message(logger::LOG_PERF, "done " + label_);
+        logger_.message(logger::LOG_PERF, "done " + label_);
     }
 
     performance_scope(const performance_scope&) = delete;
@@ -177,6 +178,6 @@ class performance_scope {
 
 #define IFCOPENSHELL_PERF_NAME_IMPL(line) ifcopenshell_performance_scope_##line
 #define IFCOPENSHELL_PERF_NAME(line) IFCOPENSHELL_PERF_NAME_IMPL(line)
-#define PERF(x) ::ifcopenshell::detail::performance_scope IFCOPENSHELL_PERF_NAME(__LINE__)(x)
+#define PERF(...) ::ifcopenshell::detail::performance_scope IFCOPENSHELL_PERF_NAME(__LINE__)(__VA_ARGS__)
 
 #endif

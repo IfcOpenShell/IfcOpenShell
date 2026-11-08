@@ -175,9 +175,11 @@ static void worldAabbFromLocal(const float local_min[3],
         float wx = M[0]*x + M[4]*y + M[8]*z  + M[12];
         float wy = M[1]*x + M[5]*y + M[9]*z  + M[13];
         float wz = M[2]*x + M[6]*y + M[10]*z + M[14];
-        if (wx < out_min[0]) out_min[0] = wx; if (wx > out_max[0]) out_max[0] = wx;
-        if (wy < out_min[1]) out_min[1] = wy; if (wy > out_max[1]) out_max[1] = wy;
-        if (wz < out_min[2]) out_min[2] = wz; if (wz > out_max[2]) out_max[2] = wz;
+        const float w[3] = {wx, wy, wz};
+        for (int i = 0; i < 3; ++i) {
+            out_min[i] = std::min(out_min[i], w[i]);
+            out_max[i] = std::max(out_max[i], w[i]);
+        }
     }
 }
 

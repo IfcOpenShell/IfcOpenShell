@@ -52,6 +52,10 @@ namespace ifcopenshell::geom {
                 matrix_orig_units_ = nullptr;
 			}
         }
+		const ifcopenshell::geom::settings& settings() const { return settings_; }
+
+		const ifcopenshell::geom::taxonomy::matrix4::ptr& si_data() const { return matrix_; }
+
 		const ifcopenshell::geom::taxonomy::matrix4::ptr& data() const {
             if (matrix_orig_units_) {
 				return matrix_orig_units_;
@@ -154,7 +158,13 @@ namespace ifcopenshell::geom {
 
 			_unique_id = oss.str();
 		}
+
 		virtual ~element() {}
+
+	protected:
+		void set_transformation(const ifcopenshell::geom::taxonomy::matrix4::ptr& trsf) {
+			_transformation = ifcopenshell::geom::transformation(_transformation.settings(), trsf);
+		}
 	};
 
 	class native_element : public element {
@@ -185,16 +195,35 @@ namespace ifcopenshell::geom {
 		const ifcopenshell::geom::triangulation& geometry() const { return *_geometry; }
 		const std::shared_ptr< ifcopenshell::geom::triangulation>& geometry_pointer() const { return _geometry; }
 		triangulation_element(const ifcopenshell::geom::native_element& shape_model)
-			: element(shape_model)
-			, _geometry(std::make_shared<ifcopenshell::geom::triangulation>(shape_model.geometry()))
+			: triangulation_element(shape_model, std::make_shared<ifcopenshell::geom::triangulation>(shape_model.geometry()))
 		{}
 		triangulation_element(const ifcopenshell::geom::element& source, const std::shared_ptr<ifcopenshell::geom::triangulation>& geometry)
 			: element(source)
 			, _geometry(geometry)
-		{}
+		{
+			set_transformation(apply_vertex_rebase(source.transformation(), *geometry));
+		}
 		triangulation_element(const triangulation_element& other) = default;
 	private:
 		triangulation_element& operator=(const triangulation_element& other);
+
+		// The geometry's rebase offset was subtracted from its vertices; add it back to the
+		// placement so world positions are unchanged. The offset is in vertex units, the
+		// placement in meters.
+		static ifcopenshell::geom::taxonomy::matrix4::ptr apply_vertex_rebase(const ifcopenshell::geom::transformation& source, const ifcopenshell::geom::triangulation& geometry) {
+			const auto& placement = source.si_data();
+			const auto& offset = geometry.rebase_offset();
+			if (offset[0] == 0.0 && offset[1] == 0.0 && offset[2] == 0.0) {
+				return placement;
+			}
+			const auto& settings = geometry.settings();
+			const double to_meters = settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().get()
+				? settings.get<ifcopenshell::geom::settings::LengthUnit>().get()
+				: 1.0;
+			Eigen::Matrix4d m = placement ? placement->ccomponents() : Eigen::Matrix4d::Identity();
+			m.block<3, 1>(0, 3) += m.block<3, 3>(0, 0) * (Eigen::Vector3d(offset[0], offset[1], offset[2]) * to_meters);
+			return ifcopenshell::geom::taxonomy::make<ifcopenshell::geom::taxonomy::matrix4>(m);
+		}
 	};
 
 	class serialized_element : public element {
