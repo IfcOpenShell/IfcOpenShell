@@ -5,9 +5,10 @@ IfcEdit
 
 IfcEdit is a CLI wrapper for the full ``ifcopenshell.api`` mutation API. It
 exposes all editor functions — over 350 across 30+ modules — without requiring
-you to write a Python script. It supports four subcommands:
+you to write a Python script. It supports six subcommands:
 
 - **list** — list all API modules, or all functions within a module
+- **search** — find API functions by keyword
 - **docs** — show full documentation for a function (parameters, types, descriptions)
 - **run** — execute a mutation against an IFC file
 - **foreach** — apply an API function to each element in a JSON array read from stdin
@@ -35,6 +36,7 @@ Discover available API functions::
     $ ifcedit list
     $ ifcedit list root
     $ ifcedit list geometry
+    $ ifcedit search "assign container"
 
 Read documentation for a function::
 

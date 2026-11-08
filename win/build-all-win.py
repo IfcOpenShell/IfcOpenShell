@@ -224,15 +224,13 @@ def trace_runtime_dependencies(roots: set[Path], candidates: set[Path]) -> set[P
 
 def collect_ifc_runtime_plugins(dlls: set[Path], dependencies: set[Path]) -> set[Path]:
     """IfcOpenShell plugins are loaded by name at runtime, so dumpbin cannot discover them."""
-    # Runtime plugins are canonically prefixed with 'ifcopenshell_' (see
-    # decorated_basename() in src/plugin/plugin.cpp and the OUTPUT_NAME properties of
-    # the plugin targets, e.g. 'ifcopenshell_parse_schema_ifc${schema}'), while the
-    # core shared libraries keep the dotted 'ifcopenshell.' names. Match both so the
-    # load-by-name plugins are not silently dropped from the archives.
-    ifc_runtime_plugin_prefixes = ("ifcopenshell.", "ifcopenshell_")
-    return {
-        d for d in (dlls - dependencies) if d.name.startswith(ifc_runtime_plugin_prefixes) and not is_geometry_writer(d)
-    }
+    # Everything IfcOpenShell builds is prefixed with 'ifcopenshell_': the runtime
+    # plugins (see decorated_basename() in src/plugin/plugin.cpp and the OUTPUT_NAME
+    # properties of the plugin targets, e.g. 'ifcopenshell_parse_schema_ifc${schema}')
+    # and the core shared libraries ('ifcopenshell_parse', 'ifcopenshell_geometry',
+    # 'ifcopenshell_geometry_writer', 'ifcopenshell_plugin'). The plugins are loaded by
+    # name, so they must be matched here or they are silently dropped from the archives.
+    return {d for d in (dlls - dependencies) if d.name.startswith("ifcopenshell_") and not is_geometry_writer(d)}
 
 
 def is_qt_deployment_dll(file: Path) -> bool:

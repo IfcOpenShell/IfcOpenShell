@@ -13,6 +13,13 @@ class TestNoModel:
             session.ifc_edit("root.create_entity")
 
 
+class TestSearch:
+    def test_search_works_without_a_model(self, session):
+        result = session.ifc_search("remove product", limit=3)
+        assert len(result) == 3
+        assert result[0]["function"] == "root.remove_product"
+
+
 class TestList:
     def test_list_all_modules(self, loaded_session):
         result = loaded_session.ifc_list()

@@ -483,7 +483,7 @@ class PolylineOperator:
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         PolylineDecorator.install(context)
-        GpuSnapDecorator.install(context, event, detection=tool.Raycast.detect_gpu_snaps)
+        GpuSnapDecorator.install(context, detection=tool.Raycast.detect_gpu_snaps)
         tool.Snap.clear_snapping_point()
 
         self.tool_state.use_default_container = False
