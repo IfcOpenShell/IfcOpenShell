@@ -818,7 +818,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             points = [Vector(p) / unit_scale for p in ((0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0))]
-            representation = builder.get_representation(ifc_context, [builder.face(points)])
+            # Structural surface items need an IfcFaceSurface, whose plane gives their local axes.
+            representation = builder.get_representation(ifc_context, [builder.face_surface(points)])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
             bonsai.core.geometry.switch_representation(
                 tool.Ifc,
