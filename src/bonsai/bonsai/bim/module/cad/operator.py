@@ -34,6 +34,268 @@ messages = {
 }
 
 
+# How far along each edge the user last clicked, keyed by the edge's two vertex
+# indices. Joining two edges is ambiguous - either side of each edge may be kept
+# - so the side that was clicked is the one kept. This is resolved at the moment
+# of the click, while Blender can still say which edge was picked and the pointer
+# is still on it: by the time the hotkey is pressed the mouse has moved on, and
+# the geometry shifts during the join, so a remembered screen position would no
+# longer mean anything.
+clicked_ends: dict[tuple[int, int], float] = {}
+MAX_CLICKED_ENDS = 32
+
+# A click that drags even slightly is routed to box select instead, which is
+# modal - the selection only exists once the drag ends, long after we could ask
+# what it picked. So the press position is parked here and resolved later, at
+# join time, against whichever selected edge it landed on.
+pending_presses: list[tuple[int, int]] = []
+MAX_PENDING_PRESSES = 8
+# How close a press has to land to an edge (in pixels) to count as picking it.
+PRESS_TOLERANCE = 50
+
+
+def edge_key(edge) -> tuple[int, int]:
+    a, b = edge.verts
+    return (a.index, b.index) if a.index < b.index else (b.index, a.index)
+
+
+def active_tool() -> str:
+    try:
+        return bpy.context.workspace.tools.from_space_view3d_mode(bpy.context.mode, create=False).idname
+    except Exception:
+        return ""
+
+
+def deselect_edit_meshes() -> None:
+    """Drop the edit-mode selection, so nothing stays selected without a click on it."""
+    try:
+        objects = list(getattr(bpy.context, "objects_in_mode", None) or [])
+        if not objects and bpy.context.active_object:
+            objects = [bpy.context.active_object]
+        for obj in objects:
+            if obj.type != "MESH" or obj.mode != "EDIT":
+                continue
+            bm = bmesh.from_edit_mesh(obj.data)
+            for sequence in (bm.verts, bm.edges, bm.faces):
+                for element in sequence:
+                    element.select = False
+            bm.select_history.clear()
+            bmesh.update_edit_mesh(obj.data)
+        for area in bpy.context.screen.areas:
+            if area.type == "VIEW_3D":
+                area.tag_redraw()
+    except Exception:
+        pass
+
+
+@bpy.app.handlers.persistent
+def clear_clicked_ends(*args) -> None:
+    """Forget the clicks - and the selection - once undo rolls the geometry back.
+
+    Undo restores the selection along with the geometry, which would leave both
+    edges looking ready to join while the clicks describing them are gone. The
+    join would then run on an edge nobody picked and quietly fall back to the
+    longest side. Clearing both keeps them honest: after an undo you pick the two
+    edges again, and picking them is what records which side to keep.
+    """
+    clicked_ends.clear()
+    pending_presses.clear()
+    # Only while the CAD tool is driving. Undo has no business wiping the
+    # selection for anyone else working in edit mode.
+    if active_tool() == "bim.cad_tool":
+        deselect_edit_meshes()
+
+
+def project_edge(region, rv3d, matrix_world, edge):
+    """Both ends of an edge in screen space, or None if either is behind the camera."""
+    projected = []
+    for vert in edge.verts:
+        co_2d = bpy_extras.view3d_utils.location_3d_to_region_2d(region, rv3d, matrix_world @ vert.co)
+        if co_2d is None:
+            return None
+        projected.append((co_2d, vert))
+    return projected
+
+
+def record_clicked_end(context, region, rv3d, pos: tuple[int, int]) -> None:
+    """Remember how far along the edge just clicked the pointer landed."""
+    obj = context.active_object
+    if not obj or obj.type != "MESH" or obj.mode != "EDIT":
+        return
+
+    bm = bmesh.from_edit_mesh(obj.data)
+    bm.verts.index_update()
+    edge = bm.select_history.active
+    if not isinstance(edge, bmesh.types.BMEdge):
+        # Clicking empty space, or picking a vert or face, tells us nothing.
+        return
+    projected = project_edge(region, rv3d, obj.matrix_world, edge)
+    if not projected:
+        return
+
+    # Measured from the lower-numbered vertex, to match how the join reads it.
+    # This is a screen-space percentage, which equals the real one in orthographic
+    # views and is close enough in perspective except right at the intersection.
+    (a_2d, a), (b_2d, b) = projected
+    if a.index > b.index:
+        a_2d, b_2d = b_2d, a_2d
+    _, percent = mathutils.geometry.intersect_point_line(Vector(pos), a_2d, b_2d)
+
+    if len(clicked_ends) >= MAX_CLICKED_ENDS:
+        clicked_ends.clear()
+    clicked_ends[edge_key(edge)] = min(max(percent, 0.0), 1.0)
+
+
+def resolve_pending_press(context, obj, edge) -> float | None:
+    """Fall back to a drag's press position for an edge that got no proper click."""
+    region = context.region
+    rv3d = context.region_data
+    if not pending_presses or region is None or region.type != "WINDOW" or rv3d is None:
+        return None
+
+    projected = project_edge(region, rv3d, obj.matrix_world, edge)
+    if not projected:
+        return None
+    (a_2d, a), (b_2d, b) = projected
+    if a.index > b.index:  # Measured from the lower-numbered vertex, as elsewhere.
+        a_2d, b_2d = b_2d, a_2d
+
+    # Newest press first - the most recent drag is the one that selected this.
+    for pos in reversed(pending_presses):
+        press = Vector(pos)
+        _, percent = mathutils.geometry.intersect_point_line(press, a_2d, b_2d)
+        percent = min(max(percent, 0.0), 1.0)
+        if (a_2d.lerp(b_2d, percent) - press).length > PRESS_TOLERANCE:
+            continue
+        return percent
+    return None
+
+
+def remove_chain_between(bm, edge_a, edge_b, clicked_percents) -> int:
+    """Delete whatever edges sit between the two being joined, and return how many.
+
+    Without this the in-between edges aren't removed, they're merely dragged along
+    by the vertices the join moves, leaving a spike hanging off the new corner.
+    """
+    # On a closed loop both routes between the two edges can be the same number of
+    # edges, so which one is "between" them cannot be settled by length. The answer
+    # is the route attached to the ends the join is about to throw away.
+    p1, p2 = [vert.co for vert in edge_a.verts]
+    p3, p4 = [vert.co for vert in edge_b.verts]
+    intersection = tool.Cad.get_intersection([p1, p2], [p3, p4])
+    if intersection is None:
+        return 0
+
+    discard_a = tool.Cad.vert_idx_to_move(intersection, edge_a, clicked_percents)
+    discard_b = tool.Cad.vert_idx_to_move(intersection, edge_b, clicked_percents)
+    bm.verts.ensure_lookup_table()
+    chain = tool.Cad.get_chain_between(
+        edge_a, edge_b, start=bm.verts[discard_a], goal=bm.verts[discard_b]
+    )
+    if not chain:
+        return 0
+
+    # Interior vertices of the chain belong to nothing else, so deleting them
+    # takes their edges with them and leaves nothing floating. The vertices the
+    # two joined edges own are never touched - the join still needs them.
+    kept = set(edge_a.verts) | set(edge_b.verts)
+    interior = {vert for edge in chain for vert in edge.verts} - kept
+    if interior:
+        bmesh.ops.delete(bm, geom=list(interior), context="VERTS")
+    # A single edge spanning the two joined edges has no interior vertex, so it
+    # survives the step above and has to go explicitly.
+    remaining = [edge for edge in chain if edge.is_valid]
+    if remaining:
+        bmesh.ops.delete(bm, geom=remaining, context="EDGES")
+
+    bm.verts.ensure_lookup_table()
+    bm.edges.ensure_lookup_table()
+    bm.verts.index_update()
+    bm.edges.index_update()
+    return len(chain)
+
+
+def get_clicked_percents(context, obj, edges) -> dict:
+    """How far along each edge the user clicked, keyed by the edge itself.
+
+    Keyed by edge rather than by vertex indices so it stays valid after the chain
+    between the two edges is removed, which renumbers vertices.
+    """
+    percents = {}
+    for edge in edges:
+        percent = clicked_ends.get(edge_key(edge))
+        if percent is None:
+            percent = resolve_pending_press(context, obj, edge)
+        if percent is not None:
+            percents[edge] = percent
+    return percents
+
+
+class CadSelect(bpy.types.Operator):
+    bl_idname = "bim.cad_select"
+    bl_label = "CAD Select"
+    bl_description = "Select, remembering where you clicked so joins keep the end you picked"
+    bl_options = {"INTERNAL"}
+
+    # Mirrors the properties the default selection keymap sets on view3d.select.
+    # SKIP_SAVE so a shift-click's toggle=True can't leak into the next click.
+    deselect_all: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    toggle: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        region = context.region
+        rv3d = context.region_data
+        # Region coords, derived from the (always absolute) window coords.
+        pos = (event.mouse_x - region.x, event.mouse_y - region.y) if region else None
+        # Every mode property is passed explicitly. Leaving any of them out lets
+        # it keep whatever value it last had, which silently turns a plain click
+        # into an extending one and leaves the previous selection in place.
+        result = bpy.ops.view3d.select(
+            "INVOKE_DEFAULT",
+            extend=False,
+            deselect=False,
+            toggle=self.toggle,
+            deselect_all=self.deselect_all,
+            center=False,
+            enumerate=False,
+            object=False,
+        )
+        # Only after the selection has happened do we know which edge was picked.
+        if pos and region.type == "WINDOW" and rv3d:
+            record_clicked_end(context, region, rv3d, pos)
+        return result
+
+
+class CadSelectBox(bpy.types.Operator):
+    bl_idname = "bim.cad_select_box"
+    bl_label = "CAD Box Select"
+    bl_description = "Box select, remembering where the drag started so joins keep the end you picked"
+    bl_options = {"INTERNAL"}
+
+    # Mirrors the property the default selection keymap sets on view3d.select_box.
+    mode: bpy.props.EnumProperty(
+        items=[
+            ("SET", "Set", ""),
+            ("ADD", "Extend", ""),
+            ("SUB", "Subtract", ""),
+            ("AND", "Intersect", ""),
+        ],
+        default="SET",
+        options={"SKIP_SAVE"},
+    )
+
+    def invoke(self, context, event):
+        region = context.region
+        # A drag this short is a click the user fumbled, and the press position
+        # is the closest thing to the click they meant to make. Box select is
+        # modal, so the answer has to wait until the join asks for it.
+        if region and region.type == "WINDOW":
+            pos = (event.mouse_x - region.x, event.mouse_y - region.y)
+            pending_presses.append(pos)
+            del pending_presses[:-MAX_PENDING_PRESSES]
+        return bpy.ops.view3d.select_box("INVOKE_DEFAULT", mode=self.mode)
+
+
 class CadTrimExtend(bpy.types.Operator):
     bl_idname = "bim.cad_trim_extend"
     bl_label = "CAD Trim / Extend"
@@ -65,7 +327,8 @@ class CadTrimExtend(bpy.types.Operator):
         edges = [e for e in bm.edges if e.select and not e.hide]
 
         if len(edges) == 2:
-            message = tool.Cad.do_vtx_if_appropriate(bm, edges, mode="T")
+            clicked_percents = get_clicked_percents(context, obj, edges)
+            message = tool.Cad.do_vtx_if_appropriate(bm, edges, mode="T", clicked_percents=clicked_percents)
             if isinstance(message, set):
                 msg = messages.get(message.pop())
                 return self.cancel_message(msg)
@@ -111,7 +374,11 @@ class CadMitre(bpy.types.Operator):
         edges = [e for e in bm.edges if e.select and not e.hide]
 
         if len(edges) == 2:
-            message = tool.Cad.do_vtx_if_appropriate(bm, edges, mode="V")
+            # Resolved before anything is deleted, and keyed by edge so it stays
+            # valid once removing the chain renumbers the vertices.
+            clicked_percents = get_clicked_percents(context, obj, edges)
+            remove_chain_between(bm, edges[0], edges[1], clicked_percents)
+            message = tool.Cad.do_vtx_if_appropriate(bm, edges, mode="V", clicked_percents=clicked_percents)
             if isinstance(message, set):
                 msg = messages.get(message.pop())
                 return self.cancel_message(msg)
