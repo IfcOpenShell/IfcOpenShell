@@ -494,9 +494,18 @@ class PolylineOperator:
         for obj in self.visible_objs:
             if bbox_2d := tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj):
                 self.objs_2d_bbox.append(bbox_2d)
-        detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
-        self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
+        self._init_snapping_points(context, event)
         tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
 
         tool.Blender.update_viewport()
         context.window_manager.modal_handler_add(self)
+
+    def _init_snapping_points(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
+        """Populate self.snapping_points at operator start.
+
+        Override in subclasses to skip the full BVH snap detection when a cheap
+        placeholder is sufficient.  The default runs the full detection pass.
+        """
+        detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
+        self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
+
