@@ -163,8 +163,33 @@ class CreateProject(bpy.types.Operator):
             tool.Ifc, tool.Georeference, tool.Project, tool.Spatial, schema=props.export_schema, template=template
         )
         self.create_objects_for_orphan_spatial_elements(context)
+        self.create_materials_and_objects_for_orphan_elements(context)
         tool.Blender.register_toolbar()
         tool.Loader.set_unit_scale(ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get()))
+
+    def create_materials_and_objects_for_orphan_elements(self, context: bpy.types.Context) -> None:
+        # A project template with a site merges in its elements via ifcpatch MergeProjects.
+        # Ensure merged surface styles get Blender materials and merged type products get Blender objects.
+        ifc_file = tool.Ifc.get()
+        orphan_styles = [s for s in ifc_file.by_type("IfcSurfaceStyle") if tool.Ifc.get_object(s) is None]
+        orphan_types = {t for t in ifc_file.by_type("IfcTypeProduct") if tool.Ifc.get_object(t) is None}
+        if not orphan_styles and not orphan_types:
+            return
+
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = ifc_file
+        ifc_importer.process_context_filter()
+        ifc_importer.material_creator.load_existing_materials()
+
+        for style in orphan_styles:
+            ifc_importer.create_style(style)
+
+        if orphan_types:
+            for element_type in orphan_types:
+                ifc_importer.create_element_type(element_type)
+            ifc_importer.place_objects_in_collections()
 
     def create_objects_for_orphan_spatial_elements(self, context: bpy.types.Context) -> None:
         # A project template may have merged its own spatial structure into the IFC file.
