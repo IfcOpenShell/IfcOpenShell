@@ -26,6 +26,8 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import numpy as np
 
 
