@@ -257,8 +257,7 @@ def test_add_structural_member_connection_noop_when_member_unset():
             patch.object(structural_op.tool.Structural, "get_object_structural_props", return_value=props),
             patch.object(structural_op.tool.Ifc, "get", return_value=ifc_file),
         ):
-            op = structural_op.AddStructuralMemberConnection()
-            op.report = MagicMock()
-            result = op._execute(context)
+            mock_op = MagicMock()
+            result = structural_op.AddStructuralMemberConnection._execute(mock_op, context)
             assert result == {"FINISHED"}
-            op.report.assert_called_once_with({"WARNING"}, "Select a structural member first.")
+            mock_op.report.assert_called_once_with({"WARNING"}, "Select a structural member first.")
