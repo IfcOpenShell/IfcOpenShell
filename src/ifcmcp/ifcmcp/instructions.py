@@ -112,6 +112,15 @@ MCP server for working on the IFC model open in Bonsai, the Blender add-on. \
 It works on the live session: each call sees the user's latest changes, \
 including unsaved ones, and the user sees each edit in Bonsai as soon as it \
 is made. Saving the model is left to the user.
+
+# Bonsai
+
+When the user refers to "this", "these" or "the selected" elements, call \
+bonsai_selection to find out which. To show the user what you mean, select \
+the elements with bonsai_select, which also zooms to them; bonsai_view \
+turns the viewport to a standard direction. bonsai_screenshot shows you the \
+3D viewport as the user sees it: use it to check the result of a geometry \
+edit. These tools change the selection and the view, never the model.
 """
     + _WORKING
     + _EDITING.format(

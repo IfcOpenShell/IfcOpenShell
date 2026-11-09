@@ -10,7 +10,7 @@ import pytest
 from ifcmcp.bonsai import BonsaiSession
 from ifcmcp.core import IfcSession, IfcSessionError
 from ifcmcp.instructions import BONSAI_INSTRUCTIONS
-from ifcmcp.server import BONSAI_TOOLS, build_server
+from ifcmcp.server import BONSAI_TOOLS, BONSAI_VIEW_TOOLS, build_server
 
 try:
     from mcp.server.mcpserver.exceptions import ToolError
@@ -93,14 +93,14 @@ class TestBonsaiSession:
 class TestBonsaiServer:
     def test_offers_only_the_bonsai_tools(self):
         server = build_server(allow_execute=True, bonsai_port=free_port())
-        assert {t.name for t in server._tool_manager.list_tools()} == BONSAI_TOOLS
+        assert {t.name for t in server._tool_manager.list_tools()} == BONSAI_TOOLS | BONSAI_VIEW_TOOLS
 
     def test_sends_the_bonsai_instructions(self):
         assert build_server(bonsai_port=free_port()).instructions == BONSAI_INSTRUCTIONS
 
     def test_every_tool_named_in_the_instructions_is_offered(self):
         tools = {t.name for t in build_server(bonsai_port=free_port())._tool_manager.list_tools()}
-        named = set(re.findall(r"\bifc_[a-z_]+", BONSAI_INSTRUCTIONS))
+        named = set(re.findall(r"\b(?:ifc|bonsai)_[a-z_]+", BONSAI_INSTRUCTIONS))
         assert named <= tools, named - tools
 
     def test_undo_and_redo_describe_bonsai_history(self):
@@ -122,6 +122,36 @@ class TestBonsaiServer:
         asyncio.run(server.call_tool("ifc_undo", {}))
         assert [r["name"] for r in bonsai.requests] == ["ifc_edit", "ifc_undo"]
         assert bonsai.requests[0]["args"] == {"function_path": "root.create_entity", "params": params}
+
+    def test_view_tools_reach_bonsai(self, bonsai):
+        def answer(name, args):
+            if name == "bonsai_screenshot":
+                return {"png_base64": "iVBORw0K", "width": 1, "height": 1}
+            return {"name": name, "args": args}
+
+        bonsai.session.dispatch = answer
+        server = build_server(bonsai_port=bonsai.port)
+        asyncio.run(server.call_tool("bonsai_selection", {}))
+        asyncio.run(server.call_tool("bonsai_select", {"element_ids": [5, "2O2Fr$t4X7Zf8NOew3FLOH"]}))
+        asyncio.run(server.call_tool("bonsai_view", {"direction": "top"}))
+        image = asyncio.run(server.call_tool("bonsai_screenshot", {}))
+        assert bonsai.requests == [
+            {"type": "tool", "name": "bonsai_selection", "args": {}},
+            {
+                "type": "tool",
+                "name": "bonsai_select",
+                "args": {"element_ids": [5, "2O2Fr$t4X7Zf8NOew3FLOH"], "frame": True},
+            },
+            {"type": "tool", "name": "bonsai_view", "args": {"direction": "top", "frame": "selected"}},
+            {"type": "tool", "name": "bonsai_screenshot", "args": {}},
+        ]
+        # mcp 2.x returns a CallToolResult, 1.x the content list.
+        content = getattr(image, "content", image)
+        assert [(c.type, c.data) for c in content] == [("image", "iVBORw0K")]
+
+    def test_view_tools_are_not_offered_without_bonsai(self):
+        tools = {t.name for t in build_server()._tool_manager.list_tools()}
+        assert not tools & BONSAI_VIEW_TOOLS
 
     def test_reason_reaches_the_client_when_bonsai_is_not_listening(self):
         server = build_server(bonsai_port=free_port())
