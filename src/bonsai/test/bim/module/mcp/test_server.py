@@ -259,3 +259,62 @@ class TestMcpEdits(NewIfc):
         }
         assert bpy.data.objects["IfcSite/My Site"].location.x == 7
         assert not tool.Ifc.get().by_type("IfcWall")
+
+
+class TestMcpView(NewIfc):
+    @pytest.fixture(autouse=True)
+    def bridge(self, setup):
+        server.start(0)
+        bpy.ops.ed.undo_push(message="Start")
+        yield
+        server.stop()
+
+    def create_wall(self, name: str) -> ifcopenshell.entity_instance:
+        """A wall in the storey, as one not yet in a container is hidden."""
+        wall = edit("root.create_entity", ifc_class="IfcWall", name=name)["result"]["id"]
+        storey = tool.Ifc.get().by_type("IfcBuildingStorey")[0].id()
+        edit("spatial.assign_container", products=str(wall), relating_structure=str(storey))
+        return tool.Ifc.get().by_id(wall)
+
+    def test_selection_lists_the_selected_elements(self):
+        wall = self.create_wall("Picked")
+        self.create_wall("Other")
+        bpy.ops.object.select_all(action="DESELECT")
+        bpy.ops.mesh.primitive_cube_add()  # Not an IFC element, so not listed.
+        obj = tool.Ifc.get_object(wall)
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        result = tool_call("bonsai_selection")["result"]
+        assert result == {
+            "count": 1,
+            "active": {"id": wall.id(), "type": "IfcWall", "name": "Picked"},
+            "selected": [{"id": wall.id(), "type": "IfcWall", "name": "Picked"}],
+        }
+
+    def test_select_replaces_the_selection(self):
+        first, second = self.create_wall("First"), self.create_wall("Second")
+        bpy.data.objects["IfcSite/My Site"].select_set(True)
+        reply = tool_call("bonsai_select", element_ids=[second.GlobalId, str(first.id())])
+        # Without a window there is no viewport to frame.
+        assert reply == {"status": "ok", "result": {"selected": [second.id(), first.id()], "framed": False}}
+        assert {o.name for o in bpy.context.selected_objects} == {"IfcWall/First", "IfcWall/Second"}
+        assert bpy.context.view_layer.objects.active.name == "IfcWall/Second"
+
+    def test_select_reports_elements_it_cannot_select(self):
+        wall, hidden = self.create_wall("Shown"), self.create_wall("Hidden")
+        tool.Ifc.get_object(hidden).hide_set(True)
+        unshown = ifcopenshell.api.root.create_entity(tool.Ifc.get(), ifc_class="IfcWall")
+        result = tool_call("bonsai_select", element_ids=[wall.id(), hidden.id(), unshown.id()], frame=False)["result"]
+        assert result == {"selected": [wall.id()], "no_object": [unshown.id()], "hidden": [hidden.id()]}
+
+    def test_select_fails_when_nothing_can_be_selected(self):
+        unshown = ifcopenshell.api.root.create_entity(tool.Ifc.get(), ifc_class="IfcWall")
+        reply = tool_call("bonsai_select", element_ids=[unshown.id()])
+        assert reply["status"] == "error"
+        assert "no object" in reply["message"]
+
+    def test_view_and_screenshot_need_a_window(self):
+        for name in ("bonsai_view", "bonsai_screenshot"):
+            reply = tool_call(name)
+            assert reply["status"] == "error"
+            assert "without a window" in reply["message"]

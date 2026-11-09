@@ -34,7 +34,8 @@ The query tools are served, and the edit tools in ``EDIT_TOOLS``. An edit that
 changes the model becomes the undo step of the ``bim.mcp_edit`` operator, which
 covers both the IFC change and the objects updated to match it. ``ifc_undo``
 and ``ifc_redo`` step through Bonsai's undo history, but only over those steps,
-never the user's own.
+never the user's own. The tools in ``VIEW_TOOLS`` read and change the
+selection and the 3D viewport.
 """
 
 from __future__ import annotations
@@ -85,6 +86,8 @@ class _PendingWrite(NamedTuple):
 EDIT_TOOLS = frozenset({"ifc_edit", "ifc_shape", "ifc_quantify"})
 # The operator that runs them, whose class name ends the key of each step it adds.
 EDIT_OPERATOR = "McpEdit"
+# Tools that only Bonsai has: they read or change the selection and the viewport, never the model.
+VIEW_TOOLS = frozenset({"bonsai_selection", "bonsai_select", "bonsai_view", "bonsai_screenshot"})
 
 
 class _State:
@@ -113,18 +116,41 @@ def handle_request(request: dict[str, Any]) -> dict[str, Any]:
         return {"status": "error", "message": f"Unknown request type: {request.get('type')!r}"}
     name = request.get("name")
     args = request.get("args") or {}
-    if name not in READ_ONLY_TOOLS | EDIT_TOOLS | {"ifc_undo", "ifc_redo"}:
+    if name not in READ_ONLY_TOOLS | EDIT_TOOLS | VIEW_TOOLS | {"ifc_undo", "ifc_redo"}:
         return {"status": "error", "message": f"{name} is not available from Bonsai"}
     if tool.Ifc.get() is None:
         return {"status": "error", "message": "No IFC project is open in Bonsai"}
     if name in EDIT_TOOLS:
         return _edit(name, args)
+    if name in VIEW_TOOLS:
+        return _view(name, args)
     if name == "ifc_undo":
         return _undo()
     if name == "ifc_redo":
         return _redo()
     try:
         result = _session().dispatch(name, args)
+    except Exception as e:
+        return {"status": "error", "message": str(e) or type(e).__name__}
+    return {"status": "ok", "result": result}
+
+
+def _view(name: str, args: dict[str, Any]) -> dict[str, Any]:
+    from bonsai.bim.module.mcp import view
+
+    try:
+        if name == "bonsai_selection":
+            result = view.selection()
+        elif name == "bonsai_select":
+            session = _session()
+            elements = [session._get_element(i) for i in args.get("element_ids") or []]
+            if not elements:
+                return {"status": "error", "message": "No element_ids given"}
+            result = view.select(elements, frame=args.get("frame", True))
+        elif name == "bonsai_view":
+            result = view.set_view(direction=args.get("direction", ""), frame=args.get("frame", "selected"))
+        else:
+            result = view.screenshot()
     except Exception as e:
         return {"status": "error", "message": str(e) or type(e).__name__}
     return {"status": "ok", "result": result}
