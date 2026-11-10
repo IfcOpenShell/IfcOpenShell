@@ -82,17 +82,17 @@ class AggregateData:
         if parts:
             aggregate = element
 
-        product_linked_agg_group = next(
-            (
-                r
-                for r in getattr(aggregate, "HasAssignments", []) or []
-                if r.is_a("IfcRelAssignsToGroup")
-                if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
-            ),
-            None,
-        )
-
-        if product_linked_agg_group is None:
+        if not (
+            product_linked_agg_group := next(
+                (
+                    r
+                    for r in getattr(aggregate, "HasAssignments", []) or []
+                    if r.is_a("IfcRelAssignsToGroup")
+                    if "BBIM_Linked_Aggregate" in (r.RelatingGroup.Name or "")
+                ),
+                None,
+            )
+        ):
             return
 
         total = len(product_linked_agg_group.RelatedObjects)
