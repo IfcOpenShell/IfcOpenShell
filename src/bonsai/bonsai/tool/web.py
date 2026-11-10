@@ -386,8 +386,13 @@ class Web(bonsai.core.tool.Web):
 
         # The client, not the scene's flag, says whether there is a connection -
         # the flag reads False after a project load (see restore_connection_state).
-        if ws_thread is not None and sio is not None:
-            ws_thread.run_coro(cls.sio_send(payload, event, namespace))
+        # A client can outlive its server, so check the namespace is still connected:
+        # pushing UI data must never fail the operator that triggered it.
+        if ws_thread is not None and sio is not None and namespace in sio.namespaces:
+            try:
+                ws_thread.run_coro(cls.sio_send(payload, event, namespace))
+            except socketio.exceptions.BadNamespaceError:
+                pass  # Dropped between the check and the emit.
 
     @classmethod
     def check_operator_queue(cls) -> None | float:

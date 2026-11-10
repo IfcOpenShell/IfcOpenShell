@@ -88,3 +88,42 @@ class TestDisconnectWithoutAThread(NewFile):
         yield
         bonsai.tool.web.ws_thread = None
         bonsai.tool.web.sio = None
+
+
+class TestSendWebuiDataWithoutAServer(NewFile):
+    """Every IFC operator pushes UI data when it ends, so a client whose server
+    has gone must not make the operator fail with BadNamespaceError."""
+
+    class FakeThread:
+        def __init__(self):
+            self.calls = 0
+
+        def run_coro(self, coro):
+            self.calls += 1
+            coro.close()
+
+    class FakeClient:
+        def __init__(self, namespaces):
+            self.namespaces = namespaces
+
+    def test_it_does_not_send_when_the_namespace_is_not_connected(self):
+        bonsai.tool.web.ws_thread = thread = self.FakeThread()
+        bonsai.tool.web.sio = self.FakeClient({})
+
+        subject.send_webui_data(use_web_data=False)
+
+        assert thread.calls == 0
+
+    def test_it_sends_when_connected(self):
+        bonsai.tool.web.ws_thread = thread = self.FakeThread()
+        bonsai.tool.web.sio = self.FakeClient({"/blender": "sid"})
+
+        subject.send_webui_data(use_web_data=False)
+
+        assert thread.calls == 1
+
+    @pytest.fixture(autouse=True)
+    def _leave_the_module_as_it_was(self):
+        yield
+        bonsai.tool.web.ws_thread = None
+        bonsai.tool.web.sio = None
