@@ -47,8 +47,24 @@ class ProductAssignmentsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"relating_product": cls.relating_product()}
+        cls.data = {
+            "relating_product": cls.relating_product(),
+            "assigned_annotations": cls.assigned_annotations(),
+        }
         cls.is_loaded = True
+
+    @classmethod
+    def assigned_annotations(cls):
+        """List of (annotation_id, annotation_name) assigned to the active product.
+
+        The inverse of relating_product, so it's only populated for non-annotation elements.
+        """
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if not element or element.is_a("IfcAnnotation"):
+            return []
+        return [
+            (a.id(), a.Name or a.ObjectType or "Unnamed") for a in tool.Drawing.get_assigned_annotations(element)
+        ]
 
     @classmethod
     def relating_product(cls):
