@@ -45,6 +45,7 @@ from ifcquery import (
 from ifcquery import (
     render as render_mod,
 )
+from ifcquery import structural as structural_mod
 from ifcquery import validate as validate_mod
 
 
@@ -161,6 +162,17 @@ def main():
         default=None,
         metavar="N",
         help="Limit cost item expansion to N levels (default: unlimited)",
+    )
+
+    structural_parser = subparsers.add_parser(
+        "structural", help="List structural analysis models with their members, connections and loads"
+    )
+    structural_parser.add_argument(
+        "--depth",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Limit expansion to N levels, the analysis models being level 1 (default: unlimited)",
     )
 
     subparsers.add_parser("contexts", help="List geometric representation contexts and subcontexts")
@@ -316,6 +328,8 @@ def main():
         result = schedule.schedule(model, max_depth=args.depth)
     elif args.command == "cost":
         result = cost_mod.cost(model, max_depth=args.depth)
+    elif args.command == "structural":
+        result = structural_mod.structural(model, max_depth=args.depth)
     elif args.command == "contexts":
         result = contexts_mod.contexts(model)
     elif args.command == "materials":
