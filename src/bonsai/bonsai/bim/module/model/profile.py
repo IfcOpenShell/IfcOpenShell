@@ -445,9 +445,6 @@ class DumbProfileJoiner:
     def recreate_profile(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, axis=None, body=None):
         if not element or element.is_a("IfcStructuralItem"):
             return
-        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if old_body and old_body.is_a("IfcTopologyRepresentation"):
-            return
         if axis is None or body is None:
             axis = body = self.get_profile_axis(obj)
         self.axis = copy.deepcopy(axis)

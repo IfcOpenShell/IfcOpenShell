@@ -439,7 +439,7 @@ class ShaderInfo:
         rotation = placement[0:3, 0:3]
         return rotation
 
-    def get_curve_member_rotation(self, curve_member: ifcopenshell.entity_instance) -> np.ndarray:
+    def get_curve_member_rotation(self, curve_member: ifcopenshell.entity_instance) -> np.ndarray | None:
         """returns the rotation matrix of a structural curve member"""
         edge = None
         if getattr(curve_member, "Representation", None):
@@ -484,12 +484,9 @@ class ShaderInfo:
         )
         print(
             f"WARNING: Structural curve member '{member_name}' (#{curve_member.id()}) has no valid IfcEdge topology; "
-            "falling back to placement rotation."
+            "skipping load drawing."
         )
-        if getattr(curve_member, "ObjectPlacement", None):
-            placement = ifcopenshell.util.placement.get_placement(curve_member.ObjectPlacement)
-            return placement[0:3, 0:3]
-        return np.eye(3)
+        return None
 
     def get_activity_transform_matrix(
         self, activity: ifcopenshell.entity_instance, element_rotation_matrix: np.ndarray
@@ -647,12 +644,11 @@ class ShaderInfo:
             start_co = blender_object.matrix_world @ blender_object.data.vertices[0].co
             end_co = blender_object.matrix_world @ blender_object.data.vertices[1].co
             x_axis = Vector(end_co - start_co).normalized()
-            z_direction = getattr(member, "Axis")
-            # local coordinates
-            z_axis = Vector(getattr(z_direction, "DirectionRatios", None)).normalized()
-            y_axis = z_axis.cross(x_axis).normalized()
-            z_axis = x_axis.cross(y_axis).normalized()
             rotation = self.get_curve_member_rotation(member)
+            if rotation is None:
+                continue
+            y_axis = Vector(rotation[:, 1]).normalized()
+            z_axis = Vector(rotation[:, 2]).normalized()
 
             props = tool.Structural.get_structural_props()
             reference_frame = props.reference_frame

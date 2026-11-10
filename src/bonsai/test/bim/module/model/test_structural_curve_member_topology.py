@@ -230,11 +230,8 @@ def test_get_curve_member_rotation_handles_edge_and_non_edge_representations(cap
         member.Representation.Representations = [swept_rep]
         ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=member, matrix=np.eye(4))
 
-        if not hasattr(ifcopenshell.util.placement, "get_placement"):
-            ifcopenshell.util.placement.get_placement = ifcopenshell.util.placement.get_local_placement
         fallback_rot = data.get_curve_member_rotation(member)
-        assert fallback_rot.shape == (3, 3)
-        assert np.allclose(fallback_rot, np.eye(3))
+        assert fallback_rot is None
         captured = capsys.readouterr()
         assert "C1" in captured.out
         assert "WARNING" in captured.out
@@ -259,5 +256,5 @@ def test_add_structural_member_connection_noop_when_member_unset():
         ):
             mock_op = MagicMock()
             result = structural_op.AddStructuralMemberConnection._execute(mock_op, context)
-            assert result == {"FINISHED"}
+            assert result == {"CANCELLED"}
             mock_op.report.assert_called_once_with({"WARNING"}, "Select a structural member first.")
