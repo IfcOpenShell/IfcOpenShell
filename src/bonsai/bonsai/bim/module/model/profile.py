@@ -516,6 +516,7 @@ class DumbProfileJoiner:
                 return (position.Axis.DirectionRatios, position.RefDirection.DirectionRatios)
             return ((0.0, 0.0, 1.0), (1.0, 0.0, 0.0))
 
+        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         new_body = ifcopenshell.api.geometry.add_profile_representation(
             tool.Ifc.get(),
             context=self.body_context,
