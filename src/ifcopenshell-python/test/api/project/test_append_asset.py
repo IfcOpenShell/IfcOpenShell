@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import math
-
 import numpy as np
 import pytest
 
@@ -608,11 +606,11 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
     @pytest.mark.parametrize(
         "library_unit, angle, project_unit, expected",
         [
-            ("radian", math.pi, "degree", 180.0),
-            (None, math.pi, "degree", 180.0),  # No unit is radians, IFC's default.
-            ("degree", 90.0, "radian", math.pi / 2),
+            ("radian", np.pi, "degree", 180.0),
+            (None, np.pi, "degree", 180.0),  # No unit is radians, IFC's default.
+            ("degree", 90.0, "radian", np.pi / 2),
             ("degree", 90.0, "degree", 90.0),
-            ("radian", math.pi, None, math.pi),
+            ("radian", np.pi, None, np.pi),
         ],
     )
     def test_append_converts_plane_angles_between_units(self, library_unit, angle, project_unit, expected):
@@ -630,7 +628,7 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         assert self.file.by_type("IfcRevolvedAreaSolid")[0].Angle == pytest.approx(expected)
 
     def test_append_leaves_angle_property_values_with_their_own_unit(self):
-        library, element = self.make_revolved_asset("radian", math.pi)
+        library, element = self.make_revolved_asset("radian", np.pi)
         degree = ifcopenshell.api.unit.add_conversion_based_unit(library, name="degree")
         pset = ifcopenshell.api.pset.add_pset(library, product=element, name="Foo_Bar")
         pset.HasProperties = [
