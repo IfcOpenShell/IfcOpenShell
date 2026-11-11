@@ -643,6 +643,18 @@ Scenario: Duplicate linked aggregate - a nested aggregate stays inside its paren
     Then the object "Nested_01" exists
     And the object "Nested_01" is aggregated by object "IfcElementAssembly/Assembly"
 
+Scenario: Refresh linked aggregate - an instance with no container
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    # Uncontain the assembly in IFC only. bim.remove_container would also move it to the hidden Unsorted collection.
+    And I evaluate expression "import ifcopenshell.api.spatial; ifcopenshell.api.spatial.unassign_container({ifc}, products=[{ifc}.by_type('IfcElementAssembly')[0]])"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    Then the object "IfcWall/Wall_01.001" exists
+    When the object "IfcWall/Wall_01" is selected
+    And I refresh linked aggregate the selected object
+    Then the object "IfcWall/Wall_01" exists
+    And the object "IfcWall/Wall_01.001" exists
+
 Scenario: Refresh linked aggregate - after deleting an object
     Given I load the IFC test file "/test/files/linked-aggregates.ifc"
     And the object "IfcWall/Wall_01" is selected

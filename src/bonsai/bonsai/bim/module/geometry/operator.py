@@ -1785,12 +1785,13 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
                 # Only assign container if element is not already aggregated under another element
                 # Aggregated elements should not be in the spatial structure
-                if not ifcopenshell.util.element.get_aggregate(element):
+                container = original_data[matching_group_id][index]["Container"]
+                if container and not ifcopenshell.util.element.get_aggregate(element):
                     bonsai.core.spatial.assign_container(
                         tool.Ifc,
                         tool.Collector,
                         tool.Spatial,
-                        container=original_data[matching_group_id][index]["Container"],
+                        container=container,
                         objs=[obj],
                     )
                     for part in ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj)):
