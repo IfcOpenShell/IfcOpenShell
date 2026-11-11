@@ -25,6 +25,7 @@ from bpy.props import (
     CollectionProperty,
     EnumProperty,
     FloatProperty,
+    FloatVectorProperty,
     IntProperty,
     PointerProperty,
     StringProperty,
@@ -174,6 +175,13 @@ class BIMStructuralProperties(PropertyGroup):
     active_structural_analysis_model_id: IntProperty(name="Active Structural Analysis Model Id")
     current_structural_analysis_model_id: IntProperty(name="Current Structural Analysis Model Id")
     load_case_attributes: CollectionProperty(name="Load Case Attributes", type=Attribute)
+    load_case_has_self_weight: BoolProperty(name="Include Self-Weight", default=False)
+    load_case_self_weight: FloatVectorProperty(
+        name="Self-Weight Coefficients",
+        size=3,
+        default=(0.0, 0.0, -1.0),
+        description="Self-weight coefficients (X, Y, Z) in the analysis model's axes",
+    )
     active_load_case_id: IntProperty(name="Active Load Case Id")
     load_group_editing_type: StringProperty(name="Load Group Editing Type")
     # load_group_attributes: CollectionProperty(name="Load Group Attributes", type=Attribute)
@@ -294,6 +302,8 @@ class BIMStructuralProperties(PropertyGroup):
         active_structural_analysis_model_id: int
         current_structural_analysis_model_id: int
         load_case_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        load_case_has_self_weight: bool
+        load_case_self_weight: tuple[float, float, float]
         active_load_case_id: int
         load_group_editing_type: str
         active_load_group_id: int

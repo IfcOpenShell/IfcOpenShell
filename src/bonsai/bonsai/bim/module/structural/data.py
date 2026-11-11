@@ -100,7 +100,7 @@ class StructuralBoundaryConditionsData:
         condition = element.AppliedCondition
         attributes = []
         for name, value in condition.get_info().items():
-            if name in ["id", "type"] or value is None:
+            if name in ["id", "type"]:
                 continue
             attributes.append({"name": name, "value": value, "is_bool": isinstance(value, bool)})
         return {"id": condition.id(), "type": condition.is_a(), "attributes": attributes}
@@ -158,7 +158,13 @@ class StructuralMemberData:
 
     @classmethod
     def load(cls):
-        cls.data = {"active_object_class": cls.active_object_class()}
+        obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(obj) if obj else None
+        cls.data = {
+            "active_object_class": element.is_a() if element else None,
+            "thickness": getattr(element, "Thickness", None) if element else None,
+            "predefined_type": getattr(element, "PredefinedType", None) if element else None,
+        }
         cls.is_loaded = True
 
     @classmethod
@@ -264,6 +270,9 @@ class StructuralLoadCasesData:
                 {
                     "id": load_case.id(),
                     "name": load_case.Name or "Unnamed",
+                    "self_weight": tuple(load_case.SelfWeightCoefficients)
+                    if load_case.SelfWeightCoefficients
+                    else None,
                     "load_groups": load_groups,
                     "activities": activities,
                     "model_ids": [m.id() for m in load_case.LoadGroupFor],

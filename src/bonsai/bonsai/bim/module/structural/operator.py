@@ -565,6 +565,10 @@ class EditStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = tool.Structural.get_structural_props()
         attributes = bonsai.bim.helper.export_attributes(props.load_case_attributes)
+        if props.load_case_has_self_weight:
+            attributes["SelfWeightCoefficients"] = list(props.load_case_self_weight)
+        else:
+            attributes["SelfWeightCoefficients"] = None
         self.file = tool.Ifc.get()
         ifcopenshell.api.structural.edit_structural_load_case(
             self.file,
@@ -598,16 +602,37 @@ class EnableEditingStructuralLoadCase(bpy.types.Operator):
         self.props = tool.Structural.get_structural_props()
         self.props.active_load_case_id = self.load_case
         self.props.load_case_attributes.clear()
+        load_case_entity = tool.Ifc.get().by_id(self.load_case)
         bonsai.bim.helper.import_attributes(
-            tool.Ifc.get().by_id(self.load_case),
+            load_case_entity,
             self.props.load_case_attributes,
             callback=self.import_attributes_callback,
         )
+        coeffs = getattr(load_case_entity, "SelfWeightCoefficients", None)
+        if coeffs:
+            self.props.load_case_has_self_weight = True
+            self.props.load_case_self_weight = tuple(coeffs)
+        else:
+            self.props.load_case_has_self_weight = False
+            self.props.load_case_self_weight = (0.0, 0.0, -1.0)
         return {"FINISHED"}
 
     def import_attributes_callback(self, name: str, prop: object, data: object) -> None | Literal[False]:
         if name in ["SelfWeightCoefficients"]:
             return False
+
+
+class SetSelfWeightDownwards(bpy.types.Operator):
+    bl_idname = "bim.set_self_weight_downwards"
+    bl_label = "Reset Self-Weight Downwards"
+    bl_description = "Reset self-weight coefficients to downwards gravity (0, 0, -1) in the analysis model's axes"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = tool.Structural.get_structural_props()
+        props.load_case_has_self_weight = True
+        props.load_case_self_weight = (0.0, 0.0, -1.0)
+        return {"FINISHED"}
 
 
 class DisableEditingStructuralLoadCase(bpy.types.Operator):
