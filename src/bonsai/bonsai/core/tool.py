@@ -699,6 +699,7 @@ class Model:
     def get_material_layer_parameters(cls, element): pass
     def get_slab_clipping_bmesh(cls, obj): pass
     def get_usage_type(cls, element): pass
+    def is_framing(cls, element): pass
     def get_wall_axis(cls, obj, layers=None): pass
     def import_curve(cls, curve, obj=None, position=None): pass
     def import_profile(cls, profile, obj=None, position=None): pass
@@ -708,6 +709,8 @@ class Model:
     def recalculate_walls(cls, objs): pass
     def recreate_wall(cls, element, obj): pass
     def regenerate_array(cls, parent, data): pass
+    def apply_framing_type(cls, obj): pass
+    def regenerate_framing(cls, obj): pass
     def regenerate_profile(cls, obj): pass
     def regenerate_slab(cls, obj): pass
     def reload_body_representation(cls, obj_or_objects): pass

@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
 from collections import deque
 from collections.abc import Callable
 from functools import partial
@@ -29,6 +30,7 @@ import ifcopenshell.api.project
 import ifcopenshell.api.type
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
+import ifcopenshell.util.framing
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
@@ -401,6 +403,7 @@ class Usecase:
         self.existing_contexts = list(self.file.by_type("IfcGeometricRepresentationContext"))
         new_element = self.add_element(element)
         self.reuse_existing_contexts()
+        self.append_framing(element, new_element)
         return new_element
 
     def append_product(self, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance | None:
@@ -421,6 +424,7 @@ class Usecase:
         self.existing_contexts = list(self.file.by_type("IfcGeometricRepresentationContext"))
         new_element = self.add_element(element)
         self.reuse_existing_contexts()
+        self.append_framing(element, new_element)
 
         placement = new_element.ObjectPlacement
         if placement is not None:
@@ -449,6 +453,46 @@ class Usecase:
             ifcopenshell.api.owner.settings.restore()
 
         return new_element
+
+    def append_framing(self, element: ifcopenshell.entity_instance, new_element: ifcopenshell.entity_instance) -> None:
+        """Bring along what the element's own ``BBIM_Framing`` JSON refers to.
+
+        A framing system names its profiles by ``{"id", "name"}`` in JSON, which file
+        traversal cannot see, and a framing type has no representation maps that would
+        carry them. So each profile is appended, and its reference points to the copy.
+        Lengths in the JSON are converted if the files' units differ."""
+        if element.id() not in self.added_elements:
+            return  # The element was already in the project, with its framing.
+        pset = ifcopenshell.util.element.get_pset(new_element, "BBIM_Framing", should_inherit=False)
+        if not pset:
+            return
+        library_scale = ifcopenshell.util.unit.calculate_unit_scale(self.library)
+        factor = library_scale / ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        values: dict[str, Any] = {}
+        if data := pset.get("Data"):
+            system = json.loads(data)
+            for member in system.get("members", []):
+                profile = ifcopenshell.util.framing.resolve_profile(self.library, member.get("profile"))
+                if profile is None:
+                    continue  # Left as it is, for the framing tool to report.
+                # An occurrence's body may have brought the profile along already.
+                new_profile = self.added_elements.get(profile.id()) or ifcopenshell.api.project.append_asset(
+                    self.file,
+                    library=self.library,
+                    element=profile,
+                    reuse_identities=self.reuse_identities,
+                    assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
+                )
+                member["profile"] = {"id": new_profile.id(), "name": new_profile.ProfileName}
+            values["Data"] = ifcopenshell.util.framing.scale_system(system, factor) if factor != 1 else system
+        if factor != 1 and (guide := pset.get("Guide")):
+            values["Guide"] = ifcopenshell.util.framing.scale_guide(json.loads(guide), factor)
+        if not values:
+            return
+        # The pset and its properties were copied for this element, so they are edited in place.
+        for prop in self.file.by_id(pset["id"]).HasProperties:
+            if prop.Name in values and prop.is_a("IfcPropertySingleValue"):
+                prop.NominalValue = self.file.createIfcText(json.dumps(values[prop.Name]))
 
     def add_element(self, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance | None:
         """Add element and check all it's subgraph inverses."""
