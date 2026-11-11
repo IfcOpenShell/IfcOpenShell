@@ -82,11 +82,13 @@ class AddStructuralMemberConnection(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Structural.get_object_structural_props(obj)
         file = tool.Ifc.get()
         related_structural_connection = file.by_id(oprops.ifc_definition_id)
-        assert props.relating_structural_member
+        if not props.relating_structural_member:
+            self.report({"WARNING"}, "Select a structural member first.")
+            return {"CANCELLED"}
         relating_structural_member = tool.Ifc.get_entity(props.relating_structural_member)
-        assert relating_structural_member
-        if not relating_structural_member.is_a("IfcStructuralMember"):
-            return {"FINISHED"}
+        if not relating_structural_member or not relating_structural_member.is_a("IfcStructuralMember"):
+            self.report({"WARNING"}, "Select a structural member first.")
+            return {"CANCELLED"}
         ifcopenshell.api.structural.add_structural_member_connection(
             file,
             relating_structural_member=relating_structural_member,

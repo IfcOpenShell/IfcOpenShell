@@ -439,16 +439,54 @@ class ShaderInfo:
         rotation = placement[0:3, 0:3]
         return rotation
 
-    def get_curve_member_rotation(self, curve_member: ifcopenshell.entity_instance) -> np.ndarray:
-        """returns the rotation matrix of a structural surface member"""
-        z = curve_member.Axis.DirectionRatios
-        edge = curve_member.Representation.Representations[0].Items[0]
-        origin = edge.EdgeStart.VertexGeometry.Coordinates
-        end = edge.EdgeEnd.VertexGeometry.Coordinates
-        x = [c2 - c1 for c1, c2 in zip(origin, end)]
-        placement = ifcopenshell.util.placement.a2p(origin, z, x)
-        rotation = placement[0:3, 0:3]
-        return rotation
+    def get_curve_member_rotation(self, curve_member: ifcopenshell.entity_instance) -> np.ndarray | None:
+        """returns the rotation matrix of a structural curve member"""
+        edge = None
+        if getattr(curve_member, "Representation", None):
+            for rep in curve_member.Representation.Representations or ():
+                for item in getattr(rep, "Items", None) or ():
+                    if (
+                        item.is_a("IfcEdge")
+                        and getattr(item, "EdgeStart", None)
+                        and getattr(item.EdgeStart, "VertexGeometry", None)
+                        and getattr(item, "EdgeEnd", None)
+                        and getattr(item.EdgeEnd, "VertexGeometry", None)
+                    ):
+                        edge = item
+                        break
+                if edge:
+                    break
+        if edge:
+            origin = edge.EdgeStart.VertexGeometry.Coordinates
+            end = edge.EdgeEnd.VertexGeometry.Coordinates
+            x = [c2 - c1 for c1, c2 in zip(origin, end)]
+            x_norm = float(np.linalg.norm(x))
+            if x_norm > 1e-9:
+                x_unit = np.asarray(x, dtype=float) / x_norm
+                axis_dir = getattr(curve_member, "Axis", None)
+                z = axis_dir.DirectionRatios if axis_dir else None
+                if z is not None:
+                    z_norm = float(np.linalg.norm(z))
+                    if (
+                        z_norm <= 1e-9
+                        or float(np.linalg.norm(np.cross(np.asarray(z, dtype=float) / z_norm, x_unit))) < 1e-6
+                    ):
+                        z = None
+                if z is None:
+                    for candidate in ((0.0, 1.0, 0.0), (1.0, 0.0, 0.0), (0.0, 0.0, 1.0)):
+                        if float(np.linalg.norm(np.cross(candidate, x_unit))) >= 1e-6:
+                            z = candidate
+                            break
+                placement = ifcopenshell.util.placement.a2p(origin, z, x)
+                return placement[0:3, 0:3]
+        member_name = (
+            getattr(curve_member, "Name", None) or getattr(curve_member, "GlobalId", None) or f"#{curve_member.id()}"
+        )
+        print(
+            f"WARNING: Structural curve member '{member_name}' (#{curve_member.id()}) has no valid IfcEdge topology; "
+            "skipping load drawing."
+        )
+        return None
 
     def get_activity_transform_matrix(
         self, activity: ifcopenshell.entity_instance, element_rotation_matrix: np.ndarray
@@ -606,12 +644,11 @@ class ShaderInfo:
             start_co = blender_object.matrix_world @ blender_object.data.vertices[0].co
             end_co = blender_object.matrix_world @ blender_object.data.vertices[1].co
             x_axis = Vector(end_co - start_co).normalized()
-            z_direction = getattr(member, "Axis")
-            # local coordinates
-            z_axis = Vector(getattr(z_direction, "DirectionRatios", None)).normalized()
-            y_axis = z_axis.cross(x_axis).normalized()
-            z_axis = x_axis.cross(y_axis).normalized()
             rotation = self.get_curve_member_rotation(member)
+            if rotation is None:
+                continue
+            y_axis = Vector(rotation[:, 1]).normalized()
+            z_axis = Vector(rotation[:, 2]).normalized()
 
             props = tool.Structural.get_structural_props()
             reference_frame = props.reference_frame
