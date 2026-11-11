@@ -212,6 +212,14 @@ def test_get_curve_member_rotation_handles_edge_and_non_edge_representations(cap
         assert rot.shape == (3, 3)
         assert np.allclose(rot, np.eye(3))
 
+        # Sloped member (a 4:3 rafter) with Axis = Z: local x stays along the edge and
+        # local z is tilted into the plane of Axis and the edge
+        edge.EdgeEnd.VertexGeometry.Coordinates = (4.0, 0.0, 3.0)
+        sloped_rot = data.get_curve_member_rotation(member)
+        assert np.allclose(sloped_rot[:, 0], (0.8, 0.0, 0.6))
+        assert np.allclose(sloped_rot[:, 1], (0.0, 1.0, 0.0))
+        assert np.allclose(sloped_rot[:, 2], (-0.6, 0.0, 0.8))
+
         # 2. Curve member with Axis parallel to its edge (e.g. vertical column along Z with Axis = Z)
         edge.EdgeEnd.VertexGeometry.Coordinates = (0.0, 0.0, 3.0)
         member.Axis.DirectionRatios = (0.0, 0.0, 1.0)
@@ -219,6 +227,7 @@ def test_get_curve_member_rotation_handles_edge_and_non_edge_representations(cap
         assert parallel_rot.shape == (3, 3)
         assert not np.isnan(parallel_rot).any()
         assert np.allclose(parallel_rot.T @ parallel_rot, np.eye(3), atol=1e-6)
+        assert np.allclose(parallel_rot[:, 0], (0.0, 0.0, 1.0))
 
         # 3. Corrupted representation (e.g. IfcExtrudedAreaSolid in first slot) warns and falls back cleanly
         profile_def = ifc_file.by_type("IfcIShapeProfileDef")[0]
