@@ -2047,7 +2047,7 @@ class TexturedQuadGizmoMixin(StaticTrisGizmoMixin):
     def setup(self) -> None:
         super().setup()
         from bonsai.bim.module.drawing import (
-            gizmo_textures,  # ty: ignore[unresolved-import]
+            gizmo_textures,  # ty: ignore[import-not-found]
         )
 
         self._quad_batch = batch_for_shader(
@@ -2058,7 +2058,7 @@ class TexturedQuadGizmoMixin(StaticTrisGizmoMixin):
 
     def draw(self, context: bpy.types.Context) -> None:
         from bonsai.bim.module.drawing import (
-            gizmo_textures,  # ty: ignore[unresolved-import]
+            gizmo_textures,  # ty: ignore[import-not-found]
         )
 
         texture = gizmo_textures.get_icon_texture(self.icon_name)

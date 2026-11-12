@@ -31,7 +31,7 @@ import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
 import ifcopenshell.guid
 import numpy as np
-import pymeshlab  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+import pymeshlab  # pyright: ignore[reportMissingImports]  # ty:ignore[import-not-found]
 
 
 class Obj2Ifc:
