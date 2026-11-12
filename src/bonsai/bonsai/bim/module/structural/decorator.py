@@ -24,11 +24,25 @@ import bpy
 import gpu
 import numpy as np
 from bpy.types import SpaceView3D
+from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
 
 import bonsai.tool as tool
 from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
+
+
+def update_loads_after_moves(scene: bpy.types.Scene, depsgraph: bpy.types.Depsgraph) -> None:
+    """Redraw the shown loads when a structural item moves, so that they follow it"""
+    if not tool.Ifc.get():
+        return
+    for update in depsgraph.updates:
+        if update.is_updated_transform and isinstance(update.id, bpy.types.Object):
+            element = tool.Ifc.get_entity(update.id.original)
+            if element and element.is_a("IfcStructuralItem"):
+                LoadsDecorator.update()
+                tool.Blender.update_all_viewports()
+                return
 
 
 class LoadsDecorator(tool.Blender.ViewportDecorator):
@@ -59,6 +73,14 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         cls.decoration_data = ShaderInfo()
         cls.update()
         cls.is_installed = True
+        if update_loads_after_moves not in bpy.app.handlers.depsgraph_update_post:
+            bpy.app.handlers.depsgraph_update_post.append(update_loads_after_moves)
+
+    @classmethod
+    def uninstall(cls) -> None:
+        if update_loads_after_moves in bpy.app.handlers.depsgraph_update_post:
+            bpy.app.handlers.depsgraph_update_post.remove(update_loads_after_moves)
+        super().uninstall()
 
     @classmethod
     def update(cls) -> None:
@@ -71,14 +93,19 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         # set open gl configurations
         original_blend = gpu.state.blend_get()
         original_depth_test = gpu.state.depth_test_get()
+        original_depth_mask = gpu.state.depth_mask_get()
         gpu.state.blend_set("ALPHA")
         gpu.state.depth_test_set("LESS_EQUAL")
+        # Load glyphs stay behind the model but don't write depth, so they neither hide each other (later ones,
+        # such as resultants, draw on top) nor hide the load values, whose visibility is tested against depth.
+        gpu.state.depth_mask_set(False)
 
         self.draw_batch()
 
         # restore opengl configurations
         gpu.state.blend_set(original_blend)
         gpu.state.depth_test_set(original_depth_test)
+        gpu.state.depth_mask_set(original_depth_mask)
 
     def draw_batch(self) -> None:
         """draw the 3D representation of loads"""
@@ -118,10 +145,31 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
             text_position = self.location_3d_to_region_2d(info["position"], context)
             if text_position is not None:
                 font_id = 0
-                blf.position(font_id, text_position[0], text_position[1], text_position[2])
                 blf.size(font_id, 20.0)
-                blf.color(font_id, 0.9, 0.9, 0.9, 1.0)
+                x, y = text_position[0], text_position[1]
+                if (away := info.get("away")) is not None:
+                    x, y = self.place_beside(info["position"], away, x, y, info["text"], context)
+                blf.position(font_id, x, y, text_position[2])
+                # Labels take the colour of what they describe, lightened to stay legible on a dark viewport.
+                r, g, b = (min(c, 1.0) + (1 - min(c, 1.0)) * 0.35 for c in info.get("color", (0.85, 0.85, 0.85))[:3])
+                blf.color(font_id, r, g, b, 1.0)
                 blf.draw(font_id, info["text"])
+
+    def place_beside(
+        self, position: Iterable, away: Iterable, x: float, y: float, text: str, context: bpy.types.Context
+    ) -> tuple[float, float]:
+        """Offset a label from its anchor towards away, so that it sits beside its line rather than on it"""
+        start = location_3d_to_region_2d(context.region, context.region_data, Vector(position))
+        end = location_3d_to_region_2d(context.region, context.region_data, Vector(position) + Vector(away))
+        if start is None or end is None or not (end - start).length:
+            return x, y
+        direction = (end - start).normalized()
+        width, height = blf.dimensions(0, text)
+        gap = 12
+        # The text box goes on the away side of the anchor, centred across directions near perpendicular to it.
+        x += gap * direction.x + (0 if direction.x > 0.3 else -width if direction.x < -0.3 else -width / 2)
+        y += gap * direction.y + (0 if direction.y > 0.3 else -height if direction.y < -0.3 else -height / 2)
+        return x, y
 
     def location_3d_to_region_2d(self, coord: Iterable, context: bpy.types.Context) -> Union[Vector, None]:
         """Convert from 3D space to 2D screen space.
