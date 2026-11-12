@@ -214,8 +214,8 @@ class Context:
 class Cost:
     def add_cost_column(cls, name): pass
     def change_parent_cost_item(cls, cost_item, new_parent): pass
-    def clean_up_cost_item_tree(cls, cost_item): pass
-    def contract_cost_item_rate(cls, cost_item): pass
+    def clean_up_cost_item_tree(cls, cost_item_id): pass
+    def contract_cost_item_rate(cls, cost_item_id): pass
     def contract_cost_item(cls, cost_item_id): pass
     def contract_cost_items(cls): pass
     def create_new_cost_item_li(props_collection, cost_item, level_index, type): pass
@@ -232,10 +232,10 @@ class Cost:
     def enable_editing_cost_item_values(cls, cost_item): pass
     def enable_editing_cost_items(cls, cost_schedule): pass
     def enable_editing_cost_schedule_attributes(cls, cost_schedule): pass
-    def expand_cost_item_rate(cls, cost_item): pass
+    def expand_cost_item_rate(cls, cost_item_id): pass
     def expand_cost_item(cls, cost_item_id): pass
     def expand_cost_items(cls): pass
-    def export_cost_schedules(cls, filepath, format, cost_schedule): pass
+    def export_cost_schedules(cls, dirpath, format, cost_schedule): pass
     def export_cost_schedules_to_pdf(cls, filepath, cost_schedule, options): pass
     def format_unit(cls, unit): pass
     def get_active_cost_item(cls): pass
@@ -250,7 +250,7 @@ class Cost:
     def get_cost_items_for_product(cls, product, cost_schedule): pass
     def get_cost_schedule_attributes(cls): pass
     def get_cost_schedule_products(cls, cost_schedule): pass
-    def get_cost_schedule(cls, cost_schedule): pass
+    def get_cost_schedule(cls, cost_item): pass
     def get_cost_value_attributes(cls): pass
     def get_cost_value_unit_component(cls): pass
     def get_highlighted_cost_item(cls): pass
@@ -341,8 +341,8 @@ class Drawing:
     def disable_editing_text(cls, obj): pass
     def does_file_exist(cls, uri): pass
     def edit_text_alignment(cls, obj, alignment): pass
-    def edit_text_font_size(cls, obj, size): pass
-    def edit_text_literals(cls, obj, literals): pass
+    def edit_text_font_size(cls, obj, font_size): pass
+    def edit_text_literals(cls, obj, literal_attributes): pass
     def edit_text_symbol(cls, obj, symbol): pass
     def edit_text_wrap_length(cls, obj, wrap_length): pass
     def enable_editing(cls, obj): pass
@@ -367,7 +367,7 @@ class Drawing:
     def generate_sheet_identification(cls): pass
     def get_annotation_context(cls, target_view, object_type=None): pass
     def get_annotation_drawing(cls, element): pass
-    def get_annotation_representation(cls, element_type): pass
+    def get_annotation_representation(cls, element): pass
     def get_assigned_product(cls, element): pass
     def get_assigned_product_workaround(cls, element): pass
     def get_body_context(cls): pass
@@ -389,7 +389,7 @@ class Drawing:
     def get_group_elements(cls, group): pass
     def get_ifc_representation_class(cls, object_type): pass
     def get_name(cls, element): pass
-    def get_path_filename(cls, uri): pass
+    def get_path_filename(cls, path): pass
     def get_reference_description(cls, reference): pass
     def get_reference_document(cls, reference): pass
     def get_reference_location(cls, reference): pass
@@ -411,12 +411,12 @@ class Drawing:
     def move_file(cls, src, dest): pass
     def open_layout_svg(cls, uri): pass
     def open_spreadsheet(cls, uri): pass
-    def open_svg(cls, filepath): pass
+    def open_svg(cls, uri): pass
     def reload_representation(cls, obj, representation): pass
     def run_drawing_activate_model(cls): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def run_type_assign_type(cls, element=None, relating_type=None): pass
-    def select_assigned_product(cls, drawing): pass
+    def select_assigned_product(cls, context): pass
     def set_camera_name(cls, drawing, name): pass
     def set_drawing_collection_name(cls, drawing, collection): pass
     def set_name(cls, element, name): pass
@@ -424,7 +424,7 @@ class Drawing:
     def setup_shading_styles_path(cls, resource_path): pass
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
-    def update_embedded_svg_location(cls, uri, old_location, new_location): pass
+    def update_embedded_svg_location(cls, uri, reference, new_location): pass
 
 
 @interface
@@ -440,7 +440,7 @@ class Duplicate:
 
 @interface
 class Feature:
-    def add_feature(cls, featured_obj, featured_objs): pass
+    def add_feature(cls, featured_obj, feature_objs): pass
 
 @interface
 class Geometry:
@@ -450,9 +450,9 @@ class Geometry:
     def copy_data_links(cls, data, copied_entities) -> None: pass
     def delete_data(cls, data): pass
     def delete_ifc_object(cls, obj): pass
-    def delete_opening_object_placement(cls, opening): pass
+    def delete_opening_object_placement(cls, placement): pass
     def does_representation_id_exist(cls, representation_id): pass
-    def duplicate_ifc_objects(cls, objects_to_duplicate, active_object=None, duplicate_ifc_objects=None): pass
+    def duplicate_ifc_objects(cls, objects_to_duplicate, active_object=None, linked=None): pass
     def duplicate_object_data(cls, obj): pass
     def get_blender_offset_type(cls, obj): pass
     def get_cartesian_point_offset(cls, obj): pass
@@ -469,7 +469,7 @@ class Geometry:
     def get_total_representation_items(cls, obj): pass
     def has_axis_representation(cls, element): pass
     def has_data_users(cls, data): pass
-    def has_material_style_override(cls, obj): pass
+    def has_material_style_override(cls, element): pass
     def import_representation_parameters(cls, data): pass
     def is_body_representation(cls, representation): pass
     def is_box_representation(cls, representation): pass
@@ -492,10 +492,10 @@ class Geometry:
     def should_force_faceted_brep(cls): pass
     def should_force_triangulation(cls): pass
     def should_generate_uvs(cls, obj): pass
-    def should_use_immediate_representation(cls, entity, apply_openings): pass
+    def should_use_immediate_representation(cls, element, apply_openings): pass
     def should_use_presentation_style_assignment(cls): pass
     def switch_from_representation(cls, obj, representation): pass
-    def unresolve_type_representation(cls, representation, element): pass
+    def unresolve_type_representation(cls, representation, occurence): pass
 
 
 @interface
@@ -521,7 +521,7 @@ class Georeference:
     def import_wcs(cls): pass
     def set_coordinates(cls, io, coordinates): pass
     def set_model_origin(cls): pass
-    def set_wcs(cls, matrix): pass
+    def set_wcs(cls, wcs): pass
     def xyz2enh(cls, coordinates): pass
 
 
@@ -542,8 +542,8 @@ class Group:
 class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
-    def get_entity_by_id(cls, element_id): pass
-    def get_object(cls, entity): pass
+    def get_entity_by_id(cls, entity_id): pass
+    def get_object(cls, element): pass
     def get_path(cls): pass
     def get_schema(cls): pass
     def is_edited(cls, obj): pass
@@ -684,7 +684,7 @@ class Misc:
 
 @interface
 class Model:
-    def clip_wall_to_slab(cls, element, bm): pass
+    def clip_wall_to_slab(cls, wall, clipping_bm): pass
     def connect_wall_to_slab(cls, wall, slab): pass
     def convert_si_to_unit(cls, value): pass
     def convert_unit_to_si(cls, value): pass
@@ -705,9 +705,9 @@ class Model:
     def import_rectangle(cls, obj, position, profile): pass
     def load_openings(cls, openings): pass
     def purge_scene_openings(cls): pass
-    def recalculate_walls(cls, objs): pass
+    def recalculate_walls(cls, walls): pass
     def recreate_wall(cls, element, obj): pass
-    def regenerate_array(cls, parent, data): pass
+    def regenerate_array(cls, parent_obj, data): pass
     def regenerate_profile(cls, obj): pass
     def regenerate_slab(cls, obj): pass
     def reload_body_representation(cls, obj_or_objects): pass
@@ -718,7 +718,7 @@ class Model:
 
 @interface
 class Nest:
-    def can_nest(cls, relating_object, related_object): pass
+    def can_nest(cls, relating_obj, related_obj): pass
     def disable_editing(cls, obj): pass
     def enable_editing(cls, obj): pass
     def get_container(cls, element): pass
@@ -1001,7 +1001,7 @@ class Sequence:
     def get_work_schedule(cls, task): pass
     def get_work_time_attributes(cls): pass
     def guess_date_range(cls, work_schedule): pass
-    def has_task_assignments(cls, product, cost_schedule=None): pass
+    def has_task_assignments(cls, product, work_schedule=None): pass
     def go_to_task(cls, task): pass
     def is_filter_by_active_schedule(cls): pass
     def is_work_schedule_active(cls, work_schedule): pass
@@ -1037,7 +1037,7 @@ class Sequence:
 
 @interface
 class Spatial:
-    def can_contain(cls, container, element_obj): pass
+    def can_contain(cls, container, element): pass
     def can_reference(cls, structure, element): pass
     def contract_container(cls, container): pass
     def copy_xy(cls, src_obj, destination_obj): pass
@@ -1051,7 +1051,7 @@ class Spatial:
     def filter_products(cls, products, action): pass
     def get_active_container(cls): pass
     def get_container(cls, element): pass
-    def get_decomposed_elements(cls, container, recursive): pass
+    def get_decomposed_elements(cls, container, is_recursive): pass
     def get_decomposition(cls, element): pass
     def get_host_element(cls, filling): pass
     def get_host_wall(cls, filling): pass
@@ -1088,7 +1088,7 @@ class Spatial:
     def get_boundary_elements(cls, selected_objects): pass
     def get_polygons(cls, boundary_elements): pass
     def get_obj_base_points(cls, obj): pass
-    def get_converted_tolerance(cls, tolerance): pass
+    def get_converted_tolerance(cls, tolerance_si): pass
     def get_purged_inner_holes_poly(cls, union_geom, min_area): pass
     def get_poly_valid_interior_list(cls, poly, min_area, interiors_list): pass
     def get_buffered_poly_from_linear_ring(cls, linear_ring): pass
@@ -1158,11 +1158,11 @@ class Style:
     def get_elements_by_style(cls, style): pass
     def get_currently_edited_material(cls): pass
     def get_name(cls, obj): pass
-    def get_style_elements(cls, blender_material): pass
+    def get_style_elements(cls, blender_material_or_style): pass
     def get_surface_rendering_attributes(cls, obj, verbose=True): pass
-    def get_surface_rendering_style(cls, obj): pass
-    def get_texture_style(cls, obj): pass
-    def get_external_style(cls, obj): pass
+    def get_surface_rendering_style(cls, blender_material_or_style): pass
+    def get_texture_style(cls, blender_material_or_style): pass
+    def get_external_style(cls, blender_material_or_style): pass
     def get_surface_shading_attributes(cls, obj): pass
     def get_surface_shading_style(cls, obj): pass
     def get_surface_texture_style(cls, obj): pass
@@ -1171,7 +1171,7 @@ class Style:
     def import_surface_attributes(cls, style): pass
     def is_editing_style(cls): pass
     def is_editing_styles(cls): pass
-    def reload_material_from_ifc(cls, obj): pass
+    def reload_material_from_ifc(cls, blender_material): pass
     def is_style_side_attribute_edited(cls, style, new_attributes): pass
     def reload_representations(cls, style): pass
 
@@ -1184,7 +1184,7 @@ class Surveyor:
 @interface
 class System:
     def create_empty_at_cursor_with_element_orientation(cls, element): pass
-    def create_port_at_cursor(cls, system): pass
+    def create_port_at_cursor(cls, element): pass
     def delete_element_objects(cls, elements): pass
     def disable_editing_system(cls): pass
     def disable_system_editing_ui(cls): pass

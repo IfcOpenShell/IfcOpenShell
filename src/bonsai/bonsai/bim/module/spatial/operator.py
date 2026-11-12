@@ -436,7 +436,7 @@ class SelectDecomposedElements(bpy.types.Operator):
     is_recursive: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
 
     @classmethod
-    def description(cls, context, operator):
+    def description(cls, context, properties):
         return (
             "Select the active item"
             + "\nALT+CLICK to select all listed elements.\nCTRL + CLICK to select only one level deep"
@@ -500,10 +500,10 @@ class SetContainerVisibility(bpy.types.Operator):
     mode: bpy.props.StringProperty(name="Mode")
 
     @classmethod
-    def description(cls, context, operator):
-        if operator.mode == "HIDE":
+    def description(cls, context, properties):
+        if properties.mode == "HIDE":
             return "Hides the selected container and all children.\n" + "ALT+CLICK to ignore children"
-        elif operator.mode == "SHOW":
+        elif properties.mode == "SHOW":
             return "Shows the selected container and all children.\n" + "ALT+CLICK to ignore children"
         return "Isolate the selected container and all children.\n" + "ALT+CLICK to ignore children"
 
@@ -548,10 +548,10 @@ class SetElementVisibility(bpy.types.Operator):
     mode: bpy.props.StringProperty(name="Mode")
 
     @classmethod
-    def description(cls, context, operator):
-        if operator.mode == "HIDE":
+    def description(cls, context, properties):
+        if properties.mode == "HIDE":
             return "Hides the active item\n" + "ALT+CLICK to hide all listed items"
-        elif operator.mode == "SHOW":
+        elif properties.mode == "SHOW":
             return "Shows the active item\n" + "ALT+CLICK to show all listed items"
         return "Isolate the active item\n" + "ALT+CLICK to isolate all listed items"
 

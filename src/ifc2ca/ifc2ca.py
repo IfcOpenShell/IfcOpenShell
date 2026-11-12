@@ -969,7 +969,8 @@ class Ifc2CA:
 
 
 class IFC2JSONEncoder(json.JSONEncoder):
-    def default(self, obj):
+    def default(self, o):
+        obj = o
         # print(type(obj), obj)
         if isinstance(obj, ios.entity_instance):
             return f"{obj.is_a()}|{obj.id()}"

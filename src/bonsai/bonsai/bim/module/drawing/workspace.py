@@ -281,8 +281,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         return tool.Ifc.get()
 
     @classmethod
-    def description(cls, context, operator):
-        return operator.description or ""
+    def description(cls, context, properties):
+        return properties.description or ""
 
     def _execute(self, context):
         if not (camera := context.scene.camera) or not tool.Ifc.get_entity(camera):

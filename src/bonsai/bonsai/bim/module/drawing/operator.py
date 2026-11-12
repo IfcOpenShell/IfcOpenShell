@@ -1878,8 +1878,8 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
         return tool.Ifc.get() and context.scene.camera
 
     @classmethod
-    def description(cls, context, operator):
-        return operator.description or ""
+    def description(cls, context, properties):
+        return properties.description or ""
 
     def _execute(self, context):
         props = tool.Drawing.get_annotation_props()
