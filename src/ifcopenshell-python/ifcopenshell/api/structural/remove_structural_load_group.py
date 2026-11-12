@@ -24,13 +24,20 @@ import ifcopenshell.util.element
 def remove_structural_load_group(file: ifcopenshell.file, load_group: ifcopenshell.entity_instance) -> None:
     """Removes a structural load group
 
-    The structural activities in the load group are removed with it.
+    The structural activities in the load group are removed with it, except
+    those that another load group or load case also groups: they are only
+    taken out of this one.
 
     :param load_group: The IfcStructuralLoadGroup to remove.
     :return: None
     """
-    activities = [o for rel in load_group.IsGroupedBy for o in rel.RelatedObjects if o.is_a("IfcStructuralActivity")]
+    activities = {o for rel in load_group.IsGroupedBy for o in rel.RelatedObjects if o.is_a("IfcStructuralActivity")}
     for activity in activities:
+        if any(
+            rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup != load_group
+            for rel in activity.HasAssignments or ()
+        ):
+            continue
         ifcopenshell.api.structural.remove_structural_activity(file, activity=activity)
     # TODO: do a deep purge
     for inverse in file.get_inverse(load_group):

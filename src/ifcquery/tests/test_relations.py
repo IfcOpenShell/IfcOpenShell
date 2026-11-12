@@ -197,3 +197,75 @@ class TestCLI:
             assert "Error" in result.stderr
         finally:
             os.unlink(path)
+
+
+def _by_name(model, ifc_class, name):
+    return next(e for e in model.by_type(ifc_class) if e.Name == name)
+
+
+def _refs(entities):
+    return [{"id": e.id(), "type": e.is_a(), **({"name": e.Name} if e.Name else {})} for e in entities]
+
+
+class TestStructuralRelations:
+    def test_no_structural_block_without_structural_links(self, model):
+        assert "structural" not in relations(model, model.by_type("IfcWall")[0])
+
+    def test_member(self, structural_model):
+        f = structural_model
+        member = _by_name(f, "IfcStructuralCurveMember", "Cantilever")
+        structural = relations(f, member)["structural"]
+        assert structural == {
+            "analysis_models": _refs(f.by_type("IfcStructuralAnalysisModel")),
+            "connections": _refs(
+                [
+                    _by_name(f, "IfcStructuralPointConnection", "Root"),
+                    _by_name(f, "IfcStructuralPointConnection", "Tip"),
+                ]
+            ),
+            "building_elements": _refs(f.by_type("IfcBeam")),
+        }
+
+    def test_connection(self, structural_model):
+        f = structural_model
+        tip = _by_name(f, "IfcStructuralPointConnection", "Tip")
+        structural = relations(f, tip)["structural"]
+        assert structural["members"] == _refs(f.by_type("IfcStructuralCurveMember"))
+        assert structural["activities"] == _refs(f.by_type("IfcStructuralPointAction"))
+
+    def test_building_element(self, structural_model):
+        f = structural_model
+        structural = relations(f, f.by_type("IfcBeam")[0])["structural"]
+        assert structural == {"structural_members": _refs(f.by_type("IfcStructuralCurveMember"))}
+
+    def test_activity(self, structural_model):
+        f = structural_model
+        structural = relations(f, f.by_type("IfcStructuralPointAction")[0])["structural"]
+        assert structural == {
+            "item": _refs([_by_name(f, "IfcStructuralPointConnection", "Tip")])[0],
+            "load_groups": _refs([_by_name(f, "IfcStructuralLoadGroup", "Point loads")]),
+        }
+
+    def test_load_case(self, structural_model):
+        f = structural_model
+        case = _by_name(f, "IfcStructuralLoadCase", "Live")
+        structural = relations(f, case)["structural"]
+        combination = _by_name(f, "IfcStructuralLoadGroup", "ULS")
+        assert structural == {"load_combinations": [{**_refs([combination])[0], "factor": 3.0}]}
+
+    def test_load_combination(self, structural_model):
+        f = structural_model
+        combination = _by_name(f, "IfcStructuralLoadGroup", "ULS")
+        structural = relations(f, combination)["structural"]
+        case = _by_name(f, "IfcStructuralLoadCase", "Live")
+        assert structural == {
+            "analysis_models": _refs(f.by_type("IfcStructuralAnalysisModel")),
+            "load_cases": [{**_refs([case])[0], "factor": 3.0}],
+        }
+
+    def test_structural_entities_are_in_the_flat_list(self, structural_model):
+        f = structural_model
+        result = relations(f, _by_name(f, "IfcStructuralPointConnection", "Tip"))
+        ids = {e["id"] for e in result["elements"]}
+        assert f.by_type("IfcStructuralCurveMember")[0].id() in ids
+        assert f.by_type("IfcStructuralPointAction")[0].id() in ids

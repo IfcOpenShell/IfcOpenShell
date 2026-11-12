@@ -451,6 +451,19 @@ class TestGetBodyContext(NewFile):
         assert subject.get_body_context() == context
 
 
+class TestGetDefaultMetadata(NewFile):
+    def test_run(self):
+        prefs = tool.Blender.get_addon_preferences()
+        original = prefs.doc.metadata_default
+        try:
+            prefs.doc.metadata_default = " Name, id "
+            assert subject.get_default_metadata() == "Name, id"
+            prefs.doc.metadata_default = "  "
+            assert subject.get_default_metadata() is None
+        finally:
+            prefs.doc.metadata_default = original
+
+
 class TestGetDocumentUri(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()

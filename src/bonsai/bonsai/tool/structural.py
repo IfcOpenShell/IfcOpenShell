@@ -166,7 +166,10 @@ class Structural(bonsai.core.tool.Structural):
         """Get a rise and run along the in-plane components x and z, as small whole numbers if they make one.
 
         For example, components of -160 and -120 give a rise of -3 and a run of -4.
+        No force gives a rise and run of 1 and 1.
         """
+        if not x and not z:
+            return 1.0, 1.0
         if not x or not z:
             return (math.copysign(1.0, z) if z else 0.0), (math.copysign(1.0, x) if x else 0.0)
         exact = abs(z) / abs(x)
