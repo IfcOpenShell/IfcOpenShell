@@ -34,6 +34,7 @@ from .add_structural_member_connection import add_structural_member_connection
 from .assign_product import assign_product
 from .assign_structural_analysis_model import assign_structural_analysis_model
 from .assign_structural_load_combination import assign_structural_load_combination
+from .assign_structural_load_group import assign_structural_load_group
 from .assign_to_building import assign_to_building
 from .edit_structural_analysis_model import edit_structural_analysis_model
 from .edit_structural_boundary_condition import edit_structural_boundary_condition
@@ -41,6 +42,7 @@ from .edit_structural_connection_cs import edit_structural_connection_cs
 from .edit_structural_item_axis import edit_structural_item_axis
 from .edit_structural_load import edit_structural_load
 from .edit_structural_load_case import edit_structural_load_case
+from .remove_structural_activity import remove_structural_activity
 from .remove_structural_analysis_model import remove_structural_analysis_model
 from .remove_structural_boundary_condition import remove_structural_boundary_condition
 from .remove_structural_connection_condition import (
@@ -51,6 +53,7 @@ from .remove_structural_load_case import remove_structural_load_case
 from .remove_structural_load_group import remove_structural_load_group
 from .unassign_structural_analysis_model import unassign_structural_analysis_model
 from .unassign_structural_load_combination import unassign_structural_load_combination
+from .unassign_structural_load_group import unassign_structural_load_group
 
 wrap_usecases(__path__, __name__)
 
@@ -66,6 +69,7 @@ __all__ = [
     "assign_product",
     "assign_structural_analysis_model",
     "assign_structural_load_combination",
+    "assign_structural_load_group",
     "assign_to_building",
     "edit_structural_analysis_model",
     "edit_structural_boundary_condition",
@@ -73,6 +77,7 @@ __all__ = [
     "edit_structural_item_axis",
     "edit_structural_load",
     "edit_structural_load_case",
+    "remove_structural_activity",
     "remove_structural_analysis_model",
     "remove_structural_boundary_condition",
     "remove_structural_connection_condition",
@@ -81,4 +86,5 @@ __all__ = [
     "remove_structural_load_group",
     "unassign_structural_analysis_model",
     "unassign_structural_load_combination",
+    "unassign_structural_load_group",
 ]

@@ -109,120 +109,48 @@ class ShaderInfo:
             self.is_empty = False
 
     def get_force_units(self) -> None:
-        def get_unit_symbol(unit: ifcopenshell.entity_instance) -> str:
-            prefix_symbols = {
-                "EXA": "E",
-                "PETA": "P",
-                "TERA": "T",
-                "GIGA": "G",
-                "MEGA": "M",
-                "KILO": "k",
-                "HECTO": "h",
-                "DECA": "da",
-                "DECI": "d",
-                "CENTI": "c",
-                "MILLI": "m",
-                "MICRO": "μ",
-                "NANO": "n",
-                "PICO": "p",
-                "FEMTO": "f",
-                "ATTO": "a",
-            }
+        # Only units assigned to the project apply. A derived unit the project does not declare is composed
+        # from its force and length units (N/mm in a mm project). IFC does not say what an undeclared unit is,
+        # and ifcopenshell.util.unit.calculate_unit_scale takes it as SI (N/m), so declaring it is safer.
+        ifc_file = tool.Ifc.get()
+        project_units = {
+            t: ifcunit.get_project_unit(ifc_file, t)
+            for t in ("FORCEUNIT", "LENGTHUNIT", "TORQUEUNIT", "LINEARFORCEUNIT", "LINEARMOMENTUNIT", "PLANARFORCEUNIT")
+        }
+        linear_force_units = [u for u in [project_units["LINEARFORCEUNIT"]] if u]
+        linear_moment_units = [u for u in [project_units["LINEARMOMENTUNIT"]] if u]
+        planar_force_units = [u for u in [project_units["PLANARFORCEUNIT"]] if u]
 
-            unit_symbols = {
-                # si units
-                "CUBIC_METRE": "m3",
-                "GRAM": "g",
-                "SECOND": "s",
-                "SQUARE_METRE": "m2",
-                "METRE": "m",
-                "NEWTON": "N",
-                "PASCAL": "Pa",
-                # conversion based units
-                "pound-force": "lbf",
-                "pound-force per square inch": "psi",
-                "thou": "th",
-                "inch": "in",
-                "foot": "ft",
-                "yard": "yd",
-                "mile": "mi",
-                "square thou": "th2",
-                "square inch": "in2",
-                "square foot": "ft2",
-                "square yard": "yd2",
-                "acre": "ac",
-                "square mile": "mi2",
-                "cubic thou": "th3",
-                "cubic inch": "in3",
-                "cubic foot": "ft3",
-                "cubic yard": "yd3",
-                "cubic mile": "mi3",
-                "litre": "L",
-                "fluid ounce UK": "fl oz",
-                "fluid ounce US": "fl oz",
-                "pint UK": "pt",
-                "pint US": "pt",
-                "gallon UK": "gal",
-                "gallon US": "gal",
-                "degree": "°",
-                "ounce": "oz",
-                "pound": "lb",
-                "ton UK": "ton",
-                "ton US": "ton",
-                "lbf": "lbf",
-                "kip": "kip",
-                "psi": "psi",
-                "ksi": "ksi",
-                "minute": "min",
-                "hour": "hr",
-                "day": "day",
-                "btu": "btu",
-                "fahrenheit": "°F",
-            }
-            symbol = ""
-            if unit.is_a("IfcSIUnit"):
-                symbol += prefix_symbols.get(unit.Prefix, "")
-            symbol += unit_symbols.get(unit.Name.replace("METER", "METRE"), "?")
-            return symbol
+        force_unit = project_units["FORCEUNIT"]
+        self.force_unit = ifcunit.get_unit_symbol(force_unit) if force_unit else "N"
 
-        length_units = [u for u in tool.Ifc.get().by_type("IfcNamedUnit") if u.UnitType == "LENGTHUNIT"]
-        force_units = [u for u in tool.Ifc.get().by_type("IfcNamedUnit") if u.UnitType == "FORCEUNIT"]
-        linear_force_units = [u for u in tool.Ifc.get().by_type("IfcDerivedUnit") if u.UnitType == "LINEARFORCEUNIT"]
-        linear_moment_units = [u for u in tool.Ifc.get().by_type("IfcDerivedUnit") if u.UnitType == "LINEARMOMENTUNIT"]
-        planar_force_units = [u for u in tool.Ifc.get().by_type("IfcDerivedUnit") if u.UnitType == "PLANARFORCEUNIT"]
+        length_unit = project_units["LENGTHUNIT"]
+        length_unit = ifcunit.get_unit_symbol(length_unit) if length_unit else "m"
+        torque_unit = project_units["TORQUEUNIT"]
+        self.moment_unit = ifcunit.get_unit_symbol(torque_unit) if torque_unit else self.force_unit + "." + length_unit
 
-        conversion_force_unit = [u for u in force_units if u.is_a("IfcConversionBasedUnit")]
-        if len(conversion_force_unit) == 0:
-            conversion_force_unit.append(force_units[0])
-        self.force_unit = ifcunit.get_unit_symbol(conversion_force_unit[0])
-
-        conversion_length_unit = [u for u in length_units if u.is_a("IfcConversionBasedUnit")]
-        if len(conversion_length_unit) == 0:
-            conversion_length_unit.append(length_units[0])
-        length_unit = ifcunit.get_unit_symbol(conversion_length_unit[0])
-        self.moment_unit = self.force_unit + "." + length_unit
-
-        first = ""
-        second = ""
-        for e in linear_force_units[0].Elements:
+        # Derived units missing from the file are composed from the force and length units.
+        first = self.force_unit
+        second = length_unit
+        for e in linear_force_units[0].Elements if linear_force_units else ():
             if e.Unit.UnitType == "FORCEUNIT":
                 first = ifcunit.get_unit_symbol(e.Unit)
             if e.Unit.UnitType == "LENGTHUNIT":
                 second = ifcunit.get_unit_symbol(e.Unit)
         self.linear_force_unit = first + "/" + second
 
-        first = ""
-        second = ""
-        for e in linear_moment_units[0].Elements:
+        first = self.force_unit
+        second = length_unit
+        for e in linear_moment_units[0].Elements if linear_moment_units else ():
             if e.Unit.UnitType == "FORCEUNIT":
                 first = ifcunit.get_unit_symbol(e.Unit)
             if e.Unit.UnitType == "LENGTHUNIT":
                 second = ifcunit.get_unit_symbol(e.Unit)
         self.linear_moment_unit = first + "." + second + "/" + second
 
-        first = ""
-        second = ""
-        for e in planar_force_units[0].Elements:
+        first = self.force_unit
+        second = length_unit + "2"
+        for e in planar_force_units[0].Elements if planar_force_units else ():
             if e.Unit.UnitType == "FORCEUNIT":
                 first = ifcunit.get_unit_symbol(e.Unit)
             if e.Unit.UnitType == "LENGTHUNIT":

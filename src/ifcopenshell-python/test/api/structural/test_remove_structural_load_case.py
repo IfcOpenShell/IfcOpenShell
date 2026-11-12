@@ -71,3 +71,22 @@ class TestRemoveStructuralLoadCase(test.bootstrap.IFC4):
         ifcopenshell.api.structural.remove_structural_load_case(self.file, load_case=dead)
         assert rel.RelatedObjects == (live,)
         assert rel.RelatingGroup == sls
+
+    def test_removing_a_load_case_unassigns_it_from_analysis_models(self):
+        model = ifcopenshell.api.structural.add_structural_analysis_model(self.file)
+        load_case = ifcopenshell.api.structural.add_structural_load_case(self.file)
+        other = ifcopenshell.api.structural.add_structural_load_case(self.file)
+        ifcopenshell.api.structural.assign_structural_load_group(
+            self.file, load_groups=[load_case, other], structural_analysis_model=model
+        )
+        ifcopenshell.api.structural.remove_structural_load_case(self.file, load_case=load_case)
+        assert model.LoadedBy == (other,)
+
+    def test_removing_the_last_load_case_of_a_model_unsets_loaded_by(self):
+        model = ifcopenshell.api.structural.add_structural_analysis_model(self.file)
+        load_case = ifcopenshell.api.structural.add_structural_load_case(self.file)
+        ifcopenshell.api.structural.assign_structural_load_group(
+            self.file, load_groups=[load_case], structural_analysis_model=model
+        )
+        ifcopenshell.api.structural.remove_structural_load_case(self.file, load_case=load_case)
+        assert model.LoadedBy is None
