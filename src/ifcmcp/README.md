@@ -259,6 +259,22 @@ ifc_cost(max_depth=2)   # top two levels of the BoQ
 `max_depth` limits cost item expansion, same truncation convention as
 `ifc_schedule`.
 
+#### ifc_structural
+
+List the structural analysis models, each with its members (and the
+connections, building elements and activities of each), its connections
+(with their boundary conditions), its load cases (with their activities and
+loads) and its load combinations (with the factor of each load case).
+
+```
+ifc_structural()
+ifc_structural(max_depth=2)   # each member, connection, case and combination, without its own lists
+```
+
+`max_depth` counts the analysis models as level 1, same truncation
+convention as `ifc_schedule`. Analysis models are not part of the spatial
+structure, so `ifc_tree` does not show them.
+
 #### ifc_schema
 
 Return IFC class documentation for any entity type, using the loaded model's
@@ -450,7 +466,7 @@ session is created with `IfcSession(allow_execute=True)`.
 1. **Load** a model: `ifc_load`
 2. **Inspect** with query tools: `ifc_summary`, `ifc_tree`, `ifc_select`, `ifc_info`, `ifc_relations`
 3. **Validate** if needed: `ifc_validate`
-4. **Browse schedules / costs**: `ifc_schedule`, `ifc_cost` (use `max_depth=1` first on large projects)
+4. **Browse schedules / costs / structural models**: `ifc_schedule`, `ifc_cost`, `ifc_structural` (use `max_depth=1` first on large projects)
 5. **Look up IFC classes**: `ifc_schema`
 6. **Find** the right API function: `ifc_search`, `ifc_list`, `ifc_docs`
 7. **Edit** the model: `ifc_edit`
