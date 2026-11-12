@@ -38,3 +38,5 @@ my_ids.validate(my_ifc)
 # show results:
 reporter.Console(my_ids).report()
 ```
+## Pro Tip
+Always ensure your IFC file schema matches your IDS specification version to avoid validation warnings!
