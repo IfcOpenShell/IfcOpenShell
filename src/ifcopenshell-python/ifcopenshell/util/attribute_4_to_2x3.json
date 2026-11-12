@@ -173,7 +173,7 @@
         "Identification": "ItemReference"
     },
     "IfcMaterialProperties": {
-        "Name": "Material"
+        "Properties": "ExtendedProperties"
     },
     "IfcBlobTexture": {
         "Mode": "TextureType",

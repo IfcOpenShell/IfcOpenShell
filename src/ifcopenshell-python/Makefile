@@ -1,68 +1,60 @@
-VERSION:=`date '+%y%m%d'`
-PYVERSION:=py310
-PLATFORM:=linux
+include ../vars.mk
 
-SED:=sed -i
-ifeq ($(OS),Windows_NT)
-HOSTOS:=win
-else
-UNAME_S:=$(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-HOSTOS:=linux
-endif
-ifeq ($(UNAME_S),Darwin)
-HOSTOS:=macos
-PYTHON:=python3
-PATCH:=patch -d
-SED:=sed -i '' -e
-endif
+PYVERSION:=py311
+PLATFORM:=linux64
+
+SUPPORTED_PYVERSIONS := py311 py312 py313 py314 py315
+
+ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
+$(error Unsupported PYVERSION=$(PYVERSION). Must be one of $(SUPPORTED_PYVERSIONS))
 endif
 
-ifeq ($(PYVERSION), py39)
-PYNUMBER:=39
-endif
-ifeq ($(PYVERSION), py310)
-PYNUMBER:=310
-endif
-ifeq ($(PYVERSION), py311)
-PYNUMBER:=311
-endif
-ifeq ($(PYVERSION), py312)
-PYNUMBER:=312
-endif
+PYMINOR:=$(subst py3,,$(PYVERSION))
+PYNUMBER:=3$(PYMINOR)
 
-ifeq ($(PLATFORM), linux)
+# We actually do support glibc 2.28-2.30 (see #5636)
+# but those are old and there's no demand for it.
+ifeq ($(PLATFORM), linux64)
 PLATFORMTAG:=manylinux_2_31_x86_64
 endif
-ifeq ($(PLATFORM), macos)
+ifeq ($(PLATFORM), linuxarm64)
+PLATFORMTAG:=manylinux_2_31_aarch64
+endif
+ifeq ($(PLATFORM), macos64)
 PLATFORMTAG:=macosx_10_15_x86_64
 endif
-ifeq ($(PLATFORM), macosm1)
+ifeq ($(PLATFORM), macosm164)
 PLATFORMTAG:=macosx_11_0_arm64
 endif
-ifeq ($(PLATFORM), win)
+ifeq ($(PLATFORM), win64)
 PLATFORMTAG:=win_amd64
 endif
+ifeq ($(PLATFORM), win-arm64)
+PLATFORMTAG:=win_arm64
+endif
+
+BINARY_VERSION:=0.9.1
+BUILD_COMMIT:=7b8f129
+IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
+IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
+BONSAIVIEWER_URL:=https://s3.amazonaws.com/ifcopenshell-builds/BonsaiViewer-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
+
+.PHONY: build-urls
+build-urls:
+	@echo "You can provide one of the platforms (linux64, linuxarm64, macos64, macosm164, win64, win-arm64) using 'PLATFORM=xxx'."
+	@echo "And Python version using 'PYNUMBER=xx' (e.g. 'PYNUMBER=311')."
+	@echo ${IOS_URL}
+	@echo ${IFCCONVERT_URL}
 
 .PHONY: test
 test:
-	pytest -p no:pytest-blender test
+	pytest --import-mode=importlib -p no:pytest-blender test
 
-# safe version of tests without mathutils dependency
-# for tests to work for github workflow with python <3.10 #3895
-.PHONY: test-safe
-test-safe:
-	pytest -p no:pytest-blender test --ignore=test/util/test_shape_builder.py
+.PHONY: test-parallel
+test-parallel:
+	@NPROCS=$$(nproc 2>/dev/null || sysctl -n hw.ncpu); \
+	pytest --import-mode=importlib -p no:pytest-blender -n $$NPROCS test
 
-.PHONY: build-ids-docs
-build-ids-docs:
-	mkdir -p test/build
-	cd test && python ids_doc_generator.py
-
-.PHONY: qa
-qa:
-	black .
-	pylint ./* --output-format=colorized --disable all --enable E
 
 .PHONY: license
 license:
@@ -71,7 +63,7 @@ license:
 
 .PHONY: coverage
 coverage:
-	coverage run --source ifcopenshell -m pytest -p no:pytest-blender test
+	coverage run --source ifcopenshell -m pytest --import-mode=importlib -p no:pytest-blender test
 	coverage html
 	xdg-open htmlcov/index.html
 
@@ -79,8 +71,26 @@ coverage:
 clean:
 	rm -rf htmlcov
 
-.PHONY: dist
-dist:
+.PHONY: zip-ifcconvert
+zip-ifcconvert:
+ifndef PLATFORM
+	$(error PLATFORM is not set)
+endif
+	mkdir -p dist
+	cd dist && wget $(IFCCONVERT_URL)
+	cd dist && mv *.zip ifcconvert-$(VERSION)-$(PLATFORM).zip
+
+.PHONY: zip-bonsaiviewer
+zip-bonsaiviewer:
+ifndef PLATFORM
+	$(error PLATFORM is not set)
+endif
+	mkdir -p dist
+	cd dist && wget $(BONSAIVIEWER_URL)
+	cd dist && mv *.zip bonsaiviewer-$(VERSION)-$(PLATFORM).zip
+
+.PHONY: zip
+zip:
 ifndef PLATFORM
 	$(error PLATFORM is not set)
 endif
@@ -89,23 +99,58 @@ endif
 	mkdir -p dist/ifcopenshell
 	cp -r ifcopenshell/* dist/ifcopenshell/
 
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-f7c03db-$(PLATFORM)64.zip
+	cd dist/working && wget $(IOS_URL)
 	cd dist/working && unzip ifcopenshell-python*
-	cp -r dist/working/ifcopenshell/ifcopenshell_wrapper.py dist/ifcopenshell/
-ifeq ($(PLATFORM), win)
-	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.pyd dist/ifcopenshell/
-else
-	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.so dist/ifcopenshell/
-endif
+	cp -r dist/working/ifcopenshell/*ifcopenshell_wrapper* dist/ifcopenshell/
+	# v0.9.0 splits IfcOpenShell into shared libraries loaded from next to the
+	# wrapper (libifcopenshell_parse, ifcopenshell_document_rdb, ...). Copy
+	# them too, otherwise the wrapper fails to import. See #9364.
+	find dist/working/ifcopenshell -maxdepth 1 \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.dll' \) -exec cp {} dist/ifcopenshell/ \;
 	rm -rf dist/working
-	# distutils cannot access anything outside the cwd, so hackishly swap out the README.md
-	cp README.md ../README.bak
-	cp ../../README.md README.md
-	$(SED) "s/999999/$(VERSION)/" pyproject.toml
-	python -m build
-	$(SED) "s/$(VERSION)/999999/" pyproject.toml
-	mv ../README.bak README.md
-	cd dist && mv ifcopenshell-0.7.0.$(VERSION)-py3-none-any.whl ifcopenshell-0.7.0.$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' dist/ifcopenshell/__init__.py
+	cd dist && zip -r ifcopenshell-python-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ifcopenshell
 	rm -rf dist/ifcopenshell
-	rm -rf dist/ifcopenshell.egg-info
-	rm -rf dist/ifcopenshell-0.7.0.$(VERSION).tar.gz
+
+.PHONY: dist
+dist:
+ifndef PLATFORM
+	$(error PLATFORM is not set)
+endif
+	rm -rf build
+	mkdir -p build
+	mkdir -p dist
+	cp -r ifcopenshell build/
+
+	mkdir build/botbuild
+	cd build/botbuild && wget --no-verbose $(IOS_URL) && unzip ifcopenshell-python*
+	cp -r build/botbuild/ifcopenshell/*ifcopenshell_wrapper* build/ifcopenshell/
+	# v0.9.0 splits IfcOpenShell into shared libraries loaded from next to the
+	# wrapper (libifcopenshell_parse, ifcopenshell_document_rdb, ...). Copy
+	# them too, otherwise the wrapper fails to import. See #9364.
+	find build/botbuild/ifcopenshell -maxdepth 1 \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.dll' \) -exec cp {} build/ifcopenshell/ \;
+	cp ../../README.md build/
+	cp pyproject.toml build/
+ifeq ($(IS_STABLE), TRUE)
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/ifcopenshell/__init__.py
+else
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/ifcopenshell/__init__.py
+endif
+
+	# Older pip trusts the compromised TLS certificates.
+	cd build && if command -v uv >/dev/null 2>&1; then \
+		uv build --wheel; \
+	else \
+		$(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && \
+		$(PYTHON) -m pip install --upgrade pip && \
+		$(PIP) install build && \
+		$(PYTHON) -m build --wheel; \
+	fi
+
+ifeq ($(IS_STABLE), TRUE)
+	mv build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION_PYTHON)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+else
+	cp build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION_DAILY)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+endif
+	rm -rf build

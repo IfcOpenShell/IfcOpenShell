@@ -19,37 +19,43 @@
 
 #include "mapping.h"
 #include "../profile_helper.h"
+#include "../function_item_evaluator.h"
 
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #if defined SCHEMA_HAS_IfcPointByDistanceExpression
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPointByDistanceExpression* inst) {
-   auto u = (*inst->DistanceAlong()->as<IfcSchema::IfcLengthMeasure>()) * length_unit_;
-   //auto basis_curve = inst->BasisCurve();
-   //auto item = map(basis_curve);
-   //auto pw_curve = ifcopenshell::geometry::piecewise_from_item(item);
-   auto pw_curve = taxonomy::dcast<taxonomy::piecewise_function>(map(inst->BasisCurve()));
-   auto m = pw_curve->evaluate(u);
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPointByDistanceExpression& inst) {
+   auto u = (double) inst.DistanceAlong().as<IfcSchema::IfcLengthMeasure>() * length_unit_;
+   auto basis_curve = map(inst.BasisCurve());
+   taxonomy::function_item::ptr curve = taxonomy::dcast<taxonomy::function_item>(basis_curve);
+   if (!curve) {
+      // if the basis curve is not a function_item, the cast it to piecewise_function. the casting operator
+      // calls loop_to_piecewise_function_upgrade and will convert loops to a piecewise function
+       curve = taxonomy::dcast<taxonomy::piecewise_function>(basis_curve);
+   }
+
+   function_item_evaluator evaluator(settings_,curve);
+   auto m = evaluator.evaluate(u);
 
    auto o = m.col(3).head<3>();
    auto z = m.col(2).head<3>();
    auto x = m.col(0).head<3>();
 
-   if (inst->OffsetLateral().has_value()) {
-       auto offset_lateral = inst->OffsetLateral().get() * length_unit_;
-       auto y = Eigen::Vector3d(m.col(1)(0), m.col(1)(1), m.col(1)(2)); 
+   if (inst.OffsetLateral().has_value()) {
+       auto offset_lateral = inst.OffsetLateral().value() * length_unit_;
+       auto y = Eigen::Vector3d(m.col(1)(0), m.col(1)(1), m.col(1)(2));
        o += offset_lateral * y;
    }
 
-   if (inst->OffsetVertical().has_value()) {
-       auto offset_vertical = inst->OffsetVertical().get() * length_unit_;
+   if (inst.OffsetVertical().has_value()) {
+       auto offset_vertical = inst.OffsetVertical().value() * length_unit_;
        o += offset_vertical * z;
    }
 
-   if (inst->OffsetLongitudinal().has_value()) {
-       auto offset_longitudinal = inst->OffsetLongitudinal().get() * length_unit_;
+   if (inst.OffsetLongitudinal().has_value()) {
+       auto offset_longitudinal = inst.OffsetLongitudinal().value() * length_unit_;
        o += offset_longitudinal* x;
    }
 

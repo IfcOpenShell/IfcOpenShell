@@ -16,23 +16,31 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Geometry processing and analysis"""
+"""Geometry processing and analysis
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+IFC may define geometry explicitly (such as meshes) or implicitly (such as
+parametric extrusions). This module provides methods to extract geometric
+definitions in IFC into explicitly tessellated triangles or OpenCASCADE Breps
+for further processing.
+
+This is typically needed when writing software to visualise or analyse
+geometry. See also :mod:`ifcopenshell.util.shape` for deriving quantities.
+"""
 
 
 def _has_occ():
+    # NOTE: All pythonocc versions since 7.4.0 are using OCC.Core.
+    # Previous versions (pythonocc<=0.17.3) are using just OCC.
+
     try:
-        import OCC.Core.BRepTools
+        import OCC.Core.BRepTools  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
         return True
     except ImportError:
         pass
 
     try:
-        import OCC.BRepTools
+        import OCC.BRepTools  # ruff: ignore[unused-import]  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
         return True
     except ImportError:
@@ -44,6 +52,6 @@ def _has_occ():
 has_occ = _has_occ()
 
 if has_occ:
-    from . import occ_utils as utils
+    from . import occ_utils as utils  # ruff: ignore[unused-import]
 
 from .main import *

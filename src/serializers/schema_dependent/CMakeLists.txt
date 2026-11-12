@@ -1,0 +1,23 @@
+foreach(schema ${SCHEMA_VERSIONS})
+    if(NOT WASM_BUILD)
+        set(schema_plugin_library parse_schema_ifc${schema})
+    else()
+        set(schema_plugin_library)
+    endif()
+
+    add_document_serializer_plugin(document_serializer_xml_ifc${schema} "document.xml.ifc${schema}" SOURCES xml_serializer.cpp xml_plugin.cpp LIBRARIES ${schema_plugin_library})
+    target_compile_definitions(document_serializer_xml_ifc${schema} PRIVATE IfcSchema=Ifc${schema})
+    if(WASM_BUILD)
+        target_link_options(document_serializer_xml_ifc${schema} PRIVATE "SHELL:-s ERROR_ON_UNDEFINED_SYMBOLS=0")
+    endif()
+
+    if(GLTF_SUPPORT)
+        add_document_serializer_plugin(document_serializer_json_ifc${schema} "document.json.ifc${schema}" SOURCES json_serializer.cpp json_plugin.cpp LIBRARIES nlohmann_json::nlohmann_json ${schema_plugin_library} DEFINITIONS WITH_GLTF)
+        target_compile_definitions(document_serializer_json_ifc${schema} PRIVATE IfcSchema=Ifc${schema})
+        if(WASM_BUILD)
+            target_link_options(document_serializer_json_ifc${schema} PRIVATE "SHELL:-s ERROR_ON_UNDEFINED_SYMBOLS=0")
+        endif()
+    endif()
+endforeach()
+
+set(document_serializer_libraries ${document_serializer_libraries} PARENT_SCOPE)

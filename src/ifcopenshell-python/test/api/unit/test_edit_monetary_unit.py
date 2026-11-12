@@ -16,12 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.unit
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestEditMonetaryUnit(test.bootstrap.IFC4):
     def test_run(self):
         unit = self.file.createIfcMonetaryUnit()
-        ifcopenshell.api.run("unit.edit_monetary_unit", self.file, unit=unit, attributes={"Currency": "FOO"})
-        assert unit.Currency == "FOO"
+        ifcopenshell.api.unit.edit_monetary_unit(self.file, unit=unit, attributes={"Currency": "USD"})
+        assert unit.Currency == "USD"
+
+
+class TestEditMonetaryUnitIFC2X3(test.bootstrap.IFC2X3, TestEditMonetaryUnit):
+    pass

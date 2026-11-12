@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 from collections import deque
+
 import ifcopenshell.util.element
 
 
 class Patcher:
-    def __init__(self, src, file, logger):
+    def __init__(self, file: ifcopenshell.file, logger: logging.Logger):
         """Optimise the filesize of an IFC model by reusing non-rooted elements
 
         It is possible to non-losslessly optimise the filesize of an IFC model.
@@ -34,7 +36,7 @@ class Patcher:
         If filesize is an issue, another approach would be to use IFCZIP
         instead to compress the model. Optimising the model only typically
         affects filesize and has minimal impact on load times. Large filesizes
-        can usually be solved through other means. Consult the BlenderBIM Add-on
+        can usually be solved through other means. Consult Bonsai
         documentation on dealing with large models for more details.
 
         This patch may be run multiple times with diminishing returns.
@@ -45,7 +47,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "RecycleNonRootedElements", "arguments": []})
         """
-        self.src = src
         self.file = file
         self.logger = logger
 
@@ -65,7 +66,7 @@ class Patcher:
         deleted.sort()
         deleted_q = deque(deleted)
         new = ""
-        for line in self.file.wrapped_data.to_string().split("\n"):
+        for line in self.file.to_string().split("\n"):
             try:
                 if int(line.split("=")[0][1:]) != deleted_q[0]:
                     new += line + "\n"

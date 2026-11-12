@@ -6,10 +6,10 @@ Files and scripts for the use of [`Code_Aster`](https://code-aster.org) in IFC-d
 ## Scripts:
 
 - [`ifc2ca.py`](ifc2ca.py): a python script to extract and create a `json` file from an `ifc` file
-- [`scriptSalome.py`](scriptSalome.py): a python script to run in the [`Salome-Meca`](https://www.code-aster.org/spip.php?article303) environment. Creates the geometry and the mesh of the structure
+- [`scriptSalome.py`](templates/salome/scriptSalome.py): a python script to run in the [`Salome-Meca`](https://www.code-aster.org/spip.php?article303) environment. Creates the geometry and the mesh of the structure
 - [`scriptCodeAster.py`](scriptCodeAster.py): a python script to create the input file (`.comm`) for Code_Aster
-- [`scriptSalomeBonded.py`](scriptSalomeBonded.py): a python script to run in the [`Salome-Meca`](https://www.code-aster.org/spip.php?article303) environment. Creates the geometry and the mesh of the structure by bonding together all structural elements (no connections are considered)
-- [`scriptCodeAsterBonded.py`](scriptCodeAsterBonded.py): a python script to create the input file (`.comm`) for Code_Aster for the "bonded" case
+- [`scriptSalomeBonded.py`](_deprecated/scriptSalomeBonded.py): a python script to run in the [`Salome-Meca`](https://www.code-aster.org/spip.php?article303) environment. Creates the geometry and the mesh of the structure by bonding together all structural elements (no connections are considered). Located under `_deprecated/`.
+- [`scriptCodeAsterBonded.py`](_deprecated/scriptCodeAsterBonded.py): a python script to create the input file (`.comm`) for Code_Aster for the "bonded" case. Located under `_deprecated/`.
 
 ## Analysis Models
 

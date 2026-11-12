@@ -16,15 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.context
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestEditContext(test.bootstrap.IFC4):
     def test_editing_a_context(self):
         context = self.file.createIfcGeometricRepresentationContext()
-        ifcopenshell.api.run(
-            "context.edit_context",
+        ifcopenshell.api.context.edit_context(
             self.file,
             context=context,
             attributes={
@@ -41,8 +40,7 @@ class TestEditContext(test.bootstrap.IFC4):
 
     def test_editing_a_subcontext(self):
         subcontext = self.file.createIfcGeometricRepresentationSubcontext()
-        ifcopenshell.api.run(
-            "context.edit_context",
+        ifcopenshell.api.context.edit_context(
             self.file,
             context=subcontext,
             attributes={
@@ -58,3 +56,7 @@ class TestEditContext(test.bootstrap.IFC4):
         assert subcontext.TargetScale == 0.5
         assert subcontext.TargetView == "MODEL_VIEW"
         assert subcontext.UserDefinedTargetView == "UserDefinedTargetView"
+
+
+class TestEditContextIFC2X3(test.bootstrap.IFC2X3, TestEditContext):
+    pass

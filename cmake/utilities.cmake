@@ -18,9 +18,16 @@
 ################################################################################
 
 # Create a cache entry if absent for environment variables
+#
+# The env var fallback was mostly relied on by the Windows buil. It's not used anymore
+# (all build scripts now pass these as -D cache args instead), so in theory it could be
+# dropped in the future.
+# It also lets unrelated/stray environment state silently configure the build, since these
+# var names aren't namespaced to this project.
 macro(UNIFY_ENVVARS_AND_CACHE VAR)
-    if((NOT DEFINED ${VAR}) AND(NOT "$ENV{${VAR}}" STREQUAL ""))
+    if(NOT DEFINED ${VAR} AND DEFINED ENV{${VAR}} AND NOT ENV{${VAR}} STREQUAL "")
         set(${VAR} "$ENV{${VAR}}" CACHE STRING "${VAR}" FORCE)
+        mark_as_advanced(${VAR})
     endif()
 endmacro()
 
@@ -39,6 +46,423 @@ macro(SET_INSTALL_RPATHS _target _paths)
     message(STATUS "Set INSTALL_RPATH for ${_target}: ${${_target}_rpaths}")
     set_target_properties(${_target} PROPERTIES INSTALL_RPATH "${${_target}_rpaths}")
 endmacro()
+
+macro(SET_INSTALL_SELF_RPATH _target)
+    if(IS_ABSOLUTE "${CMAKE_INSTALL_LIBDIR}")
+        SET_INSTALL_RPATHS(${_target} "${CMAKE_INSTALL_LIBDIR}")
+    elseif(APPLE)
+        SET_INSTALL_RPATHS(${_target} "@loader_path")
+    else()
+        SET_INSTALL_RPATHS(${_target} "$ORIGIN")
+    endif()
+endmacro()
+
+function(ifcopenshell_plugin_target TARGET)
+    # Plug-ins are loaded by exact filename and should not receive a platform library prefix.
+    set_target_properties(${TARGET} PROPERTIES PREFIX "")
+    if((NOT WIN32) AND BUILD_SHARED_LIBS AND NOT WASM_BUILD AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
+        SET_INSTALL_SELF_RPATH(${TARGET})
+    endif()
+endfunction()
+
+function(ifcopenshell_native_plugin_target TARGET MODULE_TARGET)
+    if(WASM_BUILD)
+        return()
+    endif()
+    set_target_properties(${TARGET} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "$<TARGET_FILE_DIR:${MODULE_TARGET}>"
+        LIBRARY_OUTPUT_DIRECTORY "$<TARGET_FILE_DIR:${MODULE_TARGET}>"
+    )
+endfunction()
+
+function(ifcopenshell_wasm_plugin_dependency OUT_VAR)
+    if(WASM_BUILD)
+        # wasm-ld fails when the static `plugin` archive is linked into both the
+        # main module and SIDE_MODULE plugins. The main module owns `plugin`.
+        set(${OUT_VAR} "" PARENT_SCOPE)
+    else()
+        set(${OUT_VAR} plugin PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(ifcopenshell_wasm_plugin_import_from_main TARGET)
+    if(NOT WASM_BUILD)
+        return()
+    endif()
+
+    cmake_parse_arguments(IMPORT "" "" "DEPENDS" ${ARGN})
+    foreach(dep IN LISTS IMPORT_DEPENDS)
+        if(NOT TARGET ${dep})
+            continue()
+        endif()
+        add_dependencies(${TARGET} ${dep})
+        foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+            get_target_property(values ${dep} ${prop})
+            if(values)
+                target_include_directories(${TARGET} PRIVATE ${values})
+            endif()
+        endforeach()
+        foreach(prop INTERFACE_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
+            target_compile_definitions(${TARGET} PRIVATE "$<TARGET_PROPERTY:${dep},${prop}>")
+        endforeach()
+    endforeach()
+endfunction()
+
+function(ifcopenshell_wasm_define_main_import_target SOURCE_TARGET)
+    if(NOT WASM_BUILD)
+        return()
+    endif()
+    if(NOT TARGET ${SOURCE_TARGET})
+        message(FATAL_ERROR "Unknown source target '${SOURCE_TARGET}'")
+    endif()
+
+    cmake_parse_arguments(IMPORT "" "NAME" "INTERFACE_LINK_LIBRARIES" ${ARGN})
+    if(NOT IMPORT_NAME)
+        set(IMPORT_NAME "${SOURCE_TARGET}__wasm_main_import")
+    endif()
+    if(TARGET ${IMPORT_NAME})
+        set_property(TARGET ${SOURCE_TARGET} PROPERTY IFCOPENSHELL_WASM_MAIN_IMPORT_TARGET "${IMPORT_NAME}")
+        return()
+    endif()
+
+    add_library(${IMPORT_NAME} INTERFACE)
+    foreach(prop IN ITEMS INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+        get_target_property(values ${SOURCE_TARGET} ${prop})
+        if(values)
+            target_include_directories(${IMPORT_NAME} INTERFACE ${values})
+        endif()
+    endforeach()
+    foreach(prop IN ITEMS INTERFACE_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
+        # Generator expressions include definitions inherited from linked targets.
+        target_compile_definitions(${IMPORT_NAME} INTERFACE "$<TARGET_PROPERTY:${SOURCE_TARGET},${prop}>")
+    endforeach()
+    if(IMPORT_INTERFACE_LINK_LIBRARIES)
+        target_link_libraries(${IMPORT_NAME} INTERFACE ${IMPORT_INTERFACE_LINK_LIBRARIES})
+    endif()
+    set_property(TARGET ${SOURCE_TARGET} PROPERTY IFCOPENSHELL_WASM_MAIN_IMPORT_TARGET "${IMPORT_NAME}")
+endfunction()
+
+function(ifcopenshell_wasm_plugin_target_link TARGET)
+    cmake_parse_arguments(PLUGIN "" "" "MAIN_TARGETS;PRIVATE" ${ARGN})
+    # The standalone WASM runtime owns globally visible core symbols. The
+    # Pyodide wrapper is itself a locally loaded side module, so its plugins
+    # must link the core archives rather than import symbols from that wrapper.
+    if(WASM_BUILD AND NOT BUILD_IFCPYTHON)
+        if(PLUGIN_PRIVATE)
+            target_link_libraries(${TARGET} PRIVATE ${PLUGIN_PRIVATE})
+        endif()
+        if(PLUGIN_MAIN_TARGETS)
+            set(import_targets)
+            foreach(main_target IN LISTS PLUGIN_MAIN_TARGETS)
+                if(NOT TARGET ${main_target})
+                    continue()
+                endif()
+                add_dependencies(${TARGET} ${main_target})
+                get_target_property(import_target ${main_target} IFCOPENSHELL_WASM_MAIN_IMPORT_TARGET)
+                if(import_target AND TARGET ${import_target})
+                    list(APPEND import_targets ${import_target})
+                else()
+                    ifcopenshell_wasm_plugin_import_from_main(${TARGET} DEPENDS ${main_target})
+                endif()
+            endforeach()
+            if(import_targets)
+                target_link_libraries(${TARGET} PRIVATE ${import_targets})
+            endif()
+        endif()
+    else()
+        target_link_libraries(${TARGET} PRIVATE ${PLUGIN_MAIN_TARGETS} ${PLUGIN_PRIVATE})
+    endif()
+endfunction()
+
+function(ifcopenshell_wasm_main_module_link TARGET)
+    if(NOT WASM_BUILD)
+        return()
+    endif()
+
+    set(wrapper "${CMAKE_SOURCE_DIR}/cmake/emscripten-main-module-link.sh")
+    if(EXISTS "${wrapper}")
+        set_property(TARGET ${TARGET} PROPERTY RULE_LAUNCH_LINK "${wrapper}")
+    endif()
+endfunction()
+
+function(ifcopenshell_wasm_plugins_dir OUT_VAR)
+    set(${OUT_VAR} "${CMAKE_BINARY_DIR}/ifcwrap/wasm/plugins" PARENT_SCOPE)
+endfunction()
+
+function(ifcopenshell_wasm_set_plugin_info TARGET KIND ID)
+    if(NOT WASM_BUILD)
+        return()
+    endif()
+    set_target_properties(${TARGET} PROPERTIES
+        IFCOPENSHELL_PLUGIN_KIND "${KIND}"
+        IFCOPENSHELL_PLUGIN_ID "${ID}"
+    )
+endfunction()
+
+function(ifcopenshell_wasm_configure_plugin_target TARGET)
+    if(NOT WASM_BUILD)
+        return()
+    endif()
+
+    cmake_parse_arguments(PLUGIN "" "KIND;ID;SYMBOL_ID;EXPORT_SYMBOL" "DEPENDS" ${ARGN})
+    foreach(required IN ITEMS KIND ID SYMBOL_ID EXPORT_SYMBOL)
+        if(NOT PLUGIN_${required})
+            message(FATAL_ERROR "ifcopenshell_wasm_configure_plugin_target(${TARGET}) requires ${required}")
+        endif()
+    endforeach()
+
+    ifcopenshell_wasm_plugins_dir(plugin_runtime_dir)
+    set_target_properties(${TARGET} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${plugin_runtime_dir}"
+        LIBRARY_OUTPUT_DIRECTORY "${plugin_runtime_dir}"
+        IFCOPENSHELL_PLUGIN_DEPENDS "${PLUGIN_DEPENDS}"
+    )
+    target_compile_definitions(${TARGET} PRIVATE IFCOPENSHELL_WASM_PLUGIN_ID=${PLUGIN_SYMBOL_ID})
+    target_link_options(${TARGET} PRIVATE "LINKER:--export=${PLUGIN_EXPORT_SYMBOL}")
+    ifcopenshell_wasm_set_plugin_info(${TARGET} "${PLUGIN_KIND}" "${PLUGIN_ID}")
+endfunction()
+
+function(ifcopenshell_wasm_plugin_manifest_entry TARGET OUT_ENTRY)
+    if(NOT TARGET ${TARGET})
+        set(${OUT_ENTRY} "" PARENT_SCOPE)
+        return()
+    endif()
+
+    get_target_property(kind ${TARGET} IFCOPENSHELL_PLUGIN_KIND)
+    get_target_property(plugin_id ${TARGET} IFCOPENSHELL_PLUGIN_ID)
+    if(NOT kind OR NOT plugin_id)
+        set(${OUT_ENTRY} "" PARENT_SCOPE)
+        return()
+    endif()
+
+    get_target_property(output_name ${TARGET} OUTPUT_NAME)
+    if(NOT output_name)
+        set(output_name ${TARGET})
+    endif()
+
+    get_target_property(depends ${TARGET} IFCOPENSHELL_PLUGIN_DEPENDS)
+    if(NOT depends OR depends STREQUAL "depends-NOTFOUND")
+        set(depends "")
+    endif()
+    string(REPLACE ";" "," depends_csv "${depends}")
+    set(${OUT_ENTRY} "${kind}|${plugin_id}|${output_name}|${depends_csv}" PARENT_SCOPE)
+endfunction()
+
+function(ifcopenshell_wasm_plugin_link_options TARGET REGISTRATION_SYMBOL)
+    ifcopenshell_plugin_target(${TARGET})
+
+    if(NOT WASM_BUILD)
+        return()
+    endif()
+
+    cmake_parse_arguments(PLUGIN "EXPORT_DYNAMIC" "OPTIMIZATION;SIDE_MODULE" "" ${ARGN})
+    if(NOT PLUGIN_OPTIMIZATION)
+        # WASM plugins optimize for size by default (side modules download on demand).
+        set(PLUGIN_OPTIMIZATION "${IFCOPENSHELL_WASM_LINK_OPTIMIZATION}")
+    endif()
+    if(NOT PLUGIN_SIDE_MODULE)
+        set(PLUGIN_SIDE_MODULE 2)
+    endif()
+
+    set(plugin_symbols
+        ifcopenshell_plugin_abi_v2
+        ifcopenshell_plugin_metadata_v1
+        ${REGISTRATION_SYMBOL}
+    )
+
+    target_compile_options(${TARGET} PRIVATE -fwasm-exceptions)
+    target_link_options(${TARGET} PRIVATE "SHELL:-fwasm-exceptions" "SHELL:-s SIDE_MODULE=${PLUGIN_SIDE_MODULE}" "SHELL:-s ALLOW_TABLE_GROWTH=1" "SHELL:-s ERROR_ON_UNDEFINED_SYMBOLS=0" "SHELL:-sSUPPORT_LONGJMP=wasm" ${PLUGIN_OPTIMIZATION})
+    if(PLUGIN_EXPORT_DYNAMIC)
+        # Export provider APIs used only by other side modules (schema methods,
+        # OpenCascadeShape::shape(), etc.). Emscripten appends --no-export-dynamic
+        # for SIDE_MODULE=2, overriding --export-dynamic; --export-all keeps these
+        # definitions without forcing every linked archive member into the DSO.
+        target_link_options(${TARGET} PRIVATE "LINKER:--export-all")
+    endif()
+    foreach(symbol IN LISTS plugin_symbols)
+        target_link_options(${TARGET} PRIVATE "LINKER:--export=${symbol}")
+    endforeach()
+endfunction()
+
+# Install the shared third-party runtime DLLs the given targets depend on (e.g. OCCT, PROJ).
+# Static library targets are skipped, as $<TARGET_RUNTIME_DLLS> doesn't support them.
+function(ifcopenshell_install_runtime_dlls)
+    cmake_parse_arguments(ARG "" "DESTINATION" "TARGETS" ${ARGN})
+    # Conda packages get these DLLs from their dependencies.
+    if(NOT MSVC OR DEFINED ENV{CONDA_BUILD})
+        return()
+    endif()
+    if(NOT ARG_DESTINATION)
+        set(ARG_DESTINATION ${CMAKE_INSTALL_BINDIR})
+    endif()
+
+    foreach(target ${ARG_TARGETS})
+        get_target_property(target_type ${target} TYPE)
+        if(target_type STREQUAL "SHARED_LIBRARY" OR target_type STREQUAL "MODULE_LIBRARY" OR target_type STREQUAL "EXECUTABLE")
+            install(FILES $<TARGET_RUNTIME_DLLS:${target}> DESTINATION "${ARG_DESTINATION}")
+        endif()
+    endforeach()
+endfunction()
+
+function(ifcopenshell_deploy_qt_runtime TARGET)
+    if(NOT IFCOPENSHELL_DEPLOY_QT_RUNTIME)
+        return()
+    endif()
+
+    if(NOT TARGET ${TARGET})
+        message(FATAL_ERROR "Cannot deploy Qt runtime for unknown target '${TARGET}'.")
+    endif()
+
+    get_target_property(target_type ${TARGET} TYPE)
+    if(NOT target_type STREQUAL "EXECUTABLE")
+        message(FATAL_ERROR "Qt runtime deployment target '${TARGET}' is not an executable.")
+    endif()
+
+    if(NOT DEFINED QT_DEFAULT_MAJOR_VERSION)
+        if(DEFINED QT_VERSION)
+            set(QT_DEFAULT_MAJOR_VERSION ${QT_VERSION})
+        else()
+            set(QT_DEFAULT_MAJOR_VERSION 6)
+        endif()
+    endif()
+
+    if(NOT TARGET Qt${QT_DEFAULT_MAJOR_VERSION}::Core)
+        set(qt_find_args Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS Core REQUIRED)
+        if(DEFINED QT_DIR AND NOT QT_DIR STREQUAL "")
+            list(APPEND qt_find_args PATHS ${QT_DIR})
+        endif()
+        find_package(${qt_find_args})
+    endif()
+
+    if(COMMAND _qt_internal_setup_deploy_support)
+        if(NOT DEFINED QT_CMAKE_EXPORT_NAMESPACE AND TARGET Qt${QT_DEFAULT_MAJOR_VERSION}::Core)
+            set(QT_CMAKE_EXPORT_NAMESPACE Qt${QT_DEFAULT_MAJOR_VERSION})
+        endif()
+
+        if(QT_DEFAULT_MAJOR_VERSION EQUAL 6 AND TARGET Qt6::Core)
+            get_target_property(qt_core_type Qt6::Core TYPE)
+            if(qt_core_type STREQUAL "SHARED_LIBRARY")
+                set(QT6_IS_SHARED_LIBS_BUILD ON)
+            else()
+                set(QT6_IS_SHARED_LIBS_BUILD OFF)
+            endif()
+        endif()
+
+        _qt_internal_setup_deploy_support()
+    endif()
+
+    set(deploy_args
+        TARGET ${TARGET}
+        OUTPUT_SCRIPT deploy_script
+        NO_UNSUPPORTED_PLATFORM_ERROR
+        # Don't deploy vc_redist.exe with windeployqt.
+        NO_COMPILER_RUNTIME
+    )
+
+    if(NOT IFCOPENSHELL_DEPLOY_QT_TRANSLATIONS)
+        list(APPEND deploy_args NO_TRANSLATIONS)
+    endif()
+
+    list(APPEND deploy_args ${ARGN})
+
+    if(COMMAND qt_generate_deploy_app_script)
+        qt_generate_deploy_app_script(${deploy_args})
+    elseif(COMMAND qt6_generate_deploy_app_script)
+        qt6_generate_deploy_app_script(${deploy_args})
+    else()
+        message(WARNING
+            "Qt runtime deployment requested for '${TARGET}', but this Qt version "
+            "does not provide qt_generate_deploy_app_script()."
+        )
+        return()
+    endif()
+
+    install(SCRIPT ${deploy_script})
+endfunction()
+
+# Stage IfcOpenShell dylibs into the macOS .app bundle's Frameworks/ directory.
+#
+# Two flavours sit alongside each other in <prefix>/lib/ after install:
+#
+#   1. Linked core libs (lib*.dylib) — IfcParse, IfcGeom (output-named
+#      libifcopenshell_geometry.dylib), IfcViewer, plug-in / mapping /
+#      kernel shared libs. With --shared these are runtime @rpath deps
+#      of the app executable. macdeployqt is *supposed* to follow them
+#      but in practice misses non-Qt @rpath deps when the source lib
+#      lives outside the standard system / Qt prefixes, so we stage
+#      them explicitly. (In a static build these are absent from lib/
+#      and the glob just no-ops, so this rule is safe in both modes.)
+#
+#   2. Plug-ins (ifcopenshell_*.dylib, no `lib` prefix) — dlopen-only
+#      deps the plug-in loader resolves at runtime. macdeployqt has
+#      no way to know about these.
+#
+# Both kinds get a flat copy into Contents/Frameworks/. The plug-in
+# loader's primary search path is dirname(libIfcParse) (= Frameworks/
+# inside the bundle), so plug-ins and core libs both find each other
+# on the first probe.
+#
+# The geometry-writer filter drops libifcopenshell_geometry_writer.dylib
+# and the per-schema ifcopenshell_geometry_writer_*.dylib plug-ins
+# (OCCT -> IFC serialization, unused by the apps), and all document
+# serializers except rdb (json/xml are only used by IfcConvert). Mirrors
+# `is_geometry_writer` and `is_json_or_xml_document_serializer` in win/common.py.
+#
+# <prefix>/lib/ is IfcOpenShell-exclusive — Qt / boost / eigen live in
+# their own brew / build prefixes — so a broad *.dylib glob is safe
+# here and automatically picks up any future shared libs without
+# needing to maintain an explicit name list.
+#
+# Subdirectory order in cmake/CMakeLists.txt guarantees that ifcparse/
+# / ifcgeom/ / serializers/ are add_subdirectory'd before the apps,
+# so by the time this install rule fires the *.dylib files are already
+# on disk under <prefix>/lib/.
+function(ifcopenshell_stage_app_bundle_dylibs APP_NAME)
+    if(NOT APPLE)
+        return()
+    endif()
+
+    # A shared OCCT lives in its own dependency prefix, outside the glob below,
+    # and the plug-ins resolve it through @rpath, so it has to be staged too.
+    set(occt_shared_lib_dir "")
+    if(TARGET TKernel)
+        get_target_property(occt_library_type TKernel TYPE)
+        if(occt_library_type STREQUAL "SHARED_LIBRARY")
+            get_target_property(occt_location TKernel LOCATION)
+            get_filename_component(occt_shared_lib_dir "${occt_location}" DIRECTORY)
+        endif()
+    endif()
+    install(CODE "set(_app \"${APP_NAME}.app\")\nset(_occt_shared_lib_dir \"${occt_shared_lib_dir}\")")
+    install(CODE [[
+        set(_fw "${CMAKE_INSTALL_PREFIX}/${_app}/Contents/Frameworks")
+        file(GLOB _ifc_dylibs "${CMAKE_INSTALL_PREFIX}/lib/*.dylib")
+        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell_geometry_writer")
+        # Geometry serializers (obj, svg, glb, ...) and svgfill are only used by IfcConvert and Python.
+        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell_geometry_[A-Za-z]+\\.dylib$")
+        # Geometry trees are only used by Python (`ifcopenshell.geom.tree`).
+        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell_geometry_tree_")
+
+        set(_ifc_unused_documents ${_ifc_dylibs})
+        list(FILTER _ifc_unused_documents INCLUDE REGEX "ifcopenshell_document_")
+        # Other document serializers (json, xml) are only used by IfcConvert.
+        list(FILTER _ifc_unused_documents EXCLUDE REGEX "ifcopenshell_document_rdb")
+        if(_ifc_unused_documents)
+            list(REMOVE_ITEM _ifc_dylibs ${_ifc_unused_documents})
+        endif()
+
+        if(_ifc_dylibs)
+            message(STATUS "Staging IfcOpenShell dylibs (linked core + plug-ins) into ${_app}/Contents/Frameworks")
+            file(COPY ${_ifc_dylibs} DESTINATION "${_fw}")
+        else()
+            message(WARNING "No IfcOpenShell *.dylib found in lib/ — ${_app} will fail to launch (missing @rpath linked deps) or at IFC load time (missing plug-ins)")
+        endif()
+        if(_occt_shared_lib_dir)
+            file(GLOB _occt_dylibs "${_occt_shared_lib_dir}/libTK*.dylib")
+            message(STATUS "Staging shared OCCT dylibs into ${_app}/Contents/Frameworks")
+            file(COPY ${_occt_dylibs} DESTINATION "${_fw}")
+        endif()
+    ]])
+endfunction()
 
 # Get a list of all OPTION flags from the CMakeLists.txt and store in an output LIST
 function(get_all_option_flags output_list)
@@ -111,6 +535,76 @@ function(add_debug_variants NAME LIBRARIES POSTFIX)
     endforeach()
 
     set(${NAME} ${LIBRARIES} PARENT_SCOPE)
+endfunction()
+
+# E.g.
+# - `get_release_variant(MYLIB "mylibd.lib" "d")` -> `MYLIB = "mylib.lib"`
+# - `get_release_variant(MYLIB "mylib.lib" "d")`  -> `MYLIB = "mylib.lib"`
+function(get_release_variant NAME LIBRARY POSTFIX)
+    set(RELEASE_SUFFIX ".lib")
+    set(DEBUG_SUFFIX "${POSTFIX}${RELEASE_SUFFIX}")
+    if("${LIBRARY}" MATCHES "${DEBUG_SUFFIX}$")
+        string(REPLACE "${DEBUG_SUFFIX}" "${RELEASE_SUFFIX}" LIBRARY ${LIBRARY})
+    endif()
+    set(${NAME} "${LIBRARY}" PARENT_SCOPE)
+endfunction()
+
+# E.g.
+# - `get_debug_variant(MYLIB "mylib.lib" "d")`  -> `MYLIB = "mylibd.lib"`
+# - `get_debug_variant(MYLIB "mylibd.lib" "d")` -> `MYLIB = "mylibd.lib"`
+function(get_debug_variant NAME LIBRARY POSTFIX)
+    set(RELEASE_SUFFIX ".lib")
+    set(DEBUG_SUFFIX "${POSTFIX}${RELEASE_SUFFIX}")
+    if(NOT "${LIBRARY}" MATCHES "${DEBUG_SUFFIX}$" AND "${LIBRARY}" MATCHES "${RELEASE_SUFFIX}$")
+        string(REPLACE "${RELEASE_SUFFIX}" "${DEBUG_SUFFIX}" LIBRARY ${LIBRARY})
+    endif()
+    set(${NAME} "${LIBRARY}" PARENT_SCOPE)
+endfunction()
+
+# When building specified config, cmake first tries to find target config by the exact match
+# (e.g. to find `-relwithdebinfo.cmake` dependency for RelWithDebInfo build),
+# but if it fails, it falls back to the first cmake config it can find, alphabetically.
+# If there's a Debug config, then it ends up pulling Debug build as the default.
+# Which is critical on Windows if dependency is using CRT - linking will fail due to a CRT mismatch.
+# To resolve this, we allow `RelWithDebInfo`, `MinSizeRel` to fallback to `Release`.
+#
+# Especially important on a multi-config generator (e.g. Visual Studio),
+# when cmake has to define targets for each possible config.
+# Without this fallback, user would need to build each dependency for each of 4 configs
+# to guarantee switching between them won't break.
+# And in some cases it's not even possible (e.g. OpenCOLLADA hardcodes only Release/Debug builds).
+#
+# Important: we're mixing up MinSizeRel to RelWithDebInfo targets and vice versa, because
+# by setting `MAP_IMPORTED_CONFIG_` we override the fallback, but multi-config builds
+# has to be able to find a way to build a target for each config, otherwise configuration would fail.
+function(avoid_debug_imported_config_fallback)
+    # Only needed on MSVC to avoid CRT mimsatch.
+    # On Unix it's usually okay to mix up Debug and Release configs and we shouldn't block it.
+    if(NOT MSVC)
+        return()
+    endif()
+
+    foreach(_target ${ARGN})
+        if(TARGET ${_target})
+            set_target_properties(${_target} PROPERTIES
+                MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RELWITHDEBINFO;RELEASE;MINSIZEREL"
+                MAP_IMPORTED_CONFIG_MINSIZEREL "MINSIZEREL;RELEASE;RELWITHDEBINFO"
+            )
+        endif()
+    endforeach()
+endfunction()
+
+# Fail the configure if FOUND_VERSION is older than MIN_VERSION.
+#
+# Useful when a package's CMake config can't express minimum-version semantics via
+# find_package()'s own version argument:
+# - it requires an exact full-version or exact-major-version match
+# - the config is missing a -version.cmake file
+function(check_min_version PACKAGE_NAME FOUND_VERSION MIN_VERSION)
+    if("${FOUND_VERSION}" VERSION_LESS "${MIN_VERSION}")
+        message(FATAL_ERROR "${PACKAGE_NAME} ${MIN_VERSION} or newer is required, found ${FOUND_VERSION}.")
+    endif()
+    message(STATUS "${PACKAGE_NAME}: found version ${FOUND_VERSION} (minimum required is ${MIN_VERSION}).")
 endfunction()
 
 function(files_for_ifc_version IFC_VERSION RESULT_NAME)

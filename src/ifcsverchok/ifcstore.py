@@ -16,18 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Union
+
+import bonsai.tool as tool
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
+import ifcopenshell.util.representation
 from ifcopenshell import template
 
 
 class SvIfcStore:
     path = ""
-    file = None
+    file: Union[ifcopenshell.file, None] = None
     schema = None
-    cache = None
-    cache_path = None
-    id_map = {}
+    id_map: dict[str, Any] = {}
+    """Mapping `{node_id: Any}`"""
     guid_map = {}
     deleted_ids = set()
     edited_objs = set()
@@ -44,13 +48,13 @@ class SvIfcStore:
     future = []
     schema_identifiers = ["IFC4", "IFC2X3"]
 
+    use_bonsai_file = False
+
     @staticmethod
-    def purge():
+    def purge() -> None:
         SvIfcStore.path = ""
         SvIfcStore.file = None
         SvIfcStore.schema = None
-        SvIfcStore.cache = None
-        SvIfcStore.cache_path = None
         SvIfcStore.id_map = {}
         SvIfcStore.guid_map = {}
         SvIfcStore.deleted_ids = set()
@@ -65,8 +69,7 @@ class SvIfcStore:
         SvIfcStore.schema_identifiers = ["IFC4", "IFC2X3"]
 
     @staticmethod
-    def create_boilerplate():
-
+    def create_boilerplate() -> ifcopenshell.file:
         file = template.create(
             filename="IfcSverchokDemoFile",
             organization=None,
@@ -77,9 +80,7 @@ class SvIfcStore:
             # TODO change units to imperial
             pass
         model = ifcopenshell.util.representation.get_context(file, context="Model")
-        print("model: ", model)
-        context = ifcopenshell.api.run(
-            "context.add_context",
+        context = ifcopenshell.api.context.add_context(
             file,
             context_type="Model",
             context_identifier="Body",
@@ -91,7 +92,9 @@ class SvIfcStore:
         return SvIfcStore.file
 
     @staticmethod
-    def get_file():
+    def get_file() -> ifcopenshell.file:
+        if SvIfcStore.use_bonsai_file:
+            return tool.Ifc.get()
         if SvIfcStore.file is None:
             SvIfcStore.create_boilerplate()
         return SvIfcStore.file

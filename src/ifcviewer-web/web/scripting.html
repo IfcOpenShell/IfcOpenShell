@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>IfcViewer (web) — JavaScript API</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; min-height: 100%; background: #0f1117; color: #c8ccd6;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 12px 16px; border-bottom: 1px solid #232833; }
+  header h1 { margin: 0; font-size: 15px; font-weight: 600; }
+  header p  { margin: 4px 0 0; font-size: 12px; color: #8a93a6; }
+  header a  { color: #7f9bd6; }
+  .layout { display: flex; gap: 16px; padding: 16px; align-items: flex-start; flex-wrap: wrap; }
+  #viewer-box { position: relative; width: 640px; height: 460px; max-width: 100%;
+    border: 1px solid #232833; border-radius: 6px; overflow: hidden; background: #1a1d24; }
+  #viewer-canvas { display: block; width: 100%; height: 100%; outline: none; }
+  #marquee { position: absolute; display: none; z-index: 5; pointer-events: none;
+    border: 1px solid #4a9eff; background: rgba(74, 158, 255, 0.15); }
+  .sidebar { flex: 1 1 340px; min-width: 320px; display: flex; flex-direction: column; gap: 14px; }
+  .card { border: 1px solid #232833; border-radius: 6px; background: #151821; }
+  .card h2 { margin: 0; padding: 9px 12px; font-size: 12px; font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase; color: #8a93a6;
+    border-bottom: 1px solid #232833; }
+  .card .body { padding: 12px; }
+  .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .row + .row { margin-top: 8px; }
+  button { background: #2b6cb0; color: #fff; border: none; padding: 6px 10px;
+    border-radius: 4px; font-size: 12px; cursor: pointer; }
+  button.secondary { background: #2d3748; color: #c8ccd6; }
+  button:hover { filter: brightness(1.15); }
+  button:disabled { opacity: .5; cursor: default; filter: none; }
+  input[type=number] { background: #0f1117; color: #c8ccd6; border: 1px solid #2b3244;
+    border-radius: 4px; padding: 5px 6px; font-size: 12px; width: 66px; }
+  input[type=color] { width: 34px; height: 27px; padding: 0; background: #0f1117;
+    border: 1px solid #2b3244; border-radius: 4px; cursor: pointer; }
+  label.field { display: flex; gap: 5px; align-items: center; font-size: 12px; color: #8a93a6; }
+  .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; }
+  .readout { background: #0f1117; border: 1px solid #232833; border-radius: 4px;
+    padding: 8px; line-height: 1.6; color: #9aa4b6; white-space: pre; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; font-weight: 600; color: #8a93a6; font-size: 11px;
+    padding: 6px 8px; border-bottom: 1px solid #232833; }
+  td { padding: 5px 8px; border-bottom: 1px solid #1c202b; }
+  tr[data-id] { cursor: pointer; }
+  tr[data-id]:hover td { background: #1a1e28; }
+  tr.selected td { background: #1b3350; }
+  .swatch { width: 18px; height: 18px; }
+  .hint { font-size: 11px; color: #6f7988; margin-top: 8px; }
+  .empty { color: #6f7988; font-size: 12px; padding: 10px 12px; }
+  .pill { font-size: 11px; color: #6f7988; font-weight: 400; text-transform: none;
+    letter-spacing: 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>IfcOpenShell web viewer — JavaScript API</h1>
+  <p>Every control below is plain DOM driving the <code>viewer</code> object from
+     <code>ifcviewer.js</code> — read this page's source, each button is one call.
+     It is also on <code>window.viewer</code>, so you can drive it from the devtools console.
+     &nbsp;<a href="index.html">↩ all examples</a></p>
+</header>
+
+<div class="layout">
+  <div>
+    <div id="viewer-box">
+      <canvas id="viewer-canvas" width="1280" height="920"></canvas>
+      <div id="marquee"></div>
+    </div>
+    <div class="hint">Drag to orbit · scroll to zoom · <b>right-click to select</b>
+      (drag right-click to box-select several, shift+right-click to add)</div>
+    <div class="row" style="margin-top:10px">
+      <button id="browse-btn" class="secondary">Add .ifcview…</button>
+      <input id="file-input" type="file" accept=".ifcview" multiple style="display:none">
+      <span class="pill" id="scene-hint">Starting WebGPU…</span>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="card">
+      <h2>Camera <span class="pill">getCamera · setCamera</span></h2>
+      <div class="body">
+        <div class="readout mono" id="camera-readout">—</div>
+        <div class="row" style="margin-top:10px">
+          <label class="field">yaw <input type="number" id="cam-yaw" step="15"></label>
+          <label class="field">pitch <input type="number" id="cam-pitch" step="15"></label>
+          <label class="field">dist <input type="number" id="cam-distance" step="1"></label>
+          <button id="cam-apply">Set</button>
+        </div>
+        <div class="row">
+          <button class="secondary" id="cam-top">Top</button>
+          <button class="secondary" id="cam-front">Front</button>
+          <button class="secondary" id="cam-ortho">Toggle ortho</button>
+          <button class="secondary" id="cam-save">Save view</button>
+          <button class="secondary" id="cam-restore" disabled>Restore</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Selection <span class="pill">getSelection · setSelection</span></h2>
+      <div class="body">
+        <div class="readout mono" id="selection-readout">nothing selected</div>
+        <div class="row" style="margin-top:10px">
+          <button id="sel-walls">Select walls</button>
+          <button class="secondary" id="sel-add-beams">Add beams</button>
+          <button class="secondary" id="sel-all">Select all</button>
+          <button class="secondary" id="sel-clear">Clear</button>
+          <button class="secondary" id="sel-frame">Zoom to</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Visibility &amp; colour <span class="pill">setVisible · setColor</span></h2>
+      <div class="body">
+        <div class="row">
+          <button class="secondary" id="vis-hide-sel">Hide selected</button>
+          <button class="secondary" id="vis-isolate">Isolate selected</button>
+          <button class="secondary" id="vis-hide-all">Hide all</button>
+          <button class="secondary" id="vis-show-all">Show all</button>
+        </div>
+        <div class="row">
+          <input type="color" id="colour-picker" value="#ff8800">
+          <button id="colour-apply">Colour selected</button>
+          <label class="field">alpha
+            <input type="number" id="colour-alpha" min="1" max="255" value="255" step="16"></label>
+          <button class="secondary" id="colour-by-type">Colour by type</button>
+          <button class="secondary" id="colour-clear">Reset colours</button>
+        </div>
+        <div class="hint" id="vis-hint">Nothing hidden.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Objects <span class="pill" id="object-count">getObjects</span></h2>
+      <table id="object-table">
+        <thead><tr><th>GlobalId</th><th>Name</th><th>Type</th><th>Model</th>
+          <th style="width:1%">Shown</th><th style="width:1%">Colour</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="empty" id="object-empty">Loading the element table…</div>
+    </div>
+  </div>
+</div>
+
+<script src="IfcViewerWeb.js"></script>
+<script src="ifcviewer.js"></script>
+<script>
+  // ---------------------------------------------------------------------------
+  // Everything below is ordinary page code. It never touches the wasm module
+  // directly — only the `viewer` object that IfcViewer.create() hands back.
+  // ---------------------------------------------------------------------------
+  const $ = (id) => document.getElementById(id);
+
+  let viewer  = null;
+  let objects = [];       // the whole element table, from viewer.getObjects()
+  let models  = [];       // one name per loaded model, in load order
+  let savedView = null;   // a getCamera() snapshot, for the Restore button
+  let cameraInputsSeeded = false;
+
+  // Resolve any CSS colour (including the hsl() below) to {r, g, b} channels —
+  // which is one of the shapes viewer.setColor() accepts.
+  const probe = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  function toRgb(css) {
+    probe.fillStyle = css;
+    probe.fillRect(0, 0, 1, 1);
+    const [r, g, b] = probe.getImageData(0, 0, 1, 1).data;
+    return { r, g, b };
+  }
+  // A stable colour per IFC type. Cheap hash → hue; the point is only that
+  // adjacent types read as different.
+  function colourForType(type) {
+    let h = 0;
+    for (const ch of type) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return toRgb(`hsl(${h % 360}, 65%, 55%)`);
+  }
+
+  const alpha = () => Number($('colour-alpha').value);
+  const ofType = (t) => objects.filter((o) => o.type === t);
+
+  // ---- Rendering the page from viewer state ---------------------------------
+
+  function renderCamera(c) {
+    const f = (n) => n.toFixed(1);
+    $('camera-readout').textContent =
+      `yaw    ${f(c.yaw)}°\npitch  ${f(c.pitch)}°\n` +
+      `target ${c.target.map(f).join(', ')}\n` +
+      `eye    ${c.eye.map(f).join(', ')}\n` +
+      `dist   ${f(c.distance)}  (${c.ortho ? 'orthographic' : 'perspective'})`;
+    if (!cameraInputsSeeded) {
+      cameraInputsSeeded = true;
+      $('cam-yaw').value      = c.yaw.toFixed(0);
+      $('cam-pitch').value    = c.pitch.toFixed(0);
+      $('cam-distance').value = c.distance.toFixed(0);
+    }
+  }
+
+  function renderSelection(ids) {
+    if (!ids.length) {
+      $('selection-readout').textContent = 'nothing selected';
+    } else {
+      // getSelectedObjects() is getSelection() with the IFC identity attached.
+      const rows = viewer.getSelectedObjects().map(
+        (o) => `${o.guid || '(id ' + o.objectId + ')'}  ${o.name || ''}${o.type ? ' · ' + o.type : ''}`);
+      $('selection-readout').textContent =
+        `${ids.length} selected · active ${viewer.getActiveObject() || 'none'}\n` + rows.join('\n');
+    }
+    // Keep the table's highlight in step with the viewport.
+    const selected = new Set(ids);
+    for (const tr of $('object-table').querySelectorAll('tr[data-id]')) {
+      tr.classList.toggle('selected', selected.has(Number(tr.dataset.id)));
+    }
+  }
+
+  function renderTable() {
+    const tbody = $('object-table').querySelector('tbody');
+    const hidden = new Set(viewer.getHidden());
+    const selected = new Set(viewer.getSelection());
+    $('object-empty').style.display = objects.length ? 'none' : 'block';
+    $('vis-hint').textContent = hidden.size ? `${hidden.size} object(s) hidden.` : 'Nothing hidden.';
+
+    tbody.replaceChildren();
+    for (const o of objects) {
+      const tr = document.createElement('tr');
+      tr.dataset.id = o.objectId;
+      tr.classList.toggle('selected', selected.has(o.objectId));
+      tr.innerHTML =
+        `<td class="mono">${o.guid}</td><td>${o.name || '—'}</td>` +
+        `<td>${o.type || '—'}</td><td>${models[o.model] || o.model}</td>` +
+        `<td><input type="checkbox" ${hidden.has(o.objectId) ? '' : 'checked'}></td>` +
+        `<td><input type="color" class="swatch" value="#cccccc"></td>`;
+
+      // Click the row to select it; shift-click adds, as in the viewport.
+      tr.onclick = (ev) => {
+        if (ev.target.tagName === 'INPUT') return;
+        if (ev.shiftKey) viewer.addToSelection(o.objectId);
+        else             viewer.setSelection(o.objectId);
+      };
+      // Per-object visibility + colour, straight off the row.
+      tr.querySelector('input[type=checkbox]').onchange = (ev) => {
+        viewer.setVisible(o.objectId, ev.target.checked);
+        const n = viewer.getHidden().length;
+        $('vis-hint').textContent = n ? `${n} object(s) hidden.` : 'Nothing hidden.';
+      };
+      tr.querySelector('input[type=color]').oninput = (ev) => {
+        viewer.setColor(o.objectId, { ...toRgb(ev.target.value), a: alpha() });
+      };
+      tbody.appendChild(tr);
+    }
+  }
+
+  async function refreshObjects() {
+    objects = await viewer.getObjects();
+    $('object-count').textContent = `${objects.length} objects · ${models.length} model(s)`;
+    $('scene-hint').textContent = models.join(', ');
+    renderTable();
+    renderSelection(viewer.getSelection());
+  }
+
+  // ---- Boot ------------------------------------------------------------------
+
+  if (!navigator.gpu) $('scene-hint').textContent = 'navigator.gpu missing — needs a WebGPU browser';
+  $('viewer-canvas').addEventListener('contextmenu', (ev) => ev.preventDefault());
+
+  IfcViewer.create({
+    canvas: $('viewer-canvas'),
+    // The camera has no change event — it moves on every frame you drag — so
+    // the readout is the one thing worth polling. Everything else is event-driven.
+    onFrame: (v) => renderCamera(v.getCamera()),
+  }).then(async (v) => {
+    viewer = window.viewer = v;
+    await viewer.ready;
+
+    // The wasm ships with a small sample model (a slab, a wall and a beam), so
+    // there is something to drive before you add a file of your own.
+    models = ['sample.ifcview'];
+    await refreshObjects();
+
+    // ---- Camera: read (1) and set (2) ---------------------------------------
+
+    // setCamera takes any subset of what getCamera returns; omitted fields hold.
+    $('cam-apply').onclick = () => viewer.setCamera({
+      yaw:      Number($('cam-yaw').value),
+      pitch:    Number($('cam-pitch').value),
+      distance: Number($('cam-distance').value),
+    });
+    $('cam-top').onclick     = () => viewer.setStandardView(4);
+    $('cam-front').onclick   = () => viewer.setStandardView(0);
+    $('cam-ortho').onclick   = () => viewer.setCamera({ ortho: !viewer.getCamera().ortho });
+    $('cam-save').onclick    = () => {
+      savedView = viewer.getCamera();
+      $('cam-restore').disabled = false;
+    };
+    // A whole getCamera() result is valid input to setCamera, so a view round-trips.
+    $('cam-restore').onclick = () => viewer.setCamera(savedView);
+
+    // ---- Selection: read multiple (3), set / add / clear (4) ------------------
+
+    // Fires for clicks, box-selects AND the programmatic setters below, so the
+    // readout and the table highlight stay right whatever changed them.
+    viewer.onSelectionChange(renderSelection);
+
+    // The setters take objectIds, GlobalId strings, or whole element objects —
+    // these three lines each use a different one of those.
+    $('sel-walls').onclick     = () => viewer.setSelection(ofType('IfcWall'));
+    $('sel-add-beams').onclick = () => viewer.addToSelection(ofType('IfcBeam').map((o) => o.guid));
+    $('sel-all').onclick       = () => viewer.setSelection(objects.map((o) => o.objectId));
+    $('sel-clear').onclick     = () => viewer.clearSelection();
+    $('sel-frame').onclick     = () => viewer.frameSelection();
+
+    // ---- Visibility: per object (6), show all / hide all (7) ------------------
+
+    $('vis-hide-sel').onclick = () => { viewer.hideSelected(); renderTable(); };
+    $('vis-isolate').onclick  = () => { viewer.isolateSelected(); renderTable(); };
+    $('vis-hide-all').onclick = () => { viewer.hideAll(); renderTable(); };
+    $('vis-show-all').onclick = () => { viewer.showAll(); renderTable(); };
+
+    // ---- Colour override (8) --------------------------------------------------
+
+    $('colour-apply').onclick = () => {
+      viewer.setColor(viewer.getSelection(), { ...toRgb($('colour-picker').value), a: alpha() });
+      renderTable();
+    };
+    $('colour-by-type').onclick = () => {
+      // One call per type, not per object: setColor takes a whole batch, and a
+      // batch costs one instance-buffer upload per model it touches.
+      for (const t of new Set(objects.map((o) => o.type))) {
+        viewer.setColor(ofType(t), { ...colourForType(t), a: alpha() });
+      }
+      renderTable();
+    };
+    $('colour-clear').onclick = () => { viewer.clearColors(); renderTable(); };
+
+    // ---- Objects (5): the table above, and federating in more models ----------
+
+    $('browse-btn').onclick = () => $('file-input').click();
+    $('file-input').onchange = async (ev) => {
+      for (const file of ev.target.files) {
+        await viewer.addFile(file);
+        models.push(file.name);
+      }
+      ev.target.value = '';
+      // The new model's metadata has to land before its objects can be listed;
+      // give the load a beat, then re-read the whole scene.
+      setTimeout(refreshObjects, 800);
+    };
+  });
+</script>
+</body>
+</html>

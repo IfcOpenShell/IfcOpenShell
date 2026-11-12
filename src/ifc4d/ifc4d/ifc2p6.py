@@ -16,13 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Ifc4D.  If not, see <http://www.gnu.org/licenses/>.
 
-import math
-import uuid
 import datetime
+import uuid
+import xml.etree.ElementTree as ET
+
 import ifcopenshell
 import ifcopenshell.util.date
-import xml.etree.ElementTree as ET
-from .common import ScheduleIfcGenerator
+import ifcopenshell.util.sequence
 
 
 class Ifc2P6:
@@ -47,9 +47,9 @@ class Ifc2P6:
         self.root = ET.Element("APIBusinessObjects")
         self.root.attrib["xmlns"] = "http://xmlns.oracle.com/Primavera/P6Professional/V18.8/API/BusinessObjects"
         self.root.attrib["xmlns:xsi"] = "http://www.w3.org/2001/XMLSchema-instance"
-        self.root.attrib[
-            "xsi:schemaLocation"
-        ] = "http://xmlns.oracle.com/Primavera/P6Professional/V18.8/API/BusinessObjects http://xmlns.oracle.com/Primavera/P6Professional/V18.8/API/p6apibo.xsd"
+        self.root.attrib["xsi:schemaLocation"] = (
+            "http://xmlns.oracle.com/Primavera/P6Professional/V18.8/API/BusinessObjects http://xmlns.oracle.com/Primavera/P6Professional/V18.8/API/p6apibo.xsd"
+        )
 
         self.schedule = self.file.by_type("IfcWorkSchedule")[0]
 

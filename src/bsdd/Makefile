@@ -16,19 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with bSDD.  If not, see <http://www.gnu.org/licenses/>.
 
-VERSION:=`date '+%y%m%d'`
-SED:=sed -i
-ifeq ($(UNAME_S),Darwin)
-SED:=sed -i '' -e
-endif
+PACKAGE_NAME:=bsdd.py
+IS_MODULE:=true
+include ../common.mk
 
 .PHONY: test
 test:
-	pytest -p no:pytest-blender test
-
-.PHONY: dist
-dist:
-	rm -rf dist
-	$(SED) "s/999999/$(VERSION)/" pyproject.toml
-	python -m build
-	$(SED) "s/$(VERSION)/999999/" pyproject.toml
+# Using python -m pytest vs just using pytest is important here.
+# As just using pytest does not add current directory to PATH.
+	python -m pytest -p no:pytest-blender tests

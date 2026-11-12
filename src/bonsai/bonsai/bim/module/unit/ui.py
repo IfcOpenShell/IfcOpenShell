@@ -1,0 +1,147 @@
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Bonsai is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import bpy
+from bpy.types import Panel, UIList
+
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai.bim.helper import prop_with_search
+from bonsai.bim.module.unit.data import UnitsData
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.unit.prop import BIMUnitProperties, Unit
+
+
+class BIM_PT_units(Panel):
+    bl_label = "Units"
+    bl_idname = "BIM_PT_units"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_geometry"
+
+    @classmethod
+    def poll(cls, context):
+        file = tool.Ifc.get()
+        return file
+
+    def draw(self, context):
+        if not UnitsData.is_loaded:
+            UnitsData.load()
+
+        self.props = tool.Unit.get_unit_props()
+        assert self.layout
+
+        row = self.layout.row(align=True)
+        row.label(text="{} Units Found".format(UnitsData.data["total_units"]), icon="SNAP_GRID")
+        if self.props.is_editing:
+            row.operator("bim.assign_scene_units", text="", icon="TOOL_SETTINGS")
+            row.operator("bim.disable_unit_editing_ui", text="", icon="CANCEL")
+        else:
+            row.operator("bim.convert_units", text="", icon="FILE_REFRESH")
+            row.operator("bim.load_units", text="", icon="GREASEPENCIL")
+
+        if not self.props.is_editing:
+            labels = {
+                "LENGTHUNIT": ("Length Unit", "ARROW_LEFTRIGHT"),
+                "AREAUNIT": ("Area Unit", "ORIENTATION_VIEW"),
+                "VOLUMEUNIT": ("Volume Unit", "EMPTY_ARROWS"),
+            }
+            for unit_type, name, ifc_class in UnitsData.data["assigned_units"]:
+                row = self.layout.row(align=True)
+                label, icon = labels.get(unit_type, (unit_type, tool.Unit.get_icon_for_unit_class(ifc_class)))
+                row.label(text=label, icon=icon)
+                row.label(text=str(name))
+            return
+
+        row = self.layout.row(align=True)
+        prop_with_search(row, self.props, "unit_classes", text="")
+
+        if self.props.unit_classes == "IfcMonetaryUnit":
+            row.operator("bim.add_monetary_unit", text="", icon="ADD")
+        elif self.props.unit_classes in ("IfcConversionBasedUnit", "IfcConversionBasedUnitWithOffset"):
+            prop_with_search(row, self.props, "conversion_unit_types", text="")
+            op = row.operator("bim.add_conversion_based_unit", text="", icon="ADD")
+            op.name = self.props.conversion_unit_types
+        elif self.props.unit_classes == "IfcDerivedUnit":
+            pass  # TODO
+        elif self.props.unit_classes == "IfcSIUnit":
+            prop_with_search(row, self.props, "named_unit_types", text="")
+            op = row.operator("bim.add_si_unit", text="", icon="ADD")
+            op.unit_type = self.props.named_unit_types
+        elif self.props.unit_classes == "IfcContextDependentUnit":
+            prop_with_search(row, self.props, "named_unit_types", text="")
+            op = row.operator("bim.add_context_dependent_unit", text="", icon="ADD")
+            op.name = "THINGAMAJIG"
+            op.unit_type = self.props.named_unit_types
+
+        self.layout.template_list(
+            "BIM_UL_units",
+            "",
+            self.props,
+            "units",
+            self.props,
+            "active_unit_index",
+        )
+
+        if self.props.active_unit_id:
+            self.draw_editable_ui(context)
+
+    def draw_editable_ui(self, context):
+        bonsai.bim.helper.draw_attributes(self.props.unit_attributes, self.layout)
+
+
+class BIM_UL_units(UIList):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMUnitProperties,
+        item: Unit,
+        icon_: int,
+        active_data,
+        active_propname,
+    ) -> None:
+        if item:
+            icon = tool.Unit.get_icon_for_unit_class(item.ifc_class)
+            row = layout.row(align=True)
+            row.label(text=item.unit_type or "No Type", icon=icon)
+            row.label(text=item.name or "Unnamed")
+
+            if item.is_assigned:
+                op = row.operator("bim.unassign_unit", text="", icon="KEYFRAME_HLT", emboss=False)
+                op.unit = item.ifc_definition_id
+            else:
+                op = row.operator("bim.assign_unit", text="", icon="KEYFRAME", emboss=False)
+                op.unit = item.ifc_definition_id
+
+            if data.active_unit_id == item.ifc_definition_id:
+                row.operator("bim.edit_unit", text="", icon="CHECKMARK").unit = item.ifc_definition_id
+                row.operator("bim.disable_editing_unit", text="", icon="CANCEL")
+            elif data.active_unit_id:
+                row.operator("bim.remove_unit", text="", icon="X").unit = item.ifc_definition_id
+            else:
+                op = row.operator("bim.enable_editing_unit", text="", icon="GREASEPENCIL")
+                op.unit = item.ifc_definition_id
+                row.operator("bim.remove_unit", text="", icon="X").unit = item.ifc_definition_id

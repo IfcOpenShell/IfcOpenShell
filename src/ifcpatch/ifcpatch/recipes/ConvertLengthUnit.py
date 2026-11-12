@@ -16,38 +16,64 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.api.owner.settings
-import ifcopenshell.util.pset
-import ifcopenshell.util.element
-import ifcopenshell.util.unit
+import typing
 from logging import Logger
+from typing import Union
+
+import ifcopenshell
+import ifcopenshell.util.unit
+
+import ifcpatch
+
+LengthUnit = typing.Literal[
+    "ATTOMETER",
+    "FEMTOMETER",
+    "PICOMETER",
+    "NANOMETER",
+    "MICROMETER",
+    "MILLIMETER",
+    "CENTIMETER",
+    "DECIMETER",
+    "METER",
+    "DECAMETER",
+    "HECTOMETER",
+    "KILOMETER",
+    "MEGAMETER",
+    "GIGAMETER",
+    "TERAMETER",
+    "PETAMETER",
+    "EXAMETER",
+    "INCH",
+    "FOOT",
+    "MILE",
+]
 
 
-class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, unit: str = "METERS"):
+class Patcher(ifcpatch.BasePatcher):
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        logger: Union[Logger, None] = None,
+        unit: LengthUnit = "METER",
+    ):
         """Converts the length unit of a model to the specified unit
 
-        Allowed metric units include METERS, MILLIMETERS, CENTIMETERS, etc.
-        Allowed imperial units include INCHES, FEET, MILES.
+        Allowed metric units include METER, MILLIMETER, CENTIMETER, etc.
+        Allowed imperial units include INCH, FOOT, MILE.
 
-        :param unit: The name of the desired unit, defaults to "METERS"
-        :type unit: str
+        :param unit: The name of the desired unit, defaults to "METER"
 
         Example:
 
         .. code:: python
 
             # Convert to millimeters
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertLengthUnit", "arguments": ["MILLIMETERS"]})
+            model = ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertLengthUnit", "arguments": ["MILLIMETER"]})
 
             # Convert to feet
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertLengthUnit", "arguments": ["FEET"]})
+            model = ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertLengthUnit", "arguments": ["FOOT"]})
         """
-        self.src = src
-        self.file = file
-        self.logger = logger
+        super().__init__(file, logger)
         self.unit = unit
         self.file_patched: ifcopenshell.file
 

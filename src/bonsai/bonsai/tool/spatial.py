@@ -1,0 +1,1858 @@
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Bonsai is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import annotations
+
+import json
+import multiprocessing
+from collections import defaultdict
+from collections.abc import Generator, Iterable
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+
+import bmesh
+import bpy
+import ifcopenshell
+import ifcopenshell.api.attribute
+import ifcopenshell.api.boundary
+import ifcopenshell.api.geometry
+import ifcopenshell.api.type
+import ifcopenshell.geom
+import ifcopenshell.util.classification
+import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import ifcopenshell.util.shape
+import ifcopenshell.util.shape_builder
+import ifcopenshell.util.space
+import ifcopenshell.util.type
+import ifcopenshell.util.unit
+import numpy as np
+import shapely
+import shapely.affinity
+import shapely.ops
+from mathutils import Matrix, Vector
+from natsort import natsorted
+from shapely import Polygon
+
+import bonsai.core.geometry
+import bonsai.core.root
+import bonsai.core.spatial
+import bonsai.core.tool
+import bonsai.core.type
+import bonsai.tool as tool
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.spatial.prop import (
+        BIMGridProperties,
+        BIMObjectSpatialProperties,
+        BIMSpatialDecompositionProperties,
+    )
+
+_GEOM_CACHE_TOKEN = 0
+
+
+@bpy.app.handlers.persistent
+def _bump_geom_cache_token(*args) -> None:
+    global _GEOM_CACHE_TOKEN
+    if len(args) >= 2:
+        depsgraph = args[1]
+        if depsgraph is not None and hasattr(depsgraph, "updates"):
+            if not any(
+                (getattr(u, "is_updated_geometry", False) or getattr(u, "is_updated_transform", False))
+                and hasattr(u, "id")
+                and isinstance(u.id, bpy.types.Object)
+                for u in depsgraph.updates
+            ):
+                return
+    _GEOM_CACHE_TOKEN += 1
+
+
+def install_geom_cache_handlers() -> None:
+    for hook in (
+        bpy.app.handlers.depsgraph_update_post,
+        bpy.app.handlers.undo_post,
+        bpy.app.handlers.redo_post,
+        bpy.app.handlers.load_post,
+    ):
+        if _bump_geom_cache_token not in hook:
+            hook.append(_bump_geom_cache_token)
+
+
+def uninstall_geom_cache_handlers() -> None:
+    for hook in (
+        bpy.app.handlers.depsgraph_update_post,
+        bpy.app.handlers.undo_post,
+        bpy.app.handlers.redo_post,
+        bpy.app.handlers.load_post,
+    ):
+        try:
+            hook.remove(_bump_geom_cache_token)
+        except ValueError:
+            pass
+
+
+class Spatial(bonsai.core.tool.Spatial):
+    _geom_cache: dict = {}
+
+    @classmethod
+    def get_spatial_props(cls) -> BIMSpatialDecompositionProperties:
+        return bpy.context.scene.BIMSpatialDecompositionProperties
+
+    @classmethod
+    def get_object_spatial_props(cls, obj: bpy.types.Object) -> BIMObjectSpatialProperties:
+        return obj.BIMObjectSpatialProperties
+
+    @classmethod
+    def get_grid_props(cls) -> BIMGridProperties:
+        return bpy.context.scene.BIMGridProperties
+
+    @classmethod
+    def get_decomposition(cls, element: ifcopenshell.entity_instance) -> list(ifcopenshell.entity_instance):
+        return ifcopenshell.util.element.get_decomposition(element)
+
+    @classmethod
+    def get_root_element(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        while True:
+            if parent := (
+                ifcopenshell.util.element.get_aggregate(element) or ifcopenshell.util.element.get_nest(element)
+            ):
+                element = parent
+            else:
+                break
+        return element
+
+    @classmethod
+    def get_host_element(cls, filling: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance | None:
+        """The building element that hosts a filling (door/window) via the
+        standard ``FillsVoids → RelatingOpeningElement → VoidsElements →
+        RelatingBuildingElement`` chain, with safety guards at each hop.
+        Returns ``None`` if any link is missing, or if the given entity is
+        not a fillable type (no ``FillsVoids`` inverse).
+
+        For the wall-only case (gizmos that only make sense on walls), use
+        `get_host_wall` which adds an ``IfcWall`` type filter on top of this."""
+        if not getattr(filling, "FillsVoids", None):
+            return None
+        opening = filling.FillsVoids[0].RelatingOpeningElement
+        if not opening.VoidsElements:
+            return None
+        return opening.VoidsElements[0].RelatingBuildingElement
+
+    @classmethod
+    def get_host_wall(cls, filling: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance | None:
+        """The ``IfcWall`` that hosts a filling (door/window), or ``None``.
+
+        Walls only — fillings hosted in slabs / roofs / arbitrary elements
+        produce ``None`` so wall-offset callers stay opted out cleanly."""
+        host = cls.get_host_element(filling)
+        return host if host and host.is_a("IfcWall") else None
+
+    @classmethod
+    def can_contain(cls, container: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance) -> bool:
+        if tool.Ifc.get_schema() == "IFC2X3":
+            if not container.is_a("IfcSpatialStructureElement"):
+                return False
+        else:
+            if not container.is_a("IfcSpatialStructureElement") and not container.is_a(
+                "IfcExternalSpatialStructureElement"
+            ):
+                return False
+        if not hasattr(element, "ContainedInStructure"):
+            return False
+        return True
+
+    @classmethod
+    def can_reference(
+        cls, structure: Union[ifcopenshell.entity_instance, None], element: Union[ifcopenshell.entity_instance, None]
+    ) -> bool:
+        if not structure or not element:
+            return False
+        if tool.Ifc.get_schema() == "IFC2X3":
+            if not structure.is_a("IfcSpatialStructureElement"):
+                return False
+        else:
+            if not structure.is_a("IfcSpatialElement"):
+                return False
+        if not hasattr(element, "ReferencedInStructures"):
+            return False
+        return True
+
+    @classmethod
+    def disable_editing(cls, obj: bpy.types.Object) -> None:
+        props = cls.get_object_spatial_props(obj)
+        props.is_editing = False
+
+    @classmethod
+    def duplicate_object_and_data(cls, obj: bpy.types.Object) -> bpy.types.Object:
+        new_obj = obj.copy()
+        if obj.data:
+            new_obj.data = obj.data.copy()
+        return new_obj
+
+    @classmethod
+    def enable_editing(cls, obj: bpy.types.Object) -> None:
+        props = cls.get_object_spatial_props(obj)
+        props.is_editing = True
+        props.relating_container_object = None
+
+    @classmethod
+    def get_container(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        return ifcopenshell.util.element.get_container(element)
+
+    @classmethod
+    def get_decomposed_elements(
+        cls, container: ifcopenshell.entity_instance, is_recursive=True
+    ) -> list[ifcopenshell.entity_instance]:
+        return ifcopenshell.util.element.get_decomposition(container, is_recursive=is_recursive)
+
+    @classmethod
+    def get_object_matrix(cls, obj: bpy.types.Object) -> Matrix:
+        return obj.matrix_world
+
+    @classmethod
+    def get_relative_object_matrix(cls, target_obj: bpy.types.Object, relative_to_obj: bpy.types.Object) -> Matrix:
+        return relative_to_obj.matrix_world.inverted() @ target_obj.matrix_world
+
+    @classmethod
+    def run_root_copy_class(cls, obj: bpy.types.Object) -> ifcopenshell.entity_instance:
+        return bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
+
+    @classmethod
+    def run_spatial_assign_container(
+        cls, container: ifcopenshell.entity_instance, objs: list[bpy.types.Object]
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        return bonsai.core.spatial.assign_container(
+            tool.Ifc, tool.Collector, tool.Spatial, container=container, objs=objs
+        )
+
+    @classmethod
+    def run_spatial_import_spatial_decomposition(cls) -> None:
+        return bonsai.core.spatial.import_spatial_decomposition(tool.Spatial)
+
+    @classmethod
+    def select_object(cls, obj: bpy.types.Object) -> None:
+        tool.Blender.select_object(obj)
+
+    @classmethod
+    def set_active_object(cls, obj: bpy.types.Object, selection_mode: str = "ADD") -> None:
+        if selection_mode == "ADD":
+            tool.Blender.set_active_object(obj)
+        elif selection_mode == "REMOVE":
+            tool.Blender.deselect_object(obj)
+        else:
+            tool.Blender.select_and_activate_single_object(bpy.context, obj)
+
+    @classmethod
+    def set_relative_object_matrix(
+        cls, target_obj: bpy.types.Object, relative_to_obj: bpy.types.Object, matrix: Matrix
+    ) -> None:
+        target_obj.matrix_world = relative_to_obj.matrix_world @ matrix
+
+    @classmethod
+    def select_products(cls, products: Iterable[ifcopenshell.entity_instance], unhide: bool = False) -> None:
+        assert (view_layer := bpy.context.view_layer)
+        # Update view layer, otherwise `objects` might be missing just created objects.
+        view_layer.update()
+        for product in products:
+            obj = tool.Ifc.get_object(product)
+            if obj and view_layer.objects.get(obj.name):
+                if unhide:
+                    obj.hide_set(False)
+                obj.select_set(True)
+
+    @classmethod
+    def filter_products(
+        cls, products: list[ifcopenshell.entity_instance], action: Literal["select", "isolate", "unhide", "hide"]
+    ) -> None:
+        objects = [obj for product in products if (obj := tool.Ifc.get_object(product))]
+        if action == "select":
+            [obj.select_set(True) for obj in objects]
+        elif action == "isolate":
+            [obj.hide_set(False) for obj in objects if bpy.context.view_layer.objects.get(obj.name)]
+            [
+                obj.hide_set(True)
+                for obj in bpy.context.visible_objects
+                if not obj in objects and bpy.context.view_layer.objects.get(obj.name)
+            ]  # this is slow
+        elif action == "unhide":
+            [obj.hide_set(False) for obj in objects if bpy.context.view_layer.objects.get(obj.name)]
+        elif action == "hide":
+            [obj.hide_set(True) for obj in objects if bpy.context.view_layer.objects.get(obj.name)]
+
+    @classmethod
+    def deselect_objects(cls) -> None:
+        [obj.select_set(False) for obj in bpy.context.selected_objects]
+
+    @classmethod
+    def show_scene_objects(cls) -> None:
+        [
+            obj.hide_set(False)
+            for obj in bpy.data.scenes["Scene"].objects
+            if bpy.context.view_layer.objects.get(obj.name)
+        ]
+
+    @classmethod
+    def get_selected_products(cls) -> Generator[ifcopenshell.entity_instance]:
+        for obj in bpy.context.selected_objects:
+            entity = tool.Ifc.get_entity(obj)
+            if entity and entity.is_a("IfcProduct"):
+                yield entity
+
+    @classmethod
+    def get_selected_product_types(cls) -> Generator[ifcopenshell.entity_instance]:
+        for obj in tool.Blender.get_selected_objects():
+            entity = tool.Ifc.get_entity(obj)
+            if entity and entity.is_a("IfcTypeProduct"):
+                yield entity
+
+    @classmethod
+    def copy_xy(cls, src_obj: bpy.types.Object, destination_obj: bpy.types.Object) -> None:
+        src_obj.location.xy = destination_obj.location.xy
+
+    @classmethod
+    def get_container_elements_grouped_by_classification(cls, container: ifcopenshell.entity_instance) -> dict:
+        props = cls.get_spatial_props()
+        results = {}
+        if props.should_include_children:
+            elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
+        else:
+            elements = set(ifcopenshell.util.element.get_contained(container))
+            for e in elements:
+                elements.update(ifcopenshell.util.element.get_decomposition(e))
+        flat_results: dict[str, Any] = {}
+        reference_names: dict[str, str] = {}
+        for element in elements:
+            if element.is_a("IfcOpeningElement") or tool.Root.is_spatial_element(element):
+                continue
+            references = ifcopenshell.util.classification.get_references(element)
+            if not references:
+                flat_results.setdefault("Unclassified", []).append(element)
+            else:
+                for reference in references:
+                    identification = reference[1] or ""
+                    reference_names[identification] = reference[2]
+                    flat_results.setdefault(identification, []).append(element)
+
+        for flat_key in sorted(flat_results.keys()):
+            current_results = results
+
+            while True:
+                has_parent = None
+                new_current_results = None
+                for key in current_results:
+                    if flat_key.startswith(key):
+                        has_parent = True
+                        new_current_results = current_results[key]["children"]
+                        break
+                if has_parent:
+                    assert new_current_results is not None
+                    current_results = new_current_results
+                else:
+                    break
+
+            current_results[flat_key] = {
+                "Name": "Unclassified" if flat_key == "Unclassified" else reference_names[flat_key],
+                "elements": flat_results[flat_key],
+                "children": {},
+            }
+
+        return results
+
+    @classmethod
+    def get_container_elements_grouped_by_type(cls, container: ifcopenshell.entity_instance) -> dict:
+        props = cls.get_spatial_props()
+        results: defaultdict[str, dict[int, Any]] = defaultdict(dict)
+        if props.should_include_children:
+            elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
+        else:
+            queue = list(set(ifcopenshell.util.element.get_contained(container)))
+            elements = set()
+            while queue:
+                item = queue.pop()
+                elements.add(item)
+                queue.extend(ifcopenshell.util.element.get_decomposition(item))
+        for element in elements:
+            if element.is_a("IfcOpeningElement") or tool.Root.is_spatial_element(element):
+                continue
+            element_type = ifcopenshell.util.element.get_type(element)
+            ifc_class = element.is_a()
+            ifc_definition_id = element_type.id() if element_type else 0
+            type_name = (
+                element_type.is_a() + "/" + (element_type.Name or "Unnamed")
+                if element_type
+                else f"Untyped {element.is_a()}"
+            )
+            class_data = results.setdefault(ifc_class, {})
+            type_data = class_data.setdefault(ifc_definition_id, {"type_name": type_name, "elements": []})
+            type_data["elements"].append(element)
+        return results
+
+    @classmethod
+    def load_contained_elements(cls) -> None:
+        props = cls.get_spatial_props()
+        props.elements.clear()
+        if not (container := props.active_container):
+            return
+
+        container = tool.Ifc.get().by_id(container.ifc_definition_id)
+        if props.element_mode == "TYPE":
+            cls.load_contained_elements_by_type(container)
+        elif props.element_mode == "DECOMPOSITION":
+            cls.load_contained_elements_by_decomposition(container)
+        elif props.element_mode == "CLASSIFICATION":
+            cls.load_contained_elements_by_classification(container)
+
+    @classmethod
+    def load_contained_elements_by_type(cls, container: ifcopenshell.entity_instance) -> None:
+        props = cls.get_spatial_props()
+        results = cls.get_container_elements_grouped_by_type(container)
+
+        expanded_elements = json.loads(props.expanded_elements)
+        expanded_classes = expanded_elements.get("CLASS", [])
+        expanded_ifc_ids = expanded_elements.get("IFC_ID", [])
+        expanded_untyped = expanded_elements.get("UNTYPED_CLASSES", [])
+        expanded_classes_r = expanded_elements.get("CLASS_R", [])
+
+        total_elements = 0
+        for ifc_class in sorted(results.keys()):
+            new = props.elements.add()
+            new.name = ifc_class
+            new.type = "CLASS"
+            new.has_children = True
+            class_is_expanded = ifc_class in expanded_classes
+            class_is_expanded_r = ifc_class in expanded_classes_r
+            new.is_expanded = class_is_expanded or class_is_expanded_r
+            total = 0
+            for ifc_definition_id in sorted(
+                results[ifc_class].keys(), key=lambda x: results[ifc_class][x]["type_name"]
+            ):
+                type_data = results[ifc_class][ifc_definition_id]
+                total2 = len(type_data["elements"])
+                if new.is_expanded:
+                    new2 = props.elements.add()
+                    new2.type = "TYPE"
+                    new2.has_children = True
+                    new2.level = 1
+                    new2.name = type_data["type_name"]
+                    new2.ifc_class = ifc_class
+                    new2.total = total2
+                    new2.ifc_definition_id = ifc_definition_id
+                    if ifc_definition_id == 0:
+                        type_is_expanded = ifc_class in expanded_untyped
+                    else:
+                        type_is_expanded = ifc_definition_id in expanded_ifc_ids
+                    new2.is_expanded = type_is_expanded or class_is_expanded_r
+
+                    if new2.is_expanded:
+                        for element in type_data["elements"]:
+                            occurrence = props.elements.add()
+                            occurrence.name = element.Name or "Unnamed"
+                            occurrence.level = 2
+                            occurrence.ifc_definition_id = element.id()
+                            occurrence.type = "OCCURRENCE"
+
+                total += total2
+            new.total = total
+            total_elements += total
+
+        props.total_elements = total_elements
+
+    @classmethod
+    def load_contained_elements_by_decomposition(cls, container: ifcopenshell.entity_instance) -> None:
+        props = cls.get_spatial_props()
+        expanded_elements = json.loads(props.expanded_elements)
+        expanded_ifc_ids = expanded_elements.get("IFC_ID", [])
+
+        def add_elements(elements, level=0):
+            for element in sorted(elements, key=lambda x: f"{x.is_a()}/{x.Name or 'Unnamed'}"):
+                if not props.should_include_children and tool.Root.is_spatial_element(element):
+                    continue
+                ifc_definition_id = element.id()
+                new = props.elements.add()
+                new.name = f"{element.is_a()}/{element.Name or 'Unnamed'}"
+                new.level = level
+                new.ifc_definition_id = ifc_definition_id
+                new.type = "OCCURRENCE"
+                children = [
+                    e
+                    for e in ifcopenshell.util.element.get_decomposition(element, is_recursive=False)
+                    if not e.is_a("IfcFeatureElement")
+                ]
+                if children:
+                    new.has_children = True
+                    new.total = len(children)
+                    if ifc_definition_id in expanded_ifc_ids:
+                        new.is_expanded = True
+                        add_elements(children, level=level + 1)
+
+        elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=False)
+        add_elements(elements)
+
+    @classmethod
+    def load_contained_elements_by_classification(cls, container: ifcopenshell.entity_instance) -> None:
+        props = cls.get_spatial_props()
+        expanded_elements = json.loads(props.expanded_elements)
+        expanded_classifications = expanded_elements.get("CLASSIFICATION", [])
+        expanded_classifications_r = expanded_elements.get("CLASSIFICATION_R", [])
+
+        def add_elements(results, level=0):
+            for identification in sorted(results.keys()):
+                data = results[identification]
+                new = props.elements.add()
+                new.name = f"{identification}:{data['Name']}"
+                new.type = "CLASSIFICATION"
+                new.identification = identification
+                new.has_children = True
+                new.level = level
+
+                is_expanded = identification in expanded_classifications
+                is_expanded_r = any([c for c in expanded_classifications_r if identification.startswith(c)])
+
+                if is_expanded or is_expanded_r:
+                    new.is_expanded = True
+                    add_elements(data["children"], level=level + 1)
+
+                    for element in sorted(data["elements"], key=lambda x: f"{x.is_a()}/{x.Name or 'Unnamed'}"):
+                        new2 = props.elements.add()
+                        new2.name = f"{element.is_a()}/{element.Name or 'Unnamed'}"
+                        new2.type = "OCCURRENCE"
+                        new2.level = level + 1
+                        new2.ifc_definition_id = element.id()
+
+        results = cls.get_container_elements_grouped_by_classification(container)
+        add_elements(results)
+
+    @classmethod
+    def filter_elements(
+        cls,
+        elements: Iterable[ifcopenshell.entity_instance],
+        ifc_class: str | None,
+        relating_type: ifcopenshell.entity_instance | None,
+        is_untyped: bool,
+        keyword: str | None,
+    ) -> filter[ifcopenshell.entity_instance]:
+        keyword = keyword.lower() if keyword else keyword
+
+        def filter_element(element: ifcopenshell.entity_instance) -> bool:
+            if ifc_class:
+                if not element.is_a(ifc_class):
+                    return False
+            element_type = ifcopenshell.util.element.get_type(element)
+            if relating_type:
+                if relating_type != element_type:
+                    return False
+            if is_untyped:
+                if element_type is not None:
+                    return False
+            if keyword:
+                type_name = getattr(element_type, "Name", "") or ""
+                if keyword not in f"{element.is_a()} {type_name}".lower():
+                    return False
+            return True
+
+        return filter(filter_element, elements)
+
+    @classmethod
+    def import_spatial_decomposition(cls) -> None:
+        props = cls.get_spatial_props()
+        previous_container_index = props.active_container_index
+        props.containers.clear()
+        cls.contracted_containers = json.loads(props.contracted_containers)
+        cls.sync_moved_spatial_placements()
+        cls.import_spatial_element(tool.Ifc.get().by_type("IfcProject")[0], 0)
+        props.active_container_index = tool.Blender.get_valid_uilist_index(previous_container_index, props.containers)
+
+    @classmethod
+    def sync_moved_spatial_placements(cls) -> None:
+        """Commit the placement of moved spatial elements so the container manager shows current elevations."""
+        ifc_file = tool.Ifc.get()
+        for element in ifc_file.by_type(tool.Root.get_spatial_element_class()):
+            obj = tool.Ifc.get_object(element)
+            if isinstance(obj, bpy.types.Object) and tool.Ifc.is_moved(obj):
+                # Refresh paths are not tool.Ifc.Operator flows, so mark the committed change ourselves.
+                tool.Blender.get_bim_props().is_dirty = True
+                tool.Geometry.commit_placement_if_moved(obj)
+
+    @classmethod
+    def import_spatial_element(cls, element: ifcopenshell.entity_instance, level_index: int) -> None:
+        if not element.is_a("IfcProject") and not tool.Root.is_spatial_element(element):
+            return
+        props = cls.get_spatial_props()
+        new = props.containers.add()
+        new.ifc_class = element.is_a()
+        new["name"] = element.Name or "Unnamed"
+        new.description = element.Description or ""
+        # Assign via subscript so the update callbacks, which write back to IFC, don't fire. See #8545.
+        new["long_name"] = element.LongName or ""
+        if not element.is_a("IfcProject"):
+            elevation = ifcopenshell.util.placement.get_storey_elevation(element)
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            elevation_in_meters = elevation * unit_scale
+            new["elevation"] = tool.Unit.format_distance(elevation_in_meters)
+        new.is_expanded = element.id() not in cls.contracted_containers
+        new.level_index = level_index
+        children = ifcopenshell.util.element.get_parts(element)
+        if children:
+            children = natsorted(
+                children,
+                key=lambda element: (ifcopenshell.util.placement.get_storey_elevation(element), element.Name),
+            )
+        new.has_children = bool(children)
+        new.ifc_definition_id = element.id()
+        if new.is_expanded:
+            for child in children or []:
+                cls.import_spatial_element(child, level_index + 1)
+
+    @classmethod
+    def create_orientation_slot(cls, container: ifcopenshell.entity_instance) -> None:
+        active_slot = bpy.context.scene.transform_orientation_slots[0]
+        placement = container.ObjectPlacement
+        combined_matrix = ifcopenshell.util.placement.get_placement(placement)[:3, :3]
+
+        if np.allclose(combined_matrix, np.eye(3), atol=1e-6):
+            # this spatial element has global orientation
+            active_slot.type = "GLOBAL"
+            return
+        elif (
+            hasattr(container, "Decomposes")
+            and container.Decomposes
+            and hasattr(container.Decomposes[0].RelatingObject, "ObjectPlacement")
+        ):
+            # this spatial element is part of a decomposition
+            parent_placement = container.Decomposes[0].RelatingObject.ObjectPlacement
+            parent_matrix = ifcopenshell.util.placement.get_placement(parent_placement)[:3, :3]
+            if np.allclose(combined_matrix, parent_matrix, atol=1e-6):
+                # this spatial element has the same orientation as its parent
+                cls.create_orientation_slot(container=container.Decomposes[0].RelatingObject)
+                return
+
+        # this spatial element has a unique orientation
+        orientation_name = container.is_a() + "/" + container.Name
+
+        # stash selected objects
+        active_object = bpy.context.view_layer.objects.active
+        selected_objects = list(bpy.context.view_layer.objects.selected)
+
+        # bpy.ops.transform.create_orientation() requires a dummy object
+        bpy.ops.object.empty_add(type="PLAIN_AXES")
+        bpy.ops.transform.create_orientation(name=orientation_name, overwrite=True)
+        active_slot.type = orientation_name
+        active_slot.custom_orientation.matrix = np.linalg.inv(combined_matrix)
+
+        # delete dummy object
+        bpy.ops.object.delete()
+
+        # reinstate selected objects
+        for obj in selected_objects:
+            obj.select_set(True)
+        if active_object:
+            bpy.context.view_layer.objects.active = active_object
+
+    @classmethod
+    def edit_container_name(cls, container: ifcopenshell.entity_instance, name: str) -> None:
+        ifcopenshell.api.attribute.edit_attributes(tool.Ifc.get(), product=container, attributes={"Name": name})
+
+    @classmethod
+    def get_active_container(cls) -> Union[ifcopenshell.entity_instance, None]:
+        props = cls.get_spatial_props()
+        if active_container := props.active_container:
+            container = tool.Ifc.get().by_id(active_container.ifc_definition_id)
+            return container
+
+    @classmethod
+    def contract_container(cls, container: ifcopenshell.entity_instance, is_recursive: bool) -> None:
+        props = cls.get_spatial_props()
+        contracted_containers = set(json.loads(props.contracted_containers))
+        queue = [container]
+        while queue:
+            item = queue.pop()
+            if is_recursive and (children := ifcopenshell.util.element.get_parts(item)):
+                queue.extend(children)
+            contracted_containers.add(item.id())
+        props.contracted_containers = json.dumps(list(contracted_containers))
+
+    @classmethod
+    def expand_container(cls, container: ifcopenshell.entity_instance, is_recursive: bool) -> None:
+        props = cls.get_spatial_props()
+        contracted_containers = set(json.loads(props.contracted_containers))
+        queue = [container]
+        while queue:
+            item = queue.pop()
+            if is_recursive and (children := ifcopenshell.util.element.get_parts(item)):
+                queue.extend(children)
+            contracted_containers.discard(item.id())
+        props.contracted_containers = json.dumps(list(contracted_containers))
+
+    @classmethod
+    def toggle_container_element(cls, element_index: int, is_recursive: bool) -> None:
+        props = cls.get_spatial_props()
+        if props.element_mode == "TYPE":
+            cls.toggle_container_element_by_type(element_index, is_recursive)
+        elif props.element_mode == "DECOMPOSITION":
+            cls.toggle_container_element_by_decomposition(element_index, is_recursive)
+        elif props.element_mode == "CLASSIFICATION":
+            cls.toggle_container_element_by_classification(element_index, is_recursive)
+
+    @classmethod
+    def toggle_container_element_by_type(cls, element_index: int, is_recursive: bool) -> None:
+        props = cls.get_spatial_props()
+        expanded_elements: dict[str, list[Union[str, int]]] = json.loads(props.expanded_elements)
+
+        element = props.elements[element_index]
+        if element.type == "CLASS":
+            element_type = "CLASS"
+            filtered_item = element.name
+        elif element.type == "TYPE":
+            if element.ifc_definition_id == 0:
+                element_type = "UNTYPED_CLASSES"
+                filtered_item = element.ifc_class
+            else:
+                element_type = "IFC_ID"
+                filtered_item = element.ifc_definition_id
+        else:
+            return
+
+        expanded_elements_list: list[Union[str, int]] = expanded_elements.setdefault(element_type, [])
+        if filtered_item in expanded_elements_list:
+            expanded_elements_list.remove(filtered_item)
+            should_expand = False
+        else:
+            expanded_elements_list.append(filtered_item)
+            should_expand = True
+
+        if is_recursive and element.type == "CLASS":
+            container = tool.Ifc.get().by_id(props.active_container.ifc_definition_id)
+            results = cls.get_container_elements_grouped_by_type(container)
+            for ifc_class in results.keys():
+                if ifc_class != element.name:
+                    continue
+                for ifc_definition_id in results[ifc_class].keys():
+                    if ifc_definition_id == 0:
+                        element_type = "UNTYPED_CLASSES"
+                        filtered_item = ifc_class
+                    else:
+                        element_type = "IFC_ID"
+                        filtered_item = ifc_definition_id
+
+                    expanded_elements_list = expanded_elements.setdefault(element_type, [])
+                    if should_expand is False and filtered_item in expanded_elements_list:
+                        expanded_elements_list.remove(filtered_item)
+                    elif should_expand is True and filtered_item not in expanded_elements_list:
+                        expanded_elements_list.append(filtered_item)
+
+        props.expanded_elements = json.dumps(expanded_elements)
+
+    @classmethod
+    def toggle_container_element_by_decomposition(cls, element_index: int, is_recursive: bool) -> None:
+        props = cls.get_spatial_props()
+        element = props.elements[element_index]
+        expanded_elements: dict[str, list[Union[str, int]]] = json.loads(props.expanded_elements)
+        expanded_elements_list: list[Union[str, int]] = expanded_elements.setdefault("IFC_ID", [])
+        ifc_definition_id = element.ifc_definition_id
+        if ifc_definition_id in expanded_elements_list:
+            expanded_elements_list.remove(ifc_definition_id)
+            should_expand = False
+        else:
+            expanded_elements_list.append(ifc_definition_id)
+            should_expand = True
+
+        if is_recursive:
+            queue = [tool.Ifc.get().by_id(ifc_definition_id)]
+            while queue:
+                element = queue.pop()
+                children = [
+                    e
+                    for e in ifcopenshell.util.element.get_decomposition(element, is_recursive=False)
+                    if not e.is_a("IfcFeatureElement")
+                ]
+                ifc_definition_id = element.id()
+                if children:
+                    if should_expand is False and ifc_definition_id in expanded_elements_list:
+                        expanded_elements_list.remove(ifc_definition_id)
+                    elif should_expand is True and ifc_definition_id not in expanded_elements_list:
+                        expanded_elements_list.append(ifc_definition_id)
+                    queue.extend(children)
+
+        props.expanded_elements = json.dumps(expanded_elements)
+
+    @classmethod
+    def toggle_container_element_by_classification(cls, element_index: int, is_recursive: bool) -> None:
+        props = cls.get_spatial_props()
+        expanded_elements: dict[str, list[str]] = json.loads(props.expanded_elements)
+        expanded_elements_list: list[str] = expanded_elements.setdefault("CLASSIFICATION", [])
+
+        element = props.elements[element_index]
+        identification = element.identification
+
+        if identification in expanded_elements_list:
+            expanded_elements_list.remove(identification)
+            should_expand = False
+        else:
+            expanded_elements_list.append(identification)
+            should_expand = True
+
+        if is_recursive:
+            expanded_elements_list = expanded_elements.setdefault("CLASSIFICATION_R", [])
+            if should_expand is False and identification in expanded_elements_list:
+                expanded_elements_list.remove(identification)
+            elif should_expand is True and identification not in expanded_elements_list:
+                expanded_elements_list.append(identification)
+
+        props.expanded_elements = json.dumps(expanded_elements)
+
+    # HERE STARTS SPATIAL TOOL
+
+    @classmethod
+    def get_or_build_geom_cache(cls) -> dict:
+        """Build or return a cached dict of IFC element shapes for space generation.
+
+        The cache is keyed on ``_GEOM_CACHE_TOKEN`` which is bumped by a
+        ``depsgraph_update_post`` handler when any Object geometry or transform
+        changes, and on undo/redo/load. This means the cache survives space
+        generations (which don't change Object geometry) but is correctly
+        invalidated when a user moves or edits a wall, slab, etc.
+
+        :return: ``{"shapes": {id: {"verts": ndarray, "faces": ndarray, "bottom_z": float, "top_z": float}}, "token": int}``
+        """
+        global _GEOM_CACHE_TOKEN
+        cached = cls._geom_cache.get("current")
+        if cached and cached["token"] == _GEOM_CACHE_TOKEN:
+            return cached
+
+        ifc_file = tool.Ifc.get()
+        include = ifcopenshell.util.space.get_bounding_and_height_elements(ifc_file)
+
+        settings = ifcopenshell.geom.settings()
+        settings.set("disable-opening-subtractions", True)
+        settings.set("use-world-coords", True)
+
+        shapes = {}
+        iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=include)
+        if iterator.initialize():
+            while True:
+                shape = iterator.get()
+                verts = ifcopenshell.util.shape.get_shape_vertices(shape, shape.geometry)
+                faces = ifcopenshell.util.shape.get_faces(shape.geometry)
+                zs = verts[:, 2]
+                shapes[shape.id] = {
+                    "verts": verts,
+                    "faces": faces,
+                    "bottom_z": float(zs.min()),
+                    "top_z": float(zs.max()),
+                }
+                if not iterator.next():
+                    break
+
+        cache = {"shapes": shapes, "token": _GEOM_CACHE_TOKEN}
+        cls._geom_cache["current"] = cache
+        return cache
+
+    @classmethod
+    def is_bounding_class(cls, visible_element: ifcopenshell.entity_instance) -> bool:
+        for ifc_class in ifcopenshell.util.space.BOUNDING_CLASSES:
+            if visible_element.is_a(ifc_class):
+                return True
+        return False
+
+    @classmethod
+    def get_boundary_lines_from_ifc_elements(
+        cls,
+        cut_z: float,
+    ) -> tuple[list[shapely.LineString], list[ifcopenshell.entity_instance]]:
+        """Generate boundary lines by bisecting IFC element geometry with a horizontal plane.
+
+        Uses the class-level geometry cache (parallel iterator) instead of
+        iterating Blender visible objects. Works without any Blender objects
+        being loaded.
+
+        :param cut_z: Z elevation of the cutting plane in world coordinates.
+        :return: (boundary_lines, bounding_elements)
+        """
+        cache = cls.get_or_build_geom_cache()
+        return ifcopenshell.util.space.get_boundary_lines(tool.Ifc.get(), cache["shapes"], cut_z)
+
+    @classmethod
+    def get_space_polygon_from_context_visible_objects(
+        cls, x: float, y: float, container: Optional[ifcopenshell.entity_instance] = None
+    ) -> tuple[
+        Union[shapely.Polygon, Literal["NO POLYGONS FOUND", "NO POLYGON FOR POINT"]],
+        list[ifcopenshell.entity_instance],
+    ]:
+        props = tool.Model.get_model_props()
+        calculation_rl = props.rl3
+        if container is None:
+            container = tool.Root.get_default_container()
+        container_obj = tool.Ifc.get_object(container)
+        cut_z = container_obj.matrix_world.translation.z + calculation_rl
+
+        # Commit any moved visible bounding objects before reading IFC geometry,
+        # so the IFC-based cache uses the current Blender positions.
+        # Walls/roofs/slabs that affect the space footprint or height must be
+        # committed before the cache is rebuilt; otherwise the IFC geometry read by
+        # the iterator will be stale and a moved roof/slab will not be picked up.
+        affected_classes = ifcopenshell.util.space.BOUNDING_CLASSES + ifcopenshell.util.space.HEIGHT_DETECTION_CLASSES
+        for obj in bpy.context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element is None or not any(element.is_a(c) for c in affected_classes):
+                continue
+            tool.Geometry.commit_placement_if_moved(obj)
+        cls._geom_cache.clear()
+
+        boundary_lines, bounding_elements = cls.get_boundary_lines_from_ifc_elements(cut_z)
+        polygon, _ = ifcopenshell.util.space.get_space_polygon(boundary_lines, x, y)
+        if isinstance(polygon, str):
+            return polygon, []
+        return polygon, bounding_elements
+
+    @classmethod
+    def get_auto_space_height(
+        cls,
+        space_polygon: shapely.Polygon,
+        base_z: float,
+        bounding_walls: list[ifcopenshell.entity_instance],
+    ) -> Optional[float]:
+        """Auto-detect space height from elements above using IFC geometry.
+
+        Delegates to :func:`ifcopenshell.util.space.get_auto_space_height`.
+
+        :param space_polygon: The space footprint polygon in world XY.
+        :param base_z: The space's base Z in world coordinates.
+        :param bounding_walls: List of IFC wall elements bounding the space.
+        :return: Detected height in SI (meters), or None if nothing found.
+        """
+        cache = cls.get_or_build_geom_cache()
+        return ifcopenshell.util.space.get_auto_space_height(
+            tool.Ifc.get(), cache["shapes"], space_polygon, base_z, bounding_walls
+        )
+
+    @classmethod
+    def get_space_volume_strategy(
+        cls,
+        space_polygon: shapely.Polygon,
+        base_z: float,
+        bounding_walls: list[ifcopenshell.entity_instance],
+        container: Optional[ifcopenshell.entity_instance] = None,
+    ) -> tuple[str, Optional[list], Optional[list]]:
+        """Decide how to build the space volume (clipped extrusion or B-rep).
+
+        Rays are cast from the RL cut elevation (``container_z + props.rl3``), the
+        same level at which the space footprint polygon was found.
+        """
+        ifc_file = tool.Ifc.get()
+        cache = cls.get_or_build_geom_cache()
+        start_z = None
+        if container is None:
+            container = tool.Root.get_default_container()
+        if container is not None:
+            container_obj = tool.Ifc.get_object(container)
+            props = tool.Model.get_model_props()
+            start_z = container_obj.matrix_world.translation.z + props.rl3
+        elements = ifcopenshell.util.space.get_bounding_and_height_elements(ifc_file)
+        tree = ifcopenshell.util.space.build_bounding_tree(ifc_file, elements)
+        return ifcopenshell.util.space.detect_space_volume_strategy(
+            ifc_file, cache["shapes"], tree, space_polygon, base_z, bounding_walls, start_z=start_z
+        )
+
+    @classmethod
+    def _get_or_create_body_context(cls, ifc_file: ifcopenshell.file) -> ifcopenshell.entity_instance:
+        """Return the Model/Body/MODEL_VIEW context, creating one if absent."""
+        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        if context is not None:
+            return context
+        # Some subcontexts may not expose the inherited ContextType value, so also
+        # search by ContextIdentifier/TargetView directly.
+        for ctx in ifc_file.by_type("IfcGeometricRepresentationSubContext"):
+            if ctx.ContextIdentifier == "Body" and getattr(ctx, "TargetView", None) == "MODEL_VIEW":
+                return ctx
+        # Create a minimal context if none exists.
+        model_context = ifcopenshell.util.representation.get_context(ifc_file, "Model")
+        if model_context is None:
+            model_context = ifc_file.createIfcGeometricRepresentationContext(
+                ContextType="Model",
+                CoordinateSpaceDimension=3,
+                Precision=1e-5,
+                WorldCoordinateSystem=ifc_file.createIfcAxis2Placement3D(
+                    ifc_file.createIfcCartesianPoint([0.0, 0.0, 0.0])
+                ),
+                TrueNorth=ifc_file.createIfcDirection([0.0, 1.0, 0.0]),
+            )
+        return ifc_file.createIfcGeometricRepresentationSubContext(
+            ParentContext=model_context,
+            ContextIdentifier="Body",
+            TargetView="MODEL_VIEW",
+            ContextType="Model",
+        )
+
+    @classmethod
+    def _remove_existing_body_representations(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Optional[ifcopenshell.entity_instance]:
+        """Remove every existing Body representation from an element.
+
+        Returns the context of the first removed representation, or None.
+        """
+        ifc_file = tool.Ifc.get()
+        if element.Representation is None:
+            return None
+        body_reps = [r for r in element.Representation.Representations if r.RepresentationIdentifier == "Body"]
+        context = None
+        for rep in body_reps:
+            context = rep.ContextOfItems
+            ifcopenshell.api.geometry.unassign_representation(ifc_file, product=element, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=rep)
+        return context
+
+    @classmethod
+    def set_brep_representation_from_mesh(
+        cls,
+        obj: bpy.types.Object,
+        element: ifcopenshell.entity_instance,
+        item: ifcopenshell.entity_instance,
+    ) -> None:
+        """Assign a representation item (clipped solid or B-rep) to the element."""
+        ifc_file = tool.Ifc.get()
+        context = cls._remove_existing_body_representations(element)
+        if context is None:
+            context = cls._get_or_create_body_context(ifc_file)
+
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+        new_body = builder.get_representation(context, item)
+        ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=new_body)
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=new_body,
+        )
+
+    @classmethod
+    def debug_shape(cls, foo: shapely.Polygon) -> None:
+        coords = [(p[0], p[1], 0) for p in foo.exterior.coords]
+        mesh = bpy.data.meshes.new(name="NewMesh")
+        bm = bmesh.new()
+        for coord in coords:
+            bm.verts.new(coord)
+        bm.verts.ensure_lookup_table()
+        bm.faces.new(bm.verts)
+        bm.to_mesh(mesh)
+        bm.free()
+        obj = bpy.data.objects.new("NewObject", mesh)
+        bpy.context.collection.objects.link(obj)
+        bpy.context.view_layer.update()
+
+    @classmethod
+    def debug_line(cls, start: Vector, end: Vector) -> None:
+        coords = [start, end]
+        mesh = bpy.data.meshes.new(name="NewMesh")
+        bm = bmesh.new()
+        for coord in coords:
+            bm.verts.new(coord)
+        bm.verts.ensure_lookup_table()
+        bm.edges.new(bm.verts)
+        bm.to_mesh(mesh)
+        bm.free()
+        obj = bpy.data.objects.new("NewLine", mesh)
+        bpy.context.collection.objects.link(obj)
+        bpy.context.view_layer.update()
+
+    @classmethod
+    def get_boundary_lines_from_context_visible_objects(
+        cls,
+    ) -> tuple[list[shapely.LineString], list[ifcopenshell.entity_instance]]:
+        props = tool.Model.get_model_props()
+        calculation_rl = props.rl3
+        container = tool.Root.get_default_container()
+        container_obj = tool.Ifc.get_object(container)
+        cut_point = container_obj.matrix_world.translation.copy() + Vector((0, 0, calculation_rl))
+        cut_normal = Vector((0, 0, 1))
+        boundary_lines = []
+        bounding_elements = []
+
+        for obj in bpy.context.visible_objects:
+            visible_element = tool.Ifc.get_entity(obj)
+
+            old_mesh = obj.data
+            if (
+                not visible_element
+                or not isinstance(old_mesh, bpy.types.Mesh)
+                or not cls.is_bounding_class(visible_element)
+                or not tool.Drawing.is_intersecting_plane(obj, cut_point, cut_normal)
+            ):
+                continue
+
+            bounding_elements.append(visible_element)
+            old_mesh = obj.data
+            assert isinstance(old_mesh, bpy.types.Mesh)
+            if visible_element.HasOpenings:
+                new_mesh = cls.get_gross_mesh_from_element(visible_element)
+            else:
+                new_mesh = old_mesh.copy()
+            obj.data = new_mesh
+
+            # Boundary objects are likely triangulated. If a triangulated quad
+            # is bisected by our plane, we end up with two lines instead of
+            # one. This makes shapely's job much harder (since shapely is very
+            # exact with its coordinates). As a result, let's limited dissolve
+            # prior to bisecting.
+            bm = bmesh.new()
+            bm.from_mesh(new_mesh)
+            bmesh.ops.dissolve_limit(bm, angle_limit=0.02, verts=bm.verts, edges=bm.edges)
+            bm.to_mesh(new_mesh)
+            new_mesh.update()
+            bm.free()
+
+            local_cut_point = obj.matrix_world.inverted() @ cut_point
+            local_cut_normal = obj.matrix_world.inverted().to_quaternion() @ cut_normal
+            verts, edges = tool.Drawing.bisect_mesh_with_plane(obj, local_cut_point, local_cut_normal)
+
+            # Restore the original mesh
+            obj.data = old_mesh
+            bpy.data.meshes.remove(new_mesh)
+
+            for edge in edges or []:
+                # Rounding is necessary to ensure coincident points are coincident
+                start = [round(x, 3) for x in verts[edge[0]]]
+                end = [round(x, 3) for x in verts[edge[1]]]
+                if start == end:
+                    continue
+                # Extension by 50mm is necessary to ensure lines overlap with other diagonal lines
+                # This also closes small but likely irrelevant gaps for space generation.
+                start, end = tool.Drawing.extend_line(start, end, 0.05)
+                boundary_lines.append(shapely.LineString([start, end]))
+
+        return boundary_lines, bounding_elements
+
+    @classmethod
+    def get_gross_mesh_from_element(cls, visible_element: ifcopenshell.entity_instance) -> bpy.types.Mesh:
+        gross_settings = ifcopenshell.geom.settings()
+        gross_settings.set("disable-opening-subtractions", True)
+        new_mesh = cls.create_mesh_from_shape(ifcopenshell.geom.create_shape(gross_settings, visible_element))
+        return new_mesh
+
+    @classmethod
+    def create_mesh_from_shape(cls, shape: ifcopenshell.geom.ShapeElementType) -> bpy.types.Mesh:
+        geometry = shape.geometry
+        return tool.Loader.create_mesh_from_shape(geometry)
+
+    @classmethod
+    def get_x_y_z_h_mat_from_obj(cls, obj: bpy.types.Object) -> tuple[float, float, float, float, Matrix]:
+        """
+        `x`, `y` - object's center XY in world space;\n
+        `z` - object's local Z- in world space;\n
+        `h` - object's Z dimension;\n
+        `mat` - object's matrix
+        """
+        mat = obj.matrix_world
+        local_bbox_center = 0.125 * sum((Vector(b) for b in obj.bound_box), Vector())
+        global_bbox_center = mat @ local_bbox_center
+        x = global_bbox_center.x
+        y = global_bbox_center.y
+        z = (mat @ Vector(obj.bound_box[0])).z
+
+        h = obj.dimensions.z
+        return x, y, z, h, mat
+
+    @classmethod
+    def get_x_y_z_h_mat_from_cursor(cls) -> tuple[float, float, float, float, Matrix]:
+        """
+        `x`, `y` - from cursor;\n
+        `z` - from default container Z location (if set);\n
+        `h` - default value of 3;\n
+        `mat` - identity matrix
+        """
+        x, y, z = bpy.context.scene.cursor.location.xyz
+        if tool.Root.get_default_container():
+            z = tool.Root.get_default_container_elevation()
+        mat = Matrix()
+        h = 3
+        return x, y, z, h, mat
+
+    @classmethod
+    def get_space_reference_point(cls, obj: bpy.types.Object) -> tuple[float, float]:
+        """Return a point inside the space's current footprint, in world XY.
+
+        The bounding box centre does not necessarily lie inside a concave
+        footprint (e.g. an L-shaped room), which would make the polygon lookup
+        pick an unrelated region such as a wall cross-section. The lowest faces
+        of the current mesh form the footprint, so use the largest one and a
+        representative point that is guaranteed to lie inside it.
+        """
+        bpy.context.view_layer.update()
+        if obj.data is not None and len(obj.data.vertices):
+            world_verts = [obj.matrix_world @ v.co for v in obj.data.vertices]
+            min_z = min(v.z for v in world_verts)
+            footprints = []
+            for polygon in obj.data.polygons:
+                points = [world_verts[i] for i in polygon.vertices]
+                if max(p.z for p in points) > min_z + 1e-4:
+                    continue
+                footprint = shapely.Polygon([(p.x, p.y) for p in points])
+                if footprint.area > 0:
+                    footprints.append(footprint)
+            if footprints:
+                point = max(footprints, key=lambda footprint: footprint.area).representative_point()
+                return point.x, point.y
+        x, y, _, _, _ = cls.get_x_y_z_h_mat_from_obj(obj)
+        return x, y
+
+    @classmethod
+    def get_union_shape_from_selected_objects(cls) -> Polygon:
+        selected_objects = bpy.context.selected_objects
+        boundary_elements = cls.get_boundary_elements(selected_objects)
+        polys = cls.get_polygons(boundary_elements)
+        converted_tolerance = cls.get_converted_tolerance(tolerance_si=0.03)
+        union = shapely.ops.unary_union(polys).buffer(
+            converted_tolerance,
+            cap_style=shapely.constructive.BufferCapStyle.flat,
+            join_style=shapely.constructive.BufferJoinStyle.mitre,
+        )
+        union = cls.get_purged_inner_holes_poly(
+            union_geom=union, min_area=cls.get_converted_tolerance(tolerance_si=0.1)
+        )
+        return union
+
+    @classmethod
+    def get_boundary_elements(cls, selected_objects: list[bpy.types.Object]) -> list[ifcopenshell.entity_instance]:
+        boundary_elements = []
+        for obj in selected_objects:
+            subelement = tool.Ifc.get_entity(obj)
+            if subelement.is_a("IfcWall") or subelement.is_a("IfcColumn"):
+                boundary_elements.append(subelement)
+        return boundary_elements
+
+    @classmethod
+    def get_polygons(cls, boundary_elements: list[ifcopenshell.entity_instance]) -> list[Polygon]:
+        polys = []
+        for boundary_element in boundary_elements:
+            obj = tool.Ifc.get_object(boundary_element)
+            if not obj:
+                continue
+            points = []
+            base = cls.get_obj_base_points(obj)
+            for index in ["low_left", "low_right", "high_right", "high_left"]:
+                point = base[index]
+                points.append(point)
+
+            polys.append(Polygon(points))
+        return polys
+
+    @classmethod
+    def get_obj_base_points(cls, obj: bpy.types.Object) -> dict[str, tuple[float, float]]:
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        bbox_ws = [obj.matrix_world @ Vector(v) / si_conversion for v in obj.bound_box]
+        return {
+            "low_left": (bbox_ws[0].x, bbox_ws[0].y),
+            "high_left": (bbox_ws[3].x, bbox_ws[3].y),
+            "low_right": (bbox_ws[4].x, bbox_ws[4].y),
+            "high_right": (bbox_ws[7].x, bbox_ws[7].y),
+        }
+
+    @classmethod
+    def get_converted_tolerance(cls, tolerance_si: float) -> float:
+        model = tool.Ifc.get()
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(model)
+        return tolerance_si / si_conversion
+
+    @classmethod
+    def get_purged_inner_holes_poly(cls, union_geom: Polygon, min_area: float) -> Polygon:
+        interiors_list = []
+
+        new_poly = None
+        poly = None
+        if union_geom.geom_type == "MultiPolygon":
+            for poly in union_geom.geoms:
+                interiors_list = cls.get_poly_valid_interior_list(
+                    poly=poly, min_area=min_area, interiors_list=interiors_list
+                )
+
+            assert poly is not None
+            new_poly = Polygon(poly.exterior.coords, holes=interiors_list)
+
+        if union_geom.geom_type == "Polygon":
+            interiors_list = cls.get_poly_valid_interior_list(
+                poly=union_geom, min_area=min_area, interiors_list=interiors_list
+            )
+            new_poly = Polygon(union_geom.exterior.coords, holes=interiors_list)
+
+        assert new_poly is not None
+        return new_poly
+
+    @classmethod
+    def get_poly_valid_interior_list(cls, poly: Polygon, min_area: float, interiors_list: list[shapely.LinearRing]):
+        for interior in poly.interiors:
+            p = Polygon(interior)
+            if p.area >= min_area:
+                interiors_list.append(interior)
+        return interiors_list
+
+    @classmethod
+    def get_buffered_poly_from_linear_ring(cls, linear_ring: shapely.LinearRing) -> Polygon:
+        poly = Polygon(linear_ring)
+        converted_tolerance = cls.get_converted_tolerance(tolerance_si=0.03)
+        poly = poly.buffer(
+            converted_tolerance,
+            #            single_sided=True,
+            cap_style=shapely.BufferCapStyle.flat,
+            join_style=shapely.BufferJoinStyle.mitre,
+        )
+        return poly
+
+    @classmethod
+    def create_object(cls, name: str) -> bpy.types.Object:
+        mesh = bpy.data.meshes.new(name=name)
+        obj = bpy.data.objects.new(name, mesh)
+        return obj
+
+    @classmethod
+    def set_obj_origin_to_polygon_center(cls, obj: bpy.types.Object, poly: Polygon, polygon_is_si: bool = True) -> None:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        centroid = poly.centroid
+        if polygon_is_si:
+            obj.location = Vector((centroid.x, centroid.y, 0))
+        else:
+            obj.location = Vector((centroid.x * unit_scale, centroid.y * unit_scale, 0))
+
+    @classmethod
+    def get_2d_vertices_from_polygon(
+        cls,
+        poly: Polygon,
+        obj: bpy.types.Object,
+        polygon_is_si: bool = True,
+    ) -> list[list[float]]:
+        """Convert a world-space shapely polygon to 2D vertices in obj's local space, in IFC file units.
+
+        :param poly: The polygon in world space.
+        :param obj: The Blender object whose local space is used.
+        :param polygon_is_si: True if polygon coords are in SI, False if in IFC file units.
+        :return: List of [x, y] coordinates (not closed).
+        """
+        ifc_file = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        bpy.context.view_layer.update()
+        mat_inv = obj.matrix_world.inverted()
+        coords_2d = []
+        for v in shapely.get_exterior_ring(poly).coords[:-1]:
+            world_si = Vector((v[0], v[1], 0))
+            if not polygon_is_si:
+                world_si = world_si * unit_scale
+            local_si = mat_inv @ world_si
+            coords_2d.append([local_si.x / unit_scale, local_si.y / unit_scale])
+        return coords_2d
+
+    @classmethod
+    def set_extrusion_representation_from_polygon(
+        cls,
+        obj: bpy.types.Object,
+        element: ifcopenshell.entity_instance,
+        poly: Polygon,
+        depth_ifc: float,
+        polygon_is_si: bool = True,
+    ) -> None:
+        """Create or replace the IFC body representation from a polygon extrusion.
+
+        :param obj: The Blender object.
+        :param element: The IFC product entity.
+        :param poly: The polygon in world space.
+        :param depth_ifc: The extrusion depth in IFC file units.
+        :param polygon_is_si: True if polygon coords are in SI, False if in IFC file units.
+        """
+        ifc_file = tool.Ifc.get()
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+
+        coords_2d = cls.get_2d_vertices_from_polygon(poly, obj, polygon_is_si)
+
+        curve = builder.polyline(coords_2d, closed=True)
+        item = builder.extrude(curve, magnitude=depth_ifc)
+
+        context = cls._remove_existing_body_representations(element)
+        if context is None:
+            context = cls._get_or_create_body_context(ifc_file)
+
+        new_body = builder.get_representation(context, item)
+        ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=new_body)
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=new_body,
+        )
+
+    @classmethod
+    def set_space_representation_from_polygon(
+        cls,
+        obj: bpy.types.Object,
+        element: ifcopenshell.entity_instance,
+        poly: Polygon,
+        h: float,
+        polygon_is_si: bool = True,
+        bounding_walls: Optional[list[ifcopenshell.entity_instance]] = None,
+        container: Optional[ifcopenshell.entity_instance] = None,
+    ) -> None:
+        """Create or replace the IFC body representation of a space from a polygon.
+
+        :param h: The height in SI (meters).
+        """
+        # Remove collinear points introduced by the mesh bisection so the
+        # footprint polygon has a minimal vertex count.
+        poly = poly.simplify(0, preserve_topology=True)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        ifc_file = tool.Ifc.get()
+        poly_si = poly if polygon_is_si else shapely.affinity.scale(poly, unit_scale, unit_scale, origin=(0, 0))
+
+        # Ensure the IFC entity has an ObjectPlacement matching the Blender object,
+        # so the generated representation is in the correct local coordinate system.
+        bpy.context.view_layer.update()
+        # Read the placement after the depsgraph update: objects created earlier in
+        # the same operator (e.g. a new space) have a stale matrix_world until then.
+        # matrix_world.translation is a live view into the matrix, so copy it once
+        # the matrix has been evaluated.
+        origin = obj.matrix_world.translation.copy()
+        # The space builders expect base_z and polygon in SI (world) units.
+        base_z = origin.z
+        matrix = np.array(obj.matrix_world)
+        ifcopenshell.api.geometry.edit_object_placement(
+            ifc_file,
+            product=element,
+            matrix=matrix,
+            is_si=True,
+        )
+
+        for b in list(element.BoundedBy or []):
+            ifcopenshell.api.boundary.remove_boundary(ifc_file, b)
+
+        cls._remove_existing_body_representations(element)
+
+        if cls.get_spatial_props().force_space_height:
+            cls.set_extrusion_representation_from_polygon(obj, element, poly, h / unit_scale, polygon_is_si)
+            return
+        if bounding_walls is None:
+            bounding_walls = []
+            if container is None:
+                container = ifcopenshell.util.element.get_container(element)
+            if container is not None:
+                for wall in ifc_file.by_type("IfcWall"):
+                    if wall in ifcopenshell.util.element.get_decomposition(container):
+                        bounding_walls.append(wall)
+
+        # Detect planes in world SI (same coordinate system as the geom cache).
+        strategy, top_planes, bottom_planes = cls.get_space_volume_strategy(poly_si, base_z, bounding_walls, container)
+
+        # Build the geometry in the space's local coordinate system so the IFC
+        # representation is relative to the object's ObjectPlacement.
+        # Use the full inverse of the object's placement matrix so rotated spaces
+        # keep the correct footprint orientation.
+        matrix_inv = np.array(obj.matrix_world.inverted())
+        # shapely.affine_transform expects [a, b, d, e, xoff, yoff]
+        # where x' = a*x + b*y + xoff, y' = d*x + e*y + yoff.
+        affine_params = [
+            matrix_inv[0, 0],
+            matrix_inv[0, 1],
+            matrix_inv[1, 0],
+            matrix_inv[1, 1],
+            matrix_inv[0, 3],
+            matrix_inv[1, 3],
+        ]
+        local_poly_si = shapely.affinity.affine_transform(poly_si, affine_params)
+        local_base_z = base_z - origin.z
+
+        def localize_plane(plane):
+            point, normal = plane
+            local_point = matrix_inv @ np.array([*point, 1.0])
+            rotation_inv = matrix_inv[:3, :3]
+            local_normal = rotation_inv @ np.array(normal)
+            local_normal = local_normal / np.linalg.norm(local_normal)
+            return (local_point[:3], local_normal)
+
+        local_top_planes = [localize_plane(p) for p in (top_planes or [])]
+        local_bottom_planes = [localize_plane(p) for p in (bottom_planes or [])]
+
+        if strategy == "EXTRUDE_CLIP" and top_planes:
+            item = ifcopenshell.util.space.build_extruded_clipped_space(
+                ifc_file, local_poly_si, local_base_z, local_top_planes, local_bottom_planes
+            )
+            cls.set_brep_representation_from_mesh(obj, element, item)
+        else:
+            shapes = cls.get_or_build_geom_cache()["shapes"]
+            local_shapes = {}
+            for shape_id, shape_data in shapes.items():
+                local_shape_data = dict(shape_data)
+                local_shape_data["top_z"] = shape_data["top_z"] - origin.z
+                local_shape_data["bottom_z"] = shape_data["bottom_z"] - origin.z
+                local_shapes[shape_id] = local_shape_data
+            item = ifcopenshell.util.space.build_brep_space(
+                ifc_file, element, local_shapes, local_poly_si, local_base_z
+            )
+            if item is None:
+                cls.set_extrusion_representation_from_polygon(obj, element, poly, h / unit_scale, polygon_is_si)
+            else:
+                cls.set_brep_representation_from_mesh(obj, element, item)
+
+    @classmethod
+    def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj: bpy.types.Object) -> None:
+        mat = obj.matrix_world
+        inverted = mat.inverted()
+
+        x, y = bpy.context.scene.cursor.location.xy
+        z = 0
+
+        oldLoc = obj.location
+        newLoc = Vector((x, y, z))
+        diff = newLoc - oldLoc
+        for vert in obj.data.vertices:
+            aux_vector = mat @ vert.co
+            aux_vector = aux_vector - diff
+            vert.co = inverted @ aux_vector
+        obj.location = newLoc
+
+    @classmethod
+    def get_selected_objects(cls) -> list[bpy.types.Object]:
+        return bpy.context.selected_objects
+
+    @classmethod
+    def get_active_obj(cls) -> Union[bpy.types.Object, None]:
+        return bpy.context.active_object
+
+    @classmethod
+    def get_active_obj_z(cls) -> float:
+        return bpy.context.active_object.matrix_world.translation.z
+
+    @classmethod
+    def get_active_obj_height(cls) -> float:
+        height = bpy.context.active_object.dimensions.z
+        return height
+
+    @classmethod
+    def get_relating_type_id(cls) -> int:
+        props = tool.Model.get_model_props()
+        relating_type_id = props.relating_type_id
+        return relating_type_id
+
+    @classmethod
+    def translate_obj_to_z_location(cls, obj: bpy.types.Object, z: float) -> None:
+        if z != 0:
+            obj.location = obj.location + Vector((0, 0, z))
+
+    @classmethod
+    def assign_ifcspace_class_to_obj(cls, obj: bpy.types.Object) -> None:
+        bonsai.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class="IfcSpace",
+            should_add_representation=False,
+        )
+
+    @classmethod
+    def assign_type_to_obj(cls, obj: bpy.types.Object) -> None:
+        props = tool.Model.get_model_props()
+        ifc_file = tool.Ifc.get()
+        relating_type_id = props.relating_type_id
+        relating_type = ifc_file.by_id(int(relating_type_id))
+        ifc_class = relating_type.is_a()
+        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, ifc_file.schema)[0].ifc_class
+        bonsai.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class=instance_class,
+            should_add_representation=False,
+        )
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        ifcopenshell.api.type.assign_type(ifc_file, related_objects=[element], relating_type=relating_type)
+
+    @classmethod
+    def set_covering_representation_from_polygon(
+        cls,
+        obj: bpy.types.Object,
+        poly: Polygon,
+        polygon_is_si: bool = True,
+    ) -> None:
+        """Create the covering body representation from a polygon, extruded by the type's material layer thickness."""
+        element = tool.Ifc.get_entity(obj)
+        relating_type = ifcopenshell.util.element.get_type(element)
+        material = ifcopenshell.util.element.get_material(relating_type, should_skip_usage=True)
+        depth = 0.0
+        if material and material.is_a("IfcMaterialLayerSet"):
+            depth = sum(layer.LayerThickness for layer in material.MaterialLayers)
+        cls.set_extrusion_representation_from_polygon(obj, element, poly, depth, polygon_is_si)
+
+    @classmethod
+    def assign_relating_type_to_element(
+        cls,
+        ifc: tool.Ifc,
+        type: tool.Type,
+        element: ifcopenshell.entity_instance,
+        relating_type: ifcopenshell.entity_instance,
+    ) -> None:
+        bonsai.core.type.assign_type(ifc, tool.Model, type, element=element, type=relating_type)
+
+    @classmethod
+    def set_space_visibility(cls, is_visible: bool) -> None:
+        if tool.Ifc.get().schema == "IFC2X3":
+            elements = tool.Ifc.get().by_type("IfcSpatialStructureElement")
+        else:
+            elements = tool.Ifc.get().by_type("IfcSpatialElement")
+        for element in elements:
+            if obj := tool.Ifc.get_object(element):
+                if obj.hide_viewport is True and is_visible:
+                    obj.hide_viewport = False
+                elif obj.hide_viewport is False and not is_visible:
+                    obj.hide_viewport = True
+
+    @classmethod
+    def set_grid_visibility(cls, is_visible: bool) -> None:
+        for element in tool.Ifc.get().by_type("IfcGrid") + tool.Ifc.get().by_type("IfcGridAxis"):
+            if obj := tool.Ifc.get_object(element):
+                if obj.hide_viewport is True and is_visible:
+                    obj.hide_viewport = False
+                elif obj.hide_viewport is False and not is_visible:
+                    obj.hide_viewport = True
+
+    @classmethod
+    def toggle_spaces_visibility_wired_and_textured(cls, spaces: list[ifcopenshell.entity_instance]) -> None:
+        first_obj = tool.Ifc.get_object(spaces[0])
+        assert isinstance(first_obj, bpy.types.Object)
+        obj: bpy.types.Object
+        if first_obj.display_type == "TEXTURED":
+            for space in spaces:
+                obj = tool.Ifc.get_object(space)
+                obj.show_wire = True
+                obj.display_type = "WIRE"
+            return
+
+        elif first_obj.display_type == "WIRE":
+            for space in spaces:
+                obj = tool.Ifc.get_object(space)
+                obj.show_wire = False
+                obj.display_type = "TEXTURED"
+            return
+
+    @classmethod
+    def toggle_hide_spaces(cls, spaces: list[ifcopenshell.entity_instance]) -> None:
+        first_obj = tool.Ifc.get_object(spaces[0])
+        assert isinstance(first_obj, bpy.types.Object)
+        obj: bpy.types.Object
+        if first_obj.hide_get() == False:
+            for space in spaces:
+                obj = tool.Ifc.get_object(space)
+                obj.hide_set(True)
+            return
+
+        elif first_obj.hide_get() == True:
+            for space in spaces:
+                obj = tool.Ifc.get_object(space)
+                obj.hide_set(False)
+
+    @classmethod
+    def set_default_container(cls, container: ifcopenshell.entity_instance) -> None:
+        from bonsai.bim.module.spatial.data import SpatialDecompositionData
+
+        props = cls.get_spatial_props()
+        props.default_container = container.id()
+        SpatialDecompositionData.data["default_container"] = SpatialDecompositionData.default_container()
+
+        project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+        project_collection = tool.Blender.get_object_bim_props(project).collection
+        obj = tool.Ifc.get_object(container)
+        if obj and (collection := tool.Blender.get_object_bim_props(obj).collection):
+            for layer_collection in bpy.context.view_layer.layer_collection.children:
+                if layer_collection.collection == project_collection:
+                    for layer_collection2 in layer_collection.children:
+                        if layer_collection2.collection == collection:
+                            bpy.context.view_layer.active_layer_collection = layer_collection2
+                            break
+
+    @classmethod
+    def guess_default_container(cls) -> Optional[ifcopenshell.entity_instance]:
+        project = tool.Ifc.get().by_type("IfcProject")[0]
+        subelement = None
+        # We try to priorise the first Site > Building > Storey as a convention for vertical projects
+        for subelement in ifcopenshell.util.element.get_parts(project):
+            if subelement.is_a("IfcSite"):
+                for subelement2 in ifcopenshell.util.element.get_parts(subelement):
+                    if subelement2.is_a("IfcBuilding"):
+                        for subelement3 in ifcopenshell.util.element.get_parts(subelement2):
+                            if subelement3.is_a("IfcBuildingStorey"):
+                                return subelement3
+                # No Building > Storey convention found (e.g. a template-defined
+                # facility). Descend while unambiguous, without hardcoding classes.
+                container = subelement
+                while len(children := ifcopenshell.util.element.get_parts(container)) == 1:
+                    container = children[0]
+                if container != subelement:
+                    return container
+        if subelement:
+            return subelement
+        return None
+
+    @classmethod
+    def get_selected_containers(cls) -> list[ifcopenshell.entity_instance]:
+        results = []
+        for obj in tool.Blender.get_selected_objects():
+            if (element := tool.Ifc.get_entity(obj)) and tool.Root.is_spatial_element(element):
+                results.append(element)
+        return results
+
+    @classmethod
+    def get_selected_objects_without_containers(cls) -> list[bpy.types.Object]:
+        """Get selected objects skipping spatial elements.
+
+        Useful for operators that are using selected objects to identify selected containers.
+        Note that those operators are typically have a limitation since they can't tell
+        objects to operate on from containers that should be used in the operation.
+
+        E.g. we cannot bim.copy_to_container containers to other containers."""
+        results: list[bpy.types.Object] = []
+        for obj in tool.Blender.get_selected_objects():
+            if (element := tool.Ifc.get_entity(obj)) and not tool.Root.is_spatial_element(element):
+                results.append(obj)
+        return results
+
+    @classmethod
+    def set_target_container_as_default(cls) -> None:
+        if (
+            (container := tool.Root.get_default_container())
+            and (container_obj := tool.Ifc.get_object(container))
+            and (obj := bpy.context.active_object)
+        ):
+            props = cls.get_object_spatial_props(obj)
+            props.container_obj = container_obj
+
+    @classmethod
+    def get_filtered_elements(
+        cls, should_filter: bool = True, is_recursive: bool = True
+    ) -> Iterable[ifcopenshell.entity_instance]:
+        ifc_file = tool.Ifc.get()
+        props = cls.get_spatial_props()
+        container = ifc_file.by_id(props.active_container.ifc_definition_id)
+        element_filter = props.element_filter
+        active_element = props.active_element
+
+        if not should_filter:
+            if props.should_include_children:
+                elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=is_recursive)
+            else:
+                queue = list(set(ifcopenshell.util.element.get_contained(container)))
+                elements = set()
+                while queue:
+                    item = queue.pop()
+                    elements.add(item)
+                    queue.extend(ifcopenshell.util.element.get_decomposition(item))
+            if not element_filter:
+                return elements
+
+            keyword = element_filter.lower()
+            if props.element_mode == "TYPE":
+                filtered_occurrences = set()
+                filtered_classes = set()
+                filtered_types = set()
+                for item in props.elements:
+                    if item.type == "CLASS" and not item.is_expanded and keyword in item.name.lower():
+                        filtered_classes.add(item.name)
+                    elif item.type == "TYPE" and not item.is_expanded and keyword in item.name.lower():
+                        if item.ifc_definition_id:
+                            filtered_types.add(ifc_file.by_id(item.ifc_definition_id))
+                        else:
+                            filtered_types.add(item.name.split(" ")[1])
+                    elif item.type == "OCCURRENCE" and keyword in item.name.lower():
+                        filtered_occurrences.add(ifc_file.by_id(item.ifc_definition_id))
+                return {
+                    e
+                    for e in elements
+                    if e.is_a() in filtered_classes
+                    or ((e_type := ifcopenshell.util.element.get_type(e)) and e_type in filtered_types)
+                    or (not e_type and e.is_a() in filtered_types)
+                } | filtered_occurrences
+            elif props.element_mode == "DECOMPOSITION":
+                return [ifc_file.by_id(i.ifc_definition_id) for i in props.elements if keyword in i.name.lower()]
+            elif props.element_mode == "CLASSIFICATION":
+                filtered_classifications = set()
+                filtered_occurrences = set()
+                for item in props.elements:
+                    if item.type == "CLASSIFICATION" and not item.is_expanded and keyword in item.name.lower():
+                        filtered_classifications.add(item.identification)
+                    elif item.type == "OCCURRENCE" and keyword in item.name.lower():
+                        filtered_occurrences.add(ifc_file.by_id(item.ifc_definition_id))
+                for element in elements:
+                    if refs := ifcopenshell.util.classification.get_references(element):
+                        for ref in refs:
+                            for filtered_classification in filtered_classifications:
+                                if ref[1].startswith(filtered_classification):
+                                    filtered_occurrences.add(element)
+                    elif "Unclassified" in filtered_classifications:
+                        filtered_occurrences.add(element)
+                return filtered_occurrences
+            return elements
+
+        if not active_element:
+            return []
+
+        if props.element_mode == "TYPE":
+            if active_element.type == "OCCURRENCE":
+                return {ifc_file.by_id(active_element.ifc_definition_id)}
+
+            ifc_class = relating_type = None
+            is_untyped = False
+
+            if active_element.type == "CLASS":
+                ifc_class = active_element.name
+            elif active_element.type == "TYPE":
+                ifc_class = active_element.ifc_class
+                if ifc_id := active_element.ifc_definition_id:
+                    relating_type = ifc_file.by_id(ifc_id)
+
+            if props.should_include_children:
+                elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=is_recursive)
+            else:
+                elements = set(ifcopenshell.util.element.get_contained(container))
+                if is_recursive:
+                    for e in list(elements):
+                        elements.update(ifcopenshell.util.element.get_decomposition(e))
+            return cls.filter_elements(elements, ifc_class, relating_type, is_untyped, element_filter)
+        elif props.element_mode == "DECOMPOSITION":
+            occurrence = ifc_file.by_id(active_element.ifc_definition_id)
+            elements = ifcopenshell.util.element.get_decomposition(occurrence, is_recursive=is_recursive)
+            elements.add(occurrence)
+            return elements
+        elif props.element_mode == "CLASSIFICATION":
+            if active_element.type == "OCCURRENCE":
+                return {ifc_file.by_id(active_element.ifc_definition_id)}
+
+            if active_element.type == "CLASSIFICATION":
+                identification = active_element.identification
+                if props.should_include_children:
+                    elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=is_recursive)
+                else:
+                    elements = set(ifcopenshell.util.element.get_contained(container))
+                    if is_recursive:
+                        for e in list(elements):
+                            elements.update(ifcopenshell.util.element.get_decomposition(e))
+
+                def filter_element(element: ifcopenshell.entity_instance) -> bool:
+                    references = ifcopenshell.util.classification.get_references(element)
+                    if identification == "Unclassified":
+                        if not references:
+                            return True
+                    elif any([r for r in references if r[1].startswith(identification)]):
+                        return True
+                    return False
+
+                return filter(filter_element, elements)

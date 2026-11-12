@@ -19,16 +19,16 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef&) {
 	return nullptr;
 
 	/*
-	const double d = inst->Thickness() * length_unit_ / 2.;
+	const double d = inst.Thickness() * length_unit_ / 2.;
 	auto f = taxonomy::make<taxonomy::face>();
 	auto ofc = taxonomy::make<taxonomy::offset_curve>();
-	ofc->basis = map(inst->Curve());
+	ofc->basis = map(inst.Curve());
 	ofc->offset = d;
 	// @todo
 	// f->children.push_back(ofc);
@@ -39,7 +39,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef* inst) 
 
 	/*
 	TopoDS_Wire wire;
-	if (!convert_wire(inst->Curve(), wire)) return false;
+	if (!convert_wire(inst.Curve(), wire)) return false;
 
 	// BRepOffsetAPI_MakeOffset insists on creating circular arc
 	// segments for joining the curves that constitute the center
@@ -73,7 +73,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef* inst) 
 		mw.Add(BRepBuilderAPI_MakeEdge(c1a, c2a));
 		mw.Add(BRepBuilderAPI_MakeEdge(c2));
 		mw.Add(BRepBuilderAPI_MakeEdge(c2b, c1b));
-		
+
 		face = BRepBuilderAPI_MakeFace(mw.Wire());
 	} else {
 		BRepOffsetAPI_MakeOffset offset(BRepBuilderAPI_MakeFace(gp_Pln(gp::Origin(), gp::DZ())));

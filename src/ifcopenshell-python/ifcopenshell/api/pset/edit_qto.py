@@ -16,161 +16,246 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, assert_never
+
 import ifcopenshell
+import ifcopenshell.api.pset
 import ifcopenshell.util.pset
+
+FLOAT_TYPE_KEYWORDS = (
+    ("Area", ("area",)),
+    ("Volume", ("volume",)),
+    ("Weight", ("weight", "mass")),
+    ("Length", ("length", "width", "height", "depth", "distance")),
+    ("Time", ("time", "duration")),
+)
+
+PROP_VALUE_TYPE = ifcopenshell.entity_instance | float | int | dict[str, "PROP_VALUE_TYPE"]
+
+
+def edit_qto(
+    file: ifcopenshell.file,
+    qto: ifcopenshell.entity_instance,
+    name: str | None = None,
+    properties: dict[str, PROP_VALUE_TYPE] | None = None,
+    pset_template: ifcopenshell.entity_instance | None = None,
+) -> None:
+    """Edits a quantity set and its quantities
+
+    At its simplest usage, this may be used to edit the name of a quantity
+    set. It may also be used to add, edit, or remove quantities.
+
+    See ifcopenshell.api.pset.edit_pset for documentation on how this is
+    intended to be used.
+
+    One major difference is that quantities set to None are always purged.
+    It is not allowed to have None quantities in IFC.
+
+    :param qto: The IfcElementQuantity or IfcPhysicalComplexQuantity to edit.
+    :param name: A new name for the quantity set. If no name is specified,
+        the quantity set name is not changed.
+    :param properties: A dictionary of properties. The keys must be a string
+        of the name of the quantity. The data type of the value will be
+        determined by the quantity set template. If no quantity set
+        template is found, the data types of the Python values and
+        properties names will influence the IFC data type of the quantity.
+
+        - For `float` values - see `FLOAT_TYPE_KEYWORDS` for the keywords in property name
+        used to detect the quantity type. If no keyword matches,
+        the default quantity type will be IfcQuantityLength.
+
+        - `int` values will map to IfcQuantityCount.
+
+        - dictionary values will be used to create IfcPhysicalComplexQuantity with
+        properties from the dictionary.
+
+        If more control is desired, you may explicitly specify IFC data objects directly.
+    :param pset_template: If a quantity set template is provided, this will
+        be used to determine data types. If no user-defined template is
+        provided, the built-in buildingSMART templates will be loaded.
+    :return: None
+
+    Example:
+
+    .. code:: python
+
+        # Let's imagine we have a new wall type.
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+
+        # This is a standard buildingSMART property set.
+        qto = ifcopenshell.api.pset.add_qto(model, product=wall, name="Qto_WallBaseQuantities")
+
+        # In this scenario, we don't specify any pset_template because it is
+        # part of the built-in buildingSMART templates, and so the Length
+        # will automatically be an IfcLengthMeasure, and the NetVolume will
+        # automatically be an IfcVolumeMeasure. Neither of these properties
+        # exist yet, so they will be created.
+        ifcopenshell.api.pset.edit_qto(model, qto=qto, properties={"Length": 12, "NetVolume": 7.2})
+
+        # Setting to None will delete the quantity.
+        ifcopenshell.api.pset.edit_qto(model, qto=qto, properties={"Length": None})
+
+        # What if we wanted to manage our own properties? Let's create our
+        # own "Company Standard" property set templates. Notice how we
+        # prefix our property set with "Foo_", if our company name was "Foo"
+        # this would make sense. In this example, we say that our template
+        # only applies to walls and is for quantities.
+        template = ifcopenshell.api.pset_template.add_pset_template(model,
+            name="Foo_Wall", template_type="QTO_OCCURRENCEDRIVEN", applicable_entity="IfcWall")
+
+        # Let's imagine we want all model authors to specify a length
+        # measurement for the portion of a wall that is overhanging.
+        prop = ifcopenshell.api.pset_template.add_prop_template(model, pset_template=template,
+            name="OverhangLength", template_type="Q_LENGTH", primary_measure_type="IfcLengthMeasure")
+
+        # Now we can use our property set template to add our properties,
+        # and the data types will always match our template.
+        qto = ifcopenshell.api.pset.add_qto(model, product=wall, name="Foo_Wall")
+        ifcopenshell.api.pset.edit_qto(model,
+            qto=qto, properties={"OverhangLength": 42.3}, pset_template=template)
+
+        # Here's a third scenario where we want to add arbitrary quantities
+        # that are not standardised by anything, not even our own custom
+        # templates.
+        qto = ifcopenshell.api.pset.add_qto(model, product=wall, name="Custom_Qto")
+        ifcopenshell.api.pset.edit_qto(model,
+            qto=qto, properties={
+                "SomeLength": model.createIfcLengthMeasure(42.3),
+                "SomeArea": model.createIfcAreaMeasure(21.0)
+            })
+
+        # Editing existing quantities will retain their current data types
+        # if possible. So this will still be a length measure.
+        ifcopenshell.api.pset.edit_qto(model, qto=qto, properties={"SomeLength": 12.3})
+    """
+    usecase = Usecase()
+    usecase.file = file
+    return usecase.execute(qto, name, properties or {}, pset_template)
+
+
+# Sentinel distinguishing "no Unit dict was passed at all" from "a Unit dict was passed
+# with Unit explicitly set to None" (i.e. explicitly clear an existing override).
+_NO_UNIT = object()
 
 
 class Usecase:
-    def __init__(self, file, qto=None, name=None, properties=None, pset_template=None):
-        """Edits a quantity set and its quantities
+    file: ifcopenshell.file
 
-        At its simplest usage, this may be used to edit the name of a quantity
-        set. It may also be used to add, edit, or remove quantities.
-
-        See ifcopenshell.api.pset.edit_pset for documentation on how this is
-        intended to be used.
-
-        One major difference is that quantities set to None are always purged.
-        It is not allowed to have None quantities in IFC.
-
-        :param qto: The IfcElementQuantity to edit.
-        :type qto: ifcopenshell.entity_instance.entity_instance
-        :param name: A new name for the quantity set. If no name is specified,
-            the quantity set name is not changed.
-        :type name: str, optional
-        :param properties: A dictionary of properties. The keys must be a string
-            of the name of the quantity. The data type of the value will be
-            determined by the quantity set template. If no quantity set
-            template is found, the data types of the Python values will
-            influence the IFC data type of the quantity. String values will
-            become IfcLabel, float values will become IfcReal, booleans will
-            become IfcBoolean, and integers will become IfcInteger. If more
-            control is desired, you may explicitly specify IFC data objects
-            directly.
-        :type properties: dict
-        :param pset_template: If a quantity set template is provided, this will
-            be used to determine data types. If no user-defined template is
-            provided, the built-in buildingSMART templates will be loaded.
-        :type pset_template: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-
-        Example:
-
-        .. code:: python
-
-            # Let's imagine we have a new wall type.
-            wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
-
-            # This is a standard buildingSMART property set.
-            qto = ifcopenshell.api.run("pset.add_qto", model, product=wall, name="Qto_WallBaseQuantities")
-
-            # In this scenario, we don't specify any pset_template because it is
-            # part of the built-in buildingSMART templates, and so the Length
-            # will automatically be an IfcLengthMeasure, and the NetVolume will
-            # automatically be an IfcVolumeMeasure. Neither of these properties
-            # exist yet, so they will be created.
-            ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"Length": 12, "NetVolume": 7.2})
-
-            # Setting to None will delete the quantity.
-            ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"Length": None})
-
-            # What if we wanted to manage our own properties? Let's create our
-            # own "Company Standard" property set templates. Notice how we
-            # prefix our property set with "Foo_", if our company name was "Foo"
-            # this would make sense. In this example, we say that our template
-            # only applies to walls and is for quantities.
-            template = ifcopenshell.api.run("pset_template.add_pset_template", model,
-                name="Foo_Wall", template_type="QTO_OCCURRENCEDRIVEN", applicable_entity="IfcWall")
-
-            # Let's imagine we want all model authors to specify a length
-            # measurement for the portion of a wall that is overhanging.
-            prop = ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=template,
-                name="OverhangLength", template_type="Q_LENGTH", primary_measure_type="IfcLengthMeasure")
-
-            # Now we can use our property set template to add our properties,
-            # and the data types will always match our template.
-            qto = ifcopenshell.api.run("pset.add_qto", model, product=wall, name="Foo_Wall")
-            ifcopenshell.api.run("pset.edit_qto", model,
-                qto=qto, properties={"OverhangLength": 42.3}, pset_template=template)
-
-            # Here's a third scenario where we want to add arbitrary quantities
-            # that are not standardised by anything, not even our own custom
-            # templates.
-            qto = ifcopenshell.api.run("pset.add_qto", model, product=wall, name="Custom_Qto")
-            ifcopenshell.api.run("pset.edit_qto", model,
-                qto=qto, properties={
-                    "SomeLength": model.createIfcLengthMeasure(42.3),
-                    "SomeArea": model.createIfcAreaMeasure(21.0)
-                })
-
-            # Editing existing quantities will retain their current data types
-            # if possible. So this will still be a length measure.
-            ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"SomeLength": 12.3})
+    @staticmethod
+    def unpack_unit_value(value_candidate: Any) -> tuple[Any, Any]:
         """
-        self.file = file
-        self.settings = {"qto": qto, "name": name, "properties": properties or {}, "pset_template": pset_template}
+        Returns tuple of the format: (Unit, NominalValue)
 
-    def execute(self):
-        self.qto_idx = 5
-        if self.settings["qto"].is_a("IfcPhysicalComplexQuantity"):
-            self.qto_idx = 2
+        NOTE: a dict value_candidate is ambiguous with the IfcPhysicalComplexQuantity spec
+        convention ({"Discrimination": ..., "HasQuantities": ...}) used elsewhere in this
+        module -- callers must check for that case (absence of a "Unit" key) before calling
+        this. Unit is the module-level _NO_UNIT sentinel when no Unit was specified at all
+        (bare value, or a dict without a "Unit" key), so that callers can distinguish "leave
+        the existing Unit untouched" from an explicit `{"Unit": None, ...}` (clear the
+        existing Unit override, falling back to the project default).
+        """
+        if isinstance(value_candidate, dict) and "Unit" in value_candidate:
+            return (value_candidate["Unit"], value_candidate["NominalValue"])
+        return (_NO_UNIT, value_candidate)
 
-        self.update_qto_name()
-        self.load_qto_template()
-        self.update_existing_properties()
-        new_properties = self.add_new_properties()
-        self.extend_qto_with_new_properties(new_properties)
+    def execute(
+        self,
+        qto: ifcopenshell.entity_instance,
+        name: str | None,
+        properties: dict[str, PROP_VALUE_TYPE],
+        pset_template: ifcopenshell.entity_instance | None,
+    ) -> None:
+        qto_idx = 5
+        if qto.is_a("IfcPhysicalComplexQuantity"):
+            qto_idx = 2
 
-    def update_qto_name(self):
-        if self.settings["name"]:
-            self.settings["qto"].Name = self.settings["name"]
+        # Don't mutate the caller's dict.
+        properties = properties.copy()
 
-    def load_qto_template(self):
-        if self.settings["pset_template"]:
-            self.pset_template = self.settings["pset_template"]
-        else:
-            # TODO: add IFC2X3 PsetQto template support
-            self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
-            self.qto_template = self.psetqto.get_by_name(self.settings["qto"].Name)
+        self.update_qto_name(qto, name)
+        qto_template = self.load_qto_template(qto, pset_template)
+        self.update_existing_properties(qto, qto_idx, properties)
+        new_properties = self.add_new_properties(properties, qto_template)
+        self.extend_qto_with_new_properties(qto, qto_idx, new_properties)
 
-    def update_existing_properties(self):
-        for prop in self.settings["qto"][self.qto_idx] or []:
-            self.update_existing_property(prop)
+    def update_qto_name(self, qto: ifcopenshell.entity_instance, name: str | None) -> None:
+        if name:
+            qto.Name = name
 
-    def update_existing_property(self, prop):
-        if prop.Name not in self.settings["properties"]:
+    def load_qto_template(
+        self, qto: ifcopenshell.entity_instance, pset_template: ifcopenshell.entity_instance | None
+    ) -> ifcopenshell.entity_instance | None:
+        if pset_template:
+            return pset_template
+        psetqto = ifcopenshell.util.pset.get_template(self.file.schema_identifier)
+        return psetqto.get_by_name(qto.Name)
+
+    def update_existing_properties(
+        self, qto: ifcopenshell.entity_instance, qto_idx: int, properties: dict[str, PROP_VALUE_TYPE]
+    ) -> None:
+        for prop in qto[qto_idx] or []:
+            self.update_existing_property(prop, properties)
+
+    def update_existing_property(
+        self, prop: ifcopenshell.entity_instance, properties: dict[str, PROP_VALUE_TYPE]
+    ) -> None:
+        if prop.Name not in properties:
             return
-        value = self.settings["properties"][prop.Name]
+        value = properties[prop.Name]
         name = prop.Name
         if value is None:
             self.file.remove(prop)
+        elif prop.is_a("IfcPhysicalComplexQuantity") and isinstance(value, dict) and "Unit" not in value:
+            prop.Discrimination = value.get("Discrimination", prop.Discrimination)
+            ifcopenshell.api.pset.edit_qto(self.file, qto=prop, properties=value["HasQuantities"])
         elif prop.is_a("IfcPhysicalSimpleQuantity"):
+            unit, value = self.unpack_unit_value(value)
             value = value.wrappedValue if isinstance(value, ifcopenshell.entity_instance) else value
-            prop[3] = float(value)
-        del self.settings["properties"][name]
+            # 3 IfcPhysicalSimpleQuantity.XXXValue
+            if self.file.schema == "IFC4X3" and prop.is_a("IfcQuantityCount"):
+                prop[3] = int(value)
+            else:
+                prop[3] = float(value)
+            if unit is not _NO_UNIT:
+                prop.Unit = unit
+        del properties[name]
 
-    def add_new_properties(self):
-        properties = []
-        for name, value in self.settings["properties"].items():
+    def add_new_properties(
+        self, properties: dict[str, PROP_VALUE_TYPE], qto_template: ifcopenshell.entity_instance | None
+    ) -> list[ifcopenshell.entity_instance]:
+        new_properties = []
+        for name, value in properties.items():
             if value is None:
                 continue
-            property_type = self.get_canonical_property_type(name, value)
-            value = value.wrappedValue if isinstance(value, ifcopenshell.entity_instance) else value
-            properties.append(
-                self.file.create_entity(
-                    "IfcQuantity{}".format(property_type),
-                    **{"Name": name, "{}Value".format(property_type): value},
+            if isinstance(value, dict) and "Unit" not in value:
+                complex_qto = self.file.create_entity(
+                    "IfcPhysicalComplexQuantity", Name=name, Discrimination=value["Discrimination"]
                 )
-            )
-        return properties
+                new_properties.append(complex_qto)
+                ifcopenshell.api.pset.edit_qto(self.file, qto=complex_qto, properties=value["HasQuantities"])
+            else:
+                unit, value = self.unpack_unit_value(value)
+                property_type = self.get_canonical_property_type(name, value, qto_template)
+                value = value.wrappedValue if isinstance(value, ifcopenshell.entity_instance) else value
+                kwargs = {"Name": name, "{}Value".format(property_type): value}
+                if unit is not None and unit is not _NO_UNIT:
+                    kwargs["Unit"] = unit
+                new_properties.append(self.file.create_entity("IfcQuantity{}".format(property_type), **kwargs))
+        return new_properties
 
-    def extend_qto_with_new_properties(self, new_properties):
-        props = list(self.settings["qto"][self.qto_idx]) if self.settings["qto"][self.qto_idx] else []
+    def extend_qto_with_new_properties(
+        self, qto: ifcopenshell.entity_instance, qto_idx: int, new_properties: list[ifcopenshell.entity_instance]
+    ) -> None:
+        props = list(qto[qto_idx]) if qto[qto_idx] else []
         props.extend(new_properties)
-        self.settings["qto"][self.qto_idx] = props
+        qto[qto_idx] = props
 
-    def get_canonical_property_type(self, name, value):
+    def get_canonical_property_type(
+        self,
+        name: str,
+        value: ifcopenshell.entity_instance | float | int,
+        qto_template: ifcopenshell.entity_instance | None,
+    ) -> str:
         if isinstance(value, ifcopenshell.entity_instance):
             result = value.is_a().replace("Ifc", "").replace("Measure", "")
             # Sigh, IFC inconsistencies
@@ -179,18 +264,24 @@ class Usecase:
             elif result == "Mass":
                 result = "Weight"
             return result
-        if self.qto_template:
-            for prop_template in self.qto_template.HasPropertyTemplates:
+        if qto_template:
+            for prop_template in qto_template.HasPropertyTemplates:
                 if prop_template.Name != name:
                     continue
                 return prop_template.TemplateType[2:].lower().capitalize()
-        return "Length"
+        return infer_property_type(name, value)
 
-    def get_primary_measure_type(self, name, previous_value=None):
-        if not self.qto_template:
-            return previous_value.is_a() if previous_value else "IfcLabel"
-        for prop_template in self.qto_template.HasPropertyTemplates:
-            if prop_template.Name != name:
-                continue
-            return prop_template.PrimaryMeasureType or "IfcLabel"
-        return previous_value.is_a() if previous_value else "IfcLabel"
+
+def infer_property_type(name: str, value: float | int) -> str:
+    name_lower = name.lower()
+    # Only undetected type is IfcQuantityNumber (IFC4X3),
+    # not sure when it's appropriate.
+    if isinstance(value, float):
+        for category, keywords in FLOAT_TYPE_KEYWORDS:
+            if any(keyword in name_lower for keyword in keywords):
+                return category
+        return "Length"
+    elif isinstance(value, int):
+        return "Count"
+    else:
+        assert_never(value)

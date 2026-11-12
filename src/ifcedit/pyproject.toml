@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ifcedit"
+version = "0.0.0"
+authors = [
+  { name="Bruno Postle", email="bruno@postle.net" },
+]
+description = "CLI wrapper for ifcopenshell.api IFC model mutation functions"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "LGPL-3.0-or-later"
+keywords = ["IFC", "BIM", "API"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = ["ifcopenshell", "ifc5d"]
+
+[project.scripts]
+ifcedit = "ifcedit.__main__:main"
+
+[project.urls]
+Homepage = "http://ifcopenshell.org"
+Documentation = "https://docs.ifcopenshell.org"
+Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
+
+[tool.setuptools.packages.find]
+include = ["ifcedit*"]
+exclude = ["test*"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"

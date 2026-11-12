@@ -16,16 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.owner
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestEditActor(test.bootstrap.IFC4):
     def test_editing_an_actor(self):
         person = self.file.createIfcPerson()
-        actor = ifcopenshell.api.run("owner.add_actor", self.file, ifc_class="IfcActor", actor=person)
-        ifcopenshell.api.run(
-            "owner.edit_actor",
+        actor = ifcopenshell.api.owner.add_actor(self.file, ifc_class="IfcActor", actor=person)
+        ifcopenshell.api.owner.edit_actor(
             self.file,
             actor=actor,
             attributes={"Name": "Name", "Description": "Description", "ObjectType": "ObjectType"},
@@ -36,9 +35,8 @@ class TestEditActor(test.bootstrap.IFC4):
 
     def test_editing_an_occupant(self):
         person = self.file.createIfcPerson()
-        actor = ifcopenshell.api.run("owner.add_actor", self.file, ifc_class="IfcOccupant", actor=person)
-        ifcopenshell.api.run(
-            "owner.edit_actor",
+        actor = ifcopenshell.api.owner.add_actor(self.file, ifc_class="IfcOccupant", actor=person)
+        ifcopenshell.api.owner.edit_actor(
             self.file,
             actor=actor,
             attributes={
@@ -52,3 +50,7 @@ class TestEditActor(test.bootstrap.IFC4):
         assert actor.Description == "Description"
         assert actor.ObjectType == "ObjectType"
         assert actor.PredefinedType == "TENANT"
+
+
+class TestEditActorIFC2X3(test.bootstrap.IFC2X3, TestEditActor):
+    pass

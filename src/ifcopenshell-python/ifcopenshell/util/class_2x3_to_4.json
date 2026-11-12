@@ -1,3 +1,9 @@
 {
     "IfcElectricDistributionPoint": "IfcElectricDistributionBoard"
+    , "IfcAnnotationCurveOccurrence": "IfcStyledItem"
+    , "IfcAnnotationFillAreaOccurrence": "IfcStyledItem"
+    , "IfcAnnotationSurfaceOccurrence": "IfcStyledItem"
+    , "IfcAnnotationSymbolOccurrence": "IfcStyledItem"
+    , "IfcAnnotationTextOccurrence": "IfcStyledItem"
+    , "IfcExtendedMaterialProperties": "IfcMaterialProperties"
 }

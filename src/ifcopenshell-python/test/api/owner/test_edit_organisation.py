@@ -16,23 +16,30 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.owner
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestEditOrganisation(test.bootstrap.IFC4):
     def test_editing_a_organisation(self):
         organisation = self.file.createIfcOrganization()
-        ifcopenshell.api.run(
-            "owner.edit_organisation",
+        attributes = {
+            "Identification" if self.file.schema != "IFC2X3" else "Id": "Identification",
+            "Name": "Name",
+            "Description": "Description",
+        }
+        ifcopenshell.api.owner.edit_organisation(
             self.file,
             organisation=organisation,
-            attributes={
-                "Identification": "Identification",
-                "Name": "Name",
-                "Description": "Description",
-            },
+            attributes=attributes,
         )
-        assert organisation.Identification == "Identification"
-        assert organisation.Name == "Name"
-        assert organisation.Description == "Description"
+        for attr, value in attributes.items():
+            assert getattr(organisation, attr) == value
+
+
+class TestEditOrganisationIFC2X3(test.bootstrap.IFC2X3, TestEditOrganisation):
+    pass
+
+
+class TestEditOrganisationIFC4X3(test.bootstrap.IFC4X3, TestEditOrganisation):
+    pass

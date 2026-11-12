@@ -17,9 +17,10 @@
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell
-import ifcsverchok.helper
+import ifcopenshell.guid
 from sverchok.node_tree import SverchCustomTreeNode
+
+import ifcsverchok.helper
 
 
 class SvIfcGenerateGuid(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):

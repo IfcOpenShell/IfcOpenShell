@@ -18,11 +18,12 @@
 
 import bpy
 import ifcopenshell
-import ifcsverchok.helper
 from bpy.props import EnumProperty
-from ifcsverchok.ifcstore import SvIfcStore
-from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
+from sverchok.node_tree import SverchCustomTreeNode
+
+import ifcsverchok.helper
+from ifcsverchok.ifcstore import SvIfcStore
 
 
 def get_ifc_products(self, context):
@@ -64,7 +65,7 @@ def get_ifc_classes(self, context):
     file = SvIfcStore.get_file()
     if not file:
         return []
-    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(file.schema)
+    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(file.schema_identifier)
     declaration = schema.declaration_by_name(self.ifc_product)
 
     def get_classes(declaration):

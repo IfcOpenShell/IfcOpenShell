@@ -18,23 +18,31 @@
 
 """2D drawing generation and serialisation"""
 
-import math
+import itertools
 import json
-import functools
+import math
+import operator
+import warnings
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, field, fields
+from functools import reduce
+from xml.dom.minidom import parseString
+
+import numpy
+import shapely
 
 import ifcopenshell
 import ifcopenshell.geom
-
-from xml.dom.minidom import parseString
-from dataclasses import dataclass, fields
-
-import numpy
+import ifcopenshell.util.element
+import ifcopenshell.util.selector
 
 W = ifcopenshell.ifcopenshell_wrapper
 
 WHITE = numpy.array((1.0, 1.0, 1.0))
 
 DO_NOTHING = lambda *args: None
+
+ARRANGE_POLYGON_SETTINGS = W.arrange_polygon_settings() if hasattr(W, "arrange_polygon_settings") else None
 
 
 @dataclass
@@ -49,31 +57,76 @@ class draw_settings:
     space_areas: bool = False
     door_arcs: bool = False
     subtract_before_hlr: bool = False
-    cache: bool = False
-    css: bool = True
+    css: str = ""
     storey_heights: str = "none"
+    storey_filter: str = ""
     include_entities: str = ""
     exclude_entities: str = "IfcOpeningElement"
-    drawing_guid: str = ""
+    drawing_guid: str = field(
+        default="",
+        metadata={
+            "doc": "Use a drawing with the provided GlobalId. Setting takes priority over 'drawing_object_type'."
+        },
+    )
+    drawing_object_type: str = field(
+        default="", metadata={"doc": 'Use IfcAnnotations with provided ObjectType for drawings (e.g. "DRAWING").'}
+    )
     profile_threshold: int = -1
     cells: bool = True
     merge_cells: bool = False
     include_projection: bool = True
+    hlr_poly: bool = False
     prefilter: bool = True
     include_curves: bool = False
     unify_inputs: bool = True
+    arrange_spaces: bool = False
+    arrange_zones: bool = False
+    zone_filter: str = ""
+    zone_label: str = ""
+    mirror_y: bool = False
 
 
-def main(settings, files, iterators=None, merge_projection=True, progress_function=DO_NOTHING):
+class type_unsafe_value:
+    def __init__(self, value):
+        self.value = value
+
+    def __eq__(self, other):
+        try:
+            v = type(other)(self.value)
+        except:
+            return False
+        return v == other
+
+
+def main(
+    settings: draw_settings,
+    files: list[ifcopenshell.file],
+    iterators: Sequence[ifcopenshell.geom.iterator] = (),
+    merge_projection: bool = True,
+    progress_function: Callable = DO_NOTHING,
+    logger=None,
+):
+    logger = ifcopenshell.logger_or_root(logger)
+
+    def by_guid(g):
+        for f in files:
+            try:
+                return f.by_guid(g)
+            except:
+                pass
 
     geom_settings = ifcopenshell.geom.settings(
-        # this is required for serialization
-        APPLY_DEFAULT_MATERIALS=True,
-        DISABLE_TRIANGULATION=True,
-        INCLUDE_CURVES=settings.include_curves,
         # when not doing booleans, proper solids from shells isn't a requirement
-        SEW_SHELLS=settings.subtract_before_hlr,
+        REORIENT_SHELLS=settings.subtract_before_hlr,
+        # SVG serialiazation depends on element hierarchy now to look up the parent
+        ELEMENT_HIERARCHY=True,
     )
+
+    # this is required for serialization
+    dimensionality = W.CURVES_SURFACES_AND_SOLIDS if settings.include_curves else W.SURFACES_AND_SOLIDS
+    geom_settings.set("dimensionality", dimensionality)
+    geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
+    geom_settings.set("apply-default-materials", True)
 
     if not iterators:
         iterator_kwargs = {}
@@ -82,67 +135,75 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
         elif settings.exclude_entities:
             iterator_kwargs["exclude"] = settings.exclude_entities.split(",")
 
+        def yield_parents(el):
+            yield el
+            if par := ifcopenshell.util.element.get_parent(el):
+                yield from yield_parents(par)
+
+        def has_selected_parent(el):
+            return any(settings.storey_filter in (x.Name or x.GlobalId) for x in yield_parents(el))
+
+        def create_iter(f):
+            if settings.storey_filter and iterator_kwargs.get("include"):
+                iterator_kwargs["include"] = list(
+                    filter(has_selected_parent, sum((f.by_type(x) for x in iterator_kwargs["include"]), []))
+                )
+            return ifcopenshell.geom.iterator(geom_settings, f, logger=logger, **iterator_kwargs)
+
         # We have to keep the iterator in memory because otherwise
         # the styles are cleared up.
         iterators = list(
             map(
-                functools.partial(ifcopenshell.geom.iterator, geom_settings, **iterator_kwargs),
+                create_iter,
                 files,
             )
         )
 
-        if settings.cache:
-            cache = ifcopenshell.geom.serializers.hdf5("cache.h5", geom_settings)
-            for it in iterators:
-                it.set_cache(cache)
-
-    def yield_from_iterator(it):
-        if it.initialize():
-            while True:
-                yield it.get()
-                if not it.next():
-                    break
-
     # Initialize serializer
     buffer = ifcopenshell.geom.serializers.buffer()
-    sr = ifcopenshell.geom.serializers.svg(buffer, geom_settings)
-
-    sr.setFile(files[0])
     if settings.auto_floorplan:
-        sr.setSectionHeightsFromStoreys()
+        geom_settings.set("section-height-from-storeys", True)
 
-    if settings.drawing_guid:
-        sr.setElevationRefGuid(settings.drawing_guid)
-        sr.setWithoutStoreys(True)
-        # If you want to filter by IfcAnnotation ObjectType named "DRAWING"
-        # sr.setElevationRef("DRAWING")
+    # elevation-ref-guid and elevation-ref are also mutually exclusive in C-code.
+    # Note that guid or object type are not checked anywhere to be valid,
+    # it's up to user to keep them valid for the provided projects.
+    if settings.drawing_guid or settings.drawing_object_type:
+        if settings.drawing_guid:
+            if not by_guid(settings.drawing_guid):
+                raise ValueError(f"Unable to find guid {settings.drawing_guid!r}")
+            geom_settings.set("elevation-ref-guid", settings.drawing_guid)
+        elif settings.drawing_object_type:
+            geom_settings.set("elevation-ref", settings.drawing_object_type)
+        geom_settings.set("svg-without-storeys", True)
 
     # required for svgfill
-    sr.setPolygonal(True)
-    sr.setUseNamespace(True)
+    geom_settings.set("svg-write-poly", True)
+    geom_settings.set("svg-xmlns", True)
 
-    sr.setAlwaysProject(settings.include_projection)
-
-    sr.setProfileThreshold(settings.profile_threshold)
-    sr.setBoundingRectangle(settings.width, settings.height)
-    sr.setScale(settings.scale)
-    sr.setAutoElevation(settings.auto_elevation)
-    sr.setAutoSection(settings.auto_section)
-    sr.setPrintSpaceNames(settings.space_names)
-    sr.setPrintSpaceAreas(settings.space_areas)
-    sr.setDrawDoorArcs(settings.door_arcs)
-    sr.setNoCSS(not settings.css)
+    geom_settings.set("svg-project", settings.include_projection)
+    geom_settings.set("profile-threshold", settings.profile_threshold)
+    geom_settings.set("bounds", f"{settings.width}x{settings.height}")
+    geom_settings.set("scale", str(settings.scale))
+    geom_settings.set("auto-elevation", settings.auto_elevation)
+    geom_settings.set("auto-section", settings.auto_section)
+    geom_settings.set("print-space-names", settings.space_names)
+    geom_settings.set("print-space-areas", settings.space_areas)
+    geom_settings.set("door-arcs", settings.door_arcs)
+    geom_settings.set("svg-no-css", bool(settings.css))
     if settings.subtract_before_hlr:
-        sr.setSubtractionSettings(W.ALWAYS)
+        geom_settings.set("svg-subtract-before", "always")
 
-    sr.setUsePrefiltering(settings.prefilter)
-    sr.setUnifyInputs(settings.unify_inputs)
+    geom_settings.set("svg-poly", settings.hlr_poly)
+    geom_settings.set("svg-prefilter", settings.prefilter)
+    geom_settings.set("svg-unify-inputs", settings.unify_inputs)
+    geom_settings.set("svg-mirror-y", settings.mirror_y)
 
-    try:
-        sh = ["none", "full", "left"].index(settings.storey_heights)
-        sr.setDrawStoreyHeights(sh)
-    except:
+    if settings.storey_heights not in {"none", "full", "left"}:
         raise ValueError("storey_heights should be one of {'none', 'full', 'left'}")
+    geom_settings.set("draw-storey-heights", settings.storey_heights)
+
+    sr = ifcopenshell.geom.serializers.svg(buffer, geom_settings)
+    sr.setFile(files[0])
 
     """
     # It is also possible to add drawing planes manually
@@ -165,7 +226,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
 
     # Loop over iterators for geometric content
     for i, it in enumerate(iterators):
-        for elem in yield_from_iterator(it):
+        for elem in it:
             sr.write(elem)
             if elem.type != "IfcSpace":
                 tree.add_element(elem)
@@ -182,57 +243,57 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
 
     if not settings.cells:
         return svg_data_1.encode("ascii", "xmlcharrefreplace")
-    
-    def yield_groups(n):
-        if n.nodeType == n.ELEMENT_NODE and n.tagName == "g":
+
+    def yield_groups(n, tag="g"):
+        if n.nodeType == n.ELEMENT_NODE and n.tagName == tag:
             yield n
         for c in n.childNodes:
-            yield from yield_groups(c)
+            yield from yield_groups(c, tag=tag)
 
     dom1 = parseString(svg_data_1)
     svg1 = dom1.childNodes[0]
     # From file 1 we take the groups to be substituted
     groups1 = [g for g in yield_groups(svg1) if g.getAttribute("class") == "projection"]
-    
+
     # Parse SVG into vector of line segments
     #
     # The second argument 'projection' tells the parser to only include <g> groups
     # that have the classname 'projection'. The IfcOpenShell SVG serializer puts
     # the hidden line rendering output into this group. So the sections are not
     # included here as they already form closed loops.
-    
+
     ls_groups = W.svg_to_line_segments(svg_data_1, "projection")
     for i, (ls, g1) in enumerate(zip(ls_groups, groups1)):
         progress_function("creating cells", i)
-        
+
         projection, g1 = g1, g1.parentNode
-        
+
         svgfill_context = W.context(W.FILTERED_CARTESIAN_QUOTIENT, 1.0e-3)
 
         # remove duplicates (without tolerance)
         ls = list(map(tuple, set(map(frozenset, ls))))
 
         svgfill_context.add(ls)
-        
+
         if settings.merge_cells:
             # To be refined:
             # - Find cells on original line segments
             # - Associate cells with IFC entities for merging
             # - Merge cells by discarding edges
-            # - Associate cells with IFC entities for styling        
+            # - Associate cells with IFC entities for styling
             num_passes = 1
         else:
             num_passes = 0
-        
-        for iteration in range(num_passes+1):
-        
+
+        g2 = None
+        for iteration in range(num_passes + 1):
             # initialize empty group, note that in the current approach only one
             # group is stored
             ps = W.svg_groups_of_polygons()
-            
+
             if iteration != 0 or svgfill_context.build():
                 svgfill_context.write(ps)
-        
+
             """
             # Debugging tool to plot line segments and cells
             from matplotlib import pyplot as plt
@@ -243,10 +304,11 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
             for x in ps[0]:
                 plt.fill(numpy.array(x.boundary).T[0], numpy.array(x.boundary).T[1])
             """
-            
+
+            semantics, pairs = None, None
             if iteration != num_passes:
                 pairs = svgfill_context.get_face_pairs()
-                semantics = [None] * (max(pairs)+1)
+                semantics = [None] * (max(pairs) + 1)
                 # For every edge print the two neighbouring faces
                 # for x in range(0, len(pairs), 2):
                 #     print(x // 2, *pairs[x:x+2])
@@ -261,8 +323,8 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
             svg2 = dom2.childNodes[0]
             # file 2 only has the groups we are interested in.
             # in fact in the approach, it's only a single group
-            
-            g2 = list(yield_groups(svg2))[0]
+
+            g2 = next(yield_groups(svg2))
 
             # These are attributes on the original group that we can use to reconstruct
             # a 4x4 matrix of the projection used in the SVG generation process
@@ -286,7 +348,6 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
 
             # Loop over the cell paths
             for pi, p in enumerate(g2.getElementsByTagName("path")):
-
                 progress_function("group", i, "pass", iteration, "path", pi)
 
                 d = p.getAttribute("d")
@@ -297,14 +358,15 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
                 assert p.hasAttribute("ifc:pointInside")
 
                 xy = list(map(float, p.getAttribute("ifc:pointInside").split(",")))
-                
+
                 a, b = project(xy, 0.0), project(xy, -100.0)
-                
+
                 inside_elements = tree.select(pythonize(a))
-                
-                if inside_elements:                
+
+                if inside_elements:
                     elements = None
                     if iteration != num_passes:
+                        assert semantics is not None
                         semantics[pi] = (inside_elements[0], -1)
                 else:
                     elements = tree.select_ray(pythonize(a), pythonize(b - a))
@@ -313,7 +375,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
                     # Put the IFC element entity type on the path for CSS-based styling
                     p.setAttribute("class", elements[0].instance.is_a())
 
-                    # Obtain style (IfcOpenShell IfcGeom::Material)
+                    # Obtain style (IfcOpenShell ifcopenshell::geom::Material)
                     style = tree.styles()[elements[0].style_index]
 
                     # This is just a demonstration. We compose a factor of using:
@@ -322,49 +384,61 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
                     # - style transparency
                     # the factor determines how much white will be interpolated
                     # into the style diffuse color.
-                    clr = numpy.array(style.diffuse)
+                    def clr(c):
+                        if isinstance(c, ifcopenshell.ifcopenshell_wrapper.colour):
+                            return c.r(), c.g(), c.b()
+                        else:
+                            return c
+
+                    clr = numpy.array(clr(style.diffuse) if style else (0.6, 0.6, 0.6))
                     factor = (math.log(elements[0].distance + 2.0) / 7.0) * (1.0 - 0.5 * abs(elements[0].dot_product))
-                    if style.has_transparency:
+                    if style and style.has_transparency:
                         factor *= 1.0 - style.transparency
                     clr = WHITE * (1.0 - factor) + clr * factor
 
                     svg_fill = "rgb(%s)" % ", ".join(str(f * 255.0) for f in clr[0:3])
-                    
+
                     if iteration != num_passes:
+                        assert semantics is not None
                         semantics[pi] = elements[0]
                 else:
                     svg_fill = "none"
 
                 p.setAttribute("style", "fill: " + svg_fill)
-                
+
             if iteration != num_passes:
+                assert pairs is not None
+                assert semantics is not None
                 to_remove = []
 
                 for he_idx in range(0, len(pairs), 2):
                     # @todo instead of ray_distance, better do (x.point - y.point).dot(x.normal)
                     # to see if they're coplanar, because ray-distance will be different in case
                     # of element surfaces non-orthogonal to the view direction
-                    
+
                     def format(x):
-                        if x is None: return None
+                        if x is None:
+                            return None
                         elif isinstance(x, tuple):
                             # found to be inside element using tree.select() no face or style info
                             return x
-                        else: return (x.instance.is_a(), x.ray_distance, tuple(x.position))
-                    
-                    pp = pairs[he_idx:he_idx+2]
+                        else:
+                            return (x.instance.is_a(), x.ray_distance, tuple(x.position))
+
+                    pp = pairs[he_idx : he_idx + 2]
                     if pp == (-1, -1):
                         continue
                     data = list(map(format, map(semantics.__getitem__, pp)))
-                    if None not in data and data[0][0] == data[1][0] and abs(data[0][1] - data[1][1]) < 1.e-5:
+                    if None not in data and data[0][0] == data[1][0] and abs(data[0][1] - data[1][1]) < 1.0e-5:
                         to_remove.append(he_idx // 2)
                         # Print edge index and semantic data
                         # print(he_idx // 2, *data)
-                
+
                 svgfill_context.merge(to_remove)
 
         # Swap the XML nodes from the files
         # Remove the original hidden line node we still have in the serializer output
+        assert g2 is not None
         g1.removeChild(projection)
         g2.setAttribute("class", "projection")
         # Find the children of the projection node parent
@@ -379,16 +453,226 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
             # This generally shouldn't happen
             g1.appendChild(g2)
 
-    data = dom1.toxml()
+    if settings.arrange_spaces or settings.arrange_zones:
+        if settings.storey_filter:
+            # delete storey groups not selected by filter
+            # sometimes happens in case of elements protruding multiple stories
+            # are assigned wrongly in the decomposition tree
+            for rg in (g for g in yield_groups(svg1) if g.parentNode.tagName == "svg"):
+                storey_guid = ifcopenshell.guid.compress(rg.attributes["id"].value.split("-", 1)[1].replace("-", ""))
+                storey = by_guid(storey_guid)
+                if settings.storey_filter not in (storey.Name or storey.GlobalId):
+                    rg.parentNode.removeChild(rg)
+
+        root_groups = [g for g in yield_groups(svg1) if g.parentNode.tagName == "svg"]
+        zone_groups = []
+
+        for grp in root_groups:
+            path_objects = [p for p in yield_groups(grp, "path") if "IfcSpace" in p.parentNode.getAttribute("class")]
+
+            polies = [p.getAttribute("d") for p in path_objects]
+
+            def break_at_second(char, s, offset=1):
+                i = s.find(char, offset)
+                if i == -1:
+                    return s
+                else:
+                    warnings.warn("Polygons with holes are not supported")
+                    return s[0:i]
+
+            def svg_to_coordlist(str):
+                return [[*map(float, s[1:].split(","))] for s in break_at_second("M", str).split(" ")[:-1]]
+
+            polies = [svg_to_coordlist(d) for d in polies]
+
+            def create_poly(b):
+                p = ifcopenshell.ifcopenshell_wrapper.polygon_2()
+                p.boundary = b
+                return p
+
+            def min_bound_extent_p2(p):
+                arr = numpy.array(p.boundary)
+                return (arr.max(axis=0) - arr.min(axis=0)).min() > 0.5
+
+            def min_bound_extent_li(p):
+                arr = numpy.array(p)
+                return (arr.max(axis=0) - arr.min(axis=0)).min() > 0.5
+
+            def polygon_to_svg_path(doc, polygon: shapely.Polygon) -> str:
+                def ring_to_path(coords):
+                    coords = list(coords)[:-1]
+                    return "M " + " L ".join(f"{x},{y}" for x, y in coords) + " Z"
+
+                rings = [polygon.exterior, *polygon.interiors]
+                d = " ".join(ring_to_path(r.coords) for r in rings)
+
+                path = doc.createElement("path")
+                path.setAttribute("d", d)
+                path.setAttribute("fill-rule", "evenodd")
+                return path
+
+            included = list(map(min_bound_extent_li, polies))
+            polies = [p for p, incl in zip(polies, included) if incl]
+
+            path_objects = [p for p, incl in zip(path_objects, included) if incl]
+            section_polies = list(map(shapely.Polygon, polies))
+            polies = [create_poly(p) for p in polies]
+
+            def has_relevant_zone(i):
+                inst = by_guid(path_objects[i].parentNode.attributes["ifc:guid"].value)
+                groups = [rel.RelatingGroup for rel in inst.HasAssignments if rel.is_a("IfcRelAssignsToGroup")]
+                if settings.zone_filter:
+                    query, val = settings.zone_filter.rsplit("=", 1)
+                    # cast to type encountered in pset prop
+                    val = type_unsafe_value(val)
+                    groups = [g for g in groups if ifcopenshell.util.selector.get_element_value(g, query) == val]
+                return len(groups) > 0
+
+            if settings.arrange_zones:
+                path_objects, section_polies, polies = zip(
+                    *(tup for i, tup in enumerate(zip(path_objects, section_polies, polies)) if has_relevant_zone(i))
+                )
+
+            # ty can't bound the length of the unpacked iterables, so it over-counts the args.
+            arranged = W.arrange_polygons(
+                *filter(None, (ARRANGE_POLYGON_SETTINGS,)),
+                polies,
+                *ifcopenshell.optional_logger_args(logger),  # ty: ignore[too-many-positional-arguments]
+            )
+            svg_data_3 = W.polygons_to_svg(arranged, False)
+            dom3 = parseString(svg_data_3)
+            svg3 = dom3.childNodes[0]
+            g3 = next(yield_groups(svg3))
+            arranged_polies = []
+            for p in g3.getElementsByTagName("path"):
+                # arranged path
+                sp = shapely.Polygon(svg_to_coordlist(p.getAttribute("d")))
+                arranged_polies.append(sp)
+
+            # Mapping of arrange_poly_idx (stored as list) -> instance
+            # Obtained by point containment of sectionpoly in arranged
+            mapping = [None] * len(arranged_polies)
+            for i, p in enumerate(section_polies):
+                g = by_guid(path_objects[i].parentNode.attributes["ifc:guid"].value)
+                contains = [ap.contains(p.representative_point()) for ap in arranged_polies]
+                # arrangement, so this can generally be assumed
+                if sum(contains) == 1:
+                    idx = contains.index(True)
+                    # mapping[idx].append(g)
+                    if mapping[idx] is None:
+                        mapping[idx] = g
+                    else:
+                        warnings.warn(f"Not applying {g}; overlapping with {mapping[idx]}")
+                else:
+                    warnings.warn(f"Point {p.representative_point()} not covered by arrangement")
+
+            if settings.arrange_zones:
+                # @todo test whether output with only arrange_spaces is unaltered for bimlegal to function
+
+                zone_assignment = [None] * len(arranged_polies)
+
+                for i, m in enumerate(mapping):
+                    if m is not None:
+                        groups = [rel.RelatingGroup for rel in m.HasAssignments if rel.is_a("IfcRelAssignsToGroup")]
+                        if settings.zone_filter:
+                            query, val = settings.zone_filter.rsplit("=", 1)
+                            # cast to type encountered in pset prop
+                            val = type_unsafe_value(val)
+                            groups = [
+                                g for g in groups if ifcopenshell.util.selector.get_element_value(g, query) == val
+                            ]
+                        zone_assignment[i] = frozenset(groups)
+
+                all_zones = list(set(itertools.chain.from_iterable(a or () for a in zone_assignment)))
+                all_zone_memberships = [
+                    {i for i, zns in enumerate(zone_assignment) if zns is not None and zn in zns} for zn in all_zones
+                ]
+
+                def union_find(sets):
+                    merged = True
+                    while merged:
+                        merged = False
+                        result = []
+                        while sets:
+                            first, *rest = sets
+                            first = set(first)
+
+                            # merge any overlapping sets into `first`
+                            changed = True
+                            while changed:
+                                changed = False
+                                new_rest = []
+                                for r in rest:
+                                    if first & r:  # overlap?
+                                        first |= r
+                                        changed = True
+                                        merged = True
+                                    else:
+                                        new_rest.append(r)
+                                rest = new_rest
+                            result.append(first)
+                            sets = rest
+                        sets[:] = result
+                    return sets
+
+                to_merge = union_find(all_zone_memberships)
+                zone_groups.append(dom1.createElement("g"))
+                for idx_set in to_merge:
+                    zone = next(iter(zone_assignment[max(idx_set)]))
+
+                    poly = shapely.unary_union([arranged_polies[i] for i in idx_set])
+                    poly = poly.geoms if poly.geom_type == "MultiPolygon" else [poly]
+                    g = dom1.createElement("g")
+
+                    def classes():
+                        yield zone.is_a()
+                        for propname, propval in reduce(
+                            operator.or_, ifcopenshell.util.element.get_psets(zone).values()
+                        ).items():
+                            if propval is True:
+                                yield propname
+
+                    g.setAttribute("class", " ".join(classes()))
+                    for p in poly:
+                        g.appendChild(polygon_to_svg_path(dom1, p))
+
+                        if (lbl := settings.zone_label) and (
+                            val := ifcopenshell.util.selector.get_element_value(zone, lbl)
+                        ):
+                            pt = p.representative_point()
+                            text_el = dom1.createElement("text")
+                            text_el.setAttribute("x", str(pt.x))
+                            text_el.setAttribute("y", str(pt.y))
+                            text_el.appendChild(dom1.createTextNode(str(val)))
+                            g.appendChild(text_el)
+                    zone_groups[-1].appendChild(g)
+            else:
+                zone_groups.append(g3)
+
+        for rg, zg in zip(root_groups, zone_groups):
+            if not settings.arrange_zones:
+                for p in rg.getElementsByTagName("path"):
+                    p.setAttribute("style", "fill: none; stroke: black; stroke-width: 0.05")
+            rg.appendChild(zg)
+
+    if settings.css:
+        svg = dom1.documentElement
+        style = dom1.createElement("style")
+        style.setAttribute("type", "text/css")
+        style.appendChild(
+            dom1.createTextNode(open(settings.css[1:]).read() if settings.css.startswith("@") else settings.css)
+        )
+        svg.insertBefore(style, svg.firstChild)
+
+    data = dom1.toprettyxml()
     data = data.encode("ascii", "xmlcharrefreplace")
 
     return data
 
 
 if __name__ == "__main__":
-    import sys
-    import time
     import argparse
+    import time
 
     times = []
 
@@ -404,21 +688,39 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("files", type=str, nargs="+")
+    parser.add_argument(
+        "files",
+        type=str,
+        nargs="+",
+        help=(
+            "List of files for script to use. "
+            "Last file is considered an output file (.svg), all other files are existing IFC files."
+        ),
+    )
 
     for field in fields(draw_settings):
+        name = field.name.replace("_", "-")
+        description = field.metadata.get("doc") or ""
+        description += " " if description else ""
+        description += f"Default: {repr(field.default)}."
         if field.type == bool:
-            parser.add_argument("--" + field.name.replace("_", "-"), dest=field.name, action="store_true")
-            parser.add_argument("--no-" + field.name.replace("_", "-"), dest=field.name, action="store_false")
+            parser.add_argument(
+                f"--{name}",
+                help=description,
+                dest=field.name,
+                action="store_true",
+            )
+            parser.add_argument(f"--no-{name}", dest=field.name, action="store_false")
             parser.set_defaults(**{field.name: field.default})
         else:
-            parser.add_argument(
-                "--" + field.name.replace("_", "-"), dest=field.name, type=field.type, default=field.default
-            )
+            parser.add_argument(f"--{name}", help=description, dest=field.name, type=field.type, default=field.default)
 
-    args = vars(parser.parse_args(sys.argv))
+    args = vars(parser.parse_args())
+
+    if len(args["files"]) < 2:
+        parser.error("At least 2 files are required: one or more input files and one output file.")
+
     files = args.pop("files")
-    files.remove(__file__)
     output = files.pop()
 
     settings = draw_settings(**args)

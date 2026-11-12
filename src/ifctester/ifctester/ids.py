@@ -16,37 +16,66 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
+from __future__ import annotations
+
 import datetime
-import ifcopenshell
-from xmlschema import XMLSchema
-from xmlschema import etree_tostring
+import os
+from typing import Any, Optional, Union
 from xml.etree import ElementTree as ET
+
+import ifcopenshell
+from xmlschema import XMLSchema, etree_tostring
+from xmlschema.validators.exceptions import XMLSchemaValidationError
+
 from .facet import (
-    Facet,
-    Entity,
     Attribute,
+    Cardinality,
     Classification,
-    Property,
-    PartOf,
+    Entity,
+    Facet,
+    FacetFailure,
     Material,
+    PartOf,
+    Property,
     Restriction,
     get_pset,
     get_psets,
-    Cardinality,
 )
-from typing import List, Optional, Union
 
+__all__ = ["Attribute", "Classification", "Entity", "Material", "PartOf", "Property", "Restriction"]
 cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None
 
 
-def open(filepath, validate=False):
-    if validate:
-        get_schema().validate(filepath)
-    return Ids().parse(
-        get_schema().decode(filepath, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"})
-    )
+class IdsXmlValidationError(Exception):
+    def __init__(self, xml_error: XMLSchemaValidationError, message: str):
+        self.xml_error = xml_error
+        super().__init__(message)
+
+
+def open(filepath: str, validate: bool = False) -> Ids:
+    try:
+        if validate:
+            get_schema().validate(filepath)
+        decode = get_schema().decode(
+            filepath, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
+        )
+    except XMLSchemaValidationError as e:
+        raise IdsXmlValidationError(e, f"Provided .ids file ({filepath}) appears to be invalid. See details above.")
+    return Ids().parse(decode)
+
+
+def from_string(xml: str, validate: bool = False) -> Ids:
+    tree = ET.ElementTree(ET.fromstring(xml))
+    try:
+        if validate:
+            get_schema().validate(tree)
+        decode = get_schema().decode(
+            xml, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
+        )
+    except XMLSchemaValidationError as e:
+        raise IdsXmlValidationError(e, "Provided XML appears to be invalid. See details above.")
+    return Ids().parse(decode)
 
 
 def get_schema():
@@ -57,6 +86,8 @@ def get_schema():
 
 
 class Ids:
+    info: dict[str, Any]
+
     def __init__(
         self,
         title: Optional[str] = "Untitled",
@@ -69,10 +100,10 @@ class Ids:
         milestone=None,
     ):
         # Not part of the IDS spec, but very useful in practice
-        self.filepath = None
-        self.filename = None
+        self.filepath: Optional[str] = None
+        self.filename: Optional[str] = None
 
-        self.specifications: List[Specification] = []
+        self.specifications: list[Specification] = []
         self.info = {}
         self.info["title"] = title or "Untitled"
         if copyright:
@@ -93,16 +124,16 @@ class Ids:
         if milestone:
             self.info["milestone"] = milestone
 
-    def asdict(self):
-        info = {}
+    def asdict(self) -> dict[str, Any]:
+        info: dict[str, Any] = {}
         for attr in ["title", "copyright", "version", "description", "author", "date", "purpose", "milestone"]:
             if attr in self.info:
                 info[attr] = self.info[attr]
-        ids_dict = {
+        ids_dict: dict[str, Any] = {
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd",
             "info": info,
             "specifications": {"specification": []},
         }
@@ -133,7 +164,9 @@ class Ids:
         ET.ElementTree(get_schema().encode(self.asdict())).write(filepath, encoding="utf-8", xml_declaration=True)
         return get_schema().is_valid(filepath)
 
-    def validate(self, ifc_file: ifcopenshell.file, filter_version=False, filepath: Optional[str] = None) -> None:
+    def validate(
+        self, ifc_file: ifcopenshell.file, should_filter_version: bool = False, filepath: Optional[str] = None
+    ) -> None:
         if filepath:
             self.filepath = filepath
             self.filename = os.path.basename(filepath)
@@ -143,7 +176,8 @@ class Ids:
         get_psets.cache_clear()
         for specification in self.specifications:
             specification.reset_status()
-            specification.validate(ifc_file, filter_version=filter_version)
+            specification.check_ifc_version(ifc_file)
+            specification.validate(ifc_file, should_filter_version=should_filter_version)
 
 
 class Specification:
@@ -152,14 +186,14 @@ class Specification:
         name="Unnamed",
         minOccurs=0,
         maxOccurs="unbounded",
-        ifcVersion=["IFC2X3", "IFC4"],
+        ifcVersion=["IFC2X3", "IFC4", "IFC4X3_ADD2"],
         identifier=None,
         description=None,
         instructions=None,
     ):
         self.name = name or "Unnamed"
-        self.applicability: List[Facet] = []
-        self.requirements: List[Facet] = []
+        self.applicability: list[Facet] = []
+        self.requirements: list[Facet] = []
         self.minOccurs: Union[int, str] = minOccurs
         self.maxOccurs: Union[int, str] = maxOccurs
         self.ifcVersion = ifcVersion
@@ -168,10 +202,13 @@ class Specification:
         self.instructions = instructions
 
         self.applicable_entities: list[ifcopenshell.entity_instance] = []
+        self.passed_entities: set[ifcopenshell.entity_instance] = set()
+        self.failed_entities: set[ifcopenshell.entity_instance] = set()
         self.status = None
+        self.is_ifc_version = None
 
-    def asdict(self):
-        results = {
+    def asdict(self) -> dict[str, Any]:
+        results: dict[str, Any] = {
             "@name": self.name,
             "@ifcVersion": self.ifcVersion,
             "applicability": {},
@@ -225,20 +262,25 @@ class Specification:
                 facets = [facets]
             for facet_xml in facets:
                 name_capitalised = name[0].upper() + name[1:]
-                facet = globals()[name_capitalised]().parse(facet_xml)
+                facet = globals()[name_capitalised]().parse(facet_xml or {})
                 results.append(facet)
         return results
 
     def reset_status(self):
         self.applicable_entities.clear()
+        self.passed_entities: set[ifcopenshell.entity_instance] = set()
         self.failed_entities: set[ifcopenshell.entity_instance] = set()
         for facet in self.requirements:
             facet.status = None
             facet.failures.clear()
         self.status = None
 
-    def validate(self, ifc_file: ifcopenshell.file, filter_version=False) -> None:
-        if filter_version and ifc_file.schema not in self.ifcVersion:
+    def check_ifc_version(self, ifc_file: ifcopenshell.file) -> bool:
+        self.is_ifc_version = ifc_file.schema_identifier in self.ifcVersion
+        return self.is_ifc_version
+
+    def validate(self, ifc_file: ifcopenshell.file, should_filter_version: bool = False) -> None:
+        if should_filter_version and not self.is_ifc_version:
             return
 
         elements = None
@@ -259,17 +301,15 @@ class Specification:
             if not is_applicable:
                 continue
             self.applicable_entities.append(element)
-            for facet in self.requirements:
-                result = facet(element)
-                is_pass = bool(result)
-                if self.maxOccurs != 0:  # This is a required or optional specification
-                    if not is_pass:
+            if self.maxOccurs != 0:  # Requirements are skipped for prohibited applicability
+                for facet in self.requirements:
+                    result = facet(element)
+                    if bool(result):
+                        self.passed_entities.add(element)
+                        facet.passed_entities.add(element)
+                    else:
                         self.failed_entities.add(element)
-                        facet.failures.append({"element": element, "reason": str(result)})
-                else:  # This is a prohibited specification
-                    if is_pass:
-                        self.failed_entities.add(element)
-                        facet.failures.append({"element": element, "reason": str(result)})
+                        facet.failures.append(FacetFailure(element=element, reason=str(result)))
 
         self.status = True
         for facet in self.requirements:
@@ -283,7 +323,7 @@ class Specification:
                 for facet in self.requirements:
                     facet.status = False
         elif self.maxOccurs == 0:  # Prohibited specification
-            if self.applicable_entities and not self.requirements:
+            if self.applicable_entities:
                 self.status = False
 
     def get_usage(self) -> Cardinality:
@@ -293,6 +333,7 @@ class Specification:
             return "optional"
         elif self.maxOccurs == 0:
             return "prohibited"
+        return "required"  # Fallback
 
     def set_usage(self, usage: Cardinality) -> None:
         if usage == "optional":

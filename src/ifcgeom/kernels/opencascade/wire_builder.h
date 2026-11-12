@@ -20,7 +20,7 @@
 #ifndef WIRE_BUILDER_H
 #define WIRE_BUILDER_H
 
-#include "../../../ifcparse/IfcBaseClass.h"
+#include "../../../ifcparse/express.h"
 
 #include <Geom_Curve.hxx>
 
@@ -31,7 +31,7 @@
 #include <Extrema_ExtPC.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 	namespace util {
 		// Returns the first edge of a wire
 		TopoDS_Edge first_edge(const TopoDS_Wire& w);
@@ -46,10 +46,10 @@ namespace IfcGeom {
 			double p_;
 			bool override_next_;
 			gp_Pnt next_override_;
-			const IfcUtil::IfcBaseClass* inst_;
+			express::base inst_;
 
 		public:
-			wire_builder(double p, const IfcUtil::IfcBaseClass* inst = 0) : p_(p), override_next_(false), inst_(inst) {}
+            wire_builder(double p, const express::base& inst = express::base()) : p_(p), override_next_(false), inst_(inst) {}
 
 			void operator()(const TopoDS_Shape& a);
 
@@ -59,7 +59,7 @@ namespace IfcGeom {
 		};
 
 		template <typename Fn>
-		void shape_pair_enumerate(TopTools_ListIteratorOfListOfShape& it, Fn& fn, bool closed) {
+        void shape_pair_enumerate(NCollection_List<TopoDS_Shape>::Iterator& it, Fn& fn, bool closed) {
 			bool is_first = true;
 			TopoDS_Shape first, previous, current;
 			for (; it.More(); it.Next(), is_first = false) {
@@ -98,7 +98,7 @@ namespace IfcGeom {
 
 		double deflection_for_approximating_circle(double radius, double param);
 
-		bool create_edge_over_curve_with_log_messages(const Handle_Geom_Curve& crv, const double eps, const gp_Pnt& p1, const gp_Pnt& p2, TopoDS_Edge& result);
+		bool create_edge_over_curve_with_log_messages(const opencascade::handle<Geom_Curve>& crv, const double eps, const gp_Pnt& p1, const gp_Pnt& p2, TopoDS_Edge& result);
 	}
 }
 

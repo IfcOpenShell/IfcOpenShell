@@ -17,18 +17,16 @@
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.element
+from bpy.props import StringProperty
+from sverchok.data_structure import flatten_data, updateNode
+from sverchok.node_tree import SverchCustomTreeNode
+
 import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
-from bpy.props import StringProperty
-from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode, flatten_data
 
 
-class SvIfcGetProperty(
-    bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore
-):
+class SvIfcGetProperty(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcGetProperty"
     bl_label = "IFC Get Property"
     entity: StringProperty(name="Entity Ids", update=updateNode)
@@ -52,9 +50,7 @@ class SvIfcGetProperty(
     def draw_buttons(self, context, layout):
         layout.operator(
             "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = (
-            "Get the value of a property of an IfcEntity. Can take multiple entity ids."
-        )
+        ).tooltip = "Get the value of a property of an IfcEntity. Can take multiple entity ids."
 
     def process(self):
         self.sv_input_names = ["entity_ids", "pset_name", "prop_name"]
@@ -72,9 +68,7 @@ class SvIfcGetProperty(
         self.value_out = []
         for entity in self.entities:
             try:
-                self.value_out.append(
-                    ifcopenshell.util.element.get_psets(entity)[pset_name][prop_name]
-                )
+                self.value_out.append(ifcopenshell.util.element.get_psets(entity)[pset_name][prop_name])
             except:
                 pass
         self.outputs["value"].sv_set(self.value_out)

@@ -16,66 +16,67 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
-import ifcopenshell.api
+import pytest
+
+import ifcopenshell.api.geometry
+import ifcopenshell.api.material
+import ifcopenshell.api.root
+import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import pytest
+import test.bootstrap
 
 
 class TestAssignType(test.bootstrap.IFC4):
     def test_assigning_a_type(self):
-        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        rel = ifcopenshell.api.run(
-            "type.assign_type", self.file, related_objects=[element1, element2], relating_type=element_type
+        element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        rel = ifcopenshell.api.type.assign_type(
+            self.file, related_objects=[element1, element2], relating_type=element_type
         )
         assert ifcopenshell.util.element.get_type(element1) == element_type
         assert ifcopenshell.util.element.get_type(element2) == element_type
         assert rel.is_a("IfcRelDefinesByType")
 
     def test_doing_nothing_if_type_is_already_assigned(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
         total_elements = len([e for e in self.file])
-        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
         assert len([e for e in self.file]) == total_elements
 
     def test_that_old_typing_relationships_are_updated_if_they_still_have_elements(self):
-        element_type1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        element_type2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run(
-            "type.assign_type", self.file, related_objects=[element1, element2], relating_type=element_type1
-        )
+        element_type1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element_type2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1, element2], relating_type=element_type1)
         rel = element1.IsDefinedBy[0] if self.file.schema == "IFC2X3" else element1.IsTypedBy[0]
         assert len(rel.RelatedObjects) == 2
-        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element1], relating_type=element_type2)
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1], relating_type=element_type2)
         assert len(rel.RelatedObjects) == 1
 
     def test_that_old_typing_relationships_are_purged_if_no_more_elements_are_nested(self):
-        element_type1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        element_type2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element1], relating_type=element_type1)
+        element_type1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element_type2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1], relating_type=element_type1)
         rel_id = (element1.IsDefinedBy[0] if self.file.schema == "IFC2X3" else element1.IsTypedBy[0]).id()
-        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element1], relating_type=element_type2)
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1], relating_type=element_type2)
         with pytest.raises(RuntimeError):
             self.file.by_id(rel_id)
 
     def test_map_representation_disabled(self):
-        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         context = self.file.createIfcGeometricRepresentationContext()
         rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
-        ifcopenshell.api.run("geometry.assign_representation", self.file, product=element_type, representation=rep)
-        ifcopenshell.api.run("material.assign_material", self.file, products=[element_type], type="IfcMaterialLayerSet")
+        ifcopenshell.api.geometry.assign_representation(self.file, product=element_type, representation=rep)
+        ifcopenshell.api.material.assign_material(self.file, products=[element_type], type="IfcMaterialLayerSet")
 
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run(
-            "type.assign_type",
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(
             self.file,
             related_objects=[element],
             relating_type=element_type,
@@ -87,30 +88,28 @@ class TestAssignType(test.bootstrap.IFC4):
         assert ifcopenshell.util.element.get_material(element, should_inherit=False) == None
 
     def test_map_representation(self):
-        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         context = self.file.createIfcGeometricRepresentationContext()
         rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
-        ifcopenshell.api.run("geometry.assign_representation", self.file, product=element_type, representation=rep)
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
+        ifcopenshell.api.geometry.assign_representation(self.file, product=element_type, representation=rep)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
         mapped_rep = ifcopenshell.util.representation.get_representation(element, context=context)
         assert mapped_rep.RepresentationType == "MappedRepresentation"
         assert mapped_rep.Items[0].MappingSource.MappedRepresentation == rep
 
     def test_do_not_map_representation_if_type_was_assigned_previously(self):
-        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         context = self.file.createIfcGeometricRepresentationContext()
         rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
-        ifcopenshell.api.run("geometry.assign_representation", self.file, product=element_type, representation=rep)
-        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element1], relating_type=element_type)
+        ifcopenshell.api.geometry.assign_representation(self.file, product=element_type, representation=rep)
+        element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1], relating_type=element_type)
         assert (mapped_rep := ifcopenshell.util.representation.get_representation(element1, context=context))
         mapped_rep_id = mapped_rep.id()
 
-        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run(
-            "type.assign_type", self.file, related_objects=[element1, element2], relating_type=element_type
-        )
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1, element2], relating_type=element_type)
         assert (mapped_rep := ifcopenshell.util.representation.get_representation(element1, context=context))
         assert mapped_rep.id() == mapped_rep_id
 
@@ -119,30 +118,133 @@ class TestAssignType(test.bootstrap.IFC4):
         if self.file.schema != "IFC2X3":
             material_types += ("IfcMaterialProfileSet",)
         for material_type in material_types:
-            element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-            ifcopenshell.api.run("material.assign_material", self.file, products=[element_type], type=material_type)
-            element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-            ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
+            element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+            ifcopenshell.api.material.assign_material(self.file, products=[element_type], type=material_type)
+            element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
             material = ifcopenshell.util.element.get_material(element)
             assert material
             assert material.is_a(f"{material_type}Usage")
 
     def test_do_not_reassign_material_if_it_was_assigned_previously(self):
-        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("material.assign_material", self.file, products=[element_type], type="IfcMaterialLayerSet")
-        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element1], relating_type=element_type)
+        element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.material.assign_material(self.file, products=[element_type], type="IfcMaterialLayerSet")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1], relating_type=element_type)
         assert (material := ifcopenshell.util.element.get_material(element1))
         material_id = material.id()
 
         # use 2 elements to trigger material assignment code block
-        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run(
-            "type.assign_type", self.file, related_objects=[element1, element2], relating_type=element_type
-        )
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1, element2], relating_type=element_type)
         assert (material := ifcopenshell.util.element.get_material(element1))
         assert material.id() == material_id
 
+    def test_remove_predefined_type_if_type_assignment(self):
+        """
+        if an element has a PredefinedType, it should be removed when assigning a type.
+        This is because the type will have its own PredefinedType, and the element's PredefinedType
+        will conflict with it. (See #7006)
+        """
+        is_ifc2x3 = self.file.schema == "IFC2X3"
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element_type.PredefinedType = "POLYGONAL"
+
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        if not is_ifc2x3:
+            # In IFC2X3, there seems to be no example when both type and occurence have PredefinedType.
+            # So we just ignore it.
+            element.PredefinedType = "USERDEFINED"
+        element.ObjectType = "Test"
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+
+        if not is_ifc2x3:
+            assert element.PredefinedType is None
+        assert element.ObjectType is None
+
+    def test_keep_predefined_type_if_type_assignment_is_notdefined(self):
+        """
+        if an element has a PredefinedType, it will be removed when assigning a type.(See #7006)
+        This behavior needs to be blocked if the PredefinedType of the typing Entity is set to "NOTDEFINED". (See #7011)
+        """
+        is_ifc2x3 = self.file.schema == "IFC2X3"
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element_type.PredefinedType = "NOTDEFINED"
+
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        if not is_ifc2x3:
+            # In IFC2X3, there seems to be no example when both type and occurence have PredefinedType.
+            # So we just ignore it.
+            element.PredefinedType = "USERDEFINED"
+        element.ObjectType = "Test"
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+
+        if not is_ifc2x3:
+            assert element.PredefinedType == "USERDEFINED"
+        assert element.ObjectType == "Test"
+
+    def test_class_mismatched_pair_raises(self):
+        door = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
+        wall_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        with pytest.raises(TypeError, match=r"IfcWallType cannot type IfcDoor"):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[door], relating_type=wall_type)
+        assert ifcopenshell.util.element.get_type(door) is None
+
+    def test_class_mismatched_pair_does_not_mutate(self):
+        door = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
+        wall_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        rels_before = self.file.by_type("IfcRelDefinesByType")
+        with pytest.raises(TypeError):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[door], relating_type=wall_type)
+        rels_after = self.file.by_type("IfcRelDefinesByType")
+        assert rels_after == rels_before
+
+    def test_partial_mismatch_in_selection_rejects_whole_call(self):
+        door = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        with pytest.raises(TypeError):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[door, wall], relating_type=wall_type)
+        # The good occurrence must NOT have been typed — partial mutation is the
+        # bug class this guard exists to prevent.
+        assert ifcopenshell.util.element.get_type(wall) is None
+        assert ifcopenshell.util.element.get_type(door) is None
+
+    def test_untypable_occurrence_rejected(self):
+        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+        any_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        with pytest.raises(TypeError):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[opening], relating_type=any_type)
+
+    def test_generic_type_product_types_an_annotation(self):
+        annotation = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcAnnotation")
+        annotation_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct")
+        annotation_type.ApplicableOccurrence = "IfcAnnotation/TEXT"
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[annotation], relating_type=annotation_type)
+        assert ifcopenshell.util.element.get_type(annotation) == annotation_type
+
+
+class TestAssignTypeSchemaRules(test.bootstrap.IFC4):
+    def test_generic_type_product_cannot_type_an_occurrence_with_its_own_type_class(self):
+        stair = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStair")
+        generic_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct")
+        with pytest.raises(TypeError, match=r"IfcTypeProduct cannot type IfcStair"):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[stair], relating_type=generic_type)
+
+    def test_assigning_a_process_type(self):
+        task = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
+        task_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTaskType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[task], relating_type=task_type)
+        assert ifcopenshell.util.element.get_type(task) == task_type
+
 
 class TestAssignTypeIFC2X3(test.bootstrap.IFC2X3, TestAssignType):
+    def test_generic_type_product_types_an_occurrence_without_its_own_type_class(self):
+        stair = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStair")
+        generic_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[stair], relating_type=generic_type)
+        assert ifcopenshell.util.element.get_type(stair) == generic_type
+
+
+class TestAssignTypeIFC4X3(test.bootstrap.IFC4X3, TestAssignType):
     pass

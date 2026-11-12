@@ -16,14 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.util.element
 from logging import Logger
+from typing import Any
+
+import ifcopenshell
+import ifcopenshell.api.type
+import ifcopenshell.util.element
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, attribute: str = "Tag"):
+    def __init__(self, file: ifcopenshell.file, logger: Logger, attribute: str = "Tag", should_merge_null: bool = True):
         """Merge duplicate element types via the Tag or another attribute
 
         Revit is notorious for creating many duplicate element types. Element
@@ -48,7 +50,8 @@ class Patcher:
         :param attribute: The name of the attribute to merge element types based
             on. Typically this will be "Tag" as it stores the unique ID from the
             proprietary BIM software.
-        :type attribute: str
+        :param should_merge_null: If True, all elements with an empty attribute
+            will be merged. If False, they will be kept separate.
 
         Example:
 
@@ -60,16 +63,18 @@ class Patcher:
             # Explicitly say we want to merge based on the Name attribute
             ifcpatch.execute({"file": model, "recipe": "MergeDuplicateTypes", "arguments": ["Name"]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.attribute = attribute
+        self.should_merge_null = should_merge_null
 
     def patch(self):
-        key = self.attribute
-        keys = {}
+        keys: dict[Any, ifcopenshell.entity_instance] = {}
         for element_type in self.file.by_type("IfcTypeObject"):
-            original_type = keys.get(getattr(element_type, key), None)
+            key = getattr(element_type, self.attribute)
+            if not key and not self.should_merge_null:
+                continue
+            original_type = keys.get(key, None)
             if original_type:
                 elements = ifcopenshell.util.element.get_types(element_type)
                 if elements:
@@ -78,7 +83,7 @@ class Patcher:
                     ifcopenshell.util.element.replace_attribute(inverse, element_type, original_type)
                 self.file.remove(element_type)
             else:
-                keys[getattr(element_type, key)] = element_type
+                keys[key] = element_type
 
     def assign_type(
         self, related_objects: list[ifcopenshell.entity_instance], relating_type: ifcopenshell.entity_instance
@@ -87,10 +92,10 @@ class Patcher:
         # since that would do other things like
         # map type representations or recalculate material set usages which is
         # risky when we're patching an existing dataset.
-        ifcopenshell.api.run(
-            "type.assign_type",
+        ifcopenshell.api.type.assign_type(
             self.file,
             relating_type=relating_type,
             related_objects=related_objects,
             should_map_representations=False,
+            should_run_listeners=False,  # ty:ignore[unknown-argument]
         )

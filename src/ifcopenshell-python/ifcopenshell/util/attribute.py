@@ -16,9 +16,24 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Literal, Union
 
-def get_primitive_type(attribute_or_data_type):
-    if hasattr(attribute_or_data_type, "type_of_attribute"):
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
+
+PrimitiveType = Literal["entity", "string", "float", "integer", "boolean", "enum", "binary"]
+ComplexPrimitiveType = Literal["list", "array", "set"]
+PrimitiveTypeOutput = Union[
+    PrimitiveType,
+    tuple[ComplexPrimitiveType, "PrimitiveTypeOutput"],
+    tuple[Literal["select"], tuple["PrimitiveTypeOutput", ...]],
+    None,
+]
+
+
+def get_primitive_type(
+    attribute_or_data_type: Union[ifcopenshell_wrapper.attribute, ifcopenshell_wrapper.parameter_type],
+) -> PrimitiveTypeOutput:
+    if isinstance(attribute_or_data_type, ifcopenshell_wrapper.attribute):
         data_type = str(attribute_or_data_type.type_of_attribute())
     else:
         data_type = str(attribute_or_data_type)
@@ -42,17 +57,25 @@ def get_primitive_type(attribute_or_data_type):
         return "float"
     elif "<number>" in data_type or "<integer>" in data_type:
         return "integer"
-    elif "<boolean>" in data_type or "<logical>" in data_type:
+    elif "<boolean>" in data_type:
         return "boolean"
-    elif "<enumeration" in data_type:
+    elif "<logical>" in data_type or "<enumeration" in data_type:
         return "enum"
     elif "<binary" in data_type:
         return "binary"
 
 
-def get_enum_items(attribute):
-    return attribute.type_of_attribute().declared_type().enumeration_items()
+def get_enum_items(attribute: ifcopenshell_wrapper.attribute) -> tuple[str, ...]:
+    named_type = attribute.type_of_attribute().as_named_type()
+    assert named_type
+    enumeration = named_type.declared_type().as_enumeration_type()
+    assert enumeration
+    return enumeration.enumeration_items()
 
 
-def get_select_items(attribute):
-    return attribute.type_of_attribute().declared_type().select_list()
+def get_select_items(attribute: ifcopenshell_wrapper.attribute) -> tuple[ifcopenshell_wrapper.declaration, ...]:
+    named_type = attribute.type_of_attribute().as_named_type()
+    assert named_type
+    select_type = named_type.declared_type().as_select_type()
+    assert select_type
+    return select_type.select_list()

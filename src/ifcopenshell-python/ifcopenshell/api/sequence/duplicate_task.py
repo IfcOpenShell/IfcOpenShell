@@ -17,52 +17,74 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.nest
+import ifcopenshell.api.owner
+import ifcopenshell.api.sequence
+import ifcopenshell.guid
+import ifcopenshell.util.date
 import ifcopenshell.util.element
-import ifcopenshell.util.sequence
+
+
+# TODO: inconsistent name with other copy_xxx api methods.
+def duplicate_task(
+    file: ifcopenshell.file, task: ifcopenshell.entity_instance
+) -> tuple[list[ifcopenshell.entity_instance], list[ifcopenshell.entity_instance]]:
+    """Duplicates a task in the project
+
+    The following relationships are also duplicated:
+
+    * The copy will have the same attributes and property sets as the original task
+    * The copy will be assigned to the parent task or work schedule
+    * The copy will have duplicated nested tasks
+
+    :param task: The task to be duplicated
+    :return: A tuple that consists of two lists of tasks:
+
+        - Original task and it's nested tasks.
+        - Their corresponding duplicated tasks.
+
+    Example:
+    .. code:: python
+
+        # We have a task
+        original_task = ifcopenshell.api.sequence.add_task(
+            model, work_schedule=work_schedule,
+            name="Design new feature",
+        )
+
+        # And now we have two
+        original_tasks, duplicated_tasks = ifcopenshell.api.sequence.duplicate_task(original_task)
+        print(duplicated_tasks[0])  # A copy of ``original_task``.
+    """
+    usecase = Usecase()
+    usecase.file = file
+    return usecase.execute(task)
 
 
 class Usecase:
-    def __init__(self, file, task=None):
-        """Duplicates a task in the project
+    file: ifcopenshell.file
+    current: list[ifcopenshell.entity_instance]
+    duplicate: list[ifcopenshell.entity_instance]
 
-        The following relationships are also duplicated:
+    def execute(
+        self, task: ifcopenshell.entity_instance
+    ) -> tuple[list[ifcopenshell.entity_instance], list[ifcopenshell.entity_instance]]:
+        self.current = []
+        self.duplicate = []
+        self.duplicate_task(task)
+        self.copy_sequence_relationship()
+        return self.current, self.duplicate
 
-        * The copy will have the same attributes and property sets as the original task
-        * The copy will be assigned to the parent task or work schedule
-        * The copy will have duplicated nested tasks
-
-        :param task: The task to be duplicated
-        :type task: ifcopenshell.entity_instance.entity_instance
-        :return: The duplicated task or the list of duplicated tasks if the latter has children
-        :rtype: ifcopenshell.entity_instance.entity_instance or list of ifcopenshell.entity_instance.entity_instance
-
-        Example:
-        .. code:: python
-
-            # We have a task
-            original_task = Task(name="Design new feature", deadline="2023-03-01")
-
-            # And now we have two
-            duplicated_task = project.duplicate_task(original_task)
-        """
-        self.file = file
-        self.settings = {"task": task}
-
-    def execute(self):
-        self.tracker = {"current": [], "duplicate": []}
-        self.duplicate_task(self.settings["task"])
-        self.copy_sequence_relationship(self.tracker["current"], self.tracker["duplicate"])
-        return self.tracker["current"], self.tracker["duplicate"]
-
-    def duplicate_task(self, task):
+    def duplicate_task(self, task: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         new_task = ifcopenshell.util.element.copy_deep(self.file, task)
-        self.tracker["current"].append(task)
-        self.tracker["duplicate"].append(new_task)
+        self.current.append(task)
+        self.duplicate.append(new_task)
         self.copy_indirect_attributes(task, new_task)
         return new_task
 
-    def copy_indirect_attributes(self, from_element, to_element):
+    def copy_indirect_attributes(
+        self, from_element: ifcopenshell.entity_instance, to_element: ifcopenshell.entity_instance
+    ) -> None:
         for inverse in self.file.get_inverse(from_element):
             if inverse.is_a("IfcRelDefinesByProperties"):
                 inverse = ifcopenshell.util.element.copy(self.file, inverse)
@@ -79,9 +101,8 @@ class Usecase:
                     inverse = ifcopenshell.util.element.copy(self.file, inverse)
                     inverse.RelatingObject = to_element
                     inverse.RelatedObjects = new_tasks
-                    ifcopenshell.api.run("nest.unassign_object", self.file, related_objects=new_tasks)
-                    ifcopenshell.api.run(
-                        "nest.assign_object",
+                    ifcopenshell.api.nest.unassign_object(self.file, related_objects=new_tasks)
+                    ifcopenshell.api.nest.assign_object(
                         self.file,
                         related_objects=new_tasks,
                         relating_object=to_element,
@@ -105,7 +126,9 @@ class Usecase:
                         new_value.append(to_element)
                         inverse[i] = new_value
 
-    def copy_sequence_relationship(self, original_tasks, duplicated_tasks):
+    def copy_sequence_relationship(self) -> None:
+        original_tasks = self.current
+        duplicated_tasks = self.duplicate
         for i, original_task in enumerate(original_tasks):
             for inverse in self.file.get_inverse(original_task):
                 if inverse.is_a("IfcRelSequence") and (
@@ -129,15 +152,14 @@ class Usecase:
                     else:  # thus the relating process is not part of the duplicated tasks
                         relating_process = inverse.RelatingProcess
                     if relating_process and related_process:
-                        rel = ifcopenshell.api.run(
-                            "sequence.assign_sequence",
+                        rel = ifcopenshell.api.sequence.assign_sequence(
                             self.file,
                             relating_process=relating_process,
                             related_process=related_process,
+                            sequence_type=inverse.SequenceType,
                         )
                         if inverse.TimeLag:
-                            ifcopenshell.api.run(
-                                "sequence.assign_lag_time",
+                            ifcopenshell.api.sequence.assign_lag_time(
                                 self.file,
                                 rel_sequence=rel,
                                 lag_value=(
@@ -148,7 +170,9 @@ class Usecase:
                                 duration_type=inverse.TimeLag.DurationType,
                             )
 
-    def create_object_reference(self, relating_object, related_object):
+    def create_object_reference(
+        self, relating_object: ifcopenshell.entity_instance, related_object: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         referenced_by = None
         if relating_object.Declares:
             referenced_by = relating_object.Declares[0]
@@ -156,15 +180,15 @@ class Usecase:
             related_objects = list(referenced_by.RelatedObjects)
             related_objects.append(related_object)
             referenced_by.RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": referenced_by})
+            ifcopenshell.api.owner.update_owner_history(self.file, element=referenced_by)
         else:
             referenced_by = self.file.create_entity(
                 "IfcRelDefinesByObject",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                    "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
                     "RelatedObjects": [related_object],
                     "RelatingObject": relating_object,
-                }
+                },
             )
         return referenced_by

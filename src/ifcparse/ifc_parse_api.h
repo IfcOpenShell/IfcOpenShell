@@ -20,31 +20,22 @@
 #ifndef IFC_PARSE_API_H
 #define IFC_PARSE_API_H
 
-#ifdef IFC_SHARED_BUILD
-#ifdef _WIN32
-#ifdef IFC_PARSE_EXPORTS
-#define IFC_PARSE_API __declspec(dllexport)
-#else
-#define IFC_PARSE_API __declspec(dllimport)
-#endif
-#else // simply assume *nix + GCC-like compiler
-#define IFC_PARSE_API __attribute__((visibility("default")))
-#endif
-#else
-#define IFC_PARSE_API
-#endif
-
-#if defined(__clang__)
-#define my_thread_local thread_local
-#elif defined(__GNUC__)
-#define my_thread_local __thread
-#elif __STDC_VERSION__ >= 201112L
-#define my_thread_local _Thread_local
-#elif defined(_MSC_VER)
-#define my_thread_local __declspec(thread)
-#elif defined(SWIG)
-#else
-#error Cannot define thread_local
-#endif
-
-#endif
+#ifdef SWIG
+  #define IFC_PARSE_API
+  #define IFC_SCHEMA_API
+#elif defined(_WIN32)
+  #ifdef IFC_PARSE_EXPORTS
+    #define IFC_PARSE_API __declspec(dllexport)
+  #else
+    #define IFC_PARSE_API __declspec(dllimport)
+  #endif
+  #ifdef IFC_SCHEMA_EXPORTS
+    #define IFC_SCHEMA_API __declspec(dllexport)
+  #else
+    #define IFC_SCHEMA_API IFC_PARSE_API
+  #endif
+#else // *nix + GCC-like compiler
+  #define IFC_PARSE_API __attribute__((visibility("default")))
+  #define IFC_SCHEMA_API __attribute__((visibility("default")))
+#endif // SWIG
+#endif // IFC_PARSE_API_H

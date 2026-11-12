@@ -26,11 +26,11 @@
 
 bl_info = {
     "name": "IfcBlender",
-    "description": "Import files in the " "Industry Foundation Classes (.ifc) file format",
+    "description": "Import files in the Industry Foundation Classes (.ifc) file format",
     "author": "Thomas Krijnen, IfcOpenShell",
     "blender": (2, 80, 0),
     "location": "File > Import",
-    "tracker_url": "https://sourceforge.net/p/ifcopenshell/" "_list/tickets?source=navbar",
+    "tracker_url": "https://sourceforge.net/p/ifcopenshell/_list/tickets?source=navbar",
     "category": "Import-Export",
 }
 
@@ -40,17 +40,18 @@ if "bpy" in locals():
     if "ifcopenshell" in locals():
         importlib.reload(ifcopenshell)
 
+import logging
+import os
+from collections import defaultdict
+
+import bpy
+import mathutils
 from bpy.props import (
     BoolProperty,
     IntProperty,
     StringProperty,
 )
 from bpy_extras.io_utils import ImportHelper
-from collections import defaultdict
-import bpy
-import logging
-import mathutils
-import os
 
 major, minor = bpy.app.version[0:2]
 transpose_matrices = minor >= 62
@@ -86,7 +87,7 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
 
     print(f"Reading {bpy.path.basename(filename)}...")
     settings = ifcopenshell_geom.settings()
-    settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, blender_booleans)
+    settings.set("disable-opening-subtractions", blender_booleans)
     assert os.path.exists(filename), filename
     ifc_file = ifcopenshell.open(filename)
     iterator = ifcopenshell_geom.iterator(settings, ifc_file)
@@ -163,6 +164,7 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
 
             me.from_pydata(verts, [], faces)
             me.validate()
+
             # MATERIAL CREATION
             def add_material(mname, props):
                 if mname in bpy.data.materials:
@@ -175,7 +177,8 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
                             mat.blend_method = "HASHED"
                             mat.use_screen_refraction = True
                             mat.refraction_depth = 0.1
-                            mat.use_nodes = True
+                            if bpy.app.version >= (5, 0, 0):
+                                mat.use_nodes = True
                             bsdf = next(n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
                             bsdf.inputs[15].default_value = v
                         else:
@@ -327,17 +330,15 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
     filter_glob: StringProperty(default="*.ifc", options={"HIDDEN"})
 
     use_names: BoolProperty(
-        name="Use entity names", description="Use entity names rather than " "GlobalIds for objects", default=True
+        name="Use entity names", description="Use entity names rather than GlobalIds for objects", default=True
     )
     process_relations: BoolProperty(
         name="Process relations",
-        description="Convert containment and "
-        "aggregation relations to parenting"
-        " (warning: may be slow on large files)",
+        description="Convert containment and aggregation relations to parenting (warning: may be slow on large files)",
         default=False,
     )
     blender_booleans: BoolProperty(
-        name="Use Blender booleans", description="Use Blender boolean modifiers " "for opening elements", default=False
+        name="Use Blender booleans", description="Use Blender boolean modifiers for opening elements", default=False
     )
 
     def execute(self, context):

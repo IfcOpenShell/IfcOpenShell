@@ -19,8 +19,9 @@
 
 #include "mapping.h"
 #include "../profile_helper.h"
+#include "../function_item_evaluator.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 // ifc4x1
 //#define SCHEMA_IfcOffsetCurveByDistances_HAS_OffsetValues
@@ -29,133 +30,183 @@ using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcOffsetCurveByDistances
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst) {
-    auto offset_values = inst->OffsetValues();
-    if (offset_values->size() == 0) {
-        Logger::Error("IfcOffsetCurveByDistances must have at least one offset value");
+namespace {
+// Lateral (y) and vertical (z) offset from the basis curve, the same over the whole span
+struct constant_offset_function : public taxonomy::span_function {
+    constant_offset_function(double y, double z) : y_(y), z_(z) {}
+
+    Eigen::Matrix4d operator()(double /*u*/) const override {
+        Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+        m.col(3)(1) = y_;
+        m.col(3)(2) = z_;
+        return m;
     }
 
-    auto first_offset_value = *(offset_values->begin());
+    double y_, z_;
+};
 
-    auto basis_curve = inst->BasisCurve();
-    //auto pw_curve = ifcopenshell::geometry::piecewise_from_item(map(basis_curve));
-    auto pw_curve = taxonomy::dcast<taxonomy::piecewise_function>(map(basis_curve));
-    double basis_curve_length = pw_curve->length();
+// Lateral (y) and vertical (z) offset from the basis curve, varying linearly over a span of length l
+struct linear_offset_function : public taxonomy::span_function {
+    linear_offset_function(double y_start, double y_end, double z_start, double z_end, double l) : y_start_(y_start), y_end_(y_end), z_start_(z_start), z_end_(z_end), l_(l) {}
 
-    auto offsets = taxonomy::make<taxonomy::piecewise_function>(&settings_);
+    Eigen::Matrix4d operator()(double u) const override {
+        Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+        m.col(3)(1) = (l_ == 0.0 ? y_start_ : (y_start_ + (y_end_ - y_start_) * u / l_));
+        m.col(3)(2) = (l_ == 0.0 ? z_start_ : (z_start_ + (z_end_ - z_start_) * u / l_));
+        return m;
+    }
+
+    double y_start_, y_end_, z_start_, z_end_, l_;
+};
+
+taxonomy::span_info offset_span_info(taxonomy::span_curve curve) {
+    taxonomy::span_info info;
+    info.layout = taxonomy::span_layout::OFFSET;
+    info.curve = curve;
+    return info;
+}
+} // namespace
+
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst) {
+    auto offset_values = inst.OffsetValues();
+    if (offset_values.empty()) {
+        logger_.error("GEO", 270, "IfcOffsetCurveByDistances must have at least one offset value");
+    }
+
+    auto& first_offset_value = offset_values.front();
+
+    auto basis_curve = inst.BasisCurve();
+
+//    // IfcOffsetCurveByDistances can be based on another IfcOffsetCurveByDistances, an IfcGradientCurve, or an IfcCompositeCurve
+//    // When based on IfcOffsetCurveByDistances, it creates a chain of curves that we must navigate down to the base curve.
+//    // The source curve is IfcGradientCurve or IfcCompositeCurve. This loop drills down to the base curve.
+//    while (auto offset_curve = basis_curve->as<IfcSchema::IfcOffsetCurveByDistances>()) {
+//        basis_curve = offset_curve;
+//    }
+//
+//#if defined SCHEMA_HAS_IfcGradientCurve
+//    if (auto gc = basis_curve->as<IfcSchema::IfcGradientCurve>()) {
+//        basis_curve = gc->BaseCurve();
+//    }
+//#endif
+
+    auto basis_curve_fn = taxonomy::dcast<taxonomy::function_item>(map(basis_curve));
+    if (!basis_curve_fn) {
+        // Only implement on alignment curves
+        logger_.warning("GEO", 271, "IfcOffsetCurveByDistances is only implemented for BasisCurves curves based on taxonomy::function_item", inst);
+        return nullptr;
+    }
+
+    double start = basis_curve_fn->start();
+    double basis_curve_length = basis_curve_fn->length();
+
+    taxonomy::piecewise_function::span_list offset_spans;
 
 #if defined SCHEMA_HAS_IfcDistanceExpression
-   double first_distance = first_offset_value->DistanceAlong();
+   double first_distance = first_offset_value.DistanceAlong();
 #else
-   double first_distance = *first_offset_value->DistanceAlong()->as<IfcSchema::IfcLengthMeasure>();
+   double first_distance = first_offset_value.DistanceAlong().as<IfcSchema::IfcLengthMeasure>();
 #endif
+   first_distance *= length_unit_;
 
    if (first_distance < 0.0) {
-        Logger::Warning("IfcOffsetCurveByDistance first offset value is before the start of the curve.");
+        logger_.warning("GEO", 272, "IfcOffsetCurveByDistance first offset value is before the start of the curve.");
    }
 
    if(0.0 < first_distance)
    {
       // First offset is defined after the start of the curve so the lateral and vertical offsets
 		// implicitly continue with the same value towards the start of the basis curve
-        double py = first_offset_value->OffsetLateral().get_value_or(0.0);
-        double pz = first_offset_value->OffsetVertical().get_value_or(0.0);
+        double py = first_offset_value.OffsetLateral().value_or(0.0);
+        double pz = first_offset_value.OffsetVertical().value_or(0.0);
         py *= length_unit_;
         pz *= length_unit_;
-        
-        auto fn = [py, pz](double u) -> Eigen::Matrix4d { 
-           Eigen::Matrix4d m = Eigen::Matrix4d::Identity(); 
-           m.col(3)(1) = py; 
-           m.col(3)(2) = pz; 
-           return m; };
-        offsets->spans.push_back({first_distance, fn});
+
+        auto fn = std::make_shared<constant_offset_function>(py, pz);
+        offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(first_distance, fn, offset_span_info(taxonomy::span_curve::CONSTANT), inst));
 	}
 
-    auto iter = offset_values->begin();
+    auto iter = offset_values.begin();
     auto next = std::next(iter);
     auto prev = std::prev(next);
-    auto end = offset_values->end();
+    auto end = offset_values.end();
     for (; next != end; prev++, next++) {
-#if defined SCHEMA_HAS_IfcPointByDistanceExpression
-        if ((*prev)->BasisCurve() != basis_curve || (*next)->BasisCurve() != basis_curve) {
-            Logger::Error("All offsets from a IfcOffsetCurveByDistances must refer to the same BasisCurve");
-        }
-#endif
-
 #if defined SCHEMA_HAS_IfcDistanceExpression
-        double dn = (*next)->DistanceAlong();
-        double dp = (*prev)->DistanceAlong();
+        double dp = (*prev).DistanceAlong();
+        double dn = (*next).DistanceAlong();
 #else
-        double dn = *(*next)->DistanceAlong()->as<IfcSchema::IfcLengthMeasure>();
-        double dp = *(*prev)->DistanceAlong()->as<IfcSchema::IfcLengthMeasure>();
+        double dp = prev->DistanceAlong().as<IfcSchema::IfcLengthMeasure>();
+        double dn = next->DistanceAlong().as<IfcSchema::IfcLengthMeasure>();
 #endif
-        if ((dp < 0.0 || basis_curve_length < dp) 
-             or 
-            (dn < 0.0 || basis_curve_length < dn)
-           or
-            (dn < dp)
-           )
+        dp *= length_unit_;
+        dn *= length_unit_;
+
+        if (dn < dp) // next is before previous
         {
-            Logger::Warning("IfcOffsetCurveByDistance offset value is out of bounds.");
+            logger_.warning("GEO", 273, "IfcOffsetCurveByDistance offset value is out of bounds.");
             continue;
         }
 
-        double l = (dn - dp)*length_unit_;
-        double yn = (*next)->OffsetLateral().get_value_or(0.0) * length_unit_;
-        double yp = (*prev)->OffsetLateral().get_value_or(0.0) * length_unit_;
-        double zn = (*next)->OffsetVertical().get_value_or(0.0) * length_unit_;
-        double zp = (*prev)->OffsetVertical().get_value_or(0.0) * length_unit_;
-       
-        auto fn = [yp, yn, zp, zn, l](double u) -> Eigen::Matrix4d {
-            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-            m.col(3)(1) = (l == 0.0 ? yp : (yp + (yn - yp) * u / l));
-            m.col(3)(2) = (l == 0.0 ? zp : (zp + (zn - zp) * u / l));
-            return m;
-        };
-		  offsets->spans.push_back({l, fn});
+        double l = (dn - dp);
+        double yn = next->OffsetLateral().value_or(0.0) * length_unit_;
+        double yp = prev->OffsetLateral().value_or(0.0) * length_unit_;
+        double zn = next->OffsetVertical().value_or(0.0) * length_unit_;
+        double zp = prev->OffsetVertical().value_or(0.0) * length_unit_;
+
+        if ( (dp < 0.0 && dn < 0.0) || (basis_curve_length < dp && basis_curve_length < dn) ) {
+            // both points are either before the start of the curve or after the end of the curve. ignore them.
+            continue;
+        }
+
+        if (dp < 0.0) {
+            // previous is before the start of the curve
+            // compute y and z offsets at the start of the curve
+            auto yp_at_start = yp - (yn - yp) * dp / l;
+            auto zp_at_start = zp - (zn - zp) * dp / l;
+
+            dp = 0.0;
+            yp = yp_at_start;
+            zp = zp_at_start;
+        }
+
+        if (basis_curve_length < dn) {
+            // next is after the end of the curve
+            // compute y and z offsets at the end of the curve
+            auto yn_at_end = yn - (yn - yp) * (dn - basis_curve_length) / l;
+            auto zn_at_end = zn - (zn - zp) * (dn - basis_curve_length) / l;
+            dn = basis_curve_length;
+            yn = yn_at_end;
+            zn = zn_at_end;
+        }
+
+
+        auto fn = std::make_shared<linear_offset_function>(yp, yn, zp, zn, l);
+        offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn, offset_span_info(taxonomy::span_curve::LINEAR), inst));
     }
 
 	 // at this point, next == end and prev == end-1
     #if defined SCHEMA_HAS_IfcDistanceExpression
-    double last_distance = (*prev)->DistanceAlong() * length_unit_;
+    double last_distance = prev->DistanceAlong() * length_unit_;
     #else
-    double last_distance = *(*prev)->DistanceAlong()->as<IfcSchema::IfcLengthMeasure>() * length_unit_;
+    double last_distance = (double) prev->DistanceAlong().as<IfcSchema::IfcLengthMeasure>() * length_unit_;
     #endif
-    
-    if (basis_curve_length < last_distance) {
-          Logger::Warning("IfcOffsetCurveByDistance last offset value is after the end of the curve.");
-    }
 
     if (last_distance < basis_curve_length) {
          // Last offset is defined before the end of the curve so the lateral and vertical offsets
          // implicitly continue with the same value towards the end of the basis curve
-         double py = (*prev)->OffsetLateral().get_value_or(0.0);
-         double pz = (*prev)->OffsetVertical().get_value_or(0.0);
+         double py = prev->OffsetLateral().value_or(0.0);
+         double pz = prev->OffsetVertical().value_or(0.0);
          py *= length_unit_;
          pz *= length_unit_;
          double l = basis_curve_length - last_distance;
-         auto fn = [py, pz](double u) -> Eigen::Matrix4d { 
-            Eigen::Matrix4d m = Eigen::Matrix4d::Identity(); 
-            m.col(3)(1) = py; 
-            m.col(3)(2) = pz; 
-            return m; };
-
-         offsets->spans.push_back({l, fn});
+         auto fn = std::make_shared<constant_offset_function>(py, pz);
+         offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn, offset_span_info(taxonomy::span_curve::CONSTANT), inst));
     }
 
-	auto composition = [pw_curve, offsets](double u) -> Eigen::Matrix4d {
-      auto p = pw_curve->evaluate(u);
-		auto offset = offsets->evaluate(u);
-      Eigen::Matrix4d m = p * offset;
-      return m;
-	};
+   auto offsets = taxonomy::make<taxonomy::piecewise_function>(start,offset_spans);
 
-   // current implementation assumes that composition is equal to the full length of basis curve
-   // this may change depending on decisions in the bSI-IF
-	auto pwf = taxonomy::make<taxonomy::piecewise_function>(&settings_);
-	pwf->spans.emplace_back( basis_curve_length, composition );
-	pwf->instance = inst;
-	return pwf;
+   auto fn = taxonomy::make<taxonomy::offset_function>(basis_curve_fn, offsets);
+   return fn;
 }
 
 #endif

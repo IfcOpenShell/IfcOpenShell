@@ -21,17 +21,19 @@
 
 #define mapping POSTFIX_SCHEMA(mapping)
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2Placement2D* inst) {
-	Eigen::Vector3d P, axis(0, 0, 1), V(1, 0, 0);
-	{
-		taxonomy::point3::ptr v = taxonomy::cast<taxonomy::point3>(map(inst->Location()));
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2Placement2D& inst) {
+	Eigen::Vector3d P(0, 0, 0), axis(0, 0, 1), V(1, 0, 0);
+	try {
+		taxonomy::point3::ptr v = taxonomy::cast<taxonomy::point3>(map(inst.Location()));
 		P = *v->components_;
+	} catch (const std::exception&) {
+		logger_.warning("GEO", 233, "Placement with invalid Location:", inst);
 	}
-	const bool hasRef = !!inst->RefDirection();
+	const bool hasRef = !!inst.RefDirection();
 	if (hasRef) {
-		taxonomy::direction3::ptr v = taxonomy::cast<taxonomy::direction3>(map(inst->RefDirection()));
+		taxonomy::direction3::ptr v = taxonomy::cast<taxonomy::direction3>(map(inst.RefDirection()));
 		V = *v->components_;
 	}
 	return taxonomy::make<taxonomy::matrix4>(P, axis, V);

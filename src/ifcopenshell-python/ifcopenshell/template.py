@@ -17,22 +17,20 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import time
 import uuid
+from typing import Optional
 
-from .file import file
+from ifcopenshell import file
+
 from .guid import compress
-from . import main
+from .ifcopenshell_wrapper import version
 
 # A quick way to setup an 'empty' IFC file, taken from:
 # http://academy.ifcopenshell.org/creating-a-simple-wall-with-property-set-and-quantity-information/
 TEMPLATE = """ISO-10303-21;
 HEADER;
-FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_DESCRIPTION(('ViewDefinition [%(mvd)s]'),'2;1');
 FILE_NAME('%(filename)s','%(timestring)s',('%(creator)s'),('%(organization)s'),'%(application)s','%(application)s','');
 FILE_SCHEMA(('%(schema_identifier)s'));
 ENDSEC;
@@ -62,27 +60,50 @@ END-ISO-10303-21;
 """
 
 DEFAULTS = {
-    "application": lambda d: "IfcOpenShell-%s" % main.version,
-    "application_version": lambda d: main.version,
+    "application": lambda d: "IfcOpenShell contributors - IfcOpenShell - v%s" % get_pep440_version(version()),
+    "application_version": lambda d: get_pep440_version(version()),
     "project_globalid": lambda d: compress(uuid.uuid4().hex),
     "schema_identifier": lambda d: "IFC4",
     "timestamp": lambda d: int(time.time()),
-    "timestring": lambda d: time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(d.get("timestamp") or time.time())),
+    "timestring": lambda d: time.strftime(
+        "%Y-%m-%dT%H:%M:%S",
+        time.gmtime(d["timestamp"] if d.get("timestamp") is not None else time.time()),
+    ),
+    "mvd": lambda d: (
+        "ReferenceView_V1.2"
+        if d.get("schema_identifier") == "IFC4"
+        else (
+            "CoordinationView_V2.0"
+            if d.get("schema_identifier") == "IFC2X3"
+            else "ReferenceView"
+            if d.get("schema_identifier") == "IFC4X3_ADD2"
+            else "ReferenceView_V1.2"
+        )
+    ),
 }
 
 
+def get_pep440_version(ifcopenshell_wrapper_version):
+    """
+    Returns a PEP 440-compliant version string, valid for use with
+    `packaging.version.parse()` and compliant with the Validation Service header policy.
+    """
+    return ifcopenshell_wrapper_version.replace("-", "+", 1)
+
+
 def create(
-    filename=None,
-    timestring=None,
-    organization=None,
-    creator=None,
-    schema_identifier=None,
-    application_version=None,
-    timestamp=None,
-    application=None,
-    project_globalid=None,
-    project_name=None,
-):
+    filename: Optional[str] = None,
+    timestring: Optional[str] = None,
+    organization: Optional[str] = None,
+    creator: Optional[str] = None,
+    schema_identifier: Optional[str] = None,
+    application_version: Optional[str] = None,
+    timestamp: Optional[str] = None,
+    application: Optional[str] = None,
+    project_globalid: Optional[str] = None,
+    project_name: Optional[str] = None,
+    mvd: Optional[str] = None,
+) -> file:
     d = dict(locals())
 
     def _():

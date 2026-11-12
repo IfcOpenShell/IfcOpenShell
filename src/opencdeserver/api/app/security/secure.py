@@ -1,50 +1,42 @@
-from fastapi import Depends, HTTPException, status, Security
-from fastapi.security import OAuth2AuthorizationCodeBearer, SecurityScopes
+from __future__ import annotations
 
-from datetime import datetime, timedelta
-from passlib.context import CryptContext
-from jose import jwt, JWTError
-
-from models.other import TokenData
-from models.request import User
+import os
+from datetime import UTC, datetime, timedelta
 
 from database.neo4j import db
-import os
-
+from fastapi import Depends, HTTPException, Security, status
+from fastapi.security import OAuth2AuthorizationCodeBearer, SecurityScopes
+from jose import JWTError, jwt
+from models.other import TokenData
+from models.request import User
+from passlib.context import CryptContext
 from security.secrets import get_secrets
 
 secrets = get_secrets()
 
 # password context
-crypt_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto")
+crypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl='foundation/oauth2/auth',
-    tokenUrl='foundation/oauth2/token',
-    scopes={
-        'test': 'Full access, but only test data.',
-        'user': 'Normal user access.',
-        'admin': 'Full access to all.'
-    })
+    authorizationUrl="foundation/oauth2/auth",
+    tokenUrl="foundation/oauth2/token",
+    scopes={"test": "Full access, but only test data.", "user": "Normal user access.", "admin": "Full access to all."},
+)
 
 
 credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     payload = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+    expires_delta = expires_delta or timedelta(minutes=15)
+    expire = datetime.now(UTC) + expires_delta
     payload.update({"expires": str(expire)})
-    encoded_jwt = jwt.encode(payload, secrets['security_secret_key'], algorithm=os.environ['SECURITY_ALGORITHM'])
+    encoded_jwt = jwt.encode(payload, secrets["security_secret_key"], algorithm=os.environ["SECURITY_ALGORITHM"])
     return encoded_jwt
 
 
@@ -79,20 +71,18 @@ async def get_current_user(security_scopes: SecurityScopes, token: str = Depends
     print(authenticate_value)
 
     try:
-        print('Token: ', token)
-        payload = jwt.decode(token,
-                             secrets['security_secret_key'],
-                             algorithms=[os.environ['SECURITY_ALGORITHM']])
+        print("Token: ", token)
+        payload = jwt.decode(token, secrets["security_secret_key"], algorithms=[os.environ["SECURITY_ALGORITHM"]])
         username_from_token: str = payload.get("username")
-        print('Token username: ', username_from_token)
+        print("Token username: ", username_from_token)
         if username_from_token is None:
             raise credentials_exception
         token_scopes = payload.get("scopes", [])
-        print('Token scopes: ', token_scopes)
+        print("Token scopes: ", token_scopes)
         token_data = TokenData(scopes=token_scopes, username=username_from_token)
 
     except JWTError:
-        print('JWTError')
+        print("JWTError")
         raise credentials_exception
 
     user = db.get_user(username=token_data.username)

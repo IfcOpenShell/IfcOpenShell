@@ -34,3 +34,24 @@ element or None. Example:
 """
 
 unpack_non_aggregate_inverses = False
+
+"""
+When true compare entity instances by value rather than by identity, even
+when they belong to the same file. EXPRESS uses `=` for value comparison and
+`:=:` for instance comparison, whereas the Python API only has `==`, which
+normally means "the same instance". Example:
+
+>>> import ifcopenshell
+>>> f = ifcopenshell.file(schema='ifc2x3')
+>>> f.createIfcCartesianPoint((0., 0.))
+#1=IfcCartesianPoint((0.,0.))
+>>> f.createIfcCartesianPoint((0., 0.))
+#2=IfcCartesianPoint((0.,0.))
+>>> f[1] == f[2]
+False
+>>> ifcopenshell.settings.compare_instances_by_value = True
+>>> f[1] == f[2]
+True
+"""
+
+compare_instances_by_value = False

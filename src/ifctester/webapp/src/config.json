@@ -1,0 +1,7 @@
+{
+    "wasm": {
+        "wheel_url": "/worker/bin/ifcopenshell-0.8.5+a51b2c5-cp313-cp313-pyodide_2025_0_wasm32.whl",
+        "odfpy_url": "/worker/bin/odfpy-1.4.2-py2.py3-none-any.whl",
+        "api_py_url": "/worker/api.py"
+    }
+}

@@ -16,21 +16,25 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.owner
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestAddRole(test.bootstrap.IFC4):
     def test_adding_a_role_to_a_person(self):
         person = self.file.createIfcPerson()
-        role = ifcopenshell.api.run("owner.add_role", self.file, assigned_object=person)
+        role = ifcopenshell.api.owner.add_role(self.file, assigned_object=person)
         assert role.is_a("IfcActorRole")
         assert role.Role == "ARCHITECT"
         assert person.Roles == (role,)
 
     def test_adding_a_role_to_an_organisation(self):
         organisation = self.file.createIfcOrganization()
-        role = ifcopenshell.api.run("owner.add_role", self.file, assigned_object=organisation)
+        role = ifcopenshell.api.owner.add_role(self.file, assigned_object=organisation)
         assert role.is_a("IfcActorRole")
         assert role.Role == "ARCHITECT"
         assert organisation.Roles == (role,)
+
+
+class TestAddRoleIFC2X3(test.bootstrap.IFC2X3, TestAddRole):
+    pass

@@ -16,27 +16,34 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.library
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestEditReference(test.bootstrap.IFC4):
     def test_editing_a_reference(self):
         reference = self.file.createIfcLibraryReference()
-        ifcopenshell.api.run(
-            "library.edit_reference",
+        attributes = {
+            "Location": "Location",
+            "Identification" if self.file.schema != "IFC2X3" else "ItemReference": "Identification",
+            "Name": "Name",
+        }
+        if self.file.schema != "IFC2X3":
+            attributes["Description"] = "Description"
+            attributes["Language"] = "Language"
+        ifcopenshell.api.library.edit_reference(
             self.file,
             reference=reference,
-            attributes={
-                "Location": "Location",
-                "Identification": "Identification",
-                "Name": "Name",
-                "Description": "Description",
-                "Language": "Language",
-            },
+            attributes=attributes,
         )
         assert reference.Location == "Location"
-        assert reference.Identification == "Identification"
+        # 1 IfcExternalReference Identification(>IFC2X3) / ItemReference  (IFC2X3)
+        assert reference[1] == "Identification"
         assert reference.Name == "Name"
-        assert reference.Description == "Description"
-        assert reference.Language == "Language"
+        if self.file.schema != "IFC2X3":
+            assert reference.Description == "Description"
+            assert reference.Language == "Language"
+
+
+class TestEditReferenceIFC2X3(test.bootstrap.IFC2X3, TestEditReference):
+    pass

@@ -17,10 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import numpy as np
-import ifcopenshell
-from typing import Any, Union
+
 from dataclasses import dataclass
+from typing import Any, Union
+
+import numpy as np
+
+import ifcopenshell
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
 @dataclass
@@ -31,7 +35,9 @@ class Clipping:
     operand_type: str = "IfcHalfSpaceSolid"
 
     @classmethod
-    def parse(cls, raw_data: Any) -> Union[ifcopenshell.entity_instance, Clipping, None]:
+    def parse(
+        cls, raw_data: Union[ifcopenshell.entity_instance, Clipping, dict[str, Any]]
+    ) -> Union[ifcopenshell.entity_instance, Clipping]:
         """Parse various formats into a clipping object
 
         `raw_data` can be either:
@@ -64,7 +70,7 @@ class Clipping:
         raise Exception(f"Unexpected clipping type provided: {raw_data}")
 
     def apply(
-        self, ifc_file: ifcopenshell.file, first_operand: ifcopenshell.entity_instance, unit_scale: float
+        self, ifc_file: Union[ifcopenshell.file, None], first_operand: ifcopenshell.entity_instance, unit_scale: float
     ) -> ifcopenshell.entity_instance:
         """Applies the clipping data as an IfcBooleanClippingResult to an operand
 
@@ -74,8 +80,9 @@ class Clipping:
         :return: An IfcBooleanClippingResult which uses an IfcHalfSpaceSolid to clip the first operand
         """
 
-        location = ifc_file.createIfcCartesianPoint([i / unit_scale for i in self.location])
-        direction = ifc_file.createIfcDirection(self.normal)
+        if not ifc_file:
+            ifc_file = first_operand.file
+        builder = ShapeBuilder(ifc_file)
 
         normal = np.array(self.normal)
         if np.allclose(normal, np.array([0.0, 0.0, 1.0]), atol=1e-2) or np.allclose(
@@ -87,9 +94,9 @@ class Clipping:
 
         x_axis = np.cross(normal, arbitrary_vector)
         x_axis /= np.linalg.norm(x_axis)
-        x_axis = ifc_file.createIfcDirection(x_axis.tolist())
 
-        plane = ifc_file.createIfcPlane(ifc_file.createIfcAxis2Placement3D(location, direction, x_axis))
+        placement = builder.create_axis2_placement_3d([i / unit_scale for i in self.location], self.normal, x_axis)
+        plane = ifc_file.create_entity("IfcPlane", placement)
 
         second_operand = ifc_file.createIfcHalfSpaceSolid(plane, False)
         return ifc_file.createIfcBooleanClippingResult("DIFFERENCE", first_operand, second_operand)

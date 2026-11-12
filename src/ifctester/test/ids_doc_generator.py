@@ -16,21 +16,42 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Documentation generator for IfcTester IDS facets and test cases.
+
+This is not a test file. It lives in the test/ directory because it reuses
+test cases from test_facet.py and test_ids.py to generate example IFC files,
+IDS files, and Markdown documentation into test/build/.
+
+Run via: make build-ids-docs (from src/ifctester/)
+"""
+
+import functools
 import os
 import re
 import uuid
-import pytest
-import functools
-import ifcopenshell
-import ifcopenshell.api
-import ifctester
-import test_facet
-import test_ids
-import numpy as np
 from pathlib import Path
 from xml.dom.minidom import parseString
-from ifctester import ids
+
+import ifcopenshell
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.spatial
+import ifcopenshell.api.type
+import ifcopenshell.api.unit
+import ifcopenshell.guid
+import numpy as np
+import pytest
+import test_facet
+import test_ids
 from ifcopenshell import validate
+
+import ifctester
+import ifctester.facet
+from ifctester import ids
 
 outdir = "build"
 
@@ -53,7 +74,7 @@ class FacetDocGenerator:
 
         result = "pass" if expected is True else "fail"
 
-        ifc = inst.wrapped_data.file
+        ifc = inst.file
         if "GlobalId" not in name:
             regenerate_guids(ifc)
 
@@ -72,7 +93,7 @@ class FacetDocGenerator:
                 raise Exception("About to emit invalid example data:", issue)
 
         # ifc_text = "\n".join([f"{e} /* Testcase */" if e == inst else str(e) for e in f])
-        lines = ifc.wrapped_data.to_string().split("\n")[7:-3]
+        lines = ifc.to_string().split("\n")[7:-3]
         ifc_text = "\n".join([f"{l} /* Testcase */" if f"#{inst.id()}=" in l else l for l in lines])
         basename = f"{result}-" + re.sub("[^0-9a-zA-Z]", "_", name.lower())
 
@@ -107,6 +128,8 @@ class FacetDocGenerator:
             {"name": name, "ids": xml_text, "ifc": ifc_text, "basename": basename, "result": result, "id": inst.id()}
         )
 
+        ifctester.facet.get_pset.cache_clear()
+        ifctester.facet.get_psets.cache_clear()
         assert bool(facet(inst)) is expected
 
     def set_facet(self, facet):
@@ -130,7 +153,7 @@ class IdsDocGenerator:
             all_applicable.update(spec.applicable_entities)
             for requirement in spec.requirements:
                 if requirement.status is False:
-                    all_failures.update(requirement.failed_entities)
+                    all_failures.update(f["element"] for f in requirement.failures)
         assert set(all_applicable) == set(applicable_entities)
         assert set(all_failures) == set(failed_entities)
 
@@ -141,9 +164,13 @@ class IdsDocGenerator:
         l = validate.json_logger()
         validate.validate(ifc, l)
         for issue in l.statements:
-            raise Exception("About to emit invalid example data:", issue)
+            # test_parsing_entities_with_no_attributes uses nameless IfcMaterial; fix for doc generation.
+            if issue["instance"].is_a("IfcMaterial") and issue.get("attribute") == "IfcMaterial.Name":
+                issue["instance"].Name = "Unnamed"
+            else:
+                raise Exception("About to emit invalid example data:", issue)
 
-        lines = ifc.wrapped_data.to_string().split("\n")[7:-3]
+        lines = ifc.to_string().split("\n")[7:-3]
         ifc_text = ""
         for i, line in enumerate(lines):
             step_id = int(line[1 : line.index("=")])
@@ -283,12 +310,12 @@ spec = ifctester.ids.Specification(
 )
 specs.specifications.append(spec)
 spec.applicability.append(ifctester.ids.Entity(name="IFCWALLTYPE"))
-restriction = ifctester.ids.Restriction(options={"pattern": "(-|[0-9]{2,3})\/(-|[0-9]{2,3})\/(-|[0-9]{2,3})"})
+restriction = ifctester.ids.Restriction(options={"pattern": r"(-|[0-9]{2,3})/(-|[0-9]{2,3})/(-|[0-9]{2,3})"})
 spec.requirements.append(
     ifctester.ids.Property(
         propertySet="Pset_WallCommon",
-        name="FireRating",
-        datatype="IfcLabel",
+        baseName="FireRating",
+        dataType="IfcLabel",
         value=restriction,
         instructions="Fire rating is specified using the Fire Resistance Level as defined in the Australian National Construction Code (NCC) 2019. Valid examples include -/-/-, -/120/120, and 60/60/60",
     )
@@ -302,13 +329,12 @@ specs.to_xml(str(ids_path))
 # Create sample model
 model = ifcopenshell.file()
 
-project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject", name="My Project")
+project = ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject", name="My Project")
 project.Name = "TEST"
-ifcopenshell.api.run("unit.assign_unit", model)
+ifcopenshell.api.unit.assign_unit(model)
 
-context = ifcopenshell.api.run("context.add_context", model, context_type="Model")
-body = ifcopenshell.api.run(
-    "context.add_context",
+context = ifcopenshell.api.context.add_context(model, context_type="Model")
+body = ifcopenshell.api.context.add_context(
     model,
     context_type="Model",
     context_identifier="Body",
@@ -316,37 +342,37 @@ body = ifcopenshell.api.run(
     parent=context,
 )
 
-site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite", name="My Site")
-building = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding", name="Building A")
-storey = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey", name="Ground Floor")
+site = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSite", name="My Site")
+building = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuilding", name="Building A")
+storey = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuildingStorey", name="Ground Floor")
 
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=project, products=[site])
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=site, products=[building])
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=building, products=[storey])
+ifcopenshell.api.aggregate.assign_object(model, relating_object=project, products=[site])
+ifcopenshell.api.aggregate.assign_object(model, relating_object=site, products=[building])
+ifcopenshell.api.aggregate.assign_object(model, relating_object=building, products=[storey])
 
 wall_types = []
 for i in range(0, 4):
-    wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType", name=f"DEMO{i + 1}")
-    wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall", name=f"WALL {i + 1}")
-    ifcopenshell.api.run("type.assign_type", model, related_objects=[wall], relating_type=wall_type)
-    representation = ifcopenshell.api.run(
-        "geometry.add_wall_representation", model, context=body, length=5, height=3, thickness=(i + 1) * 0.05
+    wall_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWallType", name=f"DEMO{i + 1}")
+    wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall", name=f"WALL {i + 1}")
+    ifcopenshell.api.type.assign_type(model, related_objects=[wall], relating_type=wall_type)
+    representation = ifcopenshell.api.geometry.add_wall_representation(
+        model, context=body, length=5, height=3, thickness=(i + 1) * 0.05
     )
     if i == 0:
         pass
     elif i == 1:
-        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
-        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"FireRating": "-/-/-"})
+        pset = ifcopenshell.api.pset.add_pset(model, product=wall_type, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(model, pset=pset, properties={"FireRating": "-/-/-"})
     elif i == 2:
-        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
-        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"FireRating": "120/120/120"})
+        pset = ifcopenshell.api.pset.add_pset(model, product=wall_type, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(model, pset=pset, properties={"FireRating": "120/120/120"})
     elif i == 3:
-        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
-        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"FireRating": "FOOBAR"})
-    ifcopenshell.api.run("geometry.assign_representation", model, product=wall, representation=representation)
+        pset = ifcopenshell.api.pset.add_pset(model, product=wall_type, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(model, pset=pset, properties={"FireRating": "FOOBAR"})
+    ifcopenshell.api.geometry.assign_representation(model, product=wall, representation=representation)
     location = np.eye(4)
     location[1][3] += i * 1
-    ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall, matrix=location)
-    ifcopenshell.api.run("spatial.assign_container", model, relating_structure=storey, products=[wall])
+    ifcopenshell.api.geometry.edit_object_placement(model, product=wall, matrix=location)
+    ifcopenshell.api.spatial.assign_container(model, relating_structure=storey, products=[wall])
 
 model.write(os.path.join(outdir, "library", "sample.ifc"))

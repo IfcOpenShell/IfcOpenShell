@@ -4,4 +4,4 @@ license:
 
 .PHONY: qa
 qa:
-	black .
+	ruff format

@@ -1,0 +1,166 @@
+name: Build IfcOpenShell macOS
+
+permissions: {}
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos
+            # Cross-compiled on Apple Silicon, it's about twice as fast as the Intel runner.
+            runner: macos-15
+            arch: x64
+            oldarch: ""
+            without: -without-bonsaiviewer
+            test_args: --skip-bonsaiviewer
+          - os: macos
+            # macos-14 no longer receives Homebrew bottles, so `brew install qt`
+            # compiles Qt (and QtWebEngine) from source there and fails.
+            runner: macos-15
+            arch: arm64
+            oldarch: m1
+            without: ""
+            test_args: ""
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Checkout Build Repository
+        uses: actions/checkout@v7.0.1
+        with:
+          repository: IfcOpenShell/build-outputs
+          path: ./build
+          ref: ${{ matrix.os }}-${{ matrix.arch }}
+          lfs: true
+          token: ${{ secrets.BUILD_REPO_TOKEN }}
+          persist-credentials: true
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.3.2
+
+      - name: Install Dependencies
+        run: |
+          # Since 2023, brew doesn't need taps and having them slows down the update for no reason.
+          # See https://github.com/actions/runner-images/issues/14882
+          brew untap homebrew/core homebrew/cask
+          brew update
+          # preinstalled: xz, cmake
+          # If we drop cross-compilation:
+          # build bison from source on the Intel runner, as Intel bottles disappear soon.
+          brew install bison
+          # qt brings in Qt6 + Svg; nix/build-all.py honours pre-set
+          # QT_DIR so BonsaiViewer doesn't try to aqtinstall (which is
+          # Linux-only). Only the viewer needs it.
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            brew install qt
+          fi
+          # build-all's gmp has no gmpxx, so CGAL would pick up the preinstalled one.
+          brew uninstall --ignore-dependencies gmp
+          # Mac is using bison 2.5 by default, but we need 3.5+ for swig.
+          echo "$(brew --prefix bison)/bin" >> $GITHUB_PATH
+
+      # The bonsaiviewer-autodesk connector is a Rust crate; the "Package
+      # .zip archives" step below runs `cargo build --release` via
+      # packaging/build.py. Match the dedicated connector workflow's stable
+      # toolchain, rather than whatever Rust the runner image happens to ship.
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Unpack Dependencies
+        run: |
+          cd build
+          uv run ../nix/cache_dependencies.py unpack
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          key: mac-${{ matrix.arch }}
+          # If we drop cross-compilation:
+          # use `install: binary` on the Intel runner, as there's no Intel bottle in brew.
+          # See https://github.com/hendrikmuhs/ccache-action/issues/374
+
+      - name: Run Build Script
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" == "macos" ]; then
+            DARWIN_C_SOURCE=-D_DARWIN_C_SOURCE
+          fi
+          set -o pipefail
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            export QT_DIR="$(brew --prefix qt)"
+          fi
+          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" \
+            QT_DIR="${QT_DIR}" \
+            uv run ./nix/build-all.py \
+              -v \
+              --diskcleanup \
+              --shared \
+              --split-instance-builds \
+              --add-commit-sha \
+              --build-cfg Release \
+              --use-ninja \
+              ${{ matrix.arch == 'x64' && '--mac-cross-compile-intel' || '' }} \
+              ${{ matrix.without }} \
+            | tee build.log
+
+      - name: Upload Build Logs
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: build-logs-osx-${{ matrix.arch }}
+          path: |
+            build.log
+            build/*/*/*/logs/latest.log
+            build/*/*/*/build/ifcopenshell/**/CMakeCache.txt
+          retention-days: 30
+
+      - name: Pack Dependencies
+        run: |
+          cd build
+          uv run ../nix/cache_dependencies.py pack
+
+      - name: Commit and Push Changes to Build Repository
+        run: |
+          cd build
+          git config user.name "IfcOpenBot"
+          git config user.email "ifcopenbot@ifcopenshell.org"
+          git add "$(find . -maxdepth 4 -name install)/*.tar.gz"
+          git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
+          git push || true
+
+      - name: Package .zip archives
+        run: |
+          uv run nix/package-zip-archives.py "macos${{ matrix.oldarch }}64"
+
+      - name: Test packages
+        env:
+          # Colored output for pytest.
+          FORCE_COLOR: 1
+        run: |
+          uv run test/package/run_against_package.py ${{ matrix.test_args }} "$HOME/output"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # AWS CLI is preinstalled on the runner image.
+      - name: Upload .zip archives to S3
+        env:
+          AWS_RETRY_MODE: standard
+          AWS_MAX_ATTEMPTS: "10"
+        run: |
+          aws s3 cp ~/output s3://ifcopenshell-builds/ --recursive

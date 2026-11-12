@@ -1,4 +1,3 @@
-
 # IfcClash - IFC-based clash detection.
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -17,5 +16,4 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcClash.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcclash.__main__
-
+import ifcclash.__main__  # ruff: ignore[unused-import]

@@ -17,17 +17,20 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
-import math
+import logging
+from typing import Union
+
 import ifcopenshell
 import ifcopenshell.geom
-import ifcopenshell.util.unit
-import ifcopenshell.util.schema
 import ifcopenshell.util.element
+import ifcopenshell.util.schema
+import ifcopenshell.util.unit
+
+import ifcpatch
 
 
-class Patcher:
-    def __init__(self, src, file, logger):
+class Patcher(ifcpatch.BasePatcher):
+    def __init__(self, file: ifcopenshell.file, logger: Union[logging.Logger, None] = None):
         """Fix missing door swings in Revit when viewing ArchiCAD IFCs
 
         ArchiCAD has the ability to store 2D data with objects like doors for
@@ -56,11 +59,9 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "FixArchiCADToRevitDoorSwings", "arguments": []})
         """
-        self.src = src
-        self.file = file
-        self.logger = logger
+        super().__init__(file, logger)
 
-    def patch(self):
+    def patch(self) -> None:
         # Revit has the ability to switch between 3D representations and 2D
         # representations (e.g. in plan view). It does this by detecting IFC
         # representations that belong to either the Model Body representation
@@ -167,9 +168,9 @@ class Patcher:
             related_elements.append(door_copy)
             door.ContainedInStructure[0].RelatedElements = related_elements
 
-            body_context = [
+            body_context = next(
                 c for c in self.file.by_type("IfcGeometricRepresentationSubContext") if c.ContextIdentifier == "Body"
-            ][0]
+            )
             for subelement in self.file.traverse(footprint_reps[0]):
                 if not subelement.is_a("IfcShapeRepresentation"):
                     continue
@@ -186,9 +187,11 @@ class Patcher:
         # This fixes symptom C.
 
         settings = ifcopenshell.geom.settings()
-        settings.set(settings.INCLUDE_CURVES, True)
+        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         for curve in self.file.by_type("IfcIndexedPolyCurve"):
+            if curve.Segments is None:
+                continue
             if True in [s.is_a("IfcArcIndex") for s in curve.Segments]:
                 shape = ifcopenshell.geom.create_shape(settings, curve)
                 e = shape.edges
@@ -201,6 +204,5 @@ class Patcher:
                         [v[i] / unit_scale, v[i + 1] / unit_scale, v[i + 2] / unit_scale] for i in range(0, len(v), 3)
                     ]
                 edges = [[e[i] + 1, e[i + 1] + 1] for i in range(0, len(e), 2)]
-                points = []
-                curve.Points = f.create_entity(curve.Points.is_a(), vertices)
-                curve.Segments = [f.createIfcLineIndex(e) for e in edges]
+                curve.Points = self.file.create_entity(curve.Points.is_a(), vertices)
+                curve.Segments = [self.file.create("IfcLineIndex", e) for e in edges]

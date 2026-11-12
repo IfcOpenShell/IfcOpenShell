@@ -18,24 +18,33 @@
 
 
 import bpy
-import ifcsverchok.helper
-from ifcsverchok.ifcstore import SvIfcStore
 from bpy.props import StringProperty
+from sverchok.data_structure import flatten_data, updateNode
 from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode, flatten_data
+
+import ifcsverchok.helper
+import ifcsverchok.helper as helper
+from ifcsverchok.ifcstore import SvIfcStore
 
 
 class SvIfcById(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcById"
     bl_label = "IFC By Id"
+    bl_description = "Get IFC elements by step id from the transient IFC file."
     id: StringProperty(
         name="Id(s)",
         update=updateNode,
     )
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "id").prop_name = "id"
-        self.outputs.new("SvStringsSocket", "Entities")
+        helper.create_socket(self.inputs, "id", description="Step ids.", data_type="list[list[str]]", prop_name="id")
+        helper.create_socket(
+            self.outputs,
+            "Entities",
+            description="Entities.",
+            data_type="list[ifcopenshell.entity_instance]",
+            prop_name="Entities",
+        )
 
     def draw_buttons(self, context, layout):
         layout.operator(

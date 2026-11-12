@@ -1,0 +1,363 @@
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2020-2023 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Bonsai is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+
+include ../vars.mk
+
+LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
+LAST_COMMIT_DATE:=$(shell git show -s --format=%cI)
+LAST_GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD)
+PYPI_IMP:=cp
+
+SUPPORTED_PYVERSIONS := py311 py313
+# Blender extensions platform allows just one build per platform per version,
+# so we add suffix for different Python versions builds.
+SEMVER_SUFFIX:=
+
+ifdef PYVERSION
+ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
+$(error Unsupported PYVERSION=$(PYVERSION). Must be one of $(SUPPORTED_PYVERSIONS))
+endif
+
+PYMINOR:=$(subst py3,,$(PYVERSION))
+PYLIBDIR:=python3.$(PYMINOR)
+PYNUMBER:=3$(PYMINOR)
+PYPI_VERSION:=3.$(PYMINOR)
+endif # def PYVERSION
+
+IFCMERGE_VERSION:=2026-04-07
+
+SUPPORTED_PLATFORMS := linux macosm1 win
+
+ifdef PLATFORM
+ifeq ($(filter $(PLATFORM),$(SUPPORTED_PLATFORMS)),)
+$(error Unsupported PLATFORM=$(PLATFORM). Must be one of $(SUPPORTED_PLATFORMS))
+endif
+
+ifeq ($(PLATFORM), linux)
+# See Blender glibc requirements in https://www.blender.org/download/requirements/
+PYPI_PLATFORM:=--platform manylinux_2_28_x86_64
+# tzfpy requires 2_17.
+PYPI_PLATFORM+=--platform manylinux_2_17_x86_64
+BLENDER_PLATFORM:=linux-x64
+endif
+
+ifeq ($(PLATFORM), macosm1)
+PYPI_PLATFORM:=--platform macosx_11_0_arm64
+BLENDER_PLATFORM:=macos-arm64
+endif
+
+ifeq ($(PLATFORM), win)
+PYPI_PLATFORM:=--platform win_amd64
+BLENDER_PLATFORM:=windows-x64
+endif
+
+endif # def PLATFORM
+
+PIP_COOLDOWN_ARGS=--uploaded-prior-to=P7D
+PIP_DOWNLOAD_ARGS=$(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: $(PIP_COOLDOWN_ARGS) --dest=./wheels
+
+# Wheels bundled with Bonsai, downloaded for the target platform in one pip call.
+BUNDLED_WHEELS :=
+BUNDLED_WHEELS += GitPython
+# IfcOpenShell dependency - support for new typing features
+BUNDLED_WHEELS += typing_extensions
+# Required by IfcCSV
+BUNDLED_WHEELS += pandas
+BUNDLED_WHEELS += openpyxl
+# Required by IFCCityJSON
+BUNDLED_WHEELS += "cjio >=0.8, <0.10"
+# Required in general for sorting all sorts of stuff in a nice way
+BUNDLED_WHEELS += natsort
+# Provides express rule validation for ifcopenshell.validate
+# Blender's extension wheels take precedence over its Python site-packages.
+# Keep this cap in sync with pyproject.toml and scripts/setup_pytest.py for pytest-bdd.
+BUNDLED_WHEELS += "pytest<9.2"
+# Provides Brickschema functionality
+# Is not platform specific but has platform specific dependencies.
+# The SQLAlchemy store must be 0.7.1 or later (SQLAlchemy 2.1, rdflib 7, and the
+# store.transaction() that brickschema 0.8 runs its persistent graph through).
+BUNDLED_WHEELS += brickschema "brickschema-rdflib-sqlalchemy>=0.7.1" alembic
+# Required for SVG to DXF conversion
+BUNDLED_WHEELS += ezdxf
+# Required by bcf
+BUNDLED_WHEELS += xsdata
+BUNDLED_WHEELS += xmlschema
+BUNDLED_WHEELS += elementpath
+BUNDLED_WHEELS += six
+# Required by drawing module
+BUNDLED_WHEELS += lxml
+# Required by drawing module for markdown hyperlinks in annotations
+BUNDLED_WHEELS += markdown-it-py
+BUNDLED_WHEELS += mdurl
+# Required by qto and drawing module
+BUNDLED_WHEELS += shapely
+# Required by the BIM type manager thumbnail generator
+BUNDLED_WHEELS += pillow
+# Provides mustache templating in construction docs and web UI data
+BUNDLED_WHEELS += pystache
+# Provides SVG export in construction documentation
+BUNDLED_WHEELS += svgwrite
+# Provides fuzzy date parsing for construction sequencing
+BUNDLED_WHEELS += python-dateutil
+# Provides duration parsing for construction sequencing
+BUNDLED_WHEELS += isodate
+# Provides networkx graph analysis for project dependency calculations
+BUNDLED_WHEELS += networkx
+# Required by IFCDiff
+BUNDLED_WHEELS += deepdiff
+# Required by IFCCSV and ifcopenshell.util.selector
+BUNDLED_WHEELS += lark
+# Required by IFC4D
+BUNDLED_WHEELS += PyP6Xer
+# Required by web module
+# Is not platform specific but has platform specific dependencies.
+BUNDLED_WHEELS += "python-socketio[asyncio_client]"
+BUNDLED_WHEELS += aiohttp
+# Required to access platform specific paths
+BUNDLED_WHEELS += platformdirs
+# Required by light module
+BUNDLED_WHEELS += pytz
+BUNDLED_WHEELS += tzfpy
+BUNDLED_WHEELS += pyradiance
+# Required by ifctester web ui.
+BUNDLED_WHEELS += flask
+
+# Current build commit hash.
+OLD:=7b8f129
+.PHONY: bump
+bump:
+ifndef NEW
+	$(error ERROR: 'NEW' variable is not set (should be set with new commit hash). \
+		Example use for 'bump' command: 'make bump NEW=0123456')
+endif
+	cd . && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
+	cd ../ifcopenshell-python/ && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
+	# Verify the builds for the new commit are uploaded.
+	cd ../ifcopenshell-python/ && uvx pytest -p no:pytest-blender test/test_package.py
+
+.PHONY: dist
+dist:
+ifndef PLATFORM
+	$(error PLATFORM is not set. Example values: $(SUPPORTED_PLATFORMS))
+endif
+ifndef PYVERSION
+	$(error PYVERSION is not set. Example values: $(SUPPORTED_PYVERSIONS))
+endif
+	rm -rf build
+	mkdir -p build
+	mkdir -p dist
+	cp -r bonsai build/
+
+	# To scope any build-time dependencies
+	cd build && $(PYTHON) -m venv env
+	# Must bump pip as older versions trust some stale compromised CA certificates (see eMudhra CA incident).
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m pip install --upgrade pip
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) install build
+
+	mkdir -p build/wheels
+	# Provides IfcOpenShell Python functionality
+	cd ../ifcopenshell-python && make dist PLATFORM=$(PLATFORM)64 PYVERSION=$(PYVERSION) && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../bcf && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifcclash && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifctester && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifcfm && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../bsdd && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifcdiff && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifccsv && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifcpatch && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifc4d && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifc5d && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifccityjson && make dist && mv dist/*.whl ../bonsai/build/wheels/
+
+	# Resolve all bundled wheels in one pip call, so they share a single consistent
+	# dependency set - no conflicting versions or duplicate wheels of the same package -
+	# and skip re-resolving shared dependencies in dozens of separate pip calls.
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download $(BUNDLED_WHEELS) $(PIP_DOWNLOAD_ARGS)
+
+	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
+	# See https://github.com/eea/odfpy/issues/132
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy $(PIP_COOLDOWN_ARGS) --wheel-dir=./wheels
+	# jQuery is required for web UI functionality
+	cd build/bonsai/bim/data/webui/static/js/ && wget --no-verbose https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
+
+	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
+	cd build/bonsai/bim/data/gantt/ && wget --no-verbose https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
+	cd build/bonsai/bim/data/gantt/ && wget --no-verbose https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
+
+	# Provides IFCJSON functionality. Upstream (IFCJSON-Team) is dormant and has no wheel
+	# packaging, so we maintain our own fork under the IfcOpenShell organisation.
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m pip wheel "git+https://github.com/IfcOpenShell/IFC2JSON_python.git@main" --no-deps -w wheels/
+
+	# Brickschema requires pkg_resources which is provided by Blender.
+	# Provides Brickschema functionality
+	# For now lets bundle the latest nightly schema
+	cd build/bonsai/bim/data/brick/ && wget --no-verbose https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
+
+	# Required for hipped roof generation
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m pip wheel "git+https://github.com/prochitecture/bpypolyskel" --no-deps -w wheels/
+
+	# folder for executable files
+	mkdir -p build/bonsai/libs/bin
+
+	# required for three-way git merging
+ifeq ($(PLATFORM), win)
+	cd build/bonsai/libs/bin && wget --no-verbose https://github.com/brunopostle/ifcmerge/releases/download/$(IFCMERGE_VERSION)/ifcmerge.exe
+else
+	cd build/bonsai/libs/bin && wget --no-verbose https://raw.githubusercontent.com/brunopostle/ifcmerge/$(IFCMERGE_VERSION)/ifcmerge && chmod +x ifcmerge
+endif
+
+	# Generate translations module for Bonsai build
+	git clone https://github.com/IfcOpenShell/bonsai-translations.git build/working
+	$(PYTHON) scripts/bonsai_translations.py -i "build/working" -o "build/bonsai"
+	rm -rf build/working
+
+	# Remove dependencies also bundled with Blender
+	rm -rf build/wheels/numpy*
+
+	cp pyproject.toml build/
+ifeq ($(IS_STABLE), TRUE)
+	$(SED) "s/0.0.0/$(VERSION_SEMVER)$(SEMVER_SUFFIX)/" build/bonsai/blender_manifest.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/pyproject.toml
+else
+	$(SED) "s/0.0.0/$(VERSION_SEMVER_DAILY)/" build/bonsai/blender_manifest.toml
+	$(SED) "s/8888888/$(LAST_COMMIT_HASH)/" build/bonsai/__init__.py
+	$(SED) "s/9999999/$(LAST_COMMIT_DATE)/" build/bonsai/__init__.py
+	$(SED) "s/7777777/$(LAST_GIT_BRANCH)/" build/bonsai/__init__.py
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/pyproject.toml
+endif
+
+# Blender 5.1+ requires Python 3.13.
+ifeq ($(PYVERSION), py313)
+	$(SED) 's/blender_version_min = "4\.2\.0"/blender_version_min = "5.1.0"/' build/bonsai/blender_manifest.toml
+endif
+ifeq ($(PYVERSION), py311)
+	$(SED) 's/^# blender_version_max = /blender_version_max = /' build/bonsai/blender_manifest.toml
+endif
+
+	$(SED) "s/os-arch/$(BLENDER_PLATFORM)/" build/bonsai/blender_manifest.toml
+
+	# Provides bonsai Add-on functionality
+	cd build && if command -v uv >/dev/null 2>&1; then \
+		uv build --wheel; \
+	else \
+		. env/$(VENV_ACTIVATE) && $(PYTHON) -m build --wheel; \
+	fi
+	cp build/dist/*.whl build/wheels/
+
+	# Safeguard for non-wheel dependencies slipping in.
+	wheels=$$(find build/wheels/* ! -name "*.whl"); \
+	if [ -n "$$wheels" ]; then \
+		echo "Found non-wheel dependencies:"; \
+		echo "$$wheels"; \
+		echo "Error: non-wheel dependencies are not supported by Blender!"; \
+		exit 1; \
+	fi
+	mv build/wheels/*.whl build/bonsai/wheels/
+
+ifneq ($(PLATFORM), linux)
+	# Safeguard: in case one of `pip download` will break,
+	# it will produce a linux wheel for non-linux build (our github action machine is using linux).
+	wheels=$$(find build/bonsai/wheels/*manylinux_*.whl); \
+	if [ -n "$$wheels" ]; then \
+		echo "Found linux wheel files in non-linux build:"; \
+		echo "$$wheels"; \
+		echo "Error: linux wheels are incompatible with build $(PLATFORM)!"; \
+		exit 1; \
+	fi
+endif
+
+	$(PYTHON) scripts/get_wheels.py build/bonsai/wheels build/bonsai/blender_manifest.toml
+	rm -rf build/bonsai/bim/
+	rm -rf build/bonsai/core/
+	rm -rf build/bonsai/tool/
+	rm -rf build/bonsai/libs/
+
+ifeq ($(IS_STABLE), TRUE)
+	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION_SEMVER)$(SEMVER_SUFFIX)-$(BLENDER_PLATFORM).zip ./bonsai
+else
+	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION_SEMVER_DAILY)-$(BLENDER_PLATFORM).zip ./bonsai
+endif
+
+	mv build/bonsai*.zip dist/
+
+	rm -rf build
+
+.PHONY: test
+test:
+	@echo "Running all tests..."
+	@ERROR=0; \
+	make test-core || ERROR=1; \
+	make test-tool || ERROR=1; \
+	make test-bim || ERROR=1; \
+	if [ $$ERROR -ne 0 ]; then \
+		echo "One or more tests failed"; \
+		exit 1; \
+	fi
+
+.PHONY: test-core
+test-core:
+ifndef MODULE
+	pytest -p no:pytest-blender test/core
+else
+	pytest -p no:pytest-blender test/core/test_${MODULE}.py
+endif
+
+.PHONY: test-bim
+test-bim:
+ifndef MODULE
+	pytest test/bim
+else
+	pytest test/bim -m "$(MODULE)" ./ --maxfail=1
+endif
+
+.PHONY: test-tool
+test-tool:
+ifndef MODULE
+	pytest test/tool
+else
+	pytest test/tool/test_$(MODULE).py --maxfail=1
+endif
+
+.PHONY: test-modal
+test-modal:
+	blender --window-geometry 0 0 1920 1080 --enable-event-simulate --python test/modal/test_modal.py
+
+# Reregistering test is not added to the standard test suite because during unregister
+# Blender removes all Bonsai dependencies breaking dev-environment symlinks.
+.PHONY: test-reregister
+test-reregister:
+	blender --python scripts/reregister_bonsai.py
+
+.PHONY: coverage
+coverage:
+	coverage run --source bonsai.core -m pytest -p no:pytest-blender test/core
+	coverage html
+	xdg-open htmlcov/index.html
+
+.PHONY: license
+license:
+	copyright-header --license GPL3 --copyright-holder "Dion Moult <dion@thinkmoult.com>" --copyright-year "2022" --copyright-software "Bonsai" --copyright-software-description "OpenBIM Blender Add-on" -a ./ -o ./
+
+.PHONY: clean
+clean:
+	rm -rf dist
+	rm -rf htmlcov
+
+.PHONY: dev
+dev:
+	blender -p setup_pytest.py

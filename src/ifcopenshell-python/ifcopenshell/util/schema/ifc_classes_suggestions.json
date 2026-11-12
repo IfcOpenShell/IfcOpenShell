@@ -5,6 +5,16 @@
             "predefined_type": "NOTDEFINED"
         }
     ],
+    "IfcAirTerminal": [
+        {
+            "name": "Commercial Kitchen Hood"
+        }
+    ],
+    "IfcAirTerminalType": [
+        {
+            "name": "Commercial Kitchen Hood"
+        }
+    ],
     "IfcAirTerminalBox": [
         {
             "name": "VAV Box"
@@ -21,16 +31,14 @@
         },
         {
             "name": "Capping"
-        }
-    ],
-    "IfcDistributionElement": [
+        },
         {
-            "name": "Furnace"
-        }
-    ],
-    "IfcDistributionElementType": [
+            "name": "Screed",
+            "predefined_type": "FLOORING"
+        },
         {
-            "name": "Furnace"
+            "name": "Screed",
+            "predefined_type": "TOPPING"
         }
     ],
     "IfcElectricDistributionBoard": [
@@ -51,6 +59,16 @@
         {
             "name": "Electrical Panel",
             "predefined_type": "DISTRIBUTIONBOARD"
+        }
+    ],
+    "IfcFireSuppressionTerminal": [
+        {
+            "name": "Fire Extinguisher"
+        }
+    ],
+    "IfcFireSuppressionTerminalType": [
+        {
+            "name": "Fire Extinguisher"
         }
     ],
     "IfcFurniture": [
@@ -96,7 +114,7 @@
         {
             "name": "Shrubs"
         }
-    ],    
+    ],
     "IfcPlate": [
         {
             "name": "Glazing"
@@ -132,6 +150,41 @@
     "IfcUnitaryEquipment": [
         {
             "name": "Fan Coil Unit"
+        },
+        {
+            "name": "Roof Top Unit (RTU)",
+            "predefined_type": "ROOFTOPUNIT"
+        },
+        {
+            "name": "Furnace"
+        },
+        {
+            "name": "Central air conditioner (split or package)",
+            "predefined_type": "AIRCONDITIONINGUNIT"
+        },
+        {
+            "name": "Mini-split system",
+            "predefined_type": "SPLITSYSTEM"
+        }
+    ],
+    "IfcUnitaryEquipmentType": [
+        {
+            "name": "Fan Coil Unit"
+        },
+        {
+            "name": "Roof Top Unit (RTU)",
+            "predefined_type": "ROOFTOPUNIT"
+        },
+        {
+            "name": "Furnace"
+        },
+        {
+            "name": "Central air conditioner (split or package)",
+            "predefined_type": "AIRCONDITIONINGUNIT"
+        },
+        {
+            "name": "Mini-split system",
+            "predefined_type": "SPLITSYSTEM"
         }
     ],
     "IfcWall": [

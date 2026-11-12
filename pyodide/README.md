@@ -1,0 +1,53 @@
+
+There are two ways to build pyodide ifcopenshell Python wrapper wheel.
+
+For a container build, run `docker build -f docker/pyodide.Dockerfile -t ifcos-pyodide .`
+from the repository root. See [the Docker documentation](../docker/README.md) for outputs and caches.
+
+1. Using pyodide build system (`build-ifcopenshell-wasm.yml` does it):
+
+- install prebuilt pyodide build and emscripten environment (see `build_pyodide.sh`)
+- clone IfcOpenShell to `IfcOpenShell` folder
+- create `packages/ifcopenshell` folder that will be used by pyodide build system
+- from `IfcOpenShell` move building recipe `pyodide/meta.yaml` to `packages/ifcopenshell`
+- run `pyodide build-recipes ifcopenshell --install`, it will
+    - execute `meta.yaml` recipe - it will:
+        - copy IfcOpenShell source to a build folder
+        - build ifcopenshell and its dependencies
+        - note that rerunning `pyodide build-recipes` will remove previous build folder and rebuild all dependencies.  
+        The way to avoid it, if build fails, is to use `pyodide build-recipes-no-deps ifcopenshell --continue` instead.
+    - run `setup.py` in `IfcOpenShell` root, producing a wheel in `IfcOpenShell/dist`
+    - copy that wheel to `packages/ifcopenshell/dist`
+    - `--install` it to current build environment
+        - copy the wheel next to `dist` folder (in root directory, next to `packages`)
+        - add wheel to `dist/pyodide-lock.json`
+
+2. Build it outside of pyodide build system.
+
+Building inside pyodide build system should be preferred, option to build it outside is useful for debugging purposes,
+since it's pure cmake without any additional moving parts.
+
+- setup pyodide environment, see above
+- clone IfcOpenShell repo next to it to `IfcOpenShell` folder
+- run `python nix/build-all.py -wasm -py-313` in `IfcOpenShell`
+    - it will produce Python package in `IfcOpenShell/ifcopenshell`
+- run `python pyodide/build-all-pack-wheel-local.py`, it will
+    - clean up previous wheels
+    - run `pyodide build`
+    - prepare standalone and modular wheels
+    - produce final wheels in `IfcOpenShell/dist` and `IfcOpenshell/dist-modular`
+- testing:
+  - ensure you're in pyodide environment
+  - `cd IfcOpenshell/pyodide`
+  - `./run_pytest.py setup`
+  - `./run_pytest.py run`
+
+Verify geometry for both the monolithic wheel and the minimal IFC4 modular set:
+
+```sh
+PYODIDE_ROOT=$(pyodide config get pyodide_root)
+node pyodide/verify_wheels.mjs "$PYODIDE_ROOT/dist" dist dist-modular
+```
+
+This runs `create_shape` with the Manifold kernel and checks the mesh dimensions.
+It uses normal local library loading, without promoting schema exports to global visibility.

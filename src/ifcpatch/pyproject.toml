@@ -1,21 +1,28 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "ifcpatch"
-version = "0.0.999999"
+version = "0.0.0"
 authors = [
   { name="Dion Moult", email="dion@thinkmoult.com" },
 ]
-description = "IFC patching utility"
+description = "Utility for applying modification recipes to IFC files"
 readme = "README.md"
+requires-python = ">=3.11"
+license = "LGPL-3.0-or-later"
 keywords = ["IFC", "BIM"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
-dependencies = ["ifcopenshell", "toposort", "numpy"]
+dependencies = ["ifcopenshell", "numpy"]
+
+[project.optional-dependencies]
+advanced = [
+  "sqlite3",
+  "mysql-connector-python",
+]
 
 [project.urls]
 Homepage = "http://ifcopenshell.org"
@@ -23,5 +30,8 @@ Documentation = "https://docs.ifcopenshell.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
 [tool.setuptools.packages.find]
-include = ["ifcpatch"]
+include = ["ifcpatch*"]
 exclude = ["test*"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"

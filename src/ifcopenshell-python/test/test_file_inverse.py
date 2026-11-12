@@ -1,19 +1,14 @@
-import gc
-import sys
 import pytest
-import pprint
-import weakref
-import itertools
+
 import ifcopenshell
-import ifcopenshell.api
 
 
 def test_inverse_indices():
-    f =  ifcopenshell.file()
+    f = ifcopenshell.file()
 
-    p0 = f.createIfcCartesianPoint((0.,0.,0.))
-    p1 = f.createIfcCartesianPoint((1.,0.,0.))
-    p2 = f.createIfcCartesianPoint((1.,1.,0.))
+    p0 = f.createIfcCartesianPoint((0.0, 0.0, 0.0))
+    p1 = f.createIfcCartesianPoint((1.0, 0.0, 0.0))
+    p2 = f.createIfcCartesianPoint((1.0, 1.0, 0.0))
 
     poly = f.createIfcPolyline((p0, p1, p2, p0))
     place = f.createIfcAxis2Placement3D(p0)
@@ -26,7 +21,7 @@ def test_inverse_indices():
             # @nb this doesn't account for nested lists
             v = list(v)
             i = v.index(p0)
-            v[i:i+1] = []
+            v[i : i + 1] = []
         else:
             v = p1
         inst[idx] = v

@@ -1,0 +1,98 @@
+name: Publish IfcOpenShell Python
+
+permissions: {}
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upstream-only:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+
+  release:
+    needs: upstream-only
+    runs-on: ubuntu-latest
+    permissions:
+      # Create the release.
+      contents: write
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+    - uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
+
+    # Create the release once for the entire matrix.
+    # Otherwise creating it becomes a race condition between matrix jobs,
+    # which sometimes results in duplicate releases on Github.
+    - name: Create release
+      id: release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        VERSION=$(cat VERSION)
+        TAG="ifcopenshell-python-$VERSION"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        gh release view "$TAG" || gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes ""
+
+  publish:
+    needs: release
+    name: ${{ matrix.config.name }}-${{ matrix.pyver }}
+    runs-on: ubuntu-latest
+    permissions:
+      # upload-release-action uploads assets
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        pyver: [py311, py312, py313, py314, py315]
+        config:
+          - {
+            name: "Windows 64bit",
+            short_name: win64,
+          }
+          - {
+            name: "Windows ARM 64bit",
+            short_name: win-arm64
+          }
+          - {
+            name: "Linux 64bit",
+            short_name: linux64
+          }
+          - {
+            name: "Linux ARM 64bit",
+            short_name: linuxarm64
+          }
+          - {
+            name: "MacOS Intel 64bit",
+            short_name: macos64
+          }
+          - {
+            name: "MacOS Silicon 64bit",
+            short_name: macosm164
+          }
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Compile
+        run: |
+          cp -r src/ifcopenshell-python src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          cd src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          make zip PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
+      - name: Upload zip file to release
+        uses: svenstaro/upload-release-action@2.11.5
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist/ifcopenshell-python-${{ needs.release.outputs.version }}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
+          asset_name: ifcopenshell-python-${{ needs.release.outputs.version }}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
+          tag: ${{ needs.release.outputs.tag }}
+          overwrite: true

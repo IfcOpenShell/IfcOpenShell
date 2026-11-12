@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/BlankSpruce/gersemi/0.24.0/gersemi/configuration.schema.json
+
+# Gersemi doesn't support autodetection of macros/functions from other files or from the current one
+# and requires to explicitly list directories/cmake files that define them.
+definitions: ["./cmake", "./src"]
+disable_formatting: false
+extensions: []
+indent: 4
+line_length: 120
+list_expansion: favour-inlining
+unsafe: false
+warn_about_unknown_commands: true

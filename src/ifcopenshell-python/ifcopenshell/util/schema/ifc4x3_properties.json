@@ -531,7 +531,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_AlarmTypeCommon.htm"
     },
     "Pset_AlignmentCantSegmentCommon": {
-        "description": "Properties common to the definition of all instances of alignment cant segment.",
+        "description": "Properties common to the definition of all instances of alignment segment that have designParameters for cant.",
         "properties": {
             "CantDeficiency": {
                 "description": "Difference between applied cant and a higher equilibrium cant."
@@ -561,7 +561,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_AlignmentVerticalSegmentCommon.htm"
     },
     "Pset_AnnotationContourLine": {
-        "description": "Specifies parameters of a standard curve that has a single, consistent measure value.",
+        "description": "Specifies properties of a standard curve that has a single, consistent measure value.",
         "properties": {
             "ContourValue": {
                 "description": "Value of the elevation of the contour above or below a reference plane."
@@ -570,7 +570,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_AnnotationContourLine.htm"
     },
     "Pset_AnnotationLineOfSight": {
-        "description": "Specifies the properties of the line of sight at a point of connection between two elements. Typically used to define the line of sight visibility at the junction between two roads (particularly between an access road and a public road).",
+        "description": "Specifies the properties of the line of sight. For example, it can be used to define the line of sight visibility at the junction between two roads (particularly between an access road and a public road); or in the design of a stadium or theatre.",
         "properties": {
             "RoadVisibleDistanceLeft": {
                 "description": "Distance visible to the left of the access."
@@ -996,7 +996,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_BerthCommon.htm"
     },
     "Pset_BoilerPHistory": {
-        "description": "Boiler performance history common attributes. WaterQuality attribute deleted in IFC2x2 Pset Addendum: Use IfcWaterProperties instead. CombustionProductsMaximulLoad and CombustionProductsPartialLoad attributes deleted in IFC2x2 Pset Addendum: Use IfcProductsOfCombustionProperties instead.",
+        "description": "Boiler performance history common attributes. WaterQuality attribute deleted in IFC2x2 Pset Addendum: Use IfcMaterialProperties instead. CombustionProductsMaximulLoad and CombustionProductsPartialLoad attributes deleted in IFC2x2 Pset Addendum: Use IfcMaterialProperties instead.",
         "properties": {
             "AuxiliaryEnergyConsumption": {
                 "description": "Boiler secondary energy source consumption (i.e., the electricity consumed by electrical devices such as fans and pumps)."
@@ -1029,7 +1029,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_BoilerPHistory.htm"
     },
     "Pset_BoilerTypeCommon": {
-        "description": "Boiler type common attributes. SoundLevel attribute deleted in IFC2x2 Pset Addendum: Use IfcSoundProperties instead. PrimaryEnergySource and AuxiliaryEnergySource attributes deleted in IFC2x2 Pset Addendum: Use IfcEnergyProperties, IfcFuelProperties, etc. instead.",
+        "description": "Boiler type common attributes. SoundLevel attribute deleted in IFC2x2 Pset Addendum: Use IfcSoundProperties instead. PrimaryEnergySource and AuxiliaryEnergySource attributes deleted in IFC2x2 Pset Addendum: Use IfcMaterialProperties instead.",
         "properties": {
             "EnergySource": {
                 "description": "Enumeration defining the energy source or fuel cumbusted."
@@ -1077,13 +1077,13 @@
         "description": "Steam boiler type common attributes.",
         "properties": {
             "HeatOutput": {
-                "description": "Total nominal heat output as listed by the Boiler manufacturer.  For steam boilers, it is a function of inlet temperature versus steam pressure.  Note: as two variables are used, DefiningValues and DefinedValues are null, and values are stored in IfcTable in the following order: InletTemperature(IfcThermodynamicTemperatureMeasure) and OutletTemperature(IfcThermodynamicTemperatureMeasure) in DefiningValues, and HeatOutput(IfcEnergyMeasure) in DefinedValues. For example, DefiningValues(InletTemp, OutletTemp), DefinedValues(null, HeatOutput). The IfcTable is related to IfcPropertyTableValue using IfcMetric and IfcPropertyConstraintRelationship."
+                "description": "Total nominal heat output as listed by the Boiler manufacturer.  For steam boilers, it is a function of inlet temperature versus steam pressure.  Note: as two variables are used, DefiningValues and DefinedValues are null, and values are stored in IfcTable in the following order: InletTemperature(IfcThermodynamicTemperatureMeasure) and OutletTemperature(IfcThermodynamicTemperatureMeasure) in DefiningValues, and HeatOutput(IfcEnergyMeasure) in DefinedValues. For example, DefiningValues(InletTemp, OutletTemp), DefinedValues(null, HeatOutput). The IfcTable is related to IfcPropertyTableValue using IfcMetric and IfcResourceConstraintRelationship."
             },
             "MaximumOutletPressure": {
                 "description": "Maximum steam outlet pressure."
             },
             "NominalEfficiencyTable": {
-                "description": "The nominal efficiency of the boiler as defined by the manufacturer. For steam boilers, a function of inlet temperature versus steam pressure.  Note: as two variables are used, DefiningValues and DefinedValues are null, and values are stored in IfcTable in the following order: InletTemperature(IfcThermodynamicTemperatureMeasure) and OutletTemperature(IfcThermodynamicTemperatureMeasure) in DefiningValues, and NominalEfficiency(IfcNormalisedRatioMeasure) in DefinedValues. For example, DefininfValues(InletTemp, OutletTemp), DefinedValues(null, NominalEfficiency).  The IfcTable is related to IfcPropertyTableValue using IfcMetric and IfcPropertyConstraintRelationship."
+                "description": "The nominal efficiency of the boiler as defined by the manufacturer. For steam boilers, a function of inlet temperature versus steam pressure.  Note: as two variables are used, DefiningValues and DefinedValues are null, and values are stored in IfcTable in the following order: InletTemperature(IfcThermodynamicTemperatureMeasure) and OutletTemperature(IfcThermodynamicTemperatureMeasure) in DefiningValues, and NominalEfficiency(IfcNormalisedRatioMeasure) in DefinedValues. For example, DefininfValues(InletTemp, OutletTemp), DefinedValues(null, NominalEfficiency).  The IfcTable is related to IfcPropertyTableValue using IfcMetric and IfcResourceConstraintRelationship."
             }
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_BoilerTypeSteam.htm"
@@ -1092,16 +1092,16 @@
         "description": "Water boiler type common attributes.",
         "properties": {
             "HeatOutput": {
-                "description": "Total nominal heat output as listed by the Boiler manufacturer.  For water boilers, it is a function of inlet versus outlet temperature. For steam boilers, it is a function of inlet temperature versus steam pressure.  Note: as two variables are used, DefiningValues and DefinedValues are null, and values are stored in IfcTable in the following order: InletTemperature(IfcThermodynamicTemperatureMeasure), OutletTemperature(IfcThermodynamicTemperatureMeasure), HeatOutput(IfcEnergyMeasure).  The IfcTable is related to IfcPropertyTableValue using IfcMetric and IfcPropertyConstraintRelationship."
+                "description": "Total nominal heat output as listed by the Boiler manufacturer.  For water boilers, it is a function of inlet versus outlet temperature. For steam boilers, it is a function of inlet temperature versus steam pressure.  Note: as two variables are used, DefiningValues and DefinedValues are null, and values are stored in IfcTable in the following order: InletTemperature(IfcThermodynamicTemperatureMeasure), OutletTemperature(IfcThermodynamicTemperatureMeasure), HeatOutput(IfcEnergyMeasure).  The IfcTable is related to IfcPropertyTableValue using IfcMetric and IfcResourceConstraintRelationship."
             },
             "NominalEfficiency": {
-                "description": "Nominal object efficiency under nominal conditions.  The nominal efficiency of the boiler as defined by the manufacturer. For water boilers, a function of inlet versus outlet temperature. Note: as two variables are used, DefiningValues and DefinedValues are null, and values are stored in IfcTable in the following order: InletTemperature(IfcThermodynamicTemperatureMeasure), OutletTemperature(IfcThermodynamicTemperatureMeasure), NominalEfficiency(IfcNormalizedRatioMeasure).  The IfcTable is related to IfcPropertyTableValue using IfcMetric and IfcPropertyConstraintRelationship."
+                "description": "Nominal object efficiency under nominal conditions.  The nominal efficiency of the boiler as defined by the manufacturer. For water boilers, a function of inlet versus outlet temperature. Note: as two variables are used, DefiningValues and DefinedValues are null, and values are stored in IfcTable in the following order: InletTemperature(IfcThermodynamicTemperatureMeasure), OutletTemperature(IfcThermodynamicTemperatureMeasure), NominalEfficiency(IfcNormalisedRatioMeasure).  The IfcTable is related to IfcPropertyTableValue using IfcMetric and IfcResourceConstraintRelationship."
             }
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_BoilerTypeWater.htm"
     },
     "Pset_BoreholeCommon": {
-        "description": "Properties describing the features of a borehole (If not modelled separately).",
+        "description": "Properties describing the features of a borehole (if not modelled separately).",
         "properties": {
             "BoreholeState": {
                 "description": "The state the borehole or trial pit has been left in. (boreholeML)."
@@ -1125,7 +1125,7 @@
                 "description": "Lining material or 'NOT LINED' or 'UNKNOWN' (boreholeML)."
             },
             "LiningThickness": {
-                "description": "Lining thickness (boreholeML)."
+                "description": "Thickness of the lining."
             }
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_BoreholeCommon.htm"
@@ -1155,7 +1155,7 @@
         "description": "Common property set for bridges.",
         "properties": {
             "StructureIndicator": {
-                "description": "Structure Indicator"
+                "description": "The type of bridge structure (composite, coated, homogeneous or other)"
             }
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_BridgeCommon.htm"
@@ -1168,6 +1168,12 @@
             },
             "ConstructionMethod": {
                 "description": "The type of construction action to the object, e.g. new construction, renovation, refurbishment, etc."
+            },
+            "ElevationOfRefHeight": {
+                "description": "Elevation above sea level of the reference height used for all storey elevation measures, equals to height 0.0. It is usually the ground floor level."
+            },
+            "ElevationOfTerrain": {
+                "description": "Elevation above the minimal terrain level around the foot print of the building, given in elevation above sea level."
             },
             "FireProtectionClass": {
                 "description": "Main fire protection class for the building which is assigned from the fire protection classification table as given by the relevant national building code."
@@ -1185,7 +1191,7 @@
                 "description": "Total planned net area of the object. Used for programming the object."
             },
             "NumberOfStoreys": {
-                "description": "The number of storeys within a building. Captured for those cases where the IfcBuildingStorey entity is not used. Note that if IfcBuilingStorey is asserted and the number of storeys in a building can be determined from it, then this approach should be used in preference to setting a property for the number of storeys."
+                "description": "The number of storeys within a building. Captured for those cases where the IfcBuildingStorey entity is not used. Note that if IfcBuildingStorey is asserted and the number of storeys in a building can be determined from it, then this approach should be used in preference to setting a property for the number of storeys."
             },
             "OccupancyType": {
                 "description": "Occupancy type for this object. It is defined according to the presiding national building code."
@@ -1425,7 +1431,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_CableCarrierSegmentTypeCableTrunkingSegment.htm"
     },
     "Pset_CableCarrierSegmentTypeCatenaryWire": {
-        "description": "Properties of a catenary wire, which is a longtitudinal wire supporting the grooved contact wires. Properties in this property set are applicable to a type or an occurrence ifcCableCarrierSegment with predefined type of CATENARYWIRE.",
+        "description": "Properties of a catenary wire, which is a longtitudinal wire supporting the grooved contact wires. Properties in this property set are applicable to a type or an occurrence IfcCableCarrierSegment with predefined type of CATENARYWIRE.",
         "properties": {
             "ACResistance": {
                 "description": "The resistance under AC."
@@ -2106,13 +2112,13 @@
         "description": "Chiller type common attributes.",
         "properties": {
             "CapacityCurve": {
-                "description": "Chiller cooling capacity is a function of condensing temperature and evaporating temperature, data is in table form, Capacity = f (TempCon, TempEvp), capacity = a1+b1*Tei+c1*Tei\\^2+d1*Tci+e1*Tci\\^2+f1*Tei*Tci. This table uses multiple input variables; to represent, both DefiningValues and DefinedValues lists are null and IfcTable is attached using IfcPropertyConstraintRelationship and IfcMetric.  Columns are specified in the following order: 1.IfcPowerMeasure:Capacity 2.IfcThermodynamicTemperatureMeasure:CondensingTemperature 3.IfcThermodynamicTemperatureMeasure:EvaporatingTemperature"
+                "description": "Chiller cooling capacity is a function of condensing temperature and evaporating temperature, data is in table form, Capacity = f (TempCon, TempEvp), capacity = a1+b1*Tei+c1*Tei\\^2+d1*Tci+e1*Tci\\^2+f1*Tei*Tci. This table uses multiple input variables; to represent, both DefiningValues and DefinedValues lists are null and IfcTable is attached using IfcResourceConstraintRelationship and IfcMetric.  Columns are specified in the following order: 1.IfcPowerMeasure:Capacity 2.IfcThermodynamicTemperatureMeasure:CondensingTemperature 3.IfcThermodynamicTemperatureMeasure:EvaporatingTemperature"
             },
             "ChillerCapacity": {
                 "description": "Nominal cooling capacity of chiller at standardized conditions as defined by the agency having jurisdiction."
             },
             "CoefficientOfPerformanceCurve": {
-                "description": "Chiller coefficient of performance (COP) is function of condensing temperature and evaporating temperature, data is in table form, COP= f (TempCon, TempEvp), COP = a2+b2*Tei+c2*Tei\\^2+d2*Tci+e2*Tci\\^2+f2*Tei*Tci. This table uses multiple input variables; to represent, both DefiningValues and DefinedValues lists are null and IfcTable is attached using IfcPropertyConstraintRelationship and IfcMetric.  Columns are specified in the following order: 1.IfcPositiveRatioMeasure:CoefficientOfPerformance 2.IfcThermodynamicTemperatureMeasure:CondensingTemperature 3.IfcThermodynamicTemperatureMeasure:EvaporatingTemperature"
+                "description": "Chiller coefficient of performance (COP) is function of condensing temperature and evaporating temperature, data is in table form, COP= f (TempCon, TempEvp), COP = a2+b2*Tei+c2*Tei\\^2+d2*Tci+e2*Tci\\^2+f2*Tei*Tci. This table uses multiple input variables; to represent, both DefiningValues and DefinedValues lists are null and IfcTable is attached using IfcResourceConstraintRelationship and IfcMetric.  Columns are specified in the following order: 1.IfcPositiveRatioMeasure:CoefficientOfPerformance 2.IfcThermodynamicTemperatureMeasure:CondensingTemperature 3.IfcThermodynamicTemperatureMeasure:EvaporatingTemperature"
             },
             "FullLoadRatioCurve": {
                 "description": "Ratio of actual power to full load power as a quadratic function of part load, at certain condensing and evaporating temperature, FracFullLoadPower = f ( PartLoadRatio)."
@@ -2298,7 +2304,7 @@
                 "description": "Air-side sensible heat ratio, or fraction of sensible heat transfer to the total heat transfer."
             },
             "TotalUACurves": {
-                "description": "Total UA curves, UA - air and water velocities, UA = [(C1 * AirFlowRate\\^0.8)\\^-1 + (C2 * WaterFlowRate\\^0.8)\\^-1]\\^-1.  Note: as two variables are used, DefiningValues and DefinedValues are null, and values are stored in IfcTable in the following order: AirFlowRate,WaterFlowRate,UA.  The IfcTable is related to IfcPropertyTableValue using IfcMetric and IfcPropertyConstraintRelationship."
+                "description": "Total UA curves, UA - air and water velocities, UA = [(C1 * AirFlowRate\\^0.8)\\^-1 + (C2 * WaterFlowRate\\^0.8)\\^-1]\\^-1.  Note: as two variables are used, DefiningValues and DefinedValues are null, and values are stored in IfcTable in the following order: AirFlowRate,WaterFlowRate,UA.  The IfcTable is related to IfcPropertyTableValue using IfcMetric and IfcResourceConstraintRelationship."
             },
             "WaterPressureDropCurve": {
                 "description": "Water pressure drop curve, pressure drop \u2013 flow rate curve, WaterPressureDrop = f(WaterflowRate)."
@@ -2619,7 +2625,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_CompressorTypeCommon.htm"
     },
     "Pset_ConcreteElementGeneral": {
-        "description": "General properties common to different types of concrete elements, including reinforced concrete elements. The property set can be used by a number of subtypes of IfcBuildingElement, indicated that such element is designed or constructed using a concrete construction method.",
+        "description": "General properties common to different types of concrete elements, including reinforced concrete elements. The property set can be used by a number of subtypes of IfcBuiltElement, indicated that such element is designed or constructed using a concrete construction method.",
         "properties": {
             "AssemblyPlace": {
                 "description": "Enumeration defining where the assembly is intended to take place, either in a factory, other offsite location or on the building site."
@@ -2781,7 +2787,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_ConstructionAdministration.htm"
     },
     "Pset_ConstructionOccurence": {
-        "description": "Property set for construction occurence.",
+        "description": "Property set for construction occurrence.",
         "properties": {
             "AssetIdentifier": {
                 "description": "A unique identification assigned to an asset that enables its differentiation from other assets.NOTE  The asset identifier is unique within the asset register. It differs from the globally unique id assigned to the instance of an entity populating a database."
@@ -3399,10 +3405,10 @@
                 "description": "Face area open to the airstream."
             },
             "FrameDepth": {
-                "description": "The length (or depth) of the damper frame."
+                "description": "The length (or depth) of the frame.  For a damper, it is the length (or depth) of the damper frame."
             },
             "FrameThickness": {
-                "description": "The thickness of the damper frame material."
+                "description": "The thickness of the frame.  For a damper, it is the thickness of the damper frame material."
             },
             "FrameType": {
                 "description": "The type of frame used by the damper (e.g., Standard, Single Flange, Single Reversed Flange, Double Flange, etc.)."
@@ -4461,7 +4467,7 @@
                 "description": "Fraction of the glazing area relative to the total area of the filling element. It shall be used, if the glazing area is not given separately for all panels within the filling element."
             },
             "HandicapAccessible": {
-                "description": "Indication that this object is designed to be accessible by the handicapped. Set to (TRUE) if this object is rated as handicap accessible according the local building codes, otherwise (FALSE). It is giving according to the requirements of the national building code."
+                "description": "Indication that this object is designed to be accessible by the handicapped. Set to (TRUE) if this object is rated as handicap accessible according to the local building codes, otherwise (FALSE). It is giving according to the requirements of the national building code."
             },
             "HasDrive": {
                 "description": "Indication whether this object has an automatic drive to operate it (TRUE) or no drive (FALSE)"
@@ -4504,6 +4510,66 @@
             }
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_DoorCommon.htm"
+    },
+    "Pset_DoorLiningProperties": {
+        "description": "Properties of the door lining.HISTORY New property set in IFC4.3.2.0 to replace the entity IfcDoorLiningProperties",
+        "properties": {
+            "CasingDepth": {
+                "description": "Depth of the casing.  For a door, it is the dimension in the plane perpendicular to door leaf. If given it is applied equally to all four sides of the adjacent wall."
+            },
+            "CasingThickness": {
+                "description": "Thickness of the casing.  For a door, it is the dimension in plane of the door leaf. If given it is applied equally to all four sides of the adjacent wall."
+            },
+            "LiningDepth": {
+                "description": "The depth of the lining.  For a door, it is the depth of the door lining, measured perpendicular to the plane of the door lining. If omitted (and with a given value to lining thickness) it indicates an adjustable depth (i.e. a depth that adjusts to the thickness of the wall into which the occurrence of this door style is inserted)."
+            },
+            "LiningOffset": {
+                "description": "Offset of the lining.  For a door, it is the offset (dimension in plane perpendicular to door leaf) of the door lining. The offset is given as distance to the x axis of the local placement."
+            },
+            "LiningThickness": {
+                "description": "Thickness of the lining.  For a door, it is the thickness of the door lining as explained in the figure above. If LiningThickness value is 0. (zero) it denotes a door without a lining (all other lining parameters shall be set to NIL in this case). If the LiningThickness is NIL it denotes that the value is not available."
+            },
+            "LiningToPanelOffsetX": {
+                "description": "Offset between the lining and the panel, measured along the x-axis of the local placement.  For a door, it is the offset between the lining and the window panel."
+            },
+            "LiningToPanelOffsetY": {
+                "description": "Offset between the lining and the panel, measured along the y-axis of the local placement.  For a door, it is the offset between the lining and the door panel."
+            },
+            "ThresholdDepth": {
+                "description": "Depth (dimension in plane perpendicular to door leaf) of the door threshold. Only given if the door lining includes a threshold. If omitted (and with a given value to threshold thickness) it indicates an adjustable depth (i.e. a depth that adjusts to the thickness of the wall into which the occurrence of this door style is inserted)."
+            },
+            "ThresholdOffset": {
+                "description": "Offset (dimension in plane perpendicular to door leaf) of the door threshold. The offset is given as distance to the x axis of the local placement. Only given if the door lining includes a threshold and the parameter is known."
+            },
+            "ThresholdThickness": {
+                "description": "Thickness of the door threshold as explained in the figure above. If ThresholdThickness value is 0. (zero) it denotes a door without a threshold (ThresholdDepth shall be set to NIL in this case). If the ThresholdThickness is NIL it denotes that the information about a threshold is not available."
+            },
+            "TransomOffset": {
+                "description": "Offset of the transom (if given) which divides the door leaf from a glazing (or window) above. The offset is given from the bottom of the door opening."
+            },
+            "TransomThickness": {
+                "description": "Thickness of the transom.  For a door, it is the thickness (width in plane parallel to door leaf) of the transom (if provided - that is, if the TransomOffset attribute is set), which divides the door leaf from a glazing (or window) above. If the TransomThickness is set to zero (and the TransomOffset set to a positive length), then the door is divided vertically into a leaf and transom window area without a physical frame."
+            }
+        },
+        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_DoorLiningProperties.htm"
+    },
+    "Pset_DoorPanelProperties": {
+        "description": "Properties of the door panel.HISTORY New property set in IFC4.3.2.0 to replace the entity IfcDoorPanelProperties",
+        "properties": {
+            "PanelDepth": {
+                "description": "Depth of the panel.  For a door, it is the depth of the door panel, measured perpendicular to the plane of the door leaf."
+            },
+            "PanelOperation": {
+                "description": "The way of operation of a panel.  For a door, it is the way of operation of the panel. The PanelOperation of the door panel shall correspond to the OperationType of the IfcDoorType by which it is referenced."
+            },
+            "PanelPosition": {
+                "description": "Position of the panel.  For a door, it is the position of the panel within the door. The PanelPosition of the door panel shall correspond to the OperationType of the IfcDoorType by which it is referenced."
+            },
+            "PanelWidth": {
+                "description": "Width of the panel.  For a door, it is the width of the panel, given as ratio relative to the total clear opening width of the door. If omitted, it defaults to 1. A value shall be provided for all doors with OperationType's at IfcDoorType defining a door with more then one panel."
+            }
+        },
+        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_DoorPanelProperties.htm"
     },
     "Pset_DoorTypeTurnstile": {
         "description": "Properties common to turnstiles or automatic gates used to control the flow of people or vehicles. This property set is applied to IfcDoor instances of predefined type TURNSTILE.",
@@ -6987,7 +7053,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_LampTypeCommon.htm"
     },
     "Pset_LandRegistration": {
-        "description": "Specifies the identity of land within a statutory registration system. NOTE: The property LandTitleID is to be used in preference to deprecated attribute LandTitleNumber in IfcSite.",
+        "description": "Specifies the identity of land within a statutory registration system.NOTE  The property LandTitleID is to be used in preference to deprecated attribute LandTitleNumber in IfcSite.",
         "properties": {
             "IsPermanentID": {
                 "description": "Indicates whether the identity assigned to the object is permanent (= TRUE) or temporary (=FALSE)."
@@ -8609,6 +8675,24 @@
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_PavementSurfaceCommon.htm"
     },
+    "Pset_PermeableCoveringProperties": {
+        "description": "Properties of the permeable covering.HISTORY New property set in IFC4.3.2.0 to replace the entity IfcPermeableCoveringProperties",
+        "properties": {
+            "FrameDepth": {
+                "description": "The length (or depth) of the frame.  For a permeable covering, it is the depth of panel frame (used to include the permeable covering), measured from front face to back face horizontally (i.e. perpendicular to the window or door elevation plane)."
+            },
+            "FrameThickness": {
+                "description": "The thickness of the frame.  For a permeable covering, it is the width of panel frame (used to include the permeable covering), measured from inside of panel (at permeable covering) to outside of panel (at lining), i.e. parallel to the window or door (elevation) plane."
+            },
+            "OperationType": {
+                "description": "Type of operations. Also used to assign standard symbolic presentations according to national building standards.  For a permeable covering, it is the type of permeable covering operations. Also used to assign standard symbolic presentations according to national building standards."
+            },
+            "PanelPosition": {
+                "description": "Position of the panel.  For a permeable covering, it is the position of the permeable covering panel within the overall window or door type."
+            }
+        },
+        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_PermeableCoveringProperties.htm"
+    },
     "Pset_Permit": {
         "description": "A permit is a document that allows permission to gain access to an area or carry out work in a situation where security or other access restrictions apply.",
         "properties": {
@@ -8889,7 +8973,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_PowerControlSystem.htm"
     },
     "Pset_PrecastConcreteElementFabrication": {
-        "description": "Production and manufacturing related properties common to different types of precast concrete elements. The Pset applies to manufactured pieces. It can be used by a number of subtypes of IfcBuildingElement. If the precast concrete ele",
+        "description": "Production and manufacturing related properties common to different types of precast concrete elements. The Pset applies to manufactured pieces. It can be used by a number of subtypes of IfcBuiltElement. If the precast concrete ele",
         "properties": {
             "ActualErectionDate": {
                 "description": "Date erected."
@@ -8916,7 +9000,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_PrecastConcreteElementFabrication.htm"
     },
     "Pset_PrecastConcreteElementGeneral": {
-        "description": "Production and manufacturing related properties common to different types of precast concrete elements. The Pset can be used by a number of subtypes of IfcBuildingElement. If the precast concrete element is a sandwich wall panel each structural layer or shell represented by an IfcBuildingElementPart may be attached to a separate Pset of this type, if needed. Some of the properties apply only for specific types of precast concrete elements.",
+        "description": "Production and manufacturing related properties common to different types of precast concrete elements. The Pset can be used by a number of subtypes of IfcBuiltElement. If the precast concrete element is a sandwich wall panel each structural layer or shell represented by an IfcBuildingElementPart may be attached to a separate Pset of this type, if needed. Some of the properties apply only for specific types of precast concrete elements.",
         "properties": {
             "BatterAtEnd": {
                 "description": "The angle, in radians, by which the formwork at the ending face of a piece is to be rotated from the vertical in order to compensate for the rotation of the face that will occur once the piece is stripped from its form, inducing camber due to eccentric prestressing."
@@ -9033,7 +9117,7 @@
         "description": "Property set for the application of process data to spatial elements and transport assets",
         "properties": {
             "DownstreamConnections": {
-                "description": "Names of downstream connected equipment and spaces (comma-separated), if not otherwise represented"
+                "description": "Names of downstream connected equipment and spaces, if not otherwise represented"
             },
             "ProcessCapacity": {
                 "description": "The number of units that can be processed in the time defined in ProcessPerformance"
@@ -9045,13 +9129,13 @@
                 "description": "Minimum time to accept or dispatch the entire item capacity."
             },
             "UpstreamConnections": {
-                "description": "Names of upstream connected equipment and spaces (comma-separated), if not otherwise represented"
+                "description": "Names of upstream connected equipment and spaces, if not otherwise represented"
             }
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_ProcessCapacity.htm"
     },
     "Pset_ProfileArbitraryDoubleT": {
-        "description": "This is a collection of geometric properties of double-T section profiles of precast concrete elements, to be used in conjunction with IfcArbitraryProfileDef when profile designation alone does not fulfill the information requirements.",
+        "description": "This is a collection of geometric properties of double-T section profiles of precast concrete elements, to be used in conjunction with IfcArbitraryClosedProfileDef when profile designation alone does not fulfill the information requirements.",
         "properties": {
             "FlangeBaseFillet": {
                 "description": "Flange base fillet of the profile."
@@ -9258,7 +9342,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_ProfileMechanical.htm"
     },
     "Pset_ProjectCommon": {
-        "description": "Property set for the application of high level project information to all occurrences of IfcProject",
+        "description": "Property set for the application of high level project information.",
         "properties": {
             "FundingSource": {
                 "description": "Investment funding source"
@@ -10098,7 +10182,7 @@
                 "description": "Characteristic height  Vertical extension in elevation. Only provided if the Shape property is set to \"rectangle\"."
             },
             "System": {
-                "description": "he building service system that requires the provision for voids, e.g. 'Air Conditioning', 'Plumbing', 'Electro', etc."
+                "description": "The building service system that requires the provision for voids, e.g. 'Air Conditioning', 'Plumbing', 'Electro', etc.  Reference to the building service is done using the Name attribute."
             },
             "VoidShape": {
                 "description": "The shape form of the provision for void, the minimum set of agreed values includes 'Rectangle', 'Round', and 'Undefined'."
@@ -10560,7 +10644,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_RailwaySignalType.htm"
     },
     "Pset_RailwayTrackStructurePart": {
-        "description": "Properties applicable to IfcRailwayPart with PredefinedType set to TRACKSTRUCTURE, or more specialized types including PLAINTRACKSUPERSTRUCTURE, TURNOUTSUPERSTRUCTURE or DILATATIONSUPERSTRUCTURE.",
+        "description": "Properties applicable to IfcRailwayPart with PredefinedType set to TRACK, or more specialized types including PLAINTRACK, TURNOUTTRACK, DILATATIONTRACK or TRACKPART.",
         "properties": {
             "HasBallastTrack": {
                 "description": "Indicates whether the track has ballast or not."
@@ -10587,7 +10671,7 @@
                 "description": "Fire rating for this object. It is given according to the national fire safety classification."
             },
             "HandicapAccessible": {
-                "description": "Indication that this object is designed to be accessible by the handicapped. Set to (TRUE) if this object is rated as handicap accessible according the local building codes, otherwise (FALSE). It is giving according to the requirements of the national building code."
+                "description": "Indication that this object is designed to be accessible by the handicapped. Set to (TRUE) if this object is rated as handicap accessible according to the local building codes, otherwise (FALSE). It is giving according to the requirements of the national building code."
             },
             "HasNonSkidSurface": {
                 "description": "Indication whether the surface finish is designed to prevent slippery (TRUE) or not (FALSE)."
@@ -10857,7 +10941,7 @@
                 "description": "Identifies the likelihood of the hazard given the planned mitigation."
             },
             "MitigatedRiskSignificance": {
-                "description": "Identifies the signifiance of the risk given the mitigation of likelihood and consequence."
+                "description": "Identifies the significance of the risk given the mitigation of likelihood and consequence."
             },
             "MitigationPlanned": {
                 "description": "The planned (agreed and irrevocable) mitigation of the likelhood and consequences of the hazard."
@@ -10872,7 +10956,7 @@
                 "description": "An indication or link to the chosen risk assessment methodology, for example PAS1192-6 or a chosen ISO13100 annex."
             },
             "RiskName": {
-                "description": "A locally unique identifier for the risk entry that can be used to track the development and mitiagtion of the risk throughout the project life cycle"
+                "description": "A locally unique identifier for the risk entry that can be used to track the development and mitigation of the risk throughout the project life cycle"
             },
             "RiskType": {
                 "description": "Identifies the predefined types of risk from which the type required may be set."
@@ -10884,7 +10968,7 @@
                 "description": "Identifies the likelihood of the hazard prior to any specific mitigation."
             },
             "UnmitigatedRiskSignificance": {
-                "description": "Identifies the signifiance of the risk given the likelihood and consequence prior to any specific mitigation."
+                "description": "Identifies the significance of the risk given the likelihood and consequence prior to any specific mitigation."
             }
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_Risk.htm"
@@ -11694,7 +11778,7 @@
                 "description": "Indication whether the element is designed for use in the exterior (TRUE) or not (FALSE). If (TRUE) it is an external element and faces the outside of the building."
             },
             "MechanicalOperated": {
-                "description": "Indication whether the element is operated machanically (TRUE) or not, i.e. manually  (FALSE)."
+                "description": "Indication whether the element is operated machanically (TRUE) or not, i.e. manually  (FALSE).  Indication whether the element is operated mechanically (TRUE) or not, i.e. manually (FALSE)."
             },
             "Reference": {
                 "description": "Reference ID for this specified type in this project (e.g. type 'A-1'), Also referred to as \"construction type\". It should be provided as an alternative to the name of the \"object type\", if the software does not support object types and no classification reference to a recognized classification system used.IFC4.3.0.0 DEPRECATION  The Reference property is deprecated and shall no longer be used, use attribute Name on the relating type instead."
@@ -12114,13 +12198,13 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_SpaceAirHandlingDimensioning.htm"
     },
     "Pset_SpaceCommon": {
-        "description": "Properties common to the definition of all occurrences of IfcSpace. Please note that several space attributes are handled directly at the IfcSpace instance, the space number (or short name) by IfcSpace.Name, the space name (or long name) by IfcSpace:LongName, and the description (or comments) by IfcSpace.Description. Actual space quantities, like space perimeter, space area and space volume are provided by IfcElementQuantity, and space classification according to national building code by IfcClassificationReference. The level above zero (relative to the building) for the slab row construction is provided by the IfcBuildingStorey.Elevation, the level above zero (relative to the building) for the floor finish is provided by the IfcSpace.ElevationWithFlooring.",
+        "description": "Properties common to the definition of all occurrences of IfcSpace. Please note that several space attributes are handled directly at the IfcSpace instance, the space number (or short name) by IfcSpace.Name, the space name (or long name) by IfcSpace.LongName, and the description (or comments) by IfcSpace.Description. Actual space quantities, like space perimeter, space area and space volume are provided by IfcElementQuantity, and space classification according to national building code by IfcClassificationReference. The level above zero (relative to the building) for the slab row construction is provided by the IfcBuildingStorey.Elevation, the level above zero (relative to the building) for the floor finish is provided by the IfcSpace.ElevationWithFlooring.",
         "properties": {
             "GrossPlannedArea": {
                 "description": "Total planned gross area of the spatial structure element. Used for programming the spatial structure element."
             },
             "HandicapAccessible": {
-                "description": "Indication that this object is designed to be accessible by the handicapped. Set to (TRUE) if this object is rated as handicap accessible according the local building codes, otherwise (FALSE). It is giving according to the requirements of the national building code."
+                "description": "Indication that this object is designed to be accessible by the handicapped. Set to (TRUE) if this object is rated as handicap accessible according to the local building codes, otherwise (FALSE). It is giving according to the requirements of the national building code."
             },
             "IsExternal": {
                 "description": "Indication whether the element is designed for use in the exterior (TRUE) or not (FALSE). If (TRUE) it is an external element and faces the outside of the building."
@@ -12141,7 +12225,7 @@
         "description": "Properties common to the definition of covering requirements of IfcSpace. Those properties define the requirements coming from a space program in early project phases and can later be used to define the room book information, if such coverings are not modeled explicitly as covering elements.",
         "properties": {
             "CeilingCovering": {
-                "description": "Label to indicate the material or finish of the space flooring. The label is used for room book information and often displayed in room stamp.The material information is provided in absence of an IfcCovering (type=CEILING) object with own shape representation and material assignment. In case of inconsistency the material assigned to IfcCovering elements takes precedence."
+                "description": "Label to indicate the material or finish of the space ceiling. The label is used for room book information and often displayed in room stamp.The material information is provided in absence of an IfcCovering (type=CEILING) object with own shape representation and material assignment. In case of inconsistency the material assigned to IfcCovering elements takes precedence."
             },
             "CeilingCoveringThickness": {
                 "description": "Thickness of the material layer(s) for the space ceiling.The thickness information is provided in absence of an IfcCovering (type=CEILING) object with own shape representation. In cases of inconsistency between the geometric parameters of an assigned IfcCovering and this attached property, the geometric parameters take precedence."
@@ -12177,7 +12261,7 @@
                 "description": "Height of the skirting board.The height information is provided in absence of an IfcCovering (type=SKIRTINGBOARD) object with own shape representation and material assignment. In case of inconsistency the height assigned to IfcCovering elements takes precedence."
             },
             "WallCovering": {
-                "description": "Label to indicate the material or finish of the space flooring. The label is used for room book information and often displayed in room stamp.The material information is provided in absence of an IfcCovering (type=CLADDING) object with own shape representation and material assignment. In case of inconsistency the material assigned to IfcCovering elements takes precedence."
+                "description": "Label to indicate the material or finish of the space cladding. The label is used for room book information and often displayed in room stamp.The material information is provided in absence of an IfcCovering (type=CLADDING) object with own shape representation and material assignment. In case of inconsistency the material assigned to IfcCovering elements takes precedence."
             },
             "WallCoveringThickness": {
                 "description": "Thickness of the material layer(s) for the space cladding.The thickness information is provided in absence of an IfcCovering (type=CLADDING) object with own shape representation. In cases of inconsistency between the geometric parameters of an assigned IfcCovering and this attached property, the geometric parameters take precedence."
@@ -12240,13 +12324,13 @@
                 "description": "Humidity of the space or zone for the cold (winter) period that is required from user/designer view point and provided as requirement for heating."
             },
             "MechanicalVentilation": {
-                "description": "Indication whether the space is required to have mechanical ventilation (TRUE)."
+                "description": "Indication whether the space is required to have mechanical ventilation (TRUE), or not (FALSE)."
             },
             "MechanicalVentilationRate": {
                 "description": "Indication of the requirement of a particular mechanical air ventilation rate, given in air changes per hour."
             },
             "NaturalVentilation": {
-                "description": "Indication whether the space is required to have natural ventilation (TRUE)"
+                "description": "Indication whether the space is required to have natural ventilation (TRUE), or not (FALSE)."
             },
             "NaturalVentilationRate": {
                 "description": "Indication of the requirement of a particular natural air ventilation rate, given in air changes per hour."
@@ -12426,7 +12510,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_SpaceOccupancyRequirements.htm"
     },
     "Pset_SpaceParking": {
-        "description": "Properties common to the definition of all occurrences of IfcSpace which have an attribute value for ObjectType = 'Parking'. NOTE: Modified in IFC 2x3, properties ParkingUse and ParkingUnits added.",
+        "description": "Properties common to the definition of all occurrences of IfcSpace which have an attribute value for ObjectType = 'Parking'.NOTE  Modified in IFC 2x3, properties ParkingUse and ParkingUnits added.",
         "properties": {
             "IsAisle": {
                 "description": "Indicates that this parking zone is for accessing the parking units, i.e. an aisle (TRUE) and not a parking unit itself (FALSE)"
@@ -12492,7 +12576,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_SpaceThermalLoad.htm"
     },
     "Pset_SpaceThermalLoadPHistory": {
-        "description": "The space thermal load IfcSpaceThermalLoadProperties defines actual measured thermal losses and gains occurring within a space or zone. The thermal load source attribute defines an enumeration of possible sources of the thermal load.",
+        "description": "This property set defines actual measured thermal losses and gains occurring within a space or zone. The thermal load source attribute defines an enumeration of possible sources of the thermal load.",
         "properties": {
             "AirExchangeRateTimeHistory": {
                 "description": "Loads from the air exchange rate."
@@ -12612,7 +12696,7 @@
                 "description": "Fire rating for this object. It is given according to the national fire safety classification."
             },
             "HandicapAccessible": {
-                "description": "Indication that this object is designed to be accessible by the handicapped. Set to (TRUE) if this object is rated as handicap accessible according the local building codes, otherwise (FALSE). It is giving according to the requirements of the national building code."
+                "description": "Indication that this object is designed to be accessible by the handicapped. Set to (TRUE) if this object is rated as handicap accessible according to the local building codes, otherwise (FALSE). It is giving according to the requirements of the national building code."
             },
             "HasNonSkidSurface": {
                 "description": "Indication whether the surface finish is designed to prevent slippery (TRUE) or not (FALSE)."
@@ -12710,6 +12794,9 @@
     "Pset_Stationing": {
         "description": "Specifies stationing parameters for IfcReferent.",
         "properties": {
+            "HasIncreasingStation": {
+                "description": "Inform on the increasing or decreasing progress of stationing values, for referents nested in a given alignment.If present and true, or if not present, then the relevant subsequently nested referents are expected to have greater Pset_Stationing.Station values (i.e., increasing stations).If present and false, then the relevant subsequently nested referents are expected to have lower Pset_Stationing.Station values (i.e., decreasing stations)."
+            },
             "IncomingStation": {
                 "description": "The optional station value of the incoming segment that ends at this location. This value needs to be set if the intention is to specify a station equation, i.e. a location where stationing changes."
             },
@@ -12795,7 +12882,7 @@
                 "description": "Reference ID for this specified type in this project (e.g. type 'A-1'), Also referred to as \"construction type\". It should be provided as an alternative to the name of the \"object type\", if the software does not support object types and no classification reference to a recognized classification system used.IFC4.3.0.0 DEPRECATION  The Reference property is deprecated and shall no longer be used, use attribute Name on the relating type instead."
             },
             "SetPoint": {
-                "description": "Indicates the setpoint and label.  For toggle switches, there are two positions, 0 for off and 1 for on.  For dimmer switches, the values may indicate the fully-off and full-on positions, where missing integer values in between are interpolated.   For selector switches, the range indicates the available positions. An IfcTable may be attached (using IfcMetric and IfcPropertyConstraintRelationship) containing columns of the specified header names and types: 'Position' (IfcInteger): The discrete setpoint level. 'Sink' (IfcLabel): The Name of the switched input port (IfcDistributionPort with FlowDirection=SINK). 'Source' (IfcLabel): The Name of the switched output port (IfcDistributionPort with FlowDirection=SOURCE). 'Ratio' (IfcNormalizedRatioMeasure): The ratio of power at the setpoint where 0.0 is off and 1.0 is fully on."
+                "description": "Indicates the setpoint and label.  For toggle switches, there are two positions, 0 for off and 1 for on.  For dimmer switches, the values may indicate the fully-off and full-on positions, where missing integer values in between are interpolated.   For selector switches, the range indicates the available positions. An IfcTable may be attached (using IfcMetric and IfcResourceConstraintRelationship) containing columns of the specified header names and types: 'Position' (IfcInteger): The discrete setpoint level. 'Sink' (IfcLabel): The Name of the switched input port (IfcDistributionPort with FlowDirection=SINK). 'Source' (IfcLabel): The Name of the switched output port (IfcDistributionPort with FlowDirection=SOURCE). 'Ratio' (IfcNormalisedRatioMeasure): The ratio of power at the setpoint where 0.0 is off and 1.0 is fully on."
             },
             "Status": {
                 "description": "Status of the element, predominately used in renovation or retrofitting projects. The status can be assigned to as \"New\" - element designed as new addition, \"Existing\" - element exists and remains, \"Demolish\" - element existed but is to be demolished,  \"Temporary\" - element will exists only temporary (like a temporary support structure)."
@@ -13848,7 +13935,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_UnitaryControlElementTypeThermostat.htm"
     },
     "Pset_UnitaryEquipmentTypeAirConditioningUnit": {
-        "description": "Air conditioning unit equipment type attributes. Note that these attributes were formerly Pset_PackagedACUnit prior to IFC2x2. HeatingEnergySource attribute deleted in IFC2x2 Pset Addendum: Use IfcEnergyProperties, IfcFuelProperties, etc. instead.",
+        "description": "Air conditioning unit equipment type attributes. Note that these attributes were formerly Pset_PackagedACUnit prior to IFC2x2. HeatingEnergySource attribute deleted in IFC2x2 Pset Addendum: Use IfcMaterialProperties instead.",
         "properties": {
             "CondenserEnteringTemperature": {
                 "description": "Temperature of fluid entering condenser."
@@ -14088,7 +14175,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_ValveTypePressureRelief.htm"
     },
     "Pset_VegetationCommon": {
-        "description": "Properties for a plant.",
+        "description": "Properties for vegetation and plants, modelled as instances of IfcGeographicElement with the predefined type set to VEGETATION.",
         "properties": {
             "BotanicalName": {
                 "description": "Formal scientific name conforming to the International Code of Nomenclature for algae, fungi, and plants (ICN)"
@@ -14594,6 +14681,63 @@
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_WindowCommon.htm"
     },
+    "Pset_WindowLiningProperties": {
+        "description": "Properties of the window lining.HISTORY New property set in IFC4.3.2.0 to replace the entity IfcWindowLiningProperties",
+        "properties": {
+            "FirstMullionOffset": {
+                "description": "Offset of the mullion centerline, measured along the x-axis of the window placement coordinate system. An offset value = 0.5 indicates that the mullion is positioned in the middle of the window."
+            },
+            "FirstTransomOffset": {
+                "description": "Offset of the transom centerline, measured along the z-axis of the window placement coordinate system. An offset value = 0.5 indicates that the transom is positioned in the middle of the window."
+            },
+            "LiningDepth": {
+                "description": "The depth of the lining.  For a window, it is the depth of the window lining, measured perpendicularly to window elevation plane."
+            },
+            "LiningOffset": {
+                "description": "Offset of the lining.  For a window, it is the offset of the window lining, given as distance along the y axis of the local placement (perpendicular to the window plane)."
+            },
+            "LiningThickness": {
+                "description": "Thickness of the lining.  For a window, it is the thickness of the window lining as explained in the figure below. If LiningThickness value is 0. (zero) it denotes a window without a lining (all other lining parameters shall be set to NIL in this case). If the LiningThickness is NIL it denotes that the value is not available."
+            },
+            "LiningToPanelOffsetX": {
+                "description": "Offset between the lining and the panel, measured along the x-axis of the local placement.  For a window, it is the offset between the lining and the window panel. Should be smaller or equal to the LiningThickness."
+            },
+            "LiningToPanelOffsetY": {
+                "description": "Offset between the lining and the panel, measured along the y-axis of the local placement.  For a window, it is the offset between the lining and the window panel. Should be smaller or equal to the IfcWindowPanelProperties.PanelThickness."
+            },
+            "MullionThickness": {
+                "description": "Thickness of the mullion.  For a window, it is the thickness of the mullion (i.e., the vertical separator of window panels within a window), measured parallel to the window elevation plane. The mullion is part of the lining and the mullion depth is assumed to be identical to the lining depth. If the MullionThickness is set to zero (and the MullionOffset set to a positive length), then the window is divided horizontally without a physical divider."
+            },
+            "SecondMullionOffset": {
+                "description": "Offset of the mullion centerline for the second mullion, measured along the x-axis of the window placement co-ordinate system. An offset value = 0.666 indicates that the second mullion is positioned at two/third of the window."
+            },
+            "SecondTransomOffset": {
+                "description": "Offset of the transom centerline for the second transom, measured along the x-axis of the window placement co-ordinate system. An offset value = 0.666 indicates that the second transom is positioned at two/third of the window."
+            },
+            "TransomThickness": {
+                "description": "Thickness of the transom.  For a window, it is the thickness of the transom (horizontal separator of window panels within a window), measured parallel to the window elevation plane. The transom is part of the lining and the transom depth is assumed to be identical to the lining depth. If the TransomThickness is set to zero (and the TransomOffset set to a positive length), then the window is divided vertically without a physical divider."
+            }
+        },
+        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_WindowLiningProperties.htm"
+    },
+    "Pset_WindowPanelProperties": {
+        "description": "Properties of the window panel.HISTORY New property set in IFC4.3.2.0 to replace the entity IfcWindowPanelProperties",
+        "properties": {
+            "FrameDepth": {
+                "description": "The length (or depth) of the frame.  For a window, it is the depth of panel frame, measured from front face to back face horizontally (i.e. perpendicular to the window elevation plane)."
+            },
+            "FrameThickness": {
+                "description": "The thickness of the frame.  For a window, it is the width of panel frame, measured from inside of panel (at glazing) to outside of panel (at lining), i.e. parallel to the window (elevation) plane."
+            },
+            "OperationType": {
+                "description": "Type of operations. Also used to assign standard symbolic presentations according to national building standards.  For a window, it is the type of window panel operations. Also used to assign standard symbolic presentations according to national building standards."
+            },
+            "PanelPosition": {
+                "description": "Position of the panel.  For a window, it is the position of the panel within the overall window style."
+            }
+        },
+        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Pset_WindowPanelProperties.htm"
+    },
     "Pset_WiredCommunicationPortCommon": {
         "description": "Properties used for wired communication port.",
         "properties": {
@@ -14634,7 +14778,7 @@
                 "description": "Total planned gross area of the spatial structure element. Used for programming the spatial structure element."
             },
             "HandicapAccessible": {
-                "description": "Indication that this object is designed to be accessible by the handicapped. Set to (TRUE) if this object is rated as handicap accessible according the local building codes, otherwise (FALSE). It is giving according to the requirements of the national building code."
+                "description": "Indication that this object is designed to be accessible by the handicapped. Set to (TRUE) if this object is rated as handicap accessible according to the local building codes, otherwise (FALSE). It is giving according to the requirements of the national building code."
             },
             "IsExternal": {
                 "description": "Indication whether the element is designed for use in the exterior (TRUE) or not (FALSE). If (TRUE) it is an external element and faces the outside of the building."
@@ -14808,7 +14952,7 @@
                 "description": "Gross area of the site covered by the building(s)."
             },
             "GrossFloorArea": {
-                "description": "Sum of all gross floor areas covered by the spaces within the spatial structure element.  Includes the area of construction elements within the building. May be provided in addition to the quantities of the spaces and the construction elements assigned to the building. In case of inconsistencies, the individual quantities of spaces and construction elements take precedence."
+                "description": "Sum of all gross floor areas within the spatial structure element.  Includes the area of construction elements within the building. May be provided in addition to the quantities of the spaces and the construction elements assigned to the building. In case of inconsistencies, the individual quantities of spaces and construction elements take precedence."
             },
             "GrossVolume": {
                 "description": "Total gross volume of the object. Openings, recesses, enclosed objects and projections are not taken into account.  Sum of all gross volumes of spaces enclosed. It includes the volumes of construction elements within the element. May be provided in addition to the quantities of the spaces and the construction elements assigned to the element. In case of inconsistencies, the individual quantities of spaces and construction elements take precedence."
@@ -14841,7 +14985,7 @@
         "description": "Base quantities that are common to the definition of all occurrences of building storey.",
         "properties": {
             "GrossFloorArea": {
-                "description": "Sum of all gross floor areas covered by the spaces within the spatial structure element.  Includes the area of construction elements within the building storey. May be provided in addition to the quantities of the spaces and the construction elements assigned to the storey. In case of inconsistencies, the individual quantities of spaces and construction elements take precedence."
+                "description": "Sum of all gross floor areas within the spatial structure element.  Includes the area of construction elements within the building storey. May be provided in addition to the quantities of the spaces and the construction elements assigned to the storey. In case of inconsistencies, the individual quantities of spaces and construction elements take precedence."
             },
             "GrossHeight": {
                 "description": "Standard gross height of this storey, from the top surface of the construction floor, to the top surface of the construction floor or roof above. Only provided is there is a constant height."
@@ -15834,10 +15978,10 @@
         "description": "Base quantities that are common to the definition of all occurrences of projection elements.",
         "properties": {
             "Area": {
-                "description": "Calculated area for the object.  Area of the projection as viewed by an elevation view (for wall projections or as viewed by a ground floor view (for slab projections)."
+                "description": "Calculated area for the object.  Area of the projection as viewed by an elevation view (for wall projections) or as viewed by a ground floor view (for slab projections)."
             },
             "Volume": {
-                "description": "Volume of the element.  Volume of the opening. It is the additional volume of the projection to the element (e.g. wall or slab)."
+                "description": "Volume of the element.  Volume of the projection. It is the additional volume of the projection to the element (e.g. wall or slab)."
             }
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/Qto_ProjectionElementBaseQuantities.htm"
@@ -16101,7 +16245,7 @@
                 "description": "Sum of all ceiling areas of the space. It includes the area covered by elementsinside the space (columns, inner walls, etc.). The ceiling area is the real (and not the projected) area (e.g. in case of sloped ceilings)."
             },
             "GrossFloorArea": {
-                "description": "Sum of all gross floor areas covered by the spaces within the spatial structure element.  Includes the area covered by elements inside the space (columns, inner walls, etc.) and excludes the area covered by wall claddings."
+                "description": "Sum of all gross floor areas within the spatial structure element.  Includes the area covered by elements inside the space (columns, inner walls, etc.) and excludes the area covered by wall claddings."
             },
             "GrossPerimeter": {
                 "description": "Gross perimeter at the outer contour of the object.  Measured at floor level with all sides of the space, including those parts of the perimeter that are created by virtual boundaries and openings (like doors)."
@@ -16122,7 +16266,7 @@
                 "description": "Sum of all net usable floor areas.  It excludes the area covered  by elements inside the space (columns, inner walls, built-in's etc.), slab openings, or other protruding elements. Varying heights are not taking into account (i.e. no reduction for areas under a minimum headroom)."
             },
             "NetPerimeter": {
-                "description": "Net perimeter at the floor level of this space. It excludes those parts of the perimeter that are created by by virtual boundaries and openings (like doors). It is the measurement used for skirting boards and may includes the perimeter of internal fixed objects like columns."
+                "description": "Net perimeter at the floor level of this space. It excludes those parts of the perimeter that are created by by virtual boundaries and openings (like doors). It is the measurement used for skirting boards and may include the perimeter of internal fixed objects like columns."
             },
             "NetVolume": {
                 "description": "Total net volume of the object, taking into account possible processing features (cut-out's, etc.) or openings and recesses.  Net volume enclosed by the space, excluding the volume of construction elements inside the space."

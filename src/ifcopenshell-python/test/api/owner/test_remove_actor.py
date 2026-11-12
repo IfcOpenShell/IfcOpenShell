@@ -16,13 +16,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.owner
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestRemoveActor(test.bootstrap.IFC4):
     def test_removing_an_actor(self):
         person = self.file.createIfcPerson()
-        actor = ifcopenshell.api.run("owner.add_actor", self.file, ifc_class="IfcActor", actor=person)
-        ifcopenshell.api.run("owner.remove_actor", self.file, actor=actor)
+        actor = ifcopenshell.api.owner.add_actor(self.file, ifc_class="IfcActor", actor=person)
+        ifcopenshell.api.owner.remove_actor(self.file, actor=actor)
         assert len(self.file.by_type("IfcActor")) == 0
+
+
+class TestRemoveActorIFC2X3(test.bootstrap.IFC2X3, TestRemoveActor):
+    pass

@@ -1,0 +1,436 @@
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Bonsai is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import annotations
+
+import json
+import re
+from collections import defaultdict
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Literal, Union, assert_never
+
+import bmesh
+import bpy
+import ifcopenshell.api.material
+import ifcopenshell.api.owner
+import ifcopenshell.express
+import ifcopenshell.ifcopenshell_wrapper as W
+import ifcopenshell.util.element
+import ifcopenshell.util.schema
+from mathutils import Vector
+
+import bonsai.core.style
+import bonsai.core.tool
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.debug.prop import BIMDebugProperties
+
+
+class Debug(bonsai.core.tool.Debug):
+    @classmethod
+    def get_debug_props(cls) -> BIMDebugProperties:
+        return bpy.context.scene.BIMDebugProperties
+
+    @classmethod
+    def add_schema_identifier(cls, schema: W.schema_definition) -> None:
+        IfcStore.schema_identifiers.append(schema.name())
+
+    @classmethod
+    def load_express(cls, filename: str) -> W.schema_definition:
+        schema = ifcopenshell.express.parse(filename)
+        ifcopenshell.register_schema(schema)
+        return schema.schema
+
+    @classmethod
+    def debug_bmesh(cls, bm: bmesh.types.BMesh, name: str = "Debug") -> bpy.types.Object:
+        mesh = bpy.data.meshes.new("Debug")
+        bm.to_mesh(mesh)
+        obj = bpy.data.objects.new(name, mesh)
+        assert bpy.context.scene
+        bpy.context.scene.collection.objects.link(obj)
+        return obj
+
+    @classmethod
+    def debug_geometry(
+        cls, verts: list[Vector] = [], edges: list[tuple[int, int]] = [], name: str = "Debug"
+    ) -> bpy.types.Object:
+        mesh = bpy.data.meshes.new("Debug")
+        mesh.from_pydata(verts, edges, [])
+        obj = bpy.data.objects.new(name, mesh)
+        assert bpy.context.scene
+        bpy.context.scene.collection.objects.link(obj)
+        return obj
+
+    @classmethod
+    def remove_unused_elements(cls, elements: list[ifcopenshell.entity_instance]) -> None:
+        ifc_file = tool.Ifc.get()
+        for element in elements:
+            ifcopenshell.util.element.remove_deep2(ifc_file, element)
+
+    @classmethod
+    def print_unused_elements_stats(cls, requested_ifc_class: str = "", ignore_classes: Iterable[str] = tuple()) -> int:
+        ifc_file = tool.Ifc.get()
+
+        # get list of ifc classes used in model
+        classes = set()
+        requested_ifc_classes = set()
+        for el in ifc_file:
+            if any(el.is_a(i) for i in ignore_classes):
+                continue
+            classes.add(el.is_a())
+            if requested_ifc_class and el.is_a(requested_ifc_class):
+                requested_ifc_classes.add(el.is_a())
+
+        # count unused elements for each class
+        unused = dict()
+        for c in classes:
+            uses = [i for i in ifc_file.by_type(c) if ifc_file.get_total_inverses(i) == 0]
+            if not uses:
+                continue
+            unused[c] = len(uses)
+
+        # print classes and their unsued elements in ascending order
+        if unused:
+            print("Unused elements by classes:")
+            for ifc_class in sorted(unused.keys(), key=lambda x: unused[x]):
+                class_string = ifc_class
+                if ifc_class in requested_ifc_classes:
+                    class_string = "---> " + class_string
+                print(f"{class_string: <50} {unused[ifc_class]: >5}")
+
+        return sum(unused.values())
+
+    @classmethod
+    def merge_identical_objects(
+        cls,
+        object_type: Literal[
+            "STYLE",
+            "MATERIAL",
+            "ORGANIZATION",
+            "APPLICATION",
+            "PERSON",
+            "PERSON_AND_ORGANIZATION",
+        ],
+        by_name_or_identification_only: bool = False,
+    ) -> dict[str, list[str]]:
+        """Merge identical objects.
+
+        Note that Styles UI (or other UI) should be updated manually after using this method.
+
+        :param object_type: The type of object to merge
+        :param by_name_or_identification_only: If True, merge based only on Name attribute (or equivalent identifier).
+            Strips .XXX suffix patterns (e.g., 'foo.001' matches 'foo', 'foo.002').
+            For PERSON, uses Identification. For APPLICATION, uses ApplicationFullName.
+            For PERSON_AND_ORGANIZATION, uses combination of person and organization identifiers.
+        """
+
+        def normalize_name(name: str) -> str:
+            """Remove .XXX suffix pattern from names (e.g., 'foo.001' -> 'foo')"""
+            if not name:
+                return ""
+            # Match pattern: name ending with .digits
+            match = re.match(r"^(.+)\.\d+$", name)
+            if match:
+                return match.group(1)
+            return name
+
+        def get_hash(element: ifcopenshell.entity_instance) -> int:
+            data = element.get_info(include_identifier=False, recursive=True)
+            if object_type == "APPLICATION":
+                # To avoid disruption let user merge organizations separately.
+                data["ApplicationDeveloper"] = element.ApplicationDeveloper.id()
+            elif object_type == "PERSON_AND_ORGANIZATION":
+                data["ThePerson"] = element.ThePerson.id()
+                data["TheOrganization"] = element.TheOrganization.id()
+            return hash(json.dumps(data, sort_keys=True))
+
+        def get_name_key(element: ifcopenshell.entity_instance) -> str:
+            """Get key based on name/identifier attribute for the given object type"""
+            if object_type == "STYLE":
+                name = element.Name if element.Name else ""
+                return normalize_name(name)
+            elif object_type == "MATERIAL":
+                name = element.Name if element.Name else ""
+                return normalize_name(name)
+            elif object_type == "ORGANIZATION":
+                name = element.Name if element.Name else ""
+                return normalize_name(name)
+            elif object_type == "APPLICATION":
+                name = element.ApplicationFullName if element.ApplicationFullName else ""
+                return normalize_name(name)
+            elif object_type == "PERSON":
+                ident = element.Identification if element.Identification else ""
+                return normalize_name(ident)
+            elif object_type == "PERSON_AND_ORGANIZATION":
+                person_id = element.ThePerson.Identification if element.ThePerson.Identification else ""
+                org_name = element.TheOrganization.Name if element.TheOrganization.Name else ""
+                return f"{normalize_name(person_id)}|{normalize_name(org_name)}"
+            else:
+                assert_never(object_type)
+
+        def get_element_name(element: ifcopenshell.entity_instance) -> str:
+            """Get the actual name/identifier from element for sorting purposes"""
+            if object_type == "STYLE":
+                return element.Name if element.Name else ""
+            elif object_type == "MATERIAL":
+                return element.Name if element.Name else ""
+            elif object_type == "ORGANIZATION":
+                return element.Name if element.Name else ""
+            elif object_type == "APPLICATION":
+                return element.ApplicationFullName if element.ApplicationFullName else ""
+            elif object_type == "PERSON":
+                return element.Identification if element.Identification else ""
+            elif object_type == "PERSON_AND_ORGANIZATION":
+                person_id = element.ThePerson.Identification if element.ThePerson.Identification else ""
+                org_name = element.TheOrganization.Name if element.TheOrganization.Name else ""
+                return f"{person_id}|{org_name}"
+            else:
+                assert_never(object_type)
+
+        ifc_file = tool.Ifc.get()
+        merged_element_types: dict[str, list[str]] = {}
+
+        if object_type == "STYLE":
+            declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle").as_entity()
+            assert declaration
+            element_types = [e.name() for e in ifcopenshell.util.schema.get_subtypes(declaration)]
+        elif object_type == "MATERIAL":
+            # TODO: support other material types.
+            element_types = ["IfcMaterial"]
+        elif object_type == "ORGANIZATION":
+            element_types = ["IfcOrganization"]
+        elif object_type == "APPLICATION":
+            element_types = ["IfcApplication"]
+        elif object_type == "PERSON":
+            element_types = ["IfcPerson"]
+        elif object_type == "PERSON_AND_ORGANIZATION":
+            element_types = ["IfcPersonAndOrganization"]
+        else:
+            assert_never(object_type)
+
+        def get_person_name(person: ifcopenshell.entity_instance) -> str:
+            return f"{person.Identification} / {person.FamilyName} / {person.GivenName}"
+
+        for element_type in element_types:
+            elements = ifc_file.by_type(element_type, include_subtypes=False)
+
+            # Calculate hashes or name keys.
+            hash_to_elements: defaultdict[Union[int, str], list[ifcopenshell.entity_instance]]
+
+            if by_name_or_identification_only:
+                # Group by name/identifier only (with .XXX suffix normalization)
+                hash_to_elements = defaultdict(list)
+                for element in elements:
+                    name_key = get_name_key(element)
+                    # Skip elements without a valid identifier
+                    if not name_key:
+                        continue
+                    hash_to_elements[name_key].append(element)
+
+                # Sort elements within each group to keep the one without suffix (or lowest suffix)
+                for name_key in hash_to_elements:
+                    # Sort by: 1) prefer names without .XXX suffix, 2) then by original name
+                    def sort_key(el):
+                        name = get_element_name(el)
+                        # Check if name has .XXX suffix
+                        has_suffix = bool(re.match(r"^.+\.\d+$", name))
+                        # Return tuple: (has_suffix, name) - sort by no suffix first, then alphabetically
+                        return (has_suffix, name)
+
+                    hash_to_elements[name_key].sort(key=sort_key)
+            else:
+                # Group by full hash
+                hash_to_elements = defaultdict(list)
+                for element in elements:
+                    # Except for styles, ignore unnamed elements as they may be not safe to merge
+                    merge_optional_names = ("STYLE", "PERSON")
+                    not_optional_name = ("APPLICATION", "ORGANIZATION")
+                    has_no_name = ("PERSON_AND_ORGANIZATION",)
+                    if (
+                        object_type not in merge_optional_names
+                        and object_type not in not_optional_name
+                        and object_type not in has_no_name
+                        and not element.Name
+                    ):
+                        continue
+                    element_hash = get_hash(element)
+                    hash_to_elements[element_hash].append(element)
+
+            merged_elements_names: list[str] = []
+            # Merge elements.
+            for elements in hash_to_elements.values():
+                if len(elements) == 1:
+                    continue
+
+                main_element = elements[0]
+                if object_type == "STYLE":
+                    main_style_obj = tool.Ifc.get_object(main_element)
+                    for style in elements[1:]:
+                        ifcopenshell.util.element.replace_element(style, main_element)
+                        style_obj = tool.Ifc.get_object(style)
+                        # Only for surface styles.
+                        if style_obj:
+                            assert main_style_obj
+                            style_obj.user_remap(main_style_obj)
+                        merged_elements_names.append(style.Name)
+                        bonsai.core.style.remove_style(tool.Ifc, tool.Style, style, reload_styles_ui=False)
+
+                elif object_type == "MATERIAL":
+                    for material in elements[1:]:
+                        ifcopenshell.util.element.replace_element(material, main_element)
+                        merged_elements_names.append(material.Name)
+                        ifcopenshell.api.material.remove_material(ifc_file, material)
+
+                elif object_type == "ORGANIZATION":
+                    for organization in elements[1:]:
+                        ifcopenshell.util.element.replace_element(organization, main_element)
+                        merged_elements_names.append(organization.Name)
+                        ifcopenshell.api.owner.remove_organisation(ifc_file, organization)
+
+                elif object_type == "APPLICATION":
+                    for application in elements[1:]:
+                        ifcopenshell.util.element.replace_element(application, main_element)
+                        merged_elements_names.append(application.ApplicationFullName)
+                        ifcopenshell.api.owner.remove_application(ifc_file, application)
+
+                elif object_type == "PERSON":
+                    for person in elements[1:]:
+                        ifcopenshell.util.element.replace_element(person, main_element)
+                        merged_elements_names.append(get_person_name(person))
+                        ifcopenshell.api.owner.remove_person(ifc_file, person)
+
+                elif object_type == "PERSON_AND_ORGANIZATION":
+                    for pao in elements[1:]:
+                        ifcopenshell.util.element.replace_element(pao, main_element)
+                        merged_elements_names.append(f"{get_person_name(pao.ThePerson)} / {pao.TheOrganization.Name}")
+                        ifcopenshell.api.owner.remove_person_and_organisation(ifc_file, pao)
+
+                else:
+                    assert_never(object_type)
+
+            if merged_elements_names:
+                merged_element_types[element_type] = merged_elements_names
+
+        if object_type == "STYLE":
+            if merged_materials := cls.merge_stale_style_materials():
+                merged_element_types["Blender Material"] = merged_materials
+        return merged_element_types
+
+    @classmethod
+    def merge_stale_style_materials(cls) -> list[str]:
+        """Merge Blender materials that duplicate a surface style's linked material.
+
+        A material is stale if it is not the one linked to its style in the id map,
+        either because it is unlinked from IFC (e.g. "Foo" next to the linked "Foo.001")
+        or because it points to a style that is linked to another material.
+        Unlinked materials are matched to styles by name, ignoring .XXX suffixes.
+        The kept material and its style are then renamed without the suffix, if that name is free.
+
+        :return: Names of the removed materials.
+        """
+
+        def normalize_name(name: str) -> str:
+            return re.sub(r"\.\d+$", "", name)
+
+        ifc_file = tool.Ifc.get()
+        linked_materials: set[bpy.types.Material] = set()
+        name_to_material: dict[str, Union[bpy.types.Material, None]] = {}
+        for style in ifc_file.by_type("IfcSurfaceStyle"):
+            obj = tool.Ifc.get_object(style)
+            if not isinstance(obj, bpy.types.Material):
+                continue
+            linked_materials.add(obj)
+            key = normalize_name(style.Name or "")
+            if not key:
+                continue
+            # Ambiguous names are not safe to merge into.
+            name_to_material[key] = None if key in name_to_material else obj
+
+        merged_names: list[str] = []
+        for material in list(bpy.data.materials):
+            if material.library or material in linked_materials:
+                continue
+            style = tool.Ifc.get_entity(material)
+            if style:
+                target = tool.Ifc.get_object(style)
+            else:
+                target = name_to_material.get(normalize_name(material.name))
+            if not isinstance(target, bpy.types.Material) or target == material:
+                continue
+            merged_names.append(material.name)
+            material.user_remap(target)
+            tool.Blender.remove_data_block(material)
+
+        # Keep the name without the .XXX suffix, e.g. "Foo.001" becomes "Foo" once "Foo" is merged.
+        for name, material in name_to_material.items():
+            if material is None:
+                continue
+            if material.name != name and name not in bpy.data.materials:
+                material.name = name
+            style = tool.Ifc.get_entity(material)
+            if style and material.name == name and style.Name != name:
+                style.Name = name
+        return merged_names
+
+    PurgeMergeObjectType = Literal[
+        "TYPE",
+        "PROFILE",
+        "STYLE",
+        "MATERIAL",
+        "ORGANIZATION",
+        "APPLICATION",
+        "PERSON",
+        "PERSON_AND_ORGANIZATION",
+    ]
+
+    @classmethod
+    def refresh_ui_after_purge_merge(cls, object_type: PurgeMergeObjectType) -> None:
+        if object_type == "PROFILE":
+            props = tool.Profile.get_profile_props()
+            if props.is_editing:
+                bpy.ops.bim.load_profiles()
+        elif object_type == "STYLE":
+            props = tool.Style.get_style_props()
+            if props.is_editing:
+                bpy.ops.bim.load_styles()
+        elif object_type == "MATERIAL":
+            props = tool.Material.get_material_props()
+            if props.is_editing:
+                bpy.ops.bim.load_materials()
+        elif object_type == "TYPE":
+            pass
+        elif object_type == "ORGANIZATION":
+            props = tool.Owner.get_owner_props()
+            if tool.Ifc.get_entity_by_id(props.active_organisation_id) is None:
+                props.active_organisation_id = 0
+        elif object_type == "APPLICATION":
+            props = tool.Owner.get_owner_props()
+            if tool.Ifc.get_entity_by_id(props.active_application_id) is None:
+                tool.Owner.clear_application()
+        elif object_type == "PERSON":
+            props = tool.Owner.get_owner_props()
+            if tool.Ifc.get_entity_by_id(props.active_person_id) is None:
+                tool.Owner.clear_person()
+        elif object_type == "PERSON_AND_ORGANIZATION":
+            props = tool.Owner.get_owner_props()
+            if tool.Ifc.get_entity_by_id(props.active_person_id) is None:
+                tool.Owner.clear_user()
+        else:
+            assert_never(object_type)

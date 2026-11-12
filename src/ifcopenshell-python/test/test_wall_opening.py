@@ -16,18 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import re
 import glob
 import json
-import typing
+import os
+import re
 import shutil
 import subprocess
-
+import typing
 from dataclasses import dataclass, field
 
 import pytest
-import ifcopenshell
+
+import ifcopenshell.guid
 import ifcopenshell.template
 
 PERF = False
@@ -218,7 +218,7 @@ class TestWallOpenings:
 
                 ts = []
                 for j in range(10 if PERF else 1):
-                    subprocess.call(args, stdout=subprocess.PIPE)
+                    subprocess.check_call(args, stdout=subprocess.PIPE)
 
                     log = [json.loads(ln)["message"] for ln in open(fn + ".log.json") if ln]
                     perf = dict(x.groups() for x in [re.match(pat, l) for l in log] if x)
@@ -229,7 +229,11 @@ class TestWallOpenings:
 
                 if i == 0 and j == 0:
                     for ln, st in cs:
-                        assert len([l for l in log if l.startswith(st)]) == ln, f"\nOn file:\n - {fn}\nMessages:" +  "".join(f'\n - "{l}"' for l in log) + f"\nExpected:\n - \"{st}\""
+                        assert len([l for l in log if l.startswith(st)]) == ln, (
+                            f"\nOn file:\n - {fn}\nMessages:"
+                            + "".join(f'\n - "{l}"' for l in log)
+                            + f'\nExpected:\n - "{st}"'
+                        )
 
                 # breakpoint()
 

@@ -16,58 +16,66 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Optional
+
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.sequence
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, relating_process=None, related_process=None):
-        """Removes a sequence relationship between tasks
+def unassign_sequence(
+    file: ifcopenshell.file,
+    relating_process: ifcopenshell.entity_instance,
+    related_process: ifcopenshell.entity_instance,
+    sequence_type: Optional[str] = None,
+) -> None:
+    """Removes a sequence relationship between tasks
 
-        :param relating_process: The previous / predecessor task.
-        :type relating_process: ifcopenshell.entity_instance.entity_instance
-        :param related_process: The next / successor task.
-        :type related_process: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    Two tasks may be sequenced more than once with different types — see
+    :func:`ifcopenshell.api.sequence.assign_sequence` — so removing "the"
+    relationship between a pair is ambiguous. Left unspecified, every sequence
+    between the two is removed, which is what "make them unrelated" means and
+    what this did before the parameter existed. Name a type to remove only that
+    one and leave any others in place.
 
-        Example:
+    :param relating_process: The previous / predecessor task.
+    :param related_process: The next / successor task.
+    :param sequence_type: Optionally, remove only the sequence of this type.
+        Choose from FINISH_START, FINISH_FINISH, START_START, or START_FINISH.
+    :return: None
 
-        .. code:: python
+    Example:
 
-            # Let's imagine we are creating a construction schedule. All tasks
-            # need to be part of a work schedule.
-            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+    .. code:: python
 
-            # Let's imagine a root construction task
-            construction = ifcopenshell.api.run("sequence.add_task", model,
-                work_schedule=schedule, name="Construction", identification="C")
+        # Let's imagine we are creating a construction schedule. All tasks
+        # need to be part of a work schedule.
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
-            # Let's imagine we're building 2 zones, one after another.
-            zone1 = ifcopenshell.api.run("sequence.add_task", model,
-                parent_task=construction, name="Zone 1", identification="C.1")
-            zone2 = ifcopenshell.api.run("sequence.add_task", model,
-                parent_task=construction, name="Zone 2", identification="C.2")
+        # Let's imagine a root construction task
+        construction = ifcopenshell.api.sequence.add_task(model,
+            work_schedule=schedule, name="Construction", identification="C")
 
-            # Zone 1 finishes, then zone 2 starts.
-            ifcopenshell.api.run("sequence.assign_sequence", model, relating_process=zone1, related_process=zone2)
+        # Let's imagine we're building 2 zones, one after another.
+        zone1 = ifcopenshell.api.sequence.add_task(model,
+            parent_task=construction, name="Zone 1", identification="C.1")
+        zone2 = ifcopenshell.api.sequence.add_task(model,
+            parent_task=construction, name="Zone 2", identification="C.2")
 
-            # Let's make them unrelated
-            ifcopenshell.api.run("sequence.unassign_sequence", model,
-                relating_process=zone1, related_process=zone2)
-        """
-        self.file = file
-        self.settings = {
-            "relating_process": relating_process,
-            "related_process": related_process,
-        }
+        # Zone 1 finishes, then zone 2 starts.
+        ifcopenshell.api.sequence.assign_sequence(model, relating_process=zone1, related_process=zone2)
 
-    def execute(self):
-        for rel in self.settings["related_process"].IsSuccessorFrom or []:
-            if rel.RelatingProcess == self.settings["relating_process"]:
-                history = rel.OwnerHistory
-                self.file.remove(rel)
-                if history:
-                    ifcopenshell.util.element.remove_deep2(self.file, history)
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=self.settings["related_process"])
+        # Let's make them unrelated
+        ifcopenshell.api.sequence.unassign_sequence(model,
+            relating_process=zone1, related_process=zone2)
+    """
+    for rel in related_process.IsSuccessorFrom or []:
+        if rel.RelatingProcess != relating_process:
+            continue
+        if sequence_type is not None and rel.SequenceType != sequence_type:
+            continue
+        history = rel.OwnerHistory
+        file.remove(rel)
+        if history:
+            ifcopenshell.util.element.remove_deep2(file, history)
+    ifcopenshell.api.sequence.cascade_schedule(file, task=related_process)

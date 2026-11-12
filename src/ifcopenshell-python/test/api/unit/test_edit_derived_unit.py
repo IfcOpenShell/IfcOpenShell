@@ -16,18 +16,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.unit
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestEditDerivedUnit(test.bootstrap.IFC4):
     def test_run(self):
         unit = self.file.createIfcDerivedUnit()
-        ifcopenshell.api.run(
-            "unit.edit_derived_unit",
+        ifcopenshell.api.unit.edit_derived_unit(
             self.file,
             unit=unit,
             attributes={"UnitType": "USERDEFINED", "UserDefinedType": "UserDefinedType"},
         )
         assert unit.UnitType == "USERDEFINED"
         assert unit.UserDefinedType == "UserDefinedType"
+
+
+class TestEditDerivedUnitIFC2X3(test.bootstrap.IFC2X3, TestEditDerivedUnit):
+    pass

@@ -19,17 +19,17 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveBoundedPlane* inst) {
-	taxonomy::plane::ptr pl = taxonomy::cast<taxonomy::plane>(map(inst->BasisSurface()));
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveBoundedPlane& inst) {
+	taxonomy::plane::ptr pl = taxonomy::cast<taxonomy::plane>(map(inst.BasisSurface()));
 	auto f = taxonomy::make<taxonomy::face>();
-	f->children.push_back(taxonomy::cast<taxonomy::loop>(map(inst->OuterBoundary())));
-	
-	IfcSchema::IfcCurve::list::ptr boundaries = inst->InnerBoundaries();
+	f->children.push_back(taxonomy::cast<taxonomy::loop>(map(inst.OuterBoundary())));
 
-	for (IfcSchema::IfcCurve::list::it it = boundaries->begin(); it != boundaries->end(); ++it) {
-		f->children.push_back(taxonomy::cast<taxonomy::loop>(map(*it)));
+	std::vector<IfcSchema::IfcCurve> boundaries = inst.InnerBoundaries();
+
+	for (auto& b : boundaries) {
+		f->children.push_back(taxonomy::cast<taxonomy::loop>(map(b)));
 	}
 	f->matrix = pl->matrix;
 

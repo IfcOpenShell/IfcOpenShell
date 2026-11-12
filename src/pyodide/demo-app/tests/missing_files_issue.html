@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Missing Files Issue Demo</title>
+</head>
+
+<body>
+    <div id='status'>Loading...</div>
+    <div id='errors'></div>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/pyodide/v0.28.0a3/full/pyodide.js"></script>
+    <script type="module">
+        async function main() {
+            document.querySelector("#status").innerHTML = "Initializing pyodide";
+            let pyodide = await loadPyodide();
+            document.querySelector("#status").innerHTML = "Loading dependencies";
+            await pyodide.loadPackage("micropip");
+            await pyodide.loadPackage("numpy");
+            await pyodide.loadPackage("shapely");
+            const micropip = pyodide.pyimport("micropip");
+            await micropip.install("typing-extensions");
+            document.querySelector("#status").innerHTML = "Loading IfcOpenShell";
+            await micropip.install("../wheels/ifcopenshell-0.8.4+c64b477-cp313-cp313-emscripten_4_0_9_wasm32.whl");
+
+            document.querySelector("#status").innerHTML = "Loading test script";
+
+            // Load the Python test script
+            await pyodide.runPythonAsync(`
+            from pyodide.http import pyfetch
+            response = await pyfetch("./missing_files.py")
+            with open("missing_files.py", "wb") as f:
+                f.write(await response.bytes())
+            `);
+
+            document.querySelector("#status").innerHTML = "Running tests";
+
+            // Run the async test function
+            let psetErrors = await pyodide.runPythonAsync(`
+            from missing_files import test_pset
+            errors = await test_pset()
+            errors
+            `);
+
+            document.querySelector("#status").innerHTML = "Test completed";
+            document.querySelector("#errors").innerHTML = psetErrors.join("<br>");
+            
+            let docErrors = await pyodide.runPythonAsync(`
+            from missing_files import test_doc
+            errors = await test_doc()
+            errors
+            `);
+
+            document.querySelector("#errors").innerHTML += "<br>" + docErrors.join("<br>");
+        }
+
+        main();
+    </script>
+</body>
+
+</html>

@@ -16,14 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.unit
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestAddContextDependentUnit(test.bootstrap.IFC4):
     def test_run(self):
-        unit = ifcopenshell.api.run(
-            "unit.add_context_dependent_unit",
+        unit = ifcopenshell.api.unit.add_context_dependent_unit(
             self.file,
             unit_type="LENGTHUNIT",
             name="foobar",
@@ -39,3 +38,7 @@ class TestAddContextDependentUnit(test.bootstrap.IFC4):
         assert unit.Dimensions.LuminousIntensityExponent == 7
         assert unit.UnitType == "LENGTHUNIT"
         assert unit.Name == "foobar"
+
+
+class TestAddContextDependentUnitIFC2X3(test.bootstrap.IFC2X3, TestAddContextDependentUnit):
+    pass

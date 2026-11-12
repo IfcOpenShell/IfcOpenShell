@@ -1,0 +1,12 @@
+{
+  "name": "ifcviewer-web-smoke",
+  "private": true,
+  "type": "module",
+  "description": "Headless-browser smoke tests for the WebGPU/Emscripten ifcviewer build.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

@@ -1,0 +1,361 @@
+Installation
+============
+
+There are different methods of installation, depending on your situation.
+
+1. :ref:`guides/development/installation:Unstable installation` is recommended
+   for power users helping with testing.
+2. :ref:`guides/development/installation:Bundling for blender` is recommended for distributing the add-on.
+3. :ref:`guides/development/installation:Live development environment` is
+   recommended for developers who are actively coding.
+4. :ref:`guides/development/installation:Packaged installation` is recommended
+   for those who use a package manager.
+5. :ref:`guides/development/installation:BonsaiPR (Bleeding Edge) Installation` merges all open, non-draft PRs automatically.
+
+
+System requirements
+-------------------
+
+Bonsai officially supports all major 64-bit platforms, as well as the Python
+version shipped by the Blender Foundation for the most recent three major
+Blender versions:
+
+- 64-bit Linux (``linux-x64``)
+- 64-bit MacOS Intel (``macos-x64``)
+- 64-bit MacOS Silicon (``macos-arm64``)
+- 64-bit Windows (``windows-x64``)
+- Blender 5.1 or 5.2 with Python 3.13
+
+Developer builds may exist for different versions of Python but there will be
+no guarantee of the uptime or stability of these builds.
+
+Other system specifications match the `Blender Requirements
+<https://www.blender.org/download/requirements/>`_ and the `VFX Platform
+<https://vfxplatform.com/>`_ standard.
+
+Sometimes, a build may be delayed, or contain broken code. We try to avoid this,
+but it happens.
+
+Unstable installation
+---------------------
+
+**Unstable installation** is almost the same as **Stable installation**, except
+that they are typically updated every day. To install the **Unstable** version:
+
+1. Open up Blender, and click on ``Edit > Preferences``.
+
+   .. image:: /quickstart/images/install-bonsai-1.png
+
+2. Select the **Get Extensions** tab, and press **Allow Online Access**.
+
+   .. image:: /quickstart/images/install-bonsai-2.png
+
+3. Go to the `Bonsai Unstable Repository
+   <https://github.com/IfcOpenShell/bonsai_unstable_repo>`__, and drag and drop
+   from the appropriate link in the ``ID`` column of the table into Blender
+   depending on your operating system.
+
+   .. image:: images/unstable-drag-drop.png
+
+4. Enable **Check for Updates on Startup** to get updates for daily Bonsai
+   builds automatically.
+
+   .. image:: images/unstable-auto-update.png
+
+.. tip::
+
+    Instead of drag and drop, you can manually create the repository:
+
+    Open :menuselection:`Topbar --> Edit --> Preferences --> Get Extensions
+    --> Repositories (Top Right) --> "+" Icon --> Add Remote Remository`.
+    You'll see a window similar to the one above.
+
+    Use as URL:
+    ``https://raw.githubusercontent.com/IfcOpenShell/bonsai_unstable_repo/main/index.json``
+    and enable **Check for Updates on Startup** if you want them.
+
+5. Search for **Bonsai** in the top left search bar, then press the **Install**
+   button.
+
+   .. image:: /quickstart/images/install-bonsai-3.png
+
+.. warning::
+
+   Make sure the extension you install has ``raw.githubusercontent.com`` as
+   the "Repository" (not ``extensions.blender.org``).
+
+   .. image:: images/unstable-repo.png
+
+6. Whenever a new update is available, you'll see it in the bottom right
+   :menuselection:`Status Bar`
+
+   .. image:: images/unstable-icon.png
+
+7. To update, click on the update button in :menuselection:`Topbar --> Edit -->
+   Preferences --> Get Extensions`.
+
+   .. image:: /guides/images/update.png
+
+8. After an update, be sure to restart.
+
+   .. image:: images/unstable-restart.png
+
+If you wish to install an **Unstable** version offline, you can download a
+daily or previous build from the `GitHub releases page
+<https://github.com/IfcOpenShell/IfcOpenShell/releases?q=bonsai&expanded=true>`__,
+then go to :menuselection:`Topbar --> Edit --> Preferences --> Get Extensions
+--> "V" Icon (top right) --> Install from Disk`.
+
+.. tip::
+
+   Installing a previous build is a great way to roll back to previous versions. Uninstall the current version, 
+   then install the previous version from your disk. Make the install directory into the repo folder, and you can still 
+   update by the click of a button, when you are ready for the latest build.
+
+Bundling for Blender
+--------------------
+
+Instead of waiting for an official release on the Bonsai website, it
+is possible to make your own Blender add-on from the bleeding edge source code
+of Bonsai. Bonsai is coded in Python and doesn't require any
+compilation, so this is a relatively easy process.
+
+Note that Bonsai depends on IfcOpenShell, and IfcOpenShell does require
+compilation. The following instructions will use a pre-built IfcOpenShell
+(using an IfcOpenBot build) for convenience. Instructions on how to compile
+IfcOpenShell is out of scope of this document.
+
+You can create your own package by using the Makefile as shown below. You can
+choose between a ``PLATFORM`` of ``linux``, ``macos``, ``macosm1``, and ``win``.
+You can choose between a ``PYVERSION`` of ``py312``, ``py311``, ``py310``, or
+``py39``.
+
+.. code-block:: bash
+
+    cd src/bonsai
+    make dist PLATFORM=linux PYVERSION=py311
+    ls dist/
+
+This will give you a fully packaged Blender add-on zip that you can distribute
+and install.
+
+Live development environment
+----------------------------
+
+First, install using the :ref:`guides/development/installation:Unstable
+installation` method. This will provide all compiled dependencies for you out
+of the box.
+
+Once you've done this, we'll replace the installed Python files with those from
+our Git repository. We're going to use symbolic links, so we can code in our
+Git repository, and see the changes in our Blender installation (you will need
+to restart Blender to see changes).
+
+For Linux or Mac:
+
+.. code-block:: bash
+
+    cd src/bonsai/scripts
+    python dev_environment.py
+
+For Windows, you may need to run the script as an administrator. Make sure to 
+run the script with blender closed. By default the script assumes its 
+in the root directory of the IfcOpenShell repository.
+
+After you modify your code in the Git repository, you will need to restart
+Blender for the changes to take effect.
+
+Note that this only links Python code to the Git repository. If there are any
+major changes such as new dependencies or newly compiled C++ code, you will
+need to make the updates manually. This is relatively rare. Reviewing the
+`Makefile history
+<https://github.com/IfcOpenShell/IfcOpenShell/commits/v0.9.0/src/bonsai/Makefile>`__,
+is one quick way to see if a dependency has changed.
+
+If there are changes to the IfcOpenShell binaries, you may replace them with new
+ones downloaded from the automated `IfcOpenShell builds directory
+<https://builds.ifcopenshell.org/>`__.
+
+If you wish to run the IfcTester webapp, you will also need to have ``npm`` and
+setup IfcTester:
+
+.. code-block:: bash
+
+    cd src/ifctester
+    make webapp-prepare
+
+.. seealso::
+
+    There is a `useful Blender Addon
+    <https://blenderartists.org/uploads/short-url/yto1sjw7pqDRVNQzpVLmn51PEDN.zip>`__
+    (see `forum thread
+    <https://blenderartists.org/t/reboot-blender-addon/640465/13>`__) that adds
+    a Reboot button in File menu.  In this way, it's possible to directly
+    restart Blender and test the modified source code.  There is also a VS Code
+    add-on called `Blender Development
+    <https://marketplace.visualstudio.com/items?itemName=JacquesLucke.blender-development>`__
+    that has a similar functionality.
+
+
+Packaged installation
+---------------------
+
+- **Arch Linux**: `Direct from Git <https://aur.archlinux.org/packages/ifcopenshell-git/>`__.
+- **Fedora Linux**: `IfcOpenShell Copr repository <https://copr.fedorainfracloud.org/coprs/bpostle/IfcOpenShell/>`__.
+
+Tips for package managers
+-------------------------
+
+Bonsai is fully contained in the ``bonsai/`` subfolder of the Blender add-ons
+directory. This is typically distributed as a zipfile as per Blender add-on
+conventions. Within this folder, you'll find the following file structure:
+
+::
+
+    core/ (Blender agnostic core logic)
+    tool/ (Blender specific shared functionality)
+    bim/ (Blender specific UI)
+    libs/ (other assets)
+    wheels/ (dependencies)
+    __init__.py
+
+This corresponds to the structure found in the source code `here
+<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.9.0/src/bonsai/bonsai>`__.
+
+Bonsai is complex, and requires many dependencies, including Python modules,
+binaries, and static assets. When packaged for users, these dependencies are
+bundled with the add-on for convenience.
+
+If you choose to install Bonsai and use your own system dependencies, the
+source of truth for how dependencies are bundled are found in
+the `Makefile
+<https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.9.0/src/bonsai/Makefile>`__
+in the ``dist`` target.
+
+
+
+BonsaiPR (Bleeding Edge) Installation
+--------------------------------------
+
+**BonsaiPR** is a community-maintained build that automatically merges open pull
+requests (PRs) from the IfcOpenShell repository into a single installable add-on.
+It is intended for power users and testers who want to try the latest community
+contributions before they are officially reviewed and merged.
+
+Why BonsaiPR Exists
+~~~~~~~~~~~~~~~~~~~~
+
+Many excellent PRs are submitted by contributors, but core maintainers have
+limited time for timely reviews. As a result, PRs often sit unmerged,
+contributors lose momentum, and valuable work risks being forgotten.
+
+BonsaiPR addresses this by providing a ``bleeding_edge`` build that merges all
+open, non-draft PRs automatically. Power users can install this build to test
+multiple PRs together, helping catch issues earlier and reducing the load on core
+developers.
+
+.. warning::
+
+   You must enable either **Bonsai** or **BonsaiPR**, but **not both at the
+   same time**. Enabling both can cause conflicts or unexpected behaviour. To
+   switch between them, disable the active one before enabling the other.
+
+How It Works
+~~~~~~~~~~~~~
+
+On a regular basis (and whenever a PR is opened or modified), an automated
+system:
+
+1. Clones the IfcOpenShell repository and merges all open, non-draft PRs.
+2. Builds the resulting add-on for all supported platforms.
+3. Publishes the result as a release on the `BonsaiPR releases page
+   <https://github.com/falken10vdl/bonsaiPR/releases>`__.
+4. The list of branches is also published on `falken10vdl's IfcOpenShell Fork
+   <https://github.com/falken10vdl/IfcOpenShell/branches>`__.
+
+Each release includes a full report listing which PRs were merged successfully,
+which were skipped (e.g. drafts), and which failed due to conflicts with other
+PRs.
+
+Release Variants: ``[asc]``, ``[desc]`` and ``[upd]``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each run can publish up to three releases, marked by a suffix in the release
+name. They differ only in the **order** in which the PRs are merged:
+
+- ``[asc]`` — ascending: lowest PR number merged first.
+- ``[desc]`` — descending: highest PR number merged first.
+- ``[upd]`` — by last update: most recently updated PR merged first.
+
+Order matters when two PRs conflict with each other but not with the base
+branch. Whichever is merged first gets in, and the other is skipped. If a PR you
+want is listed under *Skipped – Conflict with other PRs* in one release's
+report, check the other two releases from the same run; it may be included in
+one of them.
+
+Installing BonsaiPR with Automated Updates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Open Blender and go to :menuselection:`Edit --> Preferences --> Add-ons`.
+   Disable **Bonsai** if it is currently enabled.
+
+2. Click on the **Get Extensions** tab in the left sidebar.
+
+3. In the top right, click the **Repositories** dropdown, then the **+ icon**,
+   and select **Add Remote Repository**.
+
+4. Enter the following URL::
+
+      https://raw.githubusercontent.com/falken10vdl/bonsaiPR/refs/heads/main/index.json
+
+5. Enable **Check for Updates on Startup**, then click **Create**.
+
+6. In the **Get Extensions** search bar, type ``bonsai`` and look for
+   **BonsaiPR**. Click **Install**.
+
+7. Go to :menuselection:`Edit --> Preferences --> Add-ons` and confirm that
+   **BonsaiPR** is enabled and **Bonsai** is disabled.
+
+8. Restart Blender.
+
+Blender will automatically check for updates to the BonsaiPR extension on
+startup, so you will always have access to the latest bleeding edge build.
+
+Installing BonsaiPR Manually
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you prefer to install manually, download the appropriate ``.zip`` file for
+your platform from the `BonsaiPR releases page
+<https://github.com/falken10vdl/bonsaiPR/releases>`__:
+
+- **Linux (x64)**: ``bonsaiPR_py311-0.8.4-alphaYYMMDDHHMM-linux-x64.zip``
+- **macOS Intel (x64)**: ``bonsaiPR_py311-0.8.4-alphaYYMMDDHHMM-macos-x64.zip``
+- **macOS Apple Silicon (ARM64)**: ``bonsaiPR_py311-0.8.4-alphaYYMMDDHHMM-macos-arm64.zip``
+- **Windows (x64)**: ``bonsaiPR_py311-0.8.4-alphaYYMMDDHHMM-windows-x64.zip``
+
+Then go to :menuselection:`Edit --> Preferences --> Get Extensions --> "V" Icon
+(top right) --> Install from Disk` and select the downloaded zip.
+
+
+Add-on compatibility
+--------------------
+
+Bonsai is a non-trivial add-on. By turning Blender into a graphical front-end
+to a native IFC authoring platform, some fundamental Blender features (such as
+hotkeys for basic functionality like object deletion or duplication) have been
+patched and many dependencies have been introduced.
+
+Other add-ons may no longer work as intended when Bonsai is enabled, or vice
+versa, Bonsai may no longer work as intended when other add-ons are enabled.
+
+Known scenarios which will lead to add-on incompatibility include:
+
+- The add-on also overrides the same hotkeys. For example, if an add-on
+  overrides the "X" key to delete an object, you will need to manually trigger
+  (either via menu or custom hotkey) the Bonsai equivalent operator
+  (e.g. IFC Delete).
+- The add-on uses object deletion or duplication macros with dictionary
+  override. Note that this is also deprecated in Blender, so the other add-on
+  should be updated to fix this.
+- The add-on requires a conflicting dependency, or a conflicting version of the
+  same dependency. Neither add-on may work simultaneously.

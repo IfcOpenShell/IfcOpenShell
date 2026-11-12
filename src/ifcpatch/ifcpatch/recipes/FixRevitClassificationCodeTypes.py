@@ -16,12 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
 import ifcopenshell.util.element
 
 
 class Patcher:
-    def __init__(self, src, file, logger):
+    def __init__(self, file, logger):
         """Reassigns occurrence classifications to types
 
         Revit has a bug (see https://github.com/Autodesk/revit-ifc/issues/691)
@@ -35,7 +34,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "FixRevitClassificationCodeTypes"})
         """
-        self.src = src
         self.file = file
         self.logger = logger
 

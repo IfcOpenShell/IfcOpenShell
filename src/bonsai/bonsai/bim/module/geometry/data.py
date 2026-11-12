@@ -1,0 +1,458 @@
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Bonsai is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+
+from typing import Any, Union
+
+import bpy
+import ifcopenshell.util.element
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import ifcopenshell.util.unit
+from mathutils import Vector
+
+import bonsai.tool as tool
+
+
+def refresh():
+    ViewportData.is_loaded = False
+    PlacementData.is_loaded = False
+    DerivedCoordinatesData.is_loaded = False
+    RepresentationsData.is_loaded = False
+    RepresentationItemsData.is_loaded = False
+    ConnectionsData.is_loaded = False
+
+
+class ViewportData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        # Populate data BEFORE flipping is_loaded so a raising ``mode()``
+        # call doesn't leave the class half-loaded (flag set, dict empty).
+        # Subsequent items-callback invocations skip load() on a True flag
+        # and would hit ``cls.data["mode"]`` → KeyError.
+        cls.data = {"mode": cls.mode()}
+        cls.is_loaded = True
+
+    @classmethod
+    def mode(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        obj_mode = ("OBJECT", "IFC Object Mode", "View and move the placements of objects", "OBJECT_DATAMODE", 0)
+        item_mode = ("ITEM", "IFC Item Mode", "View individual representation items", "MESH_DATA", 1)
+        edit_mode = ("EDIT", "IFC Edit Mode", "Edit representation items", "EDITMODE_HLT", 2)
+
+        obj = bpy.context.active_object
+
+        modes: list[tuple[str, str, str, str, int]] = [obj_mode]
+        gprops = tool.Geometry.get_geometry_props()
+        if gprops.representation_obj:
+            modes.append(item_mode)
+
+        if not obj:
+            return modes
+
+        element = tool.Ifc.get_entity(obj)
+        pprops = tool.Project.get_project_props()
+        if obj in pprops.clipping_planes_objs:
+            pass
+        elif element:
+            if tool.Geometry.is_locked(element):
+                pass
+            elif obj.data and tool.Geometry.has_mesh_properties(obj.data) and tool.Geometry.is_profile_based(obj.data):
+                modes.append(edit_mode)
+            elif element.is_a("IfcRelSpaceBoundary"):
+                modes.append(edit_mode)
+            elif element.is_a("IfcGridAxis"):
+                modes.append(edit_mode)
+            elif tool.Parametric.is_roof(element):
+                modes.append(edit_mode)
+            elif tool.Parametric.is_railing(element):
+                modes.append(edit_mode)
+            elif item_mode not in modes:
+                modes.append(item_mode)
+        elif tool.Geometry.is_representation_item(obj):
+            modes.append(edit_mode)
+        else:  # A regular Blender object
+            modes.append(edit_mode)
+
+        return modes
+
+
+class RepresentationsData:
+    data: dict[str, Any] = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"representations": cls.representations()}
+        cls.data["contexts"] = cls.contexts()
+
+        # Only after cls.representations().
+        cls.data["shape_aspects"] = cls.shape_aspects()
+
+        cls.is_loaded = True
+
+    @classmethod
+    def representations(cls) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        obj = tool.Geometry.get_active_or_representation_obj()
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        assert element
+
+        active_representation_id = None
+        active_representation = tool.Geometry.get_active_representation(obj)
+        if active_representation:
+            active_representation_id = active_representation.id()
+
+        for representation in tool.Geometry.get_representations_iter(element):
+            representation_type = representation.RepresentationType
+            resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
+
+            if resolved_representation != representation:
+                representation_type = resolved_representation.RepresentationType + "*"
+
+            is_active = (
+                representation.id() == active_representation_id
+                or resolved_representation.id() == active_representation_id
+            )
+
+            data = {
+                "id": representation.id(),
+                "ContextType": representation.ContextOfItems.ContextType or "",
+                "ContextIdentifier": "",
+                "TargetView": "",
+                "RepresentationType": representation_type or "",
+                "is_active": is_active,
+            }
+            if representation.ContextOfItems.is_a("IfcGeometricRepresentationSubContext"):
+                data["ContextIdentifier"] = representation.ContextOfItems.ContextIdentifier or ""
+                data["TargetView"] = representation.ContextOfItems.TargetView or ""
+            results.append(data)
+        return results
+
+    @classmethod
+    def contexts(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        results: list[tuple[str, str, str]] = []
+        for element in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+            results.append((str(element.id()), element.ContextType or "Unnamed", ""))
+        for element in tool.Ifc.get().by_type("IfcGeometricRepresentationSubContext", include_subtypes=False):
+            results.append(
+                (
+                    str(element.id()),
+                    "{}/{}/{}".format(
+                        element.ContextType or "Unnamed",
+                        element.ContextIdentifier or "Unnamed",
+                        element.TargetView or "Unnamed",
+                    ),
+                    "",
+                )
+            )
+        return results
+
+    @classmethod
+    def shape_aspects(cls) -> list[tuple[str, str, str]]:
+        """Get list of current's representation shape aspects for prop's enum_items."""
+        # Ignore objects without representations, e.g. IfcRelSpaceBoundary.
+        if not cls.data["representations"]:
+            return []
+        obj = tool.Geometry.get_active_or_representation_obj()
+        assert obj
+        if not obj.data:
+            return []
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        base_representation = tool.Geometry.get_active_representation(obj)
+        if not base_representation:
+            return []  # Maybe in profile editing mode
+
+        # shape aspects matching context of the active representation
+        matching_shape_aspects: list[ifcopenshell.entity_instance] = []
+        for shape_aspect in ifcopenshell.util.element.get_shape_aspects(element):
+            matching_representation = tool.Geometry.get_shape_aspect_representation(shape_aspect, base_representation)
+            if matching_representation:
+                matching_shape_aspects.append(shape_aspect)
+
+        # blender enum items
+        new_shape_aspect = [("NEW", "New Shape Aspect", "")]
+        return new_shape_aspect + [(str(s.id()), s.Name or "Unnamed", "") for s in matching_shape_aspects]
+
+
+class RepresentationItemsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "total_items": cls.total_items(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def total_items(cls) -> int:
+        result = 0
+        obj = tool.Geometry.get_active_or_representation_obj()
+        assert obj
+        element = tool.Geometry.get_active_representation(obj)
+        if element:
+            # IfcShapeRepresentation or IfcTopologyRepresentation.
+            if not element.is_a("IfcShapeModel"):
+                return 0
+            queue = list(element.Items)
+            while queue:
+                item = queue.pop()
+                if item.is_a("IfcMappedItem"):
+                    queue.extend(item.MappingSource.MappedRepresentation.Items)
+                else:
+                    result += 1
+        return result
+
+
+class ConnectionsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"connections": cls.connections(), "is_connection_realization": cls.is_connection_realization()}
+        cls.is_loaded = True
+
+    @classmethod
+    def connections(cls) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        obj = bpy.context.active_object
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        assert element
+
+        connected_to = getattr(element, "ConnectedTo", [])
+        connected_from = getattr(element, "ConnectedFrom", [])
+
+        for rel in connected_to:
+            if element.is_a("IfcDistributionPort"):
+                related_element = rel.RelatedPort
+            else:
+                related_element = rel.RelatedElement
+
+            realizing_elements = []
+            realizing_elements_connection_type = ""
+            if rel.is_a("IfcRelConnectsWithRealizingElements"):
+                realizing_elements.extend(rel.RealizingElements)
+                realizing_elements_connection_type = rel.ConnectionType
+
+            if rel.is_a("IfcRelConnectsPathElements"):
+                related_element_connection_type = rel.RelatedConnectionType
+            else:
+                related_element_connection_type = ""
+
+            results.append(
+                {
+                    "id": rel.id(),
+                    "is_relating": True,
+                    "Name": related_element.Name or "Unnamed",
+                    "ConnectionType": related_element_connection_type,
+                    "realizing_elements": realizing_elements,
+                    "realizing_elements_connection_type": realizing_elements_connection_type,
+                }
+            )
+
+        for rel in connected_from:
+            if element.is_a("IfcDistributionPort"):
+                relating_element = rel.RelatingPort
+            else:
+                relating_element = rel.RelatingElement
+
+            realizing_elements = []
+            realizing_elements_connection_type = ""
+            if rel.is_a("IfcRelConnectsWithRealizingElements"):
+                realizing_elements.extend(rel.RealizingElements)
+                realizing_elements_connection_type = rel.ConnectionType
+
+            if rel.is_a("IfcRelConnectsPathElements"):
+                relating_element_connection_type = rel.RelatingConnectionType
+            else:
+                relating_element_connection_type = ""
+
+            results.append(
+                {
+                    "id": rel.id(),
+                    "is_relating": False,
+                    "Name": relating_element.Name or "Unnamed",
+                    "ConnectionType": relating_element_connection_type,
+                    "realizing_elements": realizing_elements,
+                    "realizing_elements_connection_type": realizing_elements_connection_type,
+                }
+            )
+
+        return results
+
+    @classmethod
+    def is_connection_realization(cls) -> Union[list[dict[str, Any]], None]:
+        obj = bpy.context.active_object
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        connections = getattr(element, "IsConnectionRealization", None)
+        if not connections:
+            return
+
+        results: list[dict[str, Any]] = []
+        for rel in connections:
+            data = {
+                "realizing_elements_connection_type": rel.ConnectionType,
+                "connected_from": rel.RelatingElement,
+                "connected_to": rel.RelatedElement,
+            }
+            results.append(data)
+        return results
+
+
+class DerivedCoordinatesData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.load_z_values()
+        cls.load_collection()
+        cls.data = {
+            "is_storey": cls.is_storey(),
+            "storey_height": cls.storey_height(),
+            "min_global_z": cls.min_global_z(),
+            "max_global_z": cls.max_global_z(),
+            "has_collection": cls.has_collection(),
+            "min_decomposed_z": cls.min_decomposed_z(),
+            "max_decomposed_z": cls.max_decomposed_z(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def load_z_values(cls) -> None:
+        cls.z_values = [
+            (bpy.context.active_object.matrix_world @ Vector(co))[2] for co in bpy.context.active_object.bound_box
+        ]
+
+    @classmethod
+    def load_collection(cls) -> None:
+        cls.collection = None
+        cls.collection_z = 0
+        obj = bpy.context.active_object
+        if not obj:
+            return
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+        parent = ifcopenshell.util.element.get_aggregate(element)
+        if not parent:
+            parent = ifcopenshell.util.element.get_container(element)
+        if parent:
+            cls.collection = tool.Ifc.get_object(parent)
+            if cls.collection:
+                cls.collection_z = cls.collection.matrix_world.translation.z
+
+    @classmethod
+    def has_collection(cls):
+        return bool(cls.collection)
+
+    @classmethod
+    def min_global_z(cls):
+        return "{0:.3f}".format(round(min(cls.z_values), 3))
+
+    @classmethod
+    def max_global_z(cls):
+        return "{0:.3f}".format(round(max(cls.z_values), 3))
+
+    @classmethod
+    def min_decomposed_z(cls):
+        return "{0:.3f}".format(round(min(cls.z_values) - cls.collection_z, 3))
+
+    @classmethod
+    def max_decomposed_z(cls):
+        return "{0:.3f}".format(round(max(cls.z_values) - cls.collection_z, 3))
+
+    @classmethod
+    def is_storey(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element:
+            return element.is_a("IfcBuildingStorey")
+
+    @classmethod
+    def storey_height(cls):
+        if not cls.is_storey():
+            return
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        storeys = [
+            (s, ifcopenshell.util.placement.get_placement(s.ObjectPlacement)[2][3])
+            for s in tool.Ifc.get().by_type("IfcBuildingStorey")
+        ]
+        storeys = sorted(storeys, key=lambda s: s[1])
+        for i, storey in enumerate(storeys):
+            if storey[0] != element:
+                continue
+            if i >= len(storeys) - 1:
+                return "N/A"
+            return "{0:.3f}".format(round(storeys[i + 1][1] - storey[1], 3))
+
+
+class PlacementData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data: dict[str, Any] = {"has_placement": cls.has_placement()}
+
+        props = tool.Georeference.get_georeference_props()
+        obj = bpy.context.active_object
+        if obj and props.has_blender_offset:
+            xyz = cls.original_xyz(obj)
+            cls.data.update(
+                {
+                    "original_x": str(xyz[0]),
+                    "original_y": str(xyz[1]),
+                    "original_z": str(xyz[2]),
+                }
+            )
+        cls.is_loaded = True
+
+    @classmethod
+    def has_placement(cls):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if element and hasattr(element, "ObjectPlacement"):
+            return True
+        return False
+
+    @classmethod
+    def original_xyz(cls, obj: bpy.types.Object) -> list[float]:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        props = tool.Georeference.get_georeference_props()
+        translation = obj.matrix_world.translation
+        xyz = ifcopenshell.util.geolocation.xyz2enh(
+            translation[0],
+            translation[1],
+            translation[2],
+            float(props.blender_offset_x) * unit_scale,
+            float(props.blender_offset_y) * unit_scale,
+            float(props.blender_offset_z) * unit_scale,
+            float(props.blender_x_axis_abscissa),
+            float(props.blender_x_axis_ordinate),
+            1.0,
+        )
+        return [round(o, 3) / unit_scale for o in xyz]  # To nearest mm of precision

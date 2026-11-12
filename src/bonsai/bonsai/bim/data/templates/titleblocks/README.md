@@ -1,0 +1,1 @@
+SVG [mustache](https://mustache.github.io/) templates that will be used for sheets and fill be filled with infromation from the sheet's IfcDocumentInformation attributes (e.g. Identification, Name, Revision, etc).

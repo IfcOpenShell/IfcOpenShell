@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ifcdiff"
+version = "0.0.0"
+authors = [
+  { name="Dion Moult", email="dion@thinkmoult.com" },
+]
+description = "Compare IFC models for changes to geometry, properties, and structure"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "LGPL-3.0-or-later"
+keywords = ["IFC", "Diff"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "ifcopenshell",
+    "deepdiff",
+]
+
+[project.urls]
+Homepage = "http://ifcopenshell.org"
+Documentation = "https://docs.ifcopenshell.org"
+Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
+
+[tool.setuptools]
+py-modules = ["ifcdiff"]

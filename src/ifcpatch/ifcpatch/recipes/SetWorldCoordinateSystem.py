@@ -17,31 +17,36 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
+import typing
+
 import numpy as np
-import ifcopenshell
 
 
 class Patcher:
-    def __init__(self, src, file, logger, x=None, y=None, z=None, ax=None, ay=None, az=None):
+    def __init__(
+        self,
+        file,
+        logger,
+        x: typing.Union[str, float] = "0",
+        y: typing.Union[str, float] = "0",
+        z: typing.Union[str, float] = "0",
+        ax: typing.Union[str, float] = "0",
+        ay: typing.Union[str, float] = "0",
+        az: typing.Union[str, float] = "0",
+    ):
         """Sets the world coordinate system of the geometric representation context
 
         Sets the world coordinate system to whatever you want.
 
         :param x: The X coordinate.
-        :type x: float
         :param y: The Y coordinate.
-        :type y: float
         :param z: The Z coordinate.
-        :type z: float
         :param ax: An angle to rotate by for 3D rotations along the X axis.
             Angles are in decimal degrees and positive is anticlockwise.
-        :type ax: float
         :param ay: An angle to rotate by for 3D rotations along the Y axis.
             Angles are in decimal degrees and positive is anticlockwise.
-        :type ay: float
         :param az: An angle to rotate by for 3D rotations along the Z axis.
             Angles are in decimal degrees and positive is anticlockwise.
-        :type az: float
 
         Example:
 
@@ -50,20 +55,19 @@ class Patcher:
             # Set the world coordinate system back to 0, 0, 0
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "SetWorldCoordinateSystem", "arguments": [0,0,0,0,0,0]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
-        self.x = x
-        self.y = y
-        self.z = z
-        self.ax = ax
-        self.ay = ay
-        self.az = az
+        self.x = float(x)
+        self.y = float(y)
+        self.z = float(z)
+        self.ax = float(ax)
+        self.ay = float(ay)
+        self.az = float(az)
 
     def patch(self):
         rotate = self.identity_matrix()
 
-        for arg in (("x", float(self.ax)), ("y", float(self.ay)), ("z", float(self.az))):
+        for arg in (("x", self.ax), ("y", self.ay), ("z", self.az)):
             if arg[1]:
                 rotate = getattr(self, f"{arg[0]}_rotation_matrix")(math.radians(arg[1]), rotate)
 
@@ -75,13 +79,13 @@ class Patcher:
         for context in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.ContextType == "Model":
                 context.WorldCoordinateSystem = self.file.createIfcAxis2Placement3D(
-                    self.file.createIfcCartesianPoint((float(self.x), float(self.y), float(self.z))),
+                    self.file.createIfcCartesianPoint((self.x, self.y, self.z)),
                     self.file.createIfcDirection(z.tolist()),
                     self.file.createIfcDirection(x.tolist()),
                 )
             elif context.ContextType == "Plan":
                 context.WorldCoordinateSystem = self.file.createIfcAxis2Placement2D(
-                    self.file.createIfcCartesianPoint((float(self.x), float(self.y), float(self.z))),
+                    self.file.createIfcCartesianPoint((self.x, self.y, self.z)),
                     self.file.createIfcDirection(x.tolist()),
                 )
 

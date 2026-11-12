@@ -16,13 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import pytest
-import ifcpatch
-import ifcopenshell
-import ifcopenshell.api
+
+import ifcopenshell.api.geometry
+import ifcopenshell.api.material
+import ifcopenshell.api.root
+import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+
+import ifcpatch
 import test.bootstrap
 
 
@@ -30,26 +32,24 @@ class TestMergeDuplicateTypes(test.bootstrap.IFC4):
     def test_run(self):
         context = self.file.createIfcGeometricRepresentationContext()
 
-        wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        wall_type1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType", name="WallType")
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall_type1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType", name="WallType")
         rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
-        ifcopenshell.api.run("geometry.assign_representation", self.file, product=wall_type1, representation=rep)
-        ifcopenshell.api.run("material.assign_material", self.file, products=[wall_type1], type="IfcMaterialLayerSet")
-        ifcopenshell.api.run(
-            "type.assign_type",
+        ifcopenshell.api.geometry.assign_representation(self.file, product=wall_type1, representation=rep)
+        ifcopenshell.api.material.assign_material(self.file, products=[wall_type1], type="IfcMaterialLayerSet")
+        ifcopenshell.api.type.assign_type(
             self.file,
             related_objects=[wall1],
             relating_type=wall_type1,
             should_map_representations=False,
         )
 
-        wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        wall_type2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType", name="WallType")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall_type2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType", name="WallType")
         rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
-        ifcopenshell.api.run("geometry.assign_representation", self.file, product=wall_type2, representation=rep)
-        ifcopenshell.api.run("material.assign_material", self.file, products=[wall_type2], type="IfcMaterialLayerSet")
-        ifcopenshell.api.run(
-            "type.assign_type",
+        ifcopenshell.api.geometry.assign_representation(self.file, product=wall_type2, representation=rep)
+        ifcopenshell.api.material.assign_material(self.file, products=[wall_type2], type="IfcMaterialLayerSet")
+        ifcopenshell.api.type.assign_type(
             self.file,
             related_objects=[wall2],
             relating_type=wall_type2,
@@ -71,6 +71,15 @@ class TestMergeDuplicateTypes(test.bootstrap.IFC4):
         # and not to create material usages
         assert ifcopenshell.util.element.get_material(wall1, should_inherit=False) == None
         assert ifcopenshell.util.element.get_material(wall2, should_inherit=False) == None
+
+    def test_not_merging_empty_attributes(self):
+        wall_type1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType", name="")
+        wall_type2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType", name="")
+        output = ifcpatch.execute({"file": self.file, "recipe": "MergeDuplicateTypes", "arguments": ["Name", True]})
+        assert len(output.by_type("IfcWallType")) == 1
+        wall_type3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType", name="")
+        output = ifcpatch.execute({"file": self.file, "recipe": "MergeDuplicateTypes", "arguments": ["Name", False]})
+        assert len(output.by_type("IfcWallType")) == 2
 
 
 class TestMergeDuplicateTypesIFC2X3(test.bootstrap.IFC2X3, TestMergeDuplicateTypes):

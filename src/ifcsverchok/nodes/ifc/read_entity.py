@@ -18,16 +18,15 @@
 
 import bpy
 import ifcopenshell
+from bpy.props import StringProperty
+from sverchok.data_structure import flatten_data, updateNode
+from sverchok.node_tree import SverchCustomTreeNode
+
 import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
-from bpy.props import StringProperty
-from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode, ensure_min_nesting, flatten_data
 
 
-class SvIfcReadEntity(
-    bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore
-):
+class SvIfcReadEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcReadEntity"
     bl_label = "IFC Read Entity"
     entity: StringProperty(name="Entity Id", update=updateNode)
@@ -41,9 +40,7 @@ class SvIfcReadEntity(
     def draw_buttons(self, context, layout):
         layout.operator(
             "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = (
-            "Decompose an IfcEntity into its attributes. Takes one entity id as input"
-        )
+        ).tooltip = "Decompose an IfcEntity into its attributes. Takes one entity id as input"
 
     def process(self):
         self.sv_input_names = ["entity"]
@@ -62,7 +59,7 @@ class SvIfcReadEntity(
             ifc_class = entity.is_a()
             file = SvIfcStore.get_file()
             if file:
-                schema_name = file.wrapped_data.schema
+                schema_name = file.schema_identifier
             else:
                 schema_name = "IFC4"
             self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name)

@@ -17,13 +17,26 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
-import numpy as np
-import ifcopenshell
+import typing
+
 import ifcopenshell.util.placement
+import numpy as np
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
 class Patcher:
-    def __init__(self, src, file, logger, x=None, y=None, z=None, should_rotate_first=True, ax=None, ay=None, az=None):
+    def __init__(
+        self,
+        file,
+        logger,
+        x: typing.Union[str, float] = "0",
+        y: typing.Union[str, float] = "0",
+        z: typing.Union[str, float] = "0",
+        should_rotate_first: bool = True,
+        ax: typing.Optional[typing.Union[str, float]] = "",
+        ay: typing.Optional[typing.Union[str, float]] = "",
+        az: typing.Optional[typing.Union[str, float]] = "",
+    ):
         """Offset and rotate all object placements in a model
 
         Every physical object in an IFC model has an object placement, a
@@ -41,27 +54,20 @@ class Patcher:
         entire IFC model.
 
         :param x: The X coordinate to offset by in project length units.
-        :type x: float
         :param y: The Y coordinate to offset by in project length units.
-        :type y: float
         :param z: The Z coordinate to offset by in project length units.
-        :type z: float
         :param should_rotate_first: Whether or not to rotate first and then
             translate, or to first translate and rotate afterwards. Defaults to
             rotate first then translate.
-        :type should_rotate_first: bool
         :param ax: An optional angle to rotate by. If only this angle is
             specified, it is treated as the angle to rotate in plan view (i.e.
             around the Z axis). If all angle parameters are specified, then it
             is treated as the angle to rotate around the X axis. Angles are in
             decimal degrees and positive is anticlockwise.
-        :type ax: float,optional
         :param ay: An optional angle to rotate by for 3D rotations along the Y
             axis. Angles are in decimal degrees and positive is anticlockwise.
-        :type ay: float,optional
         :param az: An optional angle to rotate by for 3D rotations along the Z
             axis. Angles are in decimal degrees and positive is anticlockwise.
-        :type az: float,optional
 
         Example:
 
@@ -76,22 +82,30 @@ class Patcher:
             # Some crazy 3D rotation and offset
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "OffsetObjectPlacements", "arguments": [12.5,5,2,False,90,90,45]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
-        self.x = x
-        self.y = y
-        self.z = z
+        self.x = float(x)
+        self.y = float(y)
+        self.z = float(z)
         self.should_rotate_first = should_rotate_first
-        self.ax = ax
-        self.ay = ay
-        self.az = az
-        if self.ay is not None:
-            self.angle_type = "3D"
-        elif self.ay is not None:
+        self.ax = None
+        self.ay = None
+        self.az = None
+        self.builder = ShapeBuilder(file)
+
+        try:
+            self.ax = float(ax)
+            self.ay = float(ay)
+            self.az = float(az)
+        except Exception:
+            print("At least one input angle is not specified.")
+
+        if self.ax is None:
+            self.angle_type = None
+        elif self.ay is None:
             self.angle_type = "2D"
         else:
-            self.angle_type = None
+            self.angle_type = "3D"
 
     def patch(self):
         absolute_placements = []
@@ -127,7 +141,7 @@ class Patcher:
 
         for placement in absolute_placements:
             placement.RelativePlacement = self.get_relative_placement(
-                transformation @ ifcopenshell.util.placement.get_local_placement(placement)
+                transformation @ ifcopenshell.util.placement.get_placement(placement)
             )
 
     def get_absolute_placement(self, object_placement):
@@ -164,15 +178,4 @@ class Patcher:
         z = np.array((m[0][2], m[1][2], m[2][2]))
         o = np.array((m[0][3], m[1][3], m[2][3]))
         object_matrix = ifcopenshell.util.placement.a2p(o, z, x)
-        return self.create_ifc_axis_2_placement_3d(
-            object_matrix[:, 3][0:3],
-            object_matrix[:, 2][0:3],
-            object_matrix[:, 0][0:3],
-        )
-
-    def create_ifc_axis_2_placement_3d(self, point, up, forward):
-        return self.file.createIfcAxis2Placement3D(
-            self.file.createIfcCartesianPoint(point.tolist()),
-            self.file.createIfcDirection(up.tolist()),
-            self.file.createIfcDirection(forward.tolist()),
-        )
+        return self.builder.create_axis2_placement_3d_from_matrix(object_matrix)

@@ -1,7 +1,5 @@
 # ifctester
-
 With **IfcTester**, you can author and read **Information Delivery Specification** - **IDS** - files and validate your IFC models against IDS to see if your model is compliant. After the audit, you can generate reports in console, as a web page, JSON or BCF file. It works from the command line, as a web app, or as a library.
-
 ## How to use it
 
 ```python
@@ -40,3 +38,5 @@ reporter.Console(my_ids).report()
 ```
 ## Pro Tip
 Always ensure your IFC file schema matches your IDS specification version to avoid validation warnings!
+
+Experimental webapp can be started by `cd webapp && python app.py`.

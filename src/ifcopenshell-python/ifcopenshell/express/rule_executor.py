@@ -1,30 +1,37 @@
-import os
-import re
 import ast
 import collections
-import ifcopenshell
+import os
+import re
 from dataclasses import dataclass
+from logging import Logger
+
 from codegen import indent
+
+import ifcopenshell
 
 
 def reverse_compile(s):
     return re.sub(
-        r"\s*\-\s*EXPRESS_ONE_BASED_INDEXING",
-        "",
+        r"\bself\b",
+        "SELF",
         re.sub(
-            ", )?+.(, INDETERMINATE)\\"[::-1],
-            "]\\1[",
+            r"\s*\-\s*EXPRESS_ONE_BASED_INDEXING",
+            "",
             re.sub(
-                r", '(\w+)', INDETERMINATE\)",
-                ".\\1",
-                s.strip()
-                .replace("len(", "SIZEOF(")
-                .replace("assert ", "")
-                .replace(" is not False", "")
-                .replace("getattr(", "")
-                .replace("express_getitem(", ""),
+                ", )?+.(, INDETERMINATE)\\"[::-1],
+                "]\\1[",
+                re.sub(
+                    r", '(\w+)', INDETERMINATE\)",
+                    ".\\1",
+                    s.strip()
+                    .replace("len(", "SIZEOF(")
+                    .replace("assert ", "")
+                    .replace(" is not False", "")
+                    .replace("express_getattr(", "")
+                    .replace("express_getitem(", ""),
+                )[::-1],
             )[::-1],
-        )[::-1],
+        ),
     )
 
 
@@ -62,14 +69,18 @@ def fix_type(v):
     return v
 
 
-def run(f, logger):
+def run(f: ifcopenshell.file, logger: Logger) -> None:
     from _pytest import assertion
 
     if hasattr(logger, "set_instance"):
         # when using the json logger, we notify it of the relevant instance
-        pre_annotate_instance = lambda instance: logger.set_state('instance', instance) if hasattr(logger, 'set_state') else None
+        pre_annotate_instance = lambda instance: (
+            logger.set_state("instance", instance) if hasattr(logger, "set_state") else None
+        )
         post_annotate_instance = lambda instance: instance
-        pre_annotate_attribute = lambda attribute: logger.set_state('attribute', attribute) if hasattr(logger, 'set_state') else None
+        pre_annotate_attribute = lambda attribute: (
+            logger.set_state("attribute", attribute) if hasattr(logger, "set_state") else None
+        )
         post_annotate_attribute = lambda attribute: None
     else:
         # when using the normal text logger the instance is appended to the method
@@ -81,21 +92,27 @@ def run(f, logger):
     orig = ifcopenshell.settings.unpack_non_aggregate_inverses
     ifcopenshell.settings.unpack_non_aggregate_inverses = True
 
+    # Rules are transpiled with EXPRESS `=` emitted as Python `==`, so `==` has
+    # to mean value comparison for the duration. See the @todo on
+    # rule_compiler.process_rel_op.
+    orig_compare = ifcopenshell.settings.compare_instances_by_value
+    ifcopenshell.settings.compare_instances_by_value = True
+
     fn = os.path.join(os.path.dirname(__file__), "rules", f"{f.schema_identifier}.py")
     try:
         source = open(fn, "r").read()
     except FileNotFoundError as e:
+        import subprocess
         import sys
         import time
-        import subprocess
 
-        current_dir_files = {fn.lower(): fn for fn in os.listdir('.')}
-        schema_name = str(f.schema_identifier).split(' ')[-1].lower()
-        schema_path = current_dir_files.get(schema_name + '.exp')
-        fn = schema_path[:-4] + '.py'
+        current_dir_files = {fn.lower(): fn for fn in os.listdir(".")}
+        schema_name = str(f.schema_identifier).split(" ")[-1].lower()
+        schema_path = current_dir_files.get(schema_name + ".exp")
+        fn = schema_path[:-4] + ".py"
         if not os.path.exists(fn):
             subprocess.run([sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True)
-            time.sleep(1.)
+            time.sleep(1.0)
         source = open(fn, "r").read()
 
     a = ast.parse(source)
@@ -107,12 +124,14 @@ def run(f, logger):
 
     rules = list(filter(lambda x: hasattr(x, "SCOPE"), scope.values()))
 
-    if hasattr(logger, 'set_state'):
-        logger.set_state('type', 'global_rule')
+    if hasattr(logger, "set_state"):
+        logger.set_state("type", "global_rule")
 
     for R in [r for r in rules if r.SCOPE == "file"]:
         try:
             R()(f)
+        except RecursionError as e:
+            logger.info(str(e))
         except Exception as e:
             ln = e.__traceback__.tb_next.tb_lineno
             pre_annotate_attribute(R.__name__)
@@ -126,17 +145,15 @@ def run(f, logger):
                 )
             )
 
-    if hasattr(logger, 'set_state'):
-        logger.set_state('type', 'simpletype_rule')
+    if hasattr(logger, "set_state"):
+        logger.set_state("type", "simpletype_rule")
 
     types = {}
     subtypes = collections.defaultdict(list)
     for d in S.declarations():
         if isinstance(d, ifcopenshell.ifcopenshell_wrapper.type_declaration):
             types[d.name()] = d
-            if isinstance(
-                d.declared_type(), ifcopenshell.ifcopenshell_wrapper.named_type
-            ):
+            if isinstance(d.declared_type(), ifcopenshell.ifcopenshell_wrapper.named_type):
                 subtypes[d.declared_type().declared_type().name()].append(d.name())
 
     D = collections.defaultdict(list)
@@ -169,6 +186,8 @@ def run(f, logger):
             for R in D[type_name(type)]:
                 try:
                     R()(fix_type(value))
+                except RecursionError as e:
+                    logger.info(str(e))
                 except Exception as e:
                     ln = e.__traceback__.tb_next.tb_lineno
                     pre_annotate_instance(instance)
@@ -219,6 +238,8 @@ def run(f, logger):
     for inst in f:
         try:
             values = list(inst)
+        except RecursionError as e:
+            logger.info(str(e))
         except Exception as e:
             if hasattr(logger, "set_state"):
                 logger.error(str(e))
@@ -227,22 +248,22 @@ def run(f, logger):
             continue
         entity = S.declaration_by_name(inst.is_a())
         attrs = entity.all_attributes()
-        for i, (attr, val, is_derived) in enumerate(
-            zip(attrs, values, entity.derived())
-        ):
+        for i, (attr, val, is_derived) in enumerate(zip(attrs, values, entity.derived())):
             if is_derived:
                 # @todo
                 pass
             else:
                 check(val, attr.type_of_attribute(), instance=inst)
 
-    if hasattr(logger, 'set_state'):
-        logger.set_state('type', 'entity_rule')
+    if hasattr(logger, "set_state"):
+        logger.set_state("type", "entity_rule")
 
     for R in [r for r in rules if r.SCOPE == "entity"]:
         for inst in f.by_type(R.TYPE_NAME):
             try:
                 R()(inst)
+            except RecursionError as e:
+                logger.info(str(e))
             except Exception as e:
                 ln = e.__traceback__.tb_next.tb_lineno
                 pre_annotate_instance(inst)
@@ -259,12 +280,14 @@ def run(f, logger):
                 )
 
     ifcopenshell.settings.unpack_non_aggregate_inverses = orig
+    ifcopenshell.settings.compare_instances_by_value = orig_compare
 
 
 if __name__ == "__main__":
-    import sys
     import json
     import logging
+    import sys
+
     import ifcopenshell
     from ifcopenshell.validate import json_logger
 

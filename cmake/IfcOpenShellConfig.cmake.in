@@ -1,0 +1,94 @@
+@PACKAGE_INIT@
+
+set_and_check(IFCOPENSHELL_LIBRARY_DIR "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
+
+# Variable to inspect installed schema versions.
+set(IFCOPENSHELL_SCHEMA_VERSIONS @SCHEMA_VERSIONS@)
+
+set(IFCOPENSHELL_WITH_OPENCASCADE @WITH_OPENCASCADE@)
+set(IFCOPENSHELL_WITH_CGAL @WITH_CGAL@)
+set(IFCOPENSHELL_WITH_MANIFOLD @WITH_MANIFOLD@)
+set(IFCOPENSHELL_IFCXML @IFCXML_SUPPORT@)
+set(IFCOPENSHELL_WITH_ROCKSDB @WITH_ROCKSDB@)
+set(IFCOPENSHELL_SAFE_INSTANCE @IFOPSH_SAFE_INSTANCE@)
+set(IFCOPENSHELL_COLLADA_SUPPORT @COLLADA_SUPPORT@)
+set(IFCOPENSHELL_GLTF_SUPPORT @GLTF_SUPPORT@)
+set(IFCOPENSHELL_WITH_PROJ @WITH_PROJ@)
+set(IFCOPENSHELL_USD_SUPPORT @USD_SUPPORT@)
+set(IFCOPENSHELL_USE_MMAP @USE_MMAP@)
+
+include(CMakeFindDependencyMacro)
+
+set(IFCOPENSHELL_BOOST_USE_STATIC_LIBS "@Boost_USE_STATIC_LIBS@")
+set(IFCOPENSHELL_BOOST_USE_STATIC_RUNTIME "@Boost_USE_STATIC_RUNTIME@")
+set(IFCOPENSHELL_BOOST_USE_MULTITHREADED "@Boost_USE_MULTITHREADED@")
+if(NOT "${IFCOPENSHELL_BOOST_USE_STATIC_LIBS}" STREQUAL "")
+    set(Boost_USE_STATIC_LIBS ${IFCOPENSHELL_BOOST_USE_STATIC_LIBS})
+endif()
+if(NOT "${IFCOPENSHELL_BOOST_USE_STATIC_RUNTIME}" STREQUAL "")
+    set(Boost_USE_STATIC_RUNTIME ${IFCOPENSHELL_BOOST_USE_STATIC_RUNTIME})
+endif()
+if(NOT "${IFCOPENSHELL_BOOST_USE_MULTITHREADED}" STREQUAL "")
+    set(Boost_USE_MULTITHREADED ${IFCOPENSHELL_BOOST_USE_MULTITHREADED})
+endif()
+set(Boost_COMPONENTS @BOOST_COMPONENTS@)
+find_dependency(Boost CONFIG COMPONENTS ${Boost_COMPONENTS})
+find_dependency(Eigen3 CONFIG)
+
+if(IFCOPENSHELL_WITH_ROCKSDB)
+    find_dependency(zstd CONFIG)
+
+    # Temporaily mess with CMAKE_FIND_PACKAGE_PREFER_CONFIG to help RocksDB
+    # find it's zstd dependency on Windows.
+    # Only do it on Windows, otherwise it might create problems as
+    # findzstd and zstd-config target names do not match.
+    # https://github.com/facebook/rocksdb/pull/13975
+    if(WIN32)
+        set(TEMP CMAKE_FIND_PACKAGE_PREFER_CONFIG)
+        set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
+    endif()
+    find_dependency(RocksDB CONFIG)
+    if(WIN32)
+        set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${TEMP})
+    endif()
+endif()
+
+if(IFCOPENSHELL_IFCXML)
+    find_dependency(LibXml2)
+endif()
+
+if(IFCOPENSHELL_WITH_CGAL)
+    find_dependency(CGAL CONFIG)
+endif()
+
+if(IFCOPENSHELL_WITH_MANIFOLD)
+    find_dependency(manifold CONFIG)
+endif()
+
+if(IFCOPENSHELL_COLLADA_SUPPORT)
+    find_dependency(OpenCOLLADA)
+endif()
+
+if(IFCOPENSHELL_GLTF_SUPPORT)
+    find_dependency(nlohmann_json CONFIG)
+endif()
+
+if(IFCOPENSHELL_WITH_PROJ)
+    find_dependency(PROJ)
+endif()
+
+if(IFCOPENSHELL_USD_SUPPORT)
+    find_dependency(USD)
+endif()
+
+if(IFCOPENSHELL_WITH_OPENCASCADE)
+    find_dependency(OpenCASCADE CONFIG)
+    if(OpenCASCADE_VERSION VERSION_LESS "7.7.0")
+        # cmake configs < 7.7.0 were not adding include directories to targets automatically.
+        set_target_properties(TKernel PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${OpenCASCADE_INCLUDE_DIR}")
+    endif()
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/@CONFIG_TARGETS_FILENAME@")
+
+check_required_components("@PROJECT_NAME@")

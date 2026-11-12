@@ -17,33 +17,53 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import annotations
 
-import random
+import inspect
 import operator
+import random
 import warnings
+from collections.abc import Iterable
+from typing import NamedTuple, Union, assert_never
 
-from collections import namedtuple
+import OCC  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
-try:  # python 3.3+
-    from collections.abc import Iterable
-except ImportError:  # python 2
-    from collections import Iterable
-
-import OCC
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 
 try:
-    from OCC.Core import V3d, TopoDS, gp, AIS, Quantity, BRepTools, Graphic3d
+    from OCC.Core import (  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+        AIS,
+        BRepTools,
+        Graphic3d,
+        Quantity,
+        TopoDS,
+        V3d,
+        gp,
+    )
 
     USE_OCCT_HANDLE = False
 except ImportError:
-    from OCC import V3d, TopoDS, gp, AIS, Quantity, BRepTools, Graphic3d
+    from OCC import (  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+        AIS,
+        BRepTools,
+        Graphic3d,
+        Quantity,
+        TopoDS,
+        V3d,
+        gp,
+    )
 
     USE_OCCT_HANDLE = True
 
-shape_tuple = namedtuple("shape_tuple", ("data", "geometry", "styles", "style_ids"))
+
+class shape_tuple(NamedTuple):
+    """A tuple containing IfcOpenShell serialized element/shape and pythonOCC shape."""
+
+    data: Union[ifcopenshell_wrapper.serialized_element, ifcopenshell_wrapper.serialization]
+    geometry: TopoDS.TopoDS_Shape
+    styles: tuple[tuple[float, float, float, float], ...]
+    style_ids: tuple[int, ...]
+
 
 handle, main_loop, add_menu, add_function_to_menu = None, None, None, None
 
@@ -63,7 +83,7 @@ DEFAULT_STYLES = {
 
 
 def initialize_display():
-    import OCC.Display.SimpleGui
+    import OCC.Display.SimpleGui  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
     global handle, main_loop, add_menu, add_function_to_menu
     handle, main_loop, add_menu, add_function_to_menu = OCC.Display.SimpleGui.init_display()
@@ -204,7 +224,11 @@ def display_shape(shape, clr=None, viewer_handle=None):
 
 
 def set_shape_transparency(ais, t, update_viewer=True):
-    handle.Context.SetTransparency(ais, t, update_viewer)
+    # AIS_InteractiveContext.SetTransparency()'s argument count differs across
+    # pythonocc-core versions (#1037); AIS_InteractiveObject.SetTransparency() is stable.
+    ais.SetTransparency(t)
+    if update_viewer:
+        handle.Context.UpdateCurrentViewer()
 
 
 def get_bounding_box_center(bbox):
@@ -222,25 +246,46 @@ def serialize_shape(shape):
     shapes.SetFormatNb(2)
 
     shapes.Add(shape)
-    return shapes.WriteToString()
+
+    # Check if WriteToString method exists and has the correct signature
+    # In PythonOCC >= 7.8.0, WriteToString signature changed and requires additional arguments
+    if hasattr(shapes, "WriteToString"):
+        try:
+            # Try to get the method signature
+            sig = inspect.signature(shapes.WriteToString)
+            # If WriteToString has no parameters (just self), use it
+            # This works for PythonOCC < 7.8.0
+            if len(sig.parameters) == 0:
+                return shapes.WriteToString()
+        except (ValueError, TypeError):
+            # If signature inspection fails, fall through to Write() method
+            pass
+
+    # Fall back to Write() method for newer PythonOCC versions (>= 7.8.0)
+    # or when WriteToString is not available/compatible
+    return shapes.Write()
 
 
-def create_shape_from_serialization(brep_object):
+def create_shape_from_serialization(
+    brep_object: Union[ifcopenshell_wrapper.serialized_element, ifcopenshell_wrapper.serialization],
+) -> Union[shape_tuple, TopoDS.TopoDS_Shape]:
     brep_data, occ_shape, styles, style_ids = None, None, (), ()
 
     is_product_shape = True
-    try:
+    if isinstance(brep_object, ifcopenshell_wrapper.serialized_element):
         brep_data = brep_object.geometry.brep_data
         styles = brep_object.geometry.surface_styles
         style_ids = brep_object.geometry.surface_style_ids
-    except BaseException:
+    elif isinstance(brep_object, ifcopenshell_wrapper.serialization):
         try:
             brep_data = brep_object.brep_data
             styles = brep_object.surface_styles
             style_ids = brep_object.surface_style_ids
             is_product_shape = False
-        except BaseException:
-            pass
+        except BaseException as e:
+            print("Error occurred creating a shape:", e)
+    else:
+        assert_never(brep_object)
 
     styles = tuple(styles[i : i + 4] for i in range(0, len(styles), 4))
 
@@ -248,11 +293,15 @@ def create_shape_from_serialization(brep_object):
         return shape_tuple(brep_object, None, styles, style_ids)
 
     try:
-        ss = BRepTools.BRepTools_ShapeSet()
-        ss.ReadFromString(brep_data)
-        occ_shape = ss.Shape(ss.NbShapes())
-    except BaseException:
-        pass
+        if OCC.VERSION < "7.8":
+            ss = BRepTools.BRepTools_ShapeSet()
+            ss.ReadFromString(brep_data)
+            occ_shape = ss.Shape(ss.NbShapes())
+        else:
+            ss = BRepTools.breptools()
+            occ_shape = ss.ReadFromString(brep_data)
+    except BaseException as e:
+        print("Error occurred parsing a shape from a string:", e)
 
     if is_product_shape:
         return shape_tuple(brep_object, occ_shape, styles, style_ids)

@@ -17,33 +17,27 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.root
 
 
-class Usecase:
-    def __init__(self, file, relating_structural_member=None, related_structural_connection=None):
-        """Relates a structural member and a structural connection
+def add_structural_member_connection(
+    file: ifcopenshell.file,
+    relating_structural_member: ifcopenshell.entity_instance,
+    related_structural_connection: ifcopenshell.entity_instance,
+) -> ifcopenshell.entity_instance:
+    """Relates a structural member and a structural connection
 
-        :param relating_structural_member: The IfcStructuralMember to have a
-            connection added to it.
-        :type relating_structural_member: ifcopenshell.entity_instance.entity_instance
-        :param related_structural_connection: The IfcStructuralConnection to add
-            to the IfcStructuralMember.
-        :type related_structural_connection: ifcopenshell.entity_instance.entity_instance
-        :return: The IfcRelConnectsStructuralMember relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
-        """
-        self.file = file
-        self.settings = {
-            "relating_structural_member": relating_structural_member,
-            "related_structural_connection": related_structural_connection,
-        }
+    :param relating_structural_member: The IfcStructuralMember to have a
+        connection added to it.
+    :param related_structural_connection: The IfcStructuralConnection to add
+        to the IfcStructuralMember.
+    :return: The IfcRelConnectsStructuralMember relationship
+    """
 
-    def execute(self):
-        for connection in self.settings["related_structural_connection"].ConnectsStructuralMembers or []:
-            if connection.RelatingStructuralMember == self.settings["relating_structural_member"]:
-                return
-        rel = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcRelConnectsStructuralMember")
-        rel.RelatingStructuralMember = self.settings["relating_structural_member"]
-        rel.RelatedStructuralConnection = self.settings["related_structural_connection"]
-        return rel
+    for connection in related_structural_connection.ConnectsStructuralMembers or []:
+        if connection.RelatingStructuralMember == relating_structural_member:
+            return connection
+    rel = ifcopenshell.api.root.create_entity(file, ifc_class="IfcRelConnectsStructuralMember")
+    rel.RelatingStructuralMember = relating_structural_member
+    rel.RelatedStructuralConnection = related_structural_connection
+    return rel

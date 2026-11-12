@@ -1,0 +1,44 @@
+name: Publish IfcSverchok
+
+permissions: {}
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upstream-only:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+
+  publish:
+    needs: upstream-only
+    name: ifcsverchok
+    runs-on: ubuntu-latest
+    permissions:
+      # upload-release-action creates the release and uploads assets
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Get current version
+        id: version
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+      - name: Compile
+        run: |
+          cd src/ifcsverchok
+          make dist IS_STABLE=TRUE
+      - name: Upload zip file to release
+        uses: svenstaro/upload-release-action@2.11.5
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: src/ifcsverchok/dist/ifcsverchok-${{steps.version.outputs.version}}.zip
+          asset_name: ifcsverchok-${{steps.version.outputs.version}}.zip
+          release_name: "ifcsverchok-${{steps.version.outputs.version}}"
+          tag: "ifcsverchok-${{steps.version.outputs.version}}"
+          target_commit: ${{ github.sha }}
+          overwrite: true

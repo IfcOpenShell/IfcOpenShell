@@ -1,0 +1,89 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@200;300;400;500;600;700;800&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@200;300;400;500;600;700&display=swap');
+h1, h2, h3, h4 {
+    font-weight: normal;
+    color: #7cbf33;
+    background: -webkit-linear-gradient(0deg, #7cbf33, #049344);
+    background-clip: border-box;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+h1 code.literal {
+    background: none;
+}
+a {
+    text-decoration: none;
+}
+.toc-tree .reference:hover {
+    color: #d98014;
+}
+.sidebar-brand-text {
+    font-size: 1rem;
+    text-align: center;
+}
+.blockbutton {
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+.blockbutton a {
+    display: block;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    border-radius: 5px;
+    background: #40b74c;
+    width: 100%;
+    height: 100%;
+    color: #fff;
+    text-decoration: none;
+}
+.blockbutton a:hover {
+    background: #70ba35;
+}
+.highlight .hll {
+    background-color: #ffc2;
+}
+section img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+    border-radius: 5px;
+}
+
+/* Make it clearer which signatures are part of a class */
+.py.class {
+    border-left: 3px solid var(--color-brand-primary);
+}
+.py.class > .sig {
+    background: var(--color-brand-primary) !important;
+    margin: 0;
+    border-radius: 0;
+}
+.py.class > .sig * {
+    color: #2e3436 !important;
+}
+.py.class > .sig a {
+    color: #fff;
+}
+
+/* Make it easier to spot functions and methods */
+.py.function, .py.method {
+    border-top: 1px solid var(--color-background-item);
+}
+dl.py.property, dl.py.attribute, dl.py.method, dl.py.function {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.field-list > dt {
+    /* Clearly distinguish parameters otherwise it looks like a wall of text */
+    color: var(--color-brand-content);
+    font-style: italic;
+}
+
+/* Workaround for highlighting issue in Furo */
+[role=main] .highlighted {
+    -webkit-text-fill-color: initial !important;
+}

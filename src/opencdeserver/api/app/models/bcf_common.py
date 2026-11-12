@@ -1,6 +1,7 @@
-from pydantic import BaseModel
-from typing import List, Optional
 from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class BimSnippet(BaseModel):
@@ -55,13 +56,13 @@ class ClippingPlane(BaseModel):
 
 
 class SnapshotType(Enum):
-    jpg = 'jpg'
-    png = 'png'
+    jpg = "jpg"
+    png = "png"
 
 
 class BitmapType(Enum):
-    jpg = 'jpg'
-    png = 'png'
+    jpg = "jpg"
+    png = "png"
 
 
 class Component(BaseModel):
@@ -72,7 +73,7 @@ class Component(BaseModel):
 
 class Coloring(BaseModel):
     color: Optional[str] = None
-    components: Optional[List[Component]] = None
+    components: Optional[list[Component]] = None
 
 
 class ViewSetupHints(BaseModel):
@@ -83,5 +84,5 @@ class ViewSetupHints(BaseModel):
 
 class Visibility(BaseModel):
     default_visibility: Optional[bool] = False
-    exceptions: Optional[List[Component]] = None
+    exceptions: Optional[list[Component]] = None
     view_setup_hints: Optional[ViewSetupHints] = None

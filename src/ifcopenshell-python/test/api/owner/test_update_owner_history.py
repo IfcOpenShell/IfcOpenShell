@@ -17,8 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
+
+import ifcopenshell.api.owner
+import ifcopenshell.api.owner.settings
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestUpdateOwnerHistory(test.bootstrap.IFC4):
@@ -32,7 +34,8 @@ class TestUpdateOwnerHistory(test.bootstrap.IFC4):
         ifcopenshell.api.owner.settings.get_application = lambda x: application
 
         element = self.file.createIfcWall()
-        history = ifcopenshell.api.run("owner.update_owner_history", self.file, element=element)
+        history = ifcopenshell.api.owner.update_owner_history(self.file, element=element)
+        assert history
         assert history.is_a("IfcOwnerHistory")
         assert element.OwnerHistory == history
         assert history.ChangeAction == "ADDED"
@@ -53,10 +56,11 @@ class TestUpdateOwnerHistory(test.bootstrap.IFC4):
         ifcopenshell.api.owner.settings.get_application = lambda x: application
 
         element = self.file.createIfcWall()
-        old_history = ifcopenshell.api.run("owner.create_owner_history", self.file)
+        old_history = ifcopenshell.api.owner.create_owner_history(self.file)
         element.OwnerHistory = old_history
 
-        new_history = ifcopenshell.api.run("owner.update_owner_history", self.file, element=element)
+        new_history = ifcopenshell.api.owner.update_owner_history(self.file, element=element)
+        assert new_history
         assert new_history == old_history
         assert element.OwnerHistory == new_history
         assert new_history.ChangeAction == "MODIFIED"
@@ -78,11 +82,12 @@ class TestUpdateOwnerHistory(test.bootstrap.IFC4):
 
         element = self.file.createIfcWall()
         element2 = self.file.createIfcWall()
-        old_history = ifcopenshell.api.run("owner.create_owner_history", self.file)
+        old_history = ifcopenshell.api.owner.create_owner_history(self.file)
         element.OwnerHistory = old_history
         element2.OwnerHistory = old_history
 
-        new_history = ifcopenshell.api.run("owner.update_owner_history", self.file, element=element)
+        new_history = ifcopenshell.api.owner.update_owner_history(self.file, element=element)
+        assert new_history
         assert new_history != old_history
         assert element.OwnerHistory == new_history
         assert new_history.ChangeAction == "MODIFIED"
@@ -95,4 +100,8 @@ class TestUpdateOwnerHistory(test.bootstrap.IFC4):
 
     def test_doing_nothing_if_no_history_can_be_updated(self):
         person = self.file.createIfcPerson()
-        assert ifcopenshell.api.run("owner.update_owner_history", self.file, element=person) == None
+        assert ifcopenshell.api.owner.update_owner_history(self.file, element=person) == None
+
+
+class TestUpdateOwnerHistoryIFC2X3(test.bootstrap.IFC2X3, TestUpdateOwnerHistory):
+    pass

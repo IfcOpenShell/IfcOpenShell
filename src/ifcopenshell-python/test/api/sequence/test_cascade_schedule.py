@@ -16,23 +16,27 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
 import datetime
+
+import pytest
+
+import ifcopenshell.api.sequence
 import test.bootstrap
-import ifcopenshell.api
 
 
+# NOTE: sequence module features relies on entities introduced in IFC4
+# therefore no IFC2X3 tests
 class TestCascadeSchedule(test.bootstrap.IFC4):
     def test_doing_nothing_if_the_task_has_no_successors(self):
-        task = ifcopenshell.api.run("sequence.add_task", self.file)
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
+        task = ifcopenshell.api.sequence.add_task(self.file)
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
         assert task.TaskTime is None
 
     def test_not_affecting_tasks_that_are_not_related(self):
         task = self._create_task("P1D")
         task2 = self._create_task("P1D")
 
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task2.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
@@ -45,7 +49,7 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         self._create_sequence(task, task2, "FINISH_START")
         self._create_sequence(task, task3, "FINISH_START", lag="P1D")
 
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task2)
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task2)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task2.TaskTime.ScheduleStart == "2000-01-02T09:00:00"
@@ -60,7 +64,7 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         self._create_sequence(task, task2, "FINISH_START")
         with pytest.raises(RecursionError):
             self._create_sequence(task2, task, "FINISH_START")
-            ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
+            ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
 
     def test_cascading_finish_to_start(self):
         task = self._create_task("P1D")
@@ -69,7 +73,7 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         self._create_sequence(task, task2, "FINISH_START")
         self._create_sequence(task, task3, "FINISH_START", lag="P1D")
 
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task2.TaskTime.ScheduleStart == "2000-01-02T09:00:00"
@@ -84,7 +88,7 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         self._create_sequence(task, task2, "FINISH_START")
         self._create_sequence(task, task3, "FINISH_START", lag="P1D")
 
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T09:00:00"
         assert task2.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
@@ -99,7 +103,7 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         self._create_sequence(task, task2, "FINISH_FINISH")
         self._create_sequence(task, task3, "FINISH_FINISH", lag="P1D")
 
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task2.TaskTime.ScheduleStart == "1999-12-31T09:00:00"
@@ -114,7 +118,7 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         self._create_sequence(task, task2, "START_START")
         self._create_sequence(task, task3, "START_START", lag="P1D")
 
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task2.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
@@ -129,7 +133,7 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         self._create_sequence(task, task2, "START_FINISH")
         self._create_sequence(task, task3, "START_FINISH", lag="P1D")
 
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task2.TaskTime.ScheduleStart == "1999-12-30T09:00:00"
@@ -144,7 +148,7 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         self._create_sequence(task, task2, "START_FINISH")
         self._create_sequence(task, task3, "START_FINISH", lag="P1D")
 
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T09:00:00"
         assert task2.TaskTime.ScheduleStart == "1999-12-30T09:00:00"
@@ -153,12 +157,11 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         assert task3.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
 
     def _create_task(self, duration):
-        task = ifcopenshell.api.run("sequence.add_task", self.file)
+        task = ifcopenshell.api.sequence.add_task(self.file)
         if duration == "P0D":
             task.IsMilestone = True
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={"ScheduleStart": datetime.date(2000, 1, 1), "ScheduleDuration": duration},
@@ -166,13 +169,11 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         return task
 
     def _create_sequence(self, predecessor, successor, relationship, lag=None):
-        rel = ifcopenshell.api.run(
-            "sequence.assign_sequence", self.file, relating_process=predecessor, related_process=successor
+        rel = ifcopenshell.api.sequence.assign_sequence(
+            self.file, relating_process=predecessor, related_process=successor
         )
-        ifcopenshell.api.run(
-            "sequence.edit_sequence", self.file, rel_sequence=rel, attributes={"SequenceType": relationship}
-        )
+        ifcopenshell.api.sequence.edit_sequence(self.file, rel_sequence=rel, attributes={"SequenceType": relationship})
         if lag:
-            ifcopenshell.api.run(
-                "sequence.assign_lag_time", self.file, rel_sequence=rel, lag_value=lag, duration_type="WORKTIME"
+            ifcopenshell.api.sequence.assign_lag_time(
+                self.file, rel_sequence=rel, lag_value=lag, duration_type="WORKTIME"
             )

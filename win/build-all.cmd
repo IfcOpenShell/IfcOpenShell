@@ -23,14 +23,20 @@
 :: Usage example for doing an optimized vs2015-x64 build with debug information and using IFC 4:
 :: > build-all.cmd vs2015-x64 RelWithDebInfo -DUSE_IFC4=1 -DENABLE_BUILD_OPTIMIZATIONS=1
 
-@echo off
+@if not defined ECHO_ON ( echo off )
 
 setlocal EnableDelayedExpansion
 
 call vs-cfg.cmd %1
 if not %ERRORLEVEL%==0 GOTO :Error
+
+call cecho.cmd 0 12 "WARNING: build-all.cmd is deprecated since 11 Sep 2026 and will be removed very shortly."
+call cecho.cmd 0 12 "Use `python build-all.py` instead. It's intended to be a drop-in replacement, so exactly the same args apply,"
+call cecho.cmd 0 12 "except CMake args now need to be passed after `"--`", e.g. `python build-all.py vs2022-x64 -- -DGLTF_SUPPORT=ON`."
+echo.
+
 :: Use "yes" trick to break the pause in build-deps.cmd
-echo y | call .\build-deps %1 %2
+echo y | call build-deps.cmd %1 %2
 if not %ERRORLEVEL%==0 goto :EOF
 :: Same trick as in run-cmake.bat
 set ARGUMENTS=%*

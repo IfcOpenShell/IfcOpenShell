@@ -16,14 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.owner
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestAddPersonAndOrganisation(test.bootstrap.IFC4):
     def test_adding(self):
         person = self.file.createIfcPerson()
         organisation = self.file.createIfcOrganization()
-        person_and_organisation = ifcopenshell.api.run(
-            "owner.add_person_and_organisation", self.file, person=person, organisation=organisation
-        )
+        ifcopenshell.api.owner.add_person_and_organisation(self.file, person=person, organisation=organisation)
+
+
+class TestAddPersonAndOrganisationIFC2X3(test.bootstrap.IFC2X3, TestAddPersonAndOrganisation):
+    pass

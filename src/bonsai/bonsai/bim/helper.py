@@ -1,0 +1,790 @@
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Bonsai is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import annotations
+
+import importlib
+import json
+from collections.abc import Callable, Iterable, Sequence
+from types import EllipsisType
+from typing import TYPE_CHECKING, Any, Optional, Union
+
+import bpy
+import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper as W
+import ifcopenshell.util.attribute
+import ifcopenshell.util.unit
+from ifcopenshell.util.doc import (
+    get_attribute_doc,
+    get_predefined_type_doc,
+    get_property_doc,
+)
+
+import bonsai.tool as tool
+
+if TYPE_CHECKING:
+    import bonsai.bim.prop
+    from bonsai.bim.module.search.prop import BIMFilterGroup
+    from bonsai.bim.prop import Attribute
+
+    # ImportCallback return values:
+    # - None  - property should be imported by default workflow
+    # - True  - setting value for imported attribute should be skipped
+    # - False - property should be skipped entirely from import
+    # Second argument is optional,
+    # because ImportCallback might be called for attributes that are not created by default
+    # (e.g. IFC entity attributes).
+    ImportCallback = Callable[[str, Optional[bonsai.bim.prop.Attribute], dict[str, Any]], Union[bool, None]]
+    # ExportCallback return values:
+    # - True  - property should be skipped entirely from export
+    # - False - property should be exproted by default workflow
+    ExportCallback = Callable[[dict[str, Any], bonsai.bim.prop.Attribute], bool]
+
+
+def draw_attributes(
+    props: Union[bpy.types.bpy_prop_collection_idprop[Attribute], Sequence[Attribute]],
+    layout: bpy.types.UILayout,
+    copy_operator: Optional[str] = None,
+    popup_active_attribute: Optional[bonsai.bim.prop.Attribute] = None,
+    callback: Optional[Callable[[bonsai.bim.prop.Attribute, bpy.types.UILayout], None]] = None,
+    *,
+    enable_search: Union[bool, EllipsisType] = ...,
+) -> None:
+    """Draw editable UI for prop.Attributes.
+
+    You can set attribute active in popup with `active_attribute`
+    meaning you will be able to type into attribute's field without having to click
+    on it first
+
+    :param enable_search: Add search button to string, integer, and float attributes
+        Possible values:
+
+        - ``...`` (default value) -
+            add search if possible. If it's not possible, there will be no warnings or errors.
+        - ``True`` - always add search, if it's not possible it will result in errors.
+        - ``False`` - never add search.
+
+    """
+    for attribute in props:
+        row = layout.row(align=True)
+        if attribute == popup_active_attribute:
+            row.activate_init = True
+        draw_attribute(attribute, row, copy_operator, enable_search=enable_search)
+        if callback:
+            callback(attribute, row)
+
+
+def draw_attribute(
+    attribute: bonsai.bim.prop.Attribute,
+    layout: bpy.types.UILayout,
+    copy_operator: Optional[str] = None,
+    enable_search: Union[bool, EllipsisType] = ...,
+) -> None:
+    value_name = attribute.get_value_name(display_only=True)
+
+    if value_name == "enum_value":
+        prop_with_search(layout, attribute, "enum_value", text=attribute.name)
+    elif value_name == "filepath_value":
+        attribute.filepath_value.layout_file_select(layout, filter_glob=attribute.filter_glob, text=attribute.name)
+
+    elif value_name == "subitems_values":
+        col = layout.column()
+        layout = col.row(align=True)
+        layout.label(text=f"{attribute.name}:")
+        data_path = tool.Blender.get_full_data_path(attribute, value_name)
+        for i, item in enumerate(attribute.subitems_values, 1):
+            row = col.row(align=True)
+            row.alignment = "EXPAND"
+            row.prop(item, "name", text=f"# {i}")
+            op = row.operator("bim.attribute_remove_subitem", text="", icon="X")
+            op.data_path = data_path
+            op.index = i - 1
+        op = layout.operator("bim.attribute_add_subitem", icon="ADD", text="")
+        op.data_path = data_path
+
+    elif attribute.special_type == "DURATION":
+        props = tool.Sequence.get_work_schedule_props()
+        for item in props.durations_attributes:
+            if item.name == attribute.name:
+                duration_props = item
+                layout.label(text=attribute.name)
+                layout.prop(duration_props, "years", text="Y")
+                layout.prop(duration_props, "months", text="M")
+                layout.prop(duration_props, "days", text="D")
+                layout.prop(duration_props, "hours", text="H")
+                layout.prop(duration_props, "minutes", text="Min")
+                layout.prop(duration_props, "seconds", text="S")
+                break
+    else:
+        layout.prop(
+            attribute,
+            value_name,
+            text=attribute.display_name,
+        )
+
+    if attribute.special_type == "URI":
+        op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
+        op.attribute_data_path = tool.Blender.get_full_data_path(attribute)
+    elif attribute.special_type in ("DATE", "DATETIME"):
+        op = layout.operator("bim.datepicker", text="", icon="TIME")
+        op.target_prop = attribute.path_from_id("string_value")
+        op.include_time = attribute.special_type == "DATETIME"
+
+    if attribute.data_type in ("string", "integer", "float") and (
+        enable_search is True or (enable_search is ... and attribute.ifc_class)
+    ):
+        op = layout.operator("bim.attribute_search_values", text="", icon="VIEWZOOM")
+        op.attribute_name = attribute.name
+        op.attribute_ifc_class = attribute.ifc_class
+        op.data_path = tool.Blender.get_full_data_path(attribute, value_name)
+        op.data_type = attribute.data_type
+
+    if attribute.is_optional:
+        layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+    if attribute.use_explorer_ui:
+        op = layout.operator("bim.explorer_show_ui_popup", text="", icon="ZOOM_SELECTED")
+        op.ifc_class = attribute.ifc_class
+        op.attribute_name = attribute.name
+        op.data_path = tool.Blender.get_full_data_path(attribute, value_name)
+        if ifc_id := attribute.get_value():
+            op.preselect_ifc_id = int(ifc_id)
+
+    if attribute.name == "GlobalId":
+        layout.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
+    elif copy_operator:
+        op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
+        op.name = attribute.name
+
+
+def import_attributes(
+    element: Union[str, ifcopenshell.entity_instance],
+    props: bpy.types.bpy_prop_collection_idprop[Attribute],
+    callback: Optional[ImportCallback] = None,
+) -> None:
+    """
+    :param element: Entity or IFC class string.
+    """
+    info: dict[str, Any]
+    if isinstance(element, str):
+        assert (entity := tool.Ifc.schema().declaration_by_name(element).as_entity())
+        attributes = entity.all_attributes()
+        info = {a.name(): None for a in attributes}
+        info["type"] = element
+    else:
+        assert (entity := element.declaration.as_entity())
+        attributes = entity.all_attributes()
+        info = element.get_info()
+    for attribute in attributes:
+        import_attribute(attribute, props, info, callback=callback)
+
+
+def import_attribute(
+    attribute: W.attribute,
+    props: bpy.types.bpy_prop_collection_idprop[Attribute],
+    data: dict[str, Any],
+    callback: Optional[ImportCallback] = None,
+) -> None:
+    data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+    # Complex data types (aggregates and entities) are handled only by callback.
+    if data_type == ("list", "string"):
+        data_type = "list[string]"
+    if isinstance(data_type, tuple) or data_type == "entity":
+        callback(attribute.name(), None, data) if callback else None
+        return
+
+    new = props.add()
+    new.name = attribute.name()
+    new.is_null = data[attribute.name()] is None
+    new.is_optional = attribute.optional()
+    new.data_type = data_type if isinstance(data_type, str) else ""
+    new.ifc_class = data["type"]
+
+    is_handled_by_callback = callback(attribute.name(), new, data) if callback else None
+    data_type = new.data_type  # Allow callback to override data type.
+
+    if is_handled_by_callback:
+        pass  # Our job is done
+    elif is_handled_by_callback is False:
+        props.remove(len(props) - 1)
+    elif data_type == "string":
+        new.string_value = "" if new.is_null else str(data[attribute.name()]).replace("\n", "\\n")
+        attribute_type = attribute.type_of_attribute()
+        if attribute_type._is("IfcURIReference"):
+            new.special_type = "URI"
+        elif attribute.type_of_attribute()._is("IfcDate"):
+            new.special_type = "DATE"
+        elif attribute.type_of_attribute()._is("IfcDateTime"):
+            new.special_type = "DATETIME"
+    elif data_type == "boolean":
+        new.bool_value = False if new.is_null else bool(data[attribute.name()])
+    elif data_type == "integer":
+        new.int_value = 0 if new.is_null else int(data[attribute.name()])
+    elif data_type == "float":
+        measure_class = attribute.type_of_attribute().declared_type().name()
+        new.special_type = tool.Pset.get_special_type_for_measure_class(measure_class)
+        new.float_value = 0.0 if new.is_null else float(data[attribute.name()])
+    elif data_type == "enum":
+        attribute_type = attribute.type_of_attribute()
+        is_logical = str(attribute_type) == "<type IfcLogical: <logical>>"
+        enum_value = data[new.name]
+        if is_logical:
+            new.special_type = "LOGICAL"
+            enum_items = ("TRUE", "FALSE", "UNKNOWN")
+            new.enum_items = json.dumps(enum_items)
+            if enum_value is not None and enum_value != "UNKNOWN":
+                # IfcOpenShell returns bool if IfcLogical is True/False.
+                enum_value = "TRUE" if enum_value else "FALSE"
+        else:
+            enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
+            new.enum_items = json.dumps(enum_items)
+            add_attribute_enum_items_descriptions(new, enum_items)
+
+        if enum_value is not None:
+            new.enum_value = enum_value
+    elif data_type == "list[string]":
+        value: Union[list[str], None] = data[attribute.name()]
+        if value:
+            for item in value:
+                new.subitems_values.add().name = str(item).replace("\n", "\\n")
+
+    add_attribute_description(new, data)
+    add_attribute_min_max(attribute, new)
+
+
+ATTRIBUTE_MIN_MAX_CONSTRAINTS = {"IfcMaterialLayer": {"Priority": {"value_min": 0, "value_max": 100}}}
+
+
+def add_attribute_min_max(attribute: W.attribute, attribute_blender: bonsai.bim.prop.Attribute) -> None:
+    if attribute_blender.ifc_class in ATTRIBUTE_MIN_MAX_CONSTRAINTS:
+        constraints = ATTRIBUTE_MIN_MAX_CONSTRAINTS[attribute_blender.ifc_class].get(attribute_blender.name, {})
+        for constraint, value in constraints.items():
+            setattr(attribute_blender, constraint, value)
+            setattr(attribute_blender, constraint + "_constraint", True)
+    attribute_type = attribute.type_of_attribute()
+
+    if attribute_type._is("IfcPositiveLengthMeasure") or attribute_type._is("IfcNonNegativeLengthMeasure"):
+        attribute_blender.value_min = 0.0
+        attribute_blender.value_min_constraint = True
+
+
+def add_attribute_enum_items_descriptions(
+    attribute_blender: bonsai.bim.prop.Attribute, enum_items: Iterable[str]
+) -> None:
+    attribute_blender.enum_descriptions.clear()
+    if isinstance(enum_items, dict):
+        enum_items = enum_items.keys()
+    version = tool.Ifc.get_schema()
+    for enum_item in enum_items:
+        new_enum_description = attribute_blender.enum_descriptions.add()
+        try:
+            description = get_predefined_type_doc(version, attribute_blender.ifc_class, enum_item) or ""
+        except KeyError:  # TODO this only supports predefined type enums. Add support for other types of enums ?
+            description = ""
+        new_enum_description.name = description
+
+
+def add_attribute_description(
+    attribute_blender: bonsai.bim.prop.Attribute,
+    attribute_ifc: Union[ifcopenshell.entity_instance, None] = None,
+) -> None:
+    """
+    :param attribute_ifc: IFC Entity to use as a fallback source of description (using "Description" attribute).
+    """
+    if not attribute_blender.name:
+        return
+    version = tool.Ifc.get_schema()
+    description = ""
+    try:
+        description = get_attribute_doc(version, attribute_blender.ifc_class, attribute_blender.name)
+    except RuntimeError:  # It's not an Entity Attribute. Let's try a Property Set attribute.
+        doc = get_property_doc(version, attribute_blender.ifc_class, attribute_blender.name)
+        if doc:
+            description = doc.get("description", "")
+        else:  # It's a custom property set. Check if this attribute has a description
+            if attribute_ifc is not None:
+                description = getattr(attribute_ifc, "Description", "")
+    if description:
+        attribute_blender.description = description
+
+
+def export_attributes(
+    props: bpy.types.bpy_prop_collection_idprop[Attribute],
+    callback: Optional[ExportCallback] = None,
+) -> dict[str, Any]:
+    attributes: dict[str, Any] = {}
+    for prop in props:
+        is_handled_by_callback = callback(attributes, prop) if callback else False
+        if is_handled_by_callback:
+            continue  # Our job is done
+        attributes[prop.name] = prop.get_value()
+    return attributes
+
+
+def process_exported_entity_attribute(attributes: dict[str, Any], attribute_names: list[str]) -> None:
+    for attribute_name in attribute_names:
+        entity_id = attributes[attribute_name]
+        if entity_id is None:
+            # Maybe it was removed by now and enum is invalid.
+            del attributes[attribute_name]
+        else:
+            attributes[attribute_name] = tool.Ifc.get().by_id(int(entity_id))
+
+
+ENUM_ITEMS_DATA = Union[bpy.types.PropertyGroup, bpy.types.ID, bpy.types.Operator, bpy.types.OperatorProperties]
+
+
+def get_display_value(value: str, float_decimal_precision: int = 6) -> str:
+    """
+    This will get rid of the floating point precision artifacts in float values stored as a string
+    """
+    try:
+        digits = len(value.split(".")[1])
+        value = float(value)
+        if digits > 6:  # Maximal decimal float precision
+            value = round(value, float_decimal_precision)
+    except (ValueError, IndexError):  # Not castable to a float or no decimal places (eg integer)
+        pass
+    return str(value)
+
+
+def prop_with_search(
+    layout: bpy.types.UILayout,
+    data: ENUM_ITEMS_DATA,
+    prop_name: str,
+    should_click_ok: bool = False,
+    original_operator_path: Optional[str] = None,
+    *,
+    enable_relating_type_suggestions: bool = False,
+    search_threshold: int = 10,
+    button_kwargs: Union[dict[str, Any], None] = None,
+    **kwargs: Any,
+) -> bpy.types.UILayout:
+    """
+    Draw a row with enum prop and enum search operator.
+
+    Search operator appears only in case if there's more than `search_threshold` items in enum.
+
+    :arg button_kwargs: kwargs to pass to ``UILayout.operator()``.
+    :arg kwargs: kwargs to pass to ``UILayout.prop()``.
+    :arg enable_relating_type_suggestions: Enable additional suggestions for relating type properties.
+    :arg search_threshold: Minimum number of enum items required to show search button.
+    :return: Added row.
+    """
+    # kwargs are layout.prop arguments (text, icon, etc.)
+    row = layout.row(align=True)
+    row.prop(data, prop_name, **kwargs)
+    try:
+        if len(get_enum_items(data, prop_name, original_operator_path=original_operator_path)) > search_threshold:
+            # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
+            row.context_pointer_set(name="data", data=data)
+            op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM", **(button_kwargs or {}))
+            op.prop_name = prop_name
+            op.should_click_ok = should_click_ok
+            op.original_operator_path = original_operator_path or ""
+            op.enable_relating_type_suggestions = enable_relating_type_suggestions
+    except TypeError:  # Prop is not iterable
+        pass
+    return row
+
+
+def get_enum_items(
+    data: ENUM_ITEMS_DATA,
+    prop_name: str,
+    context: Optional[bpy.types.Context] = None,
+    original_operator_path: Optional[str] = None,
+) -> Union[
+    Iterable[Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int], None]], None
+]:
+    """Retrieve items from a dynamic EnumProperty.
+
+    Otherwise it's not supported or throws an error in the console when the items callback returns an empty list.
+    See https://blender.stackexchange.com/q/215781/86891
+
+    :param original_operator_path: python path to the original operator class. Needed only if `data` is `bpy.types.Operator`.
+    """
+
+    # OperatorProperties is missing __annotations__, so need to somehow provide original Operator.
+    # Couldn't find any way to get Operator from OperatorProperties, so we provide the path explicitly.
+    # E.g. OperatorProperties occur when Operator is passed with context_pointer_set.
+    if isinstance(data, bpy.types.OperatorProperties):
+        if not original_operator_path:
+            raise Exception("For OperatorProperties providing the original operator path is required.")
+        operator_module_path, operator_class = original_operator_path.rsplit(".", 1)
+        operator_module = importlib.import_module(operator_module_path)
+        annotations_data = getattr(operator_module, operator_class)
+    else:
+        annotations_data = data
+
+    try:
+        annotations = annotations_data.__annotations__
+    except AttributeError:
+        annotations = type(annotations_data).__annotations__
+    prop = annotations[prop_name]
+    items = prop.keywords.get("items")
+    if items is None:
+        return
+    if not isinstance(items, (list, tuple)):
+        # items are retrieved through a callback, not a static list :
+        items = items(data, context or bpy.context)
+    return items
+
+
+def draw_expandable_panel(
+    layout: bpy.types.UILayout,
+    context: bpy.types.Context,
+    label: str,
+    ui_func: Callable[[bpy.types.UILayout, bpy.types.Context], None],
+    default_closed: bool = True,
+    *,
+    panel_id: str = "",
+) -> None:
+    """
+    :param panel_id: Optional unique identifier for the panel.
+        By default is matching ``label``, but if more than one panel with the same name is used,
+        then ``panel_id`` can be provided explicitly to ensure panels can be expanded/collapsed separately.
+    """
+    if not panel_id:
+        panel_id = label
+    header, panel = layout.panel(panel_id, default_closed=default_closed)
+    header.label(text=label)
+    if panel:
+        ui_func(panel, context)
+
+
+def convert_property_group_from_si(property_group: bpy.types.PropertyGroup, skip_props: tuple[str, ...] = ()) -> None:
+    """Method converts property group values from si to current ifc project units
+
+    based on default values of the properties.
+
+    List of properties to skip can be supplied in `skip_props`."""
+    conversion_k = 1.0 / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    skip_props = ("rna_type", "name") + skip_props
+    for prop_name in property_group.bl_rna.properties.keys():
+        if prop_name in skip_props:
+            continue
+        prop_value = tool.Blender.get_blender_prop_default_value(property_group, prop_name)
+        if type(prop_value) is float:
+            prop_value = prop_value * conversion_k
+        elif type(prop_value) is bpy.types.bpy_prop_array:
+            prop_value = [el * conversion_k for el in prop_value]
+        setattr(property_group, prop_name, prop_value)
+
+
+def draw_filter(
+    layout: bpy.types.UILayout,
+    filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup],
+    data,
+    module: str,
+) -> None:
+    if not data.is_loaded:
+        data.load()
+
+    sprops = tool.Search.get_search_props()
+
+    if tool.Ifc.get():
+        row = layout.row(align=True)
+        row.label(text=f"{len(data.data['saved_searches'])} Saved Searches")
+
+        row.operator("bim.select_entity_by_guid", text="", icon="CON_OBJECTSOLVER")
+        if data.data["saved_searches"]:
+            row.operator("bim.load_search", text="", icon="IMPORT").module = module
+        row.operator("bim.save_search", text="", icon="EXPORT").module = module
+        if data.data["saved_searches"]:
+            row.operator("bim.remove_search", text="", icon="REMOVE").module = module
+        if module != "search":
+            if module == "drawing_include":
+                row.operator("bim.edit_element_filter", icon="CHECKMARK", text="").filter_mode = "INCLUDE"
+            if module == "drawing_exclude":
+                row.operator("bim.edit_element_filter", icon="CHECKMARK", text="").filter_mode = "EXCLUDE"
+            row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
+    row = layout.row(align=True)
+    preferences = tool.Blender.get_addon_preferences()
+    if not preferences.chain_filter_with_set_operations:
+        row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD").module = module
+    else:
+        row.prop(sprops, "facet", text="")
+        op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
+        op.type = sprops.facet
+        op.index = 0
+        op.module = module
+    op = row.operator("bim.edit_filter_query", text="", icon="FILTER")
+    if "module" in op.bl_rna.properties:
+        op.module = module
+
+    for i, filter_group in enumerate(filter_groups):
+        box = layout.box()
+
+        preferences = tool.Blender.get_addon_preferences()
+        if not preferences.chain_filter_with_set_operations:
+            row = box.row(align=True)
+            row.prop(sprops, "facet", text="")
+            op = row.operator("bim.add_filter", text="Add Filter", icon="ADD")
+            op.type = sprops.facet
+            op.index = i
+            op.module = module
+            op = row.operator("bim.remove_filter_group", text="", icon="X")
+            op.index = i
+            op.module = module
+
+        for j, ifc_filter in enumerate(filter_group.filters):
+            if ifc_filter.type == "entity":
+                row = box.row(align=True)
+                preferences = tool.Blender.get_addon_preferences()
+                show_mode_toggle = preferences.chain_filter_with_set_operations and j > 0
+                if show_mode_toggle:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                row.prop(ifc_filter, "value", text="", icon="FILE_3D")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
+            elif ifc_filter.type == "attribute":
+                row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                row.prop(ifc_filter, "name", text="", icon="COPY_ID")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
+                op.suggestion_type = "attribute_name"
+                row.prop(ifc_filter, "value", text="")
+                if ifc_filter.name:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
+                    op.suggestion_type = "attribute_value"
+            elif ifc_filter.type == "type":
+                row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                row.prop(ifc_filter, "value", text="", icon="FILE_VOLUME")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
+            elif ifc_filter.type == "material":
+                row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                row.prop(ifc_filter, "value", text="", icon="MATERIAL")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
+            elif ifc_filter.type == "property":
+                row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                row.prop(ifc_filter, "pset", text="", icon="PROPERTIES")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
+                op.suggestion_type = "pset"
+                row.prop(ifc_filter, "name", text="")
+                if ifc_filter.pset:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
+                    op.suggestion_type = "property_name"
+                row.prop(ifc_filter, "comparison", text="")
+                row.prop(ifc_filter, "value", text="")
+                if ifc_filter.pset and ifc_filter.name:
+                    op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                    op.filter_type = ifc_filter.type
+                    op.suggestion_type = "property_value"
+            elif ifc_filter.type == "classification":
+                row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                row.prop(ifc_filter, "value", text="", icon="OUTLINER")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
+            elif ifc_filter.type == "location":
+                row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                row.prop(ifc_filter, "value", text="", icon="PACKAGE")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
+            elif ifc_filter.type == "group":
+                row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                row.prop(ifc_filter, "value", text="", icon="OUTLINER_COLLECTION")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
+            elif ifc_filter.type == "parent":
+                row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                row.prop(ifc_filter, "value", text="", icon="FILE_PARENT")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
+            elif ifc_filter.type == "query":
+                row = box.row(align=True)
+                if tool.Blender.get_addon_preferences().chain_filter_with_set_operations and j > 0:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                row.prop(ifc_filter, "name", text="", icon="POINTCLOUD_DATA")
+                row.prop(ifc_filter, "comparison", text="")
+                row.prop(ifc_filter, "value", text="")
+            elif ifc_filter.type == "instance":
+                row = box.row(align=True)
+                preferences = tool.Blender.get_addon_preferences()
+                show_mode_toggle = preferences.chain_filter_with_set_operations and j > 0
+                if show_mode_toggle:
+                    mode_icons = {"ADD": "ADD", "SUBTRACT": "REMOVE", "FILTER": "FILTER"}
+                    op = row.operator(
+                        "bim.toggle_filter_inclusion",
+                        icon=mode_icons.get(ifc_filter.filter_mode, "ADD"),
+                        text="",
+                        depress=ifc_filter.filter_mode != "ADD",
+                    )
+                    op.group_index = i
+                    op.filter_index = j
+                    op.module = module
+                row.prop(ifc_filter, "value", text="", icon="GRIP")
+                op = row.operator("bim.filter_value_suggestions", text="", icon="VIEWZOOM")
+                op.group_index = i
+                op.filter_index = j
+                op.module = module
+                op.filter_type = ifc_filter.type
+                op = row.operator("bim.select_filter_elements", text="", icon="EYEDROPPER")
+                op.group_index = i
+                op.index = j
+                op.module = module
+            op = row.operator("bim.remove_filter", text="", icon="X")
+            op.group_index = i
+            op.index = j
+            op.module = module

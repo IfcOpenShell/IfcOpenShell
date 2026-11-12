@@ -1,8 +1,10 @@
 #include "base_utils.h"
 
-#include "../../../ifcparse/IfcLogger.h"
-#include "OpenCascadeConversionResult.h"
+#include "../../../ifcparse/logger.h"
+#include "opencascade_conversion_result.h"
 #include "boolean_utils.h"
+
+#include <Standard_Version.hxx>
 
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
@@ -46,11 +48,15 @@
 
 #include <BRepAlgoAPI_Fuse.hxx>
 
-#include <TopTools_IndexedMapOfShape.hxx>
+#include <Standard_Macro.hxx>
+#include <TopTools_ShapeMapHasher.hxx>
+#include <NCollection_IndexedMap.hxx>
+
+#include <ShapeUpgrade_UnifySameDomain.hxx>
 
 // For axis placements detect equality early in order for the
 // relatively computionaly expensive gp_Trsf calculation to be skipped
-bool IfcGeom::util::axis_equal(const gp_Ax3 & a, const gp_Ax3 & b, double tolerance) {
+bool ifcopenshell::geom::util::axis_equal(const gp_Ax3 & a, const gp_Ax3 & b, double tolerance) {
 	if (!a.Location().IsEqual(b.Location(), tolerance)) return false;
 	// Note that the tolerance below is angular, above is linear. Since architectural
 	// objects are about 1m'ish in scale, it should be somewhat equivalent. Besides,
@@ -61,15 +67,15 @@ bool IfcGeom::util::axis_equal(const gp_Ax3 & a, const gp_Ax3 & b, double tolera
 	return true;
 }
 
-bool IfcGeom::util::axis_equal(const gp_Ax2d & a, const gp_Ax2d & b, double tolerance) {
+bool ifcopenshell::geom::util::axis_equal(const gp_Ax2d & a, const gp_Ax2d & b, double tolerance) {
 	if (!a.Location().IsEqual(b.Location(), tolerance)) return false;
 	if (!a.Direction().IsEqual(b.Direction(), tolerance)) return false;
 	return true;
 }
 
-int IfcGeom::util::count(const TopoDS_Shape& s, TopAbs_ShapeEnum t, bool unique) {
+int ifcopenshell::geom::util::count(const TopoDS_Shape& s, TopAbs_ShapeEnum t, bool unique) {
 	if (unique) {
-		TopTools_IndexedMapOfShape map;
+		NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> map;
 		TopExp::MapShapes(s, t, map);
 		return map.Extent();
 	} else {
@@ -83,7 +89,7 @@ int IfcGeom::util::count(const TopoDS_Shape& s, TopAbs_ShapeEnum t, bool unique)
 }
 
 
-int IfcGeom::util::surface_genus(const TopoDS_Shape& s) {
+int ifcopenshell::geom::util::surface_genus(const TopoDS_Shape& s) {
 	int nv = count(s, TopAbs_VERTEX, true);
 	int ne = count(s, TopAbs_EDGE, true);
 	int nf = count(s, TopAbs_FACE, true);
@@ -94,7 +100,7 @@ int IfcGeom::util::surface_genus(const TopoDS_Shape& s) {
 	return genus;
 }
 
-bool IfcGeom::util::is_manifold(const TopoDS_Shape& a) {
+bool ifcopenshell::geom::util::is_manifold(const TopoDS_Shape& a) {
 	if (a.ShapeType() == TopAbs_COMPOUND || a.ShapeType() == TopAbs_SOLID) {
 		TopoDS_Iterator it(a);
 		for (; it.More(); it.Next()) {
@@ -104,7 +110,7 @@ bool IfcGeom::util::is_manifold(const TopoDS_Shape& a) {
 		}
 		return true;
 	} else {
-		TopTools_IndexedDataMapOfShapeListOfShape map;
+        NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 		TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
 
 		for (int i = 1; i <= map.Extent(); ++i) {
@@ -128,7 +134,7 @@ bool IfcGeom::util::is_manifold(const TopoDS_Shape& a) {
 }
 
 
-bool IfcGeom::util::is_nested_compound_of_solid(const TopoDS_Shape& s, int depth) {
+bool ifcopenshell::geom::util::is_nested_compound_of_solid(const TopoDS_Shape& s, int depth) {
 	if (s.ShapeType() == TopAbs_COMPOUND) {
 		TopoDS_Iterator it(s);
 		for (; it.More(); it.Next()) {
@@ -168,23 +174,23 @@ namespace {
 	}
 }
 
-bool IfcGeom::util::is_identity(const gp_Trsf2d& t, double tolerance) {
+bool ifcopenshell::geom::util::is_identity(const gp_Trsf2d& t, double tolerance) {
 	return is_identity_helper(t, tolerance);
 }
 
-bool IfcGeom::util::is_identity(const gp_GTrsf2d& t, double tolerance) {
+bool ifcopenshell::geom::util::is_identity(const gp_GTrsf2d& t, double tolerance) {
 	return is_identity_helper(t, tolerance);
 }
 
-bool IfcGeom::util::is_identity(const gp_Trsf& t, double tolerance) {
+bool ifcopenshell::geom::util::is_identity(const gp_Trsf& t, double tolerance) {
 	return is_identity_helper(t, tolerance);
 }
 
-bool IfcGeom::util::is_identity(const gp_GTrsf& t, double tolerance) {
+bool ifcopenshell::geom::util::is_identity(const gp_GTrsf& t, double tolerance) {
 	return is_identity_helper(t, tolerance);
 }
 
-gp_Trsf IfcGeom::util::combine_offset_and_rotation(const gp_Vec & offset, const gp_Quaternion & rotation) {
+gp_Trsf ifcopenshell::geom::util::combine_offset_and_rotation(const gp_Vec & offset, const gp_Quaternion & rotation) {
 	auto offset_transform = gp_Trsf{};
 	offset_transform.SetTranslation(offset);
 
@@ -195,17 +201,17 @@ gp_Trsf IfcGeom::util::combine_offset_and_rotation(const gp_Vec & offset, const 
 }
 
 
-bool IfcGeom::util::project(const Handle_Geom_Surface& srf, const TopoDS_Shape& shp, double& u1, double& v1, double& u2, double& v2, double widen) {
+bool ifcopenshell::geom::util::project(const opencascade::handle<Geom_Surface>& srf, const TopoDS_Shape& shp, double& u1, double& v1, double& u2, double& v2, double widen) {
 	// @todo std::unique_ptr for C++11
 	ShapeAnalysis_Surface* sas = 0;
-	Handle(Geom_Plane) pln;
+	opencascade::handle<Geom_Plane> pln;
 
 	if (srf->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
 		// Optimize projection for specific cases
-		pln = Handle(Geom_Plane)::DownCast(srf);
-	} else if (srf->DynamicType() == STANDARD_TYPE(Geom_OffsetSurface) && Handle(Geom_OffsetSurface)::DownCast(srf)->BasisSurface()->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+		pln = opencascade::handle<Geom_Plane>::DownCast(srf);
+	} else if (srf->DynamicType() == STANDARD_TYPE(Geom_OffsetSurface) && opencascade::handle<Geom_OffsetSurface>::DownCast(srf)->BasisSurface()->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
 		// For an offset planar surface the projected UV coords are the same as the basis surface
-		pln = Handle(Geom_Plane)::DownCast(Handle(Geom_OffsetSurface)::DownCast(srf)->BasisSurface());
+		pln = opencascade::handle<Geom_Plane>::DownCast(opencascade::handle<Geom_OffsetSurface>::DownCast(srf)->BasisSurface());
 	} else {
 		sas = new ShapeAnalysis_Surface(srf);
 	}
@@ -242,7 +248,7 @@ bool IfcGeom::util::project(const Handle_Geom_Surface& srf, const TopoDS_Shape& 
 			const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
 
 			double a, b;
-			Handle_Geom_Curve crv = BRep_Tool::Curve(e, a, b);
+			opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, a, b);
 			gp_Pnt p;
 			crv->D0((a + b) / 2., p);
 
@@ -275,7 +281,7 @@ bool IfcGeom::util::project(const Handle_Geom_Surface& srf, const TopoDS_Shape& 
 }
 
 
-TopoDS_Shape IfcGeom::util::apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t) {
+TopoDS_Shape ifcopenshell::geom::util::apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t) {
 	if (t.Form() == gp_Identity) {
 		return s;
 	} else {
@@ -289,7 +295,7 @@ TopoDS_Shape IfcGeom::util::apply_transformation(const TopoDS_Shape& s, const gp
 }
 
 
-TopoDS_Shape IfcGeom::util::apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t) {
+TopoDS_Shape ifcopenshell::geom::util::apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t) {
 	if (t.Form() == gp_Other) {
 		return BRepBuilderAPI_GTransform(s, t, true);
 	} else {
@@ -297,23 +303,57 @@ TopoDS_Shape IfcGeom::util::apply_transformation(const TopoDS_Shape& s, const gp
 	}
 }
 
-TopoDS_Shape IfcGeom::util::apply_transformation(const TopoDS_Shape& s, const ifcopenshell::geometry::taxonomy::matrix4& t) {
-	// @todo this probably discards non-uniform scale?
+namespace {
+	bool is_non_uniform(const Eigen::Matrix4d& M, double eps = 1e-6)
+	{
+		Eigen::Matrix3d L = M.block<3, 3>(0, 0);
+		double sx = L.col(0).norm();
+		double sy = L.col(1).norm();
+		double sz = L.col(2).norm();
+		return !(
+			std::abs(sx - sy) < eps &&
+			std::abs(sx - sz) < eps &&
+			std::abs(sy - sz) < eps
+		);
+	}
+}
+
+TopoDS_Shape ifcopenshell::geom::util::apply_transformation(const TopoDS_Shape& s, const ifcopenshell::geom::taxonomy::matrix4& t) {
+
 	gp_GTrsf trsf;
 	if (t.components_) {
-		gp_Trsf tr;
 		const auto& m = t.ccomponents();
-		tr.SetValues(
-			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
-			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
-			m(2, 0), m(2, 1), m(2, 2), m(2, 3)
-		);
-		trsf = tr;
+		// This is either a bug or very finicky, but this appears to be the only
+		// way to get the transformation metadata to line up.
+		//
+		// - If gp_GTrsf.form is other, applying the transformation will result in
+		//   a conversion to b-spline surfaces for about everything, which impacts
+		//   performance and breaks detection of view volume in the svg serializer,
+		//   which would be the case when setting the SetVectorialPart() block
+		//   unconditionally.
+		//   (calling SetForm() afterwards to detect CompoundTrsf over Other would
+		//      set Scale to zero (bug?))
+		if (is_non_uniform(m)) {
+			trsf.SetVectorialPart(gp_Mat(
+				m(0, 0), m(0, 1), m(0, 2),
+				m(1, 0), m(1, 1), m(1, 2),
+				m(2, 0), m(2, 1), m(2, 2)
+			));
+			trsf.SetTranslationPart(gp_XYZ(m(0, 3), m(1, 3), m(2, 3)));
+		} else {
+			gp_Trsf tr;
+			tr.SetValues(
+				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+				m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+			);
+			trsf = tr;
+		}
 	}
 	return apply_transformation(s, trsf);
 }
 
-bool IfcGeom::util::fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b, TopoDS_Shape& box, double& height, double tol) {
+bool ifcopenshell::geom::util::fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b, TopoDS_Shape& box, double& height, double tol) {
 	TopExp_Explorer exp(b, TopAbs_FACE);
 	if (!exp.More()) {
 		return false;
@@ -411,24 +451,25 @@ bool IfcGeom::util::fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b, 
 }
 
 
-const Handle_Geom_Curve IfcGeom::util::intersect(const Handle_Geom_Surface& a, const Handle_Geom_Surface& b) {
+const opencascade::handle<Geom_Curve> ifcopenshell::geom::util::intersect(const opencascade::handle<Geom_Surface>& a, const opencascade::handle<Geom_Surface>& b) {
 	GeomAPI_IntSS x(a, b, 1.e-7);
 	if (x.IsDone() && x.NbLines() == 1) {
 		return x.Line(1);
 	} else {
-		return Handle_Geom_Curve();
+		return opencascade::handle<Geom_Curve>();
+
 	}
 }
 
-const Handle_Geom_Curve IfcGeom::util::intersect(const Handle_Geom_Surface& a, const TopoDS_Face& b) {
+const opencascade::handle<Geom_Curve> ifcopenshell::geom::util::intersect(const opencascade::handle<Geom_Surface>& a, const TopoDS_Face& b) {
 	return intersect(a, BRep_Tool::Surface(b));
 }
 
-const Handle_Geom_Curve IfcGeom::util::intersect(const TopoDS_Face& a, const Handle_Geom_Surface& b) {
+const opencascade::handle<Geom_Curve> ifcopenshell::geom::util::intersect(const TopoDS_Face& a, const opencascade::handle<Geom_Surface>& b) {
 	return intersect(BRep_Tool::Surface(a), b);
 }
 
-bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const Handle_Geom_Surface& b, gp_Pnt& p) {
+bool ifcopenshell::geom::util::intersect(const opencascade::handle<Geom_Curve>& a, const opencascade::handle<Geom_Surface>& b, gp_Pnt& p) {
 	GeomAPI_IntCS x(a, b);
 	if (x.IsDone() && x.NbPoints() == 1) {
 		p = x.Point(1);
@@ -438,11 +479,11 @@ bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const Handle_Geom_Surf
 	}
 }
 
-bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const TopoDS_Face& b, gp_Pnt &c) {
+bool ifcopenshell::geom::util::intersect(const opencascade::handle<Geom_Curve>& a, const TopoDS_Face& b, gp_Pnt &c) {
 	return intersect(a, BRep_Tool::Surface(b), c);
 }
 
-bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const TopoDS_Shape& b, std::vector<gp_Pnt>& out) {
+bool ifcopenshell::geom::util::intersect(const opencascade::handle<Geom_Curve>& a, const TopoDS_Shape& b, std::vector<gp_Pnt>& out) {
 	TopExp_Explorer exp(b, TopAbs_FACE);
 	gp_Pnt p;
 	for (; exp.More(); exp.Next()) {
@@ -453,12 +494,12 @@ bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const TopoDS_Shape& b,
 	return !out.empty();
 }
 
-bool IfcGeom::util::intersect(const Handle_Geom_Surface& a, const TopoDS_Shape& b, std::vector< std::pair<Handle_Geom_Surface, Handle_Geom_Curve> >& out) {
+bool ifcopenshell::geom::util::intersect(const opencascade::handle<Geom_Surface>& a, const TopoDS_Shape& b, std::vector< std::pair<opencascade::handle<Geom_Surface>, opencascade::handle<Geom_Curve> > >& out) {
 	TopExp_Explorer exp(b, TopAbs_FACE);
 	for (; exp.More(); exp.Next()) {
 		const TopoDS_Face& f = TopoDS::Face(exp.Current());
-		const Handle_Geom_Surface& s = BRep_Tool::Surface(f);
-		Handle_Geom_Curve crv = intersect(a, s);
+		const opencascade::handle<Geom_Surface>& s = BRep_Tool::Surface(f);
+		opencascade::handle<Geom_Curve> crv = intersect(a, s);
 		if (!crv.IsNull()) {
 			out.push_back(std::make_pair(s, crv));
 		}
@@ -466,7 +507,7 @@ bool IfcGeom::util::intersect(const Handle_Geom_Surface& a, const TopoDS_Shape& 
 	return !out.empty();
 }
 
-bool IfcGeom::util::closest(const gp_Pnt& a, const std::vector<gp_Pnt>& b, gp_Pnt& c) {
+bool ifcopenshell::geom::util::closest(const gp_Pnt& a, const std::vector<gp_Pnt>& b, gp_Pnt& c) {
 	double minimal_distance = std::numeric_limits<double>::infinity();
 	for (std::vector<gp_Pnt>::const_iterator it = b.begin(); it != b.end(); ++it) {
 		const double d = a.Distance(*it);
@@ -478,26 +519,26 @@ bool IfcGeom::util::closest(const gp_Pnt& a, const std::vector<gp_Pnt>& b, gp_Pn
 	return minimal_distance != std::numeric_limits<double>::infinity();
 }
 
-bool IfcGeom::util::project(const Handle_Geom_Curve& crv, const gp_Pnt& pt, gp_Pnt& p, double& u, double& d) {
+bool ifcopenshell::geom::util::project(const opencascade::handle<Geom_Curve>& crv, const gp_Pnt& pt, gp_Pnt& p, double& u, double& d) {
 	ShapeAnalysis_Curve sac;
 	sac.Project(crv, pt, 1e-3, p, u, false);
 	d = pt.Distance(p);
 	return true;
 }
 
-double IfcGeom::util::shape_volume(const TopoDS_Shape& s) {
+double ifcopenshell::geom::util::shape_volume(const TopoDS_Shape& s) {
 	GProp_GProps prop;
 	BRepGProp::VolumeProperties(s, prop);
 	return prop.Mass();
 }
 
-double IfcGeom::util::face_area(const TopoDS_Face& f) {
+double ifcopenshell::geom::util::face_area(const TopoDS_Face& f) {
 	GProp_GProps prop;
 	BRepGProp::SurfaceProperties(f, prop);
 	return prop.Mass();
 }
 
-bool IfcGeom::util::is_convex(const TopoDS_Wire& wire, double tol) {
+bool ifcopenshell::geom::util::is_convex(const TopoDS_Wire& wire, double tol) {
 	for (TopExp_Explorer exp1(wire, TopAbs_VERTEX); exp1.More(); exp1.Next()) {
 		TopoDS_Vertex V1 = TopoDS::Vertex(exp1.Current());
 		gp_Pnt P1 = BRep_Tool::Pnt(V1);
@@ -544,24 +585,24 @@ bool IfcGeom::util::is_convex(const TopoDS_Wire& wire, double tol) {
 	return true;
 }
 
-TopoDS_Shape IfcGeom::util::halfspace_from_plane(const gp_Pln& pln, const gp_Pnt& cent) {
+TopoDS_Shape ifcopenshell::geom::util::halfspace_from_plane(const gp_Pln& pln, const gp_Pnt& cent) {
 	TopoDS_Face face = BRepBuilderAPI_MakeFace(pln).Face();
 	return BRepPrimAPI_MakeHalfSpace(face, cent).Solid();
 }
 
-gp_Pln IfcGeom::util::plane_from_face(const TopoDS_Face& face) {
+gp_Pln ifcopenshell::geom::util::plane_from_face(const TopoDS_Face& face) {
 	BRepGProp_Face prop(face);
-	Standard_Real u1, u2, v1, v2;
+	double u1, u2, v1, v2;
 	prop.Bounds(u1, u2, v1, v2);
-	Standard_Real u = (u1 + u2) / 2.0;
-	Standard_Real v = (v1 + v2) / 2.0;
+	double u = (u1 + u2) / 2.0;
+	double v = (v1 + v2) / 2.0;
 	gp_Pnt p;
 	gp_Vec n;
 	prop.Normal(u, v, p, n);
 	return gp_Pln(p, n);
 }
 
-gp_Pnt IfcGeom::util::point_above_plane(const gp_Pln& pln, bool agree) {
+gp_Pnt ifcopenshell::geom::util::point_above_plane(const gp_Pln& pln, bool agree) {
 	if (agree) {
 		return pln.Location().Translated(pln.Axis().Direction());
 	} else {
@@ -569,7 +610,7 @@ gp_Pnt IfcGeom::util::point_above_plane(const gp_Pln& pln, bool agree) {
 	}
 }
 
-bool IfcGeom::util::is_compound(const TopoDS_Shape& shape) {
+bool ifcopenshell::geom::util::is_compound_of_faces(const TopoDS_Shape& shape) {
 	bool has_solids = TopExp_Explorer(shape, TopAbs_SOLID).More() != 0;
 	bool has_shells = TopExp_Explorer(shape, TopAbs_SHELL).More() != 0;
 	bool has_compounds = TopExp_Explorer(shape, TopAbs_COMPOUND).More() != 0;
@@ -577,7 +618,7 @@ bool IfcGeom::util::is_compound(const TopoDS_Shape& shape) {
 	return has_compounds && has_faces && !has_solids && !has_shells;
 }
 
-bool IfcGeom::util::shape_to_face_list(const TopoDS_Shape& s, TopTools_ListOfShape& li) {
+bool ifcopenshell::geom::util::shape_to_face_list(const TopoDS_Shape& s, NCollection_List<TopoDS_Shape>& li) {
 	TopExp_Explorer exp(s, TopAbs_FACE);
 	for (; exp.More(); exp.Next()) {
 		TopoDS_Face face = TopoDS::Face(exp.Current());
@@ -586,8 +627,8 @@ bool IfcGeom::util::shape_to_face_list(const TopoDS_Shape& s, TopTools_ListOfSha
 	return true;
 }
 
-bool IfcGeom::util::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape, double tol) {
-	TopTools_ListOfShape face_list;
+bool ifcopenshell::geom::util::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape, double tol) {
+	NCollection_List<TopoDS_Shape> face_list;
 	shape_to_face_list(compound, face_list);
 	if (face_list.Extent() == 0) {
 		return false;
@@ -595,7 +636,7 @@ bool IfcGeom::util::create_solid_from_compound(const TopoDS_Shape& compound, Top
 	return create_solid_from_faces(face_list, shape, tol);
 }
 
-bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& shape, double tol, bool force_sewing) {
+bool ifcopenshell::geom::util::create_solid_from_faces(const NCollection_List<TopoDS_Shape>& face_list, TopoDS_Shape& shape, double tol, bool force_sewing) {
 	bool valid_shell = false;
 
 	if (face_list.Extent() == 1) {
@@ -606,10 +647,10 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 		return false;
 	}
 
-	TopTools_ListIteratorOfListOfShape face_iterator;
+	NCollection_List<TopoDS_Shape>::Iterator face_iterator;
 
 	bool has_shared_edges = false;
-	TopTools_MapOfShape edge_set;
+    NCollection_Map<TopoDS_Shape, TopTools_ShapeMapHasher> edge_set;
 
 	// In case there are wire intersections or failures in non-planar wire triangulations
 	// the idea is to let occt do an exhaustive search of edge partners. But we have not
@@ -673,12 +714,12 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 		valid_shell &= util::count(shape, TopAbs_SHELL) > 0;
 	} catch (const Standard_Failure& e) {
 		if (e.GetMessageString() && strlen(e.GetMessageString())) {
-			Logger::Error(e.GetMessageString());
+			ifcopenshell::logger::root().error("GEO", 106, e.GetMessageString());
 		} else {
-			Logger::Error("Unknown error sewing shell");
+			ifcopenshell::logger::root().error("GEO", 107, "Unknown error sewing shell");
 		}
 	} catch (...) {
-		Logger::Error("Unknown error sewing shell");
+		ifcopenshell::logger::root().error("GEO", 108, "Unknown error sewing shell");
 	}
 
 	if (valid_shell) {
@@ -706,22 +747,22 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 						}
 					} catch (const Standard_Failure& e) {
 						if (e.GetMessageString() && strlen(e.GetMessageString())) {
-							Logger::Error(e.GetMessageString());
+							ifcopenshell::logger::root().error("GEO", 109, e.GetMessageString());
 						} else {
-							Logger::Error("Unknown error classifying solid");
+							ifcopenshell::logger::root().error("GEO", 110, "Unknown error classifying solid");
 						}
 					} catch (...) {
-						Logger::Error("Unknown error classifying solid");
+						ifcopenshell::logger::root().error("GEO", 111, "Unknown error classifying solid");
 					}
 				}
 			} catch (const Standard_Failure& e) {
 				if (e.GetMessageString() && strlen(e.GetMessageString())) {
-					Logger::Error(e.GetMessageString());
+					ifcopenshell::logger::root().error("GEO", 112, e.GetMessageString());
 				} else {
-					Logger::Error("Unknown error creating solid");
+					ifcopenshell::logger::root().error("GEO", 113, "Unknown error creating solid");
 				}
 			} catch (...) {
-				Logger::Error("Unknown error creating solid");
+				ifcopenshell::logger::root().error("GEO", 114, "Unknown error creating solid");
 			}
 
 			if (complete_shape.IsNull()) {
@@ -733,7 +774,7 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 					B.MakeCompound(C);
 					B.Add(C, complete_shape);
 					complete_shape = C;
-					Logger::Warning("Multiple components in IfcConnectedFaceSet");
+					ifcopenshell::logger::root().warning("GEO", 115, "Multiple components in IfcConnectedFaceSet");
 				}
 				B.Add(complete_shape, result_shape);
 			}
@@ -748,7 +789,7 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 				B.MakeCompound(C);
 				B.Add(C, complete_shape);
 				complete_shape = C;
-				Logger::Warning("Loose faces in IfcConnectedFaceSet");
+				ifcopenshell::logger::root().warning("GEO", 116, "Loose faces in IfcConnectedFaceSet");
 			}
 			B.Add(complete_shape, loose_faces.Current());
 		}
@@ -756,30 +797,30 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 		shape = complete_shape;
 
 	} else {
-		Logger::Error("Failed to sew faceset");
+		ifcopenshell::logger::root().error("GEO", 117, "Failed to sew faceset");
 	}
 
 	return valid_shell;
 }
 
-bool IfcGeom::util::flatten_shape_list(const IfcGeom::ConversionResults& shapes, TopoDS_Shape& result, bool fuse, double tol) {
+bool ifcopenshell::geom::util::flatten_shape_list(const std::vector<ifcopenshell::geom::conversion_result>& shapes, TopoDS_Shape& result, bool fuse, bool create_shell, double tol) {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
 	builder.MakeCompound(compound);
 
 	result = TopoDS_Shape();
 
-	for (IfcGeom::ConversionResults::const_iterator it = shapes.begin(); it != shapes.end(); ++it) {
+	for (std::vector<ifcopenshell::geom::conversion_result>::const_iterator it = shapes.begin(); it != shapes.end(); ++it) {
 		TopoDS_Shape merged;
-		const TopoDS_Shape& s = std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape())->shape();
-		if (fuse) {
-			util::ensure_fit_for_subtraction(s, merged, tol);
+		const TopoDS_Shape& s = std::static_pointer_cast<ifcopenshell::geom::open_cascade_shape>(it->shape())->shape();
+		if (fuse || create_shell) {
+			merged = util::ensure_fit_for_subtraction(s, tol);
 		} else {
 			merged = s;
 		}
 
 		// @todo refactor, also should be GTrsf
-		const auto& m = it->Placement()->ccomponents();
+		const auto& m = it->placement()->ccomponents();
 		gp_Trsf trsf;
 		trsf.SetValues(
 			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
@@ -825,7 +866,7 @@ bool IfcGeom::util::flatten_shape_list(const IfcGeom::ConversionResults& shapes,
 	return success;
 }
 
-bool IfcGeom::util::validate_shape(const TopoDS_Shape& s) {
+bool ifcopenshell::geom::util::validate_shape(const TopoDS_Shape& s) {
 	BRepCheck_Analyzer ana(s);
 	if (ana.IsValid()) {
 		return true;
@@ -837,7 +878,7 @@ bool IfcGeom::util::validate_shape(const TopoDS_Shape& s) {
 	std::function<void(const TopoDS_Shape&)> dump;
 	dump = [&ana, &str, &dump, &any_emitted](const TopoDS_Shape& s) {
 		if (!ana.Result(s).IsNull()) {
-			BRepCheck_ListIteratorOfListOfStatus itl;
+            NCollection_List<BRepCheck_Status>::Iterator itl;
 			itl.Initialize(ana.Result(s)->Status());
 			for (; itl.More(); itl.Next()) {
 				if (itl.Value() != BRepCheck_NoError) {
@@ -860,7 +901,21 @@ bool IfcGeom::util::validate_shape(const TopoDS_Shape& s) {
 
 	dump(s);
 
-	Logger::Warning(str.str());
+	ifcopenshell::logger::root().warning("GEO", 118, str.str());
 
 	return false;
+}
+
+TopoDS_Shape ifcopenshell::geom::util::unify(const TopoDS_Shape& s, double tolerance) {
+	tolerance = (std::min)(min_edge_length(s) / 2., tolerance);
+	ShapeUpgrade_UnifySameDomain usd(s);
+#if OCC_VERSION_HEX >= 0x70200
+	usd.SetSafeInputMode(true);
+#endif
+#if OCC_VERSION_HEX >= 0x70100
+	usd.SetLinearTolerance(tolerance);
+	usd.SetAngularTolerance(1.e-3);
+#endif
+	usd.Build();
+	return usd.Shape();
 }

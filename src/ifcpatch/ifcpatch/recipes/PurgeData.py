@@ -17,12 +17,13 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import ifcopenshell
 from logging import Logger
+
+import ifcopenshell
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger):
+    def __init__(self, file: ifcopenshell.file, logger: Logger):
         """Purge IFC properties, relationships, and other data
 
         In some rare cases (i.e. "resetting" a model or for security purposes)
@@ -51,21 +52,14 @@ class Patcher:
             # Watch the world burn
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "PurgeData", "arguments": []})
         """
-        self.src = src
         self.file = file
         self.logger = logger
 
     def patch(self):
-        self.file.wrapped_data.header.file_name.name = "Rabbit"
-        self.file.wrapped_data.header.file_name.time_stamp = (
-            datetime.datetime.utcnow()
-            .replace(tzinfo=datetime.timezone.utc)
-            .astimezone()
-            .replace(microsecond=0)
-            .isoformat()
-        )
-        self.file.wrapped_data.header.file_name.preprocessor_version = "Rabbit"
-        self.file.wrapped_data.header.file_name.originating_system = "Rabbit"
+        self.file.header.file_name.name = "Rabbit"
+        self.file.header.file_name.time_stamp = datetime.datetime.now().astimezone().replace(microsecond=0).isoformat()
+        self.file.header.file_name.preprocessor_version = "Rabbit"
+        self.file.header.file_name.originating_system = "Rabbit"
 
         for element in self.file.by_type("IfcApplication"):
             element.Version = "Rabbit"

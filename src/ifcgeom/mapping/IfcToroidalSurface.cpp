@@ -19,21 +19,16 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #ifdef SCHEMA_HAS_IfcToroidalSurface
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcToroidalSurface* inst) {
-	return nullptr;
-
-	/*
-	gp_Trsf trsf;
-	IfcGeom::Kernel::convert(inst->Position(), trsf);
-
-	// IfcElementarySurface.Position has unit scale factor
-	face = BRepBuilderAPI_MakeFace(new Geom_ToroidalSurface(gp::XOY(), inst->MajorRadius() * length_unit_, inst->MinorRadius() * length_unit_), getValue(GV_PRECISION)).Face().Moved(trsf);
-	return true;
-	*/
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcToroidalSurface& inst) {
+	auto torus = taxonomy::make<taxonomy::torus>();
+	torus->radius1 = inst.MajorRadius() * length_unit_;
+	torus->radius2 = inst.MinorRadius() * length_unit_;
+	torus->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
+	return torus;
 }
 
 #endif

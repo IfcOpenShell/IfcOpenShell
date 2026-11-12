@@ -16,49 +16,86 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.util.element
 
 
+def unassign_representation(
+    file: ifcopenshell.file, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+) -> None:
+    usecase = Usecase()
+    usecase.file = file
+    return usecase.execute(product, representation)
+
+
 class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {"product": None, "representation": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+    file: ifcopenshell.file
 
-    def execute(self):
-        if self.settings["product"].is_a("IfcProduct"):
-            self.unassign_product_representation(self.settings["product"], self.settings["representation"])
-        elif self.settings["product"].is_a("IfcTypeProduct"):
-            self.unassign_type_representation()
+    def execute(self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance) -> None:
+        if product.is_a("IfcProduct"):
+            self.unassign_product_representation(product, representation)
+        elif product.is_a("IfcTypeProduct"):
+            self.unassign_type_representation(product, representation)
 
-    def unassign_product_representation(self, product, representation):
-        representations = list(product.Representation.Representations or [])
+    def unassign_product_representation(
+        self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> None:
+        if not (product_def := product.Representation):
+            return
+        representations = list(product_def.Representations or [])
         if representation not in representations:
             return
         representations.remove(representation)
         if not representations:
-            self.file.remove(product.Representation)
+            # TODO: should somehow find matching shape aspect and remove it
+            # even before the last representation is removed.
+            self.process_shape_aspects(product_def)
+            self.file.remove(product_def)
         else:
-            product.Representation.Representations = representations
+            product_def.Representations = representations
 
-    def unassign_type_representation(self):
-        for representation_map in self.settings["product"].RepresentationMaps or []:
-            if representation_map.MappedRepresentation == self.settings["representation"]:
-                self.unassign_products_using_mapped_representation(representation_map)
-                self.remove_representation_map_only(representation_map)
+    def unassign_type_representation(
+        self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> None:
+        matching_representation_map = None
+
+        for representation_map in product.RepresentationMaps or []:
+            if representation_map.MappedRepresentation == representation:
+                matching_representation_map = representation_map
                 break
-        self.settings["product"].RepresentationMaps = self.settings["product"].RepresentationMaps or None
 
-    def remove_representation_map_only(self, representation_map):
+        if matching_representation_map:
+            self.unassign_products_using_mapped_representation(matching_representation_map)
+            product.RepresentationMaps = [
+                rm for rm in product.RepresentationMaps if rm != matching_representation_map
+            ] or None
+            self.process_shape_aspects(matching_representation_map)
+            self.remove_representation_map_only(matching_representation_map)
+
+    def process_shape_aspects(self, product_representation: ifcopenshell.entity_instance) -> None:
+        # Technically IfcShapeAspect doesn't become invalid when product representation is removed,
+        # but shape aspect makes sense only in context of some other representation.
+        if self.file.schema == "IFC2X3" and product_representation.is_a("IfcRepresentationMap"):
+            shape_aspects = [
+                a
+                for a in self.file.by_type("IfcShapeAspect")
+                if a.PartOfProductDefinitionShape == product_representation
+            ]
+        else:
+            shape_aspects = product_representation.HasShapeAspects
+        for shape_aspect in shape_aspects:
+            representations = shape_aspect.ShapeRepresentations
+            self.file.remove(shape_aspect)
+            for rep in representations:
+                ifcopenshell.api.geometry.remove_representation(self.file, rep)
+
+    def remove_representation_map_only(self, representation_map: ifcopenshell.entity_instance) -> None:
         representation_map.MappedRepresentation = self.file.createIfcShapeRepresentation()
         ifcopenshell.util.element.remove_deep2(self.file, representation_map)
-        self.file.remove(representation_map)
 
-    def unassign_products_using_mapped_representation(self, representation_map):
-        mapped_representations = []
-        just_representations = []
+    def unassign_products_using_mapped_representation(self, representation_map: ifcopenshell.entity_instance) -> None:
+        mapped_representations: list[dict[str, ifcopenshell.entity_instance]] = []
+        just_representations: list[ifcopenshell.entity_instance] = []
         for map_usage in representation_map.MapUsage or []:
             for inverse in self.file.get_inverse(map_usage):
                 if not inverse.is_a("IfcShapeRepresentation"):
@@ -70,4 +107,4 @@ class Usecase:
         for item in mapped_representations:
             self.unassign_product_representation(item["product"], item["representation"])
         for representation in just_representations:
-            ifcopenshell.api.run("geometry.remove_representation", self.file, **{"representation": representation})
+            ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)

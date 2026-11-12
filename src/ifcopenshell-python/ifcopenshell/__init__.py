@@ -16,33 +16,59 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""The entry module for IfcOpenShell
+"""Welcome to IfcOpenShell! IfcOpenShell provides a way to read and write IFCs.
 
-Typically used for opening an IFC via a filepath, or accessing one of the
-submodules.
+IfcOpenShell can open IFC files, read entities (such as walls, buildings,
+properties, systems, etc), edit attributes, write out ``.ifc`` files and more.
+
+This module provides primitive functions to interact with IFC, including:
+
+- For most users, you can open and read IFC models, see docs for :func:`open`.
+  This returns an :class:`file` object representing the IFC model. You can then
+  query the model to filter elements.
+- For developers, you can query the schema itself, see docs for
+  :func:`schema_by_name`. This returns a schema object which you can use to
+  analyse the definitions of IFC classes and data types.
+
+You may also be interested in:
+
+- For model authoring and editing operations, see :mod:`ifcopenshell.api`.
+- For extracting information from models, see :mod:`ifcopenshell.util`.
+- For processing geometry, see :mod:`ifcopenshell.geom`.
+
+
+For more details, consult https://docs.ifcopenshell.org/
 
 Example:
 
 .. code:: python
 
     import ifcopenshell
-    print(ifcopenshell.version) # v0.7.0-1b1fd1e6
+
+    print(ifcopenshell.version)
+
     model = ifcopenshell.open("/path/to/model.ifc")
+    walls = model.by_type("IfcWall")
+
+    for wall in walls:
+        print(wall.Name)
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import annotations
 
 import os
 import sys
 import tempfile
 import zipfile
+from collections.abc import Generator, Sequence
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, overload
 
-import ifcopenshell.util.file
+if TYPE_CHECKING:
+    import ifcopenshell.express.schema_class
 
-if hasattr(os, "uname"):
+
+if sys.platform != "win32":
     platform_system = os.uname()[0].lower()
 else:
     platform_system = "windows"
@@ -60,42 +86,135 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "lib", p
 try:
     from . import ifcopenshell_wrapper
 except Exception as e:
-    if int(python_version_tuple[0]) == 2:
-        # Only for py2, as py3 has exception chaining
-        import traceback
+    raise ImportError("IfcOpenShell not built for '%s' (%s)" % (python_distribution, e)) from e
 
-        traceback.print_exc()
-        print("-" * 64)
-    raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
+if sys.platform == "emscripten" and not ifcopenshell_wrapper.get_plugin_search_paths():
+    # Pyodide installs optional plugin wheels alongside the Python package.
+    ifcopenshell_wrapper.set_plugin_search_paths([os.path.dirname(os.path.abspath(__file__))])
 
+from . import file as file_module
 from . import guid
-from .file import file
-from .entity_instance import entity_instance, register_schema_attributes
+from .ifcopenshell_wrapper import entity_instance, file
 from .sql import sqlite, sqlite_entity
-try:
-    from .stream import stream, stream_entity
-except: pass
 
-READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
-NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
-UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
+rocksdb_lazy_instance = file_module.rocksdb_lazy_instance
+
+decode_spf_string = ifcopenshell_wrapper.decode_spf_string
+encode_spf_string = ifcopenshell_wrapper.encode_spf_string
+get_log = ifcopenshell_wrapper.get_log
+logger = ifcopenshell_wrapper.logger if hasattr(ifcopenshell_wrapper, "logger") else None
+if hasattr(ifcopenshell_wrapper, "logger_or_root"):
+    logger_or_root = ifcopenshell_wrapper.logger_or_root
+else:
+
+    def logger_or_root(_logger: ifcopenshell_wrapper.logger | None) -> None:
+        return None
+
+
+# TODO: drop this function and all callsites after we migrate to the new build.
+def optional_logger_args(logger: ifcopenshell_wrapper.logger | None) -> tuple[logger] | tuple[()]:
+    return (logger,) if logger is not None else ()
+
+
+# explicitly specify available imported symbols
+# (it's a requirement for a typed library)
+__all__ = [
+    "clear_plugin_search_paths",
+    "decode_spf_string",
+    "encode_spf_string",
+    "entity_instance",
+    "file",
+    "get_plugin_search_paths",
+    "guid",
+    "ifcopenshell_wrapper",
+    "rocksdb_lazy_instance",
+    "set_plugin_search_paths",
+    "sqlite",
+    "sqlite_entity",
+    "stream",
+    "stream_entity",
+]
+
+try:
+    from .stream import stream, stream_entity  # ty: ignore[possibly-missing-import]
+    from .stream import stream as _stream  # ty: ignore[possibly-missing-import]
+except:
+    pass
+
+
+def set_plugin_search_paths(paths: Sequence[Union[os.PathLike, str]]) -> None:
+    ifcopenshell_wrapper.set_plugin_search_paths([os.fspath(path) for path in paths])
+
+
+def get_plugin_search_paths() -> tuple[str, ...]:
+    return tuple(ifcopenshell_wrapper.get_plugin_search_paths())
+
+
+def clear_plugin_search_paths() -> None:
+    ifcopenshell_wrapper.clear_plugin_search_paths()
 
 
 class Error(Exception):
     """Error used when a generic problem occurs"""
+
     pass
 
 
 class SchemaError(Error):
     """Error used when an IFC schema related problem occurs"""
+
     pass
 
 
-def open(path: "os.PathLike | str", format: str = None, should_stream: bool = False) -> file:
+@overload
+def open(
+    path: Union[os.PathLike, str],
+    format: SupportedFormat = None,
+    *,
+    should_stream: Literal[False] = False,
+    logger: Optional[logger] = None,
+) -> Union[file, sqlite]: ...
+@overload
+def open(
+    path: Union[os.PathLike, str],
+    format: SupportedFormat = None,
+    *,
+    should_stream: Literal[True],
+    logger: Optional[logger] = None,
+) -> _stream: ...
+@overload
+def open(
+    path: Union[os.PathLike, str],
+    format: SupportedFormat = None,
+    *,
+    should_stream: bool = False,
+    readonly: bool = False,
+    logger: Optional[logger] = None,
+) -> Union[file, sqlite, _stream]: ...
+def open(
+    path: Union[os.PathLike, str],
+    format: SupportedFormat = None,
+    should_stream: bool = False,
+    readonly: bool = False,
+    mmap: bool = False,
+    bypass_types: Optional[Sequence[str]] = None,
+    logger: Optional[logger] = None,
+    lazy: bool = False,
+) -> Union[file, sqlite, _stream]:
     """Loads an IFC dataset from a filepath
 
-    You can specify a file format. If no format is given, it is guessed from its extension.
-    Currently supported specified format : .ifc | .ifcZIP | .ifcXML
+    :param should_stream: Whether to open the file in streaming mode. Could be useful
+        for reading large files.
+    :param logger: Logger that receives native parser messages.
+    :param lazy: Index the file with one quick pass and parse each instance's
+        attributes only when they are first read. Opening is then faster and
+        memory stays proportional to what is accessed; reading every attribute
+        of every instance costs about the same as a normal open, spread over
+        the reads. Falls back to a normal open if the file uses syntax the
+        index pass does not handle.
+
+    You can specify a file format. If no format is given, it is guessed from
+    its extension.
 
     You can then filter by element ID, class, etc, and subscript by id or guid.
 
@@ -111,77 +230,81 @@ def open(path: "os.PathLike | str", format: str = None, should_stream: bool = Fa
         print(products[0].id(), products[0].GlobalId) # 122 2XQ$n5SLP5MBLyL442paFx
         print(products[0] == model[122] == model["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
+
     path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"Path does not exist: '{path}'.")
     if format is None:
-        format = ifcopenshell.util.file.guess_format(path)
+        format = guess_format(path)
+    logger = logger_or_root(logger)
     if format == ".ifcXML":
-        f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()))
-        if f:
-            return file(f)
-        raise IOError(f"Failed to parse .ifcXML file from {path}")
+        raise NotImplementedError("Reading .ifcXML files is not currently supported.")
     if format == ".ifcZIP":
         with tempfile.TemporaryDirectory() as unzipped_path:
             with zipfile.ZipFile(path) as zf:
                 for name in zf.namelist():
                     if Path(name).suffix.lower() in (".ifc", ".ifcxml"):
-                        return open(zf.extract(name, unzipped_path))
+                        return open(zf.extract(name, unzipped_path), logger=logger)
                 else:
                     raise LookupError(f"No .ifc or .ifcXML file found in {path}")
     if format == ".ifcSQLite":
         return sqlite(path)
     if should_stream:
         return stream(path)
-    f = ifcopenshell_wrapper.open(str(path.absolute()))
-    if f.good():
-        return file(f)
+    if readonly:  # Temporary conditional see #7131. Remove once newer builds don't segfault on Linux.
+        f = ifcopenshell_wrapper.open(str(path.absolute()), readonly, *optional_logger_args(logger))
+    elif bypass_types or lazy:
+        f = ifcopenshell_wrapper.file.create_uninitialized(*optional_logger_args(logger))
+        for ty in bypass_types or ():
+            f.bypass_type(ty)
+        if lazy:
+            f.lazy_loading(True)
+        if mmap:
+            # mmap parameter is only available for builds with USE_MMAP, not used in our main builds
+            f.initialize(str(path.absolute()), mmap=mmap)  # ty: ignore[unknown-argument]
+        else:
+            f.initialize(str(path.absolute()))
+    elif mmap:
+        # mmap parameter is only available for builds with USE_MMAP, not used in our main builds
+        kwargs = {"mmap": mmap}
+        if logger is not None:
+            kwargs["logger"] = logger
+        f = ifcopenshell_wrapper.open(str(path.absolute()), **kwargs)
     else:
+        f = ifcopenshell_wrapper.open(str(path.absolute()), False, *optional_logger_args(logger))
+
+    f.post_init()
+
+    READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
+    NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
+    UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
+    INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
+    UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
+
+    if not f.good():
+        from . import Error, SchemaError
+
         exc, msg = {
-            READ_ERROR: (IOError, "Unable to open file for reading"),
-            NO_HEADER: (Error, "Unable to parse IFC SPF header"),
-            UNSUPPORTED_SCHEMA: (
+            READ_ERROR: lambda: (IOError, "Unable to open file for reading"),
+            NO_HEADER: lambda: (Error, "Unable to parse IFC SPF header"),
+            UNSUPPORTED_SCHEMA: lambda: (
                 SchemaError,
-                "Unsupported schema: %s"
-                % ",".join(f.header.file_schema.schema_identifiers),
+                "Unsupported schema: %s" % ",".join(f.header.file_schema.schema_identifiers),
             ),
-        }[f.good().value()]
-        raise exc(msg)
+            INVALID_SYNTAX: lambda: (Error, "Syntax error during parse, check logs"),
+            # This is the case when passing uninitialized_tag
+            UNKNOWN: lambda: (None, None),
+        }[f.good().value()]()
+        if exc is not None:
+            raise exc(msg)
+
+    return f
 
 
-def create_entity(type, schema="IFC4", *args, **kwargs):
-    """Creates a new IFC entity that does not belong to an IFC file object
-
-    Note that it is more common to create entities within a existing file
-    object. See :meth:`ifcopenshell.file.file.create_entity`.
-
-    :param type: Case insensitive name of the IFC class
-    :type type: string
-    :param schema: The IFC schema identifier
-    :type schema: string
-    :param args: The positional arguments of the IFC class
-    :param kwargs: The keyword arguments of the IFC class
-    :returns: An entity instance
-    :rtype: ifcopenshell.entity_instance.entity_instance
-
-    Example:
-
-    .. code:: python
-
-        person = ifcopenshell.create_entity("IfcPerson") # #0=IfcPerson($,$,$,$,$,$,$,$)
-        model = ifcopenshell.file()
-        model.add(person) # #1=IfcPerson($,$,$,$,$,$,$,$)
-    """
-    e = entity_instance((schema, type))
-    attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
-    for idx, arg in attrs:
-        e[idx] = arg
-    return e
-
-
-def register_schema(schema):
+def register_schema(schema: ifcopenshell.express.schema_class.SchemaClass) -> None:
     """Registers a custom IFC schema
 
     :param schema: A schema object
-    :type schema: ifcopenshell.express.schema_class.SchemaClass
 
     Example:
 
@@ -194,15 +317,20 @@ def register_schema(schema):
     schema.schema.this.disown()
     schema.disown()
     ifcopenshell_wrapper.register_schema(schema.schema)
-    register_schema_attributes(schema.schema)
 
 
-def schema_by_name(schema=None, schema_version=None):
+def schema_by_name(
+    schema: Optional[str] = None,
+    schema_version: Optional[tuple[int, ...]] = None,
+) -> ifcopenshell_wrapper.schema_definition:
     """Returns an object allowing you to query the IFC schema itself
 
     :param schema: Which IFC schema to use, chosen from "IFC2X3", "IFC4",
         or "IFC4X3". These refer to the ISO approved versions of IFC.
-    :type schema: string
+        E.g. from ``ifcopenshell.file.schema_identifier``.
+        Passing ``ifcopenshell.file.schema`` also will work but may result
+        in not precisely matching schema but it's only conern if you're
+        using not one of the main schemas.
     :param schema_version: If you want to specify an exact version of IFC
         that may not be an ISO approved version, use this argument instead
         of ``schema``. IFC versions on technical.buildingsmart.org are
@@ -211,14 +339,151 @@ def schema_by_name(schema=None, schema_version=None):
         ADD2 TC1, which is the official version approved by ISO when people
         refer to "IFC4". Generally you should not use this argument unless
         you are testing non-ISO IFC releases.
-    :type schema_version: tuple[int]
+    :return: Schema definition object.
     """
+    assert schema_version or schema, "Either schema or schema_version must be specified."
     if schema_version:
         prefixes = ("IFC", "X", "_ADD", "_TC")
         schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
     else:
-        schema = {"IFC4X3": "IFC4X3_ADD1"}.get(schema, schema)
+        schema = {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
     return ifcopenshell_wrapper.schema_by_name(schema)
 
 
-from .main import *
+SupportedFormat = Literal[".ifc", ".ifcZIP", ".ifcXML", ".ifcJSON", ".ifcSQLite", "rocksdb", None]
+
+
+def guess_format(path: Path) -> SupportedFormat:
+    """Guesses the IFC format using file extension
+
+    IFCs may be serialised as different formats. The most common is a ``.ifc``
+    file, which is plaintext and stores data using the STEP Physical File
+    format. IFC can also be stored as a Zipfile, XML, JSON, or SQL.
+
+    This will return the canonical form of the format. For example, if a path
+    has the extension of .xml or .ifcxml (case insensitive), it will return
+    .ifcXML.
+
+    Users generally won't call this function. The :func:`open` function uses
+    this internally to guess the file format.
+    """
+    suffix = path.suffix.lower()
+    if path.is_dir():
+        return "rocksdb"
+    elif suffix == ".ifc":
+        return ".ifc"
+    elif suffix in (".ifczip", ".zip"):
+        return ".ifcZIP"
+    elif suffix in (".ifcxml", ".xml"):
+        return ".ifcXML"
+    elif suffix in (".ifcjson", ".json"):
+        return ".ifcJSON"
+    elif suffix in (".ifcsqlite", ".sqlite", ".db"):
+        return ".ifcSQLite"
+    return None
+
+
+def stream2(path: Union[Path, str], mmap: bool = False, page_size: int = 0):
+    """Streams the content of a file path from disk, yielding each instance
+    as a dictionary.
+
+    :param path: Input file path
+    :param mmap: Open the file contents using memory mapping
+    :param page_size: Open file in python and feed chunks to the parser.
+
+    :yield: Entity instance dictionaries
+    """
+    if page_size:
+        import builtins
+
+        f = builtins.open(path, encoding="ascii")
+        strm = ifcopenshell_wrapper.instance_streamer()
+        strm.push_page(f.read(page_size))
+        finished = False
+        while True:
+            while strm.has_semicolon():
+                if inst := strm.read_instance_py():
+                    yield inst
+                else:
+                    finished = True
+                    break
+            if finished:
+                break
+            else:
+                if data := f.read(page_size):
+                    strm.push_page(data)
+                else:
+                    break
+    else:
+        streamer = ifcopenshell_wrapper.instance_streamer(str(path), mmap)
+        while streamer:
+            if inst := streamer.read_instance_py():
+                yield inst
+
+
+def stream2_from_string(data: str) -> Generator[dict]:
+    """Streams the content of a file path from string, yielding each instance
+    as a dictionary.
+
+    :param data: Input data string
+    :yield: entity instance dictionaries
+    """
+    streamer = ifcopenshell_wrapper.stream_from_string(data)
+    while streamer:
+        if inst := streamer.read_instance_py():
+            yield inst
+
+
+def convert_path_to_rocksdb(
+    ifcspf_path: Union[Path, str],
+    rocksdb_path: Union[Path, str],
+    skip_supertypes: Optional[list[str]] = None,
+) -> None:
+    """Converts an IFC-SPF file on disk to the IfcOpenShell-specific
+    RocksDB encoding. RocksDB is an embedded key-value store that allows
+    partial reads and is therefore more memory efficient with larger files.
+
+    :param ifcspf_path: Input file path - needs to exist
+    :param rocksdb_path: RocksDB file path (directory) - may exist, but result may then be invalid
+    :param skip_supertypes: Optional list of entity type names. Any instance
+        whose declaration is-a (or subclasses) one of these names will be
+        omitted from the resulting RocksDB. Note: references to skipped
+        instances become dangling - reads that walk into them will fail.
+    """
+    skip = list(skip_supertypes) if skip_supertypes else []
+    ser = ifcopenshell_wrapper.RocksDbSerializer(str(ifcspf_path), str(rocksdb_path), skip)
+    ser.finalize()
+
+
+_global_ifc_models: dict[str, file] = {}
+
+
+def create_entity(type: str, schema: str = "IFC4", *args: Any, **kwargs: Any) -> entity_instance:
+    """Creates a new IFC entity that will be stored in a global file object
+
+    Note that it is more common to create entities within an existing explicit file
+    object. See :meth:`ifcopenshell.file.create_entity`.
+
+    :param type: Case insensitive name of the IFC class
+    :param schema: The IFC schema identifier
+    :param args: The positional arguments of the IFC class
+    :param kwargs: The keyword arguments of the IFC class
+    :returns: An entity instance
+
+    Example:
+
+    .. code:: python
+
+        person = ifcopenshell.create_entity("IfcPerson") # #0=IfcPerson($,$,$,$,$,$,$,$)
+        model = ifcopenshell.file()
+        model.add(person) # #1=IfcPerson($,$,$,$,$,$,$,$)
+    """
+    if fi := _global_ifc_models.get(schema.lower()):
+        pass
+    else:
+        fi = _global_ifc_models[schema.lower()] = file(schema_identifier=schema)
+    return fi.create_entity(type, *args, **kwargs)
+
+
+version_core = ifcopenshell_wrapper.version()
+__version__ = version = "0.0.0"

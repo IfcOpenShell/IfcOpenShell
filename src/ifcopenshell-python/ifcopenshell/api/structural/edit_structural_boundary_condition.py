@@ -15,31 +15,39 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+from typing import Any, Literal, TypedDict, Union
+
+import ifcopenshell
 
 
-class Usecase:
-    def __init__(self, file, condition=None, attributes=None):
-        """Edits the attributes of an IfcBoundaryCondition
+class AttributeDict(TypedDict):
+    type: Union[
+        Literal["string", "null"],
+        str,  # IFC Class.
+    ]
+    value: Any
 
-        For more information about the attributes and data types of an
-        IfcBoundaryCondition, consult the IFC documentation.
 
-        :param condition: The IfcBoundaryCondition entity you want to edit
-        :type condition: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
-        """
-        self.file = file
-        self.settings = {"condition": condition, "attributes": attributes or {}}
+def edit_structural_boundary_condition(
+    file: ifcopenshell.file,
+    condition: ifcopenshell.entity_instance,
+    attributes: dict[str, AttributeDict],
+) -> None:
+    """Edits the attributes of an IfcBoundaryCondition
 
-    def execute(self):
-        for name, data in self.settings["attributes"].items():
-            if data["type"] == "string" or data["type"] == "null":
-                value = data["value"]
-            elif data["type"] == "IfcBoolean":
-                value = self.file.createIfcBoolean(data["value"])
-            else:
-                value = self.file.create_entity(data["type"], data["value"])
-            setattr(self.settings["condition"], name, value)
+    For more information about the attributes and data types of an
+    IfcBoundaryCondition, consult the IFC documentation.
+
+    :param condition: The IfcBoundaryCondition entity you want to edit
+    :param attributes: a dictionary of attribute names and values.
+        Each value is represented by a dictionary.
+    :return: None
+    """
+    for name, data in attributes.items():
+        if data["type"] == "string" or data["type"] == "null":
+            value = data["value"]
+        elif data["type"] == "IfcBoolean":
+            value = file.createIfcBoolean(data["value"])
+        else:
+            value = file.create_entity(data["type"], data["value"])
+        setattr(condition, name, value)

@@ -27,9 +27,9 @@
 #                                                                             #
 ###############################################################################
 
-import re
-import os
 import csv
+import os
+import re
 
 from schema import OrderedCaseInsensitiveDict
 

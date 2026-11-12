@@ -16,11 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+from logging import Logger
+
 import ifcopenshell
+import ifcopenshell.guid
 
 
 class Patcher:
-    def __init__(self, src, file, logger, only_duplicates=False):
+    def __init__(self, file: ifcopenshell.file, logger: Logger, only_duplicates: bool = False):
         """Regenerate GlobalIds in an IFC model
 
         All root elements in an IFC model must be identified by a unique Global
@@ -34,7 +37,6 @@ class Patcher:
         :param only_duplicates: If set to True, new GlobalIds will only be
             generated for duplicate IDs. This is a safe thing to run to ensure
             IFCs are valid. If False, all GlobalIds will be regenerated.
-        :type only_duplicates: bool
 
         Example:
 
@@ -46,25 +48,33 @@ class Patcher:
             # Regenerate only duplicate GlobalIds
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "RegenerateGlobalIds", "arguments": [True]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.only_duplicates = only_duplicates
 
     def patch(self):
         if self.only_duplicates:
+            duplicates = 0
+            invalid_ids = 0
+
             guids = set()
             for element in self.file.by_type("IfcRoot"):
                 if element.GlobalId in guids:
                     element.GlobalId = ifcopenshell.guid.new()
+                    duplicates += 1
                 elif len(element.GlobalId) != 22 or element.GlobalId[0] not in "0123":
                     element.GlobalId = ifcopenshell.guid.new()
+                    invalid_ids += 1
                 else:
                     try:
                         ifcopenshell.guid.expand(element.GlobalId)
                     except:
                         element.GlobalId = ifcopenshell.guid.new()
+                    invalid_ids += 1
                 guids.add(element.GlobalId)
+
+            print("Replaced %s duplicate GlobalIds" % duplicates)
+            print("Replaced %s invalid GlobalIds" % invalid_ids)
         else:
             for element in self.file.by_type("IfcRoot"):
                 element.GlobalId = ifcopenshell.guid.new()

@@ -16,14 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.sequence
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestUnassignProduct(test.bootstrap.IFC4):
     def test_unassigning_a_product(self):
         wall = self.file.createIfcWall()
         task = self.file.createIfcTask()
-        ifcopenshell.api.run("sequence.assign_product", self.file, relating_product=wall, related_object=task)
-        ifcopenshell.api.run("sequence.unassign_product", self.file, relating_product=wall, related_object=task)
+        ifcopenshell.api.sequence.assign_product(self.file, relating_product=wall, related_object=task)
+        ifcopenshell.api.sequence.unassign_product(self.file, relating_product=wall, related_object=task)
         assert len(self.file.by_type("IfcRelAssignsToProduct")) == 0
+
+
+class TestUnassignProductIFC2X3(test.bootstrap.IFC2X3, TestUnassignProduct):
+    pass

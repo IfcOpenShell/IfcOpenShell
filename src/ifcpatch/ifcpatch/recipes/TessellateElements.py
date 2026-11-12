@@ -16,20 +16,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.geom
-import ifcopenshell.util.selector
-import ifcopenshell.util.shape
-import ifcopenshell.util.representation
 import multiprocessing
 from logging import Logger
+from typing import Union
+
+import ifcopenshell
+import ifcopenshell.api.geometry
+import ifcopenshell.geom
+import ifcopenshell.util.representation
+import ifcopenshell.util.selector
+import ifcopenshell.util.shape
 
 
 class Patcher:
     def __init__(
         self,
-        src: str,
         file: ifcopenshell.file,
         logger: Logger,
         query: str = "IfcBeam",
@@ -46,10 +47,8 @@ class Patcher:
         See example bug: https://github.com/Autodesk/revit-ifc/issues/707
 
         :param query: Query string to filter out elements to convert, defaults to "IfcBeam"
-        :type query: str
         :param force_faceted_brep: Force using IfcFacetedBreps instead of IfcPolygonalFaceSets,
             defaults to `False`
-        :type force_faceted_brep: bool
 
         Example:
 
@@ -57,7 +56,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "TessellateElements", "arguments": ["IfcBeam", False]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.query = query
@@ -65,38 +63,69 @@ class Patcher:
 
     def patch(self):
         context = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
+        if not context:
+            return
+
         elements = ifcopenshell.util.selector.filter_elements(self.file, self.query)
 
         if not elements:
             return
 
         settings = ifcopenshell.geom.settings()
-        settings.set(settings.STRICT_TOLERANCE, True)
-        settings.set_context_ids([context.id()])
-        iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=elements)
-        replacements = {}
+        settings.set("context-ids", [context.id()])
+
+        # Iterator can handle only products, so we filter out everything else (IfcTypeProducts).
+        products = []
+        non_products = []
+        for element in elements:
+            if element.is_a("IfcProduct"):
+                products.append(element)
+            else:
+                non_products.append(element)
+
+        def store_geometry(
+            element: ifcopenshell.entity_instance,
+            shape: Union[ifcopenshell.geom.ShapeType, ifcopenshell.geom.ShapeElementType],
+        ) -> None:
+            geometry = getattr(shape, "geometry", shape)
+            v = [ifcopenshell.util.shape.get_vertices(geometry).tolist()]
+            f = [ifcopenshell.util.shape.get_faces(geometry).tolist()]
+            replacements[element] = (v, f)
+
+        iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=products)
+        replacements: dict[ifcopenshell.entity_instance, tuple[list, list]] = {}
         if iterator.initialize():
-            while True:
-                shape = iterator.get()
+            for shape in iterator:
                 element = self.file.by_guid(shape.guid)
-                v = [[x.tolist() for x in ifcopenshell.util.shape.get_vertices(shape.geometry)]]
-                f = [ifcopenshell.util.shape.get_faces(shape.geometry)]
-                replacements[element] = (v, f)
-                if not iterator.next():
-                    break
+                store_geometry(element, shape)
+
+        for element in non_products:
+            representation = ifcopenshell.util.representation.get_representation(element, context)
+            if not representation:
+                continue
+            shape = ifcopenshell.geom.create_shape(settings, representation)
+            store_geometry(element, shape)
 
         # Do the replacements outside the iterator to prevent messing up iterator state.
         for element, geometry in replacements.items():
             v, f = geometry
-            mesh = ifcopenshell.api.run(
-                "geometry.add_mesh_representation",
+            if not v or not f:
+                continue
+            mesh = ifcopenshell.api.geometry.add_mesh_representation(
                 self.file,
                 context=context,
                 vertices=v,
                 faces=f,
                 force_faceted_brep=self.force_faceted_brep,
             )
-            representations = element.Representation.Representations
-            representations = [r for r in representations if r.ContextOfItems != context]
-            representations.append(mesh)
-            element.Representation.Representations = representations
+            if element.is_a("IfcProduct"):
+                representations = element.Representation.Representations
+                representations = [r for r in representations if r.ContextOfItems != context]
+                representations.append(mesh)
+                element.Representation.Representations = representations
+            else:  # IfcTypeProduct.
+                rep_maps = element.RepresentationMaps
+                for rep_map in rep_maps:
+                    mapped_rep = rep_map.MappedRepresentation
+                    if mapped_rep.ContextOfItems == context:
+                        rep_map.MappedRepresentation = mesh

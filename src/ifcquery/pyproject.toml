@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ifcquery"
+version = "0.0.0"
+authors = [
+  { name="Bruno Postle", email="bruno@postle.net" },
+]
+description = "CLI tool for querying and inspecting IFC building models"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "LGPL-3.0-or-later"
+keywords = ["IFC", "BIM", "Query"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = ["ifcopenshell"]
+
+[project.scripts]
+ifcquery = "ifcquery.__main__:main"
+
+[project.urls]
+Homepage = "http://ifcopenshell.org"
+Documentation = "https://docs.ifcopenshell.org"
+Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
+
+[tool.setuptools.packages.find]
+include = ["ifcquery*"]
+exclude = ["test*"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"

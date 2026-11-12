@@ -16,8 +16,17 @@
 :: along with this program. If not, see <http://www.gnu.org/licenses/>.        ::
 ::                                                                             ::
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::
+:: Example usage:
+::   run-cmake.bat vs2022-x64
+::   run-cmake.bat vs2022-x64 -DGLTF_SUPPORT=ON
+::
+:: Used environment variables:
+:: - `ADD_COMMIT_SHA` - if defined then `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` cmake args will be set to `ON`.
+:: - `USE_NINJA` - if defined then the Ninja generator will be used instead of the Visual Studio.
 
-@echo off
+
+@if not defined ECHO_ON ( echo off )
 echo.
 
 set PROJECT_NAME=IfcOpenShell
@@ -35,7 +44,7 @@ if (%1)==() (
 	)
 
     if not defined GEN_SHORTHAND (
-        echo BuildDepsCache file does not exist and/or GEN_SHORTHAND missing from it. Run build-deps.cmd to create it.
+        echo BuildDepsCache file does not exist and/or GEN_SHORTHAND missing from it. Run build-deps.py to create it.
         set IFCOS_PAUSE_ON_ERROR=pause
         goto :Error
     )
@@ -47,21 +56,15 @@ if (%1)==() (
 call vs-cfg.cmd %GENERATOR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
-:: If cached variables are still undefined,
-:: read them from the specific BuildDepsCache-XXX.txt.
-set "_test=0"
-if not defined OCC_INCLUDE_DIR set _test=1
-if not defined OCC_LIBRARY_DIR set _test=1
-if %_test% EQU 1 (
-	IF DEFINED VS_TOOLSET (
-		set "BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%-%VS_TOOLSET%.txt"
-	) ELSE (
-		set "BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%.txt"
-	)
+:: Read the rest of the cached variables from the specific BuildDepsCache-XXX.txt.
+IF DEFINED VS_TOOLSET (
+	set "BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%-%VS_TOOLSET%.txt"
+) ELSE (
+	set "BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%.txt"
+)
 
-	for /f "tokens=*" %%f in ('dir !BUILD_DEPS_CACHE_PATH! /o:-n /t:a /b') do (
-		for /f "delims== tokens=1,2" %%G in (%%f) do set %%G=%%H
-	)
+for /f "tokens=*" %%f in ('dir !BUILD_DEPS_CACHE_PATH! /o:-n /t:a /b') do (
+	for /f "delims== tokens=1,2" %%G in (%%f) do set %%G=%%H
 )
 
 :: As CMake options are typically of format -DSOMETHING:BOOL=ON or -DSOMETHING=1, i.e. they contain an equal sign,
@@ -79,37 +82,36 @@ popd
 IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
 pushd ..\%BUILD_DIR%
 
-:: tfk: todo remove duplication
-set BOOST_VERSION=1.79.0
-set BOOST_VER=%BOOST_VERSION:.=_%
-
-set BOOST_ROOT=%DEPS_DIR%\boost_%BOOST_VER%
-set BOOST_LIBRARYDIR=%BOOST_ROOT%\stage\%GEN_SHORTHAND%\lib
-if not defined OCC_INCLUDE_DIR set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce
-if not defined OCC_LIBRARY_DIR set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib
-set OPENCOLLADA_INCLUDE_DIR=%INSTALL_DIR%\OpenCOLLADA\include\opencollada
-set OPENCOLLADA_LIBRARY_DIR=%INSTALL_DIR%\OpenCOLLADA\lib\opencollada
+set OPENCOLLADA_INSTALL_DIR=%INSTALL_DIR%\OpenCOLLADA
 set LIBXML2_INCLUDE_DIR=%DEPS_DIR%\OpenCOLLADA\Externals\LibXML\include
 set LIBXML2_LIBRARIES=%INSTALL_DIR%\OpenCOLLADA\lib\opencollada\xml.lib
-set HDF5_INCLUDE_DIR=%INSTALL_DIR%\HDF5-%HDF5_VERSION%-win%ARCH_BITS%\include
-set HDF5_LIBRARY_DIR=%INSTALL_DIR%\HDF5-%HDF5_VERSION%-win%ARCH_BITS%\lib
-if not defined PY_VER_MAJOR_MINOR set PY_VER_MAJOR_MINOR=311
-if not defined PYTHONHOME set PYTHONHOME=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+
+set PYTHON_EXECUTABLE=%PYTHONHOME%\python.exe
+for /f "usebackq delims=" %%v in (`
+    call "%PYTHON_EXECUTABLE%" -c "import sys; print(f'{sys.version_info[0]}{sys.version_info[1]}')"
+`) do set "PY_VER_MAJOR_MINOR=%%v"
 set PYTHON_INCLUDE_DIR=%PYTHONHOME%\include
 set PYTHON_LIBRARY=%PYTHONHOME%\libs\python%PY_VER_MAJOR_MINOR%.lib
-set PYTHON_EXECUTABLE=%PYTHONHOME%\python.exe
-set SWIG_DIR=%INSTALL_DIR%\swigwin
-set PATH=%PATH%;%SWIG_DIR%;%PYTHONHOME%
-set JSON_INCLUDE_DIR=%INSTALL_DIR%\json
-if not defined ADD_COMMIT_SHA set ADD_COMMIT_SHA=Off
 
-set CGAL_INCLUDE_DIR=%INSTALL_DIR%\cgal\include
-:: set CGAL_LIBRARY_DIR=%INSTALL_DIR%\cgal\lib
-set GMP_INCLUDE_DIR=%INSTALL_DIR%\mpir
-set GMP_LIBRARY_DIR=%INSTALL_DIR%\mpir
-set MPFR_INCLUDE_DIR=%INSTALL_DIR%\mpfr
-set MPFR_LIBRARY_DIR=%INSTALL_DIR%\mpfr
+set JSON_INCLUDE_DIR=%INSTALL_DIR%\json
+if defined ADD_COMMIT_SHA (
+    set ADD_COMMIT_SHA=ON
+    set VERSION_OVERRIDE=ON
+) else (
+    set ADD_COMMIT_SHA=OFF
+    set VERSION_OVERRIDE=OFF
+)
+
+set CGAL_INSTALL_DIR=%INSTALL_DIR%\cgal
+set GMP_INSTALL_DIR=%INSTALL_DIR%\mpir
+set MPFR_INSTALL_DIR=%INSTALL_DIR%\mpfr
+:: We don't install Eigen currently,
+:: so there's no Eigen3config.cmake and therefore we provide path explicitly.
 set EIGEN_DIR=%INSTALL_DIR%\Eigen
+set TBB_INSTALL_DIR=%INSTALL_DIR%\tbb
+set USD_INSTALL_DIR=%INSTALL_DIR%\usd
+set ROCKSDB_INSTALL_DIR=%INSTALL_DIR%\rocksdb
+set ZSTD_INSTALL_DIR=%INSTALL_DIR%\zstd
 
 echo.
 call cecho.cmd 0 10 "Script configuration:"
@@ -119,44 +121,75 @@ echo   Toolset      = %VS_TOOLSET%
 echo   Arguments    = %ARGUMENTS%
 echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
-echo    BOOST_ROOT              = %BOOST_ROOT%
-echo    BOOST_LIBRARYDIR        = %BOOST_LIBRARYDIR%
-echo    OCC_INCLUDE_DIR         = %OCC_INCLUDE_DIR%
-echo    OCC_LIBRARY_DIR         = %OCC_LIBRARY_DIR%
-echo    OPENCOLLADA_INCLUDE_DIR = %OPENCOLLADA_INCLUDE_DIR%
-echo    OPENCOLLADA_LIBRARY_DIR = %OPENCOLLADA_LIBRARY_DIR%
+echo    BOOST_INSTALL_DIR       = %BOOST_INSTALL_DIR%
+echo    OCC_INSTALL_DIR         = %OCC_INSTALL_DIR%
+echo    OPENCOLLADA_INSTALL_DIR = %OPENCOLLADA_INSTALL_DIR%
 echo    LIBXML2_INCLUDE_DIR     = %LIBXML2_INCLUDE_DIR%
 echo    LIBXML2_LIBRARIES       = %LIBXML2_LIBRARIES%
-echo    HDF5_INCLUDE_DIR        = %HDF5_INCLUDE_DIR%
-echo    HDF5_LIBRARY_DIR        = %HDF5_LIBRARY_DIR%
 echo    PYTHONHOME              = %PYTHONHOME%
 echo    PYTHON_INCLUDE_DIR      = %PYTHON_INCLUDE_DIR%
 echo    PYTHON_LIBRARY          = %PYTHON_LIBRARY%
 echo    PYTHON_EXECUTABLE       = %PYTHON_EXECUTABLE%
-echo    SWIG_DIR                = %SWIG_DIR%
+echo    SWIG_INSTALL_DIR        = %SWIG_INSTALL_DIR%
 echo    JSON_INCLUDE_DIR        = %JSON_INCLUDE_DIR%
 echo.
-echo    CGAL_INCLUDE_DIR        = %CGAL_INCLUDE_DIR%
-:: echo    CGAL_LIBRARY_DIR        = %CGAL_LIBRARY_DIR%
-echo    GMP_INCLUDE_DIR         = %GMP_INCLUDE_DIR%
-echo    GMP_LIBRARY_DIR         = %GMP_LIBRARY_DIR%
-echo    MPFR_INCLUDE_DIR        = %MPFR_INCLUDE_DIR%
-echo    MPFR_LIBRARY_DIR        = %MPFR_LIBRARY_DIR%
+echo    CGAL_INSTALL_DIR        = %CGAL_INSTALL_DIR%
+echo    GMP_INSTALL_DIR         = %GMP_INSTALL_DIR%
+echo    MPFR_INSTALL_DIR        = %MPFR_INSTALL_DIR%
 echo    EIGEN_DIR               = %EIGEN_DIR%
+echo    TBB_INSTALL_DIR         = %TBB_INSTALL_DIR%
+echo    USD_INSTALL_DIR         = %USD_INSTALL_DIR%
+echo    ROCKSDB_INSTALL_DIR     = %ROCKSDB_INSTALL_DIR%
+echo    ZSTD_INSTALL_DIR        = %ZSTD_INSTALL_DIR%
+echo    MANIFOLD_INSTALL_PATH   = %MANIFOLD_INSTALL_PATH%
+echo    QT6_INSTALL_DIR         = %QT6_INSTALL_DIR%
+echo    CCACHE_INSTALL_DIR      = %CCACHE_INSTALL_DIR%
 echo.
 echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
+echo.
+
+call cecho.cmd 0 12 "WARNING: run-cmake.bat is deprecated since 11 Sep 2026 and will be removed very shortly."
+call cecho.cmd 0 12 "Use `python run-cmake.py` instead. It's intended to be a drop-in replacement, so exactly the same args apply,"
+call cecho.cmd 0 12 "except CMake args now need to be passed after `"--`", e.g. `python run-cmake.py vs2022-x64 -- -DGLTF_SUPPORT=ON`."
 echo.
 
 set CMAKELISTS_DIR=..\cmake
 :: Delete CMakeCache.txt if command-line options were provided for this batch script.
 if not (%1)==() if exist CMakeCache.txt. del /Q CMakeCache.txt
-call cecho.cmd 0 13 "Running CMake for %PROJECT_NAME%."
+echo "Running CMake for %PROJECT_NAME%."
 
-IF NOT "%VS_TOOLSET_HOST%"=="" (
-	cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% -T %VS_TOOLSET_HOST% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" -DBoost_NO_BOOST_CMAKE=On -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% %ARGUMENTS%
-) ELSE (
-	cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" -DBoost_NO_BOOST_CMAKE=On -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% %ARGUMENTS%
+set CMAKE_PREFIX_PATH=%OPENCOLLADA_INSTALL_DIR%;%SWIG_INSTALL_DIR%
+set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%ROCKSDB_INSTALL_DIR%;%ZSTD_INSTALL_DIR%
+set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%BOOST_INSTALL_DIR%;%CCACHE_INSTALL_DIR%
+set CMake_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%USD_INSTALL_DIR%;%TBB_INSTALL_DIR%
+set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%OCC_INSTALL_DIR%;%CGAL_INSTALL_DIR%
+set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%GMP_INSTALL_DIR%;%MPFR_INSTALL_DIR%
+:: TODO: drop this TRANSITION check once everyone has re-run build-deps.py with manifold support.
+if defined MANIFOLD_INSTALL_PATH set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%MANIFOLD_INSTALL_PATH%
+if defined QT6_INSTALL_DIR set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%QT6_INSTALL_DIR%
+
+:: TODO: drop this TRANSITION check once everyone has re-run build-deps.py with manifold support.
+set WITH_MANIFOLD_OPTION=
+if defined MANIFOLD_INSTALL_PATH set WITH_MANIFOLD_OPTION=-DWITH_MANIFOLD=ON
+
+:: Not fully supported - not available from install-ifcopenshell
+:: and some logs are still showing Visual Studio generators.
+:: Needed just for debugging.
+if defined USE_NINJA (
+    set GENERATOR=Ninja
+    set ARCH_OPTION=
+) else (
+    set GENERATOR=%GENERATOR%
+    set ARCH_OPTION=-A %VS_PLATFORM%
 )
+
+cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% %ARCH_OPTION% ^
+    -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" ^
+    -DWITH_ROCKSDB=On -DWITH_ZSTD=On ^
+    -DCMAKE_PREFIX_PATH="%CMAKE_PREFIX_PATH%" ^
+    %WITH_MANIFOLD_OPTION% ^
+    -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% -DVERSION_OVERRIDE=%VERSION_OVERRIDE% ^
+    %ARGUMENTS%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 

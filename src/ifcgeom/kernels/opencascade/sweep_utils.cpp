@@ -21,13 +21,13 @@
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepOffsetAPI_MakePipeShell.hxx>
 
-#include "../../../ifcparse/IfcLogger.h"
+#include "../../../ifcparse/logger.h"
 #include "base_utils.h"
 
-bool IfcGeom::util::wire_is_c1_continuous(const TopoDS_Wire & w, double tol) {
+bool ifcopenshell::geom::util::wire_is_c1_continuous(const TopoDS_Wire & w, double tol) {
 	// NB Note that c0 continuity is NOT checked!
 
-	TopTools_IndexedDataMapOfShapeListOfShape map;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, map);
 	for (int i = 1; i <= map.Extent(); ++i) {
 		const auto& li = map.FindFromIndex(i);
@@ -57,7 +57,7 @@ bool IfcGeom::util::wire_is_c1_continuous(const TopoDS_Wire & w, double tol) {
 	return true;
 }
 
-bool IfcGeom::util::wire_to_ax(const TopoDS_Wire & wire, gp_Ax2 & directrix) {
+bool ifcopenshell::geom::util::wire_to_ax(const TopoDS_Wire & wire, gp_Ax2 & directrix) {
 	gp_Pnt directrix_origin;
 	gp_Vec directrix_tangent;
 
@@ -66,7 +66,7 @@ bool IfcGeom::util::wire_to_ax(const TopoDS_Wire & wire, gp_Ax2 & directrix) {
 	// Find first edge
 	TopoDS_Vertex v0, v1;
 	TopExp::Vertices(wire, v0, v1);
-	TopTools_IndexedDataMapOfShapeListOfShape map;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
 	if (v0.IsSame(v1) && map.Contains(v0) && map.FindFromKey(v0).Extent() == 2) {
 		// Closed wire, with more than 1 edges
@@ -97,7 +97,7 @@ bool IfcGeom::util::wire_to_ax(const TopoDS_Wire & wire, gp_Ax2 & directrix) {
 		Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u0, u1);
 		crv->D1(u0, directrix_origin, directrix_tangent);
 	} else {
-		Logger::Error("Unable to locate first edge");
+		ifcopenshell::logger::root().error("GEO", 203, "Unable to locate first edge");
 		return false;
 	}
 
@@ -106,7 +106,7 @@ bool IfcGeom::util::wire_to_ax(const TopoDS_Wire & wire, gp_Ax2 & directrix) {
 	return true;
 }
 
-bool IfcGeom::util::is_single_linear_edge(const TopoDS_Wire & wire) {
+bool ifcopenshell::geom::util::is_single_linear_edge(const TopoDS_Wire & wire) {
 	TopExp_Explorer exp(wire, TopAbs_EDGE);
 	if (!exp.More()) {
 		return false;
@@ -117,11 +117,11 @@ bool IfcGeom::util::is_single_linear_edge(const TopoDS_Wire & wire) {
 		return false;
 	}
 	double u, v;
-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+	opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 	return crv->DynamicType() == STANDARD_TYPE(Geom_Line);
 }
 
-bool IfcGeom::util::is_single_circular_edge(const TopoDS_Wire & wire) {
+bool ifcopenshell::geom::util::is_single_circular_edge(const TopoDS_Wire & wire) {
 	TopExp_Explorer exp(wire, TopAbs_EDGE);
 	if (!exp.More()) {
 		return false;
@@ -132,15 +132,15 @@ bool IfcGeom::util::is_single_circular_edge(const TopoDS_Wire & wire) {
 		return false;
 	}
 	double u, v;
-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+    opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 	return crv->DynamicType() == STANDARD_TYPE(Geom_Circle);
 }
 
-void IfcGeom::util::process_sweep_as_extrusion(const TopoDS_Wire & wire, const TopoDS_Wire & section, TopoDS_Shape & result) {
+void ifcopenshell::geom::util::process_sweep_as_extrusion(const TopoDS_Wire & wire, const TopoDS_Wire & section, TopoDS_Shape & result) {
 	TopExp_Explorer exp(wire, TopAbs_EDGE);
 	TopoDS_Edge e = TopoDS::Edge(exp.Current());
 	double u, v;
-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+    opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 	const auto& dir = Handle(Geom_Line)::DownCast(crv)->Position().Direction();
 	// OCCT line is normalized so diff in parametric coords equals length
 	const double depth = std::abs(u - v);
@@ -149,11 +149,11 @@ void IfcGeom::util::process_sweep_as_extrusion(const TopoDS_Wire & wire, const T
 	result = BRepPrimAPI_MakePrism(face, depth*dir).Shape();
 }
 
-void IfcGeom::util::process_sweep_as_revolution(const TopoDS_Wire & wire, const TopoDS_Wire & section, TopoDS_Shape & result) {
+void ifcopenshell::geom::util::process_sweep_as_revolution(const TopoDS_Wire & wire, const TopoDS_Wire & section, TopoDS_Shape & result) {
 	TopExp_Explorer exp(wire, TopAbs_EDGE);
 	TopoDS_Edge e = TopoDS::Edge(exp.Current());
 	double u, v;
-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+    opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 	auto circ = Handle(Geom_Circle)::DownCast(crv);
 	// @todo we could be extruding the wire only when we know this is an intermediate edge.
 	const double depth = std::abs(u - v);
@@ -161,7 +161,7 @@ void IfcGeom::util::process_sweep_as_revolution(const TopoDS_Wire & wire, const 
 	result = BRepPrimAPI_MakeRevol(face, circ->Axis(), depth).Shape();
 }
 
-void IfcGeom::util::process_sweep_as_pipe(const TopoDS_Wire & wire, const TopoDS_Wire & section, TopoDS_Shape & result, bool force_transformed) {
+void ifcopenshell::geom::util::process_sweep_as_pipe(const TopoDS_Wire & wire, const TopoDS_Wire & section, TopoDS_Shape & result, bool force_transformed) {
 	// This tolerance is fairly high due to the linear edge substitution for small (or large radii) conical curves.
 	const bool is_continuous = wire_is_c1_continuous(wire, 1.e-2);
 	BRepOffsetAPI_MakePipeShell builder(wire);
@@ -181,13 +181,13 @@ void IfcGeom::util::process_sweep_as_pipe(const TopoDS_Wire & wire, const TopoDS
 	result = builder.Shape();
 }
 
-void IfcGeom::util::sort_edges(const TopoDS_Wire & wire, std::vector<TopoDS_Edge>& sorted_edges) {
-	TopTools_IndexedDataMapOfShapeListOfShape map;
+void ifcopenshell::geom::util::sort_edges(const TopoDS_Wire & wire, std::vector<TopoDS_Edge>& sorted_edges) {
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
 
 	for (int i = 1; i <= map.Extent(); ++i) {
 		if (map.FindFromIndex(i).Extent() > 2) {
-			Logger::Warning("Self-intersecting Directrix");
+			ifcopenshell::logger::root().warning("GEO", 204, "Self-intersecting Directrix");
 		}
 	}
 
@@ -209,9 +209,9 @@ void IfcGeom::util::sort_edges(const TopoDS_Wire & wire, std::vector<TopoDS_Edge
 		if (!map.Contains(v0)) {
 			throw std::runtime_error("Disconnected vertex");
 		}
-		const TopTools_ListOfShape& es = map.FindFromKey(v0);
+		const NCollection_List<TopoDS_Shape>& es = map.FindFromKey(v0);
 		TopoDS_Vertex ve0, ve1;
-		TopTools_ListIteratorOfListOfShape it(es);
+		NCollection_List<TopoDS_Shape>::Iterator it(es);
 		bool added = false;
 		for (; it.More(); it.Next()) {
 			const TopoDS_Edge& e = TopoDS::Edge(it.Value());
@@ -232,7 +232,7 @@ void IfcGeom::util::sort_edges(const TopoDS_Wire & wire, std::vector<TopoDS_Edge
 
 // #939: a closed loop causes failed triangulation in 7.3 and artefacts
 // in 7.4 so we break up a closed wire into two equal parts.
-void IfcGeom::util::break_closed(const TopoDS_Wire & wire, std::vector<TopoDS_Wire>& wires) {
+void ifcopenshell::geom::util::break_closed(const TopoDS_Wire & wire, std::vector<TopoDS_Wire>& wires) {
 	std::vector<TopoDS_Edge> sorted_edges;
 	sort_edges(wire, sorted_edges);
 
@@ -257,7 +257,7 @@ void IfcGeom::util::break_closed(const TopoDS_Wire & wire, std::vector<TopoDS_Wi
 	}
 }
 
-void IfcGeom::util::segment_adjacent_non_linear(const TopoDS_Wire & wire, std::vector<TopoDS_Wire>& wires) {
+void ifcopenshell::geom::util::segment_adjacent_non_linear(const TopoDS_Wire & wire, std::vector<TopoDS_Wire>& wires) {
 	std::vector<TopoDS_Edge> sorted_edges;
 	sort_edges(wire, sorted_edges);
 
@@ -269,7 +269,7 @@ void IfcGeom::util::segment_adjacent_non_linear(const TopoDS_Wire & wire, std::v
 
 	for (int i = 0; i < (int)sorted_edges.size() - 1; ++i) {
 		const auto& e = sorted_edges[i];
-		Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+        opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 		const bool is_linear = crv->DynamicType() == STANDARD_TYPE(Geom_Line);
 
 		const auto& f = sorted_edges[i + 1];
@@ -290,7 +290,7 @@ void IfcGeom::util::segment_adjacent_non_linear(const TopoDS_Wire & wire, std::v
 }
 
 // @todo make this generic for other sweeps not just swept disk
-void IfcGeom::util::process_sweep(const TopoDS_Wire & wire, double radius, TopoDS_Shape & result) {
+void ifcopenshell::geom::util::process_sweep(const TopoDS_Wire & wire, double radius, TopoDS_Shape & result) {
 	std::vector<TopoDS_Wire> wires, wires_tmp;
 	segment_adjacent_non_linear(wire, wires_tmp);
 	for (auto& w : wires_tmp) {

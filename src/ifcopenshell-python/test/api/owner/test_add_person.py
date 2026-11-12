@@ -16,19 +16,23 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.owner
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestAddPerson(test.bootstrap.IFC4):
     def test_adding_a_person(self):
-        person = ifcopenshell.api.run(
-            "owner.add_person",
+        person = ifcopenshell.api.owner.add_person(
             self.file,
             identification="Identification",
             family_name="FamilyName",
             given_name="GivenName",
         )
-        assert person.Identification == "Identification"
+        # 0 IfcPerson Identification(>IFC2X3) / Id (IFC2X3)
+        assert person[0] == "Identification"
         assert person.FamilyName == "FamilyName"
         assert person.GivenName == "GivenName"
+
+
+class TestAddPersonIFC2X3(test.bootstrap.IFC2X3, TestAddPerson):
+    pass

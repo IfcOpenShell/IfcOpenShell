@@ -17,28 +17,86 @@
 #                                                                              #
 ################################################################################
 
-ADD_EXECUTABLE(IfcParseExamples IfcParseExamples.cpp)
-TARGET_LINK_LIBRARIES(IfcParseExamples IfcParse)
-set_target_properties(IfcParseExamples PROPERTIES FOLDER Examples)
-target_compile_features(IfcParseExamples PUBLIC cxx_std_17)
-
-if (WITH_OPENCASCADE)
-
-ADD_EXECUTABLE(IfcOpenHouse IfcOpenHouse.cpp)
-TARGET_LINK_LIBRARIES(IfcOpenHouse ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES})
-set_target_properties(IfcOpenHouse PROPERTIES FOLDER Examples)
-
-ADD_EXECUTABLE(IfcAdvancedHouse IfcAdvancedHouse.cpp)
-TARGET_LINK_LIBRARIES(IfcAdvancedHouse ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES})
-set_target_properties(IfcAdvancedHouse PROPERTIES FOLDER Examples)
-
+# Thils file can also be build standalone, outside of the IfcOpenShell build tree,
+# to demonstrate the usage IfcOpenShell as a cmake package.
+if(NOT BUILD_EXAMPLES)
+    set(STANDALONE_PROJECT ON)
 endif()
 
-ADD_EXECUTABLE(IfcAlignment IfcAlignment.cpp)
-TARGET_LINK_LIBRARIES(IfcAlignment ${IFCOPENSHELL_LIBRARIES})
-set_target_properties(IfcAlignment PROPERTIES FOLDER Examples)
+if(STANDALONE_PROJECT)
+    cmake_minimum_required(VERSION 3.21)
+    project(IfcOpenShellExamples)
 
+    set(CMAKE_CXX_STANDARD 17)
+    find_package(IfcOpenShell CONFIG REQUIRED)
+    set(SCHEMA_VERSIONS ${IFCOPENSHELL_SCHEMA_VERSIONS})
+    set(WITH_OPENCASCADE ${IFCOPENSHELL_WITH_OPENCASCADE})
+else()
+    include_directories("${CMAKE_SOURCE_DIR}/../src")
+endif()
 
-ADD_EXECUTABLE(IfcSimplifiedAlignment IfcSimplifiedAlignment.cpp)
-TARGET_LINK_LIBRARIES(IfcSimplifiedAlignment ${IFCOPENSHELL_LIBRARIES})
-set_target_properties(IfcSimplifiedAlignment PROPERTIES FOLDER Examples)
+macro(build_example exe_name)
+    set(_target_schema "")
+    set(additional_targets ${ARGN})
+    list(LENGTH additional_targets _argc)
+    if(_argc GREATER 0)
+        list(GET additional_targets 0 _first_arg)
+        if("${_first_arg}" IN_LIST SCHEMA_VERSIONS)
+            set(_target_schema ${_first_arg})
+            list(REMOVE_AT additional_targets 0)
+        endif()
+    endif()
+
+    add_executable(${exe_name} ${exe_name}.cpp)
+
+    if(STANDALONE_PROJECT)
+        target_link_libraries(
+            ${exe_name}
+            IfcOpenShell::IfcParse
+            $<$<BOOL:${additional_targets}>:IfcOpenShell::${additional_targets}>
+        )
+    else()
+        target_include_directories(${exe_name} PRIVATE "${CMAKE_SOURCE_DIR}/../src")
+        target_link_libraries(${exe_name} IfcParse ${additional_targets})
+        set_target_properties(${exe_name} PROPERTIES FOLDER Examples)
+    endif()
+
+    if(_target_schema)
+        set_target_properties(
+            ${exe_name}
+            PROPERTIES COMPILE_FLAGS "-DIfcSchema=Ifc${_target_schema}"
+        )
+    endif()
+
+    unset(_target_schema)
+    unset(_argc)
+    unset(_first_arg)
+    install(TARGETS ${exe_name})
+endmacro()
+
+macro(build_schema_example exe_name schema)
+    build_example(${exe_name} ${schema} ${ARGN})
+    if(STANDALONE_PROJECT)
+        target_link_libraries(${exe_name} IfcOpenShell::parse_schema_ifc${schema})
+        target_compile_definitions(
+            ${exe_name}
+            PRIVATE IFCOPENSHELL_EXAMPLE_PLUGIN_PATH="$<TARGET_FILE_DIR:IfcOpenShell::parse_schema_ifc${schema}>"
+        )
+    else()
+        target_link_libraries(${exe_name} parse_schema_ifc${schema})
+    endif()
+endmacro()
+
+if(SCHEMA_VERSIONS)
+    list(GET SCHEMA_VERSIONS -1 schema)
+    build_schema_example(IfcParseExamples ${schema})
+    if(WITH_OPENCASCADE)
+        build_schema_example(IfcOpenHouse ${schema} geometry_serializer)
+        build_schema_example(IfcAdvancedHouse ${schema} geometry_serializer)
+    endif()
+endif()
+
+if("4x3_add2" IN_LIST SCHEMA_VERSIONS)
+    build_schema_example(IfcAlignment 4x3_add2)
+    build_schema_example(IfcSimplifiedAlignment 4x3_add2)
+endif()

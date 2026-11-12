@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,200,0,0" />
+</head>
+
+<body class='loading'>
+    <div class='menu'>
+        <ul>
+            <li class="material-symbols-outlined">note_add</li>
+            <li class="material-symbols-outlined">folder_open</li>
+            <li class="material-symbols-outlined">save</li>
+        </ul>
+        <div id='branding'>
+            <b>IfcOpenShell</b> WebAssembly
+        </div>
+    </div>
+    <div class='toolbar'>
+        <ul>
+            <li class="material-symbols-outlined active">arrow_selector_tool</li>
+            <li class="material-symbols-outlined">diagonal_line</li>
+            <li class="material-symbols-outlined">door_open</li>
+            <li class="material-symbols-outlined">window</li>
+        </ul>
+    </div>
+    <div class='main'>
+        <input type="file" id="modelupload" style="display:none" />
+        <div class='msg'>
+            <div id='status1'>Loading...</div>
+            <div id='status2'></div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        document.querySelector("#status2").innerHTML = "Fetching pyodide";
+    </script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+    <script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+    <script type="importmap">
+        {"imports": {"three": "https://unpkg.com/three@0.141.0/build/three.module.js",
+                   "OrbitControls": "https://unpkg.com/three@0.141.0/examples/jsm/controls/OrbitControls.js"}}
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import {
+            OrbitControls
+        } from 'OrbitControls';
+
+        THREE.Object3D.DefaultUp = new THREE.Vector3(0, 0, 1);
+
+        let pyodide = null;
+        let previousPoint = null;
+        let objectMapping = {};
+
+        function triggerFatalError (modelObject) {
+            let model = modelObject.get_model();
+            model.by_type('NonExistant')
+        }
+
+        function performDownload(filename, text) {
+            let element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            element.setAttribute('download', filename);
+
+            element.style.display = 'none';
+            document.body.appendChild(element);
+
+            element.click();
+
+            document.body.removeChild(element);
+        }
+
+        async function main() {
+            document.querySelector("#status2").innerHTML = "Initializing pyodide";
+            pyodide = await loadPyodide();
+            document.querySelector("#status2").innerHTML = "Loading dependencies";
+            await pyodide.loadPackage("micropip");
+            await pyodide.loadPackage("numpy");
+            await pyodide.loadPackage("shapely");
+            const micropip = pyodide.pyimport("micropip");
+            await micropip.install("typing-extensions");
+            document.querySelector("#status2").innerHTML = "Loading IfcOpenShell";
+            await micropip.install("wheels/ifcopenshell-0.8.2+d50e806-cp312-cp312-emscripten_3_1_58_wasm32.whl");
+
+            document.body.className = '';
+
+            let ifcopenshell = pyodide.pyimport('ifcopenshell');
+            let ifcopenshell_geom = pyodide.pyimport('ifcopenshell.geom');
+            let s = ifcopenshell_geom.settings();
+            s.set(s.WELD_VERTICES, false);
+
+            // Load custom Python modules
+            await pyodide.runPythonAsync(`
+            from pyodide.http import pyfetch
+            for fn in ['context', 'propertygroups']:
+              response = await pyfetch(f"./{fn}.py")
+              with open(f"{fn}.py", "wb") as f:
+                  f.write(await response.bytes())`)
+
+            // Initialize model context and make accessibly to JS
+            pyodide.runPython(`
+            from context import Context
+            import numpy as np
+            modelObject = Context()`);
+
+            let modelObject = pyodide.globals.get('modelObject').toJs();
+            triggerFatalError(modelObject);
+
+            // Menu and toolbar init
+            let mouseMode = 0;
+            let buttons = Array.from(document.querySelectorAll('.toolbar li'));
+            buttons.forEach((el, i) => {
+                el.onclick = (e) => {
+                    buttons.forEach(el => el.classList.remove('active'));
+                    mouseMode = i;
+                    previousPoint = null;
+                    e.stopPropagation();
+                    el.classList.add('active');
+                };
+            });
+            let newfile = () => {
+                modelObject.clear();
+                clearScene();
+            };
+            let open = async () => {
+                let uploadField = document.querySelector('#modelupload');
+                let input = document.createElement('input');
+                input.type = 'file';
+                input.onchange = async () => {
+                    clearScene();
+                    let file = input.files[0];
+                    let contents = await file.text();
+                    modelObject.open(contents);
+                    loadScene();
+                    initCamera();
+                };
+                input.click();
+            };
+            let save = () => {
+                performDownload('model.ifc', modelObject.get_model().to_string());
+            };
+            let commands = Array.from(document.querySelectorAll('.menu li'));
+            commands.forEach((el, i) => {
+                el.onclick = [newfile, open, save][i];
+            });
+
+            let clearScene = () => {
+                const lights = [];
+                scene.traverse((obj) => {
+                    if (obj.type.endsWith('Light')) {
+                        lights.push(obj);
+                    }
+                });
+                scene.children = lights;
+            }
+
+            // Init ThreeJS
+            let d = document.querySelector('.main');
+            const renderer = new THREE.WebGLRenderer();
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(45, d.offsetWidth / d.offsetHeight, 1, 1000);
+            const controls = new OrbitControls(camera, renderer.domElement);
+            controls.mouseButtons = {
+                MIDDLE: THREE.MOUSE.ROTATE,
+                RIGHT: THREE.MOUSE.PAN
+            }
+            renderer.setSize(d.offsetWidth, d.offsetHeight);
+            d.appendChild(renderer.domElement);
+            renderer.setClearColor(0x000000, 0);
+            let light = new THREE.DirectionalLight(0xFFFFFF);
+            light.position.set(20, 10, 30);
+            scene.add(light);
+            light = new THREE.DirectionalLight(0xFFFFFF, 0.8);
+            light.position.set(-10, 1, -30);
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0x404050));
+            let lbm = new THREE.LineBasicMaterial({
+                color: 0x222222
+            });
+
+            // Generate ThreeJS mesh from an IfcOpenShell python geometry object
+            let last_geometries = null;
+            function generateMesh(last_mesh_id, obj) {
+                let geometries;
+                if (last_mesh_id == obj.geometry.id) {
+                    geometries = last_geometries;
+                } else {
+                    geometries = [];
+
+                    let materials = obj.geometry.materials.toJs().map(e => new THREE.MeshLambertMaterial({
+                        color: new THREE.Color(...e.diffuse.components.toJs()),
+                        opacity: 1.0 - e.transparency,
+                        transparent: e.transparency > 1.e-5,
+                        side: THREE.DoubleSide,
+                        polygonOffset: true,
+                        polygonOffsetFactor: 1.0,
+                    }));
+
+                    let mapping = {};
+                    obj.geometry.material_ids.toJs().forEach((i, idx) => {
+                        mapping[i] = mapping[i] || []
+                        mapping[i].push(idx);
+                    });
+
+                    let vs = new Float32Array(obj.geometry.verts.toJs());
+                    let ns = new Float32Array(obj.geometry.normals.toJs());
+                    let es = obj.geometry.edges.toJs();
+                    let fs = obj.geometry.faces.toJs();
+
+                    // Default material
+                    let offset = 0;
+                    if (mapping[-1]) {
+                        materials.unshift(new THREE.MeshLambertMaterial({
+                            color: new THREE.Color(0.6, 0.6, 0.6),
+                            side: THREE.DoubleSide
+                        }));
+                        offset = 1;
+                    }
+
+                    materials.forEach((m, mi) => {
+                        let geometry = new THREE.BufferGeometry();
+
+                        geometry.setIndex(mapping[mi - offset].flatMap(i => [fs[3 * i + 0], fs[3 * i + 1], fs[3 * i + 2]]));
+                        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vs, 3));
+                        geometry.setAttribute('normal', new THREE.Float32BufferAttribute(ns, 3));
+
+                        geometries.push([geometry, m]);
+                    });
+
+                    let geometry = new THREE.BufferGeometry();
+                    geometry.setAttribute('position', new THREE.BufferAttribute(vs, 3));
+                    geometry.setIndex(es);
+                    geometries.push([geometry, lbm]);
+
+                    last_mesh_id = obj.geometry.id;
+                }
+
+                for (let gm of geometries) {
+                    let [g, mat] = gm;
+                    let object;
+                    if (g.attributes.normal) {
+                        object = new THREE.Mesh(g, mat);
+                    } else {
+                        object = new THREE.LineSegments(g, lbm);
+                    }
+                    let matrix = new THREE.Matrix4();
+                    const m = obj.transformation.data().components.toJs();
+                    matrix.set(
+                        m[0][0], m[0][1], m[0][2], m[0][3],
+                        m[1][0], m[1][1], m[1][2], m[1][3],
+                        m[2][0], m[2][1], m[2][2], m[2][3],
+                        m[3][0], m[3][1], m[3][2], m[3][3]
+                    );
+                    object.matrixAutoUpdate = false;
+                    object.matrix = matrix;
+
+                    scene.add(object);
+
+                    objectMapping[object.uuid] = obj.guid;
+                }
+            }
+
+            function initCamera() {
+                let boundingBox = new THREE.Box3();
+                boundingBox.setFromObject(scene);
+                let center = new THREE.Vector3();
+                boundingBox.getCenter(center);
+                controls.target = center;
+
+                let viewDistance = boundingBox.isEmpty() ? 100. : boundingBox.getSize(new THREE.Vector3()).length() * 2.;
+                camera.position.copy(center.clone().add(
+                    new THREE.Vector3(0.25, 1.0, 0.5).normalize().multiplyScalar(viewDistance)
+                ));
+
+                camera.near = viewDistance / 100;
+                camera.far = viewDistance * 100;
+                controls.update();
+                camera.updateProjectionMatrix();
+                camera.updateMatrixWorld();
+
+                controls.update();
+            }
+
+            initCamera();
+
+            function loadScene() {
+                document.body.className = 'loading';
+                document.querySelector("#status2").innerHTML = "Generating geometry";
+
+                let ifc = modelObject.get_model();
+                let it = ifcopenshell_geom.iterator.callKwargs({
+                    'settings': s,
+                    'file_or_filename': ifc,
+                    'exclude': ['IfcSpace', 'IfcOpeningElement'],
+                    'geometry_library': 'hybrid-cgal-simple-opencascade'
+                });
+
+                let last_mesh_id = null;
+
+                if (it.initialize()) {
+                    while (true) {
+                        let obj = it.get();
+
+                        // obj.type appears to be overwritten by pyodide, returning the typename of the C++ class?
+                        let ty = ifc.by_id(obj.id).is_a()
+                        generateMesh(last_mesh_id, obj);
+
+                        if (!it.next()) {
+                            break;
+                        }
+                    }
+                }
+
+                document.body.className = '';
+
+
+            }
+
+            function render() {
+                requestAnimationFrame(render);
+                renderer.render(scene, camera);
+            }
+
+            document.addEventListener('click', onMouseClick);
+
+            function getPoint(event) {
+                let raycaster = new THREE.Raycaster();
+
+                let mouse = new THREE.Vector2();
+                let rect = renderer.domElement.getBoundingClientRect();
+                mouse.x = ((event.clientX - rect.left) / (rect.width)) * 2 - 1;
+                mouse.y = -((event.clientY - rect.top) / (rect.height)) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+
+                if (mouseMode != 1) {
+                    // Select, Add Window/Door
+                    const nonLineObjects = [];
+                    scene.traverse((obj) => {
+                        if (obj.geometry && obj.geometry.attributes.normal) {
+                            nonLineObjects.push(obj);
+                        }
+                    });
+
+                    let objs = raycaster.intersectObjects(nonLineObjects, false);
+                    if (objs.length) {
+                        let {
+                            point,
+                            object
+                        } = objs[0];
+                        return {
+                            point,
+                            object
+                        };
+                    } else {
+                        return null;
+                    }
+                } else {
+                    // Polygonal wall
+                    let plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0); // flat ground plane
+                    let point = new THREE.Vector3();
+                    return raycaster.ray.intersectPlane(plane, point);
+                }
+            }
+
+            function addObjToScene(obj) {
+                let last_mesh_id = null;
+
+                generateMesh(last_mesh_id, obj);
+            }
+
+            function createShape(el) {
+                addObjToScene(ifcopenshell_geom.create_shape.callKwargs({
+                    'settings': s,
+                    'inst': el,
+                    'geometry_library': 'hybrid-cgal-simple-opencascade'
+                }));
+            }
+
+            function onMouseClick(event) {
+                let newPoint = getPoint(event);
+                if (mouseMode == 1) {
+                    if (previousPoint != null) {
+                        createShape(modelObject.create_2pt_wall([previousPoint.x, previousPoint.y], [newPoint.x, newPoint.y], 0, 3., 0.2, modelObject.storey));
+                    }
+                    previousPoint = newPoint;
+                }
+                if (mouseMode == 2 || mouseMode == 3) {
+                    if (newPoint !== null) {
+                        let {
+                            point,
+                            object
+                        } = newPoint;
+                        const guid = objectMapping[object.uuid];
+                        const toRemove = [];
+                        scene.traverse((obj) => {
+                            if (objectMapping[obj.uuid] == guid) {
+                                toRemove.push(obj);
+                            }
+                        });
+                        toRemove.forEach(obj => obj.removeFromParent());
+                        createShape(modelObject.create_fill(mouseMode == 2 ? 'door' : 'window', [point.x, point.y, point.z], guid));
+                        createShape(modelObject.get_element(guid));
+                    }
+                }
+            }
+
+            render();
+        }
+
+        main();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,37 @@
+{
+    skymap.cal - Map a pre swewd sky picture onto a hemisphere
+    
+    ###########################################
+    #
+    #    SKY PICTURE MAP
+    #
+    #       Copyright (C) 1992 by Curtin University
+    #                     School of Architecture
+    #      
+    #    Curtin University of Technology
+    #    Department of Architecture
+    #    GPO Box U 1987
+    #    Perth, Western Australia
+    #
+    #    Version 1.1 October 1993.
+    #    Fixed NaN errors.
+    #
+    #    Simon Crone
+    #    email:    crones@puffin.curtin.edu.au
+    #    
+    ###########################################
+
+    A1 = aspect ratio ( height / width )
+}
+
+u_scale = if( A1 -1, 1, A1);
+v_scale = if( A1 -1, A1, 1);
+
+hang = if( abs( Dx) - FTINY, 
+             atan2( Dy, Dx),
+             if( Dy, PI/2, -PI/2 )
+         );
+
+map_u = ( (hang + PI ) / (PI*2) ) / u_scale;
+map_v = ( (asin( Dz) + (PI/2) ) / PI ) / v_scale;
+

@@ -1,0 +1,4 @@
+sphinx
+furo
+sphinx-autoapi
+sphinx-copybutton

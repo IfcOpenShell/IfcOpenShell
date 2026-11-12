@@ -1,0 +1,126 @@
+name: Build IfcOpenShell WASM
+
+permissions: {}
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.3.2
+
+      - name: Install Python
+        # Installs latest Python version so it's preferred by uv over system Python.
+        run: uv python install
+
+      - name: Set up Node
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Checkout Repository
+        uses: actions/checkout@v7.0.1
+        with:
+          submodules: recursive
+          path: IfcOpenShell
+          persist-credentials: false
+
+      - name: Checkout Build Repository
+        uses: actions/checkout@v7.0.1
+        with:
+          repository: IfcOpenShell/build-outputs
+          path: ifcopenshell_build
+          ref: wasm
+          lfs: true
+          token: ${{ secrets.BUILD_REPO_TOKEN }}
+          persist-credentials: true
+
+      - name: Unpack Dependencies
+        run: |
+          cd ifcopenshell_build
+          uv run ../IfcOpenShell/nix/cache_dependencies.py unpack
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          key: ubuntu-22.04-${{ runner.arch }}
+          # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
+          install: binary
+
+      - name: Build
+        run: |
+          ./IfcOpenShell/pyodide/build_pyodide.sh
+          FILE=`echo dist/ifcopenshell-*.whl`
+          NEW_FILE=`echo $FILE | sed "s/-/+${GITHUB_SHA:0:7}-/2"`
+          mv $FILE $NEW_FILE
+
+      - name: Upload Build Logs
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: build-logs-pyodide
+          path: |
+            ifcopenshell_build/*/*/logs/latest.log
+          retention-days: 30
+
+      - name: Pack Dependencies
+        run: |
+          cd ifcopenshell_build
+          uv run ../IfcOpenShell/nix/cache_dependencies.py pack
+
+      - name: Commit and Push Changes to Build Repository
+        run: |
+          cd ifcopenshell_build
+          git config user.name "IfcOpenBot"
+          git config user.email "ifcopenbot@ifcopenshell.org"
+          git add */*/install/cache-*.tar.gz
+          git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
+          git push || echo "Push failed"
+
+      - name: Order wheel shared objects
+        run: |
+          uv run ./IfcOpenShell/pyodide/order_pyodide_wheel_shared_objects.py dist/ifcopenshell-*.whl
+
+      - name: Split packages
+        run: |
+          VERSION=v`cat ./IfcOpenShell/VERSION`
+          mkdir -p dist-modular
+          uv run ./IfcOpenShell/pyodide/split_pyodide_ifcopenshell_wheel.py dist/ifcopenshell-*.whl ./dist-modular
+          cd dist-modular
+          zip -r -qq ifcopenshell-modular-${VERSION}-${GITHUB_SHA:0:7}-pyodide.zip *.whl
+
+      - name: Verify create_shape in monolithic and modular wheels
+        run: |
+          source .venv/bin/activate
+          PYODIDE_ROOT=$(pyodide config get pyodide_root)
+          node IfcOpenShell/pyodide/verify_wheels.mjs "$PYODIDE_ROOT/dist" dist dist-modular
+
+      - name: Run wheel tests
+        run: |
+          # venv set up in build_pyodide.sh.
+          source .venv/bin/activate
+          ln -s "$PWD/dist" IfcOpenShell/dist
+          ln -s "$PWD/dist-modular" IfcOpenShell/dist-modular
+          cd IfcOpenShell/pyodide
+          ./run_pytest.py setup
+          ./run_pytest.py run
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # AWS CLI is preinstalled on the runner image.
+      - name: Upload .zip archives to S3
+        env:
+          AWS_RETRY_MODE: standard
+          AWS_MAX_ATTEMPTS: "10"
+        run: |
+          aws s3 cp dist s3://ifcopenshell-builds/ --recursive --exclude "*" --include "*.whl"
+          aws s3 cp dist-modular s3://ifcopenshell-builds/ --recursive --exclude "*" --include "*.zip"

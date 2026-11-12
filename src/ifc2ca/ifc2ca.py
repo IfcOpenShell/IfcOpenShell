@@ -16,18 +16,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Ifc2CA.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import json
 import os
 import subprocess
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, List
 
 import ifcopenshell as ios
+
 # import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+
 # import ifcopenshell.util.shape
 import numpy as np
 from jinja2 import Environment, FileSystemLoader
@@ -37,6 +40,8 @@ from .scriptCodeAster import CommandFileConstructor
 
 
 class Ifc2CA:
+    file: ifcopenshell.file
+
     folder_path = None
     salome_path = None
     model_keys = ["id", "type", "GlobalId", "Name", "LoadedBy", "HasResults"]
@@ -91,7 +96,7 @@ class Ifc2CA:
         self,
         load_group: ios.entity_instance | None = None,
         element: ios.entity_instance | None = None,
-        load_group_ids: List[int] | None = None,
+        load_group_ids: list[int] | None = None,
     ):
         if load_group is not None:
             actions = [
@@ -278,7 +283,7 @@ class Ifc2CA:
             geometry = [x.EdgeStart.VertexGeometry.Coordinates for x in repr_item.Bounds[0].Bound.EdgeList]
 
         else:
-            print(representation)
+            assert False, representation
         return geometry
 
     def parse_material(self, material: ios.entity_instance):
@@ -392,7 +397,10 @@ class Ifc2CA:
             )
 
         elif element.is_a("IfcStructuralSurfaceMember"):
-            placement = ifcopenshell.util.placement.get_axis2placement(repr_item.FaceSurface.Position)
+            placement = ifcopenshell.util.placement.get_placement(repr_item.FaceSurface.Position)
+
+        else:
+            assert False, element
 
         origin, orientation = self.parse_transformation_matrix(placement)
         data["origin"] = origin
@@ -425,13 +433,13 @@ class Ifc2CA:
 
         if connection.is_a("IfcStructuralPointConnection"):
             if connection.ConditionCoordinateSystem is not None:
-                placement = ifcopenshell.util.placement.get_axis2placement(connection.ConditionCoordinateSystem)
+                placement = ifcopenshell.util.placement.get_placement(connection.ConditionCoordinateSystem)
             else:
                 placement = np.eye(4)
                 for i, v in enumerate(placement[:3]):
                     v[3] = data["geometry"][i]
 
-        if connection.is_a("IfcStructuralCurveConnection"):
+        elif connection.is_a("IfcStructuralCurveConnection"):
             placement = ifcopenshell.util.placement.a2p(
                 data["geometry"][0],
                 connection.Axis.DirectionRatios,
@@ -439,7 +447,10 @@ class Ifc2CA:
             )
 
         elif connection.is_a("IfcStructuralSurfaceConnection"):
-            placement = ifcopenshell.util.placement.get_axis2placement(repr_item.FaceSurface.Position)
+            placement = ifcopenshell.util.placement.get_placement(repr_item.FaceSurface.Position)
+
+        else:
+            assert False, connection
 
         origin, orientation = self.parse_transformation_matrix(placement)
         data["origin"] = origin
@@ -450,7 +461,7 @@ class Ifc2CA:
         data["appliedCondition"] = self.parse_applied_condition(connection.AppliedCondition, data["geometry_type"])
         return data
 
-    def parse_element_connections(self, element: Dict, connections: List[Dict]):
+    def parse_element_connections(self, element: dict, connections: list[dict]):
         ifc_element = self.file.by_id(element["id"])
         connection_ids = [c["id"] for c in connections]
         rels = [rel for rel in ifc_element.ConnectedBy if rel.RelatedStructuralConnection.id() in connection_ids]
@@ -464,7 +475,7 @@ class Ifc2CA:
             if rel.ConditionCoordinateSystem is None:
                 data[i]["orientation"] = element["orientation"]
             else:
-                placement = ifcopenshell.util.placement.get_axis2placement(rel.ConditionCoordinateSystem)
+                placement = ifcopenshell.util.placement.get_placement(rel.ConditionCoordinateSystem)
                 _, orientation = self.parse_transformation_matrix(placement)
                 data[i]["orientation"] = element["orientation"].dot(orientation)
 
@@ -501,9 +512,9 @@ class Ifc2CA:
 
     def parse_element_loads(
         self,
-        element: Dict,
-        load_group_ids: List[int],
-        load_cases: List[ios.entity_instance],
+        element: dict,
+        load_group_ids: list[int],
+        load_cases: list[ios.entity_instance],
     ):
         ifc_element = self.file.by_id(element["id"])
         actions = self.get_actions(element=ifc_element, load_group_ids=load_group_ids)
@@ -547,6 +558,9 @@ class Ifc2CA:
                 },
             }
 
+        else:
+            assert False, element["geometry_type"]
+
         for action in actions:
             self.add_action_loads(element, action, data, load_cases)
 
@@ -569,10 +583,10 @@ class Ifc2CA:
 
     def add_action_loads(
         self,
-        element: Dict,
+        element: dict,
         action: ios.entity_instance,
-        data: Dict,
-        load_cases: List[ios.entity_instance],
+        data: dict,
+        load_cases: list[ios.entity_instance],
     ):
         load_group = self.get_load_group(action)
         load_group_coeff = 1.0 if load_group.Coefficient is None else load_group.Coefficient
@@ -581,6 +595,7 @@ class Ifc2CA:
 
         data["actions"].append(action.get_info() | {"AppliedLoad": action.AppliedLoad.get_info()})
         if element["geometry_type"] in ["Vertex", "Edge"]:
+            force_projection_coeff, moment_projection_coeff = None, None
             if action.is_a("IfcStructuralPointAction") and load.is_a("IfcStructuralLoadSingleForce"):
                 FX = tempFX = load.ForceX if load.ForceX is not None else 0.0
                 FY = tempFY = load.ForceY if load.ForceY is not None else 0.0
@@ -634,8 +649,12 @@ class Ifc2CA:
                         force_projection_coeff = 1.0
                         moment_projection_coeff = 1.0
 
+            else:
+                assert False, action
+
             for iLC, load_case in enumerate(load_cases):
                 if load_case.id() in active_load_case_ids:
+                    assert force_projection_coeff is not None and moment_projection_coeff is not None
                     load_case_coeff = 1.0 if load_case.Coefficient is None else load_case.Coefficient
                     data["loadGroups"].append(load_group.Name)
                     data["loadsLC"]["FX"][iLC] += FX * load_group_coeff * load_case_coeff * force_projection_coeff
@@ -667,6 +686,9 @@ class Ifc2CA:
                     else:
                         force_projection_coeff = 1.0
 
+            else:
+                assert False, action
+
             for iLC, load_case in enumerate(load_cases):
                 if load_case.id() in active_load_case_ids:
                     load_case_coeff = 1.0 if load_case.Coefficient is None else load_case.Coefficient
@@ -690,7 +712,7 @@ class Ifc2CA:
                 for key, load in element["loads"]["loadsLC"].items():
                     element["loads"]["loadsCOMB"][key][iComb] = round(comb_factors.dot(load), 4)
 
-    def get_combination_factors(self, load_combination, load_case_ids: List[int]):
+    def get_combination_factors(self, load_combination, load_case_ids: list[int]):
         comb_coeff = 1.0 if load_combination.Coefficient is None else load_combination.Coefficient
         comb_factors = np.array([0.0 for _ in load_case_ids])
         for assignment in self.get_combination_assignments(load_combination):
@@ -713,7 +735,7 @@ class Ifc2CA:
         if model.HasResults:
             data["model"]["HasResults"] = [item.Name for item in model.HasResults]
         data["model"]["ref_id"] = self.get_ref_id(model)
-        placement = ifcopenshell.util.placement.get_local_placement(model.SharedPlacement)
+        placement = ifcopenshell.util.placement.get_placement(model.SharedPlacement)
         origin, orientation = self.parse_transformation_matrix(placement)
         data["model"]["origin"] = origin
         data["model"]["orientation"] = orientation
@@ -798,7 +820,7 @@ class Ifc2CA:
             self.folder_path.mkdir()
 
         template = self.env.get_template("salome/scriptSalome.py")
-        mesh_name = f'Model_{model_id}_v{parameters["mesh_size"]}'
+        mesh_name = f"Model_{model_id}_v{parameters['mesh_size']}"
 
         med_path = self.folder_path / f"{mesh_name}.med"
         json_path = self.folder_path / f"Model_{model_id}.json"
@@ -813,7 +835,7 @@ class Ifc2CA:
         )
 
         # Write the rendered script to the new location
-        script_path = self.folder_path / f'ScriptSalome_Model_{model_id}_v{parameters["mesh_size"]}.py'
+        script_path = self.folder_path / f"ScriptSalome_Model_{model_id}_v{parameters['mesh_size']}.py"
         with open(script_path, "w") as f:
             f.write(rendered_script)
 
@@ -857,7 +879,7 @@ class Ifc2CA:
         cases = self.get_run_case_labels(data, target)
         run_label = "_".join(cases)
 
-        comm_path = self.folder_path / f'{mesh["name"]}_{run_label}.comm'
+        comm_path = self.folder_path / f"{mesh['name']}_{run_label}.comm"
 
         constructor = CommandFileConstructor(data)
         constructor.create_comm(comm_path, cases=cases)

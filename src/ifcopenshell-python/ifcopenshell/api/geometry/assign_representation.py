@@ -16,32 +16,46 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+
+import ifcopenshell.api.geometry
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {"product": None, "representation": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+def assign_representation(
+    file: ifcopenshell.file, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+) -> None:
+    usecase = Usecase()
+    usecase.file = file
+    return usecase.execute(product, representation)
 
-    def execute(self):
-        if self.settings["product"].is_a("IfcProduct"):
-            product_type = ifcopenshell.util.element.get_type(self.settings["product"])
+
+class Usecase:
+    file: ifcopenshell.file
+
+    def execute(self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance) -> None:
+        if product.is_a("IfcProduct"):
+            product_type = ifcopenshell.util.element.get_type(product)
             if (
                 product_type
                 and product_type.RepresentationMaps
-                and self.settings["representation"].RepresentationType != "MappedRepresentation"
+                and representation.RepresentationType != "MappedRepresentation"
+                # Revit is adding a non-mapped representation to the exported profile-based types,
+                # so assigning representation to occurrence by accident was assigning it to the type.
+                # We guard from this by skipping profile and layer-based types.
+                # See 6934 for example.
+                and not (
+                    (material := ifcopenshell.util.element.get_material(product_type))
+                    and material.is_a() in ("IfcMaterialProfileSet", "IfcMaterialLayerSet")
+                )
             ):
-                self.settings["product"] = product_type
+                product = product_type
 
-        if self.settings["product"].is_a("IfcProduct"):
-            self.assign_product_representation(self.settings["product"], self.settings["representation"])
-        elif self.settings["product"].is_a("IfcTypeProduct"):
-            if self.settings["product"].RepresentationMaps:
-                maps = list(self.settings["product"].RepresentationMaps)
+        if product.is_a("IfcProduct"):
+            self.assign_product_representation(product, representation)
+        elif product.is_a("IfcTypeProduct"):
+            if product.RepresentationMaps:
+                maps = list(product.RepresentationMaps)
             else:
                 maps = []
             self.zero = self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
@@ -52,24 +66,26 @@ class Usecase:
                     "IfcRepresentationMap",
                     **{
                         "MappingOrigin": self.file.createIfcAxis2Placement3D(self.zero, self.z_axis, self.x_axis),
-                        "MappedRepresentation": self.settings["representation"],
-                    }
+                        "MappedRepresentation": representation,
+                    },
                 )
             )
-            self.settings["product"].RepresentationMaps = maps
+            product.RepresentationMaps = maps
             if self.file.schema == "IFC2X3":
-                types = self.settings["product"].ObjectTypeOf
+                types = product.ObjectTypeOf
             else:
-                types = self.settings["product"].Types
+                types = product.Types
             if types:
                 for element in types[0].RelatedObjects:
-                    mapped_representation = ifcopenshell.api.run(
-                        "geometry.map_representation", self.file, **{"representation": self.settings["representation"]}
+                    mapped_representation = ifcopenshell.api.geometry.map_representation(
+                        self.file, representation=representation
                     )
                     self.assign_product_representation(element, mapped_representation)
-        ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": self.settings["product"]})
+        ifcopenshell.api.owner.update_owner_history(self.file, element=product)
 
-    def assign_product_representation(self, product, representation):
+    def assign_product_representation(
+        self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> None:
         definition = product.Representation
         if not definition:
             definition = self.file.createIfcProductDefinitionShape()

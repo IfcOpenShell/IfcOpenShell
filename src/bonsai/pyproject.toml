@@ -1,0 +1,100 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bonsai"
+version = "0.0.0"
+authors = [
+  { name="Dion Moult", email="dion@thinkmoult.com" },
+]
+description = "A native Building Information Model authoring platform using IFC"
+keywords = ["IFC", "Blender", "BIM"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "ifcopenshell",
+]
+
+[project.urls]
+Homepage = "http://bonsaibim.org"
+Documentation = "https://docs.bonsaibim.org"
+Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
+
+[dependency-groups]
+# Test tooling for `make test-*` (pytest runs inside Blender for tool/bim).
+dev = [
+  # pytest-bdd 9.0.0 uses FixtureManager._arg2fixturedefs, removed in pytest 9.2.
+  "pytest<9.2",
+  "pytest-blender",
+  "pytest-bdd",
+  "fake-bpy-module-latest",
+  # Brick support: brickschema with its persistence extra spelled out. The SQLAlchemy store
+  # must be 0.7.1 or later: that is where SQLAlchemy 2.1 and rdflib 7 work, and where the
+  # store.transaction() that brickschema 0.8 runs its persistent graph through lives.
+  "brickschema",
+  "brickschema-rdflib-sqlalchemy>=0.7.1",
+  "alembic",
+]
+# Everything the type checker needs to resolve; see `poe ty-venv` in the repo root.
+type-check = [
+  "aiohttp",
+  "beautifulsoup4",
+  "boto3",
+  "botocore",
+  "brickschema",
+  "cjio>=0.8,<0.10",
+  "debugpy",
+  "ezdxf",
+  "fake-bpy-module-latest",
+  "bpypolyskel @ git+https://github.com/prochitecture/bpypolyskel",
+  "ifcjson @ git+https://github.com/IfcOpenShell/IFC2JSON_python.git@main",
+  "gitpython",
+  "isodate",
+  "lark",
+  "lxml",
+  "lxml-stubs",
+  "markdown-it-py",
+  "natsort",
+  "numpy",
+  "odfpy",
+  "openpyxl",
+  "pandas",
+  "pillow",
+  "platformdirs",
+  "pygments",
+  "pyradiance",
+  "pystache",
+  "pytest",
+  "pytest_bdd",
+  "pytest_blender",
+  "python-dateutil",
+  "python-socketio",
+  "pytz",
+  "rdflib",
+  "requests",
+  "shapely",
+  "svgwrite",
+  "typing-extensions",
+  "typst",
+  "tzfpy",
+  "xsdata",
+]
+
+[tool.setuptools.packages.find]
+include = ["bonsai*"]
+exclude = ["test*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.*", "libs/desktop/bonsai", "libs/bin/ifcmerge"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint.isort]
+known-first-party = [
+  "test",
+  "bonsai",
+]

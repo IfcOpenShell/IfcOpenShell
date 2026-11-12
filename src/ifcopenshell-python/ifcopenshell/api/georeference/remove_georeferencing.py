@@ -16,30 +16,36 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
 
-class Usecase:
-    def __init__(self, file):
-        """Remove georeferencing data
 
-        All georeferencing parameters such as projected CRS and map conversion
-        data will be lost.
+def remove_georeferencing(file: ifcopenshell.file) -> None:
+    """Remove georeferencing data
 
-        :return: None
-        :rtype: None
+    All georeferencing parameters such as projected CRS and map conversion
+    data will be lost.
 
-        Example:
+    In IFC2X3, the psets will be removed from the IfcProject.
 
-            ifcopenshell.api.run("georeference.add_georeferencing", model)
-            # Let's change our mind
-            ifcopenshell.api.run("georeference.remove_georeferencing", model)
-        """
-        self.file = file
+    Example:
 
-    def execute(self):
-        map_conversion = self.file.by_type("IfcMapConversion")[0]
-        projected_crs = self.file.by_type("IfcProjectedCRS")[0]
-        if projected_crs.MapUnit and len(self.file.get_inverse(projected_crs.MapUnit)) == 1:
-            # TODO: go deeper for conversion units
-            self.file.remove(projected_crs.MapUnit)
-        self.file.remove(projected_crs)
-        self.file.remove(map_conversion)
+        ifcopenshell.api.georeference.add_georeferencing(model)
+        # Let's change our mind
+        ifcopenshell.api.georeference.remove_georeferencing(model)
+    """
+    if file.schema == "IFC2X3":
+        project = file.by_type("IfcProject")[0]
+        if pset := ifcopenshell.util.element.get_pset(project, "ePSet_ProjectedCRS"):
+            ifcopenshell.api.pset.remove_pset(file, project, file.by_id(pset["id"]))
+        if pset := ifcopenshell.util.element.get_pset(project, "ePSet_MapConversion"):
+            ifcopenshell.api.pset.remove_pset(file, project, file.by_id(pset["id"]))
+        return
+    for projected_crs in file.by_type("IfcProjectedCRS"):
+        if (unit := projected_crs.MapUnit) and file.get_total_inverses(unit) == 1:
+            projected_crs.MapUnit = None
+            ifcopenshell.util.element.remove_deep2(file, unit)
+        file.remove(projected_crs)
+    for coordinate_operation in file.by_type("IfcCoordinateOperation"):
+        file.remove(coordinate_operation)

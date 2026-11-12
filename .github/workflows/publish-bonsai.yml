@@ -1,0 +1,101 @@
+name: Publish Bonsai
+
+permissions: {}
+
+# Differences from publish-bonsai-unstable.yml:
+# - make has IS_STABLE=TRUE
+# - action is never triggered and executed only manually
+# - doesn't add a current date to the release and tag
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upstream-only:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+
+  release:
+    needs: upstream-only
+    runs-on: ubuntu-latest
+    permissions:
+      # Create the release.
+      contents: write
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+    - uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
+    - name: Create release
+      id: release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        VERSION=$(cat VERSION)
+        TAG="bonsai-$VERSION"
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        gh release view "$TAG" || gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes ""
+
+  publish:
+    needs: release
+    name: ${{ matrix.config.name }}-${{ matrix.pyver }}
+    runs-on: ubuntu-latest
+    permissions:
+      # upload-release-action uploads assets
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        pyver: [py311, py313]
+        config:
+          - {
+            name: "Windows Build",
+            short_name: win,
+          }
+          - {
+            name: "Linux Build",
+            short_name: linux,
+          }
+          - {
+            name: "MacOS ARM Build",
+            short_name: macosm1,
+          }
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.x'
+      - uses: astral-sh/setup-uv@v10.3.2
+      - name: Install lbzip2
+        run: sudo apt-get install -y lbzip2
+      - name: Compile
+        env:
+          # extensions.blender.org allows one build per platform per version.
+          SEMVER_SUFFIX: ${{ matrix.pyver == 'py311' && '-py311' || '' }}
+        run: |
+          cd src/bonsai && make dist \
+            PLATFORM=${{ matrix.config.short_name }} \
+            PYVERSION=${{ matrix.pyver }} \
+            IS_STABLE=TRUE \
+            SEMVER_SUFFIX="$SEMVER_SUFFIX"
+      - name: Find zip file name
+        id: find_zip
+        run: |
+          filepath=$(ls src/bonsai/dist/bonsai_*.zip)
+          echo "filepath=$filepath" >> $GITHUB_OUTPUT
+          echo "filename=$(basename $filepath)" >> $GITHUB_OUTPUT
+      - name: Upload zip file to release
+        uses: svenstaro/upload-release-action@2.11.5
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ steps.find_zip.outputs.filepath }}
+          asset_name: ${{ steps.find_zip.outputs.filename }}
+          tag: ${{ needs.release.outputs.tag }}
+          overwrite: true

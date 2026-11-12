@@ -1,0 +1,160 @@
+# This file was generated with the assistance of an AI coding tool.
+################################################################################
+#                                                                              #
+# This file is part of Bonsai.                                                 #
+#                                                                              #
+# Bonsai is free software: you can redistribute it and/or modify               #
+# it under the terms of the GNU General Public License as published by         #
+# the Free Software Foundation, either version 3.0 of the License, or          #
+# (at your option) any later version.                                          #
+#                                                                              #
+# Bonsai is distributed in the hope that it will be useful,                    #
+# but WITHOUT ANY WARRANTY; without even the implied warranty of               #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 #
+# GNU General Public License for more details.                                 #
+#                                                                              #
+# You should have received a copy of the GNU General Public License            #
+# along with this program. If not, see <http://www.gnu.org/licenses/>.         #
+#                                                                              #
+################################################################################
+
+message("Running CMakeLists.txt in /src/bonsaiviewer")
+
+set(QT_VERSION 6 CACHE STRING "Qt version")
+# Qt6::CorePrivate is exposed differently across Qt versions: Qt 6.8 ships the
+# target inside Qt6Core (no CorePrivate config package), while Qt 6.10 provides
+# it only as a separate CorePrivate package. OPTIONAL_COMPONENTS finds that
+# package where it exists without failing where it does not; the Qt6::CorePrivate
+# target ends up available either way for the link step below.
+find_package(Qt${QT_VERSION} REQUIRED
+             COMPONENTS Core Gui Widgets Svg
+             OPTIONAL_COMPONENTS CorePrivate
+             PATHS ${QT_DIR})
+
+set(BONSAIVIEWER_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ElementRegistry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ElementRegistry.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ViewerSettings.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ViewerSettings.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SessionState.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/SessionState.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/MainWindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/MainWindow.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Measurement.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Measurement.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/SvgIcon.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/SvgIcon.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Style.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Style.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Dialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Dialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Tabs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Tabs.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/KeyValueTable.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/KeyValueTable.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Buttons.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Buttons.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Section.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Section.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Panel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Panel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/Discovery.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/Discovery.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/PickerDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/PickerDialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/Process.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/Process.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/Registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/Registry.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/AddModelDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/AddModelDialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/SettingsDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/SettingsDialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/SettingsView.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/SettingsView.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Commands.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Commands.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/FederationItemModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/FederationItemModel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Panel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Panel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/View.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/View.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/todo/Panel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/todo/Panel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/Types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/Panel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/Panel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/View.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/View.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/Commands.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/Commands.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/RecentProjects.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/RecentProjects.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/SaveProjectDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/SaveProjectDialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/settings/Dialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/settings/Dialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/spatial_hierarchy/Types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/spatial_hierarchy/Panel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/spatial_hierarchy/Panel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/spatial_hierarchy/View.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/spatial_hierarchy/View.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Panel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Panel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Commands.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Commands.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/View.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/View.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/bonsaiviewer_resources.qrc
+)
+
+add_executable(BonsaiViewer ${BONSAIVIEWER_FILES})
+
+set_target_properties(BonsaiViewer PROPERTIES
+    AUTOMOC ON
+    AUTORCC ON
+    WIN32_EXECUTABLE ON
+    MACOSX_BUNDLE ON
+)
+
+# macOS bundle runtime layout. BonsaiViewer's exe has
+# `LC_LOAD_DYLIB @rpath/libwgpu_native.dylib` (CMake bakes that in from
+# the dylib's own install_name). Without an LC_RPATH entry pointing at
+# the bundle's Frameworks/ dir, dyld aborts at launch with
+# "no LC_RPATH's found". Set the standard macOS app-bundle rpath so
+# the load resolves; the wgpu CMakeLists installs the dylib straight
+# into BonsaiViewer.app/Contents/Frameworks for us.
+if(APPLE)
+    set_target_properties(BonsaiViewer PROPERTIES
+        INSTALL_RPATH "@executable_path/../Frameworks"
+    )
+endif()
+
+target_link_libraries(BonsaiViewer PRIVATE
+    # IfcViewer is the unified scene + render lib (SceneLoader, Federation,
+    # GeometryStreamer, IfcViewAssembler, ViewportWindow, OverlayRenderer,
+    # BufferPool, …) since the wgpu/ifcviewer merge.
+    IfcViewer
+    plugin
+    Qt${QT_VERSION}::Core
+    Qt${QT_VERSION}::CorePrivate
+    Qt${QT_VERSION}::Gui
+    Qt${QT_VERSION}::Svg
+    Qt${QT_VERSION}::Widgets
+)
+# Match the plugin library's boost::dll path type (plugin.h includes boost/dll).
+target_compile_definitions(BonsaiViewer PRIVATE BOOST_DLL_USE_STD_FS)
+
+# BUNDLE DESTINATION must be "." (install-prefix root) on macOS — Qt's
+# deploy generator emits `macdeployqt BonsaiViewer.app` (no path
+# prefix), which resolves only when the .app sits at the install root.
+install(TARGETS BonsaiViewer
+    EXPORT  ${IFCOPENSHELL_EXPORT_TARGETS}
+    RUNTIME DESTINATION bin
+    BUNDLE  DESTINATION .
+)
+ifcopenshell_deploy_qt_runtime(BonsaiViewer)
+ifcopenshell_stage_app_bundle_dylibs(BonsaiViewer)

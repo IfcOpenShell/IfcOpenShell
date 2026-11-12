@@ -16,38 +16,23 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
+import functools
+import multiprocessing
 import os
 import sys
 import time
-import operator
-import functools
-import multiprocessing
+
+import ifcopenshell.ifcopenshell_wrapper as W
 
 try:
-    from OCC.Core import AIS
+    from OCC.Core import AIS  # ruff: ignore[unused-import]
 
     USE_OCCT_HANDLE = False
 except ImportError:
-    from OCC import AIS
-
     USE_OCCT_HANDLE = True
 
-from collections import defaultdict, OrderedDict
-
-try:  # python 3.3+
-    from collections.abc import Iterable
-except ModuleNotFoundError:  # python 2
-    from collections import Iterable
-
-try:
-    QString = unicode
-except NameError:
-    # Python 3
-    QString = str
+from collections import OrderedDict, defaultdict
+from collections.abc import Iterable
 
 os.environ["QT_API"] = "pyqt5"
 try:
@@ -62,8 +47,6 @@ from .code_editor_pane import code_edit
 try:
     from OCC.Display.pyqt5Display import qtViewer3d
 except BaseException:
-    import OCC.Display
-
     try:
         import OCC.Display.backend
     except BaseException:
@@ -76,11 +59,10 @@ except BaseException:
 
     from OCC.Display.qtDisplay import qtViewer3d
 
-from .main import settings, iterator
-from .occ_utils import display_shape
-
 from .. import open as open_ifc_file
 from .. import version as ifcopenshell_version
+from .main import iterator, settings
+from .occ_utils import display_shape
 
 if ifcopenshell_version < "0.6":
     # not yet ported
@@ -126,7 +108,7 @@ class geometry_creation_thread(QtCore.QThread):
         self.signals.completed.emit((it, self.f, list(_())))
 
 
-class configuration(object):
+class configuration:
     def __init__(self):
         try:
             import ConfigParser
@@ -208,7 +190,6 @@ class application(QtWidgets.QApplication):
     with two tree views and a graphical 3d view"""
 
     class abstract_treeview(QtWidgets.QTreeWidget):
-
         """Base class for the two treeview controls"""
 
         instanceSelected = QtCore.pyqtSignal([object])
@@ -259,7 +240,6 @@ class application(QtWidgets.QApplication):
             )
 
     class decomposition_treeview(abstract_treeview):
-
         """Treeview with typical IFC decomposition relationships"""
 
         ATTRIBUTES = ["Entity", "GlobalId", "Name"]
@@ -305,7 +285,6 @@ class application(QtWidgets.QApplication):
             self.expandAll()
 
     class type_treeview(abstract_treeview):
-
         """Treeview with typical IFC decomposition relationships"""
 
         ATTRIBUTES = ["Name"]
@@ -320,7 +299,7 @@ class application(QtWidgets.QApplication):
                     s = get_supertype(t)
                     if s:
                         add(s)
-                    s2, t2 = map(QString, (s, t))
+                    s2, t2 = map(str, (s, t))
                     if t2 not in items:
                         itm = items[t2] = QtWidgets.QTreeWidgetItem(items.get(s2, self), [t2])
                         itm.setData(0, QtCore.Qt.UserRole, t2)
@@ -330,7 +309,7 @@ class application(QtWidgets.QApplication):
                     add(t)
 
             for p in products:
-                t = QString(p.is_a())
+                t = str(p.is_a())
                 itm = items[p] = QtWidgets.QTreeWidgetItem(items.get(t, self), [p.Name or "<no name>"])
                 itm.setData(0, QtCore.Qt.UserRole, t)
                 self.children[t].append(p)
@@ -383,10 +362,7 @@ class application(QtWidgets.QApplication):
                         if hasattr(value_str, "wrappedValue"):
                             value_str = value_str.wrappedValue
 
-                        if isinstance(value_str, unicode):
-                            value_str = value_str.encode("utf-8")
-                        else:
-                            value_str = str(value_str)
+                        value_str = str(value_str)
 
                         if hasattr(value, "is_a"):
                             type_str = " <i>(%s)</i>" % value.is_a()
@@ -448,7 +424,6 @@ class application(QtWidgets.QApplication):
             print("property set dictionary has {} entries".format(len(self.prop_dict)))
 
     class viewer(qtViewer3d):
-
         instanceSelected = QtCore.pyqtSignal([object])
 
         #         @staticmethod
@@ -480,7 +455,6 @@ class application(QtWidgets.QApplication):
             qtViewer3d.__init__(self, widget)
             self.ais_to_product = {}
             self.product_to_ais = {}
-            self.counter = 0
             self.window = widget
             self.thread = None
 
@@ -505,11 +479,11 @@ class application(QtWidgets.QApplication):
                 ais = display_shape(shape, viewer_handle=v)
                 product = f[shape.data.id]
 
-                if USE_OCCT_HANDLE:
-                    ais.GetObject().SetSelectionPriority(self.counter)
-                self.ais_to_product[self.counter] = product
+                # Keyed by the AIS object itself (its __eq__/__hash__ track the
+                # underlying OCCT instance) instead of AIS_InteractiveObject.SetSelectionPriority(),
+                # which no longer exists on general AIS objects in modern pythonocc-core (#1098).
+                self.ais_to_product[ais] = product
                 self.product_to_ais[product] = ais
-                self.counter += 1
 
                 QtWidgets.QApplication.processEvents()
 
@@ -529,8 +503,8 @@ class application(QtWidgets.QApplication):
 
             if setting is None:
                 setting = settings()
-                setting.set(setting.INCLUDE_CURVES, True)
-                setting.set(setting.USE_PYTHON_OPENCASCADE, True)
+                setting.set("dimensionality", W.CURVES_SURFACES_AND_SOLIDS)
+                setting.set("use-python-opencascade", True)
 
             self.signals = geometry_creation_signals()
             thread = self.thread = geometry_creation_thread(self.signals, setting, f)
@@ -590,11 +564,11 @@ class application(QtWidgets.QApplication):
             v.InitSelected()
             if v.MoreSelected():
                 ais = v.SelectedInteractive()
-                inst = self.ais_to_product[ais.GetObject().SelectionPriority()]
-                self.instanceSelected.emit(inst)
+                inst = self.ais_to_product.get(ais)
+                if inst is not None:
+                    self.instanceSelected.emit(inst)
 
     class window(QtWidgets.QMainWindow):
-
         TITLE = "IfcOpenShell IFC viewer"
 
         window_closed = QtCore.pyqtSignal([])

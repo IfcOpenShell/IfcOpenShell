@@ -16,15 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.owner
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestEditRole(test.bootstrap.IFC4):
     def test_editing_a_role(self):
         role = self.file.createIfcActorRole()
-        ifcopenshell.api.run(
-            "owner.edit_role",
+        ifcopenshell.api.owner.edit_role(
             self.file,
             role=role,
             attributes={"Role": "ARCHITECT", "UserDefinedRole": "UserDefinedRole", "Description": "Description"},
@@ -32,3 +31,7 @@ class TestEditRole(test.bootstrap.IFC4):
         assert role.Role == "ARCHITECT"
         assert role.UserDefinedRole == "UserDefinedRole"
         assert role.Description == "Description"
+
+
+class TestEditRoleIFC2X3(test.bootstrap.IFC2X3, TestEditRole):
+    pass

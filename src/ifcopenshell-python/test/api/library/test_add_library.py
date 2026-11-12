@@ -16,12 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.library
 import test.bootstrap
-import ifcopenshell.api
 
 
 class TestAddLibrary(test.bootstrap.IFC4):
     def test_adding_a_library(self):
-        library = ifcopenshell.api.run("library.add_library", self.file, name="Name")
+        library = ifcopenshell.api.library.add_library(self.file, name="Name")
         assert library.is_a("IfcLibraryInformation")
         assert library.Name == "Name"
+
+
+class TestAddLibraryIFC2X3(test.bootstrap.IFC2X3, TestAddLibrary):
+    pass

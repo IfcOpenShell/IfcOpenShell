@@ -25,7 +25,7 @@
 
 #include <vector>
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 	namespace util {
 
 		bool wire_is_c1_continuous(const TopoDS_Wire& w, double tol);

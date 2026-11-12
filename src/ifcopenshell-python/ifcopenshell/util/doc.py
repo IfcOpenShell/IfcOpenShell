@@ -16,24 +16,28 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import copy
 import json
 from pathlib import Path
-import copy
+from typing import NotRequired, Optional, TypedDict, Union
+
 import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.attribute
 import ifcopenshell.util.schema
 
 try:
     import glob
-    import warnings
-    import requests
-    import urllib.parse
-    from markdown import markdown
-    from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
-    import zipfile
-    from lxml import etree
     import re
     import shutil
+    import urllib.parse
+    import warnings
+    import zipfile
+
+    import requests
+    from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
+    from lxml import etree
+    from markdown import markdown
 except:
     pass  # Only necessary if you're using it to generate the docs database
 
@@ -46,20 +50,44 @@ IFC4x3_HTML_LOCATION = BASE_MODULE_PATH / "IFC4.3-html"
 IFC4x3_DEV_LOCATION = BASE_MODULE_PATH / "IFC4.3.x-development"
 IFC4x3_SPEC_URL_TEMPLATE = "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/%s.htm"
 
-# entities schema
-# entity -> description, spec_url, attributes[], predefined_types[]
 
-# types schema
-# type -> description, spec_url
-
-# properties schema
-# pset/qset -> description, spec_url, properties[]
-# property -> description, children[]
-# child -> description
-# note: in IFC4x3 there is no children[] for properties
+class BaseData(TypedDict):
+    description: str
+    spec_url: str
 
 
-SCHEMA_FILES = {
+class EntityData(BaseData):
+    attributes: NotRequired[dict[str, str]]
+    predefined_types: NotRequired[dict[str, str]]
+
+
+class PsetData(TypedDict):
+    # Apparently some psets in ifc4 are missing spec url / description.
+    description: NotRequired[str]
+    spec_url: NotRequired[str]
+    properties: dict[str, str]
+
+
+class PropertyData(TypedDict):
+    description: str
+    # in IFC4x3 there is no children[] for properties
+    children: NotRequired[dict[str, "PropertyData"]]
+
+
+class ClassesSuggestions(TypedDict):
+    name: str
+    predefined_type: NotRequired[str]
+
+
+class SchemaData(TypedDict):
+    entities: dict[str, EntityData]
+    types: dict[str, BaseData]
+    properties: dict[str, PsetData]
+    classes_suggestions: dict[str, ClassesSuggestions]
+
+
+SUPPORTED_SCHEMA = ifcopenshell.util.schema.IFC_SCHEMA
+SCHEMA_FILES: dict[SUPPORTED_SCHEMA, dict[str, Path]] = {
     "IFC2X3": {
         "entities": BASE_MODULE_PATH / "schema/ifc2x3_entities.json",
         "properties": BASE_MODULE_PATH / "schema/ifc2x3_properties.json",
@@ -80,11 +108,15 @@ SCHEMA_FILES = {
     },
 }
 
-db = None
-schema_by_name = {"IFC2X3": None, "IFC4": None, "IFC4X3": None}
+db: dict[SUPPORTED_SCHEMA, SchemaData] = None
+schema_by_name: dict[SUPPORTED_SCHEMA, Optional[ifcopenshell_wrapper.schema_definition]] = {
+    "IFC2X3": None,
+    "IFC4": None,
+    "IFC4X3": None,
+}
 
 
-def get_db(version):
+def get_db(version: ifcopenshell.util.schema.IFC_SCHEMA) -> Union[SchemaData, None]:
     global db
     if not db:
         db = {ifc_version: dict() for ifc_version in SCHEMA_FILES}
@@ -103,15 +135,18 @@ def get_db(version):
     return db.get(version)
 
 
-def get_schema_by_name(version: str):
+def get_schema_by_name(version: str) -> ifcopenshell_wrapper.schema_definition:
     global schema_by_name
     version = ifcopenshell.util.schema.get_fallback_schema(version)
     if not schema_by_name[version]:
-        schema_by_name[version] = ifcopenshell.ifcopenshell_wrapper.schema_by_name(version)
+        schema_by_name[version] = ifcopenshell.schema_by_name(version)
     return schema_by_name[version]
 
 
-def get_class_suggestions(version, class_name):
+def get_class_suggestions(
+    version: ifcopenshell.util.schema.IFC_SCHEMA,
+    class_name: str,
+) -> Union[ClassesSuggestions, None]:
     db = get_db(version)
     if not db:
         return
@@ -119,7 +154,11 @@ def get_class_suggestions(version, class_name):
     return class_suggestions
 
 
-def get_entity_doc(version, entity_name, recursive=True):
+def get_entity_doc(
+    version: ifcopenshell.util.schema.IFC_SCHEMA,
+    entity_name: str,
+    recursive: bool = True,
+) -> Union[EntityData, None]:
     db = get_db(version)
     if db:
         entity = copy.deepcopy(db["entities"].get(entity_name))
@@ -138,37 +177,46 @@ def get_entity_doc(version, entity_name, recursive=True):
         return entity
 
 
-def get_attribute_doc(version, entity, attribute, recursive=True):
+def get_attribute_doc(
+    version: ifcopenshell.util.schema.IFC_SCHEMA,
+    entity: str,
+    attribute: str,
+    recursive=True,
+) -> Union[str, None]:
     db = get_db(version)
     if db:
-        entity = get_entity_doc(version, entity, recursive)
-        if entity:
-            return entity["attributes"].get(attribute)
+        entity_ = get_entity_doc(version, entity, recursive)
+        if entity_ and "attributes" in entity_:
+            return entity_["attributes"].get(attribute)
 
 
-def get_predefined_type_doc(version, entity, predefined_type):
+def get_predefined_type_doc(
+    version: ifcopenshell.util.schema.IFC_SCHEMA,
+    entity: str,
+    predefined_type: str,
+) -> Union[str, None]:
     db = get_db(version)
     if db:
-        entity = db["entities"].get(entity)
-        if entity:
-            return entity.get("predefined_types", {}).get(predefined_type)
+        entity_ = db["entities"].get(entity)
+        if entity_:
+            return entity_.get("predefined_types", {}).get(predefined_type)
 
 
-def get_property_set_doc(version, pset):
+def get_property_set_doc(version: ifcopenshell.util.schema.IFC_SCHEMA, pset: str) -> Union[PsetData, None]:
     db = get_db(version)
     if db:
         return db["properties"].get(pset)
 
 
-def get_property_doc(version, pset, prop):
+def get_property_doc(version: ifcopenshell.util.schema.IFC_SCHEMA, pset: str, prop: str) -> Union[str, None]:
     db = get_db(version)
     if db:
-        pset = db["properties"].get(pset)
-        if pset:
-            return pset["properties"].get(prop)
+        pset_ = db["properties"].get(pset)
+        if pset_:
+            return pset_["properties"].get(prop)
 
 
-def get_type_doc(version, ifc_type):
+def get_type_doc(version: ifcopenshell.util.schema.IFC_SCHEMA, ifc_type: str) -> Union[BaseData, None]:
     db = get_db(version)
     if db:
         return db["types"].get(ifc_type)
@@ -203,7 +251,7 @@ def get_inverse_attributes(el):
 
 
 class DocExtractor:
-    def clean_highlighted_words(self, text):
+    def clean_highlighted_words(self, text: str) -> str:
         text = re.sub(r"\b_([a-zA-Z0-9]+)_\b", r"\1", text)
         text = re.sub(r"\*\*([a-zA-Z0-9]+)\*\*", r"\1", text)
         return text
@@ -248,6 +296,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc2x3_property_sets_site_domains.json", "w", encoding="utf-8") as fo:
             print(f"{len(property_sets_domains)} property sets domains were parsed from the website")
             json.dump(property_sets_domains, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def setup_ifc2x3_reference_lookup(self):
         # setup references look up tables to convert property hrefs to actual data paths
@@ -364,6 +413,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc2x3_entities.json", "w", encoding="utf-8") as fo:
             print(f"{len(entities_dict)} entities parsed")
             json.dump(entities_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def extract_ifc2x3_property_sets(self):
         property_sets_dict = dict()
@@ -484,6 +534,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc2x3_properties.json", "w", encoding="utf-8") as fo:
             print(f"{len(property_sets_dict)} property sets parsed")
             json.dump(property_sets_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def extract_ifc2x3_types(self):
         types_dict = dict()
@@ -523,6 +574,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc2x3_types.json", "w", encoding="utf-8") as fo:
             print(f"{len(types_dict)} ifc types parsed")
             json.dump(types_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def extract_ifc4(self):
         print("Parsing data for Ifc4.0.2.1")
@@ -573,6 +625,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc4_property_sets_site_domains.json", "w", encoding="utf-8") as fo:
             print(f"{len(property_sets_domains)} property sets domains were parsed from the website")
             json.dump(property_sets_domains, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def setup_ifc4_reference_lookup(self):
         references_paths_lookup = dict()
@@ -685,6 +738,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc4_entities.json", "w", encoding="utf-8") as fo:
             print(f"{len(entities_dict)} entities parsed")
             json.dump(entities_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def extract_ifc4_property_sets(self):
         # function parses both property and quantity sets
@@ -822,6 +876,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc4_properties.json", "w", encoding="utf-8") as fo:
             print(f"{len(property_sets_dict)} property sets parsed")
             json.dump(property_sets_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def extract_ifc4_types(self):
         types_dict = dict()
@@ -862,6 +917,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc4_types.json", "w", encoding="utf-8") as fo:
             print(f"{len(types_dict)} ifc types parsed")
             json.dump(types_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def extract_ifc4x3(self):
         print("Parsing data for Ifc4.3.0.1")
@@ -909,7 +965,7 @@ class DocExtractor:
 
         entities_dict = dict()
         types_dict = dict()
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name("IFC4X3")
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name("IFC4X3_ADD2")
 
         for entity in schema.declarations():
             entity_name = entity.name()
@@ -979,11 +1035,13 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc4x3_entities.json", "w", encoding="utf-8") as fo:
             print(f"{len(entities_dict)} entities parsed")
             json.dump(entities_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
         # export entities data
         with open(BASE_MODULE_PATH / "schema/ifc4x3_types.json", "w", encoding="utf-8") as fo:
             print(f"{len(types_dict)} ifc types parsed")
             json.dump(types_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def extract_ifc4x3_property_sets(self):
         pset_data_zip = IFC4x3_HTML_LOCATION / "IFC/RELEASE/IFC4x3/HTML/annex-a-psd.zip"
@@ -1028,6 +1086,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc4x3_properties.json", "w", encoding="utf-8") as fo:
             print(f"{len(property_sets_dict)} property sets parsed")
             json.dump(property_sets_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
         shutil.rmtree(pset_data_location)
 

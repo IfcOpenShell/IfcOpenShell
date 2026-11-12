@@ -1,3 +1,5 @@
+# Debug build of OpenCOLLADAValidator fails (https://github.com/KhronosGroup/OpenCOLLADA/issues/377) so
+# disable it from the build altogether as we have no use for it.
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 95abbe21..293c951c 100644
 --- a/CMakeLists.txt

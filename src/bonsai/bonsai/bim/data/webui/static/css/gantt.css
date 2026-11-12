@@ -1,0 +1,459 @@
+@import url("./components/card.css");
+@import url("./shared.css");
+
+.table-description {
+  margin-bottom: var(--margin-medium);
+  width: 50%;
+  background-color: transparent;
+  border-collapse: collapse;
+  border-spacing: 0;
+  border-color: var(--blender-tab-outline, var(--border-color));
+  border: 1px solid var(--blender-tab-outline, var(--border-color));
+  border-radius: 0.25rem;
+  box-shadow: var(--box-shadow);
+  text-align: center;
+}
+
+.table-description tr {
+  display: table-row;
+  border-bottom: 1px solid var(--blender-tab-outline, var(--border-color));
+}
+
+.table-description tr:nth-child(even) {
+  background-color: var(--blender-even-row);
+}
+
+.table-description tr:nth-child(odd) {
+  background-color: var(--blender-odd-row);
+}
+
+#toggle-theme {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: var(--font-size-large);
+  margin-right: var(--margin-medium);
+}
+
+#toggle-theme:focus {
+  outline: none;
+}
+
+#client-list {
+  position: absolute;
+  top: calc(0 + var(--nav-height));
+  overflow-y: auto;
+  overflow: hidden;
+  transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+  border: 1px solid var(--blender-tab-outline, var(--border-color));
+  background-color: var(--blender-panel-background, var(--nav-bg-color));
+  z-index: 1;
+  opacity: 0;
+  visibility: hidden;
+  width: auto;
+}
+
+#client-list.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+#connected-list-div {
+  display: inline-block;
+}
+
+.client {
+  padding: var(--margin-small);
+  border-bottom: 1px solid var(--blender-tab-outline, var(--border-color));
+  cursor: pointer;
+}
+
+.client-details {
+  max-height: 0;
+  overflow: hidden;
+  padding-left: var(--padding-small);
+  transition: max-height 0.2s ease-out, padding 0.2s ease-out,
+    opacity 0.1s ease-out;
+  background-color: var(--blender-panel-background, var(--nav-bg-color));
+  margin-top: var(--margin-tiny);
+  opacity: 0;
+}
+
+.client-details.show {
+  max-height: none;
+  opacity: 1;
+}
+
+.client-detail {
+  border-bottom: 1px solid var(--blender-tab-outline, var(--border-color));
+  padding: var(--padding-small);
+}
+
+#show-connected-button {
+  width: auto;
+  background-color: var(--blender-panel-header, var(--bg-color));
+  font-size: var(--base-font-size);
+}
+
+#show-connected-button:hover,
+.scroll-button:hover {
+  cursor: pointer;
+}
+
+.scroll-button {
+  font-size: var(--base-font-size);
+  margin-left: var(--margin-tiny);
+  margin-top: var(--margin-small);
+}
+
+footer {
+  background-color: var(--blender-top-bar-header, var(--nav-bg-color));
+  text-align: right;
+  padding: var(--padding-tiny);
+  border-top: 1px solid var(--blender-tab-outline, var(--nav-border-color));
+}
+
+footer p {
+  margin: 0;
+  color: var(--blender-text, var(--nav-link-color));
+  margin-right: var(--margin-small);
+  font-size: 0.8rem;
+}
+
+.gantt-info {
+  margin: 0.5rem;
+  font-size: var(--font-size-small);
+  font-weight: bold;
+}
+
+.btn {
+  margin: 0.5rem;
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}
+
+@media print {
+  .no-print {
+    display: none;
+  }
+}
+
+button,
+select {
+  background-color: var(--blender-button-background, var(--bg-color));
+  color: var(--blender-button-text, var(--text-color));
+  border-color: var(--blender-button-border, var(--border-color));
+  transition: filter 0.2s ease;
+}
+
+button:hover {
+  filter: brightness(1.2);
+}
+
+/* ------------ Overwriting JSGantt CSS rules ------------ */
+/* ------------------- for dark theme ------------------- */
+
+:root.dark div.gantt {
+  background-color: var(--bg-color);
+  color: var(--secondary-text-color);
+}
+
+:root.dark .gantt table,
+:root.dark .gantt td {
+  border-color: var(--border-color);
+}
+
+/* Headings and cell defaults */
+:root.dark .gmajorheading,
+:root.dark .gminorheading,
+:root.dark .gminorheadingwkend,
+:root.dark .gtaskcell,
+:root.dark .gtaskcellcurrent,
+:root.dark .gtaskcellwkend,
+:root.dark .gname,
+:root.dark .ggroupitem,
+:root.dark .gtaskheading {
+  background-color: var(--bg-color);
+  border-color: var(--border-color);
+}
+
+:root.dark .gtaskheading,
+:root.dark .gname,
+:root.dark .gtaskname,
+:root.dark .gres,
+:root.dark .gdur,
+:root.dark .gcomp,
+:root.dark .gstartdate,
+:root.dark .gplanstartdate,
+:root.dark .gplanenddate,
+:root.dark .gcost,
+:root.dark .gchartlbl,
+:root.dark .gcontainercol,
+:root.dark .genddate {
+  color: var(--secondary-text-color);
+  border-color: var(--border-color);
+}
+
+:root.dark .gtaskname > div {
+  color: var(--secondary-text-color);
+}
+
+:root.dark .gtaskbarcontainer.gplan,
+:root.dark .gchartlbl.gcontainercol {
+  background: var(--bg-color);
+  border-color: var(--border-color);
+}
+
+:root.dark .gtaskname div,
+:root.dark .gtaskheading div,
+:root.dark .gtaskname span {
+  color: var(--secondary-text-color);
+}
+
+:root.dark .gtasklist,
+:root.dark .gadditional {
+  border: var(--border-color) 1px solid;
+}
+
+:root.dark .gchartgrid {
+  background-color: var(--bg-color);
+}
+
+:root.dark .glistgrid,
+:root.dark .glistlbl {
+  background-color: var(--bg-color);
+  border-color: var(--border-color);
+}
+
+/* Dark mode scrollbar */
+:root.dark .frame::-webkit-scrollbar-thumb,
+:root.dark .frame::-webkit-scrollbar-track {
+  background-color: var(--bg-color);
+}
+
+/* Highlight row */
+:root.dark .gitemhighlight td {
+  background-color: var(--highlight-color);
+  color: var(--nav-link-color);
+}
+
+/* Differentiate Group, Milestone and Ordinary task items (applied to row) */
+:root.dark .ggroupitem {
+  background-color: var(--bg-color);
+  font-weight: bold;
+  border-color: var(--border-color);
+}
+
+:root.dark .gmileitem,
+:root.dark .glineitem {
+  background-color: var(--bg-color);
+}
+
+/* Task bar caption text styles */
+:root.dark .gmilecaption,
+:root.dark .ggroupcaption,
+:root.dark .gcaption {
+  color: var(--nav-link-color);
+}
+
+/* Task complete %age bar */
+:root.dark .gtaskcomplete {
+  background-color: var(--task-complete-bg-color);
+}
+
+/* Milestones */
+:root.dark .gmdtop,
+:root.dark .gmdbottom {
+  border-bottom: 5px solid var(--milestone-border-color);
+}
+
+:root.dark .gfoldercollapse {
+  color: var(--secondary-text-color);
+  cursor: pointer;
+  font-weight: bold;
+  font-size: var(--folder-collapse-font-size);
+  font-family: var(--folder-collapse-font-family);
+}
+
+/* Highlight for collapsible row */
+:root.dark .gname.ggroupitem {
+  background-color: var(--group-item-bg-color);
+}
+
+/* Form label and selected highlighting */
+:root.dark .gformlabel {
+  background-color: var(--formlabel-bg-color);
+  color: var(--secondary-text-color);
+  border: var(--formlabel-border-color) 1px solid;
+}
+
+:root.dark span.gformlabel:hover {
+  background-color: var(--hover-bg-color);
+  border-color: var(--border-color);
+}
+
+:root.dark span.gselected {
+  background-color: var(--formlabel-selected-bg-color);
+  border-color: var(--task-complete-bg-color);
+  color: var(--nav-link-color);
+}
+
+:root.dark .gantt-inputtable {
+  background-color: var(--input-bg-color);
+  box-sizing: border-box;
+  border: 1px solid var(--input-border-color);
+  color: var(--secondary-text-color);
+}
+
+/* ------------------- for blender generated theme ------------------- */
+
+:root.blender div.gantt,
+:root.blender .gantt table,
+:root.blender .gantt td {
+  color: var(--blender-text);
+  border-color: var(--blender-tab-outline);
+}
+
+:root.blender .gchartgrid,
+:root.blender .gmain.gmainright,
+:root.blender .gtaskbarcontainer.gplan,
+:root.blender .gchartlbl.gcontainercol,
+:root.blender .gminorheading,
+:root.blender .gtaskcell {
+  background-color: var(--blender-odd-row);
+  border-color: var(--blender-tab-outline);
+}
+
+/* Headings and cell defaults */
+:root.blender .gtaskheading,
+:root.blender .gchartlbl.gcontainercol .gmajorheading,
+:root.blender .gchartlbl.gcontainercol .gminorheading,
+:root.blender .gchartlbl.gcontainercol .gminorheadingwkend,
+:root.blender .gchartlbl.gcontainercol .gtaskcell,
+:root.blender .gchartlbl.gcontainercol .gtaskcellcurrent,
+:root.blender .gchartlbl.gcontainercol .gtaskcellwkend,
+:root.blender .gchartlbl.gcontainercol .gname,
+:root.blender .gchartlbl.gcontainercol .ggroupitem,
+:root.blender .glistlbl.gcontainercol .gtaskname,
+:root.blender .glistlbl.gcontainercol .gtasklist {
+  background-color: var(--blender-panel-header);
+  border-color: var(--blender-tab-outline);
+}
+
+:root.blender .gtaskcellcurrent {
+  background-color: var(--blender-odd-row);
+  border-color: var(--blender-tab-outline);
+}
+
+:root.blender .gtaskheading,
+:root.blender .gname,
+:root.blender .gtaskname,
+:root.blender .gres,
+:root.blender .gdur,
+:root.blender .gcomp,
+:root.blender .gstartdate,
+:root.blender .gplanstartdate,
+:root.blender .gplanenddate,
+:root.blender .gcost,
+:root.blender .gchartlbl,
+:root.blender .gcontainercol,
+:root.blender .genddate {
+  color: var(--blender-text);
+  border-color: var(--blender-tab-outline);
+}
+
+:root.blender .gtaskname > div,
+:root.blender .gtaskname div,
+:root.blender .gtaskheading div,
+:root.blender .gtaskname span {
+  color: var(--blender-text);
+}
+
+:root.blender .gantt-chart tr:not(.gname.glineitem):not(.gname.ggroupitem) {
+  background-color: var(--blender-odd-row);
+}
+
+:root.blender .gtasklist,
+:root.blender .gadditional {
+  border: var(--blender-tab-outline) 1px solid;
+}
+
+:root.blender .glistgrid,
+:root.blender .glistlbl {
+  /* This is a border that needs background color, somehow. */
+  background-color: var(--blender-tab-outline);
+  border-color: var(--blender-tab-outline);
+}
+
+/* Highlight row */
+:root.blender .gitemhighlight td,
+:root.blender .gitemhighlight .gantt-inputtable,
+:root.blender .gitemhighlight .gcaption,
+:root.blender .gitemhighlight .ggroupcaption {
+  background-color: var(--blender-active-highlight) !important;
+  color: var(--blender-active-text-highlight) !important;
+}
+
+/* Differentiate Group, Milestone and Ordinary task items (applied to row) */
+:root.blender .ggroupitem {
+  font-weight: bold;
+  border-color: var(--border-color);
+}
+
+:root.blender .gmileitem,
+:root.blender .glineitem {
+  background-color: var(--blender-odd-row);
+}
+
+/* Task bar caption text styles */
+:root.blender .gmilecaption,
+:root.blender .ggroupcaption,
+:root.blender .gcaption {
+  color: var(--blender-text);
+}
+
+/* Milestones */
+:root.blender .gmdtop,
+:root.blender .gmdbottom {
+  border-bottom: 5px solid var(--blender-tab-outline);
+}
+
+:root.blender .gfoldercollapse {
+  color: var(--blender-text);
+  cursor: pointer;
+  font-weight: bold;
+  font-size: var(--folder-collapse-font-size);
+  font-family: var(--folder-collapse-font-family);
+}
+
+/* Highlight for collapsible row */
+:root.blender .gname.ggroupitem {
+  background-color: var(--blender-panel-background);
+}
+
+/* Form label and selected highlighting */
+:root.blender .gformlabel {
+  background-color: var(--blender-panel-header);
+  color: var(--blender-text);
+  border: var(--blender-tab-outline) 1px solid;
+}
+
+:root.blender span.gformlabel:hover,
+:root.blender span.gselected {
+  background-color: var(--blender-active-highlight);
+  color: var(--blender-active-text-highlight);
+  border-color: var(--blender-tab-outline);
+}
+
+:root.blender .gantt-inputtable {
+  background-color: var(--blender-panel-header);
+  box-sizing: border-box;
+  border: 2px solid var(--blender-button-border);
+  color: var(--blender-text);
+}
+
+/* Dark mode scrollbar */
+:root.blender .frame::-webkit-scrollbar-thumb,
+:root.blender .frame::-webkit-scrollbar-track {
+  background-color: var(--blender-window-background);
+}

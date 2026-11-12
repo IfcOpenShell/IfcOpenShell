@@ -2,14 +2,14 @@
 
 #include "validation_utils.h"
 
-double facet_area(const cgal_shape_t::Facet_handle& f) {
+double facet_area(const cgal_polyhedron::Facet_handle& f) {
 	auto p0 = f->facet_begin()->vertex()->point();
 	auto p1 = f->facet_begin()->next()->vertex()->point();
 	auto p2 = f->facet_begin()->next()->next()->vertex()->point();
 	return std::sqrt(CGAL::to_double(CGAL::cross_product(p0 - p1, p2 - p1).squared_length()));
 }
 
-void dump_facet(const cgal_shape_t::Facet_handle& f) {
+void dump_facet(const cgal_polyhedron::Facet_handle& f) {
 	auto p0 = f->facet_begin()->vertex()->point();
 	auto p1 = f->facet_begin()->next()->vertex()->point();
 	auto p2 = f->facet_begin()->next()->next()->vertex()->point();

@@ -16,38 +16,34 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any
 
-class Usecase:
-    def __init__(self, file, context, attributes):
-        """Edits the attributes of an IfcGeometricRepresentationContext
+import ifcopenshell
 
-        For more information about the attributes and data types of an
-        IfcGeometricRepresentationContext, consult the IFC documentation.
 
-        :param context: The IfcGeometricRepresentationContext entity you want to edit
-        :type context: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+def edit_context(file: ifcopenshell.file, context: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
+    """Edits the attributes of an IfcGeometricRepresentationContext
 
-        Example:
+    For more information about the attributes and data types of an
+    IfcGeometricRepresentationContext, consult the IFC documentation.
 
-        .. code:: python
+    :param context: The IfcGeometricRepresentationContext entity you want to edit
+    :param attributes: a dictionary of attribute names and values.
+    :return: None
 
-            model = ifcopenshell.api.run("context.add_context", model, context_type="Model")
-            # Revit had a bug where they incorrectly called the body representation a "Facetation"
-            body = ifcopenshell.api.run("context.add_context", model,
-                context_type="Model", context_identifier="Facetation", target_view="MODEL_VIEW", parent=model
-            )
+    Example:
 
-            # Let's fix it!
-            ifcopenshell.api.run("context.edit_context", model,
-                context=body, attributes={"ContextIdentifier": "Body"})
-        """
-        self.file = file
-        self.settings = {"context": context, "attributes": attributes or {}}
+    .. code:: python
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["context"], name, value)
+        model = ifcopenshell.api.context.add_context(model, context_type="Model")
+        # Revit had a bug where they incorrectly called the body representation a "Facetation"
+        body = ifcopenshell.api.context.add_context(model,
+            context_type="Model", context_identifier="Facetation", target_view="MODEL_VIEW", parent=model
+        )
+
+        # Let's fix it!
+        ifcopenshell.api.context.edit_context(model,
+            context=body, attributes={"ContextIdentifier": "Body"})
+    """
+    for name, value in attributes.items():
+        setattr(context, name, value)

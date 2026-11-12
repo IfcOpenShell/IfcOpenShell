@@ -22,12 +22,12 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
-	const double height = inst->Depth() * length_unit_;
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid& inst) {
+	const double height = inst.Depth() * length_unit_;
 	if (height < settings_.get<settings::Precision>().get()) {
-		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", inst);
+		logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 89, "Non-positive extrusion height encountered for:", inst);
 #ifndef PERMISSIVE_EXTRUSION
 		return nullptr;
 #endif
@@ -36,10 +36,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 	taxonomy::matrix4::ptr matrix;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = inst->Position() != nullptr;
+	has_position = !!inst.Position();
 #endif
 	if (has_position) {
-		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
 
 #ifdef PERMISSIVE_EXTRUSION
@@ -49,10 +49,28 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 	}
 #endif
 
-	return taxonomy::make<taxonomy::extrusion>(
-		matrix,
-		taxonomy::cast<taxonomy::face>(map(inst->SweptArea())),
-		taxonomy::cast<taxonomy::direction3>(map(inst->ExtrudedDirection())),
-		height
-	);
+	auto basis = map(inst.SweptArea());
+	if (auto bases = taxonomy::dcast<taxonomy::collection>(basis)) {
+		// @todo this requires a unified approach for all sweeps
+		auto c = taxonomy::make<taxonomy::collection>();
+		for (auto& f : bases->children) {
+			c->children.push_back(
+				taxonomy::make<taxonomy::extrusion>(
+					matrix,
+					taxonomy::cast<taxonomy::face>(f),
+					taxonomy::cast<taxonomy::direction3>(map(inst.ExtrudedDirection())),
+					height
+				)
+			);
+			c->children.back()->instance = inst;
+		}
+		return c;
+	} else {
+		return taxonomy::make<taxonomy::extrusion>(
+			matrix,
+			taxonomy::cast<taxonomy::face>(basis),
+			taxonomy::cast<taxonomy::direction3>(map(inst.ExtrudedDirection())),
+			height
+		);
+	}
 }

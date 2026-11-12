@@ -1,0 +1,560 @@
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2020, 2021, 2022 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Bonsai is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import annotations
+
+import os
+import tempfile
+import traceback
+import uuid
+import zipfile
+from collections.abc import Callable
+from pathlib import Path
+from typing import Literal, NotRequired, Optional, TypedDict, Union
+
+import bpy
+import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper
+from ifcopenshell.file import UndoSystemError
+
+import bonsai
+import bonsai.bim.handler
+import bonsai.tool as tool
+from bonsai.tool.brick import BrickStore
+
+IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
+
+
+class OperationData(TypedDict):
+    id: int
+    guid: NotRequired[str]
+    obj: NotRequired[str]
+
+
+class EditObjectOperationData(TypedDict):
+    obj: str
+
+
+class Operation(TypedDict):
+    rollback: Callable
+    commit: Callable
+    data: Union[OperationData, EditObjectOperationData, None]
+
+
+class TransactionStep(TypedDict):
+    key: str
+    operations: list[Operation]
+
+
+class IfcStore:
+    path: str = ""
+    """Should be set only using ``tool.Ifc.set_path``."""
+
+    file: Optional[ifcopenshell.file] = None
+    """Should be set only using ``tool.Ifc.set``."""
+
+    schema: Optional[ifcopenshell.ifcopenshell_wrapper.schema_definition] = None
+    id_map: dict[int, IFC_CONNECTED_TYPE] = {}
+    guid_map: dict[str, IFC_CONNECTED_TYPE] = {}
+    edited_objs: set[bpy.types.Object] = set()
+    pset_template_path: str = ""
+    pset_template_file: Optional[ifcopenshell.file] = None
+    classification_path: str = ""
+    classification_file: Optional[ifcopenshell.file] = None
+    library_path: str = ""
+    library_file: Optional[ifcopenshell.file] = None
+    current_transaction = ""
+    last_transaction = ""
+    history: list[TransactionStep] = []
+    future: list[TransactionStep] = []
+    schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3_ADD2"]
+    session_files: dict[str, ifcopenshell.file] = {}
+
+    @staticmethod
+    def purge():
+        tool.Ifc.listeners.clear()
+        IfcStore.path = ""
+        IfcStore.file = None
+        IfcStore.schema = None
+        IfcStore.id_map = {}
+        IfcStore.guid_map = {}
+        IfcStore.edited_objs = set()
+        IfcStore.pset_template_path = ""
+        IfcStore.pset_template_file = None
+        IfcStore.library_path = ""
+        IfcStore.library_file = None
+        IfcStore.last_transaction = ""
+        IfcStore.history = []
+        IfcStore.future = []
+        IfcStore.schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3_ADD2"]
+        IfcStore.session_files = {}
+
+    @staticmethod
+    def get_file() -> ifcopenshell.file | None:
+        if IfcStore.file is None:
+            props = tool.Blender.get_bim_props()
+            IfcStore.set_path(props.ifc_file)
+            if IfcStore.path:
+                try:
+                    IfcStore.load_file(IfcStore.path)
+                    tool.Ifc.after_file_loaded()
+                except Exception as e:
+                    print(f"Failed to load file {IfcStore.path}. Error details: {e}")
+        return IfcStore.file
+
+    @staticmethod
+    def set_path(value: str) -> None:
+        IfcStore.path = value
+        # Interpret relative paths as relative to .blend file.
+        if IfcStore.path and not os.path.isabs(IfcStore.path):
+            IfcStore.path = os.path.abspath(os.path.join(bpy.path.abspath("//"), IfcStore.path))
+
+    @staticmethod
+    def load_file(path: str) -> None:
+        if not os.path.isfile(path):
+            return
+        extension = path.split(".")[-1]
+        prefs = tool.Blender.get_addon_preferences()
+        if extension.lower() == "ifczip":
+            with tempfile.TemporaryDirectory() as unzipped_path:
+                with zipfile.ZipFile(path, "r") as zip_ref:
+                    zip_ref.extractall(unzipped_path)
+                for filename in Path(unzipped_path).glob("**/*.ifc"):
+                    IfcStore.file = ifcopenshell.open(filename)
+                    return
+        elif extension.lower() == "ifcxml":
+            raise NotImplementedError("Reading .ifcXML files is not currently supported.")
+        elif prefs.should_stream:
+            IfcStore.file = ifcopenshell.open(path, should_stream=True)
+        else:
+            IfcStore.file = ifcopenshell.open(path)
+        tool.Ifc.after_file_loaded()
+
+    @staticmethod
+    def get_schema() -> ifcopenshell.ifcopenshell_wrapper.schema_definition:
+        if IfcStore.file is None:
+            props = tool.Project.get_project_props()
+            IfcStore.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(props.export_schema)
+        elif IfcStore.schema is None:
+            IfcStore.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(IfcStore.file.schema_identifier)
+        return IfcStore.schema
+
+    @staticmethod
+    def get_element(id_or_guid: Union[int, str]) -> Union[IFC_CONNECTED_TYPE, None]:
+        if isinstance(id_or_guid, int):
+            obj = IfcStore.id_map.get(id_or_guid)
+        else:
+            obj = IfcStore.guid_map.get(id_or_guid)
+        if obj is None:
+            return None
+        if not tool.Blender.is_valid_data_block(obj):
+            return None
+        return obj
+
+    @staticmethod
+    def relink_all_objects() -> None:
+        if not IfcStore.get_file():
+            return
+        for obj in bpy.data.objects:
+            if obj.library:
+                continue
+            IfcStore.relink_object(obj)
+        for obj in bpy.data.materials:
+            if obj.library:
+                continue
+            IfcStore.relink_object(obj)
+
+    @staticmethod
+    def relink_object(obj: IFC_CONNECTED_TYPE) -> None:
+        if not obj:
+            return
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+        data = OperationData(id=element.id(), obj=obj.name)
+        if hasattr(element, "GlobalId"):
+            data["guid"] = element.GlobalId
+        IfcStore.commit_link_element(data)
+
+    @staticmethod
+    def link_element(
+        element: ifcopenshell.entity_instance, obj: Union[IFC_CONNECTED_TYPE, tool.Geometry.TYPES_WITH_MESH_PROPERTIES]
+    ) -> None:
+        # Please use tool.Ifc.link() instead of this method. We want to
+        # refactor this class and deprecate usage of IfcStore in favour of
+        # tools.
+        if not isinstance(obj, (bpy.types.Object, bpy.types.Material)):
+            tool.Geometry.get_mesh_props(obj).ifc_definition_id = element.id()
+            return
+
+        existing_obj = IfcStore.id_map.get(element.id(), None)
+        if existing_obj == obj:
+            return
+        # TODO: When does this occur?
+        elif existing_obj and tool.Blender.is_valid_data_block(existing_obj):
+            IfcStore.unlink_element(obj=existing_obj)
+
+        IfcStore.id_map[element.id()] = obj
+        if global_id := getattr(element, "GlobalId", None):
+            IfcStore.guid_map[global_id] = obj
+
+        if element.is_a("IfcSurfaceStyle"):
+            props = tool.Style.get_material_style_props(obj)
+            props.ifc_definition_id = element.id()
+        else:
+            props = tool.Blender.get_object_bim_props(obj)
+            props.ifc_definition_id = element.id()
+
+        tool.Ifc.setup_listeners(obj)
+
+        if IfcStore.history:
+            data = OperationData(id=element.id(), obj=obj.name)
+            if global_id:
+                data["guid"] = global_id
+            IfcStore.history[-1]["operations"].append(
+                Operation(rollback=IfcStore.rollback_link_element, commit=IfcStore.commit_link_element, data=data)
+            )
+
+    @staticmethod
+    def get_object_by_name(name: str) -> Union[IFC_CONNECTED_TYPE, None]:
+        obj = bpy.data.objects.get(name)
+        if not obj:
+            obj = bpy.data.materials.get(name)
+        return obj
+
+    @staticmethod
+    def rollback_link_element(data: OperationData) -> None:
+        del IfcStore.id_map[data["id"]]
+        if "guid" in data:
+            del IfcStore.guid_map[data["guid"]]
+        # Note: msgbus subscriptions are cleared globally during
+        # rebuild_element_maps which runs after every undo/redo.
+
+    @staticmethod
+    def commit_link_element(data: OperationData) -> None:
+        obj = IfcStore.get_object_by_name(data["obj"])
+        IfcStore.id_map[data["id"]] = obj
+        if "guid" in data:
+            IfcStore.guid_map[data["guid"]] = obj
+        tool.Ifc.setup_listeners(obj)
+
+    @staticmethod
+    def history_edit_object(obj: bpy.types.Object, *, finish_editing: bool) -> None:
+        if not IfcStore.history:
+            return
+
+        commit, rollback = IfcStore.commit_edit_object, IfcStore.rollback_edit_object
+        if finish_editing:
+            commit, rollback = rollback, commit
+
+        data = EditObjectOperationData(obj=obj.name)
+        IfcStore.history[-1]["operations"].append(Operation(rollback=rollback, commit=commit, data=data))
+
+    @staticmethod
+    def commit_edit_object(data: EditObjectOperationData) -> None:
+        obj = bpy.data.objects[data["obj"]]
+        IfcStore.edited_objs.add(obj)
+
+    @staticmethod
+    def rollback_edit_object(data: EditObjectOperationData) -> None:
+        obj = bpy.data.objects[data["obj"]]
+        IfcStore.edited_objs.discard(obj)
+
+    @staticmethod
+    def rollback_unlink_element(data: OperationData) -> None:
+        if "id" not in data or "obj" not in data:
+            return
+        obj = IfcStore.get_object_by_name(data["obj"])
+        IfcStore.id_map[data["id"]] = obj
+        if "guid" in data:
+            IfcStore.guid_map[data["guid"]] = obj
+        tool.Ifc.setup_listeners(obj)
+
+    @staticmethod
+    def commit_unlink_element(data: OperationData) -> None:
+        del IfcStore.id_map[data["id"]]
+        if "guid" in data:
+            del IfcStore.guid_map[data["guid"]]
+        # Note: msgbus subscriptions are cleared globally during
+        # rebuild_element_maps which runs after every undo/redo.
+
+    @staticmethod
+    def unlink_element(
+        element: Optional[ifcopenshell.entity_instance] = None, obj: Optional[IFC_CONNECTED_TYPE] = None
+    ) -> None:
+        """Unlink IFC `element` or Blender `obj`.
+
+        If element is provided then it will be unlinked from the related Blender object.
+        Blender object's IFC information is also will be purged.
+
+        If Blender object is provided  then all IFC information will be purged from this object.
+        Method won't be searching for related IFC elements as Blender object might come from
+        different Blender session and there might be an ids/guids clash.
+
+        Only one argument must be provided and other should be omitted as they have different meaning.
+        :raises TypeError: If both arguments or no arguments provided.
+
+        """
+        if not bool(element) ^ bool(obj):
+            raise TypeError("Only one argument must be provided - element or obj.")
+
+        if obj:
+            IfcStore.purge_blender_ifc_data(obj)
+            return
+
+        assert element  # Type checker.
+        if obj is None:
+            try:
+                potential_obj = IfcStore.id_map[element.id()]
+                if tool.Blender.is_valid_data_block(potential_obj):
+                    obj = potential_obj
+                    IfcStore.purge_blender_ifc_data(obj)
+            except:
+                pass
+
+        try:
+            del IfcStore.id_map[element.id()]
+        except:
+            pass
+
+        if global_id := getattr(element, "GlobalId", None):
+            try:
+                del IfcStore.guid_map[global_id]
+            except:
+                pass
+
+        if IfcStore.history:
+            data = OperationData(id=element.id())
+            if global_id:
+                data["guid"] = global_id
+            if obj:
+                data["obj"] = obj.name
+            IfcStore.history[-1]["operations"].append(
+                Operation(rollback=IfcStore.rollback_unlink_element, commit=IfcStore.commit_unlink_element, data=data)
+            )
+
+    @staticmethod
+    def purge_blender_ifc_data(obj: IFC_CONNECTED_TYPE) -> None:
+        if isinstance(obj, bpy.types.Material):
+            props = tool.Style.get_material_style_props(obj)
+            props.ifc_definition_id = 0
+        else:  # bpy.types.Object
+            props = tool.Blender.get_object_bim_props(obj)
+            props.ifc_definition_id = 0
+
+    @staticmethod
+    def get_ifc_file_undo_callback(callback_type: Literal["UNDO", "REDO"]):
+        def callback(_) -> None:
+            try:
+                if callback_type == "UNDO":
+                    tool.Ifc.get().undo()
+                else:
+                    tool.Ifc.get().redo()
+            except Exception as e:
+                # Persistent callbacks errors are not visible from UI and we set `last_error`
+                # to make it visible.
+                error_msg = ""
+                # In theory it should always be UndoSystemError, but just to be safe.
+                if isinstance(e, UndoSystemError):
+                    error_msg += "Undo transaction operations:\n"
+                    transaction = e.transaction
+                    for operation in transaction.operations:
+                        error_msg += f"- {str(operation)}\n"
+                    # Show it in system console too, not just in last message.
+                    print(error_msg)
+                error_msg += traceback.format_exc()
+                bonsai.last_error = error_msg
+                raise
+
+        return callback
+
+    modal_in_progress = False
+
+    @classmethod
+    def execute_ifc_operator(
+        cls,
+        operator: tool.Ifc.Operator,
+        context: bpy.types.Context,
+        event=None,
+        method: Literal["EXECUTE", "INVOKE", "MODAL"] = "EXECUTE",
+    ) -> set[str]:
+        bonsai.last_actions.append({"type": "operator", "name": operator.bl_idname})
+        props = tool.Blender.get_bim_props()
+        props.is_dirty = True
+        # Modals don't nest, and Blender handles the loop that continuously calls modal()
+        # So for modal operators we emulate nesting - first modal call is starting transaction
+        # and modal call with FINISHED/CANCELLED result finishes it.
+
+        # Example call chain for modal operators:
+        # Operator1.execute called
+        # -> Operator.execute called nested Operator2
+        #    -> Operator2.execute returned RUNNING_MODAL
+        #    -> Operator2.execute is finished
+        # -> Operator1.execute is finished
+        # -> Operator2.modal is called and returned PASS_THROUGH (going to another modal loop)
+        # -> Operator2.modal is finished
+        # -> Operator2.modal called again and last two steps repeat until FINISHED or CANCELLED
+        is_top_level_operator = not bool(IfcStore.current_transaction) and not cls.modal_in_progress
+
+        if is_top_level_operator:
+            IfcStore.begin_transaction(operator)
+            if ifc_file := tool.Ifc.get():
+                assert ifc_file.transaction is None, (
+                    "Trying to override existing transaction, possible IFC undo data loss."
+                )
+                ifc_file.begin_transaction()
+            if BrickStore.graph is not None:  # `if BrickStore.graph` by itself takes ages.
+                BrickStore.begin_transaction()
+            # This empty transaction ensures that each operator has at least one transaction
+            IfcStore.add_transaction_operation(operator, rollback=lambda data: True, commit=lambda data: True)
+            if method == "MODAL":
+                cls.modal_in_progress = True
+        else:
+            operator.transaction_key = IfcStore.current_transaction
+
+        def end_top_level_operator() -> None:
+            if is_top_level_operator:
+                if tool.Ifc.get():
+                    tool.Ifc.get().end_transaction()
+                    IfcStore.add_transaction_operation(
+                        operator,
+                        rollback=IfcStore.get_ifc_file_undo_callback("UNDO"),
+                        commit=IfcStore.get_ifc_file_undo_callback("REDO"),
+                    )
+                if BrickStore.graph is not None:  # `if BrickStore.graph` by itself takes ages.
+                    BrickStore.end_transaction()
+                IfcStore.end_transaction(operator)
+                bonsai.bim.handler.refresh_ui_data()
+                tool.Parametric.refresh_post_commit(operator)
+
+                if method == "MODAL":
+                    cls.modal_in_progress = False
+
+        try:
+            if method == "EXECUTE":
+                result = getattr(operator, "_execute")(context)
+            elif method == "INVOKE":
+                result = getattr(operator, "_invoke")(context, event)
+            elif method == "MODAL":
+                result = getattr(operator, "_modal")(context, event)
+        except:
+            bonsai.last_error = traceback.format_exc()
+            # An operator that mutated IFC then raised leaves the IFC graph captured
+            # by the transaction but the Blender side stale. Blender does not push an
+            # undo step for a raised operator (mirror of the CANCELLED-modal gap
+            # handled below), so we push one here so Ctrl+Z actually rewinds the
+            # partial mutation, then surface the recovery path to the user.
+            ifc_file = tool.Ifc.get()
+            if ifc_file and ifc_file.transaction and ifc_file.transaction.operations:
+                bpy.ops.ed.undo_push(message=f"Recover {operator.bl_idname}")
+                operator.report(
+                    {"WARNING"},
+                    "Operation partially completed (IFC changed, Blender state may be stale). "
+                    "Press Ctrl+Z to restore the previous state.",
+                )
+            # Try to ensure undo will work since Blender undo does work in case of errors.
+            # As error come unexpectedly, it's important that user might have a chance to save the file
+            # before they got the error and not to lose the work they've done.
+            #
+            # Also, some users won't stop seeing the error,
+            # so we need to try to ensure that undo for further operations will work.
+            end_top_level_operator()
+            raise
+
+        if method == "MODAL":
+            if result == {"FINISHED"}:
+                is_top_level_operator = True
+                end_top_level_operator()
+            elif result == {"CANCELLED"}:
+                is_top_level_operator = True
+                # Please read the docs: https://docs.blender.org/api/current/bpy.types.Operator.html
+                # > "when an operator returns {'CANCELLED'}, no undo step will be created".
+                # This means that if your modal edits IFC data, then the user
+                # cancels it, Blender's undo history will not be in sync with
+                # Bonsai / IfcOpenShell's undo history. Instead of hoping for
+                # Bonsai devs to remember to handle the "cancel" state (i.e.
+                # detect escape keypress) and return {"FINISHED"}, we instead
+                # always enforce an undo step.
+                bpy.ops.ed.undo_push(message=f"Cancel {operator.bl_idname}")
+                end_top_level_operator()
+        else:
+            end_top_level_operator()
+        return result
+
+    @staticmethod
+    def begin_transaction(operator: tool.Ifc.Operator) -> None:
+        IfcStore.current_transaction = str(uuid.uuid4()) + operator.__class__.__name__
+        operator.transaction_key = IfcStore.current_transaction
+
+    @staticmethod
+    def end_transaction(operator: tool.Ifc.Operator) -> None:
+        IfcStore.current_transaction = ""
+        operator.transaction_key = ""
+
+    @staticmethod
+    def add_transaction_operation(
+        operator: tool.Ifc.Operator, rollback: Optional[Callable] = None, commit: Optional[Callable] = None
+    ) -> None:
+        key = getattr(operator, "transaction_key", None)
+        data = getattr(operator, "transaction_data", None)
+        props = tool.Blender.get_bim_props()
+        props.last_transaction = key
+        IfcStore.last_transaction = key
+        rollback = rollback or getattr(operator, "rollback", lambda data: True)
+        commit = commit or getattr(operator, "commit", lambda data: True)
+        if IfcStore.history and IfcStore.history[-1]["key"] == key:
+            IfcStore.history[-1]["operations"].append(Operation(rollback=rollback, commit=commit, data=data))
+        else:
+            IfcStore.history.append(
+                TransactionStep(key=key, operations=[Operation(rollback=rollback, commit=commit, data=data)])
+            )
+        IfcStore.future = []
+
+    @staticmethod
+    def undo(until_key: str = None) -> None:
+        BrickStore.undo()
+        if not IfcStore.history:
+            return
+
+        while IfcStore.history:
+            if IfcStore.history[-1]["key"] == until_key:
+                return
+
+            event = IfcStore.history.pop()
+            for transaction in event["operations"][::-1]:
+                transaction["rollback"](transaction["data"])
+            IfcStore.future.append(event)
+
+    @staticmethod
+    def redo(until_key: str = None) -> None:
+        BrickStore.redo()
+
+        if not IfcStore.future:
+            return
+
+        has_encountered_key = False
+        while IfcStore.future:
+            if has_encountered_key and IfcStore.future[-1]["key"] != until_key:
+                return
+            elif IfcStore.future[-1]["key"] == until_key:
+                has_encountered_key = True
+
+            event = IfcStore.future.pop()
+            for transaction in event["operations"]:
+                transaction["commit"](transaction["data"])
+            IfcStore.history.append(event)

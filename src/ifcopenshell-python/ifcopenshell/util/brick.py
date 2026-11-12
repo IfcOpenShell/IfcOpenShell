@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import json
-import ifcopenshell
-import ifcopenshell.util.element
-import ifcopenshell.util.classification
+import os
+from typing import Union
 
+import ifcopenshell
+import ifcopenshell.util.classification
+import ifcopenshell.util.element
+import ifcopenshell.util.system
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -31,7 +33,7 @@ with open(os.path.join(cwd, "ifc4_to_brick.json")) as f:
     ifc4_to_brick_map = json.load(f)
 
 
-def get_brick_type(element):
+def get_brick_type(element: ifcopenshell.entity_instance) -> Union[str, None]:
     references = ifcopenshell.util.classification.get_references(element)
     for reference in references:
         system = ifcopenshell.util.classification.get_classification(reference)
@@ -51,6 +53,8 @@ def get_brick_type(element):
             if not result:
                 result = ifc4_to_brick_map.get(ifc_type_class, None)
     if result:
+        if result.startswith("http"):
+            return result
         return f"https://brickschema.org/schema/Brick#{result}"
     # Generic fallback
     if element.is_a("IfcDistributionElement"):
@@ -61,10 +65,10 @@ def get_brick_type(element):
         return f"https://brickschema.org/schema/Brick#System"
 
 
-def get_element_feeds(element):
+def get_element_feeds(element: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
     current_element = element
     processed_elements = set()
-    downstream_equipment = set()
+    downstream_equipment: set[ifcopenshell.entity_instance] = set()
 
     # A queue is a list of branches. A branch is a list of elements in
     # sequence, each one connecting to another element. An element in a

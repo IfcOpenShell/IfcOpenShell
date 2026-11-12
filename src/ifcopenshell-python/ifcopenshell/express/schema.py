@@ -17,14 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import nodes
-import platform
 import collections
 
-if tuple(map(int, platform.python_version_tuple())) < (2, 7):
-    import ordereddict
+import nodes
+import pyparsing
 
-    collections.OrderedDict = ordereddict.OrderedDict
 
 # According to ISO 10303-11 7.1.2: Letters: "... The case of
 # letters is significant only within explicit string literals."
@@ -83,7 +80,7 @@ class Schema:
     def __getitem__(self, key):
         return self.all_declarations[OrderedCaseInsensitiveDict_KeyObject(key)]
 
-    def __init__(self, parsetree):
+    def __init__(self, parsetree: pyparsing.ParseResults):
         self.tree = parsetree
         schema = next(iter(parsetree.syntax[0]))
         self.name = schema.simple_id
@@ -91,23 +88,21 @@ class Schema:
 
         sort = lambda d: OrderedCaseInsensitiveDict(sorted(d))
 
-        declarations = [
-            d.any()[0]
-            for d in schema_declarations
-            if d.rule == "declaration"
-        ] + [
-            d
-            for d in schema_declarations
-            if d.rule == "RuleDeclaration"
+        declarations = [d.any()[0] for d in schema_declarations if d.rule == "declaration"] + [
+            d for d in schema_declarations if d.rule == "RuleDeclaration"
         ]
-        
+
         self.types = sort([(t.name, t) for t in declarations if isinstance(t, nodes.TypeDeclaration)])
         self.entities = sort([(t.name, t) for t in declarations if isinstance(t, nodes.EntityDeclaration)])
         self.rules = sort([(t.name, t) for t in declarations if isinstance(t, nodes.RuleDeclaration)])
         self.functions = sort([(t.name, t) for t in declarations if isinstance(t, nodes.FunctionDeclaration)])
 
-        self.keys = list(self.types.keys()) + list(self.entities.keys()) + list(self.rules.keys()) + list(self.functions.keys())
-        self.all_declarations = {k: v for d in (self.types, self.entities, self.rules, self.functions) for k, v in d.items()}
+        self.keys = (
+            list(self.types.keys()) + list(self.entities.keys()) + list(self.rules.keys()) + list(self.functions.keys())
+        )
+        self.all_declarations = {
+            k: v for d in (self.types, self.entities, self.rules, self.functions) for k, v in d.items()
+        }
 
         of_type = lambda *types: sort(
             [(a, b.type) for a, b in self.types.items() if any(isinstance(b.type, ty) for ty in types)]

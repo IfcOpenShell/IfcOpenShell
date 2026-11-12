@@ -1,16 +1,15 @@
-from fastapi import FastAPI, APIRouter, Response, Request
+import logging
+from collections.abc import Callable
+
+from fastapi import Request, Response
+from fastapi.routing import APIRoute
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
-from fastapi.routing import APIRoute
-from starlette.types import Message
-from typing import Callable, Dict, Any
-import logging
-import httpx
 
 
 def log_info(req_body, res_body, route_url):
-    logging.info('request:' + route_url + ':' + str(req_body))
-    logging.info('response:' + route_url + ':' + str(res_body))
+    logging.info("request:" + route_url + ":" + str(req_body))
+    logging.info("response:" + route_url + ":" + str(res_body))
 
 
 class LoggingRoute(APIRoute):
@@ -22,21 +21,26 @@ class LoggingRoute(APIRoute):
             response = await original_route_handler(request)
             route_url = str(request.url)
             if isinstance(response, StreamingResponse):
-                res_body = b''
+                res_body = b""
                 async for item in response.body_iterator:
                     res_body += item
                 task = BackgroundTask(log_info, req_body, res_body, route_url)
-                return Response(content=res_body, status_code=response.status_code,
-                                headers=dict(response.headers), media_type=response.media_type, background=task)
+                return Response(
+                    content=res_body,
+                    status_code=response.status_code,
+                    headers=dict(response.headers),
+                    media_type=response.media_type,
+                    background=task,
+                )
             else:
-                if hasattr(response, 'body'):
+                if hasattr(response, "body"):
                     res_body = response.body
                 else:
-                    res_body = {'no response': True}
+                    res_body = {"no response": True}
                 response.background = BackgroundTask(log_info, req_body, res_body, route_url)
                 return response
 
         return custom_route_handler
 
 
-logging.basicConfig(filename='logs/info.log', level=logging.DEBUG)
+logging.basicConfig(filename="logs/info.log", level=logging.DEBUG)

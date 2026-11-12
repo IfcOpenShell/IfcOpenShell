@@ -15,47 +15,46 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+from typing import Optional
+
+import ifcopenshell
 
 
-class Usecase:
-    def __init__(self, file, entity=None, relating_space=None, related_building_element=None, parent_boundary=None, corresponding_boundary=None):
-        """Modify the relationships of a space boundary relationship
+def edit_attributes(
+    file: ifcopenshell.file,
+    entity: ifcopenshell.entity_instance,
+    relating_space: ifcopenshell.entity_instance,
+    related_building_element: ifcopenshell.entity_instance,
+    parent_boundary: Optional[ifcopenshell.entity_instance] = None,
+    corresponding_boundary: Optional[ifcopenshell.entity_instance] = None,
+    physical_or_virtual: str = "NOTDEFINED",
+    internal_or_external: str = "NOTDEFINED",
+) -> None:
+    """Modify the relationships of a space boundary relationship
 
-        Currently this function is quite minimal and offers no advantage to
-        manual assignment of the space boundary attributes.
-
-        :param entity: The IfcRelSpaceBoundary to modify
-        :type entity: ifcopenshell.entity_instance.entity_instance
-        :param relating_space: The IfcSpace or IfcExternalSpatialElement that
-            the space boundary is related to.
-        :type relating_space: ifcopenshell.entity_instance.entity_instance
-        :param related_building_element: The IfcElement that defines the
-            boundary, typically an IfcWall.
-        :type relating_space: ifcopenshell.entity_instance.entity_instance
-        :param parent_boundary: A parent IfcRelSpaceBoundary, only provided if
-            this is an inner boundary. This can apply to 1st and 2nd level
-            boundaries.
-        :type parent_boundary: ifcopenshell.entity_instance.entity_instance,
-            optional
-        :param corresponding_boundary: The other IfcRelSpaceBoundary on the
-            other side of the related element. The pair together represents a
-            thermal boundary. This only applies to 2nd level boundaries.
-        :type corresponding_boundary: ifcopenshell.entity_instance.entity_instance,
-            optional
-        :return: None
-        :rtype: None
-        """
-        self.file = file
-        self.entity = entity
-        self.relating_space = relating_space
-        self.related_building_element = related_building_element
-        self.parent_boundary = parent_boundary
-        self.corresponding_boundary = corresponding_boundary
-
-    def execute(self):
-        self.entity.RelatingSpace = self.relating_space
-        self.entity.RelatedBuildingElement = self.related_building_element
-        if hasattr(self.entity, "ParentBoundary"):
-            self.entity.ParentBoundary = self.parent_boundary
-        if hasattr(self.entity, "CorrespondingBoundary"):
-            self.entity.CorrespondingBoundary = self.corresponding_boundary
+    :param entity: The IfcRelSpaceBoundary to modify
+    :param relating_space: The IfcSpace or IfcExternalSpatialElement that
+        the space boundary is related to.
+    :param related_building_element: The IfcElement that defines the
+        boundary, typically an IfcWall.
+    :param parent_boundary: A parent IfcRelSpaceBoundary, only provided if
+        this is an inner boundary. This can apply to 1st and 2nd level
+        boundaries.
+    :param corresponding_boundary: The other IfcRelSpaceBoundary on the
+        other side of the related element. The pair together represents a
+        thermal boundary. This only applies to 2nd level boundaries.
+    :param physical_or_virtual: IfcPhysicalOrVirtualEnum value: "PHYSICAL",
+        "VIRTUAL", or "NOTDEFINED".
+    :param internal_or_external: IfcInternalOrExternalEnum value:
+        "INTERNAL", "EXTERNAL", "EXTERNAL_EARTH", "EXTERNAL_WATER",
+        "EXTERNAL_FIRE", or "NOTDEFINED".
+    :return: None
+    """
+    entity.RelatingSpace = relating_space
+    entity.RelatedBuildingElement = related_building_element
+    if hasattr(entity, "ParentBoundary"):
+        entity.ParentBoundary = parent_boundary
+    if hasattr(entity, "CorrespondingBoundary"):
+        entity.CorrespondingBoundary = corresponding_boundary
+    entity.PhysicalOrVirtualBoundary = physical_or_virtual
+    entity.InternalOrExternalBoundary = internal_or_external
