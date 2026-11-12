@@ -2441,16 +2441,16 @@ class OffsetHandle:
 
     # FIXME: works a bit weird for rotated objects
 
-    def invoke(self, ctx, event):
+    def invoke(self, context, event):
         self.init_value = self.target_get_value("offset") / self.scale_value
-        coordz = self.project_mouse(ctx, event)
+        coordz = self.project_mouse(context, event)
         if coordz is None:
             return {"CANCELLED"}
         self.init_coordz = coordz
         return {"RUNNING_MODAL"}
 
-    def modal(self, ctx, event, tweak):
-        coordz = self.project_mouse(ctx, event)
+    def modal(self, context, event, tweak):
+        coordz = self.project_mouse(context, event)
         if coordz is None:
             return {"CANCELLED"}
         delta = coordz - self.init_coordz
@@ -2458,7 +2458,7 @@ class OffsetHandle:
             delta *= PRECISION_MODE_MULTIPLIER
         value = max(0, self.init_value + delta)
         value *= self.scale_value
-        ctx.area.header_text_set(f"Depth: {value}")
+        context.area.header_text_set(f"Depth: {value}")
         self.target_set_value("offset", value)
         return {"RUNNING_MODAL"}
 
@@ -2481,11 +2481,11 @@ class OffsetHandle:
 
         return coords.z
 
-    def exit(self, ctx, cancel):
+    def exit(self, context, cancel):
         if cancel:
             self.target_set_value("offset", self.init_value)
         else:
-            self.group.update(ctx)
+            self.group.update(context)
 
 
 class UglyDotGizmo(OffsetHandle, types.Gizmo):
@@ -2508,7 +2508,7 @@ class UglyDotGizmo(OffsetHandle, types.Gizmo):
         offset = self.target_get_value("offset") / self.scale_value
         self.matrix_offset.translation.z = offset
 
-    def draw(self, ctx):
+    def draw(self, context):
         self.refresh()
         self.draw_custom_shape(self.custom_shape)
 
@@ -2543,9 +2543,9 @@ class ExtrusionGuidesGizmo(CustomGizmo, types.Gizmo):
             ),
         )
 
-    def draw(self, ctx):
+    def draw(self, context):
         self.refresh()
-        self.draw_very_custom_shape(ctx, self.custom_shape)
+        self.draw_very_custom_shape(context, self.custom_shape)
 
     def refresh(self):
         depth = self.target_get_value("depth") / self.scale_value
