@@ -173,7 +173,8 @@ ifcedit run model.ifc type.assign_type \
 ### relations
 
 Show all relationships for an element, organized by category: hierarchy,
-children, type relationships, groups, systems, material, and connections.
+children, type relationships, groups, systems, material, connections and
+structural analysis links.
 
 ```bash
 ifcquery model.ifc relations 10
