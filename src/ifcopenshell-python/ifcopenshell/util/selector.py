@@ -144,7 +144,7 @@ format_grammar = lark.Lark("""start: expression
         | mul_div "*" function  -> multiply
         | mul_div "/" function  -> divide
     
-    function: round | number | int | format_length | lower | upper | title | concat | substr | sort | reverse | join | variable | ESCAPED_STRING | SIGNED_NUMBER | "(" expression ")"
+    function: round | number | int | format_length | lower | upper | title | concat | substr | replace | sort | reverse | join | variable | ESCAPED_STRING | SIGNED_NUMBER | "(" expression ")"
 
     variable: "{{" query_path "}}"
     query_path: /[^}]+/
@@ -160,6 +160,7 @@ format_grammar = lark.Lark("""start: expression
     title: "title(" expression ")"
     concat: "concat(" expression ("," expression)* ")"
     substr: "substr(" expression "," SIGNED_INT ["," SIGNED_INT] ")"
+    replace: "replace(" expression "," expression "," expression ")"
     sort: "sort(" expression ")"
     reverse: "reverse(" expression ")"
     join: "join(" ESCAPED_STRING "," expression ")"
@@ -297,6 +298,9 @@ class FormatTransformer(lark.Transformer):
             return str(args[0])[int(args[1]) : int(args[2])]
         elif len(args) == 2:
             return str(args[0])[int(args[1]) :]
+
+    def replace(self, args):
+        return str(args[0]).replace(str(args[1]), str(args[2]))
 
     def sort(self, args):
         return sorted(args[0])

@@ -51,6 +51,9 @@ class TestFormat(test.bootstrap.IFC4):
         assert subject.format('substr("foobar", 3)') == "bar"
         assert subject.format('substr("foobar", 1, 2)') == "o"
         assert subject.format('substr("foobar", 1, -1)') == "ooba"
+        assert subject.format('replace("EXISTING", "EXISTING", "EX")') == "EX"
+        assert subject.format('replace("NEW", "EXISTING", "EX")') == "NEW"
+        assert subject.format('replace(concat("foo", "bar"), "o", "")') == "fbar"
 
     def test_number_formatting(self):
         assert subject.format("round(123, 5)") == "125"

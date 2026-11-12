@@ -82,6 +82,39 @@ class TestRemoveStructuralLoadGroup(test.bootstrap.IFC4):
         assert not self.file.by_type("IfcRelAssignsToGroup")
         assert self.file.by_type("IfcStructuralLoad") == (load,)
 
+    def test_removing_a_load_group_keeps_activities_another_group_uses(self):
+        point = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        load = ifcopenshell.api.structural.add_structural_load(self.file, ifc_class="IfcStructuralLoadSingleForce")
+        group = ifcopenshell.api.structural.add_structural_load_group(self.file)
+        other = ifcopenshell.api.structural.add_structural_load_group(self.file)
+        shared, own = [
+            ifcopenshell.api.structural.add_structural_activity(
+                self.file, ifc_class="IfcStructuralPointAction", applied_load=load, structural_member=point
+            )
+            for _ in range(2)
+        ]
+        ifcopenshell.api.group.assign_group(self.file, products=[shared, own], group=group)
+        ifcopenshell.api.group.assign_group(self.file, products=[shared], group=other)
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=group)
+        assert self.file.by_type("IfcStructuralActivity") == (shared,)
+        assert [rel.RelatingGroup for rel in shared.HasAssignments] == [other]
+        assert shared.AssignedToStructuralItem[0].RelatingElement == point
+
+    def test_removing_a_load_group_that_groups_an_activity_twice(self):
+        point = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        load = ifcopenshell.api.structural.add_structural_load(self.file, ifc_class="IfcStructuralLoadSingleForce")
+        group = ifcopenshell.api.structural.add_structural_load_group(self.file)
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            self.file, ifc_class="IfcStructuralPointAction", applied_load=load, structural_member=point
+        )
+        for _ in range(2):
+            self.file.createIfcRelAssignsToGroup(
+                ifcopenshell.guid.new(), RelatedObjects=[activity], RelatingGroup=group
+            )
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=group)
+        assert not self.file.by_type("IfcStructuralActivity")
+        assert not self.file.by_type("IfcRelAssignsToGroup")
+
     def test_removing_a_load_group_ungroups_its_other_members(self):
         group = ifcopenshell.api.structural.add_structural_load_group(self.file)
         subgroups = [ifcopenshell.api.structural.add_structural_load_group(self.file) for _ in range(2)]

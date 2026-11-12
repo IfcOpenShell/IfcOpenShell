@@ -320,6 +320,99 @@ Options:
 ]
 ```
 
+### structural
+
+List the structural analysis models: their members and connections, how they
+are joined, the boundary conditions, the building elements each member stands
+for, the load cases with their loads, and the load combinations with the factor
+of each load case.
+
+```bash
+ifcquery model.ifc structural
+ifcquery model.ifc structural --depth 2
+```
+
+Options:
+
+- `--depth N` -- expand at most N levels, counting the analysis models as level
+  1 and their members, connections, load cases and combinations as level 2
+  (default: unlimited). At the cutoff, lists are replaced with
+  `{"truncated": true, "count": N}`; `--depth 1` gives the size of each model.
+
+Load cases and combinations are those the model is loaded by (`LoadedBy`) and
+the load cases of those combinations. A load case's activities include those
+of the load groups in it. A combination's factor for a load case is the
+`Factor` of its `IfcRelAssignsToGroupByFactor` (1 for a plain
+`IfcRelAssignsToGroup`) times the combination's `Coefficient`.
+
+```json
+[
+  {
+    "id": 72,
+    "type": "IfcStructuralAnalysisModel",
+    "name": "Analysis",
+    "predefined_type": "LOADING_3D",
+    "members": [
+      {
+        "id": 86,
+        "type": "IfcStructuralCurveMember",
+        "name": "Cantilever",
+        "predefined_type": "RIGID_JOINED_MEMBER",
+        "connections": [{"id": 63, "type": "IfcStructuralPointConnection", "name": "Root"}],
+        "building_elements": [{"id": 90, "type": "IfcBeam", "name": "Beam"}],
+        "activities": []
+      }
+    ],
+    "connections": [
+      {
+        "id": 63,
+        "type": "IfcStructuralPointConnection",
+        "name": "Root",
+        "applied_condition": {
+          "id": 76,
+          "type": "IfcBoundaryNodeCondition",
+          "name": "Fixed",
+          "values": {"TranslationalStiffnessX": true, "RotationalStiffnessY": 1000.0}
+        },
+        "members": [{"id": 86, "type": "IfcStructuralCurveMember", "name": "Cantilever"}],
+        "activities": []
+      }
+    ],
+    "load_cases": [
+      {
+        "id": 65,
+        "type": "IfcStructuralLoadCase",
+        "name": "Live",
+        "action_type": "VARIABLE_Q",
+        "action_source": "LIVE_LOAD_Q",
+        "coefficient": null,
+        "self_weight_coefficients": [0.0, 0.0, 0.0],
+        "activities": [
+          {
+            "id": 102,
+            "type": "IfcStructuralPointAction",
+            "name": null,
+            "global_or_local": "GLOBAL_COORDS",
+            "item": {"id": 81, "type": "IfcStructuralPointConnection", "name": "Tip"},
+            "load": {"id": 101, "type": "IfcStructuralLoadSingleForce", "name": "P", "values": {"ForceZ": -1000.0}}
+          }
+        ]
+      }
+    ],
+    "load_combinations": [
+      {
+        "id": 70,
+        "type": "IfcStructuralLoadGroup",
+        "name": "ULS",
+        "purpose": null,
+        "coefficient": null,
+        "load_cases": [{"id": 65, "type": "IfcStructuralLoadCase", "name": "Live", "factor": 1.5}]
+      }
+    ]
+  }
+]
+```
+
 ### schema
 
 Show IFC class documentation for any entity type, using the schema version of

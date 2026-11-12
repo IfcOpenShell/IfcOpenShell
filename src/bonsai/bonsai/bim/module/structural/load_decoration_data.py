@@ -109,87 +109,13 @@ class ShaderInfo:
             self.is_empty = False
 
     def get_force_units(self) -> None:
-        def get_unit_symbol(unit: ifcopenshell.entity_instance) -> str:
-            prefix_symbols = {
-                "EXA": "E",
-                "PETA": "P",
-                "TERA": "T",
-                "GIGA": "G",
-                "MEGA": "M",
-                "KILO": "k",
-                "HECTO": "h",
-                "DECA": "da",
-                "DECI": "d",
-                "CENTI": "c",
-                "MILLI": "m",
-                "MICRO": "μ",
-                "NANO": "n",
-                "PICO": "p",
-                "FEMTO": "f",
-                "ATTO": "a",
-            }
-
-            unit_symbols = {
-                # si units
-                "CUBIC_METRE": "m3",
-                "GRAM": "g",
-                "SECOND": "s",
-                "SQUARE_METRE": "m2",
-                "METRE": "m",
-                "NEWTON": "N",
-                "PASCAL": "Pa",
-                # conversion based units
-                "pound-force": "lbf",
-                "pound-force per square inch": "psi",
-                "thou": "th",
-                "inch": "in",
-                "foot": "ft",
-                "yard": "yd",
-                "mile": "mi",
-                "square thou": "th2",
-                "square inch": "in2",
-                "square foot": "ft2",
-                "square yard": "yd2",
-                "acre": "ac",
-                "square mile": "mi2",
-                "cubic thou": "th3",
-                "cubic inch": "in3",
-                "cubic foot": "ft3",
-                "cubic yard": "yd3",
-                "cubic mile": "mi3",
-                "litre": "L",
-                "fluid ounce UK": "fl oz",
-                "fluid ounce US": "fl oz",
-                "pint UK": "pt",
-                "pint US": "pt",
-                "gallon UK": "gal",
-                "gallon US": "gal",
-                "degree": "°",
-                "ounce": "oz",
-                "pound": "lb",
-                "ton UK": "ton",
-                "ton US": "ton",
-                "lbf": "lbf",
-                "kip": "kip",
-                "psi": "psi",
-                "ksi": "ksi",
-                "minute": "min",
-                "hour": "hr",
-                "day": "day",
-                "btu": "btu",
-                "fahrenheit": "°F",
-            }
-            symbol = ""
-            if unit.is_a("IfcSIUnit"):
-                symbol += prefix_symbols.get(unit.Prefix, "")
-            symbol += unit_symbols.get(unit.Name.replace("METER", "METRE"), "?")
-            return symbol
-
-        # Only units assigned to the project apply. Missing ones fall back to SI, as ifcopenshell.util.unit assumes.
+        # Only units assigned to the project apply. A derived unit the project does not declare is composed
+        # from its force and length units (N/mm in a mm project). IFC does not say what an undeclared unit is,
+        # and ifcopenshell.util.unit.calculate_unit_scale takes it as SI (N/m), so declaring it is safer.
         ifc_file = tool.Ifc.get()
         project_units = {
             t: ifcunit.get_project_unit(ifc_file, t)
-            for t in ("FORCEUNIT", "LENGTHUNIT", "LINEARFORCEUNIT", "LINEARMOMENTUNIT", "PLANARFORCEUNIT")
+            for t in ("FORCEUNIT", "LENGTHUNIT", "TORQUEUNIT", "LINEARFORCEUNIT", "LINEARMOMENTUNIT", "PLANARFORCEUNIT")
         }
         linear_force_units = [u for u in [project_units["LINEARFORCEUNIT"]] if u]
         linear_moment_units = [u for u in [project_units["LINEARMOMENTUNIT"]] if u]
@@ -200,7 +126,8 @@ class ShaderInfo:
 
         length_unit = project_units["LENGTHUNIT"]
         length_unit = ifcunit.get_unit_symbol(length_unit) if length_unit else "m"
-        self.moment_unit = self.force_unit + "." + length_unit
+        torque_unit = project_units["TORQUEUNIT"]
+        self.moment_unit = ifcunit.get_unit_symbol(torque_unit) if torque_unit else self.force_unit + "." + length_unit
 
         # Derived units missing from the file are composed from the force and length units.
         first = self.force_unit
@@ -443,16 +370,58 @@ class ShaderInfo:
         rotation = placement[0:3, 0:3]
         return rotation
 
-    def get_curve_member_rotation(self, curve_member: ifcopenshell.entity_instance) -> np.ndarray:
-        """returns the rotation matrix of a structural surface member"""
-        z = curve_member.Axis.DirectionRatios
-        edge = curve_member.Representation.Representations[0].Items[0]
-        origin = edge.EdgeStart.VertexGeometry.Coordinates
-        end = edge.EdgeEnd.VertexGeometry.Coordinates
-        x = [c2 - c1 for c1, c2 in zip(origin, end)]
-        placement = ifcopenshell.util.placement.a2p(origin, z, x)
-        rotation = placement[0:3, 0:3]
-        return rotation
+    def get_curve_member_rotation(self, curve_member: ifcopenshell.entity_instance) -> np.ndarray | None:
+        """returns the rotation matrix of a structural curve member"""
+        edge = None
+        if getattr(curve_member, "Representation", None):
+            for rep in curve_member.Representation.Representations or ():
+                for item in getattr(rep, "Items", None) or ():
+                    if (
+                        item.is_a("IfcEdge")
+                        and getattr(item, "EdgeStart", None)
+                        and getattr(item.EdgeStart, "VertexGeometry", None)
+                        and getattr(item, "EdgeEnd", None)
+                        and getattr(item.EdgeEnd, "VertexGeometry", None)
+                    ):
+                        edge = item
+                        break
+                if edge:
+                    break
+        if edge:
+            origin = edge.EdgeStart.VertexGeometry.Coordinates
+            end = edge.EdgeEnd.VertexGeometry.Coordinates
+            x = [c2 - c1 for c1, c2 in zip(origin, end)]
+            x_norm = float(np.linalg.norm(x))
+            if x_norm > 1e-9:
+                x_unit = np.asarray(x, dtype=float) / x_norm
+                axis_dir = getattr(curve_member, "Axis", None)
+                z = axis_dir.DirectionRatios if axis_dir else None
+                if z is not None:
+                    z_norm = float(np.linalg.norm(z))
+                    if (
+                        z_norm <= 1e-9
+                        or float(np.linalg.norm(np.cross(np.asarray(z, dtype=float) / z_norm, x_unit))) < 1e-6
+                    ):
+                        z = None
+                if z is None:
+                    for candidate in ((0.0, 1.0, 0.0), (1.0, 0.0, 0.0), (0.0, 0.0, 1.0)):
+                        if float(np.linalg.norm(np.cross(candidate, x_unit))) >= 1e-6:
+                            z = candidate
+                            break
+                # Local x runs along the edge and local z lies in the plane of Axis and the edge.
+                # a2p would keep Axis and tilt x instead, off a sloped member.
+                y_unit = np.cross(np.asarray(z, dtype=float), x_unit)
+                y_unit /= np.linalg.norm(y_unit)
+                z_unit = np.cross(x_unit, y_unit)
+                return np.column_stack((x_unit, y_unit, z_unit))
+        member_name = (
+            getattr(curve_member, "Name", None) or getattr(curve_member, "GlobalId", None) or f"#{curve_member.id()}"
+        )
+        print(
+            f"WARNING: Structural curve member '{member_name}' (#{curve_member.id()}) has no valid IfcEdge topology; "
+            "skipping load drawing."
+        )
+        return None
 
     def get_activity_transform_matrix(
         self, activity: ifcopenshell.entity_instance, element_rotation_matrix: np.ndarray
@@ -818,12 +787,11 @@ class ShaderInfo:
             start_co = blender_object.matrix_world @ blender_object.data.vertices[0].co
             end_co = blender_object.matrix_world @ blender_object.data.vertices[1].co
             x_axis = Vector(end_co - start_co).normalized()
-            z_direction = getattr(member, "Axis")
-            # local coordinates
-            z_axis = Vector(getattr(z_direction, "DirectionRatios", None)).normalized()
-            y_axis = z_axis.cross(x_axis).normalized()
-            z_axis = x_axis.cross(y_axis).normalized()
             rotation = self.get_curve_member_rotation(member)
+            if rotation is None:
+                continue
+            y_axis = Vector(rotation[:, 1]).normalized()
+            z_axis = Vector(rotation[:, 2]).normalized()
 
             props = tool.Structural.get_structural_props()
             reference_frame = props.reference_frame
