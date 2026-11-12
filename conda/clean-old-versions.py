@@ -8,9 +8,9 @@
 import os
 from typing import Any
 
-from binstar_client import Binstar  # ty: ignore[unresolved-import]
-from binstar_client.errors import BinstarError  # ty: ignore[unresolved-import]
-from binstar_client.utils import get_server_api  # ty: ignore[unresolved-import]
+from binstar_client import Binstar  # ty: ignore[import-not-found]
+from binstar_client.errors import BinstarError  # ty: ignore[import-not-found]
+from binstar_client.utils import get_server_api  # ty: ignore[import-not-found]
 
 # Configuration
 api_token = os.environ["ANACONDA_TOKEN"]

@@ -1025,7 +1025,7 @@ class BIM_UL_sheets(bpy.types.UIList):
         row.prop(self, "filter_name", text="")
         row.prop(self, "use_filter_invert", text="", icon="ARROW_LEFTRIGHT")
 
-    def filter_items(self, context, data, propname):
+    def filter_items(self, context, data, property):
         flt_flags = []
         flt_neworder = []
 

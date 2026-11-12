@@ -78,7 +78,7 @@ class BIM_MT_clip_box_info(Menu):
 
 
 class BIM_UL_clip_box(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_property, index, flt_flag):
         obj = item.obj
         row = layout.row(align=True)
         if obj is None:

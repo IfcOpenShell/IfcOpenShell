@@ -63,8 +63,8 @@ class SetTab(bpy.types.Operator):
     tab: bpy.props.StringProperty()
 
     @classmethod
-    def description(cls, context, operator):
-        return next((t[1] for t in bonsai.bim.prop.get_tab(None, context) if t[0] == operator.tab), "")
+    def description(cls, context, properties):
+        return next((t[1] for t in bonsai.bim.prop.get_tab(None, context) if t[0] == properties.tab), "")
 
     def execute(self, context):
         if context.area.spaces.active.search_filter:
