@@ -815,6 +815,8 @@ class Web(bonsai.core.tool.Web):
         info = blender_theme.info
         outliner = blender_theme.outliner
         ui = blender_theme.user_interface
+        # Since Blender 5.3 `header_text` was removed and Blender relies on just `text`.
+        top_bar_header_text = top_bar.text if bpy.app.version >= (5, 3) else top_bar.header_text
 
         theme = {
             "window_background": prefs.back[:],
@@ -824,7 +826,7 @@ class Web(bonsai.core.tool.Web):
             "panel_header": to_tuple(panel_header),
             "panel_background": mix_colors(to_tuple(panel_back), to_tuple(panel_sub_back)),
             "top_bar_header": to_tuple(top_bar.header),
-            "top_bar_header_text": to_tuple(top_bar.header_text),
+            "top_bar_header_text": to_tuple(top_bar_header_text),
             "active_object": to_tuple(view_3d.object_active),
             "selected_object": to_tuple(view_3d.object_selected),
             "info_warning": to_tuple(info.info_warning_text),
