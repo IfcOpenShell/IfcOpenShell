@@ -1077,6 +1077,12 @@ class TestGetClickedConnection(NewFile):
         assert subject.get_clicked_connection(self.obj, self.start, self.end, 1.3) == "ATEND"
         assert subject.get_clicked_connection(self.obj, self.start, self.end, -0.3) == "ATSTART"
 
+    def test_a_target_at_an_end_moves_that_end_even_if_clicked_beyond_it(self):
+        self._click(self.obj, -0.2, 0.0)  # Just before the start, e.g. the corner of a joined body.
+        assert subject.get_clicked_connection(self.obj, self.start, self.end, 0.0) == "ATSTART"
+        self._click(self.obj, 10.2, 0.0)  # Just past the end.
+        assert subject.get_clicked_connection(self.obj, self.start, self.end, 1.0) == "ATEND"
+
     def test_clicked_percent_is_where_the_ray_passes_the_axis(self):
         self._click(self.obj, 2.5, 4.0)
         assert subject.get_clicked_percent(self.obj, self.start, self.end) == pytest.approx(0.25)
