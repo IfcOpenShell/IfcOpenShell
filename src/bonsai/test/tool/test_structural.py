@@ -64,6 +64,9 @@ class TestGetSimpleSlope(NewFile):
         assert subject.get_simple_slope(5, 0) == (0.0, 1.0)
         assert subject.get_simple_slope(0, -5) == (-1.0, 0.0)
 
+    def test_no_force_gives_a_unit_slope(self):
+        assert subject.get_simple_slope(0, 0) == (1.0, 1.0)
+
     def test_falling_back_to_a_unit_slope(self):
         rise, run = subject.get_simple_slope(3, 7.1)
         assert math.isclose(math.hypot(rise, run), 1)

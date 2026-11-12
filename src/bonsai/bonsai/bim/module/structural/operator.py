@@ -904,16 +904,29 @@ class StructuralForceInput:
 apply_load_group_items: list[tuple[str, str, str]] = []
 
 
+def is_load_combination(group: ifcopenshell.entity_instance) -> bool:
+    return group.is_a("IfcStructuralLoadGroup") and group.PredefinedType == "LOAD_COMBINATION"
+
+
 def get_apply_load_groups(self, context: bpy.types.Context) -> list[tuple[str, str, str]]:
     global apply_load_group_items
     model = tool.Structural.get_current_structural_analysis_model()
     groups = list(model.LoadedBy or []) if model else list(tool.Ifc.get().by_type("IfcStructuralLoadCase"))
+    # A combination groups load cases, not loads: offer its load cases instead.
+    groups = [
+        g for group in groups for g in (get_combined_load_cases(group) if is_load_combination(group) else [group])
+    ]
     apply_load_group_items = []
+    listed = set()
     for group in groups:
+        if group in listed:
+            continue
+        listed.add(group)
         apply_load_group_items.append((str(group.id()), group.Name or "Unnamed", group.is_a()))
         for rel in group.IsGroupedBy:
             for subgroup in rel.RelatedObjects:
-                if subgroup.is_a("IfcStructuralLoadGroup"):
+                if subgroup.is_a("IfcStructuralLoadGroup") and not is_load_combination(subgroup):
+                    listed.add(subgroup)
                     name = subgroup.Name or "Unnamed"
                     apply_load_group_items.append((str(subgroup.id()), f"    {name}", subgroup.is_a()))
     apply_load_group_items.append(("0", "New Load Case", "Create a new load case in the current model"))
@@ -1017,14 +1030,19 @@ def get_edit_load_groups(self, context: bpy.types.Context) -> list[tuple[str, st
         listed.add(load_case)
         for rel in load_case.IsGroupedBy:
             for group in rel.RelatedObjects:
-                if group.is_a("IfcStructuralLoadGroup") and group not in listed:
+                if group.is_a("IfcStructuralLoadGroup") and not is_load_combination(group) and group not in listed:
                     edit_load_group_items.append((str(group.id()), f"    {group.Name or 'Unnamed'}", group.is_a()))
                     listed.add(group)
     for group in tool.Ifc.get().by_type("IfcStructuralLoadGroup"):
-        if group not in listed:
+        if group not in listed and not is_load_combination(group):
             edit_load_group_items.append((str(group.id()), group.Name or "Unnamed", group.is_a()))
+    edit_load_group_items.append(("NONE", "No Load Case", "Not in any load case or load group"))
     edit_load_group_items.append(("0", "New Load Case", "Create a new load case in the current model"))
     return edit_load_group_items
+
+
+def get_combined_load_cases(combination: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+    return [o for rel in combination.IsGroupedBy for o in rel.RelatedObjects if o.is_a("IfcStructuralLoadCase")]
 
 
 def get_activity_load_groups(activity: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -1043,6 +1061,7 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
     structural_load: bpy.props.IntProperty(options={"SKIP_SAVE"})
     activity: bpy.props.IntProperty(description="Edit the load applied by this activity instead", options={"SKIP_SAVE"})
     load_group: bpy.props.EnumProperty(name="Load Case", items=get_edit_load_groups, options={"SKIP_SAVE"})
+    initial_load_group: bpy.props.StringProperty(options={"HIDDEN", "SKIP_SAVE"})
     new_load_case_name: bpy.props.StringProperty(name="New Load Case", default="Load Case")
 
     def get_load(self) -> ifcopenshell.entity_instance:
@@ -1054,8 +1073,11 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
     def invoke(self, context, event):
         load = self.get_load()
         if not (category := get_load_category(load)):
-            # Only forces have a dialog; other loads use the attribute editor.
-            return bpy.ops.bim.enable_editing_structural_load(structural_load=load.id())
+            # Only forces have a dialog; other loads use the attribute editor of the Structural Loads panel.
+            bpy.ops.bim.load_structural_loads()
+            bpy.ops.bim.enable_editing_structural_load(structural_load=load.id())
+            self.report({"INFO"}, f"Editing {load.Name or 'Unnamed'} in the Structural Loads panel")
+            return {"FINISHED"}
         self.load_category = category
         _, _, force_attributes, moment_attributes = APPLY_LOAD_CLASSES[category]
         self.x, self.y, self.z = (getattr(load, a) or 0.0 for a in force_attributes)
@@ -1082,8 +1104,10 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
             if self.fits(x, z, "ANGLE", angle=angle, direction=direction):
                 self.input_mode, self.angle, self.direction = "ANGLE", angle, direction
         self.load_name = name
-        if (activities := self.get_movable_activities()) and (groups := get_activity_load_groups(activities[0])):
-            self.load_group = str(groups[0].id())
+        if activities := self.get_movable_activities():
+            groups = get_activity_load_groups(activities[0])
+            self.load_group = str(groups[0].id()) if groups else "NONE"
+        self.initial_load_group = self.load_group
         return context.window_manager.invoke_props_dialog(self, width=350)
 
     def fits(
@@ -1127,8 +1151,9 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         attributes["Name"] = self.get_load_name(category)
         ifc_file = tool.Ifc.get()
         ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
-        activities = self.get_movable_activities()
-        if activities and (target := self.get_target_load_group(ifc_file)):
+        # An applied load in several groups stays in all of them unless another load case is chosen.
+        if self.load_group != self.initial_load_group and (activities := self.get_movable_activities()):
+            target = self.get_target_load_group(ifc_file)
             for activity in activities:
                 self.move_activity(ifc_file, activity, target)
         if tool.Structural.get_structural_props().is_editing_loads:
@@ -1150,21 +1175,25 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
                 ifc_file, name=self.new_load_case_name or "Load Case"
             )
             tool.Structural.assign_to_current_structural_analysis_model(target)
-        elif self.load_group:
+        elif self.load_group and self.load_group != "NONE":
             target = ifc_file.by_id(int(self.load_group))
         else:
             return None
         return target
 
     def move_activity(
-        self, ifc_file: ifcopenshell.file, activity: ifcopenshell.entity_instance, target: ifcopenshell.entity_instance
+        self,
+        ifc_file: ifcopenshell.file,
+        activity: ifcopenshell.entity_instance,
+        target: Union[ifcopenshell.entity_instance, None],
     ) -> None:
         groups = get_activity_load_groups(activity)
-        if groups == [target]:
+        if groups == ([target] if target else []):
             return
         for group in groups:
             ifcopenshell.api.group.unassign_group(ifc_file, products=[activity], group=group)
-        ifcopenshell.api.group.assign_group(ifc_file, products=[activity], group=target)
+        if target:
+            ifcopenshell.api.group.assign_group(ifc_file, products=[activity], group=target)
 
 
 class LoadStructuralLoads(bpy.types.Operator):
