@@ -45,6 +45,7 @@ READ_ONLY_TOOLS = frozenset(
         "ifc_validate",
         "ifc_schedule",
         "ifc_cost",
+        "ifc_structural",
         "ifc_schema",
         "ifc_shape_list",
         "ifc_shape_docs",
@@ -201,6 +202,10 @@ def build_server(allow_execute: bool = False) -> Any:
     @_tool
     def ifc_cost(max_depth: int | None = None) -> list[dict[str, Any]]:
         return session.ifc_cost(max_depth=max_depth)
+
+    @_tool
+    def ifc_structural(max_depth: int | None = None) -> list[dict[str, Any]]:
+        return session.ifc_structural(max_depth=max_depth)
 
     @_tool
     def ifc_schema(entity_type: str) -> dict[str, Any]:
