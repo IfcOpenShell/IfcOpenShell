@@ -2383,7 +2383,7 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
         for gz in all_gizmos:
             gz.hide = True
-        screen_up = tool.Blender.get_screen_up_world(context)
+        screen_up = gizmo.get_screen_up(billboard_rot)
         clearance = gizmo.top_down_clearance(context, billboard_rot)
         if top_down:
             # Swap world-Z stacking for screen-up stacking so each icon stays

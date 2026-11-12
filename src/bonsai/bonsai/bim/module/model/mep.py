@@ -2481,7 +2481,7 @@ class _MEPSegmentEditionMixin:
                     if perp_axis.length < 1e-4:
                         perp_axis = billboard_rot @ Vector((0.0, 1.0, 0.0))
                     else:
-                        perp_axis.normalize()
+                        perp_axis = perp_axis.normalized() * gizmo.get_billboard_scale(billboard_rot)
                     split_gz.matrix_basis = gizmo.billboarded_at(
                         projected_world + perp_axis * self.CURSOR_STACK_OFFSET, billboard_rot
                     )
