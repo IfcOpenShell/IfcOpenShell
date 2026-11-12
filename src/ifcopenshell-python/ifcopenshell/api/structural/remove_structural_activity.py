@@ -20,7 +20,6 @@
 
 import ifcopenshell
 import ifcopenshell.api.root
-import ifcopenshell.util.element
 
 
 def remove_structural_activity(file: ifcopenshell.file, activity: ifcopenshell.entity_instance) -> None:
@@ -39,9 +38,4 @@ def remove_structural_activity(file: ifcopenshell.file, activity: ifcopenshell.e
 
         ifcopenshell.api.structural.remove_structural_activity(model, activity=activity)
     """
-    for rel in activity.AssignedToStructuralItem:
-        history = rel.OwnerHistory
-        file.remove(rel)
-        if history:
-            ifcopenshell.util.element.remove_deep2(file, history)
     ifcopenshell.api.root.remove_product(file, product=activity)
