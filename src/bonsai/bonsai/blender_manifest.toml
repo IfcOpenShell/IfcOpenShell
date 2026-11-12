@@ -26,7 +26,8 @@ tags = [
     "User Interface",
     "UV"
 ]
-blender_version_min = "4.2.0"
+# Set per Python version in Makefile.
+blender_version_min = "BLENDER_VERSION_MIN"
 # Blender version that extension does not support.
 # Needed as a guard for Python 3.11 extensions - Blender 5.1 has Python 3.13.
 # blender_version_max = "5.1.0"
