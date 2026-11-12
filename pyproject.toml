@@ -94,10 +94,10 @@ call-non-callable = "ignore"
 # bpy is missing some context manager implementations.
 invalid-context-manager = "ignore"
 # Doesn't go well with `bpy.ops.xxx.yyy`.
-unresolved-attribute = "ignore"
+missing-attribute = "ignore"
 # Too many false positives.
 invalid-argument-type = "ignore"
-invalid-method-override = "ignore"
+incompatible-method-override = "ignore"
 invalid-assignment = "ignore"
 unsound-assignment = "ignore"
 invalid-parameter-default = "ignore"
