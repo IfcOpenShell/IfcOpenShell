@@ -477,8 +477,12 @@ class ShaderInfo:
                         if float(np.linalg.norm(np.cross(candidate, x_unit))) >= 1e-6:
                             z = candidate
                             break
-                placement = ifcopenshell.util.placement.a2p(origin, z, x)
-                return placement[0:3, 0:3]
+                # Local x runs along the edge and local z lies in the plane of Axis and the edge.
+                # a2p would keep Axis and tilt x instead, off a sloped member.
+                y_unit = np.cross(np.asarray(z, dtype=float), x_unit)
+                y_unit /= np.linalg.norm(y_unit)
+                z_unit = np.cross(x_unit, y_unit)
+                return np.column_stack((x_unit, y_unit, z_unit))
         member_name = (
             getattr(curve_member, "Name", None) or getattr(curve_member, "GlobalId", None) or f"#{curve_member.id()}"
         )
