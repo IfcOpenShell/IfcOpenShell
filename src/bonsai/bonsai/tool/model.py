@@ -151,6 +151,12 @@ class Model(bonsai.core.tool.Model):
         clicked = cls.get_clicked_percent(obj, start, end)
         if clicked is None or abs(clicked - target_percent) < 1e-6:
             return None
+        # At or past an end only the nearer end can reach the target. A click just beyond that end
+        # (e.g. on the corner of an already joined body) must not move the far end onto it instead.
+        if target_percent <= 1e-3:
+            return "ATSTART"
+        if target_percent >= 1 - 1e-3:
+            return "ATEND"
         return "ATEND" if clicked < target_percent else "ATSTART"
 
     @classmethod
