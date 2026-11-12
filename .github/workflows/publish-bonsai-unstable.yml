@@ -28,7 +28,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  BLENDER_VERSION: 5.2.0
+  BLENDER_VERSION: 5.3.0
 
 jobs:
   release:

@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  BLENDER_VERSION: 5.2.0
+  BLENDER_VERSION: 5.3.0
   PYVERSION: py313
 
 jobs:
