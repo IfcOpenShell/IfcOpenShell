@@ -281,7 +281,7 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         selected_objs = context.selected_objects
-        joiner = DumbProfileJoiner()
+        joiner = DumbProfileJoiner(keep_clicked_side=True)
         if self.join_type == "-":
             for obj in selected_objs:
                 joiner.unjoin(obj)
@@ -312,7 +312,10 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class DumbProfileJoiner:
-    def __init__(self):
+    def __init__(self, keep_clicked_side: bool = False):
+        # Off by default: only the user's own join/extend commands should be steered by
+        # where elements were clicked, not tools that join elements they just drew.
+        self.keep_clicked_side = keep_clicked_side
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
@@ -330,6 +333,12 @@ class DumbProfileJoiner:
         body = copy.deepcopy(axis1)
         self.recreate_profile(element1, profile1, axis, body)
 
+    def get_connection_end(self, obj: bpy.types.Object, axis: list[Vector], percent: float) -> str:
+        """The end of `obj` to join at `percent` along its axis, keeping the side the user clicked."""
+        if self.keep_clicked_side and (connection := tool.Model.get_clicked_connection(obj, axis[0], axis[1], percent)):
+            return connection
+        return "ATEND" if percent > 0.5 else "ATSTART"
+
     def join_E(self, profile1: bpy.types.Object, target: Vector, connection: Optional[str] = None) -> None:
         """`connection` = `ATEND` / `ATSTART` to explicitly define the reference point for the join.
 
@@ -344,7 +353,7 @@ class DumbProfileJoiner:
         axis1 = self.get_profile_axis(profile1)
         intersect, connection_value = mathutils.geometry.intersect_point_line(target, *axis1)
         if connection is None:
-            connection = "ATEND" if connection_value > 0.5 else "ATSTART"
+            connection = self.get_connection_end(profile1, axis1, connection_value)
 
         ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element1, connection_type=connection)
 
@@ -379,7 +388,7 @@ class DumbProfileJoiner:
             intersect, _ = intersect
         else:
             return
-        connection = "ATEND" if tool.Cad.edge_percent(intersect, axis1) > 0.5 else "ATSTART"
+        connection = self.get_connection_end(profile1, axis1, tool.Cad.edge_percent(intersect, axis1))
 
         ifcopenshell.api.geometry.connect_path(
             tool.Ifc.get(),
@@ -402,8 +411,8 @@ class DumbProfileJoiner:
             intersect, _ = intersect
         else:
             return
-        profile1_end = "ATEND" if tool.Cad.edge_percent(intersect, axis1) > 0.5 else "ATSTART"
-        profile2_end = "ATEND" if tool.Cad.edge_percent(intersect, axis2) > 0.5 else "ATSTART"
+        profile1_end = self.get_connection_end(profile1, axis1, tool.Cad.edge_percent(intersect, axis1))
+        profile2_end = self.get_connection_end(profile2, axis2, tool.Cad.edge_percent(intersect, axis2))
 
         ifcopenshell.api.geometry.connect_path(
             tool.Ifc.get(),
@@ -427,8 +436,8 @@ class DumbProfileJoiner:
             intersect, _ = intersect
         else:
             return
-        profile1_end = "ATEND" if tool.Cad.edge_percent(intersect, axis1) > 0.5 else "ATSTART"
-        profile2_end = "ATEND" if tool.Cad.edge_percent(intersect, axis2) > 0.5 else "ATSTART"
+        profile1_end = self.get_connection_end(profile1, axis1, tool.Cad.edge_percent(intersect, axis1))
+        profile2_end = self.get_connection_end(profile2, axis2, tool.Cad.edge_percent(intersect, axis2))
 
         ifcopenshell.api.geometry.connect_path(
             tool.Ifc.get(),
