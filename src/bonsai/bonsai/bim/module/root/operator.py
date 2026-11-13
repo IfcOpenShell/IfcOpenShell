@@ -26,6 +26,7 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import ifcopenshell.api.structural
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.schema
@@ -813,6 +814,11 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             end = Vector((1, 0, 0)) / unit_scale
             representation = builder.get_representation(ifc_context, [builder.edge(end=end)])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+            if element.is_a("IfcStructuralCurveMember") or element.is_a("IfcStructuralCurveConnection"):
+                # Its Axis is mandatory: up, square to the edge it starts with, along X.
+                ifcopenshell.api.structural.edit_structural_item_axis(
+                    tool.Ifc.get(), structural_item=element, axis=(0.0, 0.0, 1.0)
+                )
             bonsai.core.geometry.switch_representation(
                 tool.Ifc,
                 tool.Geometry,

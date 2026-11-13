@@ -355,6 +355,8 @@ class EnableEditingStructuralItemAxis(bpy.types.Operator):
         item = self.file.by_id(oprops.ifc_definition_id)
         z_axis = Vector(item.Axis.DirectionRatios).normalized() @ obj.matrix_world if item.Axis else None
         x_axis = (obj.data.vertices[1].co - obj.data.vertices[0].co).normalized()
+        if z_axis and z_axis.cross(x_axis).length < 1e-6:
+            z_axis = None  # Parallel to the edge, as when a member is stood up, so it gives no local z.
         location = obj.data.vertices[0].co
         empty = bpy.data.objects.new("Item Axis", None)
         empty.empty_display_type = "ARROWS"
