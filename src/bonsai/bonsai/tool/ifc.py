@@ -76,6 +76,13 @@ class Ifc(bonsai.core.tool.Ifc):
     def after_file_loaded(cls) -> None:
         assert IfcStore.file
         bonsai.bim.schema.reload(IfcStore.file.schema_identifier)
+        # Show the structural loads of the new file, once it is set up.
+        from bonsai.bim.module.structural.decorator import show_loads_after_load
+
+        if tool.Structural.get_structural_props().show_loads and not bpy.app.timers.is_registered(
+            show_loads_after_load
+        ):
+            bpy.app.timers.register(show_loads_after_load, first_interval=0.5)
 
     @classmethod
     def set_path(cls, value: str) -> None:
