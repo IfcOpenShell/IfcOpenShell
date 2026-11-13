@@ -153,14 +153,30 @@ class Structural(bonsai.core.tool.Structural):
     def get_load_cases(
         cls, model: Union[ifcopenshell.entity_instance, None] = None
     ) -> list[ifcopenshell.entity_instance]:
-        """The load groups loading an analysis model: those it is loaded by, then load cases with loads on its
-        items that it does not list, as some programs leave LoadedBy empty. Without a model, every load case."""
-        cases = [g for g in tool.Ifc.get().by_type("IfcStructuralLoadGroup") if cls.is_load_case(g)]
+        """The load groups loading an analysis model. Without a model, every load case.
+
+        These are the groups the model is loaded by. Some programs, such as RFEM, leave LoadedBy empty: then they
+        are the load cases that no model lists and whose loads are all on items of this model and of no other.
+        A case that could belong to more than one model is left out rather than guessed."""
+        ifc_file = tool.Ifc.get()
+        cases = [g for g in ifc_file.by_type("IfcStructuralLoadGroup") if cls.is_load_case(g)]
         if model is None:
             return cases
-        loaded_by = list(model.LoadedBy or [])
-        items = {obj for rel in model.IsGroupedBy or [] for obj in rel.RelatedObjects}
-        return loaded_by + [c for c in cases if c not in loaded_by and items & cls.get_loaded_items(c)]
+        if model.LoadedBy:
+            return list(model.LoadedBy)
+        models = {m: cls.get_model_items(m) for m in ifc_file.by_type("IfcStructuralAnalysisModel")}
+        inferred = []
+        for case in cases:
+            if case.LoadGroupFor or not (loaded := cls.get_loaded_items(case)):
+                continue
+            if [m for m, items in models.items() if loaded <= items] == [model]:
+                inferred.append(case)
+        return inferred
+
+    @classmethod
+    def get_model_items(cls, model: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+        """The structural items grouped into an analysis model"""
+        return {obj for rel in model.IsGroupedBy or [] for obj in rel.RelatedObjects}
 
     @classmethod
     def get_loaded_items(cls, group: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:

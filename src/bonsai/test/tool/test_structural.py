@@ -117,7 +117,7 @@ class TestLoadCases(NewFile):
         assert subject.get_load_cases(model) == [case]
         assert subject.get_loaded_items(case) == {point}
 
-    def test_listed_groups_come_first_and_unrelated_cases_are_left_out(self):
+    def test_a_model_is_loaded_by_what_it_lists_only(self):
         ifc_file = ifcopenshell.file(schema="IFC4")
         tool.Ifc.set(ifc_file)
         model, _, case, _ = self.make_loaded_model(ifc_file, "IfcStructuralLoadCase", "LOAD_CASE")
@@ -126,9 +126,55 @@ class TestLoadCases(NewFile):
         ifcopenshell.api.structural.assign_structural_load_group(
             ifc_file, load_groups=[combination], structural_analysis_model=model
         )
-        elsewhere = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralLoadCase")
-        assert subject.get_load_cases(model) == [combination, case]
-        assert elsewhere not in subject.get_load_cases(model)
+        # The case loads the model's item, but a model that lists its load groups is taken at its word.
+        assert subject.get_load_cases(model) == [combination]
+
+    def test_unrelated_cases_are_left_out(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        model, _, case, _ = self.make_loaded_model(ifc_file, "IfcStructuralLoadCase", "LOAD_CASE")
+        ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralLoadCase")  # Loads nothing.
+        assert subject.get_load_cases(model) == [case]
+
+    def test_a_case_another_model_lists_is_not_inferred(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        model, point, case, _ = self.make_loaded_model(ifc_file, "IfcStructuralLoadCase", "LOAD_CASE")
+        other = ifcopenshell.api.structural.add_structural_analysis_model(ifc_file)
+        ifcopenshell.api.structural.assign_structural_load_group(
+            ifc_file, load_groups=[case], structural_analysis_model=other
+        )
+        assert subject.get_load_cases(model) == []
+        assert subject.get_load_cases(other) == [case]
+
+    def test_a_case_on_items_two_models_share_is_not_inferred(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        model, point, case, _ = self.make_loaded_model(ifc_file, "IfcStructuralLoadCase", "LOAD_CASE")
+        other = ifcopenshell.api.structural.add_structural_analysis_model(ifc_file)
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc_file, products=[point], structural_analysis_model=other
+        )
+        assert subject.get_load_cases(model) == []
+        assert subject.get_load_cases(other) == []
+
+    def test_a_case_with_loads_beyond_the_model_is_not_inferred(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        model, point, case, _ = self.make_loaded_model(ifc_file, "IfcStructuralLoadCase", "LOAD_CASE")
+        other = ifcopenshell.api.structural.add_structural_analysis_model(ifc_file)
+        elsewhere = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralPointConnection")
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc_file, products=[elsewhere], structural_analysis_model=other
+        )
+        load = ifcopenshell.api.structural.add_structural_load(ifc_file, ifc_class="IfcStructuralLoadSingleForce")
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            ifc_file, applied_load=load, structural_member=elsewhere, ifc_class="IfcStructuralPointAction"
+        )
+        ifcopenshell.api.group.assign_group(ifc_file, products=[activity], group=case)
+        # One case loading items of two models belongs to neither, rather than to whichever is current.
+        assert subject.get_load_cases(model) == []
+        assert subject.get_load_cases(other) == []
 
 
 class TestModelAxes(NewFile):
