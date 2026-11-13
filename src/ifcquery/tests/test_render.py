@@ -12,12 +12,14 @@ import ifcopenshell.api.owner.settings
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
+import ifcopenshell.api.structural
 import ifcopenshell.api.unit
 import ifcopenshell.guid
 import numpy as np
 import pytest
 
-from ifcquery.render import _make_profile_occurrence, _make_type_occurrence, render
+import ifcquery.render
+from ifcquery.render import _make_profile_occurrence, _make_type_occurrence, _point_connection_positions, render
 
 HAS_PYVISTA = importlib.util.find_spec("pyvista") is not None
 
@@ -132,6 +134,59 @@ def library_with_profile_type():
     return f, beam_type
 
 
+@pytest.fixture
+def structural_model():
+    """An IFC4 analysis model in millimetres, with no building elements: a curve member
+    between two point connections. Each item has its own placement, away from the origin,
+    and its topology is relative to it."""
+    f = ifcopenshell.api.project.create_file()
+    ifcopenshell.api.owner.settings.get_user = lambda ifc: (ifc.by_type("IfcPersonAndOrganization") or [None])[0]
+    ifcopenshell.api.owner.settings.get_application = lambda ifc: (ifc.by_type("IfcApplication") or [None])[0]
+    ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject", name="StructuralProject")
+    ifcopenshell.api.unit.assign_unit(f)  # millimetres
+    model_ctx = ifcopenshell.api.context.add_context(f, context_type="Model")
+    reference = ifcopenshell.api.context.add_context(
+        f, context_type="Model", context_identifier="Reference", target_view="GRAPH_VIEW", parent=model_ctx
+    )
+
+    def place(product, x, y, z):
+        matrix = np.eye(4)
+        matrix[:3, 3] = (x, y, z)  # metres
+        ifcopenshell.api.geometry.edit_object_placement(f, product=product, matrix=matrix)
+
+    def vertex(x, y, z):
+        return f.createIfcVertexPoint(f.createIfcCartesianPoint((float(x), float(y), float(z))))
+
+    analysis = ifcopenshell.api.structural.add_structural_analysis_model(f)
+    member = ifcopenshell.api.root.create_entity(f, ifc_class="IfcStructuralCurveMember", name="Beam")
+    place(member, 1.0, 0.0, 0.0)
+    edge = f.createIfcEdge(vertex(0, 0, 3000), vertex(4000, 0, 3000))
+    ifcopenshell.api.geometry.assign_representation(
+        f,
+        product=member,
+        representation=ifcopenshell.api.geometry.add_topology_representation(f, context=reference, item=edge),
+    )
+    connections = []
+    for name, x in (("Left", 1.0), ("Right", 5.0)):
+        connection = ifcopenshell.api.root.create_entity(f, ifc_class="IfcStructuralPointConnection", name=name)
+        place(connection, x, 0.0, 0.0)
+        ifcopenshell.api.geometry.assign_representation(
+            f,
+            product=connection,
+            representation=ifcopenshell.api.geometry.add_topology_representation(
+                f, context=reference, item=vertex(0, 0, 3000)
+            ),
+        )
+        ifcopenshell.api.structural.add_structural_member_connection(
+            f, relating_structural_member=member, related_structural_connection=connection
+        )
+        connections.append(connection)
+    ifcopenshell.api.structural.assign_structural_analysis_model(
+        f, products=[member, *connections], structural_analysis_model=analysis
+    )
+    return f
+
+
 class TestRenderBasic:
     def test_returns_png_bytes(self, model_with_geometry):
         result = render(model_with_geometry)
@@ -242,6 +297,76 @@ class TestRenderProfileTypes:
         entity_count_before = len(list(model))
         render(model, element_ids=[beam_type.id()])
         assert len(list(model)) == entity_count_before
+
+
+class TestRenderStructural:
+    def test_analysis_model_without_building_elements(self, structural_model):
+        """Topology alone is enough: the kernel gives no faces for it."""
+        assert render(structural_model)[:4] == PNG_MAGIC
+
+    def test_point_connections_placed_in_metres(self, structural_model):
+        connections = structural_model.by_type("IfcStructuralPointConnection")
+        positions = {c.Name: p for c, p in _point_connection_positions(structural_model, connections)}
+        assert np.allclose(positions["Left"], (1.0, 0.0, 3.0))
+        assert np.allclose(positions["Right"], (5.0, 0.0, 3.0))
+
+    def test_curve_members_drawn_as_lines(self, structural_model, monkeypatch):
+        drawn = []
+        original = ifcquery.render._add_structural_edges
+
+        def record(product, verts, edges, plotter, highlight_ids):
+            drawn.append((product.Name, verts.copy()))
+            original(product, verts, edges, plotter, highlight_ids)
+
+        monkeypatch.setattr(ifcquery.render, "_add_structural_edges", record)
+        render(structural_model)
+        assert [name for name, _ in drawn] == ["Beam"]
+        assert np.allclose(sorted(map(tuple, drawn[0][1])), [(1.0, 0.0, 3.0), (5.0, 0.0, 3.0)])
+
+    def test_selector_of_point_connections_only(self, structural_model):
+        assert render(structural_model, selector="IfcStructuralPointConnection")[:4] == PNG_MAGIC
+
+    def test_highlight_structural_item(self, structural_model):
+        member = structural_model.by_type("IfcStructuralCurveMember")[0]
+        assert render(structural_model, element_ids=[member.id()])[:4] == PNG_MAGIC
+
+    def test_each_item_drawn_once_with_building_elements(self, structural_model, monkeypatch):
+        """Structural items are left out of the main pass, which would draw a surface member's
+        face a second time; building elements are still drawn."""
+        f = structural_model
+        reference = f.by_type("IfcGeometricRepresentationSubContext")[0]
+        body = ifcopenshell.api.context.add_context(
+            f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=reference.ParentContext
+        )
+        wall = ifcopenshell.api.root.create_entity(f, ifc_class="IfcWall", name="Wall")
+        ifcopenshell.api.geometry.assign_representation(
+            f,
+            product=wall,
+            representation=ifcopenshell.api.geometry.add_wall_representation(
+                f, context=body, length=4, height=3, thickness=0.2
+            ),
+        )
+        slab = ifcopenshell.api.root.create_entity(f, ifc_class="IfcStructuralSurfaceMember", name="Slab")
+        points = [f.createIfcCartesianPoint(p) for p in ((0.0, 0.0, 0.0), (4000.0, 0.0, 0.0), (4000.0, 3000.0, 0.0))]
+        loop = f.createIfcPolyLoop(points)
+        plane = f.createIfcPlane(f.createIfcAxis2Placement3D(f.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None))
+        face = f.createIfcFaceSurface([f.createIfcFaceOuterBound(loop, True)], plane, True)
+        ifcopenshell.api.geometry.assign_representation(
+            f,
+            product=slab,
+            representation=ifcopenshell.api.geometry.add_topology_representation(f, context=reference, item=face),
+        )
+
+        drawn = []
+        original = ifcquery.render._add_shape
+
+        def record(shape, plotter, highlight_ids):
+            drawn.append(shape.product.Name)
+            original(shape, plotter, highlight_ids)
+
+        monkeypatch.setattr(ifcquery.render, "_add_shape", record)
+        render(f)
+        assert sorted(drawn) == ["Beam", "Slab", "Wall"]
 
 
 class TestRenderNoGeometry:

@@ -503,11 +503,17 @@ Requires the IfcOpenShell drawing module (`ifcopenshell.draw`). PNG output addit
 
 ### render
 
-Render a 3D view of the model geometry to a PNG file.
+Render a 3D view of the model geometry to a PNG file. Structural analysis items
+are drawn from their topology: surface members as faces, curve members (blue) and
+curve connections (orange) as lines, and point connections (orange) as points.
 
 ```bash
 ifcquery model.ifc render -o output.png
 ifcquery model.ifc render -o output.png --view iso --selector IfcWall
+
+# The structural analysis model alone, or the building without it
+ifcquery model.ifc render -o structure.png --selector IfcStructuralItem
+ifcquery model.ifc render -o building.png --selector IfcElement
 ```
 
 Options:

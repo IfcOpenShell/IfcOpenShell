@@ -333,12 +333,21 @@ Returns an inline PNG the LLM can inspect. Requires `ifcopenshell.draw`.
 
 #### ifc_render
 
-Render the loaded model to a 3D PNG image.
+Render the loaded model to a 3D PNG image. Structural analysis items are drawn
+from their topology: surface members as faces, curve members and connections as
+lines, and point connections as points.
 
 ```
 ifc_render()
 ifc_render(selector="IfcWall", view="iso", output_path="/tmp/model.png")
 ifc_render(element_ids=[10, 11], view="south")
+
+# The structural analysis model alone, or the building without it
+ifc_render(selector="IfcStructuralItem")
+ifc_render(selector="IfcElement")
+
+# The structure inside a see-through building: highlight the structural items
+ifc_render(selector="IfcElement, IfcStructuralItem", element_ids=[...])
 ```
 
 Parameters:

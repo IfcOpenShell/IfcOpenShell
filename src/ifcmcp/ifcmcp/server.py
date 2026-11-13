@@ -307,7 +307,12 @@ def build_server(allow_execute: bool = False) -> Any:
         """Render the loaded IFC model to a PNG image.
 
         Returns an inline image the LLM can inspect to understand the spatial
-        layout of the model or a specific element in context.  If
+        layout of the model or a specific element in context.  Structural
+        analysis items are drawn from their topology: curve members (blue) and
+        connections (orange) as lines, point connections as points; select
+        ``IfcStructuralItem`` for the analysis model alone, ``IfcElement`` for
+        the building without it, or highlight the structural items to see
+        them inside a translucent building.  If
         ``output_path`` is provided the PNG is also saved to that file path.
 
         :param selector: ifcopenshell selector to restrict rendered elements
