@@ -70,6 +70,18 @@ class TestImportProjectedCRS(NewFile):
         assert props.projected_crs["MapZone"].string_value == "MapZone"
         assert props.projected_crs["MapUnit"].enum_value == str(unit.id())
 
+    def test_importing_a_length_unit_without_a_name(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        ifcopenshell.api.georeference.add_georeferencing(ifc)
+        unit = ifc.create_entity("IfcSIUnit", UnitType="LENGTHUNIT")
+        ifc.by_type("IfcProjectedCRS")[0].MapUnit = unit
+        subject.import_projected_crs()
+        props = tool.Georeference.get_georeference_props()
+        assert props.projected_crs["MapUnit"].enum_value == str(unit.id())
+
     def test_run_ifc2x3(self):
         ifc = ifcopenshell.file(schema="IFC2X3")
         tool.Ifc.set(ifc)
