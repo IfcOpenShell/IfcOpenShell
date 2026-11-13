@@ -17,6 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 # This file was generated with the assistance of an AI coding tool.
 
+import numpy
+
 import ifcopenshell.api.group
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
@@ -215,3 +217,79 @@ class TestGetStructuralMembersAndBuildingElementsIFC2X3(
         rel.RelatedStructuralMember = member
         assert subject.get_building_elements(member) == [beam]
         assert subject.get_structural_members(beam) == [member]
+
+
+class TestGetActivityItem(test.bootstrap.IFC4, StructuralModel):
+    def test_run(self):
+        self.make_frame()
+        assert subject.get_activity_item(self.add_action(self.knee)) == self.knee
+
+    def test_an_activity_on_no_item(self):
+        activity = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointAction")
+        assert subject.get_activity_item(activity) is None
+
+
+class TestGetActivityLoadCases(test.bootstrap.IFC4, StructuralModel):
+    def test_directly_and_through_a_load_group(self):
+        self.make_frame()
+        activity = self.add_action(self.knee)
+        case = ifcopenshell.api.structural.add_structural_load_case(self.file)
+        other = ifcopenshell.api.structural.add_structural_load_case(self.file)
+        group = ifcopenshell.api.structural.add_structural_load_group(self.file)
+        ifcopenshell.api.group.assign_group(self.file, products=[activity], group=case)
+        ifcopenshell.api.group.assign_group(self.file, products=[activity], group=group)
+        ifcopenshell.api.group.assign_group(self.file, products=[group], group=other)
+        assert subject.get_activity_load_cases(activity) == [case, other]
+
+    def test_not_through_a_load_combination(self):
+        self.make_frame()
+        activity = self.add_action(self.knee)
+        case = ifcopenshell.api.structural.add_structural_load_case(self.file)
+        combination = ifcopenshell.api.structural.add_structural_load_combination(self.file, name="ULS")
+        ifcopenshell.api.group.assign_group(self.file, products=[activity], group=case)
+        ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=case, load_combination=combination, factor=1.5
+        )
+        assert subject.get_activity_load_cases(activity) == [case]
+
+    def test_an_activity_in_no_load_case(self):
+        self.make_frame()
+        assert subject.get_activity_load_cases(self.add_action(self.knee)) == []
+
+
+class TestGetGlobalAxes(test.bootstrap.IFC4, StructuralModel):
+    def make_placement(self, z, x):
+        origin = self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
+        axes = self.file.createIfcAxis2Placement3D(
+            origin, self.file.createIfcDirection(z), self.file.createIfcDirection(x)
+        )
+        return self.file.createIfcLocalPlacement(None, axes)
+
+    def test_the_project_axes_by_default(self):
+        self.make_frame()
+        assert numpy.allclose(subject.get_global_axes(self.add_action(self.knee)), numpy.eye(3))
+
+    def test_the_shared_placement_of_the_model(self):
+        self.make_frame()
+        # As some programs write them: Z down, Y turned to keep the axes right-handed.
+        self.model.SharedPlacement = self.make_placement((0.0, 0.0, -1.0), (1.0, 0.0, 0.0))
+        activity = self.add_action(self.knee)
+        activity.ObjectPlacement = self.make_placement((0.0, 0.0, 1.0), (0.0, 1.0, 0.0))
+        axes = subject.get_global_axes(activity)
+        assert numpy.allclose(axes, [[1, 0, 0], [0, -1, 0], [0, 0, -1]])
+
+    def test_the_shared_placement_of_the_model_loaded_by_its_load_case(self):
+        item = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        model = ifcopenshell.api.structural.add_structural_analysis_model(self.file)
+        model.SharedPlacement = self.make_placement((0.0, 0.0, -1.0), (1.0, 0.0, 0.0))
+        case = ifcopenshell.api.structural.add_structural_load_case(self.file)
+        model.LoadedBy = [case]
+        activity = self.add_action(item)
+        ifcopenshell.api.group.assign_group(self.file, products=[activity], group=case)
+        assert numpy.allclose(subject.get_global_axes(activity)[:, 2], [0, 0, -1])
+
+    def test_the_activity_placement_without_a_shared_placement(self):
+        self.make_frame()
+        activity = self.add_action(self.knee)
+        activity.ObjectPlacement = self.make_placement((0.0, 0.0, 1.0), (0.0, 1.0, 0.0))
+        assert numpy.allclose(subject.get_global_axes(activity)[:, 0], [0, 1, 0])

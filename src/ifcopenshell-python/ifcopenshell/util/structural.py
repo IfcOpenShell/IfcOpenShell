@@ -21,11 +21,17 @@
 These functions follow the relationships of the structural analysis domain:
 the items and load groups of an analysis model, how members and connections
 are joined, the activities (loads and reactions) on an item or in a load
-group, the factors of a load combination, and the building elements that a
-structural member stands for.
+group, the factors of a load combination, the axes that loads in global
+coordinates are given in, and the building elements that a structural member
+stands for.
 """
 
+from typing import Union
+
+import numpy as np
+
 import ifcopenshell
+import ifcopenshell.util.placement
 
 
 def get_analysis_models(item: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -145,6 +151,65 @@ def get_item_activities(item: ifcopenshell.entity_instance) -> list[ifcopenshell
     return [rel.RelatedStructuralActivity for rel in item.AssignedStructuralActivity]
 
 
+def get_activity_item(activity: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    """The structural item an activity acts on, or is a reaction of
+
+    :param activity: An IfcStructuralActivity
+    :return: Its IfcStructuralItem, or None if it is assigned to none
+    """
+    for rel in activity.AssignedToStructuralItem:
+        return rel.RelatingElement
+    return None
+
+
+def get_activity_load_cases(activity: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+    """The load cases an activity is in
+
+    An activity is grouped into a load case directly or through load groups
+    of type LOAD_GROUP, as :func:`get_group_activities` finds it.
+
+    :param activity: An IfcStructuralActivity
+    :return: Its load cases, IfcStructuralLoadGroups of type LOAD_CASE
+    """
+    cases = {}
+    groups, seen = _load_groups_of(activity), set()
+    while groups:
+        group = groups.pop(0)
+        if group in seen:
+            continue
+        seen.add(group)
+        if group.PredefinedType == "LOAD_CASE":
+            cases[group] = None
+        elif group.PredefinedType == "LOAD_GROUP":
+            groups.extend(_load_groups_of(group))
+    return list(cases)
+
+
+def get_global_axes(activity: ifcopenshell.entity_instance) -> np.ndarray:
+    """The axes that an activity's loads in global coordinates are given in
+
+    IFC calls the coordinate system of an analysis model "global": loads
+    whose GlobalOrLocal is GLOBAL_COORDS are given in the axes of the
+    model's SharedPlacement, which need not be the project's. This is the
+    SharedPlacement of the analysis model of the activity's item, or of
+    its load cases, else the activity's own ObjectPlacement, else the
+    project's axes.
+
+    :param activity: An IfcStructuralActivity
+    :return: A 3x3 rotation matrix whose columns are the X, Y and Z axes,
+        in the project's coordinates
+    """
+    item = get_activity_item(activity)
+    models = get_analysis_models(item) if item else []
+    models += [m for case in get_activity_load_cases(activity) for m in get_analysis_models(case)]
+    placements = [m.SharedPlacement for m in models if m.SharedPlacement]
+    placements.append(activity.ObjectPlacement)
+    for placement in placements:
+        if placement:
+            return np.array(ifcopenshell.util.placement.get_placement(placement))[:3, :3]
+    return np.eye(3)
+
+
 def get_member_connections(member: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """The structural connections a member is joined to
 
@@ -201,3 +266,11 @@ def _linked(product: ifcopenshell.entity_instance, ifc_class: str) -> list[ifcop
     for rel in getattr(product, "ReferencesElement", ()):
         candidates.append(rel.RelatingElement)
     return list(dict.fromkeys(c for c in candidates if c.is_a(ifc_class)))
+
+
+def _load_groups_of(product: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+    return [
+        rel.RelatingGroup
+        for rel in product.HasAssignments
+        if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.is_a("IfcStructuralLoadGroup")
+    ]
