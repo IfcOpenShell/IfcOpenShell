@@ -1,6 +1,7 @@
 """BCF XML tests."""
 
 import uuid
+import zipfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -112,6 +113,42 @@ def test_massive_bcf(xml_handler) -> None:
         bcf.save(file_path)
 
 
+BLANK_PNG = (
+    b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+    b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDAT\x08\xd7c\x90\x8a"
+    b"\x00\x00\x00\x00IEND\xaeB`\x82"
+)
+
+
+def _make_visinfo(xml_handler):
+    vi = mdl.VisualizationInfo(
+        guid=str(uuid.uuid4()),
+        components=build_components(str(uuid.uuid4())),
+        perspective_camera=build_camera_from_vectors([1, 2, 3], [0, 1, 0], [0, 0, 1]),
+    )
+    return VisualizationInfoHandler(visualization_info=vi, snapshot=BLANK_PNG, xml_handler=xml_handler)
+
+
+def test_bcf21_viewpoint_and_snapshot_filenames(xml_handler, build_sample) -> None:
+    bcf, th = build_sample
+    primary = th.add_visinfo_handler(_make_visinfo(xml_handler))
+    assert primary.viewpoint == "viewpoint.bcfv"
+    assert primary.snapshot == "snapshot.png"
+
+    extra_handler = _make_visinfo(xml_handler)
+    extra = th.add_visinfo_handler(extra_handler)
+    assert extra.viewpoint == f"{extra_handler.guid}.bcfv"
+    assert extra.snapshot == f"{extra_handler.guid}.png"
+
+    with TemporaryDirectory() as tmp_dir:
+        file_path = Path(tmp_dir) / "test.bcf"
+        bcf.save(file_path)
+        with zipfile.ZipFile(file_path) as zf:
+            names = zf.namelist()
+    assert f"{th.guid}/viewpoint.bcfv" in names
+    assert f"{th.guid}/snapshot.png" in names
+
+
 def test_equality_with_wrong_object(build_sample) -> None:
     assert build_sample[0] != "Wrong object"
 
@@ -125,3 +162,14 @@ def test_bcf_get_set_version(build_sample) -> None:
     assert bcf.version.version_id == "2.1"
     bcf.version.version_id = "2.0"
     assert bcf.version.version_id == "2.0"
+
+
+def test_get_viewpoint_filename(xml_handler, build_sample) -> None:
+    _, th = build_sample
+    primary = _make_visinfo(xml_handler)
+    extra = _make_visinfo(xml_handler)
+    th.add_visinfo_handler(primary)
+    th.add_visinfo_handler(extra)
+    assert th.get_viewpoint_filename(primary.guid) == "viewpoint.bcfv"
+    assert th.get_viewpoint_filename(extra.guid) == f"{extra.guid}.bcfv"
+    assert th.get_viewpoint_filename("unknown") is None

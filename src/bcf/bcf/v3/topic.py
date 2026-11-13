@@ -259,6 +259,10 @@ class TopicHandler:
         self.topic.viewpoints.view_point.append(viewpoint)
         return viewpoint
 
+    def get_viewpoint_filename(self, guid: str) -> Optional[str]:
+        """Return the viewpoint filename (key of `viewpoints`) for a viewpoint GUID."""
+        return next((filename for filename, vpt in self.viewpoints.items() if vpt.guid == guid), None)
+
     def __eq__(self, other: object) -> bool | NoReturn:
         return (
             (
