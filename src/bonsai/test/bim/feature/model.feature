@@ -347,6 +347,56 @@ Scenario: Align walls - centerline fail due to selection criteria
     When the object "IfcWall/Wall" is selected
     Then I press "bim.hotkey(hotkey='S_C')" and expect error "Error: At least two vertically layered elements must be selected to match alignments."
 
+Scenario: Mirror a wall using another wall as the mirror axis
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And the cursor is at "2,0,0"
+    And I press "bim.add_occurrence"
+    When the object "IfcWall/Wall" is selected
+    And additionally the object "IfcWall/Wall.001" is selected
+    And I look at the tool header
+    And I click "Mirror"
+    Then the object "IfcWall/Wall" bottom left corner is at "0,0,0"
+    And the object "IfcWall/Wall" top right corner is at "1,0.1,3"
+    And the object "IfcWall/Wall.001" bottom left corner is at "2,0,0"
+    And the object "IfcWall/Wall.001" top right corner is at "3,0.1,3"
+    And the object "IfcWall/Wall.002" bottom left corner is at "3,0,0"
+    And the object "IfcWall/Wall.002" top right corner is at "4,0.1,3"
+
+Scenario: Mirror a wall - fail due to selection criteria
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    When the object "IfcWall/Wall" is selected
+    And I look at the tool header
+    And I click "Mirror" and expect error "Error: At least two objects must be selected: an object to be mirrored, and a mirror axis as the active object."
+    Then the object "IfcWall/Wall" is selected
+
+Scenario: Merge walls - fail due to a selected element that is not a wall
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    When the object "IfcSlab/Slab" is selected
+    And additionally the object "IfcWall/Wall" is selected
+    And I look at the tool header
+    And I click "Merge" and expect error "Error: Both selected items must be LAYER2 (walls, railings, etc) to perform a merge."
+    Then the object "IfcSlab/Slab" exists
+    And the object "IfcSlab/Slab" is an "IfcSlab"
+
 Scenario: Align elements
     Given an empty IFC project
     And I load the demo construction library
