@@ -551,6 +551,10 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             ifc_context = int(props.contexts or "0") or None
             if ifc_context:
                 ifc_context = tool.Ifc.get().by_id(ifc_context)
+        if representation_template in ("VERTEX", "EDGE", "FACE"):
+            # Structural items' topology is labelled 'Reference', as IfcStructuralItem requires.
+            tool.Structural.ensure_representation_contexts()
+            ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Reference", "GRAPH_VIEW")
 
         if representation_template in (
             "EMPTY",
