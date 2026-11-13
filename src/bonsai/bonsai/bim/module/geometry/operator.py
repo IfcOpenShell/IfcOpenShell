@@ -2330,6 +2330,11 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                 self.enable_edit_mode(context)
             elif tool.Blender.Modifier.try_applying_edit_mode(obj, element):
                 pass
+            elif obj.type == "CURVE" and not element.is_a("IfcAnnotation"):
+                # Swept disk curves carry no mesh item ids, so item editing cannot enter (#4813).
+                # Curve annotations do carry item ids and stay editable (#5025).
+                self.report({"INFO"}, "Editing this curve representation is not supported yet.")
+                obj.select_set(False)
             else:
                 bpy.ops.bim.import_representation_items()
         elif tool.Geometry.is_representation_item(obj):
