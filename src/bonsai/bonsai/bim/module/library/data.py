@@ -74,7 +74,8 @@ class LibrariesData:
             return []
         results = []
         data = tool.Ifc.get().by_id(reference_id).get_info()
-        del data["ReferencedLibrary"]
+        if tool.Ifc.get_schema() != "IFC2X3":
+            del data["ReferencedLibrary"]
         for key, value in data.items():
             if key in ["id", "type"]:
                 continue
