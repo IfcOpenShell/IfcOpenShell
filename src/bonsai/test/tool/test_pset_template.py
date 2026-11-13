@@ -45,3 +45,14 @@ class TestAddPsetAsTemplate(NewFile):
         assert pset_template.is_a("IfcPropertySetTemplate")
         assert len(templates := pset_template.HasPropertyTemplates) == 2
         assert set(t.Name for t in templates) == {"Foo", "Bar"}
+
+    def test_ifc4x3(self):
+        ifc = ifcopenshell.file(schema="IFC4X3")
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcWall()
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Foo": "a"})
+        pset.HasProperties[0].Specification = "Bar"
+        library = ifcopenshell.file(schema="IFC4X3")
+        pset_template = subject.add_pset_as_template("Foo", library)
+        assert [(t.Name, t.Description) for t in pset_template.HasPropertyTemplates] == [("Foo", "Bar")]
