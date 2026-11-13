@@ -22,6 +22,7 @@ import math
 from types import SimpleNamespace
 
 import ifcopenshell
+import ifcopenshell.api.group
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
 import numpy as np
