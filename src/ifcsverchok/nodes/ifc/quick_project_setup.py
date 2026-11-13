@@ -72,7 +72,9 @@ class SvIfcQuickProjectSetup(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
 
     def process(self):
         self.sv_input_names = [i.name for i in self.inputs]
+        self.file_out = []
         super().process()
+        self.outputs["file"].sv_set([self.file_out])
 
     def process_ifc(self, *setting_values):
         settings = dict(zip(self.sv_input_names, setting_values))
@@ -90,7 +92,7 @@ class SvIfcQuickProjectSetup(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
             project_name=settings["project_name"],
         )
 
-        self.outputs["file"].sv_set([[file]])
+        self.file_out.append(file)
 
 
 def register():
