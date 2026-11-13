@@ -18,6 +18,20 @@
 from typing import Optional
 
 import ifcopenshell
+import ifcopenshell.util.attribute
+
+
+def _initialize_stiffnesses_to_free(file: ifcopenshell.file, condition: ifcopenshell.entity_instance) -> None:
+    for i in range(1, len(condition)):
+        attr_decl = condition.declaration.all_attributes()[i]
+        attr_name = condition.attribute_name(i)
+        named = attr_decl.type_of_attribute().as_named_type()
+        if named and named.declared_type().as_select_type():
+            select_items = [s.name() for s in ifcopenshell.util.attribute.get_select_items(attr_decl)]
+            if "IfcBoolean" in select_items:
+                setattr(condition, attr_name, file.createIfcBoolean(False))
+        elif file.schema == "IFC2X3":
+            setattr(condition, attr_name, 0.0)
 
 
 def add_structural_boundary_condition(
@@ -65,8 +79,11 @@ def add_structural_boundary_condition(
             assert False, related_connection
 
         condition = file.create_entity(boundary_class, Name=name)
+        _initialize_stiffnesses_to_free(file, condition)
         connection.AppliedCondition = condition
         return condition
     else:
         # add an orphan boundary condition
-        return file.create_entity(ifc_class, Name=name)
+        condition = file.create_entity(ifc_class, Name=name)
+        _initialize_stiffnesses_to_free(file, condition)
+        return condition

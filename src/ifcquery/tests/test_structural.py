@@ -35,7 +35,14 @@ class TestStructural:
         assert root["name"] == "Root"
         assert root["applied_condition"]["type"] == "IfcBoundaryNodeCondition"
         assert root["applied_condition"]["name"] == "Fixed"
-        assert root["applied_condition"]["values"] == {"TranslationalStiffnessZ": True, "RotationalStiffnessY": 1000.0}
+        assert root["applied_condition"]["values"] == {
+            "TranslationalStiffnessX": False,
+            "TranslationalStiffnessY": False,
+            "TranslationalStiffnessZ": True,
+            "RotationalStiffnessX": False,
+            "RotationalStiffnessY": 1000.0,
+            "RotationalStiffnessZ": False,
+        }
         assert [m["name"] for m in root["members"]] == ["Cantilever"]
         assert tip["applied_condition"] is None
         assert [a["type"] for a in tip["activities"]] == ["IfcStructuralPointAction"]
