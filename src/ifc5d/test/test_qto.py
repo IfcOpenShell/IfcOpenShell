@@ -18,6 +18,8 @@
 
 # This file was generated with the assistance of an AI coding tool.
 
+import math
+
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.root
@@ -229,3 +231,75 @@ class TestEditQtosIntegration:
         assert length.is_a("IfcQuantityLength")
         assert length.Unit == millimetre
         assert length.LengthValue == pytest.approx(5000.0)
+
+
+class TestSegmentLengthFromGeometry:
+    def setup_method(self):
+        self.file = ifcopenshell.file(schema="IFC4X3")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject", name="Test")
+        units = [
+            self.file.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE"),
+            self.file.createIfcSIUnit(None, "AREAUNIT", None, "SQUARE_METRE"),
+            self.file.createIfcSIUnit(None, "VOLUMEUNIT", None, "CUBIC_METRE"),
+        ]
+        ifcopenshell.api.unit.assign_unit(self.file, units=units)
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        self.body = ifcopenshell.api.context.add_context(
+            self.file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+
+    def create_segment(self, rings):
+        f = self.file
+        points = [[f.createIfcCartesianPoint(p) for p in ring] for ring in rings]
+        n = len(rings[0])
+        polygons = [
+            [points[r][k], points[r][(k + 1) % n], points[r + 1][(k + 1) % n], points[r + 1][k]]
+            for r in range(len(rings) - 1)
+            for k in range(n)
+        ]
+        polygons.append(points[0][::-1])
+        polygons.append(points[-1])
+        faces = [
+            f.createIfcFace([f.createIfcFaceOuterBound(f.createIfcPolyLoop(polygon), True)]) for polygon in polygons
+        ]
+        brep = f.createIfcFacetedBrep(f.createIfcClosedShell(faces))
+        segment = ifcopenshell.api.root.create_entity(f, ifc_class="IfcCableSegment")
+        segment.ObjectPlacement = f.createIfcLocalPlacement(
+            None, f.createIfcAxis2Placement3D(f.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+        )
+        rep = f.createIfcShapeRepresentation(self.body, "Body", "Brep", [brep])
+        segment.Representation = f.createIfcProductDefinitionShape(None, None, [rep])
+        return segment
+
+    def quantify(self, segment, **kwargs):
+        rules = ifc5d.qto.rules["IFC4X3QtoBaseQuantities"]
+        results = ifc5d.qto.quantify(self.file, {segment}, rules, **kwargs)
+        return results[segment]["Qto_CableSegmentBaseQuantities"]
+
+    def create_straight_segment(self):
+        h = 0.05
+        rings = [[(x, -h, -h), (x, h, -h), (x, h, h), (x, -h, h)] for x in (0.0, 2.0)]
+        return self.create_segment(rings)
+
+    def test_tessellated_segment_has_no_length_by_default(self):
+        assert "Length" not in self.quantify(self.create_straight_segment())
+
+    def test_tessellated_segment_length_from_geometry(self):
+        quantities = self.quantify(self.create_straight_segment(), estimate_length_from_geometry=True)
+        assert quantities["Length"] == pytest.approx(2.0)
+
+    def test_short_extrusion_of_a_wide_footprint(self):
+        angles = [a * math.pi / 3 for a in range(6)]
+        rings = [[(0.5 * math.cos(a), 0.5 * math.sin(a), z) for a in angles] for z in (0.0, 0.1)]
+        quantities = self.quantify(self.create_segment(rings), estimate_length_from_geometry=True)
+        assert quantities["Length"] == pytest.approx(0.1)
+
+    def test_bent_segment_follows_the_bend(self):
+        section = [(0.05 * math.cos(a * math.pi / 4), 0.05 * math.sin(a * math.pi / 4)) for a in range(8)]
+        rings = [
+            [(0.0, w, z) for w, z in section],
+            [(2.0 - w, w, z) for w, z in section],
+            [(2.0 - w, 2.0, z) for w, z in section],
+        ]
+        quantities = self.quantify(self.create_segment(rings), estimate_length_from_geometry=True)
+        assert quantities["Length"] == pytest.approx(4.0, abs=0.1)
