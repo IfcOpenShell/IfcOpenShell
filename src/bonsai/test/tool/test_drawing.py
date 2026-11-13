@@ -23,6 +23,7 @@ from pathlib import Path
 import bpy
 import ifcopenshell
 import ifcopenshell.api.drawing
+import ifcopenshell.api.geometry
 import ifcopenshell.api.group
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
@@ -439,6 +440,31 @@ class TestGetAnnotationContext(NewFile):
         assert subject.get_annotation_context("PLAN_VIEW") == context
         assert subject.get_annotation_context("ELEVATION_VIEW") == context2
         assert subject.get_annotation_context("PLAN_VIEW", "FALL") == context3
+
+
+class TestGetAnnotationRepresentation(NewFile):
+    def add_annotation(self, ifc, context):
+        annotation = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcAnnotation")
+        representation = ifc.createIfcShapeRepresentation(context, "Annotation", "Annotation2D", [])
+        ifcopenshell.api.geometry.assign_representation(ifc, product=annotation, representation=representation)
+        return annotation, representation
+
+    def test_a_representation_in_an_annotation_subcontext(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        parent = ifc.createIfcGeometricRepresentationContext(ContextType="Model")
+        context = ifc.createIfcGeometricRepresentationSubContext(
+            ContextType="Model", ContextIdentifier="Annotation", TargetView="MODEL_VIEW", ParentContext=parent
+        )
+        annotation, representation = self.add_annotation(ifc, context)
+        assert subject.get_annotation_representation(annotation) == representation
+
+    def test_a_representation_directly_in_the_parent_context(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        parent = ifc.createIfcGeometricRepresentationContext(ContextType="Model")
+        annotation, representation = self.add_annotation(ifc, parent)
+        assert subject.get_annotation_representation(annotation) == representation
 
 
 class TestGetBodyContext(NewFile):
