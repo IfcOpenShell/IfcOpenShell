@@ -801,6 +801,8 @@ class ShaderInfo:
             load = activity.AppliedLoad
             preview = self.preview.get(load.id()) if load else None
             values = {attr: preview.get(attr) if preview is not None else getattr(load, attr, 0) for attr in attr_list}
+            if load and activity.GlobalOrLocal != "LOCAL_COORDS":
+                values = tool.Structural.to_blender_axes(load, values)  # Given in its model's axes.
             temp = np.zeros(6)
             for i, attr in enumerate(attr_list):
                 temp[i] += (values[attr] or 0) * factor

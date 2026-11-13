@@ -29,6 +29,8 @@ import ifcopenshell.api.context
 import ifcopenshell.api.structural
 import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
+import ifcopenshell.util.structural
+import numpy as np
 
 import bonsai.bim.helper
 import bonsai.core.tool
@@ -138,6 +140,88 @@ class Structural(bonsai.core.tool.Structural):
             direction
         ]
         return sign_x * x, sign_z * z
+
+    @classmethod
+    def is_load_case(cls, group: ifcopenshell.entity_instance) -> bool:
+        """Whether a load group is a load case: an IfcStructuralLoadCase, or a load group typed LOAD_CASE, as
+        some programs, such as RFEM, write them"""
+        return group.is_a("IfcStructuralLoadCase") or (
+            group.is_a("IfcStructuralLoadGroup") and group.PredefinedType == "LOAD_CASE"
+        )
+
+    @classmethod
+    def get_load_cases(
+        cls, model: Union[ifcopenshell.entity_instance, None] = None
+    ) -> list[ifcopenshell.entity_instance]:
+        """The load groups loading an analysis model: those it is loaded by, then load cases with loads on its
+        items that it does not list, as some programs leave LoadedBy empty. Without a model, every load case."""
+        cases = [g for g in tool.Ifc.get().by_type("IfcStructuralLoadGroup") if cls.is_load_case(g)]
+        if model is None:
+            return cases
+        loaded_by = list(model.LoadedBy or [])
+        items = {obj for rel in model.IsGroupedBy or [] for obj in rel.RelatedObjects}
+        return loaded_by + [c for c in cases if c not in loaded_by and items & cls.get_loaded_items(c)]
+
+    @classmethod
+    def get_loaded_items(cls, group: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+        """The structural items with loads in a load group, directly or in the groups within it"""
+        items, groups, seen = set(), [group], set()
+        while groups:
+            group = groups.pop()
+            if group.id() in seen:
+                continue
+            seen.add(group.id())
+            for rel in group.IsGroupedBy or []:
+                for obj in rel.RelatedObjects:
+                    if obj.is_a("IfcStructuralLoadGroup"):
+                        groups.append(obj)
+                    elif obj.is_a("IfcStructuralActivity") and (connects := obj.AssignedToStructuralItem):
+                        items.add(connects[0].RelatingElement)
+        return items
+
+    @classmethod
+    def get_model_rotation(cls, load: ifcopenshell.entity_instance) -> Union[np.ndarray, None]:
+        """The rotation from the axes of the analysis model a load acts in to Blender's, where they differ. IFC gives
+        global load components in the model's axes, set by its SharedPlacement; RFEM, for one, points Z down."""
+        for activity in tool.Ifc.get().get_inverse(load):
+            if not activity.is_a("IfcStructuralActivity") or activity.GlobalOrLocal == "LOCAL_COORDS":
+                continue
+            rotation = ifcopenshell.util.structural.get_global_axes(activity)
+            return None if np.allclose(rotation, np.eye(3)) else rotation
+        return None
+
+    @classmethod
+    def to_blender_axes(cls, load: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> dict[str, Any]:
+        """Load attributes with their X, Y and Z components turned from the axes of the load's model to Blender's"""
+        return cls.turn_load_attributes(load, attributes, to_model=False)
+
+    @classmethod
+    def to_model_axes(cls, load: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> dict[str, Any]:
+        """Load attributes with their X, Y and Z components turned from Blender's axes to those of the load's model"""
+        return cls.turn_load_attributes(load, attributes, to_model=True)
+
+    @classmethod
+    def turn_load_attributes(
+        cls, load: ifcopenshell.entity_instance, attributes: dict[str, Any], to_model: bool
+    ) -> dict[str, Any]:
+        attributes = dict(attributes)
+        if (rotation := cls.get_model_rotation(load)) is None:
+            return attributes
+        for prefix in ("Force", "Moment"):
+            keys = [f"{prefix}{axis}" for axis in "XYZ"]
+            if any(k in attributes for k in keys):
+                vector = np.array([attributes.get(k) or 0.0 for k in keys])
+                vector = (rotation.T if to_model else rotation) @ vector
+                # A zero the file gave stays one; one it left unset stays unset.
+                given = [attributes.get(k) is not None for k in keys]
+                attributes.update({k: float(v) if (v or g) else None for k, v, g in zip(keys, vector, given)})
+        return attributes
+
+    @classmethod
+    def get_force(cls, load: ifcopenshell.entity_instance) -> tuple[float, float, float]:
+        """A single force load's force, in Blender's axes"""
+        attributes = cls.to_blender_axes(load, {a: getattr(load, a) for a in ("ForceX", "ForceY", "ForceZ")})
+        return tuple(attributes[a] or 0.0 for a in ("ForceX", "ForceY", "ForceZ"))
 
     @classmethod
     def get_simple_slope(cls, x: float, z: float, max_denominator: int = 24) -> tuple[float, float]:
