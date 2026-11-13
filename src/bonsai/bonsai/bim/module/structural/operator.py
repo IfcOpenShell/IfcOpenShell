@@ -25,52 +25,126 @@ import bpy
 import ifcopenshell.api.group
 import ifcopenshell.api.structural
 import ifcopenshell.util.unit
+from bpy_extras.view3d_utils import location_3d_to_region_2d
 from mathutils import Matrix, Vector
 
 import bonsai.bim.helper
 import bonsai.core.structural as core
 import bonsai.tool as tool
-from bonsai.bim.module.structural.data import StructuralAnalysisModelsData, StructuralLoadCasesData
+from bonsai.bim.module.structural.data import (
+    LoadGroupDecorationData,
+    StructuralAnalysisModelsData,
+    StructuralLoadCasesData,
+)
 from bonsai.bim.module.structural.decorator import LoadsDecorator
+from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
 
 
-class ShowLoads(bpy.types.Operator):
-    """Draw decorations to show structural actions in 3d view"""
+class PickStructuralLoads(bpy.types.Operator):
+    """Highlight the shown load under the mouse, and edit it when clicked. Runs while loads are shown"""
 
-    bl_idname = "bim.show_loads"
-    bl_label = "Show Loads in 3D View"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_idname = "bim.pick_structural_loads"
+    bl_label = "Pick Structural Loads"
+    bl_options = {"INTERNAL"}
 
     def modal(self, context, event):
         assert context.screen
+        if not LoadsDecorator.is_installed:
+            LoadsDecorator.is_picking = False
+            return {"FINISHED"}  # The loads overlay was turned off.
         if event.type == "F5":
             LoadsDecorator.update()
             tool.Blender.update_all_viewports(context)
-        if event.type == "ESC":
-            LoadsDecorator.uninstall()
-            tool.Blender.update_all_viewports(context)
-            return {"FINISHED"}
+        if event.type == "MOUSEMOVE":
+            hovered = None
+            if view := self.get_view_under_mouse(context, event):
+                area, region, rv3d = view
+                hovered = LoadsDecorator.pick(region, rv3d, event.mouse_x - region.x, event.mouse_y - region.y)
+            if hovered is not LoadsDecorator.hovered:
+                LoadsDecorator.hovered = hovered
+                tool.Blender.update_all_viewports(context)
+        elif event.type == "LEFTMOUSE" and event.value == "PRESS" and LoadsDecorator.hovered:
+            if view := self.get_view_under_mouse(context, event):
+                area, region, rv3d = view
+                hovered = LoadsDecorator.hovered
+                # Dialogs open at the cursor, so move it beside the diagram for the dialog not to cover it.
+                self.move_cursor_beside_loads(context, region, rv3d, hovered)
+                with context.temp_override(window=context.window, area=area, region=region):
+                    bpy.ops.bim.edit_structural_load_values("INVOKE_DEFAULT", activity=hovered["activity"])
+                return {"RUNNING_MODAL"}
         return {"PASS_THROUGH"}
 
+    def move_cursor_beside_loads(
+        self, context: bpy.types.Context, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, hovered: dict
+    ) -> None:
+        points = [p for pickable in LoadsDecorator.pickables for p in (pickable["tail"], pickable["tip"])]
+        points += [info["position"] for info in LoadsDecorator.text_info]
+        projected = [location_3d_to_region_2d(region, rv3d, Vector(p)) for p in points]
+        projected = [p for p in projected if p is not None]
+        if not projected:
+            return
+        # Work in window coordinates: the dialog may cover other editors, just not the diagram.
+        xs = [region.x + p.x for p in projected]
+        ys = [region.y + p.y for p in projected]
+        left, right, bottom, top = min(xs), max(xs), min(ys), max(ys)
+        window_width, window_height = context.window.width, context.window.height
+        # The dialog's size in pixels: dialogs are sized in UI units, which follow the display and resolution scale.
+        scale = context.preferences.system.ui_scale
+        width, height, margin = 420 * scale, 400 * scale, 20 * scale
+        level_y, level_x = (bottom + top) / 2, (left + right) / 2
+        # A dialog opens centred on the cursor, so put the cursor half a dialog beyond the diagram's edge.
+        candidates = [
+            (window_width - right, width, right + margin + width / 2, level_y),
+            (left, width, left - margin - width / 2, level_y),
+            (bottom, height, level_x, bottom - margin - height / 2),
+            (window_height - top, height, level_x, top + margin + height / 2),
+        ]
+        fitting = [c for c in candidates if c[0] >= c[1] + margin]
+        # Failing a side with room, take the one with most, which covers the least of the diagram.
+        _, _, x, y = fitting[0] if fitting else max(candidates, key=lambda c: c[0] / c[1])
+        # Better, open it on the side of the diagram where the clicked arrow is, just clear of the diagram.
+        middle = location_3d_to_region_2d(region, rv3d, (Vector(hovered["tail"]) + Vector(hovered["tip"])) / 2)
+        if middle is not None:
+            direction = Vector((region.x + middle.x - level_x, region.y + middle.y - level_y))
+            if direction.length > 1:
+                direction.normalize()
+                clear_x = ((right - left) / 2 + margin + width / 2) / abs(direction.x) if direction.x else float("inf")
+                clear_y = ((top - bottom) / 2 + margin + height / 2) / abs(direction.y) if direction.y else float("inf")
+                distance = min(clear_x, clear_y)
+                x, y = level_x + direction.x * distance, level_y + direction.y * distance
+        x = min(max(x, width / 2), window_width - width / 2)
+        y = min(max(y, height / 2), window_height - height / 2)
+        context.window.cursor_warp(int(x), int(y))
+
+    def get_view_under_mouse(
+        self, context: bpy.types.Context, event: bpy.types.Event
+    ) -> Union[tuple[bpy.types.Area, bpy.types.Region, bpy.types.RegionView3D], None]:
+        def is_under_mouse(region: bpy.types.Region) -> bool:
+            x, y = event.mouse_x - region.x, event.mouse_y - region.y
+            return 0 <= x < region.width and 0 <= y < region.height
+
+        for area in context.window.screen.areas:
+            if area.type != "VIEW_3D":
+                continue
+            # With region overlap the sidebar, toolbar and headers lie over the view: what is under them is theirs.
+            if any(r.type != "WINDOW" and r.width > 1 and r.height > 1 and is_under_mouse(r) for r in area.regions):
+                return None
+            for region in area.regions:
+                if region.type == "WINDOW" and is_under_mouse(region):
+                    # Each view of a quad view has its own region and view.
+                    return area, region, region.data
+        return None
+
     def invoke(self, context, event):
-        assert context.window and context.window_manager and context.screen
-        collection = bpy.data.collections.get("IfcStructuralItem")
-        if collection is None:
-            self.report({"ERROR"}, "No IfcStructuralItems found.")
+        assert context.window_manager
+        if not LoadsDecorator.is_installed or LoadsDecorator.is_picking:
             return {"CANCELLED"}
-
-        collection.hide_viewport = False
-        context.window.cursor_modal_set("WAIT")
-        try:
-            LoadsDecorator.install(context)
-        except Exception as exc:
-            context.window.cursor_modal_restore()
-            raise exc
-        context.window.cursor_modal_restore()
+        LoadsDecorator.is_picking = True
         context.window_manager.modal_handler_add(self)
-        tool.Blender.update_all_viewports(context)
-
         return {"RUNNING_MODAL"}
+
+    def cancel(self, context):
+        LoadsDecorator.is_picking = False
 
 
 class AddStructuralMemberConnection(bpy.types.Operator, tool.Ifc.Operator):
@@ -814,16 +888,40 @@ def get_default_load_name(props: "StructuralForceInput", category: str) -> str:
     return f"{', '.join(values) or '0'} {unit}"
 
 
-def update_load_name(self: "StructuralForceInput", context: bpy.types.Context) -> None:
+def get_load_attributes(props: "StructuralForceInput", category: str) -> dict[str, Union[float, None]]:
+    _, _, force_attributes, moment_attributes = APPLY_LOAD_CLASSES[category]
+    values = get_force_components(props)
+    if props.input_mode == "COMPONENTS":
+        values += (props.moment_x, props.moment_y, props.moment_z)
+    else:
+        values += (0.0, 0.0, 0.0)
+    return {name: value or None for name, value in zip(force_attributes + moment_attributes, values)}
+
+
+def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context) -> None:
     # Keep a generated name in step with the values, but never overwrite a name the user typed.
     if self.load_category and (not self.load_name or DEFAULT_LOAD_NAME.match(self.load_name)):
         self.load_name = get_default_load_name(self, self.load_category)
+    # Show the load being edited with the values in the dialog until it is confirmed or cancelled.
+    if self.preview_load and self.load_category and LoadsDecorator.is_installed:
+        ShaderInfo.preview = {self.preview_load: get_load_attributes(self, self.load_category)}
+        LoadsDecorator.update()
+        tool.Blender.update_all_viewports(context)
+
+
+def clear_load_preview(context: bpy.types.Context) -> None:
+    if ShaderInfo.preview:
+        ShaderInfo.preview = {}
+        if LoadsDecorator.is_installed:
+            LoadsDecorator.update()
+            tool.Blender.update_all_viewports(context)
 
 
 class StructuralForceInput:
     """Force inputs shared by the Apply Load and Edit Load dialogs."""
 
     load_category: bpy.props.StringProperty(options={"HIDDEN", "SKIP_SAVE"})
+    preview_load: bpy.props.IntProperty(options={"HIDDEN", "SKIP_SAVE"})
     input_mode: bpy.props.EnumProperty(
         name="Input",
         items=[
@@ -831,7 +929,7 @@ class StructuralForceInput:
             ("ANGLE", "Angle", "Magnitude and angle above the horizontal, in the X-Z plane"),
             ("SLOPE", "Slope", "Magnitude and rise over run, in the X-Z plane"),
         ],
-        update=update_load_name,
+        update=update_force_inputs,
     )
     direction: bpy.props.EnumProperty(
         name="Direction",
@@ -842,31 +940,25 @@ class StructuralForceInput:
             ("DOWN_LEFT", "Down-Left", "Measured down from -X"),
             ("DOWN_RIGHT", "Down-Right", "Measured down from +X"),
         ],
-        update=update_load_name,
+        update=update_force_inputs,
     )
-    magnitude: bpy.props.FloatProperty(name="Magnitude", update=update_load_name)
-    angle: bpy.props.FloatProperty(name="Angle", description="Degrees from +X towards +Z", update=update_load_name)
-    rise: bpy.props.FloatProperty(name="Rise", description="Towards +Z", default=1.0, update=update_load_name)
-    run: bpy.props.FloatProperty(name="Run", description="Towards +X", default=1.0, update=update_load_name)
-    x: bpy.props.FloatProperty(name="X", update=update_load_name)
-    y: bpy.props.FloatProperty(name="Y", update=update_load_name)
-    z: bpy.props.FloatProperty(name="Z", update=update_load_name)
-    moment_x: bpy.props.FloatProperty(name="Moment X")
-    moment_y: bpy.props.FloatProperty(name="Moment Y")
-    moment_z: bpy.props.FloatProperty(name="Moment Z")
+    magnitude: bpy.props.FloatProperty(name="Magnitude", update=update_force_inputs)
+    angle: bpy.props.FloatProperty(name="Angle", description="Degrees from +X towards +Z", update=update_force_inputs)
+    rise: bpy.props.FloatProperty(name="Rise", description="Towards +Z", default=1.0, update=update_force_inputs)
+    run: bpy.props.FloatProperty(name="Run", description="Towards +X", default=1.0, update=update_force_inputs)
+    x: bpy.props.FloatProperty(name="X", update=update_force_inputs)
+    y: bpy.props.FloatProperty(name="Y", update=update_force_inputs)
+    z: bpy.props.FloatProperty(name="Z", update=update_force_inputs)
+    moment_x: bpy.props.FloatProperty(name="Moment X", update=update_force_inputs)
+    moment_y: bpy.props.FloatProperty(name="Moment Y", update=update_force_inputs)
+    moment_z: bpy.props.FloatProperty(name="Moment Z", update=update_force_inputs)
     load_name: bpy.props.StringProperty(name="Load Name")
 
     def get_components(self) -> tuple[float, float, float]:
         return get_force_components(self)
 
     def get_load_attributes(self, category: str) -> dict[str, Union[float, None]]:
-        _, _, force_attributes, moment_attributes = APPLY_LOAD_CLASSES[category]
-        values = self.get_components()
-        if self.input_mode == "COMPONENTS":
-            values += (self.moment_x, self.moment_y, self.moment_z)
-        else:
-            values += (0.0, 0.0, 0.0)
-        return {name: value or None for name, value in zip(force_attributes + moment_attributes, values)}
+        return get_load_attributes(self, category)
 
     def get_unit_symbol(self, category: str) -> str:
         return get_load_unit_symbol(category)
@@ -1015,7 +1107,17 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
             for element in elements
         ]
         ifcopenshell.api.group.assign_group(ifc_file, products=activities, group=group)
+        self.show_load_group(context, group)
         return {"FINISHED"}
+
+    def show_load_group(self, context: bpy.types.Context, group: ifcopenshell.entity_instance) -> None:
+        """Show the loads of the load case just applied to, so that the new load is seen"""
+        LoadGroupDecorationData.is_loaded = False  # A new load case is not listed yet.
+        try:
+            tool.Structural.get_structural_props().load_group_to_show = str(group.id())
+        except TypeError:
+            return  # Not in the current analysis model, so it cannot be shown.
+        tool.Structural.get_structural_props().show_loads = True
 
 
 edit_load_group_items: list[tuple[str, str, str]] = []
@@ -1108,6 +1210,8 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
             groups = get_activity_load_groups(activities[0])
             self.load_group = str(groups[0].id()) if groups else "NONE"
         self.initial_load_group = self.load_group
+        # Set last, so that filling in the values above does not start a preview.
+        self.preview_load = load.id()
         return context.window_manager.invoke_props_dialog(self, width=350)
 
     def fits(
@@ -1144,7 +1248,11 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         if self.input_mode != "COMPONENTS" and (self.y or self.moment_x or self.moment_y or self.moment_z):
             layout.label(text="Y and moments will be set to zero", icon="ERROR")
 
+    def cancel(self, context):
+        clear_load_preview(context)
+
     def _execute(self, context):
+        ShaderInfo.preview = {}  # The edit below refreshes the shown loads.
         load = self.get_load()
         category = get_load_category(load)
         attributes = self.get_load_attributes(category)
@@ -1196,6 +1304,27 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
             ifcopenshell.api.group.assign_group(ifc_file, products=[activity], group=target)
 
 
+class ShowStructuralLoadCase(bpy.types.Operator):
+    bl_idname = "bim.show_structural_load_case"
+    bl_label = "Show Load Case"
+    bl_description = "Show the loads of this load case in the viewport, or stop showing them if they are shown"
+    bl_options = {"REGISTER"}
+    load_case: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = tool.Structural.get_structural_props()
+        if props.show_loads and props.load_group_to_show == str(self.load_case):
+            props.show_loads = False
+            return {"FINISHED"}
+        try:
+            props.load_group_to_show = str(self.load_case)
+        except TypeError:
+            self.report({"WARNING"}, "This load case is not in the current analysis model.")
+            return {"CANCELLED"}
+        props.show_loads = True
+        return {"FINISHED"}
+
+
 class LoadStructuralLoads(bpy.types.Operator):
     bl_idname = "bim.load_structural_loads"
     bl_label = "Load Structural Loads"
@@ -1206,6 +1335,8 @@ class LoadStructuralLoads(bpy.types.Operator):
         props = tool.Structural.get_structural_props()
         props.structural_loads.clear()
         loads = tool.Ifc.get().by_type("IfcStructuralLoad")
+        if props.show_unused_loads_only:
+            loads = [load for load in loads if not self.is_used(load)]
         if props.filtered_structural_loads:
             names = [structural_load.Name or "Unnamed" for structural_load in loads]
             for structural_load in loads:
@@ -1228,6 +1359,20 @@ class LoadStructuralLoads(bpy.types.Operator):
         props.is_editing_loads = True
         bpy.ops.bim.disable_editing_structural_load()
         return {"FINISHED"}
+
+    def is_used(self, load: ifcopenshell.entity_instance) -> bool:
+        """Whether a load is applied in a load case or group, or is part of a load configuration"""
+        for inverse in self.file.get_inverse(load):
+            if inverse.is_a("IfcStructuralLoadConfiguration"):
+                return True
+            if inverse.is_a("IfcStructuralActivity") and any(
+                rel.is_a("IfcRelAssignsToGroup")
+                and rel.RelatingGroup
+                and rel.RelatingGroup.is_a("IfcStructuralLoadGroup")
+                for rel in inverse.HasAssignments
+            ):
+                return True
+        return False
 
 
 class DisableStructuralLoadEditingUI(bpy.types.Operator):

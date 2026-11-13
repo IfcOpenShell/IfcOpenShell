@@ -1726,6 +1726,27 @@ class BIM_PT_tab_misc(Panel):
         pass
 
 
+class BIM_PT_tab_object_structural(Panel):
+    bl_idname = "BIM_PT_tab_object_structural"
+    bl_label = "Structural"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+    bl_options = {"DEFAULT_CLOSED"}
+    bim_tab_name = "OBJECT"
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) or not tool.Ifc.get():
+            return False
+        element = tool.Ifc.get_entity(context.active_object) if context.active_object else None
+        return bool(element and element.is_a("IfcStructuralItem"))
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_tab_handover(Panel):
     bl_idname = "BIM_PT_tab_handover"
     bl_label = "Handover"
@@ -2022,6 +2043,8 @@ class BIM_PT_decorators_overlay(Panel):
         row.prop(system_props, "should_draw_decorations", text="System Decorations")
         row = col.row(align=True)
         row.prop(model_props, "show_bounding_box", text="Bounding Box Dimensions")
+        row = col.row(align=True)
+        row.prop(tool.Structural.get_structural_props(), "show_loads", text="Structural Loads")
         row = col.row(align=True)
         row.prop(model_props, "show_cut_decorator", text="Cut Decorator")
         row.prop(model_props, "show_cut_decorator_fill", text="Fill Cut Decorator")
