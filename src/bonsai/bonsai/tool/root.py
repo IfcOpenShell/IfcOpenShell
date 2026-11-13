@@ -102,6 +102,9 @@ class Root(bonsai.core.tool.Root):
                 exclude_callback=exclude_callback,
                 copied_entities=copied_entities,
             )
+            # The copied BBIM_Boolean pset still tracks the source's booleans;
+            # repoint it at the copy's freshly duplicated booleans.
+            tool.Model.remap_manual_booleans(dest, copied_entities)
         elif dest.is_a("IfcTypeProduct"):
             if not source.RepresentationMaps:
                 return copied_entities
