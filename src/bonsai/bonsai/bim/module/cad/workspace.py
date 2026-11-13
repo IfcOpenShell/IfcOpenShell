@@ -245,6 +245,9 @@ class CadHotkey(bpy.types.Operator):
             if tool.Geometry.is_profile_object_active():
                 row = self.layout.row()
                 row.prop(props, "radius")
+            else:
+                row = self.layout.row()
+                row.prop(props, "resolution")
 
         elif self.hotkey == "S_F":
             if not tool.Geometry.is_profile_object_active():
@@ -281,7 +284,7 @@ class CadHotkey(bpy.types.Operator):
         if tool.Geometry.is_profile_object_active():
             bpy.ops.bim.add_ifccircle(radius=self.props.radius)
         else:
-            bpy.ops.bim.cad_arc_from_2_points()
+            bpy.ops.bim.cad_arc_from_2_points(resolution=self.props.resolution)
 
     def hotkey_S_E(self):
         bpy.ops.bim.cad_trim_extend()
