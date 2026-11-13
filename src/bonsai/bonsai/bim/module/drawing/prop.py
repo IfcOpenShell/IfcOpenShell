@@ -602,8 +602,8 @@ class BIMCameraProperties(PropertyGroup):
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
     dpi: IntProperty(name="DPI", default=75, update=get_update_layer_callback("dpi", "DPI"))
-    width: FloatProperty(name="Width", default=50, subtype="DISTANCE", update=update_width_height)
-    height: FloatProperty(name="Height", default=50, subtype="DISTANCE", update=update_width_height)
+    width: FloatProperty(name="Width", default=50, min=0.01, subtype="DISTANCE", update=update_width_height)
+    height: FloatProperty(name="Height", default=50, min=0.01, subtype="DISTANCE", update=update_width_height)
     # Bonsai property is needed to prevent user from using unsupported panoramic camera.
     camera_type: EnumProperty(
         name="Camera Type",
