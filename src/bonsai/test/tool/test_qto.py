@@ -56,6 +56,47 @@ class TestGetRoundedValue(test.bim.bootstrap.NewFile):
         assert subject.get_rounded_value(quantity) == 1.234
 
 
+class TestQuantifyElementWithoutObject(test.bim.bootstrap.NewFile):
+    def test_a_door_with_no_blender_object_is_quantified_from_its_overall_size(self):
+        import ifc5d.qto
+        import pytest
+
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name="My Project")
+        ifcopenshell.api.unit.assign_unit(ifc)
+        door = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoor")
+        door.OverallWidth = 900.0
+        door.OverallHeight = 2000.0
+        assert tool.Ifc.get_object(door) is None
+
+        results = ifc5d.qto.quantify(ifc, {door}, ifc5d.qto.rules["IFC4QtoBaseQuantitiesBlender"])
+
+        assert results[door]["Qto_DoorBaseQuantities"] == {
+            "Width": pytest.approx(900.0),
+            "Height": pytest.approx(2000.0),
+            "Area": pytest.approx(1.8),
+            "Perimeter": pytest.approx(5800.0),
+        }
+
+    def test_a_wall_whose_object_is_not_a_mesh_is_not_given_zero_dimensions(self):
+        import ifc5d.qto
+
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name="My Project")
+        ifcopenshell.api.unit.assign_unit(ifc)
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        obj = bpy.data.objects.new("Wall", None)
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(wall, obj)
+        assert obj.type == "EMPTY"
+
+        results = ifc5d.qto.quantify(ifc, {wall}, ifc5d.qto.rules["IFC4QtoBaseQuantitiesBlender"])
+
+        assert wall not in results
+
+
 class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
     def setup_file(self):
         import logging
