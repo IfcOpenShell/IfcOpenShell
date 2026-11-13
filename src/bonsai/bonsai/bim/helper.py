@@ -269,6 +269,9 @@ def import_attribute(
 
 ATTRIBUTE_MIN_MAX_CONSTRAINTS = {"IfcMaterialLayer": {"Priority": {"value_min": 0, "value_max": 100}}}
 
+# Inclusive clamps cannot express "self > 0.0" exactly, so use a small epsilon above 0.
+STRICTLY_POSITIVE_FLOAT_MIN = 1e-4
+
 
 def add_attribute_min_max(attribute: W.attribute, attribute_blender: bonsai.bim.prop.Attribute) -> None:
     if attribute_blender.ifc_class in ATTRIBUTE_MIN_MAX_CONSTRAINTS:
@@ -278,9 +281,42 @@ def add_attribute_min_max(attribute: W.attribute, attribute_blender: bonsai.bim.
             setattr(attribute_blender, constraint + "_constraint", True)
     attribute_type = attribute.type_of_attribute()
 
-    if attribute_type._is("IfcPositiveLengthMeasure") or attribute_type._is("IfcNonNegativeLengthMeasure"):
-        attribute_blender.value_min = 0.0
+    def set_min(value: float) -> None:
+        attribute_blender.value_min = value
         attribute_blender.value_min_constraint = True
+
+    def set_max(value: float) -> None:
+        attribute_blender.value_max = value
+        attribute_blender.value_max_constraint = True
+
+    # Numeric measure types constrained by IFC WHERE rules.
+    if attribute_type._is("IfcNonNegativeLengthMeasure"):
+        set_min(0.0)
+    elif attribute_type._is("IfcPositiveLengthMeasure"):
+        set_min(STRICTLY_POSITIVE_FLOAT_MIN)
+    elif attribute_type._is("IfcPositiveRatioMeasure"):
+        set_min(STRICTLY_POSITIVE_FLOAT_MIN)
+    elif attribute_type._is("IfcPositivePlaneAngleMeasure"):
+        set_min(STRICTLY_POSITIVE_FLOAT_MIN)
+    elif attribute_type._is("IfcHeatingValueMeasure"):
+        set_min(STRICTLY_POSITIVE_FLOAT_MIN)
+    elif attribute_type._is("IfcNormalisedRatioMeasure"):
+        set_min(0.0)
+        set_max(1.0)
+    elif attribute_type._is("IfcPHMeasure"):
+        set_min(0.0)
+        set_max(14.0)
+    elif attribute_type._is("IfcCardinalPointReference"):
+        set_min(1)
+    elif attribute_type._is("IfcDimensionCount"):
+        set_min(1)
+        set_max(3)
+    elif attribute_type._is("IfcDayInMonthNumber"):
+        set_min(1)
+        set_max(31)
+    elif attribute_type._is("IfcMonthInYearNumber"):
+        set_min(1)
+        set_max(12)
 
 
 def add_attribute_enum_items_descriptions(
