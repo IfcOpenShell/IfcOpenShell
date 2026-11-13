@@ -435,7 +435,7 @@ class SheetBuilder:
                 data = reference.get_info()
                 data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
                 if not data["Name"]:
-                    data["Name"] = ntpath.basename(foreground_path)[0:-4]
+                    data["Name"] = drawing.Name or ntpath.basename(foreground_path)[0:-4]
 
                 # If a perspective drawing, don't add scale to view title
                 try:
