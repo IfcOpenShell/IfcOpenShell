@@ -10,6 +10,6 @@ Sphinx==9.2.0
 breathe==5.1.0
 exhale==0.3.7
 furo==2025.12.19
-sphinx-autoapi==3.8.1
+sphinx-autoapi==3.9.0
 sphinx-copybutton==0.5.2
 myst-parser==5.1.0
