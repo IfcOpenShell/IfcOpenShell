@@ -17,10 +17,12 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+import math
 import os
 from typing import TYPE_CHECKING, Any, Literal, Union, assert_never, get_args
 
 import bpy
+import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 from bpy.props import (
     BoolProperty,
@@ -301,6 +303,16 @@ def set_numerical_value(self: "Attribute", value_name: str, new_value: Union[flo
     self[value_name] = new_value
 
 
+def get_length_decimal_places(ifc_file: ifcopenshell.file) -> int:
+    """Decimal places implied by the model's geometric precision, i.e. ``-log10(precision)``."""
+    context = ifcopenshell.util.representation.get_context(ifc_file, "Model")
+    precision = getattr(context, "Precision", None) if context else None
+    if not precision or precision <= 0:
+        # Same default Bonsai uses when it creates a Model context (add_context).
+        precision = 1e-5
+    return max(0, math.ceil(-math.log10(precision)))
+
+
 def get_display_name(self: "Attribute") -> str:
     name = self.name
     if not self.unit_symbol:
@@ -435,6 +447,10 @@ class Attribute(PropertyGroup):
             value = tool.Blender.get_enum_safe(self, "enum_value")
         else:
             value = getattr(self, value_name, None)
+        if self.special_type == "LENGTH" and isinstance(value, float):
+            # Blender floats are float32: round away noise digits (67.74 -> 67.7399978637695).
+            if (ifc_file := tool.Ifc.get()) is not None:
+                value = round(value, get_length_decimal_places(ifc_file))
         if self.special_type == "LOGICAL" and value != "UNKNOWN":
             # IfcOpenShell expects bool if IfcLogical is True/False.
             value = value == "TRUE"
