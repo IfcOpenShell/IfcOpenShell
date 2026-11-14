@@ -18,9 +18,13 @@
 #
 # This file was modified with the assistance of an AI coding tool.
 
+import importlib.util
+import sys
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock
 
 import bpy
 import numpy as np
@@ -210,6 +214,41 @@ class TestGetDebugInfo(NewFile):
     def test_failed_to_load_returns_only_base_keys(self):
         info = bonsai.get_debug_info(bonsai_failed_to_load=True)
         assert set(info.keys()) == self.EXPECTED_KEYS
+
+
+class TestFatalErrorPanel(NewFile):
+    def draw_box_labels(self, monkeypatch, import_error):
+        class FailingFinder:
+            @staticmethod
+            def find_spec(name, path=None, target=None):
+                if name == "ifcopenshell":
+                    raise import_error
+
+        spec = importlib.util.spec_from_file_location("bonsai_failed_to_load", bonsai.__file__)
+        module = importlib.util.module_from_spec(spec)
+        with monkeypatch.context() as m:
+            for name in [n for n in sys.modules if n.split(".")[0] == "ifcopenshell"]:
+                m.delitem(sys.modules, name)
+            m.setattr(sys, "meta_path", [FailingFinder, *sys.meta_path])
+            spec.loader.exec_module(module)
+        bpy.app.timers.unregister(module.show_scene_properties)
+        binary_info = {"binary_error": "Couldn't find ifcopenshell wrapper binary."}
+        monkeypatch.setattr(module, "get_binary_info", lambda: binary_info)
+
+        panel = SimpleNamespace(layout=MagicMock())
+        module.BIM_PT_fatal_error.draw(panel, bpy.context)
+        return [call.kwargs["text"] for call in panel.layout.box.return_value.label.call_args_list]
+
+    def test_missing_ifcopenshell_tells_the_user_to_disable_and_enable_bonsai(self, monkeypatch):
+        error = ModuleNotFoundError("No module named 'ifcopenshell'", name="ifcopenshell")
+        advice = " ".join(self.draw_box_labels(monkeypatch, error))
+        assert "DISABLE Bonsai" in advice
+        assert "ENABLE it again" in advice
+
+    def test_other_import_failures_do_not_get_the_missing_dependency_advice(self, monkeypatch):
+        error = ImportError("DLL load failed while importing _ifcopenshell_wrapper")
+        advice = " ".join(self.draw_box_labels(monkeypatch, error))
+        assert "DISABLE" not in advice
 
 
 class TestNpFrombufferLegacy(NewFile):
