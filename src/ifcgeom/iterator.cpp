@@ -224,6 +224,17 @@ void ifcopenshell::geom::iterator::process_concurrently() {
 
 	std::vector<std::future<geometry_conversion_result*>> threadpool;
 
+	// #3904 emit results in task order rather than in thread completion order
+	std::map<size_t, geometry_conversion_result*> ready;
+	size_t next_emit = 0;
+	auto finish = [&](geometry_conversion_result* rep, ifcopenshell::geom::converter* kernel) {
+		flush_worker_log(kernel);
+		ready[rep - tasks_.data()] = rep;
+		for (auto it = ready.begin(); it != ready.end() && it->first == next_emit; it = ready.erase(it), ++next_emit) {
+			process_finished_rep(it->second);
+		}
+	};
+
 	for (auto& rep : tasks_) {
 		ifcopenshell::geom::converter* K = nullptr;
 		if (threadpool.size() < kernel_pool.size()) {
@@ -236,7 +247,7 @@ void ifcopenshell::geom::iterator::process_concurrently() {
 				std::future_status status;
 				status = fu.wait_for(std::chrono::seconds(0));
 				if (status == std::future_status::ready) {
-					process_finished_rep(fu.get(), kernel_pool[i]);
+					finish(fu.get(), kernel_pool[i]);
 
 					std::swap(threadpool[i], threadpool.back());
 					threadpool.pop_back();
@@ -284,7 +295,10 @@ void ifcopenshell::geom::iterator::process_concurrently() {
 	}
 
 	for (size_t i = 0; i < threadpool.size(); ++i) {
-		process_finished_rep(threadpool[i].get(), kernel_pool[i]);
+		finish(threadpool[i].get(), kernel_pool[i]);
+	}
+	for (auto& p : ready) {
+		process_finished_rep(p.second);
 	}
 
 	finished_ = true;
