@@ -273,10 +273,31 @@ class OverrideOriginSet(bpy.types.Operator, tool.Ifc.Operator):
             if not representation:
                 continue
             representation = ifcopenshell.util.representation.resolve_representation(representation)
-            if not tool.Geometry.is_meshlike(representation):
+            if not tool.Geometry.is_meshlike(representation) and not self.can_regenerate_swept_solid(
+                element, representation
+            ):
+                # Only a single simple extrusion can be re-derived from the mesh; warn instead of doing nothing.
+                self.report(
+                    {"WARNING"},
+                    f"IFC Set Origin is not supported for '{obj.name}': its representation "
+                    f"('{representation.RepresentationType}') is parametric and cannot be safely re-centered.",
+                )
                 continue
             bpy.ops.object.origin_set(type=self.origin_type)
             bpy.ops.bim.update_representation(obj=obj.name)
+
+    @staticmethod
+    def can_regenerate_swept_solid(
+        element: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> bool:
+        """Whether a SweptSolid is simple enough to be re-derived from its Blender mesh."""
+        if not tool.Geometry.is_swept_profile(representation):
+            return False
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        if material and material.is_a() in ("IfcMaterialProfileSet", "IfcMaterialLayerSet"):
+            # Re-deriving the extrusion from the mesh would discard the parametric definition.
+            return False
+        return bool(tool.Geometry.get_ifc_representation_class(element, representation))
 
 
 class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
