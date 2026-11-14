@@ -306,6 +306,211 @@ class DisableEditingStructuralBoundaryCondition(bpy.types.Operator):
         return {"FINISHED"}
 
 
+def get_structural_model_member_object(context, member_id):
+    model = tool.Structural.get_current_structural_analysis_model()
+    if not model or not any(member.id() == member_id for member in tool.Structural.get_analysis_model_members(model)):
+        return None
+    obj = tool.Ifc.get_object_by_identifier(member_id)
+    if not obj or context.scene.objects.get(obj.name) != obj:
+        return None
+    return obj
+
+
+def reveal_structural_model_member(context, obj):
+    def find_collection_path(layer):
+        if layer.collection in obj.users_collection:
+            return [layer]
+        for child in layer.children:
+            if path := find_collection_path(child):
+                return [layer, *path]
+        return None
+
+    path = find_collection_path(context.view_layer.layer_collection)
+    if not path:
+        return False
+    for layer in path[1:]:
+        layer.exclude = False
+        layer.hide_viewport = False
+        layer.collection.hide_viewport = False
+        layer.collection.hide_select = False
+    context.view_layer.update()
+    if context.view_layer.objects.get(obj.name) != obj:
+        return False
+    obj.hide_viewport = False
+    obj.hide_select = False
+    obj.hide_set(False, view_layer=context.view_layer)
+    return True
+
+
+class StructuralMemberAssignmentStatus(bpy.types.Operator):
+    bl_idname = "bim.structural_member_assignment_status"
+    bl_label = "Structural Member Assignment Status"
+    member: bpy.props.IntProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        member = tool.Ifc.get().by_id(properties.member)
+        missing = []
+        if not tool.Structural.get_member_sections(member):
+            missing.append("Section")
+        if not any(ifcopenshell.util.element.get_materials(member)):
+            missing.append("Material")
+        messages = [f"{' and '.join(missing)} not assigned"] if missing else []
+        model = tool.Structural.get_current_structural_analysis_model()
+        change = tool.Structural.get_member_change(model, member) if model else None
+        if change:
+            if source := change["source"]:
+                messages.append(f"Source: {source.Name or source.is_a()} (#{source.id()})")
+            reasons = {
+                "MISSING_SOURCE": "Source relationship missing",
+                "MULTIPLE_SOURCES": "Multiple source elements",
+                "UNAVAILABLE": "Cannot compare source and member axes",
+            }
+            if change["reason"] in reasons:
+                messages.append(reasons[change["reason"]])
+            else:
+                if change["orientation_changed"]:
+                    messages.append("Profile orientation differs")
+                if change["section_changed"]:
+                    messages.append("Section or material differs")
+                for point in change["points"]:
+                    member_position = ", ".join(f"{value:.9g}" for value in point["member_point"])
+                    source_position = ", ".join(f"{value:.9g}" for value in point["source_point"])
+                    messages.append(f"{point['endpoint']} member (m): {member_position}")
+                    messages.append(f"{point['endpoint']} source (m): {source_position}")
+                    messages.append(f"Difference: {point['distance']:.6g} m; tolerance: {change['tolerance']:.6g} m")
+        return "\n".join(messages) if messages else "Section and material assigned"
+
+    def execute(self, context):
+        props = tool.Structural.get_structural_props()
+        for index, item in enumerate(props.structural_model_members):
+            if item.ifc_definition_id == self.member:
+                props.active_structural_model_member_index = index
+                return {"FINISHED"}
+        self.report({"WARNING"}, "Structural member is no longer in the list")
+        return {"CANCELLED"}
+
+
+class SelectStructuralModelMember(bpy.types.Operator):
+    bl_idname = "bim.select_structural_model_member"
+    bl_label = "Select Structural Member"
+    bl_description = "Show and select this structural member"
+    bl_options = {"REGISTER", "UNDO"}
+    member: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = get_structural_model_member_object(context, self.member)
+        if not obj:
+            self.report({"WARNING"}, "Structural member is not available in the current view layer")
+            return {"CANCELLED"}
+        if not reveal_structural_model_member(context, obj):
+            self.report({"WARNING"}, "Structural member cannot be shown in the current view layer")
+            return {"CANCELLED"}
+        for selected in context.selected_objects:
+            selected.select_set(False)
+        obj.select_set(True)
+        context.view_layer.objects.active = obj
+        return {"FINISHED"}
+
+
+class RemoveStructuralModelMember(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_structural_model_member"
+    bl_label = "Remove Structural Member"
+    bl_description = "Delete this member and its unused connections; keep the physical element"
+    bl_options = {"REGISTER", "UNDO"}
+    member: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        file = tool.Ifc.get()
+        if not file:
+            self.report({"WARNING"}, "No IFC project is loaded")
+            return {"CANCELLED"}
+        member = tool.Ifc.get_entity_by_id(self.member)
+        model = tool.Structural.get_current_structural_analysis_model()
+        if (
+            not member
+            or not member.is_a("IfcStructuralMember")
+            or not model
+            or member not in tool.Structural.get_analysis_model_members(model)
+        ):
+            self.report({"WARNING"}, "Structural member is no longer in the current analysis model")
+            return {"CANCELLED"}
+        connections = {relation.RelatedStructuralConnection for relation in member.ConnectedBy or ()}
+        member_guid = member.GlobalId
+        if obj := tool.Ifc.get_object(member):
+            tool.Geometry.delete_ifc_object(obj)
+        else:
+            tool.Ifc.run("root.remove_product", product=member)
+        for connection in connections:
+            if connection.ConnectsStructuralMembers:
+                continue
+            ifcopenshell.api.structural.remove_structural_boundary_condition(file, connection=connection)
+            if obj := tool.Ifc.get_object(connection):
+                tool.Geometry.delete_ifc_object(obj)
+            else:
+                tool.Ifc.run("root.remove_product", product=connection)
+        links = tool.Structural.get_structural_props().generation_links
+        for index in reversed(range(len(links))):
+            if links[index].member_guid == member_guid:
+                links.remove(index)
+        return {"FINISHED"}
+
+
+class ToggleStructuralModelMemberVisibility(bpy.types.Operator):
+    bl_idname = "bim.toggle_structural_model_member_visibility"
+    bl_label = "Toggle Structural Member Visibility"
+    bl_description = "Show or hide this structural member"
+    bl_options = {"REGISTER", "UNDO"}
+    member: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = get_structural_model_member_object(context, self.member)
+        if not obj:
+            self.report({"WARNING"}, "Structural member is not available in the current view layer")
+            return {"CANCELLED"}
+        visible = context.view_layer.objects.get(obj.name) == obj and obj.visible_get(view_layer=context.view_layer)
+        if visible:
+            obj.hide_set(True, view_layer=context.view_layer)
+        elif not reveal_structural_model_member(context, obj):
+            self.report({"WARNING"}, "Structural member cannot be shown in the current view layer")
+            return {"CANCELLED"}
+        return {"FINISHED"}
+
+
+class ShowStructuralModelMembers(bpy.types.Operator):
+    bl_idname = "bim.show_structural_model_members"
+    bl_label = "Show Structural Members"
+    bl_description = "Toggle X-ray and select the current analysis model's structural members"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        model = tool.Structural.get_current_structural_analysis_model()
+        if not model:
+            self.report({"WARNING"}, "Select a current structural analysis model first")
+            return {"CANCELLED"}
+        area = next((area for area in context.screen.areas if area.type == "VIEW_3D"), None)
+        if not area:
+            self.report({"WARNING"}, "A 3D viewport is required")
+            return {"CANCELLED"}
+        region = next(region for region in area.regions if region.type == "WINDOW")
+        with context.temp_override(area=area, region=region):
+            bpy.ops.view3d.toggle_xray()
+        for obj in context.selected_objects:
+            obj.select_set(False)
+        selected = []
+        for member in tool.Structural.get_analysis_model_members(model):
+            obj = tool.Ifc.get_object(member)
+            if not obj or not reveal_structural_model_member(context, obj):
+                continue
+            obj.select_set(True)
+            selected.append(obj)
+        if selected:
+            context.view_layer.objects.active = selected[0]
+        else:
+            self.report({"WARNING"}, "No structural members are available in the current view layer")
+        return {"FINISHED"}
+
+
 class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
     sync_only: bool
     structural_model: int

@@ -55,6 +55,10 @@ def update_activity_type(self: "BIMStructuralProperties", context: bpy.types.Con
     LoadGroupDecorationData.is_loaded = False
 
 
+def update_active_structural_model_member(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
+    tool.Structural.refresh_analysis_model_member_details()
+
+
 def update_show_loads(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
     from bonsai.bim.module.structural.decorator import show_loads
 
@@ -153,6 +157,24 @@ class StructuralGenerationLink(PropertyGroup):
         member_guid: str
 
 
+class StructuralMemberDetail(PropertyGroup):
+    name: StringProperty(name="Name")
+    value: StringProperty(name="Value", description="IFC value in its stored units")
+    key: StringProperty(name="Key")
+    parent: IntProperty(name="Parent", default=-1)
+    level: IntProperty(name="Level")
+    has_children: BoolProperty(name="Has Children")
+    is_expanded: BoolProperty(name="Is Expanded", default=False)
+
+    if TYPE_CHECKING:
+        value: str
+        key: str
+        parent: int
+        level: int
+        has_children: bool
+        is_expanded: bool
+
+
 class StructuralActivity(PropertyGroup):
     name: StringProperty(name="Name")
     applied_load_class: StringProperty(name="Applied Load Class")
@@ -192,6 +214,13 @@ class BIMStructuralProperties(PropertyGroup):
     active_structural_analysis_model_index: IntProperty(name="Active Structural Analysis Model Index")
     active_structural_analysis_model_id: IntProperty(name="Active Structural Analysis Model Id")
     current_structural_analysis_model_id: IntProperty(name="Current Structural Analysis Model Id")
+    structural_model_members: CollectionProperty(name="Structural Members", type=StructuralAnalysisModel)
+    active_structural_model_member_index: IntProperty(
+        name="Active Structural Member", default=-1, min=-1, update=update_active_structural_model_member
+    )
+    structural_member_details: CollectionProperty(name="Structural Member Details", type=StructuralMemberDetail)
+    active_structural_member_detail_index: IntProperty(name="Active Structural Member Detail")
+    structural_member_details_id: IntProperty(name="Structural Member Details Id", options={"HIDDEN"})
     generation_merge_tolerance: FloatProperty(
         name="Merge Tolerance",
         description="Merge generated points and ignore axis differences within this distance; zero disables merging",
@@ -332,6 +361,11 @@ class BIMStructuralProperties(PropertyGroup):
         active_structural_analysis_model_index: int
         active_structural_analysis_model_id: int
         current_structural_analysis_model_id: int
+        structural_model_members: bpy.types.bpy_prop_collection_idprop[StructuralAnalysisModel]
+        active_structural_model_member_index: int
+        structural_member_details: bpy.types.bpy_prop_collection_idprop[StructuralMemberDetail]
+        active_structural_member_detail_index: int
+        structural_member_details_id: int
         generation_merge_tolerance: float
         generation_links: bpy.types.bpy_prop_collection_idprop[StructuralGenerationLink]
         load_case_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]

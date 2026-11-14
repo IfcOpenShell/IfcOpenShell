@@ -22,15 +22,21 @@ from typing import Union
 import bpy
 import ifcopenshell
 import ifcopenshell.util.doc
+import ifcopenshell.util.element
+import ifcopenshell.util.shape
+import ifcopenshell.util.structural
 import ifcopenshell.util.unit
 
 import bonsai.tool as tool
 
 
 def refresh():
+    if bpy.context.scene and hasattr(bpy.context.scene, "BIMStructuralProperties"):
+        tool.Structural.refresh_analysis_model_members()
     StructuralBoundaryConditionsData.is_loaded = False
     ConnectedStructuralMembersData.is_loaded = False
     StructuralMemberData.is_loaded = False
+    StructuralModelMemberData.is_loaded = False
     StructuralConnectionData.is_loaded = False
     StructuralAnalysisModelsData.is_loaded = False
     StructuralLoadCasesData.is_loaded = False
@@ -38,6 +44,9 @@ def refresh():
     BoundaryConditionsData.is_loaded = False
     LoadGroupDecorationData.is_loaded = False
     StructuralItemLoadsData.is_loaded = False
+
+    if bpy.context.scene and hasattr(bpy.context.scene, "BIMStructuralProperties"):
+        tool.Structural.refresh_analysis_model_member_details()
 
     # Keep the loads shown in the viewport in step with every change, undo included.
     from bonsai.bim.module.structural.decorator import LoadsDecorator
@@ -156,6 +165,177 @@ class ConnectedStructuralMembersData:
                 }
             )
         return results
+
+
+class StructuralModelMemberData:
+    data = {}
+    is_loaded = False
+    member_id = 0
+
+    @classmethod
+    def build_tree(cls, data):
+        rows = []
+        sibling_counts = {}
+
+        def append(name, value="", parent=-1):
+            index = len(rows)
+            sibling_key = (parent, str(name))
+            sibling_index = sibling_counts.get(sibling_key, 0)
+            sibling_counts[sibling_key] = sibling_index + 1
+            parent_key = rows[parent]["key"] if parent >= 0 else ""
+            rows.append(
+                {
+                    "name": str(name),
+                    "value": str(value),
+                    "key": f"{parent_key}/{name}:{sibling_index}",
+                    "parent": parent,
+                    "level": rows[parent]["level"] + 1 if parent >= 0 else 0,
+                    "has_children": False,
+                }
+            )
+            if parent >= 0:
+                rows[parent]["has_children"] = True
+            return index
+
+        def add_values(values, parent):
+            for name, value in values.items():
+                if name == "id" or value is None:
+                    continue
+                if isinstance(value, dict):
+                    add_values(value, append(name, parent=parent))
+                else:
+                    append(name, f"{value:.10g}" if isinstance(value, float) else value, parent)
+
+        def add_property_sets(property_sets, parent):
+            for name, values in property_sets.items():
+                if not name.startswith("BBIM_"):
+                    add_values(values, append(name, parent=parent))
+
+        section = append("Section", data["profile_source"] if data["profiles"] else "Not assigned")
+        for profile in data["profiles"]:
+            profile_node = append(profile["name"], parent=section)
+            add_values(profile["values"], profile_node)
+            add_property_sets(profile["properties"], profile_node)
+        material_node = append("Material", data["material_source"] if data["materials"] else "Not assigned")
+        for material in data["materials"]:
+            child = append(material["name"], parent=material_node)
+            add_property_sets(material["properties"], child)
+        member_node = append("Member Properties", data["class"])
+        if data["source"]:
+            append("Physical element", data["source"], member_node)
+        add_property_sets(data["properties"], member_node)
+        loads_node = append("Loads", "" if data["loads"] else "None")
+        for load in data["loads"]:
+            load_node = append(load["name"], load["type"], loads_node)
+            if load["groups"]:
+                append("Load groups", ", ".join(load["groups"]), load_node)
+            if load["frame"]:
+                append("Reference frame", load["frame"], load_node)
+            add_values(load["values"], load_node)
+        connections_node = append("Connections", "" if data["connections"] else "None")
+        for connection in data["connections"]:
+            connection_node = append(connection["name"], connection["type"], connections_node)
+            for condition in connection["conditions"]:
+                add_values(
+                    condition["values"],
+                    append("Condition", condition["name"], connection_node),
+                )
+        return rows
+
+    @classmethod
+    def load(cls, member):
+        sources = ifcopenshell.util.structural.get_building_elements(member)
+        source = sources[0] if len(sources) == 1 else None
+
+        def profiles_of(product):
+            material = ifcopenshell.util.element.get_material(product, should_skip_usage=True)
+            if material and material.is_a("IfcMaterialProfileSet"):
+                return [item.Profile for item in material.MaterialProfiles or () if item.Profile]
+            return [item.SweptArea for item in ifcopenshell.util.shape.get_extrusions(product) or ()]
+
+        profiles = tool.Structural.get_member_sections(member)
+        profile_source = "Member"
+        if profiles and source and set(profiles).intersection(profiles_of(source)):
+            profile_source = "Member (shared with physical element)"
+
+        materials = [material for material in ifcopenshell.util.element.get_materials(member) if material]
+        material_source = "Member"
+        if materials and source and set(materials).intersection(ifcopenshell.util.element.get_materials(source)):
+            material_source = "Member (shared with physical element)"
+
+        def values(entity):
+            result = {}
+            for name, value in entity.get_info().items():
+                if name in {"id", "type", "Name", "ProfileName", "ProfileType"}:
+                    continue
+                if isinstance(value, ifcopenshell.entity_instance) and not value.id():
+                    value = value.wrappedValue
+                if isinstance(value, (str, int, float, bool)):
+                    result[name] = value
+            return result
+
+        loads = []
+        for relation in member.AssignedStructuralActivity or ():
+            activity = relation.RelatedStructuralActivity
+            if not activity:
+                continue
+            load = activity.AppliedLoad
+            groups = [
+                assignment.RelatingGroup.Name or "Unnamed"
+                for assignment in activity.HasAssignments or ()
+                if assignment.is_a("IfcRelAssignsToGroup") and assignment.RelatingGroup.is_a("IfcStructuralLoadGroup")
+            ]
+            loads.append(
+                {
+                    "name": (load.Name if load else None) or "Unnamed",
+                    "type": load.is_a() if load else "No load",
+                    "frame": activity.GlobalOrLocal,
+                    "groups": groups,
+                    "values": values(load) if load else {},
+                }
+            )
+
+        cls.data = {
+            "name": member.Name or "Unnamed",
+            "class": member.is_a(),
+            "source": source.Name or "Unnamed" if source else None,
+            "profile_source": profile_source,
+            "profiles": [
+                {
+                    "name": profile.ProfileName or profile.is_a(),
+                    "values": values(profile),
+                    "properties": ifcopenshell.util.element.get_psets(profile),
+                }
+                for profile in profiles
+            ],
+            "material_source": material_source,
+            "materials": [
+                {
+                    "name": material.Name or "Unnamed",
+                    "properties": ifcopenshell.util.element.get_psets(material),
+                }
+                for material in materials
+            ],
+            "properties": ifcopenshell.util.element.get_psets(member),
+            "loads": loads,
+            "connections": [
+                {
+                    "name": relation.RelatedStructuralConnection.Name or "Unnamed",
+                    "type": relation.RelatedStructuralConnection.is_a(),
+                    "conditions": [
+                        {"name": condition.Name or condition.is_a(), "values": values(condition)}
+                        for condition in (
+                            relation.AppliedCondition,
+                            relation.RelatedStructuralConnection.AppliedCondition,
+                        )
+                        if condition
+                    ],
+                }
+                for relation in member.ConnectedBy or ()
+            ],
+        }
+        cls.member_id = member.id()
+        cls.is_loaded = True
 
 
 class StructuralMemberData:

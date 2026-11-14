@@ -22,6 +22,7 @@ import itertools
 from typing import TYPE_CHECKING, Any, Union
 
 import bpy
+import ifcopenshell.util.element
 from bpy.types import Panel, UIList
 
 import bonsai.bim.helper
@@ -496,6 +497,110 @@ class BIM_PT_generate_structural_model(Panel):
                     box.label(text=f"{point['endpoint']} member (m): {member_position}")
                     box.label(text=f"{point['endpoint']} source (m): {source_position}")
                     box.label(text=f"Difference: {point['distance']:.6g} m; tolerance: {change['tolerance']:.6g} m")
+
+
+class BIM_UL_structural_model_members(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        row = layout.row(align=True)
+        row.label(text=item.name, icon="OUTLINER_OB_MESH")
+        member = tool.Ifc.get().by_id(item.ifc_definition_id)
+        section = bool(tool.Structural.get_member_sections(member))
+        material = any(ifcopenshell.util.element.get_materials(member))
+        model = tool.Structural.get_current_structural_analysis_model()
+        change = tool.Structural.get_member_change(model, member) if model else None
+        warning = "STATUS_WARNING" if bpy.app.version >= (5, 2, 0) else "ERROR"
+        op = row.operator(
+            "bim.structural_member_assignment_status",
+            text="",
+            icon="CHECKMARK" if section and material and not change else warning,
+            emboss=False,
+        )
+        op.member = item.ifc_definition_id
+        obj = tool.Ifc.get_object_by_identifier(item.ifc_definition_id)
+        controls = row.row(align=True)
+        in_view_layer = bool(obj and context.view_layer.objects.get(obj.name) == obj)
+        controls.enabled = bool(obj and context.scene.objects.get(obj.name) == obj)
+        op = controls.operator("bim.select_structural_model_member", text="", icon="RESTRICT_SELECT_OFF", emboss=False)
+        op.member = item.ifc_definition_id
+        hidden = obj and (not in_view_layer or not obj.visible_get(view_layer=context.view_layer))
+        op = controls.operator(
+            "bim.toggle_structural_model_member_visibility",
+            text="",
+            icon="HIDE_ON" if hidden else "HIDE_OFF",
+            emboss=False,
+        )
+        op.member = item.ifc_definition_id
+        op = row.operator("bim.remove_structural_model_member", text="", icon="X", emboss=False)
+        op.member = item.ifc_definition_id
+
+
+class BIM_UL_structural_member_details(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        split = layout.split(factor=0.65)
+        row = split.row(align=True)
+        for unused in range(item.level):
+            row.label(text="", icon="BLANK1")
+        if item.has_children:
+            icon = "DISCLOSURE_TRI_DOWN" if item.is_expanded else "DISCLOSURE_TRI_RIGHT"
+            row.prop(item, "is_expanded", text="", icon=icon, emboss=False)
+        else:
+            row.label(text="", icon="BLANK1")
+        row.label(text=item.name)
+        value = split.row()
+        value.alignment = "RIGHT"
+        value.label(text=item.value)
+
+    def filter_items(self, context, data, propname):
+        items = getattr(data, propname)
+        visible = []
+        for item in items:
+            visible.append(item.parent < 0 or (visible[item.parent] and items[item.parent].is_expanded))
+        return [self.bitflag_filter_item if shown else 0 for shown in visible], []
+
+
+class BIM_PT_structural_model_members(Panel):
+    bl_label = "Structural Members"
+    bl_idname = "BIM_PT_structural_model_members"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_structural"
+
+    @classmethod
+    def poll(cls, context):
+        file = tool.Ifc.get()
+        return file and file.schema != "IFC2X3"
+
+    def draw(self, context):
+        props = tool.Structural.get_structural_props()
+        self.layout.operator("bim.show_structural_model_members", icon="XRAY")
+        self.layout.template_list(
+            "BIM_UL_structural_model_members",
+            "",
+            props,
+            "structural_model_members",
+            props,
+            "active_structural_model_member_index",
+            rows=4,
+        )
+        index = props.active_structural_model_member_index
+        if not 0 <= index < len(props.structural_model_members):
+            return
+        member = tool.Ifc.get().by_id(props.structural_model_members[index].ifc_definition_id)
+        if not member or not member.is_a("IfcStructuralMember"):
+            return
+        self.layout.separator()
+        self.layout.label(text=f"{member.Name or 'Unnamed'} ({member.is_a()})", icon="OUTLINER_OB_MESH")
+        self.layout.template_list(
+            "BIM_UL_structural_member_details",
+            "",
+            props,
+            "structural_member_details",
+            props,
+            "active_structural_member_detail_index",
+            rows=5,
+            maxrows=12,
+        )
 
 
 class BIM_UL_structural_analysis_models(UIList):

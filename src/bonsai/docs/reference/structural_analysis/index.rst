@@ -23,3 +23,14 @@ orientations, sections and materials from the elements. It can overwrite
 manual changes to the analysis model, but does not update the building.
 Comparisons require the relevant objects to be loaded. Generation is available
 for IFC4 and IFC4X3.
+
+Structural Members
+------------------
+
+The member list shows section and material status and differences from linked
+elements. Select a row to inspect its section, material, properties, loads and
+connections. These details are read-only.
+
+Use the row controls to select or hide a member. The X deletes the member and
+connections no longer used by another member; the physical element and shared
+connections remain. This deletion supports undo.

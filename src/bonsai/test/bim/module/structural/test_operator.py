@@ -21,10 +21,16 @@ from mathutils import Vector
 
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.structural.data import LoadGroupDecorationData
+from bonsai.bim.module.structural.data import LoadGroupDecorationData, StructuralModelMemberData
+from bonsai.bim.module.structural.data import refresh as refresh_structural_data
 from bonsai.bim.module.structural.decorator import LoadsDecorator
-from bonsai.bim.module.structural.operator import PickStructuralLoads
-from bonsai.bim.module.structural.ui import BIM_PT_generate_structural_model
+from bonsai.bim.module.structural.operator import PickStructuralLoads, StructuralMemberAssignmentStatus
+from bonsai.bim.module.structural.ui import (
+    BIM_PT_generate_structural_model,
+    BIM_PT_structural_model_members,
+    BIM_UL_structural_member_details,
+    BIM_UL_structural_model_members,
+)
 from test.bim.bootstrap import NewFile, NewIfc
 
 
@@ -686,3 +692,366 @@ class TestGenerateStructuralModel(NewIfc):
         assert [(link.model_guid, link.member_guid) for link in props.generation_links] == [
             ("model-guid", "member-guid")
         ]
+
+
+class TestShowStructuralModelMembers(NewIfc):
+    def test_member_status_and_controls_do_not_use_the_source_as_a_fallback(self):
+        ifc = tool.Ifc.get()
+        source = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBeam")
+        material = ifcopenshell.api.material.add_material(ifc, name="Steel")
+        ifcopenshell.api.material.assign_material(ifc, products=[source], material=material)
+        member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember")
+        ifcopenshell.api.structural.assign_product(ifc, relating_product=member, related_object=source)
+        item = SimpleNamespace(ifc_definition_id=member.id(), name="Member")
+        layout = MagicMock()
+        props = tool.Structural.get_structural_props()
+        BIM_UL_structural_model_members.draw_item(None, bpy.context, layout, props, item, None, props, "")
+        calls = layout.row.return_value.operator.call_args_list
+        warning = "STATUS_WARNING" if bpy.app.version >= (5, 2, 0) else "ERROR"
+        assert [(call.args[0], call.kwargs["icon"]) for call in calls] == [
+            ("bim.structural_member_assignment_status", warning),
+            ("bim.remove_structural_model_member", "X"),
+        ]
+        controls = layout.row.return_value.row.return_value
+        assert [call.args[0] for call in controls.operator.call_args_list] == [
+            "bim.select_structural_model_member",
+            "bim.toggle_structural_model_member_visibility",
+        ]
+        assert not controls.enabled
+        assert "Section and Material not assigned" in StructuralMemberAssignmentStatus.description(
+            bpy.context, SimpleNamespace(member=member.id())
+        )
+        StructuralModelMemberData.load(member)
+        assert not StructuralModelMemberData.data["profiles"]
+        assert not StructuralModelMemberData.data["materials"]
+
+    @pytest.mark.parametrize("member_loaded, node_loaded", [(True, True), (False, False), (True, False), (False, True)])
+    def test_remove_member_preserves_source_and_shared_connections(self, member_loaded, node_loaded):
+        ifc = tool.Ifc.get()
+        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        other_model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember", name="Member")
+        other = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember", name="Other")
+        shared = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralPointConnection")
+        orphan = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralPointConnection")
+        orphan_with_shared_support = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralPointConnection")
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc, products=[member, shared, orphan, orphan_with_shared_support], structural_analysis_model=model
+        )
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc, products=[other], structural_analysis_model=other_model
+        )
+        for node in (shared, orphan, orphan_with_shared_support):
+            ifcopenshell.api.structural.add_structural_member_connection(
+                ifc, relating_structural_member=member, related_structural_connection=node
+            )
+        ifcopenshell.api.structural.add_structural_member_connection(
+            ifc, relating_structural_member=other, related_structural_connection=shared
+        )
+        orphan_support = ifcopenshell.api.structural.add_structural_boundary_condition(ifc, connection=orphan)
+        shared_support = ifcopenshell.api.structural.add_structural_boundary_condition(ifc, connection=shared)
+        orphan_with_shared_support.AppliedCondition = shared_support
+        source = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBeam")
+        ifcopenshell.api.structural.assign_product(ifc, relating_product=member, related_object=source)
+        material = ifcopenshell.api.material.add_material(ifc, name="Steel")
+        ifcopenshell.api.material.assign_material(ifc, products=[source, member], material=material)
+
+        def link_object(element, name):
+            obj = bpy.data.objects.new(name, bpy.data.meshes.new(name))
+            bpy.context.scene.collection.objects.link(obj)
+            tool.Ifc.link(element, obj)
+
+        link_object(source, "Physical beam")
+        link_object(shared, "Shared node")
+        if member_loaded:
+            link_object(member, "Member object")
+        if node_loaded:
+            link_object(orphan, "Orphan node")
+        ids = {
+            name: entity.id()
+            for name, entity in (
+                ("member", member),
+                ("other", other),
+                ("shared", shared),
+                ("orphan", orphan),
+                ("orphan_shared", orphan_with_shared_support),
+                ("orphan_support", orphan_support),
+                ("shared_support", shared_support),
+                ("source", source),
+                ("material", material),
+            )
+        }
+        tool.Structural.set_current_structural_analysis_model(model)
+        props = tool.Structural.get_structural_props()
+        props.active_structural_model_member_index = 0
+        for model_guid, member_guid in (
+            (model.GlobalId, member.GlobalId),
+            (other_model.GlobalId, member.GlobalId),
+            (other_model.GlobalId, other.GlobalId),
+        ):
+            link = props.generation_links.add()
+            link.model_guid, link.member_guid = model_guid, member_guid
+        previous_transaction = IfcStore.history[-1]["key"]
+        bpy.ops.bim.remove_structural_model_member(member=ids["member"])
+        deletion_transaction = IfcStore.history[-1]["key"]
+        for name in ("member", "orphan", "orphan_shared", "orphan_support"):
+            assert tool.Ifc.get_entity_by_id(ids[name]) is None
+        for name in ("other", "shared", "shared_support", "source", "material"):
+            assert tool.Ifc.get_entity_by_id(ids[name]) is not None
+        assert ifc.by_id(ids["shared"]).AppliedCondition == ifc.by_id(ids["shared_support"])
+        assert ifc.by_id(ids["shared"]).ConnectsStructuralMembers[0].RelatingStructuralMember == other
+        assert ifcopenshell.util.element.get_materials(source) == [material]
+        assert bpy.data.objects.get("Physical beam") and bpy.data.objects.get("Shared node")
+        assert not bpy.data.objects.get("Member object") and not bpy.data.objects.get("Orphan node")
+        assert [(link.model_guid, link.member_guid) for link in props.generation_links] == [
+            (other_model.GlobalId, other.GlobalId)
+        ]
+        assert not props.structural_model_members
+        assert not props.structural_member_details
+
+        IfcStore.undo(until_key=previous_transaction)
+        assert tool.Ifc.get_entity_by_id(ids["member"])
+        assert tool.Ifc.get_entity_by_id(ids["orphan"]).AppliedCondition.id() == ids["orphan_support"]
+        assert len(ifc.by_id(ids["shared"]).ConnectsStructuralMembers) == 2
+        IfcStore.redo(until_key=deletion_transaction)
+        assert tool.Ifc.get_entity_by_id(ids["member"]) is None
+        assert tool.Ifc.get_entity_by_id(ids["orphan"]) is None
+        assert len(ifc.by_id(ids["shared"]).ConnectsStructuralMembers) == 1
+
+    def test_remove_stale_or_nonmember_does_not_change_ifc(self, capsys):
+        ifc = tool.Ifc.get()
+        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        other = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember")
+        tool.Structural.set_current_structural_analysis_model(model)
+        before = ifc.to_string()
+        for member_id in (other.id(), 999999):
+            bpy.ops.bim.remove_structural_model_member(member=member_id)
+            assert "no longer in the current analysis model" in capsys.readouterr().out
+            assert ifc.to_string() == before
+
+    def test_remove_member_blender_undo_and_redo(self):
+        ifc = tool.Ifc.get()
+        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember")
+        node = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralPointConnection")
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc, products=[member, node], structural_analysis_model=model
+        )
+        ifcopenshell.api.structural.add_structural_member_connection(
+            ifc, relating_structural_member=member, related_structural_connection=node
+        )
+        for element, name in ((member, "Undo member"), (node, "Undo node")):
+            obj = bpy.data.objects.new(name, bpy.data.meshes.new(name))
+            bpy.context.scene.collection.objects.link(obj)
+            tool.Ifc.link(element, obj)
+        member_id, node_id = member.id(), node.id()
+        model_guid, member_guid = model.GlobalId, member.GlobalId
+        tool.Structural.set_current_structural_analysis_model(model)
+        link = tool.Structural.get_structural_props().generation_links.add()
+        link.model_guid, link.member_guid = model_guid, member_guid
+        bpy.ops.ed.undo_push(message="Before removing structural member")
+        bpy.ops.bim.remove_structural_model_member(member=member_id)
+        bpy.ops.ed.undo_push(message="After removing structural member")
+
+        assert bpy.ops.ed.undo() == {"FINISHED"}
+        assert tool.Ifc.get_entity_by_id(member_id) and tool.Ifc.get_entity_by_id(node_id)
+        assert bpy.data.objects.get("Undo member") and bpy.data.objects.get("Undo node")
+        props = tool.Structural.get_structural_props()
+        assert [(link.model_guid, link.member_guid) for link in props.generation_links] == [(model_guid, member_guid)]
+        assert [item.ifc_definition_id for item in props.structural_model_members] == [member_id]
+
+        assert bpy.ops.ed.redo() == {"FINISHED"}
+        assert tool.Ifc.get_entity_by_id(member_id) is None and tool.Ifc.get_entity_by_id(node_id) is None
+        assert not bpy.data.objects.get("Undo member") and not bpy.data.objects.get("Undo node")
+        props = tool.Structural.get_structural_props()
+        assert not props.generation_links and not props.structural_model_members
+
+    @pytest.mark.parametrize("reverse_link", [False, True])
+    def test_member_details_include_section_material_load_and_connection(self, reverse_link):
+        ifc = tool.Ifc.get()
+        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember", name="Analysis beam")
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc, products=[member], structural_analysis_model=model
+        )
+        source = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBeam", name="Physical beam")
+        if reverse_link:
+            ifcopenshell.api.structural.assign_product(ifc, relating_product=source, related_object=member)
+        else:
+            ifcopenshell.api.structural.assign_product(ifc, relating_product=member, related_object=source)
+        profile = ifcopenshell.api.profile.add_parameterized_profile(ifc, ifc_class="IfcRectangleProfileDef")
+        profile.ProfileName, profile.XDim, profile.YDim = "Rectangle", 0.2, 0.3
+        profile_pset = ifcopenshell.api.pset.add_pset(ifc, product=profile, name="SectionMechanics")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=profile_pset, properties={"MomentOfInertiaY": 42.0})
+        material = ifcopenshell.api.material.add_material(ifc, name="Steel")
+        material_set = ifcopenshell.api.material.add_material_set(ifc, name="Section", set_type="IfcMaterialProfileSet")
+        ifcopenshell.api.material.add_profile(ifc, profile_set=material_set, material=material, profile=profile)
+        ifcopenshell.api.material.assign_material(
+            ifc, products=[source], type="IfcMaterialProfileSet", material=material_set
+        )
+        ifcopenshell.api.material.assign_material(ifc, products=[member], material=material_set)
+        material_pset = ifcopenshell.api.pset.add_pset(ifc, product=material, name="Mechanical")
+        ifcopenshell.api.pset.edit_pset(
+            ifc, pset=material_pset, properties={"ElasticModulus": ifc.createIfcPressureMeasure(210.0)}
+        )
+        member_pset = ifcopenshell.api.pset.add_pset(ifc, product=member, name="Analysis")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=member_pset, properties={"TestValue": 5.0, "Enabled": False})
+        quantity_set = ifcopenshell.api.pset.add_qto(ifc, product=member, name="Qto_BeamBaseQuantities")
+        ifcopenshell.api.pset.edit_qto(ifc, qto=quantity_set, properties={"Length": 3.0})
+        load = ifcopenshell.api.structural.add_structural_load(ifc, name="Wind")
+        load.LinearForceX = 12.0
+        ifcopenshell.api.structural.add_structural_activity(
+            ifc, applied_load=load, structural_member=member, ifc_class="IfcStructuralLinearAction"
+        )
+        connection = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralPointConnection", name="Node")
+        ifcopenshell.api.structural.add_structural_member_connection(
+            ifc, relating_structural_member=member, related_structural_connection=connection
+        )
+        condition = ifcopenshell.api.structural.add_structural_boundary_condition(
+            ifc, connection=connection, name="Pinned"
+        )
+        condition.TranslationalStiffnessX = ifc.createIfcBoolean(True)
+        condition.TranslationalStiffnessY = ifc.createIfcLinearStiffnessMeasure(1000.0)
+
+        StructuralModelMemberData.load(member)
+        data = StructuralModelMemberData.data
+        assert data["source"] == "Physical beam"
+        assert data["profile_source"] == data["material_source"] == "Member (shared with physical element)"
+        assert data["profiles"][0]["name"] == "Rectangle"
+        assert data["profiles"][0]["values"]["XDim"] == pytest.approx(0.2)
+        assert data["materials"][0]["name"] == "Steel"
+        assert data["materials"][0]["properties"]["Mechanical"]["ElasticModulus"] == pytest.approx(210)
+        assert data["properties"]["Analysis"]["TestValue"] == pytest.approx(5)
+        assert data["loads"][0]["name"] == "Wind"
+        assert data["loads"][0]["values"]["LinearForceX"] == pytest.approx(12)
+        assert data["connections"][0]["name"] == "Node"
+        assert data["connections"][0]["conditions"][0]["name"] == "Pinned"
+        assert data["connections"][0]["conditions"][0]["values"]["TranslationalStiffnessX"] is True
+        tree = StructuralModelMemberData.build_tree(data)
+        roots = [row["name"] for row in tree if row["parent"] == -1]
+        assert roots == ["Section", "Material", "Member Properties", "Loads", "Connections"]
+        value = next(row for row in tree if row["name"] == "TranslationalStiffnessX")
+        assert value["value"] == "True"
+        assert tree[value["parent"]]["name"] == "Condition"
+        tool.Structural.refresh_analysis_model_members()
+        tool.Structural.get_structural_props().active_structural_model_member_index = 0
+        layout = MagicMock()
+        panel = SimpleNamespace(layout=layout)
+        BIM_PT_structural_model_members.draw(panel, bpy.context)
+        assert layout.template_list.call_count == 2
+        props = tool.Structural.get_structural_props()
+        rows = props.structural_member_details
+        assert {item.name for item in rows} >= {"Rectangle", "Steel", "Wind", "Node"}
+        flags, unused_order = BIM_UL_structural_member_details.filter_items(
+            SimpleNamespace(bitflag_filter_item=1), bpy.context, props, "structural_member_details"
+        )
+        assert [row.name for row, flag in zip(rows, flags) if flag] == [
+            "Section",
+            "Material",
+            "Member Properties",
+            "Loads",
+            "Connections",
+        ]
+        rows[0].is_expanded = True
+        flags, unused_order = BIM_UL_structural_member_details.filter_items(
+            SimpleNamespace(bitflag_filter_item=1), bpy.context, props, "structural_member_details"
+        )
+        assert "Rectangle" in [row.name for row, flag in zip(rows, flags) if flag]
+        profile_index = next(index for index, row in enumerate(rows) if row.name == "Rectangle")
+        rows[profile_index].is_expanded = True
+        flags, unused_order = BIM_UL_structural_member_details.filter_items(
+            SimpleNamespace(bitflag_filter_item=1), bpy.context, props, "structural_member_details"
+        )
+        assert "XDim" in [row.name for row, flag in zip(rows, flags) if flag]
+        ifcopenshell.api.pset.edit_pset(ifc, pset=material_pset, properties={"ElasticModulus": 220.0})
+        refresh_structural_data()
+        assert props.structural_member_details[0].is_expanded
+        assert props.structural_member_details[profile_index].is_expanded
+        assert next(row.value for row in props.structural_member_details if row.name == "ElasticModulus") == "220"
+        row = next(row for row in props.structural_member_details if row.name == "ElasticModulus")
+        row_layout = MagicMock()
+        BIM_UL_structural_member_details.draw_item(None, bpy.context, row_layout, props, row, None, props, "")
+        row_layout.split.return_value.row.return_value.label.assert_any_call(text="220")
+        row_layout.split.return_value.row.return_value.prop.assert_not_called()
+
+    def test_select_and_toggle_visibility_for_one_member(self):
+        ifc = tool.Ifc.get()
+        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember")
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc, products=[member], structural_analysis_model=model
+        )
+        obj = bpy.data.objects.new("Member", bpy.data.meshes.new("Member"))
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(member, obj)
+        assert bpy.ops.bim.toggle_structural_model_member_visibility(member=member.id()) == {"FINISHED"}
+        assert obj.hide_get()
+        assert bpy.ops.bim.select_structural_model_member(member=member.id()) == {"FINISHED"}
+        assert not obj.hide_get() and obj.select_get()
+        assert bpy.context.view_layer.objects.active == obj
+        assert bpy.ops.bim.toggle_structural_model_member_visibility(member=member.id()) == {"FINISHED"}
+        assert bpy.ops.bim.toggle_structural_model_member_visibility(member=member.id()) == {"FINISHED"}
+        assert not obj.hide_get()
+        collection = bpy.data.collections.new("Hidden member")
+        bpy.context.scene.collection.children.link(collection)
+        bpy.context.scene.collection.objects.unlink(obj)
+        collection.objects.link(obj)
+        layer = bpy.context.view_layer.layer_collection.children[collection.name]
+        layer.exclude = True
+        assert bpy.ops.bim.select_structural_model_member(member=member.id()) == {"FINISHED"}
+        assert not layer.exclude and obj.visible_get() and obj.select_get()
+        other_model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        tool.Structural.set_current_structural_analysis_model(other_model)
+        assert bpy.ops.bim.select_structural_model_member(member=member.id()) == {"CANCELLED"}
+
+    def test_member_list_tracks_current_model_and_selection(self):
+        ifc = tool.Ifc.get()
+        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        other_model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember", name="Member")
+        point = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralPointConnection")
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc, products=[member, point], structural_analysis_model=model
+        )
+        tool.Structural.set_current_structural_analysis_model(model)
+        props = tool.Structural.get_structural_props()
+        assert [item.ifc_definition_id for item in props.structural_model_members] == [member.id()]
+        props.active_structural_model_member_index = 0
+        assert props.structural_member_details
+        tool.Structural.refresh_analysis_model_members()
+        assert props.active_structural_model_member_index == 0
+        tool.Structural.set_current_structural_analysis_model(other_model)
+        assert not props.structural_model_members
+        assert not props.structural_member_details
+        assert props.active_structural_model_member_index == -1
+
+    def test_selects_current_model_members_and_toggles_xray(self):
+        ifc = tool.Ifc.get()
+        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        other_model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        tool.Structural.set_current_structural_analysis_model(model)
+        objects = []
+        for structural_model in (model, other_model):
+            member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember")
+            ifcopenshell.api.structural.assign_structural_analysis_model(
+                ifc, products=[member], structural_analysis_model=structural_model
+            )
+            obj = bpy.data.objects.new("Member", bpy.data.meshes.new("Member"))
+            bpy.context.scene.collection.objects.link(obj)
+            tool.Ifc.link(member, obj)
+            objects.append(obj)
+        collection = bpy.data.collections.new("Hidden structural members")
+        bpy.context.scene.collection.children.link(collection)
+        bpy.context.scene.collection.objects.unlink(objects[0])
+        collection.objects.link(objects[0])
+        bpy.context.view_layer.layer_collection.children[collection.name].hide_viewport = True
+        objects[0].hide_set(True)
+        objects[1].select_set(True)
+        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        xray = area.spaces.active.shading.show_xray
+        assert bpy.ops.bim.show_structural_model_members() == {"FINISHED"}
+        assert area.spaces.active.shading.show_xray != xray
+        assert objects[0].select_get() and not objects[0].hide_get()
+        assert objects[0].visible_get()
+        assert not objects[1].select_get()
+        assert bpy.context.view_layer.objects.active == objects[0]
