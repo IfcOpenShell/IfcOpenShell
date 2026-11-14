@@ -866,6 +866,12 @@ def get_force_components(props: "StructuralForceInput") -> tuple[float, float, f
 
 def get_load_unit_symbol(category: str) -> str:
     ifc_file = tool.Ifc.get()
+    unit_type = {"IfcStructuralCurveMember": "LINEARFORCEUNIT", "IfcStructuralSurfaceMember": "PLANARFORCEUNIT"}.get(
+        category
+    )
+    if unit_type and (unit := ifcopenshell.util.unit.get_project_unit(ifc_file, unit_type)):
+        return ifcopenshell.util.unit.get_unit_symbol(unit)
+    # Undeclared: the force unit over the length unit, as readers of the file take it.
     force_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "FORCEUNIT")
     length_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT")
     symbol = ifcopenshell.util.unit.get_unit_symbol(force_unit) if force_unit else "N"
