@@ -57,6 +57,26 @@ Eigen::Vector3f orbitEye(const float target[3], float dist,
                            target[1] + dist * cp * sy,
                            target[2] + dist * sp);
 }
+
+Eigen::Matrix3f orbitCameraBasis(float yaw_deg, float pitch_deg) {
+    constexpr float kDeg2Rad = kPiF / 180.0f;
+    const float yaw = yaw_deg * kDeg2Rad;
+    const float pit = pitch_deg * kDeg2Rad;
+    const float cp = std::cos(pit), sp = std::sin(pit);
+    const float cy = std::cos(yaw), sy = std::sin(yaw);
+    const Eigen::Vector3f back(cp * cy, cp * sy, sp);
+    const Eigen::Vector3f forward = -back;
+    const Eigen::Vector3f world_up = (std::abs(pitch_deg) >= 89.0f)
+                                     ? Eigen::Vector3f(0.0f, 1.0f, 0.0f)
+                                     : Eigen::Vector3f(0.0f, 0.0f, 1.0f);
+    const Eigen::Vector3f right = forward.cross(world_up).normalized();
+
+    Eigen::Matrix3f basis;
+    basis.col(0) = right;
+    basis.col(1) = right.cross(forward).normalized();
+    basis.col(2) = back;
+    return basis;
+}
 } // namespace
 
 ViewportCore::ViewportCore(ViewportHost* host) : host_(host) {}
@@ -584,14 +604,42 @@ void ViewportCore::setStandardView(StandardView view) {
 
 void ViewportCore::setNavPreset(const char* name) {
     using B = MouseBtn; using M = NavMod;
+    orbit_around_selection_ = name && std::strcmp(name, "revit") == 0;
     if (name && std::strcmp(name, "rhino") == 0)
         nav_bindings_ = { B::Right,  M::Plain,  B::Right,  M::Shift, B::Left,  M::Plain };
-    else if (name && std::strcmp(name, "revit") == 0)
+    else if (orbit_around_selection_)
         nav_bindings_ = { B::Middle, M::Shift, B::Middle, M::Plain,  B::Left,  M::Plain };
     else if (name && std::strcmp(name, "web") == 0)
         nav_bindings_ = { B::Left,   M::Plain,  B::Middle, M::Plain,  B::Right, M::Plain };
     else  // blender (default)
         nav_bindings_ = { B::Middle, M::Plain,  B::Middle, M::Shift, B::Left,  M::Plain };
+}
+
+bool ViewportCore::beginOrbit() {
+    orbit_selection_pivot_active_ = false;
+    if (!orbit_around_selection_) return false;
+
+    float lo[3], hi[3];
+    if (!computeSelectionAabb(lo, hi)) return false;
+
+    orbit_pivot_ = Eigen::Vector3f(
+        0.5f * (lo[0] + hi[0]),
+        0.5f * (lo[1] + hi[1]),
+        0.5f * (lo[2] + hi[2]));
+    if (!orbit_pivot_.allFinite()) return false;
+
+    // Keep the current view byte-for-byte unchanged at gesture start. Orbit
+    // deltas rigidly rotate the camera around this off-axis pivot instead of
+    // replacing camera_target_, which would pull the pivot to viewport centre.
+    const Eigen::Vector3f eye = cameraEye();
+    const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
+    const Eigen::Vector3f forward = (target - eye).normalized();
+    orbit_pivot_scale_distance_ = projection_ortho_
+        ? camera_distance_
+        : std::max(0.01f, (orbit_pivot_ - eye).dot(forward));
+    orbit_selection_pivot_active_ = true;
+    host_->requestFrame();
+    return true;
 }
 
 void ViewportCore::setBackfaceCulling(bool enabled) {
@@ -608,24 +656,8 @@ void ViewportCore::setBackgroundColor(float r, float g, float b, float a) {
 }
 
 bool ViewportCore::frameSelection() {
-    if (selection_.count() == 0) return false;
-    float lo[3] = {  std::numeric_limits<float>::infinity(),
-                     std::numeric_limits<float>::infinity(),
-                     std::numeric_limits<float>::infinity() };
-    float hi[3] = { -std::numeric_limits<float>::infinity(),
-                    -std::numeric_limits<float>::infinity(),
-                    -std::numeric_limits<float>::infinity() };
-    bool any = false;
-    for (uint32_t id : selection_.selectionIds()) {
-        float mn[3], mx[3];
-        if (!computeObjectAabb(id, mn, mx)) continue;
-        for (int i = 0; i < 3; ++i) {
-            lo[i] = std::min(lo[i], mn[i]);
-            hi[i] = std::max(hi[i], mx[i]);
-        }
-        any = true;
-    }
-    if (!any) return false;
+    float lo[3], hi[3];
+    if (!computeSelectionAabb(lo, hi)) return false;
     frameAabb(lo, hi, 1.30f);
     return true;
 }
@@ -633,9 +665,28 @@ bool ViewportCore::frameSelection() {
 void ViewportCore::orbitBy(float dx_px, float dy_px) {
     // 0.4 deg/px matches the GL viewport. pitch is clamped just shy of
     // the pole so orbitEye() stays well-conditioned.
-    camera_yaw_deg_   -= dx_px * 0.4f;
-    camera_pitch_deg_ += dy_px * 0.4f;
-    camera_pitch_deg_ = std::clamp(camera_pitch_deg_, -89.9f, 89.9f);
+    const float next_yaw = camera_yaw_deg_ - dx_px * 0.4f;
+    const float next_pitch = std::clamp(
+        camera_pitch_deg_ + dy_px * 0.4f, -89.9f, 89.9f);
+
+    if (orbit_selection_pivot_active_) {
+        // Rotate the complete camera frame around the selected-elements pivot.
+        // Transforming camera_target_ with the same rotation as the camera
+        // basis keeps the pivot at its existing screen position.
+        const Eigen::Matrix3f rotation =
+            orbitCameraBasis(next_yaw, next_pitch)
+            * orbitCameraBasis(camera_yaw_deg_, camera_pitch_deg_).transpose();
+        const Eigen::Vector3f target(camera_target_[0], camera_target_[1],
+                                     camera_target_[2]);
+        const Eigen::Vector3f rotated_target =
+            orbit_pivot_ + rotation * (target - orbit_pivot_);
+        camera_target_[0] = rotated_target.x();
+        camera_target_[1] = rotated_target.y();
+        camera_target_[2] = rotated_target.z();
+    }
+
+    camera_yaw_deg_ = next_yaw;
+    camera_pitch_deg_ = next_pitch;
     host_->requestFrame();
 }
 
@@ -682,6 +733,7 @@ void ViewportCore::setPivotIndicatorVisible(bool visible, int hide_after_ms) {
     pivot_indicator_hide_ms_ = hide_after_ms;
     if (visible && hide_after_ms > 0) pivot_indicator_timer_.start();
     else                              pivot_indicator_timer_.invalidate();
+    if (!visible) orbit_selection_pivot_active_ = false;
     host_->requestFrame();
 }
 
@@ -796,6 +848,25 @@ bool ViewportCore::computeObjectAabb(uint32_t object_id,
             }
             any = true;
         }
+    }
+    return any;
+}
+
+bool ViewportCore::computeSelectionAabb(float mn[3], float mx[3]) const {
+    if (selection_.count() == 0) return false;
+    for (int i = 0; i < 3; ++i) {
+        mn[i] =  std::numeric_limits<float>::infinity();
+        mx[i] = -std::numeric_limits<float>::infinity();
+    }
+    bool any = false;
+    for (uint32_t id : selection_.selectionIds()) {
+        float object_min[3], object_max[3];
+        if (!computeObjectAabb(id, object_min, object_max)) continue;
+        for (int i = 0; i < 3; ++i) {
+            mn[i] = std::min(mn[i], object_min[i]);
+            mx[i] = std::max(mx[i], object_max[i]);
+        }
+        any = true;
     }
     return any;
 }
@@ -8085,10 +8156,15 @@ void ViewportCore::render() {
 
     OverlayFrame overlay_frame;
     overlay_frame.view_proj          = vp_this_frame;
-    overlay_frame.camera_target      = Eigen::Vector3f(camera_target_[0],
-                                                       camera_target_[1],
-                                                       camera_target_[2]);
-    overlay_frame.camera_distance    = camera_distance_;
+    // Keep OverlayFrame's established field names. During an active Revit
+    // orbit they carry the pivot indicator position and depth; every other
+    // path receives the camera target and distance exactly as before.
+    overlay_frame.camera_target = orbit_selection_pivot_active_
+        ? orbit_pivot_
+        : Eigen::Vector3f(camera_target_[0], camera_target_[1], camera_target_[2]);
+    overlay_frame.camera_distance = orbit_selection_pivot_active_
+        ? orbit_pivot_scale_distance_
+        : camera_distance_;
     overlay_frame.camera_yaw_deg     = camera_yaw_deg_;
     overlay_frame.camera_pitch_deg   = camera_pitch_deg_;
     overlay_frame.camera_fov_y_deg   = camera_fov_y_deg_;
