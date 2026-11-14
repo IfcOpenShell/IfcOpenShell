@@ -746,6 +746,8 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             representation=body,
         )
 
+        self._sync_mirrored_profile(element, profile)
+
         # Only certain classes should have a footprint
         if element.is_a() not in ("IfcSlab", "IfcRamp"):
             return
@@ -771,6 +773,39 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.geometry.assign_representation(
                 tool.Ifc.get(), product=element, representation=new_footprint
             )
+
+    def _sync_mirrored_profile(self, element, profile):
+        import ifcopenshell.util.shape_builder
+
+        type_element = ifcopenshell.util.element.get_type(element)
+        if not type_element:
+            return
+        mirrored_type = tool.Blender.Modifier.has_mirrored_type(type_element)
+        if not mirrored_type:
+            return
+        if tool.Blender.Modifier.has_mirrored_type(mirrored_type) != type_element:
+            return  # stale pset inherited from duplicate_type — not a real mirror pair
+        mirrored_body = ifcopenshell.util.representation.get_representation(mirrored_type, "Model", "Body", "MODEL_VIEW")
+        if not mirrored_body:
+            return
+        mirrored_body = ifcopenshell.util.representation.resolve_representation(mirrored_body)
+        mirrored_extrusion = tool.Model.get_extrusion(mirrored_body)
+        if not mirrored_extrusion:
+            return
+        ifc_file = tool.Ifc.get()
+        mirrored_profile = ifcopenshell.util.element.copy_deep(ifc_file, profile)
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+        builder.mirror(mirrored_profile.OuterCurve, (1, 0), create_copy=False)
+        if hasattr(mirrored_profile, "InnerCurves") and mirrored_profile.InnerCurves:
+            for inner in mirrored_profile.InnerCurves:
+                builder.mirror(inner, (1, 0), create_copy=False)
+        old_mirrored_profile = mirrored_extrusion.SweptArea
+        for inverse in ifc_file.get_inverse(old_mirrored_profile):
+            ifcopenshell.util.element.replace_attribute(inverse, old_mirrored_profile, mirrored_profile)
+        ifcopenshell.util.element.remove_deep2(ifc_file, old_mirrored_profile)
+        mirrored_obj = tool.Ifc.get_object(mirrored_type)
+        if mirrored_obj:
+            tool.Geometry.reload_representation(mirrored_obj)
 
 
 class ResetVertex(bpy.types.Operator):

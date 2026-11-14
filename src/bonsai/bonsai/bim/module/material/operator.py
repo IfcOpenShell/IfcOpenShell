@@ -608,6 +608,7 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.ops.bim.unassign_material(obj=obj.name)
                 bpy.ops.bim.assign_material(obj=obj.name, material_type="IfcMaterial")
             bpy.ops.bim.disable_editing_assigned_material(obj=active_obj.name)
+            self.copy_material_to_mirrored(element)
             return {"FINISHED"}
 
         material_set = self.file.by_id(self.material_set)
@@ -670,6 +671,24 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
                 model_profile.DumbProfileRecalculator().recalculate(objects)
 
         bpy.ops.bim.disable_editing_assigned_material(obj=active_obj.name)
+
+        self.copy_material_to_mirrored(element)
+
+    def copy_material_to_mirrored(self, element: ifcopenshell.entity_instance):
+        type_element = ifcopenshell.util.element.get_type(element)
+        if not type_element:
+            return
+
+        material = ifcopenshell.util.element.get_material(type_element)
+        if not material:
+            return
+
+        mirrored_type = tool.Blender.Modifier.has_mirrored_type(type_element)
+        if not mirrored_type:
+            return
+
+        ifcopenshell.api.material.assign_material(tool.Ifc.get(), [mirrored_type], material.is_a(), material)
+        tool.Material.ensure_material_assigned([mirrored_type], material.is_a(), material)
 
 
 class EnableEditingMaterialSetItemProfile(bpy.types.Operator):
