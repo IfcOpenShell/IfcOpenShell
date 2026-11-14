@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ids xmlns="http://standards.buildingsmart.org/IDS" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd">
+    <info>
+        <title>PredefinedType enumeration including USERDEFINED</title>
+        <description>An enumeration listing SOLIDWALL and USERDEFINED must still match SOLIDWALL.</description>
+    </info>
+    <specifications>
+        <specification name="Walls must be SOLIDWALL or USERDEFINED" ifcVersion="IFC4">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCWALL</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <entity>
+                    <name>
+                        <simpleValue>IFCWALL</simpleValue>
+                    </name>
+                    <predefinedType>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="SOLIDWALL"/>
+                            <xs:enumeration value="USERDEFINED"/>
+                        </xs:restriction>
+                    </predefinedType>
+                </entity>
+            </requirements>
+        </specification>
+    </specifications>
+</ids>
