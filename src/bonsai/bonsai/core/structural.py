@@ -48,6 +48,22 @@ def assign_structural_analysis_model(
     )
 
 
+def assign_to_building(
+    ifc: type[tool.Ifc],
+    structural_analysis_model: ifcopenshell.entity_instance,
+    building: ifcopenshell.entity_instance,
+) -> None:
+    ifc.run("structural.assign_to_building", structural_analysis_model=structural_analysis_model, building=building)
+
+
+def unassign_from_building(
+    ifc: type[tool.Ifc],
+    structural_analysis_model: ifcopenshell.entity_instance,
+    building: ifcopenshell.entity_instance,
+) -> None:
+    ifc.run("structural.unassign_from_building", structural_analysis_model=structural_analysis_model, building=building)
+
+
 def disable_editing_structural_analysis_model(structural: type[tool.Structural]) -> None:
     structural.disable_editing_structural_analysis_model()
 

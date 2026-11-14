@@ -382,6 +382,43 @@ class DisableEditingStructuralAnalysisModel(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AssignStructuralAnalysisModelToBuilding(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_structural_analysis_model_to_building"
+    bl_label = "Assign to Building"
+    bl_description = "Record that the structural analysis model serves the chosen building"
+    bl_options = {"REGISTER", "UNDO"}
+    structural_analysis_model: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        props = tool.Structural.get_structural_props()
+        if not props.building:
+            self.report({"WARNING"}, "The project has no building to assign.")
+            return {"CANCELLED"}
+        ifc_file = tool.Ifc.get()
+        core.assign_to_building(
+            tool.Ifc,
+            structural_analysis_model=ifc_file.by_id(self.structural_analysis_model),
+            building=ifc_file.by_id(int(props.building)),
+        )
+
+
+class UnassignStructuralAnalysisModelFromBuilding(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.unassign_structural_analysis_model_from_building"
+    bl_label = "Unassign from Building"
+    bl_description = "Stop the structural analysis model serving this building"
+    bl_options = {"REGISTER", "UNDO"}
+    structural_analysis_model: bpy.props.IntProperty()
+    building: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        core.unassign_from_building(
+            tool.Ifc,
+            structural_analysis_model=ifc_file.by_id(self.structural_analysis_model),
+            building=ifc_file.by_id(self.building),
+        )
+
+
 class AssignStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_structural_analysis_model"
     bl_label = "Assign Structural Analysis Model"
