@@ -458,9 +458,107 @@ class BIMArrayProperties(PropertyGroup):
         default=True,
     )
     method: bpy.props.EnumProperty(
-        items=(("OFFSET", "Offset", ""), ("DISTRIBUTE", "Distribute", "")),
+        items=(
+            (
+                "OFFSET",
+                "Offset",
+                "Fixed step between copies — the total span grows with the count",
+            ),
+            (
+                "DISTRIBUTE",
+                "Distribute",
+                "Fixed total span — the step between copies shrinks as the count grows",
+            ),
+        ),
         name="Method",
         default="OFFSET",
+    )
+    array_type: bpy.props.EnumProperty(
+        items=(
+            ("LINEAR", "Linear", "Copies are offset along a straight line"),
+            ("RADIAL", "Radial", "Copies are rotated about a centre point, optionally climbing into a helix"),
+        ),
+        name="Type",
+        default="LINEAR",
+        description="Linear arrays step along X/Y/Z; radial arrays sweep about a centre and axis",
+    )
+    angle: bpy.props.FloatProperty(
+        name="Angle",
+        default=math.radians(90),
+        subtype="ANGLE",
+        # Deliberately unbounded: a sweep of more than one full turn is a
+        # first-class case (spiral stairs, helical ramps), so unlike every other
+        # ANGLE property in this file there is no min/max clamp to +/-180deg.
+        # The soft range only tames mouse-drag sensitivity; typed and
+        # gizmo-accumulated values pass through untouched.
+        soft_min=math.radians(-720),
+        soft_max=math.radians(720),
+        description="Radial sweep. Per copy under Offset, total under Distribute. May exceed 360 for multi-turn helices",
+    )
+    rise: bpy.props.FloatProperty(
+        name="Rise",
+        default=0.0,
+        subtype="DISTANCE",
+        description=(
+            "Climb along the rotation axis, turning a flat ring into a helix — a spiral stair's riser. "
+            "Read as per-copy or as a total according to Rise Mode. Zero gives a flat radial array"
+        ),
+    )
+    rise_method: bpy.props.EnumProperty(
+        items=(
+            ("OFFSET", "Per Copy", "Rise is the climb between one copy and the next — the total grows with count"),
+            ("DISTRIBUTE", "Total", "Rise is the overall climb — the per-copy riser shrinks as the count grows"),
+        ),
+        name="Rise Mode",
+        default="OFFSET",
+        description=(
+            "Whether Rise means the climb per copy or the climb overall. Independent of Method so a stair can be "
+            "specified the way it is actually known — a fixed floor-to-floor height with a chosen tread angle, "
+            "or a fixed sweep with a chosen riser"
+        ),
+    )
+    axis: bpy.props.EnumProperty(
+        items=(
+            ("X", "X", "Rotate about the X axis"),
+            ("Y", "Y", "Rotate about the Y axis"),
+            ("Z", "Z", "Rotate about the Z axis"),
+            ("CUSTOM", "Custom", "Rotate about an arbitrary axis vector"),
+        ),
+        name="Axis",
+        default="Z",
+    )
+    custom_axis: bpy.props.FloatVectorProperty(
+        name="Custom Axis",
+        default=(0.0, 0.0, 1.0),
+        size=3,
+        subtype="XYZ",
+        description="Rotation axis used when Axis is set to Custom. Need not be normalised",
+    )
+    center: bpy.props.FloatVectorProperty(
+        name="Centre",
+        default=(0.0, 0.0, 0.0),
+        size=3,
+        subtype="TRANSLATION",
+        description=(
+            "Rotation pivot, measured from the arrayed object's origin. Relative rather than absolute so the "
+            "array travels with its parent"
+        ),
+    )
+    full_circle: bpy.props.BoolProperty(
+        name="Full Circle",
+        default=False,
+        description=(
+            "Treat the sweep as closing back on itself, so no copy is placed on top of the original. "
+            "Ignored when Rise is non-zero, because a helix never returns to its starting point"
+        ),
+    )
+    rotate_children: bpy.props.BoolProperty(
+        name="Rotate Copies",
+        default=True,
+        description=(
+            "Turn each copy to face along the sweep. Disable to orbit the copies around the centre while "
+            "keeping them all in the original orientation"
+        ),
     )
     per_child_opening: bpy.props.BoolProperty(
         name="Per-Child Opening",
@@ -478,6 +576,17 @@ class BIMArrayProperties(PropertyGroup):
         poll=is_object_array_applicable,
     )
 
+    def get_axis_vector(self) -> Vector:
+        """Rotation axis as a vector, resolving the X/Y/Z shorthand.
+
+        A zero-length custom axis is left as-is rather than substituted:
+        ``tool.Array`` treats it as degenerate and places every copy on the
+        source, which reads as "nothing happened" instead of silently
+        rotating about an axis the user never asked for."""
+        if self.axis == "CUSTOM":
+            return Vector(self.custom_axis)
+        return Vector({"X": (1.0, 0.0, 0.0), "Y": (0.0, 1.0, 0.0), "Z": (0.0, 0.0, 1.0)}[self.axis])
+
     if TYPE_CHECKING:
         is_editing: bool
         editing_item_index: int
@@ -487,6 +596,15 @@ class BIMArrayProperties(PropertyGroup):
         z: float
         use_local_space: bool
         method: Literal["OFFSET", "DISTRIBUTE"]
+        array_type: Literal["LINEAR", "RADIAL"]
+        angle: float
+        rise: float
+        rise_method: Literal["OFFSET", "DISTRIBUTE"]
+        axis: Literal["X", "Y", "Z", "CUSTOM"]
+        custom_axis: Vector
+        center: Vector
+        full_circle: bool
+        rotate_children: bool
         per_child_opening: bool
         sync_children: bool
         relating_array_object: Union[bpy.types.Object, None]
