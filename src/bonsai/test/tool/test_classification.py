@@ -17,14 +17,21 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
+from pathlib import Path
+
 import bpy
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
+import pytest
 
 import bonsai.core.tool
 import bonsai.tool as tool
+import test.bim.stub
 from bonsai.tool.classification import Classification as subject
 from test.bim.bootstrap import NewFile
+
+BSDD_RESPONSES = Path(__file__).parents[1] / "files" / "bsdd_classification_responses.json"
 
 
 class TestImplementsTool(NewFile):
@@ -32,6 +39,26 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), bonsai.core.tool.Classification)
 
 
+@pytest.fixture
+def recorded_bsdd():
+    """Serve the bSDD responses these tests need from a file, so they don't depend on the live service.
+
+    Run with BONSAI_BSDD_RECORD=1 to record them from the live bSDD API again.
+    """
+    real_client = tool.Bsdd.client
+    is_recording = bool(os.environ.get("BONSAI_BSDD_RECORD"))
+    if is_recording:
+        client = test.bim.stub.bSDDRecordingClient(real_client)
+    else:
+        client = test.bim.stub.bSDDReplayClient(BSDD_RESPONSES)
+    tool.Bsdd.client = client
+    yield
+    tool.Bsdd.client = real_client
+    if is_recording:
+        client.save(BSDD_RESPONSES)
+
+
+@pytest.mark.usefixtures("recorded_bsdd")
 class TestAddClassificationReferenceFromBSDD(NewFile):
     def test_add_classification_reference(self):
         bpy.ops.bim.create_project()
