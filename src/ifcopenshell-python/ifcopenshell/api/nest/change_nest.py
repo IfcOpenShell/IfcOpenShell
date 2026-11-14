@@ -26,17 +26,16 @@ def change_nest(
     file: ifcopenshell.file, item: ifcopenshell.entity_instance, new_parent: ifcopenshell.entity_instance
 ) -> None:
     """Assigns a cost item to a new parent cost item"""
-    if not item.Nests:
-        return
-    nests = item.Nests[0]
-    related_objects = list(nests.RelatedObjects)
-    related_objects.remove(item)
-    if related_objects:
-        nests.RelatedObjects = related_objects
-        ifcopenshell.api.owner.update_owner_history(file, element=nests)
-    else:
-        history = nests.OwnerHistory
-        file.remove(nests)
-        if history:
-            ifcopenshell.util.element.remove_deep2(file, history)
+    if item.Nests:
+        nests = item.Nests[0]
+        related_objects = list(nests.RelatedObjects)
+        related_objects.remove(item)
+        if related_objects:
+            nests.RelatedObjects = related_objects
+            ifcopenshell.api.owner.update_owner_history(file, element=nests)
+        else:
+            history = nests.OwnerHistory
+            file.remove(nests)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
     ifcopenshell.api.nest.assign_object(file, related_objects=[item], relating_object=new_parent)
