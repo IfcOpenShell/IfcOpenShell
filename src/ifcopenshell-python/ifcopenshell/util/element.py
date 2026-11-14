@@ -1818,6 +1818,16 @@ def remove_deep2(
         ifc_file.to_delete.update(to_delete)
         return
 
+    # See #3052. Removing an element that is still listed in a big aggregate of
+    # its inverse (e.g. tens of thousands of IfcIndexedPolygonalFace in an
+    # IfcPolygonalFaceSet.Faces) is quadratic, as each removal rewrites (and,
+    # in a transaction, serialises) that list. The holder is going too, so
+    # empty its big lists (10 is an arbitrary threshold) before removing.
+    for subelement in to_delete:
+        for i, attribute in enumerate(subelement):
+            if isinstance(attribute, tuple) and len(attribute) > 10:
+                subelement[i] = []
+
     ifc_file.batch()
     try:
         for subelement in to_delete:
