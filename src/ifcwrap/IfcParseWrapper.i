@@ -870,9 +870,11 @@ private:
 				return;
 			}
 			case ifcopenshell::Argument_BOOL: {
-				if (PyBool_Check(value)) {
-					self->set_attribute_value(i, value == Py_True);
+				long v = to_index_long(value);
+				if (v != 0 && v != 1) {
+					throw ifcopenshell::exception("Attribute not set");
 				}
+				self->set_attribute_value(i, v == 1);
 				return;
 			}
 			case ifcopenshell::Argument_LOGICAL: {
