@@ -1,5 +1,7 @@
 #include "iterator.h"
 
+#include <tuple>
+
 /**
 * Initialize iterator's list of tasks.
 *
@@ -54,13 +56,31 @@ bool ifcopenshell::geom::iterator::initialize() {
 		tasks_.push_back(std::move(res));
 	}
 
-	if (settings_.get<ifcopenshell::geom::settings::NoParallelMapping>().get() && settings_.get<ifcopenshell::geom::settings::PermissiveShapeReuse>().get()) {
-		std::unordered_map<
-			ifcopenshell::geom::taxonomy::item::ptr,
-			std::vector<std::pair<express::base, ifcopenshell::geom::taxonomy::matrix4::ptr>>> folded;
+	// World coords bake the product placement into the shape, so nothing can be shared
+	if (settings_.get<ifcopenshell::geom::settings::NoParallelMapping>().get() && settings_.get<ifcopenshell::geom::settings::PermissiveShapeReuse>().get() && !settings_.get<ifcopenshell::geom::settings::UseWorldCoords>().get()) {
+		namespace tx = ifcopenshell::geom::taxonomy;
+		struct fold_group {
+			tx::item::ptr original, shared;
+			tx::style::ptr style;
+			std::vector<std::pair<express::base, tx::matrix4::ptr>> products;
+		};
+		std::vector<fold_group> groups;
+		// Shared item, style of the unwrapped collections, material of the products
+		std::map<std::tuple<tx::item::ptr, tx::style::ptr, express::base>, size_t> group_index;
+		const bool with_openings = !settings_.get<ifcopenshell::geom::settings::DisableOpeningSubtractions>().get();
 
 		for (auto& r : tasks_) {
+			bool has_openings = false;
+			for (auto& p : r.products) {
+				has_openings = has_openings || (with_openings && !converter_->mapping()->find_openings(p.first).empty());
+			}
+			if (has_openings) {
+				groups.push_back({ r.item, r.item, nullptr, r.products });
+				continue;
+			}
+
 			auto i = r.item;
+			tx::style::ptr style;
 
 			Eigen::Matrix4d m4 = Eigen::Matrix4d::Identity();
 
@@ -69,30 +89,56 @@ bool ifcopenshell::geom::iterator::initialize() {
 					if (col->matrix) {
 						m4 *= col->matrix->ccomponents();
 					}
+					if (col->surface_style) {
+						style = col->surface_style;
+					}
 					i = col->children[0];
 				} else {
 					break;
 				}
 			}
 
+			express::base material = converter_->mapping()->get_single_material_association(r.products.front().first);
+			if (!material) {
+				if (auto type_product = converter_->mapping()->get_product_type(r.products.front().first)) {
+					material = converter_->mapping()->get_single_material_association(type_product);
+				}
+			}
+
+			auto inserted = group_index.insert({ { i, style, material }, groups.size() });
+			if (inserted.second) {
+				groups.push_back({ r.item, i, style, {} });
+			}
+			auto& group = groups[inserted.first->second];
+
 			for (auto& p : r.products) {
 				auto pl = ifcopenshell::geom::taxonomy::matrix4::ptr(p.second->clone_());
 				pl->components() *= m4;
-				folded[i].push_back(
+				group.products.push_back(
 					{ p.first, pl }
 				);
 			}
 		}
 
-		if (folded.size() < tasks_.size()) {
+		if (groups.size() < tasks_.size()) {
 			auto old_size = tasks_.size();
 			tasks_.clear();
 			int i = 0;
-			for (auto& p : folded) {
+			for (auto& g : groups) {
+				auto item = g.shared;
+				if (item != g.original) {
+					// Keeps the representation instance and the style for the converter
+					auto wrap = tx::make<tx::collection>();
+					wrap->children.push_back(std::dynamic_pointer_cast<tx::geom_item>(item));
+					wrap->matrix = tx::make<tx::matrix4>();
+					wrap->surface_style = g.style;
+					wrap->instance = g.original->instance;
+					item = wrap;
+				}
 				tasks_.emplace_back();
 				tasks_.back().index = i++;
-				tasks_.back().item = p.first;
-				tasks_.back().products = p.second;
+				tasks_.back().item = item;
+				tasks_.back().products = std::move(g.products);
 			}
 			logger_.notice("SYS", 26, "Merged " + std::to_string(old_size) + " tasks into " + std::to_string(tasks_.size()) + " tasks due to permissive shape reuse");
 		}
