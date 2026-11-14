@@ -26,6 +26,7 @@ import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.element
 import mathutils
+from ifcopenshell.util.shape import tol
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 from shapely.geometry import Polygon
@@ -830,8 +831,9 @@ def get_net_side_area(obj: bpy.types.Object) -> float:
 
 
 def get_outer_surface_area(obj: bpy.types.Object) -> float:
-    outer_surface_area = get_lateral_area(obj, exclude_end_areas=True, angle_z1=0, angle_z2=360)
-    return outer_surface_area
+    """Area of all sides except the top and bottom (local Z), as in ``ifcopenshell.util.shape.get_outer_surface_area``."""
+    assert isinstance(obj.data, bpy.types.Mesh)
+    return sum(p.area for p in obj.data.polygons if abs(p.normal.z) < tol)
 
 
 def get_end_area(obj: bpy.types.Object) -> float:
