@@ -92,6 +92,73 @@ if TYPE_CHECKING:
 
 
 class Model(bonsai.core.tool.Model):
+    # The view ray of the last click on each object, keyed by object name, so joins
+    # and extends can keep the side of a wall or profile the user clicked. A ray
+    # rather than a point: the hotkey comes later and the geometry may change, but
+    # where the ray passes the member's axis still says which side was picked.
+    clicked_rays: dict[str, tuple[Vector, Vector]] = {}
+    MAX_CLICKED_RAYS = 32
+
+    @classmethod
+    def record_clicked_object(cls, context: bpy.types.Context, pos: tuple[int, int]) -> None:
+        """Remember the view ray of a click that just selected the active object."""
+        region = context.region
+        rv3d = context.region_data
+        if not region or region.type != "WINDOW" or not rv3d or context.mode != "OBJECT":
+            return
+        obj = context.active_object
+        if not obj or not obj.select_get():
+            if not context.selected_objects:
+                cls.clicked_rays.clear()  # A click on empty space starts over.
+            return
+        from bpy_extras import view3d_utils
+
+        origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, pos)
+        direction = view3d_utils.region_2d_to_vector_3d(region, rv3d, pos)
+        cls.clicked_rays.pop(obj.name, None)
+        cls.clicked_rays[obj.name] = (origin, direction)
+        while len(cls.clicked_rays) > cls.MAX_CLICKED_RAYS:
+            del cls.clicked_rays[next(iter(cls.clicked_rays))]
+
+    @classmethod
+    def forget_clicked_objects(cls, objs: Iterable[bpy.types.Object]) -> None:
+        """Drop the clicks of objects selected some other way, e.g. by a box."""
+        for obj in objs:
+            cls.clicked_rays.pop(obj.name, None)
+
+    @classmethod
+    def get_clicked_percent(cls, obj: bpy.types.Object, start: Vector, end: Vector) -> Optional[float]:
+        """Where along the world-space axis start -> end the object was last clicked."""
+        ray = cls.clicked_rays.get(obj.name)
+        if not ray or (end - start).length < 1e-9:
+            return None
+        origin, direction = ray
+        points = mathutils.geometry.intersect_line_line(start, end, origin, origin + direction)
+        if not points:
+            return None  # Looking straight along the axis.
+        return mathutils.geometry.intersect_point_line(points[0], start, end)[1]
+
+    @classmethod
+    def get_clicked_connection(
+        cls, obj: bpy.types.Object, start: Vector, end: Vector, target_percent: float
+    ) -> Optional[Literal["ATSTART", "ATEND"]]:
+        """The end to move to a target so the clicked side of the member is kept.
+
+        :param target_percent: Where the target (an intersection or the cursor) lies
+            along start -> end. Past either end this extends the nearer end.
+        :return: None when there is no usable click, so callers keep their own rule.
+        """
+        clicked = cls.get_clicked_percent(obj, start, end)
+        if clicked is None or abs(clicked - target_percent) < 1e-6:
+            return None
+        # At or past an end only the nearer end can reach the target. A click just beyond that end
+        # (e.g. on the corner of an already joined body) must not move the far end onto it instead.
+        if target_percent <= 1e-3:
+            return "ATSTART"
+        if target_percent >= 1 - 1e-3:
+            return "ATEND"
+        return "ATEND" if clicked < target_percent else "ATSTART"
+
     @classmethod
     def get_model_props(cls) -> BIMModelProperties:
         return bpy.context.scene.BIMModelProperties

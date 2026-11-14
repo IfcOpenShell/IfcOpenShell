@@ -31,6 +31,8 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import numpy as np
+import pytest
+from mathutils import Vector
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 from mathutils import Matrix
 
@@ -1045,6 +1047,54 @@ class TestGetSiblingOccurrenceCount(NewFile):
         ifcopenshell.api.type.assign_type(ifc, related_objects=occurrences, relating_type=wall_type)
 
         assert subject.get_sibling_occurrence_count(wall_type) == 2
+
+
+class TestGetClickedConnection(NewFile):
+    def _click(self, obj, x, y):
+        # A plan-view click: a ray straight down through (x, y).
+        subject.clicked_rays[obj.name] = (Vector((x, y, 10.0)), Vector((0.0, 0.0, -1.0)))
+
+    @pytest.fixture(autouse=True)
+    def clicked(self, setup):
+        subject.clicked_rays.clear()
+        self.obj = bpy.data.objects.new("Wall", None)
+        self.start = Vector((0.0, 0.0, 0.0))
+        self.end = Vector((10.0, 0.0, 0.0))
+        yield
+        subject.clicked_rays.clear()
+
+    def test_no_click_leaves_the_choice_to_the_caller(self):
+        assert subject.get_clicked_connection(self.obj, self.start, self.end, 0.6) is None
+
+    def test_trimming_keeps_the_clicked_side(self):
+        self._click(self.obj, 2.0, 0.3)  # Clicked the start side of a target at 60%.
+        assert subject.get_clicked_connection(self.obj, self.start, self.end, 0.6) == "ATEND"
+        self._click(self.obj, 9.0, -0.3)  # Clicked the end side.
+        assert subject.get_clicked_connection(self.obj, self.start, self.end, 0.6) == "ATSTART"
+
+    def test_extending_moves_the_nearer_end_wherever_it_was_clicked(self):
+        self._click(self.obj, 1.0, 0.0)
+        assert subject.get_clicked_connection(self.obj, self.start, self.end, 1.3) == "ATEND"
+        assert subject.get_clicked_connection(self.obj, self.start, self.end, -0.3) == "ATSTART"
+
+    def test_a_target_at_an_end_moves_that_end_even_if_clicked_beyond_it(self):
+        self._click(self.obj, -0.2, 0.0)  # Just before the start, e.g. the corner of a joined body.
+        assert subject.get_clicked_connection(self.obj, self.start, self.end, 0.0) == "ATSTART"
+        self._click(self.obj, 10.2, 0.0)  # Just past the end.
+        assert subject.get_clicked_connection(self.obj, self.start, self.end, 1.0) == "ATEND"
+
+    def test_clicked_percent_is_where_the_ray_passes_the_axis(self):
+        self._click(self.obj, 2.5, 4.0)
+        assert subject.get_clicked_percent(self.obj, self.start, self.end) == pytest.approx(0.25)
+
+    def test_a_ray_along_the_axis_says_nothing(self):
+        subject.clicked_rays[self.obj.name] = (Vector((-5.0, 0.0, 0.0)), Vector((1.0, 0.0, 0.0)))
+        assert subject.get_clicked_connection(self.obj, self.start, self.end, 0.6) is None
+
+    def test_forgetting_an_object_drops_its_click(self):
+        self._click(self.obj, 2.0, 0.0)
+        subject.forget_clicked_objects([self.obj])
+        assert subject.get_clicked_connection(self.obj, self.start, self.end, 0.6) is None
 
 
 class TestConvertCurveToMesh(NewFile):

@@ -933,51 +933,187 @@ class Blender(bonsai.core.tool.Blender):
                             pass
 
     @classmethod
-    def get_default_selection_keypmap(cls) -> tuple:
-        """keymap to replicate default blender selection behaviour with click and box selection"""
-        # code below comes from blender_default.py which is part of default blender scripts licensed under GPL v2
-        # https://github.com/blender/blender/blob/master/release/scripts/presets/keyconfig/keymap_data/blender_default.py
-        # the code is the data from evaluating km_3d_view_tool_select() and km_3d_view_tool_select_box()
-        #
-        # You can run the snippet below in Blender console
-        # to regenerate those keybindings in case of errors in the future
-        # ```
-        # import os
-        # version = ".".join(bpy.app.version_string.split(".")[:2])
-        # fl = os.path.join(os.getcwd(), version, "scripts/presets/keyconfig/keymap_data/blender_default.py")
-        # def_keymap = bpy.utils.execfile(fl)
-        # params = def_keymap.Params
-        # box_keymap = def_keymap.km_3d_view_tool_select_box(def_keymap.Params(), fallback=None)[2]["items"]
-        # click_keymap = def_keymap.km_3d_view_tool_select(def_keymap.Params(select_mouse="LEFTMOUSE"), fallback=None)[2]["items"]
-        # ```
-        # https://docs.blender.org/api/current/bpy.types.KeyMapItems.html
-        keymap = (
-            # box selection keymap
-            ("view3d.select_box", {"type": "LEFTMOUSE", "value": "CLICK_DRAG"}, None),
+    def get_native_selection_keymap(
+        cls, select_operator: str = "view3d.select", box_select_operator: str = "view3d.select_box"
+    ) -> tuple:
+        """Blender's default click + box selection keymap (used when Cross Select is off).
+
+        :param select_operator: Operator to use for click selection. Tools that need
+            to know where the user clicked can pass a wrapper around ``view3d.select``.
+        :param box_select_operator: Operator to use for drag selection. A click that
+            drags even slightly comes here instead of ``select_operator``, so a tool
+            that wraps one usually needs to wrap both.
+        """
+        # Data from blender_default.py (GPL v2): the items of km_3d_view_tool_select_box()
+        # and km_3d_view_tool_select(select_mouse="LEFTMOUSE"). See git history for the
+        # console snippet to regenerate these if Blender's defaults ever change.
+        return (
+            (box_select_operator, {"type": "LEFTMOUSE", "value": "CLICK_DRAG"}, None),
             (
-                "view3d.select_box",
+                box_select_operator,
                 {"type": "LEFTMOUSE", "value": "CLICK_DRAG", "shift": True},
                 {"properties": [("mode", "ADD")]},
             ),
             (
-                "view3d.select_box",
+                box_select_operator,
                 {"type": "LEFTMOUSE", "value": "CLICK_DRAG", "ctrl": True},
                 {"properties": [("mode", "SUB")]},
             ),
             (
-                "view3d.select_box",
+                box_select_operator,
                 {"type": "LEFTMOUSE", "value": "CLICK_DRAG", "shift": True, "ctrl": True},
                 {"properties": [("mode", "AND")]},
             ),
-            # left-click selection keymap
-            ("view3d.select", {"type": "LEFTMOUSE", "value": "PRESS"}, {"properties": [("deselect_all", True)]}),
+            (select_operator, {"type": "LEFTMOUSE", "value": "PRESS"}, {"properties": [("deselect_all", True)]}),
             (
-                "view3d.select",
+                select_operator,
                 {"type": "LEFTMOUSE", "value": "PRESS", "shift": True},
                 {"properties": [("toggle", True)]},
             ),
         )
-        return keymap
+
+    @classmethod
+    def get_cross_select_keymap(cls) -> tuple:
+        """CAD/Rhino-style box selection keymap, routed through ``bim.cross_select``.
+
+        A single ``LEFTMOUSE`` ``PRESS`` binding lets the modal operator decide between a
+        click and a box drag itself (drag left-to-right = window, right-to-left = crossing),
+        reading Shift/Ctrl to add or subtract from the selection.
+        """
+        return (
+            ("bim.cross_select", {"type": "LEFTMOUSE", "value": "PRESS"}, {"properties": []}),
+            ("bim.cross_select", {"type": "LEFTMOUSE", "value": "PRESS", "shift": True}, {"properties": []}),
+            ("bim.cross_select", {"type": "LEFTMOUSE", "value": "PRESS", "ctrl": True}, {"properties": []}),
+            (
+                "bim.cross_select",
+                {"type": "LEFTMOUSE", "value": "PRESS", "shift": True, "ctrl": True},
+                {"properties": []},
+            ),
+        )
+
+    @classmethod
+    def is_cross_select_enabled(cls) -> bool:
+        try:
+            return bool(cls.get_addon_preferences().cross_select.enabled)
+        except (KeyError, AttributeError):
+            # Preferences are not registered yet (e.g. at tool import/registration time).
+            # Default to Cross Select; the saved preference is applied on startup via
+            # apply_cross_select_preference().
+            return True
+
+    @classmethod
+    def get_default_selection_keypmap(
+        cls, select_operator: str = "view3d.select", box_select_operator: str = "view3d.select_box"
+    ) -> tuple:
+        """Selection keymap shared by every Bonsai tool.
+
+        Returns the Cross Select keymap when the add-on preference is enabled, otherwise
+        Blender's native selection keymap. ``bl_keymap`` is evaluated once when the tool
+        classes are imported, so toggling the preference re-applies the keymap live via
+        :meth:`apply_cross_select_preference`.
+
+        :param select_operator: Operator to use for click selection. Tools that need
+            to know where the user clicked can pass a wrapper around ``view3d.select``.
+        :param box_select_operator: Operator to use for drag selection.
+        """
+        if cls.is_cross_select_enabled():
+            return cls.get_cross_select_keymap()
+        return cls.get_native_selection_keymap(select_operator, box_select_operator)
+
+    # Length of the selection block in bl_keymap, keyed by the operator idname of its
+    # first entry.  Used to locate and replace the selection block during a rebuild
+    # while preserving any pre-selection or post-selection entries the tool declares.
+    # bim.cad_select_box is the CAD tool's wrapper - see bim_select_operators below.
+    _SELECTION_PREFIX_LENGTHS = {"bim.cross_select": 4, "view3d.select_box": 6, "bim.cad_select_box": 6}
+
+    @classmethod
+    def get_tool_select_operators(cls, tool_cls) -> tuple[str, str]:
+        """The (click, drag) selection operators a tool wants in its keymap.
+
+        A tool declares ``bim_select_operators`` when it needs to know more about a
+        click than plain selection reports - the CAD tool records which end of an
+        edge was clicked so Join can keep that side. Everything else gets Blender's
+        native pair.
+        """
+        return getattr(tool_cls, "bim_select_operators", ("view3d.select", "view3d.select_box"))
+
+    @classmethod
+    def _iter_selection_tools(cls):
+        """Yield ``(tool_cls, after, separator, group)`` for every Bonsai WorkSpaceTool that
+        uses the shared selection keymap, in registration order so re-registration preserves
+        the toolbar layout.
+
+        NOTE: keep in sync with each module's ``register()`` tool registration. The model
+        tools are read from ``model.tools``; the single-tool modules are listed explicitly.
+        """
+        from bonsai.bim.module import project, model, cad, drawing, spatial, structural, covering
+
+        yield (project.workspace.ExploreTool, {"builtin.transform"}, True, False)
+        for td in model.tools:
+            yield (td.tool, td.after, td.separator, td.group)
+        yield (cad.workspace.CadTool, {"builtin.transform"}, True, False)
+        yield (drawing.workspace.AnnotationTool, {"bim.bim_tool"}, True, False)
+        yield (spatial.workspace.SpatialTool, {"bim.annotation_tool"}, False, False)
+        yield (structural.workspace.StructuralTool, {"bim.spatial_tool"}, False, False)
+        yield (covering.workspace.CoveringTool, {"bim.wall_tool"}, False, False)
+
+    @classmethod
+    def _split_tool_keymap(cls, tool_cls) -> tuple[tuple, tuple]:
+        """Split bl_keymap into (pre_selection, post_selection), discarding the selection block.
+
+        Locates the selection block by finding the first entry whose op is in
+        ``_SELECTION_PREFIX_LENGTHS``, then skips the declared number of entries.
+        Entries before the block become *pre_selection*; entries after become
+        *post_selection*.  The caller inserts the desired selection keymap between them.
+
+        When no selection block is found (shouldn't happen in practice) all entries
+        are returned as post_selection so the rebuild still produces a valid keymap.
+        """
+        km = tuple(tool_cls.bl_keymap)
+        sel_start = next((i for i, entry in enumerate(km) if entry[0] in cls._SELECTION_PREFIX_LENGTHS), None)
+        if sel_start is None:
+            return (), km
+        sel_len = cls._SELECTION_PREFIX_LENGTHS[km[sel_start][0]]
+        return km[:sel_start], km[sel_start + sel_len:]
+
+    @classmethod
+    def apply_cross_select_preference(cls) -> None:
+        """Rebuild every Bonsai tool's selection keymap from the current preference and
+        re-register the tools so the Cross Select toggle takes effect without a restart.
+
+        Safe to call repeatedly: it no-ops when the tools already carry the desired keymap.
+        """
+        if bpy.app.background:
+            return
+        tools = list(cls._iter_selection_tools())
+        if not tools:
+            return
+        selection_keymap = tuple(cls.get_default_selection_keypmap(*cls.get_tool_select_operators(tools[0][0])))
+
+        desired_op = selection_keymap[0][0] if selection_keymap else None
+        current = tuple(tools[0][0].bl_keymap)
+        # The selection block may be preceded by pre-selection entries (e.g. the
+        # AnnotationTool's ClickNearestDimensionAnchor), so search for it by op name
+        # rather than assuming it starts at position 0.
+        sel_start = next((i for i, entry in enumerate(current) if entry[0] in cls._SELECTION_PREFIX_LENGTHS), None)
+        if sel_start is not None and current[sel_start][0] == desired_op:
+            return  # already applied
+
+        # Capture each tool's own entries before mutating any ``bl_keymap`` (model subclasses
+        # share BimTool's inherited keymap, so this must be done up front).
+        pre_post = {tool_cls: cls._split_tool_keymap(tool_cls) for tool_cls, *_ in tools}
+        for tool_cls, *_ in reversed(tools):
+            try:
+                bpy.utils.unregister_tool(tool_cls)
+            except Exception:
+                pass
+        for tool_cls, after, separator, group in tools:
+            pre, post = pre_post[tool_cls]
+            # Rebuilt per tool, so a tool that wraps selection keeps its wrappers
+            # instead of being handed the generic pair.
+            tool_keymap = tuple(cls.get_default_selection_keypmap(*cls.get_tool_select_operators(tool_cls)))
+            tool_cls.bl_keymap = pre + tool_keymap + post
+            bpy.utils.register_tool(tool_cls, after=after, separator=separator, group=group)
 
     KEY_MODIFIERS = {
         "A": ("EVENT_ALT", "OPTION" if sys.platform == "Darwin" else "ALT"),
