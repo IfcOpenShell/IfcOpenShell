@@ -35,7 +35,8 @@ def update_diff_json_file(self: "DiffProperties", context: bpy.types.Context) ->
     DiffData.data["diff_json"] = DiffData.diff_json()
 
 
-RelationshipType = Literal["type", "property", "container", "aggregate", "classification"]
+# Mirrors ifcdiff.RELATIONSHIP_TYPE. Selecting any other relationship skips the attributes+geometry default.
+RelationshipType = Literal["attributes", "geometry", "type", "property", "container", "aggregate", "classification"]
 
 
 class Relationships(PropertyGroup):
