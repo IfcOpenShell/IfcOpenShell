@@ -18,8 +18,8 @@ material and an extruded section. The member shares its section and material
 with the element; editing shared data can therefore affect both.
 
 The panel reports differences between linked members and their elements.
-**Update Structural Model** explicitly refreshes the members' axes,
-orientations, sections and materials from the elements. It can overwrite
-manual changes to the analysis model, but does not update the building.
-Comparisons require the relevant objects to be loaded. Generation is available
-for IFC4 and IFC4X3.
+Select the physical beams or columns and use **(Re)Generate from Selected** to
+refresh their members' axes, orientations, sections and materials. This can
+overwrite manual changes to the analysis model, but does not update the
+building. Comparisons require the relevant objects to be loaded. Generation is
+available for IFC4 and IFC4X3.

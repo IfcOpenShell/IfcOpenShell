@@ -26,7 +26,6 @@ classes = (
     operator.DisableStructuralAnalysisModelEditingUI,
     operator.AddStructuralAnalysisModel,
     operator.GenerateStructuralModel,
-    operator.UpdateStructuralModel,
     operator.EditStructuralAnalysisModel,
     operator.RemoveStructuralAnalysisModel,
     operator.AssignStructuralAnalysisModel,

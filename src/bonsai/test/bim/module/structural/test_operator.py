@@ -227,7 +227,10 @@ class TestGenerateStructuralModel(NewIfc):
         BIM_PT_generate_structural_model.draw(SimpleNamespace(layout=layout), bpy.context)
         layout.box.return_value.label.assert_any_call(text="Section or material differs from the element", icon="ERROR")
         assert ifc.to_string() == before_check
-        bpy.ops.bim.update_structural_model(structural_model=model.id())
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.bim.generate_structural_model()
         assert ifcopenshell.util.element.get_material(member, should_skip_usage=True) == sets[0]
         assert ifcopenshell.util.element.get_material(source, should_skip_usage=True) == sets[0]
 
@@ -238,7 +241,7 @@ class TestGenerateStructuralModel(NewIfc):
         assert ifcopenshell.util.element.get_material(source, should_skip_usage=True) == sets[1]
         assert ifcopenshell.util.element.get_material(member, should_skip_usage=True) == sets[0]
         assert tool.Structural.get_member_changes(model)[0]["section_changed"]
-        bpy.ops.bim.update_structural_model(structural_model=model.id())
+        bpy.ops.bim.generate_structural_model()
         assert ifcopenshell.util.element.get_material(member, should_skip_usage=True) == sets[1]
         beam_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBeamType")
         ifcopenshell.api.material.assign_material(ifc, products=[beam_type], material=sets[0])
@@ -246,14 +249,14 @@ class TestGenerateStructuralModel(NewIfc):
         assert ifcopenshell.util.element.get_material(source, should_skip_usage=True) == sets[0]
         assert ifcopenshell.util.element.get_material(member, should_skip_usage=True) == sets[1]
         assert tool.Structural.get_member_changes(model)[0]["section_changed"]
-        bpy.ops.bim.update_structural_model(structural_model=model.id())
+        bpy.ops.bim.generate_structural_model()
         assert ifcopenshell.util.element.get_material(member, should_skip_usage=True) == sets[0]
         assert not tool.Structural.get_member_changes(model)
         bpy.ops.bim.unassign_material(obj=member_obj.name)
         assert not ifcopenshell.util.element.get_material(member)
         assert ifcopenshell.util.element.get_material(source, should_skip_usage=True) == sets[0]
         assert tool.Structural.get_member_changes(model)[0]["section_changed"]
-        bpy.ops.bim.update_structural_model(structural_model=model.id())
+        bpy.ops.bim.generate_structural_model()
         assert ifcopenshell.util.element.get_material(member, should_skip_usage=True) == sets[0]
 
     def test_generation_only_processes_selected_beams_and_columns(self, capsys):
@@ -299,6 +302,10 @@ class TestGenerateStructuralModel(NewIfc):
         bpy.ops.bim.generate_structural_model()
         assert "No eligible profile beams or columns selected" in capsys.readouterr().out
         assert member_obj.location.x == pytest.approx(0)
+        member_obj.select_set(False)
+        tool.Ifc.get_object(beam).select_set(True)
+        bpy.ops.bim.generate_structural_model()
+        assert member_obj.location.x == pytest.approx(1)
         bpy.ops.bim.unassign_material(obj="Beam")
         assert not ifcopenshell.util.element.get_material(beam)
         assert ifcopenshell.util.element.get_materials(member) == [material]
@@ -360,7 +367,7 @@ class TestGenerateStructuralModel(NewIfc):
         layout.box.return_value.label.assert_any_call(text="Profile orientation differs", icon="ERROR")
         assert ifc.to_string() == ifc_before_check
         assert len(IfcStore.history) == history_before_check
-        bpy.ops.bim.update_structural_model(structural_model=model.id())
+        bpy.ops.bim.generate_structural_model()
         assert member.Axis.DirectionRatios == pytest.approx(updated_axis, abs=1e-6)
         assert not tool.Structural.get_member_changes(model)
 
@@ -368,20 +375,21 @@ class TestGenerateStructuralModel(NewIfc):
             ifc.createIfcCartesianPoint((0.0, 0.0)), ifc.createIfcDirection((0.0, 1.0))
         )
         assert tool.Structural.get_member_changes(model)[0]["reason"] == "ORIENTATION"
-        bpy.ops.bim.update_structural_model(structural_model=model.id())
+        bpy.ops.bim.generate_structural_model()
         assert member.Axis.DirectionRatios == pytest.approx(profile_axis, abs=1e-6)
         member.Axis.DirectionRatios = tuple(float(value) for value in member_direction)
         assert tool.Structural.get_member_changes(model)[0]["reason"] == "ORIENTATION"
-        bpy.ops.bim.update_structural_model(structural_model=model.id())
+        bpy.ops.bim.generate_structural_model()
         assert member.Axis.DirectionRatios == pytest.approx(profile_axis, abs=1e-6)
         assert not tool.Structural.get_member_changes(model)
 
-    def test_panel_has_generate_and_update_buttons(self):
+    def test_panel_has_only_generate_button(self):
         ifcopenshell.api.structural.add_structural_analysis_model(tool.Ifc.get())
         layout = MagicMock()
         BIM_PT_generate_structural_model.draw(SimpleNamespace(layout=layout), bpy.context)
         layout.operator.assert_any_call("bim.generate_structural_model", icon="MOD_SIMPLIFY")
-        layout.operator.assert_any_call("bim.update_structural_model", icon="FILE_REFRESH")
+        assert [call.args[0] for call in layout.operator.call_args_list] == ["bim.generate_structural_model"]
+        assert "update_structural_model" not in dir(bpy.ops.bim)
 
     @pytest.mark.parametrize("source_count", [0, 2])
     def test_missing_or_ambiguous_source_preserves_member(self, source_count, capsys):
@@ -402,7 +410,7 @@ class TestGenerateStructuralModel(NewIfc):
         assert [change["reason"] for change in changes] == [
             "MISSING_SOURCE" if source_count == 0 else "MULTIPLE_SOURCES"
         ]
-        assert bpy.ops.bim.update_structural_model(structural_model=model.id()) == {"FINISHED"}
+        assert bpy.ops.bim.generate_structural_model(sync_only=True, structural_model=model.id()) == {"FINISHED"}
         assert "missing or ambiguous source relationships" in capsys.readouterr().out
         assert member in ifc.by_type("IfcStructuralCurveMember")
 
@@ -477,14 +485,14 @@ class TestGenerateStructuralModel(NewIfc):
         layout = MagicMock()
         BIM_PT_generate_structural_model.draw(SimpleNamespace(layout=layout), bpy.context)
         layout.label.assert_called_with(text="Linked members have changed or missing sources", icon="ERROR")
-        layout.operator.assert_any_call("bim.update_structural_model", icon="FILE_REFRESH")
+        layout.operator.assert_any_call("bim.generate_structural_model", icon="MOD_SIMPLIFY")
         layout.box.return_value.label.assert_any_call(
             text=f"Difference: 2 m; tolerance: {changes[0]['tolerance']:.6g} m"
         )
         assert ifc.to_string() == ifc_before_check
         assert len(IfcStore.history) == history_before_check
         previous_transaction = IfcStore.history[-1]["key"]
-        assert bpy.ops.bim.update_structural_model(structural_model=model.id()) == {"FINISHED"}
+        assert bpy.ops.bim.generate_structural_model() == {"FINISHED"}
         assert len(IfcStore.history) == history_before_check + 1
         update_transaction = IfcStore.history[-1]["key"]
         ifc_after_update = ifc.to_string()
@@ -514,7 +522,7 @@ class TestGenerateStructuralModel(NewIfc):
         bpy.context.view_layer.update()
         assert tool.Structural.get_member_changes(model)
         assert member_obj.location.x == pytest.approx(2.15)
-        bpy.ops.bim.update_structural_model(structural_model=model.id())
+        bpy.ops.bim.generate_structural_model()
         assert member_obj.location.x == pytest.approx(2)
         tool.Geometry.delete_ifc_object(obj)
         assert tool.Structural.get_member_changes(model)

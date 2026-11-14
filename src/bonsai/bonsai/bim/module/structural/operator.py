@@ -687,15 +687,6 @@ class GenerateStructuralModel(StructuralModelGeneration):
     structural_model: bpy.props.IntProperty(default=0, options={"HIDDEN", "SKIP_SAVE"})
 
 
-class UpdateStructuralModel(StructuralModelGeneration):
-    bl_idname = "bim.update_structural_model"
-    bl_label = "Update Structural Model"
-    bl_description = "Update linked structural members from their physical elements"
-    bl_options = {"REGISTER", "UNDO"}
-    sync_only = True
-    structural_model: bpy.props.IntProperty(default=0, options={"HIDDEN", "SKIP_SAVE"})
-
-
 class LoadStructuralAnalysisModels(bpy.types.Operator):
     bl_idname = "bim.load_structural_analysis_models"
     bl_label = "Load Structural Analysis Models"

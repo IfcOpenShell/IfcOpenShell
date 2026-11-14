@@ -468,8 +468,6 @@ class BIM_PT_generate_structural_model(Panel):
         model = tool.Structural.get_current_structural_analysis_model()
         if not model:
             return
-        op = self.layout.operator("bim.update_structural_model", icon="FILE_REFRESH")
-        op.structural_model = model.id()
         changes = tool.Structural.get_member_changes(model)
         if changes:
             self.layout.label(text="Linked members have changed or missing sources", icon="ERROR")
