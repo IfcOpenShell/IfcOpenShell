@@ -449,6 +449,55 @@ class BIM_PT_structural_analysis_models(Panel):
             draw_attributes(self.props.structural_analysis_model_attributes, self.layout)
 
 
+class BIM_PT_generate_structural_model(Panel):
+    bl_label = "Generate Structural Model (Beams & Columns)"
+    bl_idname = "BIM_PT_generate_structural_model"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_structural"
+
+    @classmethod
+    def poll(cls, context):
+        file = tool.Ifc.get()
+        return file and file.schema != "IFC2X3"
+
+    def draw(self, context):
+        self.layout.prop(tool.Structural.get_structural_props(), "generation_merge_tolerance")
+        self.layout.operator("bim.generate_structural_model", icon="MOD_SIMPLIFY")
+        model = tool.Structural.get_current_structural_analysis_model()
+        if not model:
+            return
+        op = self.layout.operator("bim.update_structural_model", icon="FILE_REFRESH")
+        op.structural_model = model.id()
+        changes = tool.Structural.get_member_changes(model)
+        if changes:
+            self.layout.label(text="Linked members have changed or missing sources", icon="ERROR")
+        for change in changes:
+            member, source = change["member"], change["source"]
+            box = self.layout.box()
+            box.label(text=f"{member.Name or member.is_a()} (#{member.id()})")
+            if source:
+                box.label(text=f"Source: {source.Name or source.is_a()} (#{source.id()})")
+            if change["reason"] == "MISSING_SOURCE":
+                box.label(text="Source relationship missing", icon="ERROR")
+            elif change["reason"] == "MULTIPLE_SOURCES":
+                box.label(text="Multiple source elements", icon="ERROR")
+            elif change["reason"] == "UNAVAILABLE":
+                box.label(text="Cannot compare source and member axes", icon="ERROR")
+            else:
+                if change["section_changed"]:
+                    box.label(text="Section or material differs from the element", icon="ERROR")
+                if change["orientation_changed"]:
+                    box.label(text="Profile orientation differs", icon="ERROR")
+                for point in change["points"]:
+                    member_position = ", ".join(f"{value:.9g}" for value in point["member_point"])
+                    source_position = ", ".join(f"{value:.9g}" for value in point["source_point"])
+                    box.label(text=f"{point['endpoint']} member (m): {member_position}")
+                    box.label(text=f"{point['endpoint']} source (m): {source_position}")
+                    box.label(text=f"Difference: {point['distance']:.6g} m; tolerance: {change['tolerance']:.6g} m")
+
+
 class BIM_UL_structural_analysis_models(UIList):
     def draw_item(
         self,
