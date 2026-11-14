@@ -330,7 +330,6 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
         missing_material = 0
         unresolved = 0
         props = tool.Structural.get_structural_props()
-        tracked = {item.member_guid for item in props.generation_links if item.model_guid == model.GlobalId}
         objects = [
             obj
             for obj in context.selected_objects
@@ -393,7 +392,7 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
             message = (
                 f"Skipped {missing_material} objects with missing or unsupported materials"
                 if missing_material
-                else f"Preserved {unresolved} members with missing or ambiguous source relationships"
+                else f"Preserved {unresolved} members with ambiguous source relationships"
                 if unresolved
                 else "No eligible profile beams or columns selected"
             )
@@ -405,13 +404,6 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(file)
         scale = ifcopenshell.util.unit.calculate_unit_scale(file)
         tolerance = props.generation_merge_tolerance
-
-        def track_member(member):
-            if member.GlobalId not in tracked:
-                link = props.generation_links.add()
-                link.model_guid = model.GlobalId
-                link.member_guid = member.GlobalId
-                tracked.add(member.GlobalId)
 
         def create_item(ifc_class, name, start, end=None):
             mesh = bpy.data.meshes.new(name)
@@ -565,7 +557,6 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
             tool.Structural.assign_member_section(member, ifcopenshell.util.structural.get_building_elements(member)[0])
             context.view_layer.update()
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=member_obj)
-            track_member(member)
         connections = [
             (np.asarray(tool.Ifc.get_object(item).location), item)
             for rel in model.IsGroupedBy or ()
@@ -601,7 +592,6 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.structural.edit_structural_item_axis(file, structural_item=member, axis=axis_direction)
             ifcopenshell.api.structural.assign_product(file, relating_product=member, related_object=source)
             tool.Structural.assign_member_section(member, source)
-            track_member(member)
             for connection in node_items:
                 ifcopenshell.api.structural.add_structural_member_connection(
                     file, relating_structural_member=member, related_structural_connection=connection
@@ -611,7 +601,7 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
         if missing_material:
             self.report({"WARNING"}, f"Skipped {missing_material} objects with missing or unsupported materials")
         if unresolved:
-            self.report({"WARNING"}, f"Preserved {unresolved} members with missing or ambiguous source relationships")
+            self.report({"WARNING"}, f"Preserved {unresolved} members with ambiguous source relationships")
         if not (unresolved or missing_material):
             self.report(
                 {"INFO"}, f"Created {created}, updated {len(updates)} structural members; skipped {skipped} objects"

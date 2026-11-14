@@ -470,16 +470,14 @@ class BIM_PT_generate_structural_model(Panel):
             return
         changes = tool.Structural.get_member_changes(model)
         if changes:
-            self.layout.label(text="Linked members have changed or missing sources", icon="ERROR")
+            self.layout.label(text="Linked members have changed or ambiguous sources", icon="ERROR")
         for change in changes:
             member, source = change["member"], change["source"]
             box = self.layout.box()
             box.label(text=f"{member.Name or member.is_a()} (#{member.id()})")
             if source:
                 box.label(text=f"Source: {source.Name or source.is_a()} (#{source.id()})")
-            if change["reason"] == "MISSING_SOURCE":
-                box.label(text="Source relationship missing", icon="ERROR")
-            elif change["reason"] == "MULTIPLE_SOURCES":
+            if change["reason"] == "MULTIPLE_SOURCES":
                 box.label(text="Multiple source elements", icon="ERROR")
             elif change["reason"] == "UNAVAILABLE":
                 box.label(text="Cannot compare source and member axes", icon="ERROR")

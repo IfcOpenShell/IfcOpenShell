@@ -395,15 +395,13 @@ class TestGenerateStructuralModel(NewIfc):
         assert "sync_only" not in bpy.ops.bim.generate_structural_model.get_rna_type().properties
 
     @pytest.mark.parametrize("source_count", [0, 2])
-    def test_missing_or_ambiguous_source_preserves_member(self, source_count, capsys):
+    def test_unlinked_or_ambiguous_source_preserves_member(self, source_count, capsys):
         ifc = tool.Ifc.get()
         model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
         member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember")
         ifcopenshell.api.structural.assign_structural_analysis_model(
             ifc, products=[member], structural_analysis_model=model
         )
-        link = tool.Structural.get_structural_props().generation_links.add()
-        link.model_guid, link.member_guid = model.GlobalId, member.GlobalId
         for _ in range(source_count):
             source = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcColumn")
             ifcopenshell.api.structural.assign_product(ifc, relating_product=member, related_object=source)
@@ -412,15 +410,30 @@ class TestGenerateStructuralModel(NewIfc):
             tool.Ifc.link(source, obj)
             obj.select_set(True)
 
-        assert tool.Structural.get_member_changes(model)
         changes = tool.Structural.get_member_changes(model)
-        assert [change["reason"] for change in changes] == [
-            "MISSING_SOURCE" if source_count == 0 else "MULTIPLE_SOURCES"
-        ]
+        assert [change["reason"] for change in changes] == (["MULTIPLE_SOURCES"] if source_count else [])
         assert bpy.ops.bim.generate_structural_model(structural_model=model.id()) == {"FINISHED"}
-        message = "missing or ambiguous source relationships" if source_count else "No eligible profile beams"
+        message = "ambiguous source relationships" if source_count else "No eligible profile beams"
         assert message in capsys.readouterr().out
         assert member in ifc.by_type("IfcStructuralCurveMember")
+
+    def test_comparison_uses_ifc_relationship_after_reopening(self):
+        ifc = tool.Ifc.get()
+        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember")
+        source = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBeam")
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc, products=[member], structural_analysis_model=model
+        )
+        ifcopenshell.api.structural.assign_product(ifc, relating_product=member, related_object=source)
+
+        reopened = ifcopenshell.file.from_string(ifc.to_string())
+        with mock.patch.object(tool.Ifc, "get_object", return_value=None):
+            changes = tool.Structural.get_member_changes(reopened.by_guid(model.GlobalId))
+        assert len(changes) == 1
+        assert changes[0]["member"] == reopened.by_guid(member.GlobalId)
+        assert changes[0]["source"] == reopened.by_guid(source.GlobalId)
+        assert changes[0]["reason"] == "UNAVAILABLE"
 
     @pytest.mark.parametrize("reverse_link", [False, True])
     @pytest.mark.parametrize("scene_tolerance", [None, 0.2])
@@ -493,7 +506,7 @@ class TestGenerateStructuralModel(NewIfc):
         assert changes[0]["tolerance"] >= props.generation_merge_tolerance
         layout = MagicMock()
         BIM_PT_generate_structural_model.draw(SimpleNamespace(layout=layout), bpy.context)
-        layout.label.assert_called_with(text="Linked members have changed or missing sources", icon="ERROR")
+        layout.label.assert_called_with(text="Linked members have changed or ambiguous sources", icon="ERROR")
         layout.operator.assert_any_call("bim.generate_structural_model", icon="MOD_SIMPLIFY")
         layout.box.return_value.label.assert_any_call(
             text=f"Difference: 2 m; tolerance: {changes[0]['tolerance']:.6g} m"
@@ -536,7 +549,7 @@ class TestGenerateStructuralModel(NewIfc):
         bpy.ops.bim.generate_structural_model()
         assert member_obj.location.x == pytest.approx(2)
         tool.Geometry.delete_ifc_object(obj)
-        assert tool.Structural.get_member_changes(model)
+        assert not tool.Structural.get_member_changes(model)
         bpy.ops.bim.generate_structural_model()
         assert "No eligible profile beams or columns selected" in capsys.readouterr().out
         assert member in ifc.by_type("IfcStructuralCurveMember")
@@ -688,7 +701,7 @@ class TestGenerateStructuralModel(NewIfc):
         condition = ifcopenshell.api.structural.add_structural_boundary_condition(ifc, connection=node)
         condition_id = condition.id()
         tool.Geometry.delete_ifc_object(tool.Ifc.get_object(sources[0]))
-        assert tool.Structural.get_member_changes(model)
+        assert not tool.Structural.get_member_changes(model)
         bpy.ops.bim.generate_structural_model()
         assert removed_member in ifc.by_type("IfcStructuralCurveMember")
         assert len(ifc.by_type("IfcStructuralPointConnection")) == (4 if tolerance else 6)
@@ -713,15 +726,9 @@ class TestGenerateStructuralModel(NewIfc):
     def test_generation_scene_state_survives_blend_save(self, tmp_path):
         props = tool.Structural.get_structural_props()
         props.generation_merge_tolerance = 0.25
-        link = props.generation_links.add()
-        link.model_guid, link.member_guid = "model-guid", "member-guid"
         path = str(tmp_path / "structural.blend")
         bpy.ops.wm.save_as_mainfile(filepath=path)
-        props.generation_links.clear()
         props.generation_merge_tolerance = 0
         bpy.ops.wm.open_mainfile(filepath=path)
         props = tool.Structural.get_structural_props()
         assert props.generation_merge_tolerance == pytest.approx(0.25)
-        assert [(link.model_guid, link.member_guid) for link in props.generation_links] == [
-            ("model-guid", "member-guid")
-        ]

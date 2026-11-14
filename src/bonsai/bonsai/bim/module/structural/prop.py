@@ -144,15 +144,6 @@ class StructuralAnalysisModel(PropertyGroup):
         ifc_definition_id: int
 
 
-class StructuralGenerationLink(PropertyGroup):
-    model_guid: StringProperty(name="Analysis Model GlobalId")
-    member_guid: StringProperty(name="Structural Member GlobalId")
-
-    if TYPE_CHECKING:
-        model_guid: str
-        member_guid: str
-
-
 class StructuralActivity(PropertyGroup):
     name: StringProperty(name="Name")
     applied_load_class: StringProperty(name="Applied Load Class")
@@ -200,7 +191,6 @@ class BIMStructuralProperties(PropertyGroup):
         min=0.0,
         default=0.01,
     )
-    generation_links: CollectionProperty(type=StructuralGenerationLink)
     load_case_attributes: CollectionProperty(name="Load Case Attributes", type=Attribute)
     active_load_case_id: IntProperty(name="Active Load Case Id")
     load_group_editing_type: StringProperty(name="Load Group Editing Type")
@@ -333,7 +323,6 @@ class BIMStructuralProperties(PropertyGroup):
         active_structural_analysis_model_id: int
         current_structural_analysis_model_id: int
         generation_merge_tolerance: float
-        generation_links: bpy.types.bpy_prop_collection_idprop[StructuralGenerationLink]
         load_case_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         active_load_case_id: int
         load_group_editing_type: str
