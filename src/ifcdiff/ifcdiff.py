@@ -207,7 +207,8 @@ class IfcDiff:
         iterator = ifcopenshell.geom.iterator(
             self.get_settings(ifc), ifc, multiprocessing.cpu_count(), include=elements
         )
-        valid_file = iterator.initialize()
+        if not iterator.initialize():
+            return shapes
         while True:
             shape = iterator.get()
             element = ifc.by_id(shape.id)
