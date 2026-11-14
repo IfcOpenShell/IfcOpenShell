@@ -29,7 +29,10 @@ def get_child_alignments(alignment: entity_instance) -> Sequence[entity_instance
 
     .. code:: python
 
-        alignment = model.by_type("IfcAlignment")[0]
+        model = ifcopenshell.file(schema="IFC4X3")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        alignment = ifcopenshell.api.alignment.create_by_pi_method(model,
+            name="A1", hpoints=[(0.0, 0.0), (100.0, 0.0), (100.0, 100.0)], radii=[20.0])
         children = ifcopenshell.api.alignment.get_child_alignments(alignment)
     """
     children = []

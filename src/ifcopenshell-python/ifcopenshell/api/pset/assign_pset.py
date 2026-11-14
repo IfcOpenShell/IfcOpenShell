@@ -41,6 +41,9 @@ def assign_pset(
 
     .. code:: python
 
+        pset = ifcopenshell.api.root.create_entity(model, ifc_class="IfcPropertySet", name="Pset_Shared")
+        type_pset = ifcopenshell.api.root.create_entity(model, ifc_class="IfcPropertySet", name="Pset_Type")
+
         element = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
         ifcopenshell.api.pset.assign_pset(model, [element], pset)
         # Pset is now assigned.

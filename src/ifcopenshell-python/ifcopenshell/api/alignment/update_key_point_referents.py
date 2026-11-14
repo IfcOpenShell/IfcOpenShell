@@ -137,12 +137,23 @@ def update_key_point_referents(
 
     .. code:: python
 
+        model = ifcopenshell.file(schema="IFC4X3")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(model)
+        alignment = ifcopenshell.api.alignment.create_by_pi_method(model,
+            name="A1", hpoints=[(0.0, 0.0), (100.0, 0.0), (100.0, 100.0)], radii=[20.0])
         horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
         nest = ifcopenshell.api.alignment.update_key_point_referents(model, horizontal)
 
     Example, with custom labels for a jurisdiction that doesn't use the built-in abbreviations:
 
     .. code:: python
+
+        model = ifcopenshell.file(schema="IFC4X3")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(model)
+        alignment = ifcopenshell.api.alignment.create_by_pi_method(model,
+            name="A1", hpoints=[(0.0, 0.0), (100.0, 0.0), (100.0, 100.0)], radii=[20.0])
 
         def my_horizontal_labels(prev_segment, segment):
             if prev_segment is None:
