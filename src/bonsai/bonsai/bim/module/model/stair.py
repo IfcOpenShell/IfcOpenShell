@@ -28,7 +28,6 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from mathutils import Matrix, Vector
 
-import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
 from bonsai.bim.module.drawing.gizmos import (
@@ -148,50 +147,6 @@ def update_ifc_stair_props(obj: bpy.types.Object) -> None:
             continue
         if annotation_obj := tool.Ifc.get_object(rel_element):
             tool.Drawing.setup_annotation_object(annotation_obj, "STAIR_ARROW", stair_obj)
-
-
-class BIM_OT_add_stair(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "mesh.add_stair"
-    bl_label = "Add Stair"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        return tool.Ifc.get() and context.mode == "OBJECT"
-
-    def _execute(self, context: bpy.types.Context) -> set[str]:
-        ifc_file = tool.Ifc.get()
-        if not ifc_file:
-            self.report({"ERROR"}, "You need to start IFC project first to create a stair.")
-            return {"CANCELLED"}
-
-        if context.active_object is not None:
-            spawn_location = context.active_object.location.copy()
-            context.active_object.select_set(False)
-        else:
-            spawn_location = bpy.context.scene.cursor.location.copy()
-
-        mesh = bpy.data.meshes.new("IfcStairFlight")
-        obj = bpy.data.objects.new("StairFlight", mesh)
-        obj.location = spawn_location
-
-        element = bonsai.core.root.assign_class(
-            tool.Ifc,
-            tool.Collector,
-            tool.Root,
-            obj=obj,
-            ifc_class="IfcStairFlight",
-            should_add_representation=False,
-        )
-        if tool.Ifc.get_schema() != "IFC2X3":
-            element.PredefinedType = "STRAIGHT"
-
-        bpy.ops.object.select_all(action="DESELECT")
-        bpy.context.view_layer.objects.active = None
-        bpy.context.view_layer.objects.active = obj
-        tool.Blender.select_object(obj)
-        bpy.ops.bim.add_stair()
-        return {"FINISHED"}
 
 
 # UI operators
