@@ -1,8 +1,10 @@
-#include <algorithm>
 #include "opencascade_kernel.h"
 
 #include "boolean_utils.h"
 #include "base_utils.h"
+
+#include <IntAna_QuadQuadGeo.hxx>
+#include <Precision.hxx>
 
 using namespace ifcopenshell::geom;
 using namespace ifcopenshell::geom::kernels;
@@ -44,6 +46,47 @@ namespace {
 	}
 }
 
+void open_cascade_kernel::align_polygonal_halfspace(const TopoDS_Shape& first_operand, const taxonomy::solid::ptr& solid, const gp_Trsf& placement, TopoDS_Shape& tool) {
+	// The polygonal bound of a half-space is extruded along its Position axis. When that
+	// axis is rounded a little off, a side of the bound touches a face of the first operand
+	// on one stretch and crosses it on the rest, which OpenCASCADE resolves into a wrong
+	// solid (#349). Turn the bound about the line where the two planes meet so the side
+	// coincides with the face; the clipping plane itself is left where the file puts it.
+	const double tol = settings_.get<settings::Precision>().get();
+	// Faces this close to parallel are taken as meant to coincide (0.057 degrees)
+	const double drift_angle = 1.e-3;
+	const auto& plane = taxonomy::cast<taxonomy::plane>(solid->children[0]->children[0]->basis)->matrix->ccomponents();
+	const gp_Dir clipping_normal = convert_xyz2<gp_Dir>(plane.col(2)).Transformed(placement);
+	gp_Trsf correction;
+	// The bound may drift on two faces at once; one turn usually settles both.
+	for (int attempt = 0; attempt < 2; ++attempt) {
+		gp_Pln face_a, face_b;
+		double drift;
+		if (!util::drifting_contact(first_operand, tool, tol, face_a, face_b, drift) || drift > tol * 100.) {
+			return;
+		}
+		const gp_Dir na = face_a.Axis().Direction();
+		gp_Dir nb = face_b.Axis().Direction();
+		if (na.Dot(nb) < 0.) {
+			nb.Reverse();
+		}
+		const double angle = na.Angle(nb);
+		IntAna_QuadQuadGeo meet(face_a, face_b, Precision::Angular(), Precision::Confusion());
+		// Only a side of the bound is turned, not the clipping plane, and only onto a face
+		// it was meant to share: a tilt beyond the drift angle is a design decision
+		if (std::abs(nb.Dot(clipping_normal)) > 0.5 || angle < Precision::Angular() || angle > drift_angle || !meet.IsDone() || meet.TypeInter() != IntAna_Line) {
+			return;
+		}
+		gp_Trsf turn;
+		turn.SetRotation(gp_Ax1(meet.Line(1).Location(), nb.Crossed(na)), angle);
+		// The bound is built in the half-space's own frame
+		correction = placement.Inverted() * turn * placement * correction;
+		tool = halfspace_solid(solid, correction);
+		tool.Location(tool.Location() * placement);
+		logger_.warning("GEO", 404, "Polygonal bound drifts " + std::to_string(drift) + " from a face of the first operand, turned " + std::to_string(angle) + " rad onto it:", solid->instance);
+	}
+}
+
 bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::vector<conversion_result>& results) {
     return handle_occt_exception([&]() -> bool {
 	bool valid_result = false;
@@ -52,7 +95,6 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, s
 
 	TopoDS_Shape a;
 	NCollection_List<TopoDS_Shape> b;
-	NCollection_List<TopoDS_Shape> halfspace_tools;
 
 	taxonomy::style::ptr first_item_style;
 
@@ -111,10 +153,10 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, s
 					S = util::ensure_fit_for_subtraction(S, tol);
 				}
 
-				b.Append(S);
-				if (c->instance && c->instance.declaration().is("IfcHalfSpaceSolid")) {
-					halfspace_tools.Append(S);
+				if (br->operation == taxonomy::boolean_result::SUBTRACTION && !a.IsNull() && c->kind() == taxonomy::SOLID && c->instance && c->instance.declaration().is("IfcPolygonalBoundedHalfSpace")) {
+					align_polygonal_halfspace(a, taxonomy::cast<taxonomy::solid>(c), trsf.Trsf(), S);
 				}
+				b.Append(S);
 			}
 		}
 		first = false;
@@ -126,22 +168,6 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, s
 	bst.precision = settings_.get<settings::Precision>().get();
 	bst.logger = &logger_;
 
-	// A half-space whose plane is rounded a little off an operand face touches that face
-	// on one stretch and crosses it on the rest, which OpenCASCADE resolves into a wrong
-	// solid (#349). Absorb the drift with a fuzziness for this operation alone.
-	double fuzziness = -1.;
-	if (br->operation == taxonomy::boolean_result::SUBTRACTION && !a.IsNull()) {
-		for (NCollection_List<TopoDS_Shape>::Iterator it(halfspace_tools); it.More(); it.Next()) {
-			const double drift = util::drifting_contact(a, it.Value(), tol);
-			if (drift > 0. && drift <= tol * 100.) {
-				fuzziness = (std::max)(fuzziness, 2. * drift);
-			}
-		}
-		if (fuzziness > 0.) {
-			logger_.notice("GEO", 404, "Half-space face drifts " + std::to_string(fuzziness / 2.) + " from a coincident face, using fuzziness " + std::to_string(fuzziness));
-		}
-	}
-
 	TopoDS_Shape r;
 
 	if (br->operation == taxonomy::boolean_result::SUBTRACTION && !a.IsNull() && a.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(a).More() && util::is_nested_compound_of_solid(a)) {
@@ -152,7 +178,7 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, s
 		valid_result = true;
 		for (; it.More(); it.Next()) {
 			TopoDS_Shape part;
-			if (util::boolean_operation(bst, it.Value(), b, op_to_occt(br->operation), part, fuzziness)) {
+			if (util::boolean_operation(bst, it.Value(), b, op_to_occt(br->operation), part)) {
 				B.Add(C, part);
 			} else {
 				valid_result = false;
@@ -164,7 +190,7 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, s
 			a = b.First();
 			b.RemoveFirst();
 		}
-		valid_result = util::boolean_operation(bst, a, b, op_to_occt(br->operation), r, fuzziness);
+		valid_result = util::boolean_operation(bst, a, b, op_to_occt(br->operation), r);
 	}
 
 	if (valid_result) {

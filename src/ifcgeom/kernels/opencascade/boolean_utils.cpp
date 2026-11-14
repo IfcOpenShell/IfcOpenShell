@@ -857,16 +857,16 @@ namespace {
 	}
 }
 
-double ifcopenshell::geom::util::drifting_contact(const TopoDS_Shape& a, const TopoDS_Shape& b, double prec) {
+bool ifcopenshell::geom::util::drifting_contact(const TopoDS_Shape& a, const TopoDS_Shape& b, double prec, gp_Pln& face_a, gp_Pln& face_b, double& drift) {
 	// A tool face that touches an operand face along a line and drifts away from it at a
 	// small angle (an export rounding the plane normal) is coincident within prec on one
 	// part of the contact and crossing on the rest, which OpenCASCADE's face/face
-	// intersection does not reconcile (#349). Report the drift so the caller can raise
-	// the fuzziness for this one operation to just above it.
+	// intersection does not reconcile (#349). Report the pair with the largest drift so
+	// the caller can turn the tool onto the operand face.
 	const double cos_parallel = std::cos(0.01);
 	const auto fas = planar_faces(a);
 	const auto fbs = planar_faces(b);
-	double drift = 0.;
+	drift = 0.;
 	for (const auto& fa : fas) {
 		for (const auto& fb : fbs) {
 			if (std::abs(fa.pln.Axis().Direction().Dot(fb.pln.Axis().Direction())) < cos_parallel) {
@@ -900,12 +900,14 @@ double ifcopenshell::geom::util::drifting_contact(const TopoDS_Shape& a, const T
 				dmin = (std::min)(dmin, d);
 				dmax = (std::max)(dmax, d);
 			}
-			if (dmin < prec && dmax > prec) {
-				drift = (std::max)(drift, dmax);
+			if (dmin < prec && dmax > drift) {
+				drift = dmax;
+				face_a = fa.pln;
+				face_b = fb.pln;
 			}
 		}
 	}
-	return drift;
+	return drift > prec;
 }
 
 bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {

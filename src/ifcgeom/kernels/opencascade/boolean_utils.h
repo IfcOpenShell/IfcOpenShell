@@ -108,10 +108,10 @@ namespace ifcopenshell::geom {
 
 		IFC_GEOMLIBRARY_API TopoDS_Shape ensure_fit_for_subtraction(const TopoDS_Shape& shape, double tol);
 
-		// Largest gap between a planar face of a and a near-parallel planar face of b
-		// that touch within prec somewhere and drift apart elsewhere over their shared
-		// extent. Zero when there is no such pair.
-		IFC_GEOMLIBRARY_API double drifting_contact(const TopoDS_Shape& a, const TopoDS_Shape& b, double prec);
+		// A planar face of a and a near-parallel planar face of b that touch within prec
+		// somewhere and drift apart elsewhere over their shared extent. Reports the pair
+		// with the largest gap and that gap; false when there is no such pair.
+		IFC_GEOMLIBRARY_API bool drifting_contact(const TopoDS_Shape& a, const TopoDS_Shape& b, double prec, gp_Pln& face_a, gp_Pln& face_b, double& drift);
 	}
 }
 
