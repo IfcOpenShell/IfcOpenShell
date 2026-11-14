@@ -451,9 +451,9 @@ class TestGenerateStructuralModel(NewIfc):
         with mock.patch.object(
             tool.Structural,
             "get_physical_member_data",
-            side_effect=lambda source_obj: (axis, profile_direction)
-            if source_obj == obj
-            else get_member_data(source_obj),
+            side_effect=lambda source_obj: (
+                (axis, profile_direction) if source_obj == obj else get_member_data(source_obj)
+            ),
         ):
             assert bpy.ops.bim.generate_structural_model() == {"CANCELLED"}
         assert "Profile orientation is parallel to the updated structural member" in capsys.readouterr().out
