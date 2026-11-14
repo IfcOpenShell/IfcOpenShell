@@ -298,6 +298,7 @@ unit_symbols = {
     "METRE": "m",
     "NEWTON": "N",
     "PASCAL": "Pa",
+    "RADIAN": "rad",
     # conversion based units
     "pound-force": "lbf",
     "pound-force per square inch": "psi",
