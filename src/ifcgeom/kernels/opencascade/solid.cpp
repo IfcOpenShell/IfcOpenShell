@@ -30,39 +30,42 @@ using namespace ifcopenshell::geom;
 using namespace ifcopenshell::geom::kernels;
 using namespace ifcopenshell::geom::util;
 
+TopoDS_Shape open_cascade_kernel::halfspace_solid(const taxonomy::solid::ptr& solid, const gp_Trsf& bound_correction) {
+	if (solid->children.size() != 1) {
+		throw std::runtime_error("Unexpected number of children on solid");
+	}
+
+	auto face = solid->children[0]->children[0];
+
+	const auto& m = taxonomy::cast<taxonomy::plane>(face->basis)->matrix->ccomponents();
+	gp_Pln pln(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)));
+	const gp_Pnt pnt = pln.Location().Translated(face->orientation.value_or(false) ? pln.Axis().Direction() : -pln.Axis().Direction());
+	TopoDS_Shape halfspace = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln), pnt).Solid();
+
+	if (!face->children.empty()) {
+		TopoDS_Wire wire;
+		gp_GTrsf gtrsf;
+
+		if (convert((taxonomy::loop::ptr)face->children[0], wire) && wire.Closed() && convert(face->matrix, gtrsf)) {
+			gp_Trsf trsf = gtrsf.Trsf();
+			TopoDS_Shape prism = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire), gp_Vec(0, 0, 200));
+			gp_Trsf down; down.SetTranslation(gp_Vec(0, 0, -100.0));
+
+			// `trsf` and `down` both have a unit scale factor
+			prism.Move(bound_correction * trsf * down);
+
+			halfspace = BRepAlgoAPI_Common(halfspace, prism);
+		}
+	}
+
+	return halfspace;
+}
+
 bool open_cascade_kernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& result) {
 	TopoDS_Shape S;
 
 	if (solid->instance.declaration().is("IfcHalfSpaceSolid")) {
-		// halfspace
-		if (solid->children.size() != 1) {
-			throw std::runtime_error("Unexpected number of children on solid");
-		}
-
-		auto face = solid->children[0]->children[0];
-
-		const auto& m = taxonomy::cast<taxonomy::plane>(face->basis)->matrix->ccomponents();
-		gp_Pln pln(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)));
-		const gp_Pnt pnt = pln.Location().Translated(face->orientation.value_or(false) ? pln.Axis().Direction() : -pln.Axis().Direction());
-		TopoDS_Shape halfspace = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln), pnt).Solid();
-
-		if (!face->children.empty()) {
-			TopoDS_Wire wire;
-			gp_GTrsf gtrsf;
-
-			if (convert((taxonomy::loop::ptr)face->children[0], wire) && wire.Closed() && convert(face->matrix, gtrsf)) {
-				gp_Trsf trsf = gtrsf.Trsf();
-				TopoDS_Shape prism = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire), gp_Vec(0, 0, 200));
-				gp_Trsf down; down.SetTranslation(gp_Vec(0, 0, -100.0));
-
-				// `trsf` and `down` both have a unit scale factor
-				prism.Move(trsf*down);
-
-				halfspace = BRepAlgoAPI_Common(halfspace, prism);
-			}
-		}
-
-		result = halfspace;
+		result = halfspace_solid(solid, gp_Trsf());
 		return true;
 	} else if (solid->children.size() == 1
 		&& solid->children[0]->children.size() == 1

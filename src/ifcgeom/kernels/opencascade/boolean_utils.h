@@ -107,6 +107,11 @@ namespace ifcopenshell::geom {
 		IFC_GEOMLIBRARY_API bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
 
 		IFC_GEOMLIBRARY_API TopoDS_Shape ensure_fit_for_subtraction(const TopoDS_Shape& shape, double tol);
+
+		// A planar face of a and a near-parallel planar face of b that touch within prec
+		// somewhere and drift apart elsewhere over their shared extent. Reports the pair
+		// with the largest gap and that gap; false when there is no such pair.
+		IFC_GEOMLIBRARY_API bool drifting_contact(const TopoDS_Shape& a, const TopoDS_Shape& b, double prec, gp_Pln& face_a, gp_Pln& face_b, double& drift);
 	}
 }
 

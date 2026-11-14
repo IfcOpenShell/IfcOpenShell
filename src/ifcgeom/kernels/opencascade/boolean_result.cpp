@@ -3,6 +3,9 @@
 #include "boolean_utils.h"
 #include "base_utils.h"
 
+#include <IntAna_QuadQuadGeo.hxx>
+#include <Precision.hxx>
+
 using namespace ifcopenshell::geom;
 using namespace ifcopenshell::geom::kernels;
 
@@ -40,6 +43,47 @@ namespace {
 		}
 		TopoDS_Iterator it(face);
 		return !it.More();
+	}
+}
+
+void open_cascade_kernel::align_polygonal_halfspace(const TopoDS_Shape& first_operand, const taxonomy::solid::ptr& solid, const gp_Trsf& placement, TopoDS_Shape& tool) {
+	// The polygonal bound of a half-space is extruded along its Position axis. When that
+	// axis is rounded a little off, a side of the bound touches a face of the first operand
+	// on one stretch and crosses it on the rest, which OpenCASCADE resolves into a wrong
+	// solid (#349). Turn the bound about the line where the two planes meet so the side
+	// coincides with the face; the clipping plane itself is left where the file puts it.
+	const double tol = settings_.get<settings::Precision>().get();
+	// Faces this close to parallel are taken as meant to coincide (0.057 degrees)
+	const double drift_angle = 1.e-3;
+	const auto& plane = taxonomy::cast<taxonomy::plane>(solid->children[0]->children[0]->basis)->matrix->ccomponents();
+	const gp_Dir clipping_normal = convert_xyz2<gp_Dir>(plane.col(2)).Transformed(placement);
+	gp_Trsf correction;
+	// The bound may drift on two faces at once; one turn usually settles both.
+	for (int attempt = 0; attempt < 2; ++attempt) {
+		gp_Pln face_a, face_b;
+		double drift;
+		if (!util::drifting_contact(first_operand, tool, tol, face_a, face_b, drift) || drift > tol * 100.) {
+			return;
+		}
+		const gp_Dir na = face_a.Axis().Direction();
+		gp_Dir nb = face_b.Axis().Direction();
+		if (na.Dot(nb) < 0.) {
+			nb.Reverse();
+		}
+		const double angle = na.Angle(nb);
+		IntAna_QuadQuadGeo meet(face_a, face_b, Precision::Angular(), Precision::Confusion());
+		// Only a side of the bound is turned, not the clipping plane, and only onto a face
+		// it was meant to share: a tilt beyond the drift angle is a design decision
+		if (std::abs(nb.Dot(clipping_normal)) > 0.5 || angle < Precision::Angular() || angle > drift_angle || !meet.IsDone() || meet.TypeInter() != IntAna_Line) {
+			return;
+		}
+		gp_Trsf turn;
+		turn.SetRotation(gp_Ax1(meet.Line(1).Location(), nb.Crossed(na)), angle);
+		// The bound is built in the half-space's own frame
+		correction = placement.Inverted() * turn * placement * correction;
+		tool = halfspace_solid(solid, correction);
+		tool.Location(tool.Location() * placement);
+		logger_.warning("GEO", 404, "Polygonal bound drifts " + std::to_string(drift) + " from a face of the first operand, turned " + std::to_string(angle) + " rad onto it:", solid->instance);
 	}
 }
 
@@ -109,6 +153,9 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, s
 					S = util::ensure_fit_for_subtraction(S, tol);
 				}
 
+				if (br->operation == taxonomy::boolean_result::SUBTRACTION && !a.IsNull() && c->kind() == taxonomy::SOLID && c->instance && c->instance.declaration().is("IfcPolygonalBoundedHalfSpace")) {
+					align_polygonal_halfspace(a, taxonomy::cast<taxonomy::solid>(c), trsf.Trsf(), S);
+				}
 				b.Append(S);
 			}
 		}
