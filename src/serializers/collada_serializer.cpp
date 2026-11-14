@@ -33,6 +33,8 @@
 
 #include <string>
 #include <cmath>
+#include <map>
+#include <tuple>
 
 #include "../ifcparse/utils.h"
 
@@ -76,9 +78,55 @@ void collada_serializer::collada_exporter::collada_geometries::write(
 	const bool has_normals = !normals.empty();
     const bool has_uvs = !uvs.empty();
 
-	addFloatSource(mesh_id, COLLADASW::LibraryGeometries::POSITIONS_SOURCE_ID_SUFFIX, positions);
+	// Unwelded meshes repeat positions and normals per corner: index each stream on its own.
+	std::vector<double> dedup_positions;
+	std::vector<double> dedup_normals;
+	std::vector<int> pos_index;
+	std::vector<int> norm_index;
+
+	const bool split_streams = has_normals && normals.size() == positions.size();
+	if (split_streams) {
+		typedef std::tuple<double, double, double> Triplet;
+		std::map<Triplet, int> pos_map;
+		std::map<Triplet, int> norm_map;
+		const size_t n = positions.size() / 3;
+		pos_index.reserve(n);
+		norm_index.reserve(n);
+		for (size_t i = 0; i < n; ++i) {
+			const Triplet pk(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
+			auto pit = pos_map.find(pk);
+			if (pit == pos_map.end()) {
+				const int pidx = (int)(dedup_positions.size() / 3);
+				pos_map.emplace(pk, pidx);
+				dedup_positions.push_back(std::get<0>(pk));
+				dedup_positions.push_back(std::get<1>(pk));
+				dedup_positions.push_back(std::get<2>(pk));
+				pos_index.push_back(pidx);
+			} else {
+				pos_index.push_back(pit->second);
+			}
+
+			const Triplet nk(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]);
+			auto nit = norm_map.find(nk);
+			if (nit == norm_map.end()) {
+				const int nidx = (int)(dedup_normals.size() / 3);
+				norm_map.emplace(nk, nidx);
+				dedup_normals.push_back(std::get<0>(nk));
+				dedup_normals.push_back(std::get<1>(nk));
+				dedup_normals.push_back(std::get<2>(nk));
+				norm_index.push_back(nidx);
+			} else {
+				norm_index.push_back(nit->second);
+			}
+		}
+	}
+
+	auto vertex_index = [&](int idx) { return split_streams ? pos_index[idx] : idx; };
+	auto normal_index = [&](int idx) { return split_streams ? norm_index[idx] : idx; };
+
+	addFloatSource(mesh_id, COLLADASW::LibraryGeometries::POSITIONS_SOURCE_ID_SUFFIX, split_streams ? dedup_positions : positions);
 	if (has_normals) {
-		addFloatSource(mesh_id, COLLADASW::LibraryGeometries::NORMALS_SOURCE_ID_SUFFIX, normals);
+		addFloatSource(mesh_id, COLLADASW::LibraryGeometries::NORMALS_SOURCE_ID_SUFFIX, split_streams ? dedup_normals : normals);
         if (has_uvs) {
             addFloatSource(mesh_id, COLLADASW::LibraryGeometries::TEXCOORDS_SOURCE_ID_SUFFIX, uvs, "UV");
         }
@@ -120,9 +168,10 @@ void collada_serializer::collada_exporter::collada_geometries::write(
 			for (std::vector<int>::const_iterator jt = index_range_start; jt != it; ++jt) {
 				const int idx = *jt;
                 if (has_normals && has_uvs) {
-                    triangles.appendValues(idx, idx, idx);
+                    // UVs depend on both position and normal, so keep the per-corner index.
+                    triangles.appendValues(vertex_index(idx), normal_index(idx), idx);
                 } else if(has_normals) {
-					triangles.appendValues(idx, idx);
+					triangles.appendValues(vertex_index(idx), normal_index(idx));
 				} else {
 					triangles.appendValues(idx);
 				}
@@ -154,8 +203,8 @@ void collada_serializer::collada_exporter::collada_geometries::write(
 			linelist.resize(linelist.size() + 1);
 		}
 
-		linelist.rbegin()->second.push_back(i1);
-		linelist.rbegin()->second.push_back(i2);
+		linelist.rbegin()->second.push_back(vertex_index(i1));
+		linelist.rbegin()->second.push_back(vertex_index(i2));
 	}
 
 	for (linelist_t::const_iterator it = linelist.begin(); it != linelist.end(); ++it) {
