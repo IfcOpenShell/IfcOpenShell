@@ -211,6 +211,45 @@ class SheetBuilder:
 
         layout_tree.write(layout_path)
 
+    def update_sheet_schedule_sizes(self, sheet: ifcopenshell.entity_instance) -> None:
+        ET.register_namespace("", "http://www.w3.org/2000/svg")
+
+        layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        assert layout_path
+        layout_tree = ET.parse(layout_path)
+        layout_root = layout_tree.getroot()
+        ifc_file = tool.Ifc.get()
+
+        for document_view in layout_root.findall(f"{SVG}g[@data-document]"):
+            document = ifc_file.by_id(int(document_view.attrib["data-document"]))
+            document_path = tool.Drawing.get_path_with_ext(tool.Drawing.get_document_uri(document), "svg")
+            if not os.path.exists(document_path):
+                continue
+            document_tree = ET.parse(document_path)
+            document_root = document_tree.getroot()
+            view_width = round(self.convert_to_mm(document_root.attrib.get("width")), 2)
+            view_height = round(self.convert_to_mm(document_root.attrib.get("height")), 2)
+
+            content = document_view.find(f'.//{SVG}image[@data-type="content"]')
+            if content is None:
+                continue
+            current_width = round(float(content.attrib["width"]), 2)
+            current_height = round(float(content.attrib["height"]), 2)
+
+            if current_width != view_width or current_height != view_height:
+                height_delta = view_height - current_height
+
+                for image in document_view.findall(f"{SVG}image"):
+                    if image.attrib["data-type"] == "view-title":
+                        # view-title sits below the content, so track height changes
+                        image.attrib["y"] = str(float(image.attrib["y"]) + height_delta)
+                    else:
+                        # upper-left corner stays fixed; only size changes
+                        image.attrib["width"] = str(view_width)
+                        image.attrib["height"] = str(view_height)
+
+        layout_tree.write(layout_path)
+
     def remove_drawing(self, reference: ifcopenshell.entity_instance, sheet: ifcopenshell.entity_instance) -> None:
         ET.register_namespace("", "http://www.w3.org/2000/svg")
 
