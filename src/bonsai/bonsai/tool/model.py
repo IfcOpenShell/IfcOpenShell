@@ -24,7 +24,7 @@ import collections.abc
 import json
 from collections.abc import Callable, Iterable, Sequence
 from copy import deepcopy
-from math import atan, cos, degrees, pi, radians
+from math import atan, atan2, cos, degrees, pi, radians, sin
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -598,6 +598,25 @@ class Model(bonsai.core.tool.Model):
         pass
 
     @classmethod
+    def weld_curve_vertices(cls, offset: int) -> None:
+        """Merge coincident vertices from `offset` onwards so adjoining segments share their end points."""
+        remap: dict[int, int] = {}
+        vertices = cls.vertices[:offset]
+        for i in range(offset, len(cls.vertices)):
+            for j in range(offset, len(vertices)):
+                if (cls.vertices[i] - vertices[j]).length < WELD_TOLERANCE:
+                    remap[i] = j
+                    break
+            else:
+                remap[i] = len(vertices)
+                vertices.append(cls.vertices[i])
+        cls.vertices = vertices
+        edges = [tuple(remap.get(i, i) for i in edge) for edge in cls.edges]
+        cls.edges = [edge for edge in edges if edge[0] != edge[1]]
+        cls.arcs = [[remap.get(i, i) for i in arc] for arc in cls.arcs]
+        cls.circles = [[remap.get(i, i) for i in circle] for circle in cls.circles]
+
+    @classmethod
     def convert_curve_to_mesh(
         cls,
         obj: Union[bpy.types.Object, None],  # Unused argument.
@@ -625,6 +644,7 @@ class Model(bonsai.core.tool.Model):
             # This is a first pass incomplete implementation only for simple polylines, and misses many details.
             for segment in curve.Segments:
                 cls.convert_curve_to_mesh(obj, position, segment.ParentCurve)
+            cls.weld_curve_vertices(offset)
 
         elif curve.is_a("IfcIndexedPolyCurve"):
             for local_point in curve.Points.CoordList:
@@ -662,6 +682,44 @@ class Model(bonsai.core.tool.Model):
             )
             cls.circles.append([offset, offset + 1])
             cls.edges.append((offset, offset + 1))
+        elif curve.is_a("IfcTrimmedCurve"):
+            # Trimmed circular arc, rebuilt as a (start, mid, end) IFCARCINDEX arc.
+            basis_curve = curve.BasisCurve
+            if not basis_curve.is_a("IfcCircle"):
+                raise cls.UnsupportedCurveForConversion(f"Profile has unsupported curve type: {curve}.")
+            circle_position = Matrix(ifcopenshell.util.placement.get_axis2placement(basis_curve.Position).tolist())
+            circle_position.translation *= cls.unit_scale
+            radius = cls.convert_unit_to_si(basis_curve.Radius)
+            angle_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get(), "PLANEANGLEUNIT")
+
+            def _trim_angle(trim: tuple[ifcopenshell.entity_instance, ...]) -> Union[float, None]:
+                for select in trim:
+                    if select.is_a("IfcParameterValue"):
+                        return float(select.wrappedValue) * angle_scale
+                for select in trim:
+                    if select.is_a("IfcCartesianPoint"):
+                        local = circle_position.inverted() @ Vector(cls.convert_unit_to_si(select.Coordinates)).to_3d()
+                        return atan2(local.y, local.x)
+                return None
+
+            angle_1 = _trim_angle(curve.Trim1)
+            angle_2 = _trim_angle(curve.Trim2)
+            if angle_1 is None or angle_2 is None:
+                raise cls.UnsupportedCurveForConversion(f"Profile has unsupported curve type: {curve}.")
+            # Unwrap the end angle by SenseAgreement so the midpoint lies on the swept arc.
+            if curve.SenseAgreement:
+                while angle_2 < angle_1:
+                    angle_2 += 2 * pi
+            else:
+                while angle_2 > angle_1:
+                    angle_2 -= 2 * pi
+            angle_mid = (angle_1 + angle_2) / 2
+            for angle in (angle_1, angle_mid, angle_2):
+                local_point = Vector((radius * cos(angle), radius * sin(angle), 0.0))
+                cls.vertices.append(position @ circle_position @ local_point)
+            cls.arcs.append([offset, offset + 1, offset + 2])
+            cls.edges.append((offset, offset + 1))
+            cls.edges.append((offset + 1, offset + 2))
         else:
             raise cls.UnsupportedCurveForConversion(f"Profile has unsupported curve type: {curve}.")
 
