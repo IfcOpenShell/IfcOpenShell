@@ -36,8 +36,10 @@ def add_date_time(file: ifcopenshell.file, dt: datetime) -> Union[str, ifcopensh
 
     .. code:: python
 
+        from datetime import datetime
+
         dt = datetime(2025, 3, 1, 12, 31, 24)
-        datetime_ifc = ifcopenshell.api.sequence.add_date_time(self.file, dt)
+        datetime_ifc = ifcopenshell.api.sequence.add_date_time(model, dt)
 
         # IFC2X3: #1=IfcDateAndTime(#2,#3)
         # IFC4+: "2025-03-01T12:31:24"

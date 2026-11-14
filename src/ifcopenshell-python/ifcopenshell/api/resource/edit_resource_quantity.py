@@ -44,7 +44,7 @@ def edit_resource_quantity(
             parent_resource=crew, ifc_class="IfcLaborResource")
 
         # Labour resource is quantified in terms of time.
-        ifcopenshell.api.resource.add_resource_quantity(model,
+        time = ifcopenshell.api.resource.add_resource_quantity(model,
             resource=labour, ifc_class="IfcQuantityTime")
 
         # Store the time used in hours

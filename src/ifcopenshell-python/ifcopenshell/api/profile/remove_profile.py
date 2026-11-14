@@ -32,7 +32,6 @@ def remove_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instanc
 
         circle = ifcopenshell.api.profile.add_parameterized_profile(model,
             ifc_class="IfcCircleProfileDef")
-        circle = 1.
         ifcopenshell.api.profile.remove_profile(model, profile=circle)
     """
     is_ifc2x3 = file.schema == "IFC2X3"

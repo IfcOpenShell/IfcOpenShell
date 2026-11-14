@@ -46,7 +46,7 @@ def assign_cost_value(
         # Let's create a schedule of rates with a single rate in it of 5.0
         rate_tables = ifcopenshell.api.cost.add_cost_schedule(model,
             predefined_type="SCHEDULEOFRATES")
-        rate = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
+        rate = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=rate_tables)
         value = ifcopenshell.api.cost.add_cost_value(model, parent=rate)
         ifcopenshell.api.cost.edit_cost_value(model, cost_value=value,
             attributes={"AppliedValue": 5.0})
