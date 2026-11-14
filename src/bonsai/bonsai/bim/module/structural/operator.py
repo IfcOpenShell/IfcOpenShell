@@ -305,7 +305,6 @@ class DisableEditingStructuralBoundaryCondition(bpy.types.Operator):
 
 
 class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
-    sync_only: bool
     structural_model: int
 
     def _execute(self, context):
@@ -332,43 +331,22 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
         unresolved = 0
         props = tool.Structural.get_structural_props()
         tracked = {item.member_guid for item in props.generation_links if item.model_guid == model.GlobalId}
-        if self.sync_only:
-            selected = {tool.Ifc.get_entity(obj) for obj in context.selected_objects}
-            objects = []
-            for rel in model.IsGroupedBy or ():
-                for member in rel.RelatedObjects:
-                    if not member.is_a("IfcStructuralCurveMember"):
-                        continue
-                    physical = ifcopenshell.util.structural.get_building_elements(member)
-                    if not physical:
-                        if member in selected or member.GlobalId in tracked:
-                            unresolved += 1
-                        continue
-                    if len(physical) != 1:
-                        unresolved += 1
-                        continue
-                    if obj := tool.Ifc.get_object(physical[0]):
-                        objects.append(obj)
-                    else:
-                        skipped += 1
-        else:
-            objects = [
-                obj
-                for obj in context.selected_objects
-                if (element := tool.Ifc.get_entity(obj)) and (element.is_a("IfcBeam") or element.is_a("IfcColumn"))
-            ]
+        objects = [
+            obj
+            for obj in context.selected_objects
+            if (element := tool.Ifc.get_entity(obj)) and (element.is_a("IfcBeam") or element.is_a("IfcColumn"))
+        ]
         for obj in dict.fromkeys(objects):
             element = tool.Ifc.get_entity(obj)
-            if not self.sync_only:
-                linked = ifcopenshell.util.structural.get_structural_members(element)
-                if any(
-                    member.is_a("IfcStructuralCurveMember")
-                    and len(ifcopenshell.util.structural.get_building_elements(member)) > 1
-                    and any(member in rel.RelatedObjects for rel in model.IsGroupedBy or ())
-                    for member in linked
-                ):
-                    unresolved += 1
-                    continue
+            linked = ifcopenshell.util.structural.get_structural_members(element)
+            if any(
+                member.is_a("IfcStructuralCurveMember")
+                and len(ifcopenshell.util.structural.get_building_elements(member)) > 1
+                and any(member in rel.RelatedObjects for rel in model.IsGroupedBy or ())
+                for member in linked
+            ):
+                unresolved += 1
+                continue
             data = tool.Structural.get_physical_member_data(obj)
             if data is None:
                 skipped += 1
@@ -380,8 +358,6 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
             if tool.Structural.get_member_orientation(profile_direction, axis[1] - axis[0]) is None:
                 skipped += 1
                 continue
-            if self.sync_only:
-                linked = ifcopenshell.util.structural.get_structural_members(element)
             managed = [
                 member
                 for member in linked
@@ -419,8 +395,6 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
                 if missing_material
                 else f"Preserved {unresolved} members with missing or ambiguous source relationships"
                 if unresolved
-                else "No tracked members to refresh; select linked beams or columns to refresh older members"
-                if self.sync_only
                 else "No eligible profile beams or columns selected"
             )
             self.report({"WARNING"}, message)
@@ -638,13 +612,7 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"WARNING"}, f"Skipped {missing_material} objects with missing or unsupported materials")
         if unresolved:
             self.report({"WARNING"}, f"Preserved {unresolved} members with missing or ambiguous source relationships")
-        if self.sync_only and skipped:
-            self.report(
-                {"WARNING"}, f"Refreshed {len(updates)} structural members; skipped {skipped} unsupported objects"
-            )
-        elif self.sync_only and not (unresolved or missing_material):
-            self.report({"INFO"}, f"Refreshed {len(updates)} structural members")
-        elif not self.sync_only and not (unresolved or missing_material):
+        if not (unresolved or missing_material):
             self.report(
                 {"INFO"}, f"Created {created}, updated {len(updates)} structural members; skipped {skipped} objects"
             )
@@ -656,7 +624,6 @@ class GenerateStructuralModel(StructuralModelGeneration):
     bl_label = "(Re)Generate from Selected"
     bl_description = "Generate or refresh structural members from selected profile beams and columns"
     bl_options = {"REGISTER", "UNDO"}
-    sync_only: bpy.props.BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
     structural_model: bpy.props.IntProperty(default=0, options={"HIDDEN", "SKIP_SAVE"})
 
 

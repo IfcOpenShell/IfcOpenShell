@@ -390,6 +390,7 @@ class TestGenerateStructuralModel(NewIfc):
         layout.operator.assert_any_call("bim.generate_structural_model", icon="MOD_SIMPLIFY")
         assert [call.args[0] for call in layout.operator.call_args_list] == ["bim.generate_structural_model"]
         assert "update_structural_model" not in dir(bpy.ops.bim)
+        assert "sync_only" not in bpy.ops.bim.generate_structural_model.get_rna_type().properties
 
     @pytest.mark.parametrize("source_count", [0, 2])
     def test_missing_or_ambiguous_source_preserves_member(self, source_count, capsys):
@@ -404,14 +405,19 @@ class TestGenerateStructuralModel(NewIfc):
         for _ in range(source_count):
             source = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcColumn")
             ifcopenshell.api.structural.assign_product(ifc, relating_product=member, related_object=source)
+            obj = bpy.data.objects.new("Column", bpy.data.meshes.new("Column"))
+            bpy.context.scene.collection.objects.link(obj)
+            tool.Ifc.link(source, obj)
+            obj.select_set(True)
 
         assert tool.Structural.get_member_changes(model)
         changes = tool.Structural.get_member_changes(model)
         assert [change["reason"] for change in changes] == [
             "MISSING_SOURCE" if source_count == 0 else "MULTIPLE_SOURCES"
         ]
-        assert bpy.ops.bim.generate_structural_model(sync_only=True, structural_model=model.id()) == {"FINISHED"}
-        assert "missing or ambiguous source relationships" in capsys.readouterr().out
+        assert bpy.ops.bim.generate_structural_model(structural_model=model.id()) == {"FINISHED"}
+        message = "missing or ambiguous source relationships" if source_count else "No eligible profile beams"
+        assert message in capsys.readouterr().out
         assert member in ifc.by_type("IfcStructuralCurveMember")
 
     @pytest.mark.parametrize("reverse_link", [False, True])
@@ -528,8 +534,8 @@ class TestGenerateStructuralModel(NewIfc):
         assert member_obj.location.x == pytest.approx(2)
         tool.Geometry.delete_ifc_object(obj)
         assert tool.Structural.get_member_changes(model)
-        bpy.ops.bim.generate_structural_model(sync_only=True)
-        assert "missing or ambiguous source relationships" in capsys.readouterr().out
+        bpy.ops.bim.generate_structural_model()
+        assert "No eligible profile beams or columns selected" in capsys.readouterr().out
         assert member in ifc.by_type("IfcStructuralCurveMember")
         assert len(ifc.by_type("IfcStructuralPointConnection")) == 2
 
@@ -603,7 +609,13 @@ class TestGenerateStructuralModel(NewIfc):
         bpy.context.view_layer.update()
         assert tool.Structural.get_member_changes(model)
         bpy.ops.object.select_all(action="DESELECT")
-        bpy.ops.bim.generate_structural_model(sync_only=True)
+        bpy.ops.bim.generate_structural_model()
+        assert tool.Structural.get_member_changes(model)
+        for member in members:
+            assert tool.Ifc.get_object(member).location == original_positions[member.id()]
+        for source in sources:
+            tool.Ifc.get_object(source).select_set(True)
+        bpy.ops.bim.generate_structural_model()
         assert not tool.Structural.get_member_changes(model)
         for member in members:
             assert tool.Ifc.get_object(member).location.x == pytest.approx(original_positions[member.id()].x + 2)
@@ -611,7 +623,7 @@ class TestGenerateStructuralModel(NewIfc):
         source = sources[1]
         extrusion = ifcopenshell.util.representation.get_representation(source, "Model", "Body", "MODEL_VIEW").Items[0]
         extrusion.Depth += 1 / ifcopenshell.util.unit.calculate_unit_scale(ifc)
-        bpy.ops.bim.generate_structural_model(sync_only=True)
+        bpy.ops.bim.generate_structural_model()
         member = ifcopenshell.util.structural.get_structural_members(source)[0]
         assert tool.Ifc.get_object(member).data.vertices[1].co.length == pytest.approx(4, abs=0.1)
         shared_node = next(
@@ -626,7 +638,7 @@ class TestGenerateStructuralModel(NewIfc):
         tool.Ifc.get_object(sources[0]).location.x += 1
         tool.Ifc.get_object(sources[0]).rotation_euler.y = 1.5707963267948966
         bpy.context.view_layer.update()
-        bpy.ops.bim.generate_structural_model(sync_only=True)
+        bpy.ops.bim.generate_structural_model()
         assert len(ifc.by_type("IfcStructuralPointConnection")) == 4
         assert len(ifc.by_type("IfcRelConnectsStructuralMember")) == 4
         if shared_condition:
@@ -638,7 +650,7 @@ class TestGenerateStructuralModel(NewIfc):
         tool.Ifc.get_object(sources[0]).location.x -= 1
         tool.Ifc.get_object(sources[0]).rotation_euler.y = 0
         bpy.context.view_layer.update()
-        bpy.ops.bim.generate_structural_model(sync_only=True)
+        bpy.ops.bim.generate_structural_model()
         assert len(ifc.by_type("IfcStructuralPointConnection")) == (3 if tolerance else 4)
         new_source = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcColumn", name="Later Column")
         ifcopenshell.api.material.assign_material(ifc, products=[new_source], material=material)
@@ -672,7 +684,7 @@ class TestGenerateStructuralModel(NewIfc):
         condition_id = condition.id()
         tool.Geometry.delete_ifc_object(tool.Ifc.get_object(sources[0]))
         assert tool.Structural.get_member_changes(model)
-        bpy.ops.bim.generate_structural_model(sync_only=True)
+        bpy.ops.bim.generate_structural_model()
         assert removed_member in ifc.by_type("IfcStructuralCurveMember")
         assert len(ifc.by_type("IfcStructuralPointConnection")) == (4 if tolerance else 6)
         assert len(ifc.by_type("IfcRelConnectsStructuralMember")) == 6
@@ -680,6 +692,18 @@ class TestGenerateStructuralModel(NewIfc):
         assert any(item.id() == condition_id for item in ifc.by_type("IfcBoundaryCondition"))
         if shared_condition:
             assert shared_node.AppliedCondition == shared_condition
+        other_member = ifcopenshell.util.structural.get_structural_members(sources[1])[0]
+        selected_member = ifcopenshell.util.structural.get_structural_members(new_source)[0]
+        other_position = tool.Ifc.get_object(other_member).location.copy()
+        selected_position = tool.Ifc.get_object(selected_member).location.copy()
+        for source in (sources[1], new_source):
+            tool.Ifc.get_object(source).location.x += 1
+        bpy.context.view_layer.update()
+        bpy.ops.object.select_all(action="DESELECT")
+        tool.Ifc.get_object(new_source).select_set(True)
+        bpy.ops.bim.generate_structural_model()
+        assert tool.Ifc.get_object(other_member).location == other_position
+        assert tool.Ifc.get_object(selected_member).location.x == pytest.approx(selected_position.x + 1)
 
     def test_generation_scene_state_survives_blend_save(self, tmp_path):
         props = tool.Structural.get_structural_props()
