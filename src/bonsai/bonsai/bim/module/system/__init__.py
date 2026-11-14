@@ -27,6 +27,7 @@ classes = (
     operator.AddZone,
     operator.AssignSystem,
     operator.AssignUnassignFlowControl,
+    operator.AssignZoneToZone,
     operator.ConnectPort,
     operator.CycleFlowDirection,
     operator.DisableEditingSystem,
