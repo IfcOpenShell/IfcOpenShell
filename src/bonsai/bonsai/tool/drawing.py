@@ -1317,19 +1317,27 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def open_with_user_command(cls, user_command: str, path: str) -> None:
-        if user_command:
-            commands = json.loads(user_command)
-            replacements = {"path": path}
-            for command in commands:
-                command[0] = shutil.which(str(command[0])) or command[0]
-                subprocess.Popen([replacements.get(c, c) for c in command])
-        else:
-            if platform.system() == "Darwin":
-                subprocess.call(("open", path))
-            elif platform.system() == "Windows":
-                os.startfile(os.path.normpath(path))
+        # The file is already written, so a viewer that fails to launch (e.g. a
+        # misconfigured command in preferences) must not fail the calling operator.
+        try:
+            if user_command:
+                commands = json.loads(user_command)
+                replacements = {"path": path}
+                for command in commands:
+                    command[0] = shutil.which(str(command[0])) or command[0]
+                    subprocess.Popen([replacements.get(c, c) for c in command])
             else:
-                subprocess.call(("xdg-open", path))
+                if platform.system() == "Darwin":
+                    subprocess.call(("open", path))
+                elif platform.system() == "Windows":
+                    os.startfile(os.path.normpath(path))
+                else:
+                    subprocess.call(("xdg-open", path))
+        except OSError as e:
+            message = f"Could not open '{path}': {e}. Check the viewer command in Bonsai preferences."
+            print(message)
+            if not bpy.app.background:
+                tool.Blender.show_info_message(message, "ERROR")
 
     @classmethod
     def open_spreadsheet(cls, uri: str) -> None:
