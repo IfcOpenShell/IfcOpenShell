@@ -36,7 +36,8 @@ def edit_text_literal(
 
     .. code:: python
 
-        text = model.createIfcTextLiteral()
+        placement = model.createIfcAxis2Placement2D(model.createIfcCartesianPoint((0., 0.)))
+        text = model.createIfcTextLiteral("Draft text", placement, "LEFT")
         ifcopenshell.api.drawing.edit_text_literal(model,
             text_literal=text, attributes={"Literal": "MY ANNOTATION"})
     """
