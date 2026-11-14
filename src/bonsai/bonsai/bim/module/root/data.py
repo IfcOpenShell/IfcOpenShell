@@ -135,6 +135,11 @@ class IfcClassData:
             ("EMPTY", "No Geometry", "Start with an empty object"),
         ]
 
+        if ifc_class == "IfcAlignment":
+            # Alignment representations come from ifcopenshell.api.alignment
+            # (composite curves), not from a mesh template.
+            return templates
+
         if ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcWindow"):
             templates.extend([None, ("WINDOW", "Window", "Parametric window")])
         elif ifc_class in ("IfcDoorType", "IfcDoorStyle", "IfcDoor"):
