@@ -890,7 +890,23 @@ class SaveSearch(Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Error occurred trying save search.")
             return
 
-        description = json.dumps({"type": "BBIM_Search", "query": query, "filter_structure": filter_structure})
+        description_data = {"type": "BBIM_Search", "query": query, "filter_structure": filter_structure}
+        if self.module == "csv":
+            csv_props = tool.Blender.get_csv_props()
+            description_data["csv_attributes"] = [
+                {
+                    "name": a.name,
+                    "header": a.header,
+                    "sort": a.sort,
+                    "group": a.group,
+                    "varies_value": a.varies_value,
+                    "summary": a.summary,
+                    "formatting": a.formatting,
+                }
+                for a in csv_props.csv_attributes
+            ]
+
+        description = json.dumps(description_data)
         ifc_file = tool.Ifc.get()
         group = next(
             (
@@ -937,6 +953,14 @@ class LoadSearch(Operator, tool.Ifc.Operator):
             tool.Search.import_filter_structure(group_data["filter_structure"], filter_groups)
         else:
             tool.Search.import_filter_query(tool.Search.get_group_query(group), filter_groups)
+
+        if self.module == "csv" and group_data and "csv_attributes" in group_data:
+            csv_props = tool.Blender.get_csv_props()
+            csv_props.csv_attributes.clear()
+            for attribute in group_data["csv_attributes"]:
+                new = csv_props.csv_attributes.add()
+                for prop in ["name", "header", "sort", "group", "varies_value", "summary", "formatting"]:
+                    setattr(new, prop, attribute[prop])
 
     def draw(self, context):
         assert self.layout
