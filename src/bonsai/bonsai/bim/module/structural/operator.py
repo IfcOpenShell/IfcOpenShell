@@ -888,14 +888,18 @@ def get_default_load_name(props: "StructuralForceInput", category: str) -> str:
     return f"{', '.join(values) or '0'} {unit}"
 
 
-def get_load_attributes(props: "StructuralForceInput", category: str) -> dict[str, Union[float, None]]:
+def get_load_attributes(
+    props: "StructuralForceInput", category: str, load: Union[ifcopenshell.entity_instance, None] = None
+) -> dict[str, Union[float, None]]:
+    """The attributes of the force in a dialog, entered in Blender's axes, given in those of the load's model"""
     _, _, force_attributes, moment_attributes = APPLY_LOAD_CLASSES[category]
     values = get_force_components(props)
     if props.input_mode == "COMPONENTS":
         values += (props.moment_x, props.moment_y, props.moment_z)
     else:
         values += (0.0, 0.0, 0.0)
-    return {name: value or None for name, value in zip(force_attributes + moment_attributes, values)}
+    attributes = {name: value or None for name, value in zip(force_attributes + moment_attributes, values)}
+    return tool.Structural.to_model_axes(load, attributes) if load else attributes
 
 
 def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context) -> None:
@@ -904,7 +908,8 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
         self.load_name = get_default_load_name(self, self.load_category)
     # Show the load being edited with the values in the dialog until it is confirmed or cancelled.
     if self.preview_load and self.load_category and LoadsDecorator.is_installed:
-        ShaderInfo.preview = {self.preview_load: get_load_attributes(self, self.load_category)}
+        load = tool.Ifc.get().by_id(self.preview_load)
+        ShaderInfo.preview = {self.preview_load: get_load_attributes(self, self.load_category, load)}
         LoadsDecorator.update()
         tool.Blender.update_all_viewports(context)
 
@@ -957,8 +962,10 @@ class StructuralForceInput:
     def get_components(self) -> tuple[float, float, float]:
         return get_force_components(self)
 
-    def get_load_attributes(self, category: str) -> dict[str, Union[float, None]]:
-        return get_load_attributes(self, category)
+    def get_load_attributes(
+        self, category: str, load: Union[ifcopenshell.entity_instance, None] = None
+    ) -> dict[str, Union[float, None]]:
+        return get_load_attributes(self, category, load)
 
     def get_unit_symbol(self, category: str) -> str:
         return get_load_unit_symbol(category)
@@ -1003,7 +1010,7 @@ def is_load_combination(group: ifcopenshell.entity_instance) -> bool:
 def get_apply_load_groups(self, context: bpy.types.Context) -> list[tuple[str, str, str]]:
     global apply_load_group_items
     model = tool.Structural.get_current_structural_analysis_model()
-    groups = list(model.LoadedBy or []) if model else list(tool.Ifc.get().by_type("IfcStructuralLoadCase"))
+    groups = tool.Structural.get_load_cases(model)
     # A combination groups load cases, not loads: offer its load cases instead.
     groups = [
         g for group in groups for g in (get_combined_load_cases(group) if is_load_combination(group) else [group])
@@ -1090,15 +1097,12 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
             )
         else:
             group = ifc_file.by_id(int(self.load_group))
-        if group.is_a("IfcStructuralLoadCase") and not group.LoadGroupFor:
+        if tool.Structural.is_load_case(group) and not group.LoadGroupFor:
             tool.Structural.assign_to_current_structural_analysis_model(group)
 
         load_class, activity_class, _, _ = APPLY_LOAD_CLASSES[category]
         load = ifcopenshell.api.structural.add_structural_load(
             ifc_file, name=self.get_load_name(category), ifc_class=load_class
-        )
-        ifcopenshell.api.structural.edit_structural_load(
-            ifc_file, structural_load=load, attributes=self.get_load_attributes(category)
         )
         activities = [
             ifcopenshell.api.structural.add_structural_activity(
@@ -1106,6 +1110,10 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
             )
             for element in elements
         ]
+        # Once it acts on its items, whose model gives the axes its values are written in.
+        ifcopenshell.api.structural.edit_structural_load(
+            ifc_file, structural_load=load, attributes=self.get_load_attributes(category, load)
+        )
         ifcopenshell.api.group.assign_group(ifc_file, products=activities, group=group)
         self.show_load_group(context, group)
         return {"FINISHED"}
@@ -1127,7 +1135,7 @@ def get_edit_load_groups(self, context: bpy.types.Context) -> list[tuple[str, st
     global edit_load_group_items
     edit_load_group_items = []
     listed = set()
-    for load_case in tool.Ifc.get().by_type("IfcStructuralLoadCase"):
+    for load_case in tool.Structural.get_load_cases():
         edit_load_group_items.append((str(load_case.id()), load_case.Name or "Unnamed", load_case.is_a()))
         listed.add(load_case)
         for rel in load_case.IsGroupedBy:
@@ -1144,7 +1152,7 @@ def get_edit_load_groups(self, context: bpy.types.Context) -> list[tuple[str, st
 
 
 def get_combined_load_cases(combination: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-    return [o for rel in combination.IsGroupedBy for o in rel.RelatedObjects if o.is_a("IfcStructuralLoadCase")]
+    return [o for rel in combination.IsGroupedBy for o in rel.RelatedObjects if tool.Structural.is_load_case(o)]
 
 
 def get_activity_load_groups(activity: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -1182,12 +1190,16 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
             return {"FINISHED"}
         self.load_category = category
         _, _, force_attributes, moment_attributes = APPLY_LOAD_CLASSES[category]
-        self.x, self.y, self.z = (getattr(load, a) or 0.0 for a in force_attributes)
+        # In Blender's axes, as the force is drawn, whatever axes its model gives it in.
+        values = tool.Structural.to_blender_axes(
+            load, {a: getattr(load, a) for a in force_attributes + moment_attributes}
+        )
+        self.x, self.y, self.z = (values[a] or 0.0 for a in force_attributes)
         self.moment_x, self.moment_y, self.moment_z = (
-            (getattr(load, a) or 0.0 for a in moment_attributes) if moment_attributes else (0.0, 0.0, 0.0)
+            (values[a] or 0.0 for a in moment_attributes) if moment_attributes else (0.0, 0.0, 0.0)
         )
         # IFC only stores components, so derive the in-plane inputs from them, from the nearest horizontal...
-        x, y, z = (getattr(load, a) or 0.0 for a in force_attributes)
+        x, y, z = self.x, self.y, self.z
         self.direction = f"{'UP' if z >= 0 else 'DOWN'}_{'RIGHT' if x >= 0 else 'LEFT'}"
         self.magnitude = math.hypot(x, z)
         self.angle = math.degrees(math.atan2(abs(z), abs(x)))
@@ -1255,7 +1267,7 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         ShaderInfo.preview = {}  # The edit below refreshes the shown loads.
         load = self.get_load()
         category = get_load_category(load)
-        attributes = self.get_load_attributes(category)
+        attributes = self.get_load_attributes(category, load)
         attributes["Name"] = self.get_load_name(category)
         ifc_file = tool.Ifc.get()
         ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
