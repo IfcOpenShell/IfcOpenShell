@@ -289,6 +289,7 @@ class IfcImporter:
         self.update_linked_aggregates()
         self.profile_code("Setup arrays")
         tool.Project.load_linked_models_from_ifc()
+        tool.LinkedReference.load_from_ifc()
         self.profile_code("Load linked models")
         self.add_project_to_scene()
         self.profile_code("Add project to scene")
