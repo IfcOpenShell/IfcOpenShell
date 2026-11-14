@@ -327,6 +327,17 @@ class PendingArrayRepair(PropertyGroup):
 class BIMProjectProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     is_loading: BoolProperty(name="Is Loading", default=False)
+    advanced_load_filepath: StringProperty(
+        name="Advanced Load Pending Filepath",
+        description="Path of the file previewed in Advanced import mode, committed as the Save target on Load Project Elements",
+        options={"SKIP_SAVE"},
+    )
+    advanced_load_without_ifc_data: BoolProperty(
+        name="Advanced Load Without IFC Data",
+        description="The file previewed in Advanced import mode is imported as plain Blender objects",
+        default=False,
+        options={"SKIP_SAVE"},
+    )
     mvd: StringProperty(name="MVD")
     author_name: StringProperty(name="Author")
     author_email: StringProperty(name="Author Email")
@@ -524,6 +535,8 @@ class BIMProjectProperties(PropertyGroup):
     if TYPE_CHECKING:
         is_editing: bool
         is_loading: bool
+        advanced_load_filepath: str
+        advanced_load_without_ifc_data: bool
         mvd: str
         author_name: str
         author_email: str
