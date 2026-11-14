@@ -102,6 +102,18 @@ class BIM_OT_add_object(Operator, tool.Ifc.Operator):
     def poll(cls, context):
         return tool.Ifc.get() and context.mode == "OBJECT"
 
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column(align=True)
+        col.prop(self, "total_u")
+        col.prop(self, "u_spacing")
+        col = layout.column(align=True)
+        col.prop(self, "total_v")
+        col.prop(self, "v_spacing")
+
     def _execute(self, context):
         add_object(self, context)
         return {"FINISHED"}
