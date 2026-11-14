@@ -33,14 +33,17 @@ namespace bonsaiviewer::components::buttons {
 
 QToolButton* makeButton(const QString& text,
                         const QString& icon_path,
-                        QWidget* parent) {
+                        QWidget* parent,
+                        int icon_size,
+                        int min_width,
+                        int min_height) {
     auto* button = new QToolButton(parent);
     button->setObjectName("ribbonButton");
     button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     button->setIcon(components::icons::makeAccentSvgIcon(icon_path));
-    button->setIconSize(QSize(20, 20));
+    button->setIconSize(QSize(icon_size, icon_size));
     button->setText(text);
-    button->setMinimumSize(QSize(90, 68));
+    button->setMinimumSize(QSize(min_width, min_height));
     button->setAutoRaise(false);
     return button;
 }

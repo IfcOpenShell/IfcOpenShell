@@ -230,6 +230,28 @@ public:
     // unloaded or empty model leaves the camera alone rather than flying it to
     // the origin).
     bool viewModels(const std::vector<uint32_t>& session_model_ids);
+
+    // Zoom-support queries for bonsai's "Fit View" command. hasVisibleElements:
+    // any element of a loaded, non-hidden, non-unloaded model is currently
+    // visible (not element-hidden). viewVisibleElements: frame the camera on
+    // the union AABB of the visible elements only — so after an isolation the
+    // fit zooms in on the isolated objects instead of the whole-scene box.
+    // anyDrawableElementWithinCameraPlane: after the camera is positioned,
+    // reports whether at least one visible element's world AABB comes within
+    // `max_distance_m` of the camera plane (the plane through the eye,
+    // perpendicular to the look direction); early-outs on the first hit.
+    // fitDistanceForVisibleElements: the distance a fit of the visible
+    // elements would pick, without moving the camera — lets a caller aim the
+    // camera at a picked point yet zoom out to fit the model.
+    bool hasVisibleElements() const;
+    bool viewVisibleElements();
+    bool anyDrawableElementWithinCameraPlane(float max_distance_m) const;
+    float fitDistanceForVisibleElements() const;
+
+    // Union of the world AABBs of every visible element. Shared by the
+    // queries above; public for host-side framing helpers.
+    bool computeVisibleElementsAabb(float mn[3], float mx[3]) const;
+
     void setCamera(float tx, float ty, float tz,
                    float dist, float yaw_deg, float pitch_deg);
     void setStandardView(float yaw_deg, float pitch_deg);
@@ -701,6 +723,17 @@ public:
     void updateSectionDrag(int mouse_x, int mouse_y);
     void endSectionDrag() { section_drag_active_ = false; }
     bool sectionDragActive() const { return section_drag_active_; }
+
+    // Gizmo visibility + cut suspension (bonsai's "Display" ribbon tab).
+    //   setSectionGizmosVisible(false): keep cutting, stop drawing the plane
+    //     gizmos — "Hide Planes".
+    //   setSectionCutsEnabled(false): stop cutting AND hide the gizmos —
+    //     "Suspend Sections". Re-enabling also re-shows the gizmos, which
+    //     is the behaviour the spec calls out for the suspend button.
+    void setSectionGizmosVisible(bool visible);
+    bool sectionGizmosVisible() const { return section_gizmos_visible_; }
+    void setSectionCutsEnabled(bool enabled);
+    bool sectionCutsEnabled() const { return section_cuts_enabled_; }
 
     // ---- Render loop (#84-x) ----------------------------------------------
     //
@@ -1437,6 +1470,12 @@ private:
     Eigen::Vector3f section_drag_start_origin_ = Eigen::Vector3f::Zero();
     int             section_drag_start_mx_     = 0;
     int             section_drag_start_my_     = 0;
+
+    // "Hide Planes / Suspend Sections" state. The gizmo draw gate is
+    // (section_gizmos_visible_ && section_cuts_enabled_) and the frame
+    // uniform packs clip_count = 0 while cuts are suspended.
+    bool section_gizmos_visible_ = true;
+    bool section_cuts_enabled_   = true;
 
     // X-ray mode alpha clamp: when < 1.0 every instance routes through
     // the transparent pass with fragment.a clamped to min(in.color.a, cap).
