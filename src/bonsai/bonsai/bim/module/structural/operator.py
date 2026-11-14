@@ -24,9 +24,7 @@ from typing import TYPE_CHECKING, Literal, Union
 import bpy
 import ifcopenshell.api.geometry
 import ifcopenshell.api.group
-import ifcopenshell.api.pset
 import ifcopenshell.api.structural
-import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.structural
@@ -432,11 +430,6 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
         representation_context = ifcopenshell.util.representation.get_context(file, "Model", "Reference", "GRAPH_VIEW")
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(file)
         scale = ifcopenshell.util.unit.calculate_unit_scale(file)
-        legacy_tolerance = ifcopenshell.util.element.get_pset(
-            model, "BBIM_StructuralGeneration", "MergeTolerance", should_inherit=False
-        )
-        if legacy_tolerance is not None and not props.is_property_set("generation_merge_tolerance"):
-            props.generation_merge_tolerance = legacy_tolerance
         tolerance = props.generation_merge_tolerance
 
         def track_member(member):
@@ -445,19 +438,6 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
                 link.model_guid = model.GlobalId
                 link.member_guid = member.GlobalId
                 tracked.add(member.GlobalId)
-
-        def remove_legacy_generation_state(product):
-            data = ifcopenshell.util.element.get_pset(product, "BBIM_StructuralGeneration", should_inherit=False)
-            if not data:
-                return
-            keys = {"MergeTolerance", "Generated", "Source", "SourceAxis"} & data.keys()
-            if not keys:
-                return
-            pset = file.by_id(data["id"])
-            if data.keys() - keys == {"id"}:
-                ifcopenshell.api.pset.remove_pset(file, product=product, pset=pset)
-            else:
-                ifcopenshell.api.pset.edit_pset(file, pset=pset, properties={key: None for key in keys})
 
         def create_item(ifc_class, name, start, end=None):
             mesh = bpy.data.meshes.new(name)
@@ -622,8 +602,6 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
         ]
 
         created = 0
-        created_members = []
-        touched_nodes = set(node_positions)
         for source, axis, profile_direction in sources:
             start, end = axis
             start_match = tool.Structural.find_nearby_connection(start, connections, tolerance)
@@ -643,7 +621,6 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
                     match = create_node(position)
                     connections.append((position, match))
                 node_items.append(match)
-            touched_nodes.update(node_items)
             member = create_item(
                 "IfcStructuralCurveMember", source.Name or "Structural Member", actual_start, actual_end
             )
@@ -651,15 +628,11 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.structural.assign_product(file, relating_product=member, related_object=source)
             tool.Structural.assign_member_section(member, source)
             track_member(member)
-            created_members.append(member)
             for connection in node_items:
                 ifcopenshell.api.structural.add_structural_member_connection(
                     file, relating_structural_member=member, related_structural_connection=connection
                 )
             created += 1
-
-        for item in {model, *update_members, *created_members, *touched_nodes}:
-            remove_legacy_generation_state(item)
 
         if missing_material:
             self.report({"WARNING"}, f"Skipped {missing_material} objects with missing or unsupported materials")

@@ -502,11 +502,13 @@ class TestGenerateStructuralModel(NewIfc):
         assert ifc.to_string() == ifc_after_update
         assert tool.Ifc.get_object(member).location.x == pytest.approx(2)
         assert not tool.Structural.get_member_changes(model)
-        assert not ifcopenshell.util.element.get_pset(model, "BBIM_StructuralGeneration")
-        assert props.generation_merge_tolerance == pytest.approx(0.1 if scene_tolerance is None else scene_tolerance)
-        assert not ifcopenshell.util.element.get_pset(nodes[0], "BBIM_StructuralGeneration")
-        assert ifcopenshell.util.element.get_pset(member, "BBIM_StructuralGeneration")["Keep"] == "value"
-        assert set(ifcopenshell.util.element.get_pset(member, "BBIM_StructuralGeneration")) == {"id", "Keep"}
+        assert props.generation_merge_tolerance == pytest.approx(0.0 if scene_tolerance is None else scene_tolerance)
+        assert ifcopenshell.util.element.get_pset(model, "BBIM_StructuralGeneration")["MergeTolerance"] == 0.1
+        assert ifcopenshell.util.element.get_pset(nodes[0], "BBIM_StructuralGeneration")["Generated"] is True
+        member_pset = ifcopenshell.util.element.get_pset(member, "BBIM_StructuralGeneration")
+        assert member_pset["Source"] == source.GlobalId
+        assert member_pset["SourceAxis"] == "old"
+        assert member_pset["Keep"] == "value"
         member_obj = tool.Ifc.get_object(member)
         tool.Structural.get_structural_props().generation_merge_tolerance = 0.1
         member_obj.data.vertices[1].co.x = 0.3
