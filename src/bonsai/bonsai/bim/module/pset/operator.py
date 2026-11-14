@@ -116,6 +116,11 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
         else:
             assert False
 
+        if not tool.Pset.is_editable(pset):
+            self.report({"WARNING"}, f"Editing '{pset.is_a()}' is not supported yet.")
+            bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
+            return
+
         if self.properties:
             properties = json.loads(self.properties)
         else:

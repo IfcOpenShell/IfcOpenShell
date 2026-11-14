@@ -21,6 +21,7 @@ import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+import ifcopenshell.guid
 import pytest
 
 import bonsai.core.tool
@@ -387,3 +388,18 @@ class TestEditQtoRoundingLoopPreservesUnitWrappedValues(NewFile):
         assert properties["Foo"]["NominalValue"] == 2.1235
         assert properties["Foo"]["Unit"] is None
         assert properties["Bar"] == 3
+
+
+class TestIsEditable(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcWall()
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo")
+        assert subject.is_editable(pset) is True
+        qto = ifcopenshell.api.pset.add_qto(ifc, product=element, name="Bar")
+        assert subject.is_editable(qto) is True
+        panel_pset = ifc.createIfcDoorPanelProperties(
+            GlobalId=ifcopenshell.guid.new(), Name="IfcDoorPanelProperties", PanelOperation="NOTDEFINED"
+        )
+        assert subject.is_editable(panel_pset) is False

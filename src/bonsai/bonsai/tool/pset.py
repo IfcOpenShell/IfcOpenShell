@@ -163,6 +163,11 @@ class Pset(bonsai.core.tool.Pset):
         return True
 
     @classmethod
+    def is_editable(cls, pset: ifcopenshell.entity_instance) -> bool:
+        """Whether bim.edit_pset supports this pset; IfcPreDefinedPropertySet is read only."""
+        return not pset.is_a("IfcPreDefinedPropertySet")
+
+    @classmethod
     def enable_pset_editing(
         cls, pset_id: int, pset_name: str, pset_type: PSET_TYPE, obj: str, obj_type: tool.Ifc.OBJECT_TYPE
     ) -> None:
