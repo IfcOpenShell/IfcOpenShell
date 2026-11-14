@@ -350,6 +350,13 @@ ptree* descend(ifcopenshell::logger& log, ifcopenshell::geom::abstract_mapping* 
 				ptree node;
 				node.put("<xmlattr>.xlink:href", "#" + qualify_unrooted_instance(mat));
                 format_entity_instance(log, mapping, mat.concrete(), node, child, true);
+			} else if (auto relcls = rel.as<IfcSchema::IfcRelAssociatesClassification>()) {
+				express::base classification = relcls.RelatingClassification().concrete();
+				if (classification) {
+					ptree node;
+					node.put("<xmlattr>.xlink:href", "#" + qualify_unrooted_instance(classification));
+					format_entity_instance(log, mapping, classification, node, child, true);
+				}
 			}
 		}
     }
@@ -537,7 +544,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 	}
     IfcSchema::IfcProject& project = projects.front();
 
-	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, work, calendars, connections, groups;
+	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, classifications, work, calendars, connections, groups;
 
 	auto catch_exceptions = [this, &log](const auto& fn) {
 		try {
@@ -801,6 +808,19 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 		}
 	}
 
+	auto classification_associations = file->instances_by_type<IfcSchema::IfcRelAssociatesClassification>();
+	std::set<express::base> emitted_classifications;
+	for (auto& rel : classification_associations) {
+		express::base classification = rel.RelatingClassification().concrete();
+		while (classification && emitted_classifications.insert(classification).second) {
+			ptree node;
+			node.put("<xmlattr>.id", qualify_unrooted_instance(classification));
+			format_entity_instance(log, mapping_, classification, node, classifications);
+			auto reference = classification.as<IfcSchema::IfcClassificationReference>();
+			classification = reference ? express::base(reference.ReferencedSource()) : express::base();
+		}
+	}
+
 	root.add_child("ifc.header",        header);
 	root.add_child("ifc.units",         units);
 	root.add_child("ifc.connections",   connections);
@@ -812,6 +832,7 @@ void POSTFIX_SCHEMA(xml_serializer)::finalize() {
 	root.add_child("ifc.layers",        layers);
     root.add_child("ifc.groups",        groups);
 	root.add_child("ifc.materials",     materials);
+	root.add_child("ifc.classifications", classifications);
 	root.add_child("ifc.decomposition", decomposition);
 
 	root.put("ifc.<xmlattr>.xmlns:xlink", "http://www.w3.org/1999/xlink");
