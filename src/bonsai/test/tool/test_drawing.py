@@ -46,6 +46,41 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), bonsai.core.tool.Drawing)
 
 
+class TestActivateDrawing(NewFile):
+    def test_hides_elements_without_a_representation_in_the_drawing_contexts(self):
+        bpy.ops.bim.create_project()
+        tool.Project.save_test_project()
+        ifc = tool.Ifc.get()
+        props = tool.Drawing.get_document_props()
+        props.target_view = "REFLECTED_PLAN_VIEW"
+        bpy.ops.bim.load_drawings()
+        bpy.ops.bim.add_drawing()
+        drawing = next(a for a in ifc.by_type("IfcAnnotation") if a.ObjectType == "DRAWING")
+
+        def add_proxy(name, x, context=None):
+            bpy.ops.mesh.primitive_cube_add(size=2, location=(x, 0, 1))
+            obj = bpy.context.active_object
+            obj.name = name
+            bpy.ops.bim.assign_class(ifc_class="IfcBuildingElementProxy")
+            if context:
+                tool.Ifc.get_entity(obj).Representation.Representations[0].ContextOfItems = context
+            return obj
+
+        def annotation_context(target_view):
+            return subject.get_annotation_context(target_view) or subject.create_annotation_context(target_view)
+
+        # A plan-only annotation isn't printed on an RCP, so it shouldn't show when the RCP is active.
+        plan_only = add_proxy("PlanOnly", -5, annotation_context("PLAN_VIEW"))
+        reflected = add_proxy("Reflected", 0, annotation_context("REFLECTED_PLAN_VIEW"))
+        body = add_proxy("Body", 5)
+
+        subject.activate_drawing(tool.Ifc.get_object(drawing))
+
+        assert plan_only.hide_get() is True
+        assert reflected.hide_get() is False
+        assert body.hide_get() is False
+
+
 class TestCopyRepresentation(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
