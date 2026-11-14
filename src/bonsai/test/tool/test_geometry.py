@@ -28,6 +28,7 @@ import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
+import ifcopenshell.util.representation
 import numpy as np
 import pytest
 from ifcopenshell.util.shape_builder import ShapeBuilder
