@@ -37,6 +37,7 @@ def assign_scene_units(ifc: type[tool.Ifc], unit: type[tool.Unit]) -> None:
                 )
             else:
                 units.append(ifc.run("unit.add_conversion_based_unit", name=name))
+    units.extend(unit.add_structural_units())
     if units:
         ifc.run("unit.assign_unit", units=units)
 
