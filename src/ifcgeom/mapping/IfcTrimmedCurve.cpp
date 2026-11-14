@@ -126,6 +126,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 		const double precision_markup = settings_.get<settings::PrecisionFactor>().get() == 1. ? 1. : 100.;
 
 		if (isConic && std::fabs(fmod(flts[1] - flts[0], pi * 2.)) < precision_markup * tol / (2 * pi * radius)) {
+			if (num_segments && *num_segments > 1 && std::fabs(flts[1] - flts[0]) < precision_markup * tol / (2 * pi * radius)) {
+				logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 295, "Skipping segment with length below tolerance level:", inst);
+				return nullptr;
+			}
 			flts[0] = 0.;
 			flts[1] = 2 * pi;
 		}
