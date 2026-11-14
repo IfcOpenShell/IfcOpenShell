@@ -81,43 +81,38 @@ class Csv2Ifc:
                 )
         return rels
 
+    def get_cell(self, row: list[str], column: str) -> str:
+        """Read a column that may be entirely absent from this CSV's header row.
+
+        Only Hierarchy/Identification/Name are guaranteed (Hierarchy is how a
+        header row is even recognised in the first place); every other column
+        is optional in third-party exports, and a missing column should be
+        treated the same as a present-but-blank cell, not crash the import.
+        """
+        index = self.headers.get(column)
+        return row[index] if index is not None else ""
+
     def get_row_task(self, row):
         hours_per_day = 8
         hierarchy = row[self.headers["Hierarchy"]]
         identification = row[self.headers["Identification"]]
         task_name = row[self.headers["Name"]]
 
-        task_relationships = self.parse_task_rel(row[self.headers["Relationships"]])
+        task_relationships = self.parse_task_rel(self.get_cell(row, "Relationships"))
 
-        scheduled_start_date = (
-            ifcopenshell.util.date.string_to_date(row[self.headers["ScheduleStart"]])
-            if row[self.headers["ScheduleStart"]]
-            else None
-        )
-        scheduled_finish_date = (
-            ifcopenshell.util.date.string_to_date(row[self.headers["ScheduleFinish"]])
-            if row[self.headers["ScheduleFinish"]]
-            else None
-        )
-        scheduled_duration = (
-            ifcopenshell.util.date.string_to_duration(row[self.headers["ScheduleDuration"]])
-            if row[self.headers["ScheduleDuration"]]
-            else None
-        )
-        actual_start_date = (
-            ifcopenshell.util.date.string_to_date(row[self.headers["ActualStart"]])
-            if row[self.headers["ActualStart"]]
-            else None
-        )
-        actual_finish_date = (
-            ifcopenshell.util.date.string_to_date(row[self.headers["ActualFinish"]])
-            if row[self.headers["ActualFinish"]]
-            else None
-        )
+        schedule_start = self.get_cell(row, "ScheduleStart")
+        scheduled_start_date = ifcopenshell.util.date.string_to_date(schedule_start) if schedule_start else None
+        schedule_finish = self.get_cell(row, "ScheduleFinish")
+        scheduled_finish_date = ifcopenshell.util.date.string_to_date(schedule_finish) if schedule_finish else None
+        schedule_duration = self.get_cell(row, "ScheduleDuration")
+        scheduled_duration = ifcopenshell.util.date.string_to_duration(schedule_duration) if schedule_duration else None
+        actual_start = self.get_cell(row, "ActualStart")
+        actual_start_date = ifcopenshell.util.date.string_to_date(actual_start) if actual_start else None
+        actual_finish = self.get_cell(row, "ActualFinish")
+        actual_finish_date = ifcopenshell.util.date.string_to_date(actual_finish) if actual_finish else None
+        actual_duration_cell = self.get_cell(row, "ActualDuration")
         actual_duration = (
-            ifcopenshell.util.date.string_to_duration(row[self.headers["ActualDuration"]])
-            if row[self.headers["ActualDuration"]]
-            else None
+            ifcopenshell.util.date.string_to_duration(actual_duration_cell) if actual_duration_cell else None
         )
 
         return {
