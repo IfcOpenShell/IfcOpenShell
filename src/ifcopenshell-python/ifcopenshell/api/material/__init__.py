@@ -48,6 +48,7 @@ from .edit_layer_usage import edit_layer_usage
 from .edit_material import edit_material
 from .edit_profile import edit_profile
 from .edit_profile_usage import edit_profile_usage
+from .merge_materials import merge_materials
 from .remove_constituent import remove_constituent
 from .remove_layer import remove_layer
 from .remove_list_item import remove_list_item
@@ -77,6 +78,7 @@ __all__ = [
     "edit_material",
     "edit_profile",
     "edit_profile_usage",
+    "merge_materials",
     "remove_constituent",
     "remove_layer",
     "remove_list_item",
