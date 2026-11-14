@@ -55,6 +55,30 @@ Scenario: Add one type from the Construction Type Browser
     And I add the construction type
     Then the object "IfcColumn/Column" exists
 
+Scenario: Quick Create a door type
+    Given an empty IFC project
+    When I press "bim.add_default_type(ifc_element_type='IfcDoorType')"
+    Then the variable "representations" is "len({ifc}.by_type('IfcDoorType')[0].RepresentationMaps or ())"
+    And the variable "representations" equals "3"
+
+Scenario: Quick Create a door type on IFC2X3
+    Given an empty IFC2X3 project
+    When I press "bim.add_default_type(ifc_element_type='IfcDoorStyle')"
+    Then the variable "representations" is "len({ifc}.by_type('IfcDoorStyle')[0].RepresentationMaps or ())"
+    And the variable "representations" equals "3"
+
+Scenario: Quick Create a window type on IFC2X3
+    Given an empty IFC2X3 project
+    When I press "bim.add_default_type(ifc_element_type='IfcWindowStyle')"
+    Then the variable "representations" is "len({ifc}.by_type('IfcWindowStyle')[0].RepresentationMaps or ())"
+    And the variable "representations" equals "3"
+
+Scenario: Quick Create a furniture type on IFC2X3, which has no PredefinedType
+    Given an empty IFC2X3 project
+    When I press "bim.add_default_type(ifc_element_type='IfcFurnitureType')"
+    Then the variable "furniture_types" is "len({ifc}.by_type('IfcFurnitureType'))"
+    And the variable "furniture_types" equals "1"
+
 Scenario: Add grid
     Given an empty IFC project
     When I press "bim.add_grid"
