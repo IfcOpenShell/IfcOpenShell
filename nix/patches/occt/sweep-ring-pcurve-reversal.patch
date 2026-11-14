@@ -1,0 +1,34 @@
+BRepFill_Sweep: reverse a ring pcurve only for opposite directions
+
+When BRepFill_Sweep attaches the parameter curve of a closed ring edge
+(the section circle shared by two consecutive swept faces) to a face, it
+decides whether to reverse the curve by comparing the ring's 3D tangent
+with the surface direction against an angular tolerance of 1e-4 rad.
+That is a test for "not parallel", not for "opposite": any tangent
+discontinuity of the spine above 0.0057 deg that reaches this code
+without a corner treatment (RightCorner below the angmin gate, or the
+Transformed mode which never treats corners) mirrors the parameter
+curve, and BRepCheck reports InvalidCurveOnSurface and
+InvalidSameParameterFlag on the ring. Meshing such a face produces a
+band of inverted triangles between the two rings.
+
+Only reverse when the directions are opposite.
+
+IfcOpenShell: https://github.com/IfcOpenShell/IfcOpenShell/issues/435
+             https://github.com/IfcOpenShell/IfcOpenShell/issues/382
+             https://github.com/IfcOpenShell/IfcOpenShell/issues/424
+             https://github.com/IfcOpenShell/IfcOpenShell/issues/468
+
+This file was generated with the assistance of an AI coding tool.
+
+--- a/src/BRepFill/BRepFill_Sweep.cxx
++++ b/src/BRepFill/BRepFill_Sweep.cxx
+@@ -1666,7 +1666,7 @@
+     CL->D1(F2d, P2d, V2d);
+     S->D1(P2d.X(), P2d.Y(), POnS, du, dv);
+     V3d.SetLinearForm(V2d.X(), du, V2d.Y(), dv);
+-    reverse = ( dC3d.Angle(V3d) > Tol);
++    reverse = ( dC3d.Angle(V3d) > M_PI/2);
+   }
+   if (reverse ) { // Return curve 2d
+     CL = new (Geom2d_TrimmedCurve)(L, F2d, L2d);

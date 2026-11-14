@@ -1402,6 +1402,10 @@ if "occ" in targets:
     elif OCCT_VERSION >= "7.7.2":
         occt_args.append("-DBUILD_MODULE_DETools=OFF")
 
+    # BRepFill_Sweep mirrors the shared ring of a swept disk at small tangent
+    # discontinuities of the spine (IfcOpenShell #435, #382, #424, #468).
+    patches.append("./patches/occt/sweep-ring-pcurve-reversal.patch")
+
     if WASM:
         patches.append("./patches/occt/no_em_js.patch")
     if NATIVE_WASM:
