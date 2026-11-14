@@ -1,4 +1,8 @@
 #include "wire_utils.h"
+#include <BRep_Builder.hxx>
+#include <limits>
+#include <Precision.hxx>
+#include <BRepBuilderAPI_MakeVertex.hxx>
 
 #include "../../../ifcparse/logger.h"
 #include "../../../ifcgeom/conversion_settings.h"
@@ -501,6 +505,36 @@ bool ifcopenshell::geom::util::wire_intersections(const TopoDS_Wire& wire, NColl
 
 					intersected = true;
 
+					gp_Pnt pp1, pp2;
+					ecc.Points(1, pp1, pp2);
+
+					// Both cycles pass through the crossing, so the trimmed edges of the two
+					// crossing edges share one vertex there and each cycle closes by topology.
+					// When the crossing lies within tolerance of a vertex of either edge, that
+					// vertex is the crossing: the edge is not trimmed to a sliver and the gap
+					// between the two is put in the vertex tolerance.
+					TopoDS_Vertex cut;
+					double cut_gap = std::numeric_limits<double>::infinity();
+					for (int ij : {i, j}) {
+						TopoDS_Vertex v1, v2;
+						TopExp::Vertices(wd->Edge(ij + 1), v1, v2);
+						for (const TopoDS_Vertex& v : {v1, v2}) {
+							const gp_Pnt p = BRep_Tool::Pnt(v);
+							const double d = (std::max)(p.Distance(pp1), p.Distance(pp2));
+							if (d <= eps_real * 2 && d < cut_gap) {
+								cut = v;
+								cut_gap = d;
+							}
+						}
+					}
+					BRep_Builder B;
+					if (cut.IsNull()) {
+						cut = BRepBuilderAPI_MakeVertex(gp_Pnt((pp1.XYZ() + pp2.XYZ()) / 2.));
+						B.UpdateVertex(cut, (std::max)(pp1.Distance(pp2) / 2., Precision::Confusion()));
+					} else if (BRep_Tool::Tolerance(cut) < cut_gap) {
+						B.UpdateVertex(cut, cut_gap);
+					}
+
 					// Explore a forward and backward cycle from the intersection point
 					for (int fb = 0; fb <= 1; ++fb) {
 						const bool forward = fb == 0;
@@ -515,22 +549,17 @@ bool ifcopenshell::geom::util::wire_intersections(const TopoDS_Wire& wire, NColl
 
 								TopoDS_Vertex v1, v2;
 								TopExp::Vertices(e, v1, v2, true);
-								const TopoDS_Vertex* v = first == forward ? &v2 : &v1;
+								const TopoDS_Vertex& kept = first == forward ? v2 : v1;
+								const TopoDS_Vertex& dropped = first == forward ? v1 : v2;
 
-								// gp_Pnt p2 = points3d.Value(1);
-
-								gp_Pnt p1 = BRep_Tool::Pnt(*v);
-								gp_Pnt pp1, pp2;
-								ecc.Points(1, pp1, pp2);
-								const gp_Pnt& p2 = k == i ? pp1 : pp2;
-
-								// Substitute with a new edge from/to the intersection point
-								if (p1.Distance(p2) > eps_real * 2) {
+								// Trim the edge between its kept vertex and the crossing
+								if (dropped.IsSame(cut)) {
+									mw.Add(e);
+								} else if (!kept.IsSame(cut)) {
 									double _, __;
 									opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, _, __);
-									BRepBuilderAPI_MakeEdge me(crv, p1, p2);
-									TopoDS_Edge ed = me.Edge();
-									mw.Add(ed);
+									BRepBuilderAPI_MakeEdge me(crv, kept, cut);
+									mw.Add(me.Edge());
 								}
 
 								first = false;
@@ -552,6 +581,7 @@ bool ifcopenshell::geom::util::wire_intersections(const TopoDS_Wire& wire, NColl
 
 						ShapeFix_Wire sfw;
 						sfw.Load(mw.Wire());
+						sfw.SetPrecision(eps_real);
 						sfw.Perform();
 
 						// Recursively process both cuts
