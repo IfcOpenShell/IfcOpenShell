@@ -480,7 +480,12 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
             and instance_class in ["IfcWindow", "IfcDoor"]
         ):
             # TODO For now we are hardcoding windows and doors as a prototype
-            tool.Model.add_filled_opening(building_obj, obj)
+            if error := tool.Model.add_filled_opening(building_obj, obj):
+                tool.Geometry.delete_ifc_object(obj)
+                self.report(
+                    {"ERROR"}, f"Could not host the {instance_class[3:].lower()} in {building_obj.name}: {error}"
+                )
+                return {"CANCELLED"}
         else:
             if self.container_obj:
                 bonsai.core.spatial.assign_container(
