@@ -80,6 +80,7 @@ class Results(TypedDict):
 
 class ResultsSpecification(TypedDict):
     name: str
+    identifier: Union[str, None]
     description: str
     instructions: str
     status: bool
@@ -413,6 +414,7 @@ class Json(Reporter):
 
         return ResultsSpecification(
             name=specification.name,
+            identifier=specification.identifier,
             description=specification.description,
             instructions=specification.instructions,
             status=specification.status,
