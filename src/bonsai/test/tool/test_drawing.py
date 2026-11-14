@@ -385,10 +385,11 @@ class TestEnsureUniqueDrawingName(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         assert subject.ensure_unique_drawing_name("FOOBAR") == "FOOBAR"
-        ifc.createIfcAnnotation(Name="FOOBAR", ObjectType="DRAWING")
+        foobar = ifc.createIfcAnnotation(Name="FOOBAR", ObjectType="DRAWING")
         assert subject.ensure_unique_drawing_name("FOOBAR") == "FOOBAR-X"
         ifc.createIfcAnnotation(Name="FOOBAR-X", ObjectType="DRAWING")
         assert subject.ensure_unique_drawing_name("FOOBAR") == "FOOBAR-X-X"
+        assert subject.ensure_unique_drawing_name("FOOBAR", ignore=foobar) == "FOOBAR"
 
 
 class TestEnsureUniqueIdentification(NewFile):

@@ -475,6 +475,8 @@ def remove_drawing(
 def update_drawing_name(
     ifc: type[tool.Ifc], drawing_tool: type[tool.Drawing], drawing: ifcopenshell.entity_instance, name: str
 ) -> None:
+    # The name derives the SVG filename, so duplicates would overwrite each other.
+    name = drawing_tool.ensure_unique_drawing_name(name, ignore=drawing)
     if drawing_tool.get_name(drawing) != name:
         ifc.run("attribute.edit_attributes", product=drawing, attributes={"Name": name})
 
