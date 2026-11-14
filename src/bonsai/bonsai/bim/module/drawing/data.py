@@ -71,8 +71,25 @@ class SheetsData:
             "has_saved_ifc": cls.has_saved_ifc(),
             "total_sheets": cls.total_sheets(),
             "titleblocks": cls.titleblocks(),
+            "spatial_links": {},
         }
         cls.is_loaded = True
+
+    @classmethod
+    def spatial_links(cls, sheet_id: int) -> dict:
+        """A sheet's Site and Building choices, as `SheetBuilder.get_link_field` gives them.
+
+        Worked out the first time a sheet is shown and kept until the next edit to
+        the model, rather than on every redraw.
+        """
+        links = cls.data["spatial_links"]
+        if sheet_id not in links:
+            import bonsai.bim.module.drawing.sheeter as sheeter
+
+            sheet = tool.Ifc.get().by_id(sheet_id)
+            builder = sheeter.SheetBuilder()
+            links[sheet_id] = {prefix: builder.get_link_field(sheet, prefix) for prefix in sheeter.SPATIAL_ELEMENTS}
+        return links[sheet_id]
 
     @classmethod
     def has_saved_ifc(cls):
