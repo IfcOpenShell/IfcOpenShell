@@ -22,23 +22,70 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
+import ifcopenshell.api.material
+import ifcopenshell.api.profile
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import numpy as np
+import pytest
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Matrix
 
 import bonsai.core.tool
 import bonsai.tool as tool
+from bonsai.bim.module.model.data import ItemData
 from bonsai.tool.geometry import Geometry as subject
-from test.bim.bootstrap import NewFile
+from test.bim.bootstrap import NewFile, NewIfc
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
         assert isinstance(subject(), bonsai.core.tool.Geometry)
+
+
+class TestUpdateItemAttributes(NewIfc):
+    @pytest.mark.parametrize("shared", [False, True])
+    def test_replacing_unnamed_profile_preserves_other_users(self, shared):
+        ifc = tool.Ifc.get()
+        model_context = ifcopenshell.util.representation.get_context(ifc, "Model")
+        body = ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model_context
+        )
+        old_profile = ifcopenshell.api.profile.add_parameterized_profile(ifc, ifc_class="IfcRectangleProfileDef")
+        old_profile.XDim, old_profile.YDim = 0.2, 0.3
+        old_id = old_profile.id()
+        new_profile = ifcopenshell.api.profile.add_parameterized_profile(ifc, ifc_class="IfcRectangleProfileDef")
+        new_profile.ProfileName, new_profile.XDim, new_profile.YDim = "New section", 0.4, 0.5
+        material_profile = None
+        if shared:
+            profile_set = ifcopenshell.api.material.add_material_set(ifc, set_type="IfcMaterialProfileSet")
+            material = ifcopenshell.api.material.add_material(ifc, name="Steel")
+            material_profile = ifcopenshell.api.material.add_profile(
+                ifc, profile_set=profile_set, material=material, profile=old_profile
+            )
+        representation = ifcopenshell.api.geometry.add_profile_representation(
+            ifc, context=body, profile=old_profile, depth=3
+        )
+        source_obj = bpy.data.objects.new("Beam", bpy.data.meshes.new("Beam"))
+        bpy.context.scene.collection.objects.link(source_obj)
+        tool.Geometry.link(representation, source_obj.data)
+        tool.Geometry.get_geometry_props().representation_obj = source_obj
+        ItemData.is_loaded = False
+        item = representation.Items[0]
+        item_obj = bpy.data.objects.new("Extrusion", bpy.data.meshes.new("Extrusion"))
+        bpy.context.scene.collection.objects.link(item_obj)
+        tool.Geometry.link(item, item_obj.data)
+        tool.Geometry.get_mesh_props(item_obj.data).item_profile = str(new_profile.id())
+
+        subject.update_item_attributes(item_obj)
+        assert item.SweptArea == new_profile
+        if shared:
+            assert tool.Ifc.get_entity_by_id(old_id) == old_profile
+            assert material_profile.Profile == old_profile
+        else:
+            assert tool.Ifc.get_entity_by_id(old_id) is None
 
 
 class TestChangeObjectData(NewFile):
