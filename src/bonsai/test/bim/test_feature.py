@@ -33,6 +33,7 @@ from typing import Any, Union, cast
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import numpy as np
@@ -1654,6 +1655,16 @@ def the_object_name_is_at_location(name, location):
     obj_location = the_object_name_exists(name).location
     assert (obj_location - Vector([float(co) for co in location.split(",")])).length < 0.05, (
         f"Object is at {obj_location} instead of {location}"
+    )
+
+
+@then(parsers.parse('the object "{name}" has an ifc location of "{location}"'))
+def the_object_name_has_an_ifc_location_of_value(name, location):
+    element = tool.Ifc.get_entity(the_object_name_exists(name))
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    ifc_location = Vector(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)[:3, 3]) * unit_scale
+    assert (ifc_location - Vector([float(co) for co in location.split(",")])).length < 0.1, (
+        f"IFC placement is at {ifc_location}"
     )
 
 

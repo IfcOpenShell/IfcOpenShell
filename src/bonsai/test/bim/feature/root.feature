@@ -111,6 +111,16 @@ Scenario: Assign a class to a cube
     And the object "IfcWall/Cube" is in the collection "IfcBuildingStorey/My Storey"
     And the object "IfcWall/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
 
+Scenario: Assign a class to an offset cube preserves its world position
+    Given an empty IFC project
+    And I add a cube of size "2" at "5,3,1"
+    When the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcFurniture"
+    And I press "bim.assign_class"
+    Then the object "IfcFurniture/Cube" is an "IfcFurniture"
+    And the object "IfcFurniture/Cube" has an ifc location of "5,3,1"
+
 Scenario: Assign a type class to a cube
     Given an empty IFC project
     And I add a cube
