@@ -75,13 +75,14 @@ class Usecase:
             del attributes["ScheduleFinish"]
 
         duration_type = attributes.get("DurationType", self.task_time.DurationType)
+        start_time, finish_time = ifcopenshell.util.sequence.get_calendar_work_hours(self.calendar)
         finish = attributes.get("ScheduleFinish", None)
         if finish:
             if isinstance(finish, str):
                 finish = datetime.datetime.fromisoformat(finish)
             attributes["ScheduleFinish"] = datetime.datetime.combine(
                 ifcopenshell.util.sequence.get_soonest_working_day(finish, duration_type, self.calendar),
-                datetime.time(17),
+                finish_time,
             )
         start = attributes.get("ScheduleStart", None)
         if start:
@@ -89,7 +90,7 @@ class Usecase:
                 start = datetime.datetime.fromisoformat(start)
             attributes["ScheduleStart"] = datetime.datetime.combine(
                 ifcopenshell.util.sequence.get_soonest_working_day(start, duration_type, self.calendar),
-                datetime.time(9),
+                start_time,
             )
 
         for name, value in attributes.items():

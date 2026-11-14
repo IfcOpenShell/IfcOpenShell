@@ -108,6 +108,41 @@ def count_working_days(start, finish, calendar: ifcopenshell.entity_instance) ->
     return result
 
 
+def get_calendar_work_hours(
+    calendar: Union[ifcopenshell.entity_instance, None],
+) -> tuple[datetime.time, datetime.time]:
+    """Get the start and finish time of day declared by a calendar's working times.
+
+    An IfcWorkCalendar's IfcWorkTime may declare the actual hours worked in a
+    day using the RecurrencePattern's TimePeriods (see
+    IfcTimePeriod.StartTime / EndTime). This looks at all of a calendar's
+    WorkingTimes and returns the earliest declared start and latest declared
+    finish. If no calendar is given, or it declares no time periods, the
+    conventional 9am to 5pm working day is assumed.
+
+    :param calendar: The IfcWorkCalendar to check, if any.
+    :return: A tuple of (start_time, finish_time) as datetime.time objects.
+    """
+    default_start = datetime.time(9)
+    default_finish = datetime.time(17)
+    start_time = None
+    finish_time = None
+    for work_time in (calendar and calendar.WorkingTimes) or []:
+        recurrence = work_time.RecurrencePattern
+        if not recurrence or not recurrence.TimePeriods:
+            continue
+        for period in recurrence.TimePeriods:
+            if period.StartTime:
+                time = ifcopenshell.util.date.ifc2datetime(period.StartTime)
+                if start_time is None or time < start_time:
+                    start_time = time
+            if period.EndTime:
+                time = ifcopenshell.util.date.ifc2datetime(period.EndTime)
+                if finish_time is None or time > finish_time:
+                    finish_time = time
+    return start_time or default_start, finish_time or default_finish
+
+
 def get_start_or_finish_date(
     start,
     duration,
@@ -127,9 +162,10 @@ def get_start_or_finish_date(
     if date_type == "START":
         duration = -duration
     result = offset_date(start, duration, duration_type, calendar)
+    start_time, finish_time = get_calendar_work_hours(calendar)
     if date_type == "START":
-        return datetime.datetime.combine(result, datetime.time(9))
-    return datetime.datetime.combine(result, datetime.time(17))
+        return datetime.datetime.combine(result, start_time)
+    return datetime.datetime.combine(result, finish_time)
 
 
 def offset_date(start, duration, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance):
