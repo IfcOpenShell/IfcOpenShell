@@ -49,6 +49,7 @@
 
 #include "AxisIndicatorRenderer.h"
 #include "BufferPool.h"
+#include "GridHelperRenderer.h"
 #include "GpuBudget.h"
 #include "GpuMemory.h"
 #include "ModelLookup.h"
@@ -201,6 +202,13 @@ public:
     // VP into 2D pixels — the streaming loader's priority signal.
     void buildViewProj(Eigen::Matrix4f& view_out,
                        Eigen::Matrix4f& proj_out) const;
+    // Project a world-space point to CSS pixels of the canvas (y down).
+    // World (0,0,0) is where the false origin is drawn (the survey marker).
+    // The floor axes cross at world 0,0,0, which is elsewhere once a false
+    // origin is set. Returns false
+    // when the point is behind the camera or the surface has not been sized.
+    bool projectWorldToCss(float x, float y, float z,
+                           float& css_x, float& css_y) const;
     bool computeSceneAabb(float mn[3], float mx[3]) const;
     // The same union restricted to `session_model_ids`. Unknown ids contribute
     // nothing; false means none of them resolved to any geometry. Unlike
@@ -321,6 +329,31 @@ public:
     // keeps requesting frames until an armed afterglow expires.
     void setPivotIndicatorVisible(bool visible, int hide_after_ms = 0);
     bool pivotIndicatorVisible() const;
+
+    // Blender floor axes through world 0,0,0 along world X and Y, i.e.
+    // before the false-origin shift. X and Y only, `size` metres either
+    // side. They share the grid's distance fade. The survey point is a
+    // separate amber survey marker at viewer (0,0,0), where the false origin
+    // is drawn, and is shown with these axes. Default size 1000. Off until a
+    // host turns it on.
+    void setOriginAxesVisible(bool visible);
+    bool originAxesVisible() const { return origin_axes_visible_; }
+    void toggleOriginAxes();
+    void setOriginAxesSize(float size_metres);
+    float originAxesSize() const { return origin_axes_size_; }
+
+    // Floor fade for the grid and the X/Y axes. `near_factor` and `far_factor`
+    // are multiples of the camera distance (0.35 starts the fade at 35% of
+    // the view distance). Colour is the background, so the floor dissolves
+    // into it. `mode` is 1 linear or 2 exp2; `enabled` false turns the fade off.
+    void setFog(bool enabled, int mode, float near_factor, float far_factor, float density);
+    void setFogEnabled(bool enabled);
+    bool fogEnabled() const { return fog_enabled_; }
+    void toggleFog();
+    int fogMode() const { return fog_mode_; }
+    float fogNearFactor() const { return fog_near_factor_; }
+    float fogFarFactor() const { return fog_far_factor_; }
+    float fogDensity() const { return fog_density_; }
 
     // ---- First-person / fly navigation --------------------------------------
     //
@@ -957,6 +990,17 @@ public:
     void toggleXray();
     bool xrayActive() const { return xray_alpha_cap_ < 1.0f; }
 
+    // Sparse RGB axis-aligned line grids (XY / XZ / YZ). A default "base" grid
+    // is created at init. setGridVisible is the master switch; upsert replaces
+    // a grid with the same id or adds a new one.
+    void setGridVisible(bool visible);
+    bool gridVisible() const;
+    void toggleGrid();
+    void upsertViewportGrid(const ViewportGridSpec& spec);
+    bool removeViewportGrid(const std::string& id);
+    void clearViewportGrids();
+    const std::vector<ViewportGridSpec>& viewportGrids() const;
+
 #if defined(__EMSCRIPTEN__)
     // Async object pick for the web build: encodes the same pick pass as
     // pickObjectAt but reads the staging buffer back via a spontaneous map
@@ -1231,7 +1275,16 @@ private:
     // Corner axis gizmo + orbit pivot indicator, likewise shared by desktop +
     // web. Same lift out of the Qt-coupled OverlayRenderer.
     AxisIndicatorRenderer axis_indicator_;
+    GridHelperRenderer    grid_helper_;
+    ViewportFog           fog_;
+    bool                  fog_enabled_      = true;
+    int                   fog_mode_         = 1;      // 1 linear, 2 exp2
+    float                 fog_near_factor_  = 0.35f;  // × camera distance
+    float                 fog_far_factor_   = 2.2f;
+    float                 fog_density_      = 0.002f;
     bool                  pivot_indicator_visible_ = false;
+    bool                  origin_axes_visible_     = false;
+    float                 origin_axes_size_        = 1000.0f;
     // Only running while an afterglow is armed; a drag-held indicator leaves it
     // invalid so the triad stays up until the host clears it.
     Stopwatch             pivot_indicator_timer_;

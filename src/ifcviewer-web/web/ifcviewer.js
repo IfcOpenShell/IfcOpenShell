@@ -6,6 +6,7 @@
 //   <script src="ifcviewer.js"></script>
 //   <script>
 //     const viewer = await IfcViewer.create({ canvas: myCanvas,
+//                                             sidecarFormatVersion: 19,
 //                                             navPreset: 'blender' });
 //     await viewer.ready;                       // GPU app is live
 //     await viewer.addFile(file, { replace: true });
@@ -16,6 +17,8 @@
 //     viewer.setColor(objects.filter(o => o.type === 'IfcWall'), '#ff8800');
 //     viewer.setCamera({ yaw: 45, pitch: 30 });
 //     viewer.setNavPreset('rhino');             // or switch schemes later
+//     viewer.upsertGrid({ id: 'base', plane: 'xy', spacing: 1, divisions: 50 });
+//     viewer.setOriginAxes(1000);               // metres either side of the origin
 //   </script>
 //
 // The canvas element MUST have id="viewer-canvas" — the wasm side hard-codes
@@ -39,6 +42,171 @@
 // selecting nothing.
 (function (global) {
   'use strict';
+
+  // .ifcview head: magic, format version, endian. Native-endian; the web
+  // build and the baker are both little-endian. Must match IfcViewFormat.h.
+  const IFCVIEW_MAGIC  = 0x49465657;  // "IFVW"
+  const IFCVIEW_ENDIAN = 0x01020304;
+
+  // Metres per federation unit. Matches the units the scripting page offers.
+  // Anything else is treated as metres; the composed matrix on the wasm side
+  // is what the survey marker actually uses.
+  function federationUnitToMeters(u) {
+    const name = ((u && u.name) || 'METRE').toUpperCase();
+    const prefix = ((u && u.prefix) || '').toUpperCase();
+    if (name === 'FOOT' || name === 'FEET') return 0.3048;
+    if (name === 'INCH' || name === 'INCHES') return 0.0254;
+    if (name === 'METRE' || name === 'METER') {
+      if (prefix === 'MILLI') return 0.001;
+      if (prefix === 'CENTI') return 0.01;
+      if (prefix === 'DECI') return 0.1;
+      if (prefix === 'KILO') return 1000;
+      return 1;
+    }
+    return 1;
+  }
+
+  // Where world 0, 0, 0 is drawn, in viewer metres: Rz · (0 − xyz), the same
+  // matrix composeFederatedFalseOrigin builds. The false origin itself is
+  // drawn at viewer 0, 0, 0.
+  function worldOriginInViewer(origin, unit) {
+    const s = federationUnitToMeters(unit);
+    const xyz = (origin && origin.xyz) || [0, 0, 0];
+    const a = ((origin && origin.rzDeg) || 0) * Math.PI / 180;
+    const c = Math.cos(a), n = Math.sin(a);
+    const x = -xyz[0] * s, y = -xyz[1] * s;
+    return [c * x - n * y, n * x + c * y, -xyz[2] * s];
+  }
+
+  function federationUnitLabel(u) {
+    const name = (u && u.name) || 'METRE';
+    const prefix = (u && u.prefix) || '';
+    if (name === 'METRE' && prefix === '') return 'm';
+    if (name === 'METRE' && prefix === 'MILLI') return 'mm';
+    if (name === 'METRE' && prefix === 'CENTI') return 'cm';
+    if (name === 'METRE' && prefix === 'KILO') return 'km';
+    if (name === 'foot' || name === 'FEET') return 'ft';
+    if (name === 'inch') return 'in';
+    return (prefix ? prefix + ' ' : '') + name;
+  }
+
+  function fmtCoord(v) {
+    if (!isFinite(v)) return '—';
+    const abs = Math.abs(v);
+    const digits = abs >= 1000 ? 2 : abs >= 1 ? 3 : 4;
+    const negative = v < 0;
+    const parts = Math.abs(v).toFixed(digits).split('.');
+    const grouped = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return (negative ? '−' : '') + grouped + (parts[1] ? '.' + parts[1] : '');
+  }
+
+  function originShifted(xyz) {
+    return Math.hypot(xyz[0], xyz[1], xyz[2]) > 1e-3;
+  }
+
+  function originMoved(a, b) {
+    return Math.hypot(b.xyz[0] - a.xyz[0], b.xyz[1] - a.xyz[1], b.xyz[2] - a.xyz[2]) > 1e-3
+      || Math.abs(b.rzDeg - a.rzDeg) > 1e-3
+      || b.explicit !== a.explicit;
+  }
+
+  // Same orbit projection as ViewportCore::buildViewProj, for builds that
+  // do not yet export ifcv_project_world_c. FOV / clip planes match the
+  // core defaults (45°, 0.1…10000).
+  function projectWorldFromCamera(cam, canvas, xyz) {
+    if (!cam || !canvas) return null;
+    const eye = cam.eye, target = cam.target;
+    let fx = target[0] - eye[0], fy = target[1] - eye[1], fz = target[2] - eye[2];
+    const fl = Math.hypot(fx, fy, fz) || 1;
+    fx /= fl; fy /= fl; fz /= fl;
+    const up = Math.abs(cam.pitch) >= 89 ? [0, 1, 0] : [0, 0, 1];
+    let sx = fy * up[2] - fz * up[1];
+    let sy = fz * up[0] - fx * up[2];
+    let sz = fx * up[1] - fy * up[0];
+    const sl = Math.hypot(sx, sy, sz) || 1;
+    sx /= sl; sy /= sl; sz /= sl;
+    const ux = sy * fz - sz * fy;
+    const uy = sz * fx - sx * fz;
+    const uz = sx * fy - sy * fx;
+    const vx = sx * xyz[0] + sy * xyz[1] + sz * xyz[2] - (sx * eye[0] + sy * eye[1] + sz * eye[2]);
+    const vy = ux * xyz[0] + uy * xyz[1] + uz * xyz[2] - (ux * eye[0] + uy * eye[1] + uz * eye[2]);
+    const vz = -fx * xyz[0] - fy * xyz[1] - fz * xyz[2] + (fx * eye[0] + fy * eye[1] + fz * eye[2]);
+    const rect = canvas.getBoundingClientRect();
+    const cssW = rect.width || canvas.clientWidth || 1;
+    const cssH = rect.height || canvas.clientHeight || 1;
+    const aspect = cssW / cssH;
+    const t = Math.tan(45 * Math.PI / 360);
+    let cx, cy, cw;
+    if (cam.ortho) {
+      const halfH = cam.distance * t;
+      const halfW = halfH * aspect;
+      cx = vx / halfW;
+      cy = vy / halfH;
+      cw = 1;
+    } else {
+      cx = vx / (aspect * t);
+      cy = vy / t;
+      cw = -vz;
+    }
+    if (cw <= 1e-4) return null;
+    const ndcX = cx / cw;
+    const ndcY = cy / cw;
+    return {
+      x: (ndcX * 0.5 + 0.5) * cssW,
+      y: (1 - (ndcY * 0.5 + 0.5)) * cssH,
+    };
+  }
+
+  // First 12 bytes of a File/Blob or a URL (ranged). Network failure throws
+  // a plain Error; a header that is present but not the expected sidecar
+  // format throws with .sidecarFormat set so the caller can tell the two apart.
+  async function readSidecarHead(source) {
+    let buf;
+    if (typeof source === 'string') {
+      let res;
+      try {
+        res = await fetch(source, { headers: { Range: 'bytes=0-11' } });
+      } catch (err) {
+        throw new Error('could not read .ifcview header: ' + (err && err.message || err));
+      }
+      if (res.status !== 206 && res.status !== 200) {
+        throw new Error('could not read .ifcview header (' + res.status + ')');
+      }
+      buf = await res.arrayBuffer();
+    } else if (source && typeof source.slice === 'function') {
+      buf = await source.slice(0, 12).arrayBuffer();
+    } else {
+      const err = new Error('not an .ifcview file');
+      err.sidecarFormat = true;
+      throw err;
+    }
+    if (buf.byteLength < 12) {
+      const err = new Error('not an .ifcview file');
+      err.sidecarFormat = true;
+      throw err;
+    }
+    const view = new DataView(buf);
+    return {
+      magic:   view.getUint32(0, true),
+      version: view.getUint32(4, true),
+      endian:  view.getUint32(8, true),
+    };
+  }
+
+  function assertSidecarHead(head, expected) {
+    const reject = (message) => {
+      const err = new Error(message);
+      err.sidecarFormat = true;
+      throw err;
+    };
+    if (head.magic !== IFCVIEW_MAGIC || head.endian !== IFCVIEW_ENDIAN) {
+      reject('not an .ifcview file');
+    }
+    if (head.version !== expected) {
+      reject('.ifcview sidecar format is v' + head.version +
+             '; this page loads v' + expected);
+    }
+  }
 
   // Resolve a remote .ifcview's total size so the loader can bound its ranged
   // reads: HEAD Content-Length, falling back to a 0-0 Range's Content-Range.
@@ -158,8 +326,8 @@
     }
   }
 
-  async function cacheEntryName(url) {
-    const bytes = new TextEncoder().encode(url);
+  async function cacheEntryName(url, formatVersion) {
+    const bytes = new TextEncoder().encode(String(formatVersion) + '\0' + url);
     const digest = await crypto.subtle.digest('SHA-256', bytes);
     return Array.from(new Uint8Array(digest).slice(0, 16))
       .map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -345,20 +513,34 @@
   //   {source}  — a Blob-shaped self-filling source
   //   null      — cache unusable here (no OPFS / no validators / second tab):
   //               caller falls back to the plain URL path.
-  async function cachedUrlSource(url) {
+  async function cachedUrlSource(url, formatVersion) {
     if (!(crypto && crypto.subtle) || !(navigator.storage && navigator.storage.getDirectory)) {
       return null;
     }
     const head = await headValidators(url);
     const dir = await openCacheDir();
     if (!dir) return null;
-    const name = await cacheEntryName(url);
-    const meta = await readCacheMeta(dir, name);
+    const name = await cacheEntryName(url, formatVersion);
+    let meta = await readCacheMeta(dir, name);
+    if (meta && meta.formatVersion !== formatVersion) {
+      await removeCacheEntry(dir, name);
+      meta = null;
+    }
 
     const completeLocal = async (m) => {
+      if (m.formatVersion !== formatVersion) return null;
       const fh = await dir.getFileHandle(name);
       const file = await fh.getFile();
-      return file.size === m.size ? { file: file } : null;
+      if (file.size !== m.size) return null;
+      // A copy baked for another sidecar format must not be served, even
+      // offline: the bytes are the wrong cache format for this page.
+      try {
+        assertSidecarHead(await readSidecarHead(file), formatVersion);
+      } catch (err) {
+        await removeCacheEntry(dir, name);
+        return null;
+      }
+      return { file: file };
     };
 
     if (!head) {
@@ -375,15 +557,18 @@
       if (spansCover(meta.spans, 0, meta.size)) {
         const local = await completeLocal(meta);
         if (local) return local;
+        // completeLocal drops an entry whose header is the wrong format.
+        meta = await readCacheMeta(dir, name);
       }
       // Partial copy of the still-current file: resume filling it.
     } else if (meta) {
       await removeCacheEntry(dir, name);      // server has a different file now
+      meta = null;
     }
 
     const fresh = (!meta || !validatorsMatch(meta, head))
       ? { url: url, etag: head.etag, lastModified: head.lastModified,
-          size: head.size, spans: [] }
+          size: head.size, spans: [], formatVersion: formatVersion }
       : meta;
     try {
       await cacheCall('open', name);          // exclusive: a second tab lands in catch
@@ -422,18 +607,97 @@
     return ((clamp(a) << 24) | (clamp(b) << 16) | (clamp(g) << 8) | clamp(r)) >>> 0;
   }
 
+  // Line grids. plane: 'xy' | 'xz' | 'yz'. Colors are sRGB [0..1].
+  // Both directions default to the same light grey. The renderer draws every
+  // 10th line at this colour and the lines between them lighter.
+  var GRID_PLANE_IDS = { xy: 0, xz: 1, yz: 2 };
+  var GRID_COLOR = [0.42, 0.42, 0.42];
+  var GRID_PLANE_AXIS_COLORS = {
+    xy: { u: GRID_COLOR, v: GRID_COLOR },
+    xz: { u: GRID_COLOR, v: GRID_COLOR },
+    yz: { u: GRID_COLOR, v: GRID_COLOR },
+  };
+  var GRID_DEFAULT_COLOR = -1;
+  var GRID_MAJOR_OPACITY = 0.55;
+  var GRID_UPSERT_ARG_TYPES = [
+    'string', 'number', 'number', 'number', 'number', 'number', 'number',
+    'number', 'number', 'number', 'number', 'number', 'number', 'number', 'number',
+  ];
+
+  function normalizeGridDefinition(definition) {
+    var plane = definition.plane || 'xy';
+    var defaults = GRID_PLANE_AXIS_COLORS[plane] || GRID_PLANE_AXIS_COLORS.xy;
+    var origin = definition.origin || [0, 0, 0];
+    return {
+      id: definition.id,
+      plane: plane,
+      origin: [origin[0] || 0, origin[1] || 0, origin[2] || 0],
+      spacing: Math.max(0.001, definition.spacing || 1),
+      divisions: Math.max(1, definition.divisions | 0 || 50),
+      colorU: definition.colorU || defaults.u,
+      colorV: definition.colorV || defaults.v,
+      opacity: definition.opacity != null ? definition.opacity : GRID_MAJOR_OPACITY,
+      visible: definition.visible !== false,
+    };
+  }
+
+  function upsertGridWasm(Module, grid) {
+    if (!Module._grid_upsert_c && typeof Module.ccall !== 'function') return;
+    var u = grid.colorU || [GRID_DEFAULT_COLOR, GRID_DEFAULT_COLOR, GRID_DEFAULT_COLOR];
+    var v = grid.colorV || [GRID_DEFAULT_COLOR, GRID_DEFAULT_COLOR, GRID_DEFAULT_COLOR];
+    var args = [
+      grid.id,
+      grid.origin[0], grid.origin[1], grid.origin[2],
+      GRID_PLANE_IDS[grid.plane] || 0,
+      grid.spacing,
+      grid.divisions,
+      u[0], u[1], u[2],
+      v[0], v[1], v[2],
+      grid.opacity != null ? grid.opacity : GRID_MAJOR_OPACITY,
+      grid.visible ? 1 : 0,
+    ];
+    // Direct wasm exports do not UTF-8 marshal JS strings — ccall is required for ids.
+    if (typeof Module.ccall === 'function') {
+      Module.ccall('grid_upsert_c', null, GRID_UPSERT_ARG_TYPES, args);
+    } else {
+      Module._grid_upsert_c.apply(Module, args);
+    }
+    if (Module._viewer_request_frame) Module._viewer_request_frame();
+  }
+
+  function removeGridWasm(Module, id) {
+    if (typeof Module.ccall === 'function') {
+      return Module.ccall('grid_remove_c', 'number', ['string'], [id]) !== 0;
+    }
+    if (!Module._grid_remove_c) return false;
+    return Module._grid_remove_c(id) !== 0;
+  }
+
   // Boot a viewer bound to `opts.canvas`. Resolves to the API object once the
   // wasm runtime is initialised; `api.ready` resolves once the GPU app is live.
   async function create(opts) {
     opts = opts || {};
+    const sidecarFormatVersion = opts.sidecarFormatVersion;
+    if (!Number.isInteger(sidecarFormatVersion) || sidecarFormatVersion < 1) {
+      throw new Error('IfcViewer.create requires sidecarFormatVersion: the .ifcview ' +
+        'sidecar format this page loads (IFCVIEW_VERSION in IfcViewFormat.h)');
+    }
     const factory = opts.moduleFactory || global.createIfcViewer;
     if (typeof factory !== 'function') {
       throw new Error('createIfcViewer not found — load IfcViewerWeb.js first');
     }
+    var gridRegistry = Object.create(null);
 
     const selectListeners = [];
     const selectionListeners = [];
     const modelLoadedListeners = [];
+    const frameListeners = [];
+    // Value space for the false origin and for a transform's b/pivot. The
+    // wasm default is metres; setFederationUnit is the only writer.
+    let federationUnit = { name: 'METRE', prefix: '' };
+    // null until the first projectWorld: true once ifcv_project_world_c
+    // answers, false when this wasm build does not export it.
+    let projectWorldNative = null;
     let api = null;   // built below; the RAF loop only reads it after that
     let live = false;
     let resolveReady;
@@ -461,6 +725,9 @@
             if (opts.onReady) opts.onReady(api);
           }
           Module._raf_tick_c(Module._app_ptr);
+          for (let i = 0; i < frameListeners.length; i++) {
+            try { frameListeners[i](api); } catch (e) { console.error(e); }
+          }
           if (opts.onFrame) opts.onFrame(api);
         }
         requestAnimationFrame(tick);
@@ -468,13 +735,22 @@
       requestAnimationFrame(tick);
     }
 
+    // Per-frame '[info] [frame] … fps …' heartbeat lines come from
+    // ViewportCore.cpp (Log::info()) and fire every render tick. Silence
+    // them by default; opt back in with { verboseFrames: true }.
+    const verboseFrames = opts.verboseFrames === true;
+    const defaultPrintErr = function (t) {
+      if (!verboseFrames && typeof t === 'string' && t.startsWith('[info] [frame]')) return;
+      console.warn(t);
+    };
+
     const Module = await factory({
       canvas: opts.canvas,
       // Keep the runtime alive after main() returns so Dawn-web's async
       // adapter/device callbacks land (they set Module._app_ptr).
       noExitRuntime: true,
       print:    opts.print    || function (t) { console.log(t); },
-      printErr: opts.printErr || function (t) { console.warn(t); },
+      printErr: opts.printErr || defaultPrintErr,
       onRuntimeInitialized: function () { startLoop(this); },
     });
 
@@ -637,6 +913,7 @@
     api = {
       module: Module,
       ready: ready,
+      sidecarFormatVersion: sidecarFormatVersion,
       isLive: function () { return live; },
 
       // ---- Events ----------------------------------------------------------
@@ -866,6 +1143,255 @@
       toggleXray:   function () { Module._toggle_xray_c(); },
       xrayActive:   function () { return Module._xray_is_active_c() !== 0; },
 
+      // Sparse RGB line grids. A default "base" grid is created with the GPU
+      // app. upsertGrid replaces a grid with the same id.
+      //   viewer.upsertGrid({ id: 'floor', plane: 'xy', origin: [0, 0, 0],
+      //                       spacing: 5, divisions: 20, opacity: 0.55 });
+      setGridVisible: function (visible) {
+        if (Module._set_grid_visible_c) Module._set_grid_visible_c(visible ? 1 : 0);
+      },
+      gridVisible: function () {
+        return Module._grid_is_visible_c ? Module._grid_is_visible_c() !== 0 : true;
+      },
+      toggleGrid: function () {
+        if (Module._toggle_grid_c) Module._toggle_grid_c();
+      },
+
+      // Blender floor axes through the scene origin. `size` is metres either
+      // side along X (red) and Y (green). There is no Z line. They fade into
+      // the background with the grid. A number is that size; an object may
+      // also set `visible`. Default size is 1000.
+      //   viewer.setOriginAxes(1000);
+      //   viewer.setOriginAxes({ size: 2500, visible: true });
+      setOriginAxes: function (opts) {
+        if (typeof opts === 'number') opts = { size: opts };
+        opts = opts || {};
+        if (opts.size != null && Module._set_origin_axes_size_c) {
+          Module._set_origin_axes_size_c(Number(opts.size));
+        }
+        if (opts.visible != null) this.setOriginAxesVisible(!!opts.visible);
+        return { size: this.originAxesSize(), visible: this.originAxesVisible() };
+      },
+      originAxesSize: function () {
+        return Module._origin_axes_size_c ? Module._origin_axes_size_c() : 1000;
+      },
+      setOriginAxesVisible: function (visible) {
+        if (Module._set_origin_axes_visible_c) Module._set_origin_axes_visible_c(visible ? 1 : 0);
+      },
+      originAxesVisible: function () {
+        return Module._origin_axes_visible_c ? Module._origin_axes_visible_c() !== 0 : false;
+      },
+      toggleOriginAxes: function () {
+        if (Module._toggle_origin_axes_c) Module._toggle_origin_axes_c();
+      },
+
+      // Floor fade for the grid and the X/Y axes. `near` and `far` are
+      // multiples of the camera distance: 0.35 starts the fade at 35% of
+      // the view distance, 2.2 finishes it at 2.2× that distance. `mode` is
+      // 'linear' or 'exp2'. The colour is the background. Off leaves the
+      // floor at full strength out to the grid edge.
+      //   viewer.setFog({ near: 0.35, far: 2.2 });
+      //   viewer.setFog(false);
+      setFog: function (opts) {
+        if (typeof opts === 'boolean') opts = { enabled: opts };
+        opts = opts || {};
+        const cur = this.fog();
+        const enabled = opts.enabled != null ? !!opts.enabled : cur.enabled;
+        let mode = cur.mode;
+        if (opts.mode === 'exp2' || opts.mode === 2) mode = 2;
+        else if (opts.mode === 'linear' || opts.mode === 1) mode = 1;
+        const near = opts.near != null ? Number(opts.near) : cur.near;
+        const far = opts.far != null ? Number(opts.far) : cur.far;
+        const density = opts.density != null ? Number(opts.density) : cur.density;
+        if (Module._set_fog_c) Module._set_fog_c(enabled ? 1 : 0, mode, near, far, density);
+        return this.fog();
+      },
+      fog: function () {
+        const fallback = { enabled: true, mode: 1, near: 0.35, far: 2.2, density: 0.002 };
+        if (!Module._get_fog_c) return fallback;
+        const ptr = Module._malloc(5 * 4);
+        try {
+          Module._get_fog_c(ptr);
+          const d = Module.HEAPF32.subarray(ptr >>> 2, (ptr >>> 2) + 5);
+          return {
+            enabled: d[0] !== 0,
+            mode: d[1] >= 1.5 ? 2 : 1,
+            near: d[2],
+            far: d[3],
+            density: d[4],
+          };
+        } finally {
+          Module._free(ptr);
+        }
+      },
+      setFogVisible: function (visible) {
+        if (Module._set_fog_enabled_c) Module._set_fog_enabled_c(visible ? 1 : 0);
+      },
+      fogVisible: function () {
+        return Module._fog_is_enabled_c ? Module._fog_is_enabled_c() !== 0 : true;
+      },
+      toggleFog: function () {
+        if (Module._toggle_fog_c) Module._toggle_fog_c();
+      },
+
+      // CSS pixels of a world point on the canvas, y down from the canvas
+      // top-left. Null when the point is behind the camera. World (0,0,0) is
+      // where the false origin (the survey marker) is drawn. The axes cross
+      // at worldOrigin(). Uses the renderer's
+      // own projection when this build exports it, and the same orbit math
+      // otherwise.
+      projectWorld: function (xyz) {
+        xyz = xyz || [0, 0, 0];
+        if (projectWorldNative !== false && typeof Module._ifcv_project_world_c === 'function') {
+          const ptr = Module._malloc(2 * 4);
+          try {
+            const ok = Module._ifcv_project_world_c(xyz[0], xyz[1], xyz[2], ptr);
+            projectWorldNative = true;
+            if (!ok) return null;
+            const f = Module.HEAPF32.subarray(ptr >>> 2, (ptr >>> 2) + 2);
+            return { x: f[0], y: f[1] };
+          } catch (err) {
+            projectWorldNative = false;
+          } finally {
+            Module._free(ptr);
+          }
+        }
+        return projectWorldFromCamera(this.getCamera(), opts.canvas, xyz);
+      },
+
+      // Pin `el` on the survey marker (the false origin, viewer 0, 0, 0). It
+      // stays hidden until the marker is clicked; another click on it, or a
+      // click anywhere else on the canvas, hides it again. The text is the
+      // false origin in the federation unit, grid north, and whether it was
+      // guessed or set. When the point moves, the line leads with how far.
+      // Hidden while the axes themselves are hidden. Returns an unbind fn.
+      bindOriginReadout: function (el) {
+        if (!el) return function () {};
+        const viewerApi = this;
+        const canvas = opts.canvas;
+        const HIT_PX = 18;
+        const CLICK_SLOP_PX = 4;
+        let open = false;
+        let down = null;
+        let prev = null;
+        let movedUntil = 0;
+        let movedNote = '';
+        const onDown = function (ev) {
+          down = ev.button === 0 ? { x: ev.clientX, y: ev.clientY } : null;
+        };
+        const onUp = function (ev) {
+          if (!down || ev.button !== 0) return;
+          const dragged = Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > CLICK_SLOP_PX;
+          down = null;
+          if (dragged || !viewerApi.originAxesVisible()) return;
+          const screen = viewerApi.projectWorld([0, 0, 0]);
+          const rect = canvas.getBoundingClientRect();
+          const hit = !!screen && Math.hypot(ev.clientX - rect.left - screen.x,
+                                             ev.clientY - rect.top - screen.y) <= HIT_PX;
+          open = hit ? !open : false;
+          if (!open) el.hidden = true;
+        };
+        canvas.addEventListener('pointerdown', onDown);
+        canvas.addEventListener('pointerup', onUp);
+        el.hidden = true;
+        const tickReadout = function (viewer) {
+          if (!viewer.originAxesVisible()) {
+            el.hidden = true;
+            return;
+          }
+          const origin = viewer.getFalseOrigin();
+          const unit = origin.unit || 'm';
+          const now = performance.now();
+          if (prev && originMoved(prev, origin)) {
+            const dx = origin.xyz[0] - prev.xyz[0];
+            const dy = origin.xyz[1] - prev.xyz[1];
+            const dz = origin.xyz[2] - prev.xyz[2];
+            movedNote = 'moved ' + fmtCoord(Math.hypot(dx, dy, dz)) + ' ' + unit;
+            movedUntil = now + 6000;
+          }
+          prev = { xyz: origin.xyz.slice(), rzDeg: origin.rzDeg, explicit: origin.explicit };
+          if (!open) {
+            el.hidden = true;
+            return;
+          }
+          const moving = now < movedUntil;
+          const xyz = fmtCoord(origin.xyz[0]) + ', ' +
+            fmtCoord(origin.xyz[1]) + ', ' +
+            fmtCoord(origin.xyz[2]) + ' ' + unit;
+          const how = origin.explicit ? 'set' :
+            (originShifted(origin.xyz) || Math.abs(origin.rzDeg) > 1e-3 ? 'guessed' : 'none yet');
+          const rect = canvas.getBoundingClientRect();
+          const screen = viewer.projectWorld([0, 0, 0]);
+          const onScreen = screen &&
+            screen.x >= 8 && screen.y >= 8 &&
+            screen.x <= rect.width - 8 && screen.y <= rect.height - 8;
+          el.textContent = 'false origin ' + xyz + '\n' +
+            'grid north ' + origin.rzDeg.toFixed(2) + '° · ' + how +
+            (moving ? ' · ' + movedNote : '') +
+            (onScreen ? '' : ' · off screen');
+          el.classList.toggle('moved', moving);
+          el.classList.toggle('docked', !onScreen);
+          el.hidden = false;
+          if (onScreen) {
+            const right = screen.x + 22 + el.offsetWidth <= rect.width;
+            el.style.left = (rect.left + (right ? screen.x + 12
+                                                : screen.x - 32 - el.offsetWidth)) + 'px';
+            el.style.top = (rect.top + screen.y) + 'px';
+          } else {
+            el.style.left = (rect.left + 12) + 'px';
+            el.style.top = (rect.top + 36) + 'px';
+          }
+        };
+        frameListeners.push(tickReadout);
+        return function () {
+          const i = frameListeners.indexOf(tickReadout);
+          if (i >= 0) frameListeners.splice(i, 1);
+          canvas.removeEventListener('pointerdown', onDown);
+          canvas.removeEventListener('pointerup', onUp);
+          el.hidden = true;
+        };
+      },
+      // `origin` is in world metres, like the floor axes and the models, so a
+      // grid stays put when the false origin changes.
+      upsertGrid: function (definition) {
+        var grid = normalizeGridDefinition(definition || {});
+        if (!grid.id) throw new Error('Grid definition requires an id.');
+        gridRegistry[grid.id] = grid;
+        upsertGridWasm(Module, grid);
+        return Object.assign({}, grid);
+      },
+      removeGrid: function (id) {
+        if (!id || !gridRegistry[id]) return false;
+        delete gridRegistry[id];
+        removeGridWasm(Module, id);
+        if (Module._viewer_request_frame) Module._viewer_request_frame();
+        return true;
+      },
+      clearGrids: function () {
+        gridRegistry = Object.create(null);
+        if (Module._grid_clear_c) Module._grid_clear_c();
+        if (Module._viewer_request_frame) Module._viewer_request_frame();
+      },
+      listGrids: function () {
+        return Object.keys(gridRegistry).map(function (id) {
+          return Object.assign({}, gridRegistry[id]);
+        });
+      },
+      applyGrids: function (definitions) {
+        gridRegistry = Object.create(null);
+        if (Module._grid_clear_c) Module._grid_clear_c();
+        var applied = [];
+        for (var i = 0; i < (definitions || []).length; i++) {
+          var grid = normalizeGridDefinition(definitions[i] || {});
+          if (!grid.id) continue;
+          gridRegistry[grid.id] = grid;
+          upsertGridWasm(Module, grid);
+          applied.push(Object.assign({}, grid));
+        }
+        if (Module._viewer_request_frame) Module._viewer_request_frame();
+        return applied;
+      },
+
       // Model bookkeeping (ordered by load). Progress is per-model chunk counts.
       modelCount: function () { return Module._ifcv_model_count_c ? Module._ifcv_model_count_c() : 0; },
       modelProgress: function (i) {
@@ -930,6 +1456,7 @@
       // valid immediately, before the model has streamed, so a transform or
       // name can be set against it right away — see setModelTransform.
       addFile: async function (file, o) {
+        assertSidecarHead(await readSidecarHead(file), sidecarFormatVersion);
         if (o && o.replace) this.clearScene();
         const sid = registerFile(file);
         if (o && o.name) this.setModelName(sid, o.name);
@@ -944,19 +1471,42 @@
       // server, another tab already filling this entry).
       addUrl: async function (url, o) {
         if (o && o.replace) this.clearScene();
+        // The header says which sidecar format the file actually is. A
+        // network failure is not a format error: with cache enabled, a
+        // complete local copy of this same format can still open offline.
+        let offline = null;
+        try {
+          assertSidecarHead(await readSidecarHead(url), sidecarFormatVersion);
+        } catch (err) {
+          if (err && err.sidecarFormat) throw err;
+          if (!(o && o.cache)) throw err;
+          offline = err;
+        }
         let sid = null;
         if (o && o.cache) {
-          const cached = await cachedUrlSource(url).catch(() => null);
+          const cached = await cachedUrlSource(url, sidecarFormatVersion).catch(() => null);
           if (cached) {
             const src = cached.file || cached.source;
             sid = Module.__ifcvSources.length;
             Module.__ifcvSources.push({ file: src, url: null, size: src.size });
           }
         }
-        if (sid === null) sid = await registerUrl(url);
+        if (sid === null) {
+          if (offline) throw offline;
+          sid = await registerUrl(url);
+        }
         if (o && o.name) this.setModelName(sid, o.name);
         Module._load_ifcview_from_source_c(sid);
         return sid;
+      },
+      // Append the small sample baked into the wasm (a slab, a wall and a
+      // beam). It is read from memory, not a source, so there is no source id
+      // to return. Returns false if this build has no sample to load.
+      loadSample: function () {
+        if (!Module._load_sample_c) return false;
+        objectIndex = null;
+        objectsById = null;
+        return Module._load_sample_c() !== 0;
       },
 
       // What the OPFS cache holds: [{url, size, cachedBytes, complete}] plus
@@ -971,8 +1521,10 @@
             try {
               const meta = JSON.parse(await (await
                 (await dir.getFileHandle(key)).getFile()).text());
+              if (meta.formatVersion !== sidecarFormatVersion) continue;
               out.entries.push({
                 url: meta.url,
+                formatVersion: meta.formatVersion,
                 size: meta.size,
                 cachedBytes: spansBytes(meta.spans),
                 complete: spansCover(meta.spans, 0, meta.size),
@@ -992,7 +1544,7 @@
       clearCache: async function (url) {
         try {
           const dir = await cacheDirHandle(false);
-          const only = url ? await cacheEntryName(url) : null;
+          const only = url ? await cacheEntryName(url, sidecarFormatVersion) : null;
           const names = [];
           for await (const key of dir.keys()) {
             const base = key.endsWith('.meta') ? key.slice(0, -5) : key;
@@ -1037,12 +1589,15 @@
       // a transform's b/pivot.
       setFederationUnit: function (u) {
         u = u || {};
+        federationUnit = { name: u.name || 'METRE', prefix: u.prefix || '' };
         Module.ccall('ifcv_set_federation_unit_c', null, ['string', 'string'],
-                     [u.name || 'METRE', u.prefix || '']);
+                     [federationUnit.name, federationUnit.prefix]);
       },
 
-      // Nominate a point as the scene origin, with an optional grid-north
-      // heading in degrees. Setting this turns off the automatic guess.
+      // Nominate the survey point, with an optional grid-north heading in
+      // degrees, in world coordinates. The models, grids and axes stay where
+      // they are; the survey marker moves to this point. Setting this turns
+      // off the automatic guess.
       setFalseOrigin: function (o) {
         o = o || {};
         const xyz = o.xyz || [0, 0, 0];
@@ -1056,10 +1611,28 @@
         try {
           Module._ifcv_get_false_origin_c(ptr);
           const d = Module.HEAPF64.subarray(ptr >>> 3, (ptr >>> 3) + 5);
-          return { xyz: [d[0], d[1], d[2]], rzDeg: d[3], explicit: d[4] !== 0 };
+          return {
+            xyz: [d[0], d[1], d[2]],
+            rzDeg: d[3],
+            explicit: d[4] !== 0,
+            unit: federationUnitLabel(federationUnit),
+          };
         } finally {
           Module._free(ptr);
         }
+      },
+
+      // Survey point in viewer metres: where the survey marker is drawn.
+      // Always (0, 0, 0); the false origin is what the scene is drawn
+      // around.
+      surveyPoint: function () {
+        return [0, 0, 0];
+      },
+
+      // World 0, 0, 0 in viewer metres: where the red and green axes cross.
+      // The same point as surveyPoint() until a false origin is set.
+      worldOrigin: function () {
+        return worldOriginInViewer(this.getFalseOrigin(), federationUnit);
       },
 
       // Place a model: rotate it about `pivot`, then translate so that point

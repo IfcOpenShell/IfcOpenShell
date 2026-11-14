@@ -195,8 +195,12 @@
   var canvas = document.getElementById('viewer-canvas');
   canvas.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
 
+  // Sidecar format this page will load. Must match IFCVIEW_VERSION.
+  var SIDECAR_FORMAT_VERSION = 19;
+
   IfcViewer.create({
     canvas: canvas,
+    sidecarFormatVersion: SIDECAR_FORMAT_VERSION,
     // Per-frame: refresh each model's streaming progress in the list.
     onFrame: function (viewer) {
       // Start empty: drop the wasm's embedded sample cube (kept for the
@@ -237,7 +241,8 @@
     }
 
     viewer.ready.then(function () {
-      hintEl.textContent = 'Ready — add a .ifcview model.';
+      viewer.setOriginAxesVisible(true);
+      hintEl.textContent = 'Ready — add a .ifcview (sidecar format v' + SIDECAR_FORMAT_VERSION + ').';
       [browseBtn, clearBtn, urlInput, urlBtn].forEach(function (el) { el.disabled = false; });
     });
 
@@ -245,7 +250,11 @@
     fileInput.addEventListener('change', function (ev) {
       if (ev.target.files.length) userAddedAny = true;
       Array.prototype.forEach.call(ev.target.files, function (file) {
-        viewer.addFile(file).then(function (sid) { addModelEntry(file.name, sid); });
+        viewer.addFile(file).then(function (sid) {
+          addModelEntry(file.name, sid);
+        }).catch(function (e) {
+          hintEl.textContent = file.name + ': ' + e.message;
+        });
       });
       fileInput.value = '';
     });
