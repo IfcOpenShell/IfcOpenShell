@@ -360,6 +360,10 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                         return False
                     return True
 
+                is_unresolved_collection_instance = (
+                    obj.data is None and obj.type == "EMPTY" and obj.instance_type == "COLLECTION"
+                )
+
                 element = core.assign_class(
                     tool.Ifc,
                     tool.Collector,
@@ -376,6 +380,12 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Geometry.reload_representation(obj)
                 elif obj.data is not None:
                     new_obj = tool.Geometry.recreate_object_with_data(obj, None)
+                elif is_unresolved_collection_instance:
+                    self.report(
+                        {"WARNING"},
+                        f"Object '{obj.name}' is a collection instance with no mesh data, so no representation was created. "
+                        "Use Object > Apply > Make Instances Real and assign the class again.",
+                    )
 
             if is_structural:
                 tool.Structural.assign_to_current_structural_analysis_model(element)
