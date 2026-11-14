@@ -2325,9 +2325,9 @@ class Geometry(bonsai.core.tool.Geometry):
                     profile.ProfileName = None
                     item.SweptArea = profile
             else:
-                if profile_name is None:
-                    ifcopenshell.api.profile.remove_profile(ifc_file, profile)
                 item.SweptArea = ifc_file.by_id(int(item_profile))
+                if profile_name is None and not ifc_file.get_inverse(profile):
+                    ifcopenshell.api.profile.remove_profile(ifc_file, profile)
 
     @classmethod
     def import_item(cls, obj: bpy.types.Object) -> None:
