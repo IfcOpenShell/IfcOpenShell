@@ -68,11 +68,19 @@ class CsvAttribute(PropertyGroup):
         formatting: str
 
 
+class CsvTemplateFile(PropertyGroup):
+    name: StringProperty(name="Template File", description="Filepath of a saved CSV settings template")
+
+    if TYPE_CHECKING:
+        name: str
+
+
 class CsvProperties(PropertyGroup):
     csv_ifc_file: StringProperty(default="", name="IFC File")
     ifc_selector: StringProperty(default="", name="IFC Selector")
     filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
     csv_attributes: CollectionProperty(name="CSV Attributes", type=CsvAttribute)
+    stacked_templates: CollectionProperty(name="Stacked Templates", type=CsvTemplateFile)
     should_generate_svg: BoolProperty(default=False, name="Generate SVG")
     should_preserve_existing: BoolProperty(default=False, name="Preserve Existing")
     include_global_id: BoolProperty(default=True, name="Include GlobalId")
@@ -118,6 +126,7 @@ class CsvProperties(PropertyGroup):
         ifc_selector: str
         filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
         csv_attributes: bpy.types.bpy_prop_collection_idprop[CsvAttribute]
+        stacked_templates: bpy.types.bpy_prop_collection_idprop[CsvTemplateFile]
         should_generate_svg: bool
         should_preserve_existing: bool
         include_global_id: bool
