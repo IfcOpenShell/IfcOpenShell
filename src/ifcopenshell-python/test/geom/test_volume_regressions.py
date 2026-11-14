@@ -136,3 +136,54 @@ def test_create_shape_prefers_body_over_axis_9771(axis_first):
     column.Representation = model.createIfcProductDefinitionShape(Representations=representations)
     shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), column)
     assert len(shape.geometry.verts) // 3 == 8
+
+
+def test_swept_disk_arc_next_to_corner_1001():
+    # https://github.com/IfcOpenShell/IfcOpenShell/issues/1001
+    # Test file 1001 in miniature: a straight leg, a tangent 90 degree arc, then a bar
+    # leaving the arc 9 degrees off tangent. The corner next to the arc made the
+    # OpenCASCADE right-corner sweep leave an open shell with a non-manifold edge.
+    arc_radius, bar_radius, leg, tail, kink = 0.014, 0.004, 0.08, 0.038, math.radians(9.0)
+    model = ifcopenshell.file(schema="IFC4")
+
+    def point(x, y):
+        return model.createIfcCartesianPoint((x, y, 0.0))
+
+    centre = model.createIfcAxis2Placement3D(
+        point(0.0, arc_radius), model.createIfcDirection((0.0, 0.0, 1.0)), model.createIfcDirection((1.0, 0.0, 0.0))
+    )
+    segments = [
+        model.createIfcPolyline([point(-leg, 0.0), point(0.0, 0.0)]),
+        model.createIfcTrimmedCurve(
+            model.createIfcCircle(centre, arc_radius),
+            [point(0.0, 0.0)],
+            [point(arc_radius, arc_radius)],
+            True,
+            "CARTESIAN",
+        ),
+        model.createIfcPolyline(
+            [
+                point(arc_radius, arc_radius),
+                point(arc_radius + tail * math.sin(kink), arc_radius + tail * math.cos(kink)),
+            ]
+        ),
+    ]
+    directrix = model.createIfcCompositeCurve(
+        [model.createIfcCompositeCurveSegment("CONTINUOUS", True, segment) for segment in segments], False
+    )
+    solid = model.createIfcSweptDiskSolid(directrix, bar_radius, None, None, None)
+    settings = ifcopenshell.geom.settings()
+    settings.set("mesher-linear-deflection", 0.001)
+    settings.set("mesher-angular-deflection", 0.05)
+    geometry = ifcopenshell.geom.create_shape(settings, solid, geometry_library="opencascade")
+    length = leg + arc_radius * math.pi / 2.0 + tail
+    assert ifcopenshell.util.shape.get_area(geometry) == pytest.approx(
+        2.0 * math.pi * bar_radius * length + 2.0 * math.pi * bar_radius**2, rel=0.002
+    )
+    assert ifcopenshell.util.shape.get_volume(geometry) == pytest.approx(math.pi * bar_radius**2 * length, rel=0.002)
+    vertices = np.round(ifcopenshell.util.shape.get_vertices(geometry), 8)
+    _, indices = np.unique(vertices, axis=0, return_inverse=True)
+    faces = indices[ifcopenshell.util.shape.get_faces(geometry)]
+    edges = np.concatenate([faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]])
+    _, counts = np.unique(np.sort(edges, axis=1), axis=0, return_counts=True)
+    assert np.all(counts == 2)
