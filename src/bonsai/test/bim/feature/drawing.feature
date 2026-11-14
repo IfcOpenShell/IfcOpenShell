@@ -8,7 +8,7 @@ Scenario: Duplicate drawing
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    When I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    When I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
     When I press "bim.duplicate_drawing(drawing={drawing})"
     Then nothing happens
@@ -26,13 +26,13 @@ Scenario: Duplicate drawing - without duplicating annotations
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     And I press "bim.add_annotation"
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
     When I press "bim.duplicate_drawing(drawing={drawing})"
-    And I select the "PLAN_VIEW-X" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW-X" in the "1st" list
+    And I select the "MY STOREY PLAN-X" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN-X" in the "1st" list
     Then the object "IfcAnnotation/TEXT" is not selected
     And the object "IfcAnnotation/TEXT.001" does not exist
 
@@ -49,13 +49,13 @@ Scenario: Duplicate drawing - with duplicating annotations
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     And I press "bim.add_annotation"
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
     When I press "bim.duplicate_drawing(drawing={drawing}, should_duplicate_annotations=True)"
-    And I select the "PLAN_VIEW-X" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW-X" in the "1st" list
+    And I select the "MY STOREY PLAN-X" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN-X" in the "1st" list
     Then the object "IfcAnnotation/TEXT" is not selected
     And the object "IfcAnnotation/TEXT.001" exists
 
@@ -72,11 +72,11 @@ Scenario: Create drawing
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    When I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    When I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     And I click "OUTPUT"
-    Then the file "{ifc_dir}/drawings/PLAN_VIEW.svg" should contain "cut"
-    And the file "{ifc_dir}/drawings/PLAN_VIEW.svg" should contain "IfcWall"
+    Then the file "{ifc_dir}/drawings/MY STOREY PLAN.svg" should contain "cut"
+    And the file "{ifc_dir}/drawings/MY STOREY PLAN.svg" should contain "IfcWall"
 
 Scenario: Create drawing after deleting a duplicated object
     Given an empty IFC project
@@ -92,8 +92,8 @@ Scenario: Create drawing after deleting a duplicated object
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     And I click "OUTPUT"
     And the object "IfcWall/Cube" is selected
     And I delete the selected objects
@@ -111,8 +111,8 @@ Scenario: Activate drawing preserves visibility for non-ifc objects
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     Then the object "Cube" is visible
     And the object "Cube.001" is not visible
 
@@ -125,8 +125,8 @@ Scenario: Activate drawing preserves selection
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    When I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    When I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     Then the object "Cube" is selected
 
 Scenario: Remove drawing
@@ -142,12 +142,12 @@ Scenario: Remove drawing
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
-    When I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
-    Then the collection "IfcAnnotation/PLAN_VIEW" exists
+    When I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
+    Then the collection "IfcAnnotation/MY STOREY PLAN" exists
     When I press "bim.remove_drawing(drawing={drawing})"
-    Then the collection "IfcAnnotation/PLAN_VIEW" does not exist
+    Then the collection "IfcAnnotation/MY STOREY PLAN" does not exist
 
 Scenario: Remove drawing - via object deletion
     Given an empty IFC project
@@ -162,10 +162,10 @@ Scenario: Remove drawing - via object deletion
     And I click "IMPORT"
     And I click "ADD"
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
-    And the collection "IfcAnnotation/PLAN_VIEW" exists
-    And the object "IfcAnnotation/PLAN_VIEW" is selected
+    And the collection "IfcAnnotation/MY STOREY PLAN" exists
+    And the object "IfcAnnotation/MY STOREY PLAN" is selected
     When I press "bim.override_object_delete"
-    Then the collection "IfcAnnotation/PLAN_VIEW" does not exist
+    Then the collection "IfcAnnotation/MY STOREY PLAN" does not exist
 
 Scenario: Remove drawing - deleting active drawing
     Given an empty IFC project
@@ -180,11 +180,11 @@ Scenario: Remove drawing - deleting active drawing
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
-    When the object "IfcAnnotation/PLAN_VIEW" is selected
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
+    When the object "IfcAnnotation/MY STOREY PLAN" is selected
     And I delete the selected objects
-    Then the collection "IfcAnnotation/PLAN_VIEW" does not exist
+    Then the collection "IfcAnnotation/MY STOREY PLAN" does not exist
 
 Scenario: Add annotation - text
     Given an empty IFC project
@@ -195,8 +195,8 @@ Scenario: Add annotation - text
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     When I press "bim.add_annotation"
     Then the object "IfcAnnotation/TEXT" is selected
 
@@ -212,8 +212,8 @@ Scenario: Add annotation - auto create context if it doesn't exist
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     When I press "bim.add_annotation"
     Then the object "IfcAnnotation/TEXT" is selected
 
@@ -272,8 +272,8 @@ Scenario: Add drawing to sheet
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     And I click "OUTPUT"
     And I look at the "Sheets" panel
     And I click "IMPORT"
@@ -282,7 +282,7 @@ Scenario: Add drawing to sheet
     And I select the "UNTITLED" item in the "BIM_UL_sheets" list
     And I press "bim.expand_sheet(sheet={sheet})"
     When I click "IMAGE_PLANE"
-    Then I can select the "PLAN_VIEW.svg" item in the "BIM_UL_sheets" list
+    Then I can select the "MY STOREY PLAN.svg" item in the "BIM_UL_sheets" list
 
 Scenario: Create sheet - with a drawing added to it
     Given an empty IFC project
@@ -297,8 +297,8 @@ Scenario: Create sheet - with a drawing added to it
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     And I click "OUTPUT"
     And I look at the "Sheets" panel
     And I click "IMPORT"
@@ -319,8 +319,8 @@ Scenario: Enable editing text
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     And I press "bim.add_annotation"
     And the object "IfcAnnotation/TEXT" is selected
     And I look at the "BIM_PT_text" panel
@@ -337,8 +337,8 @@ Scenario: Disable editing text
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     And I press "bim.add_annotation"
     And the object "IfcAnnotation/TEXT" is selected
     And I look at the "BIM_PT_text" panel
@@ -356,8 +356,8 @@ Scenario: Edit text - no changes
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     And I press "bim.add_annotation"
     And the object "IfcAnnotation/TEXT" is selected
     And I look at the "BIM_PT_text" panel
@@ -375,8 +375,8 @@ Scenario: Edit text - change literal
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     And I press "bim.add_annotation"
     And the object "IfcAnnotation/TEXT" is selected
     And I look at the "BIM_PT_text" panel
@@ -394,8 +394,8 @@ Scenario: Add text literal
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     And I press "bim.add_annotation"
     And the object "IfcAnnotation/TEXT" is selected
     And I look at the "BIM_PT_text" panel
@@ -414,8 +414,8 @@ Scenario: Remove text literal
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
-    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     And I press "bim.add_annotation"
     And the object "IfcAnnotation/TEXT" is selected
     And I look at the "BIM_PT_text" panel
