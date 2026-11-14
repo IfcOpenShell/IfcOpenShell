@@ -24,7 +24,7 @@ def remove_application(file: ifcopenshell.file, application: ifcopenshell.entity
     Warning: removing an application may invalidate ownership histories.
     Check whether or not the application is used anywhere prior to removal.
 
-    :param address: The IfcApplication to remove.
+    :param application: The IfcApplication to remove.
     :return: None
 
     Example:

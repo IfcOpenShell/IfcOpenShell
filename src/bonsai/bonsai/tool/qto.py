@@ -122,7 +122,7 @@ class Qto(bonsai.core.tool.Qto):
     def get_related_cost_item_quantities(cls, product: ifcopenshell.entity_instance) -> list[dict]:
         """_summary_: Returns the related cost item and related quantities of the product
 
-        :param ifc-instance product: ifc instance
+        :param product: ifc instance
 
         :return list of dictionaries in the form [
         {
