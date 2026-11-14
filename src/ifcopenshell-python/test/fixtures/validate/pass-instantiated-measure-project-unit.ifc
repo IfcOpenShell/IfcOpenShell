@@ -1,0 +1,16 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition[DesignTransferView]'),'2;1');
+FILE_NAME('test.ifc','2024-08-30T12:34:53+05:00',('author','author email'),('organization','organization email'),'IfcOpenShell','Bonsai','Nobody');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPROJECT('1iBd2lkrX61vZxF9AnXLa0',$,'My Project',$,$,$,$,(#3),#2);
+#2=IFCUNITASSIGNMENT((#4));
+#3=IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,1.E-05,#5,$);
+#4=IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);
+#5=IFCAXIS2PLACEMENT3D(#6,$,$);
+#6=IFCCARTESIANPOINT((0.,0.,0.));
+#7=IFCPROPERTYSINGLEVALUE('Length',$,IFCLENGTHMEASURE(5.),$);
+ENDSEC;
+END-ISO-10303-21;
