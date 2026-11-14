@@ -289,13 +289,17 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def export_curves(
-        cls, obj: bpy.types.Object, position: Optional[Matrix] = None
+        cls,
+        obj: bpy.types.Object,
+        position: Optional[Matrix] = None,
+        preserve_z: bool = False,
+        original: ifcopenshell.entity_instance | None = None,
     ) -> list[ifcopenshell.entity_instance] | None:
         if position is None:
             position = Matrix()
 
         results = []
-        result = cls.auto_detect_curves(obj, obj.data, position)
+        result = cls.auto_detect_curves(obj, obj.data, position, preserve_z=preserve_z, original=original)
         if isinstance(result, dict) and result["curves"]:
             for curve in result["curves"]:
                 results.append(tool.Ifc.get().add(curve))
@@ -2511,9 +2515,22 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def auto_detect_curves(
-        cls, obj: bpy.types.Object, mesh: bpy.types.Mesh, position: Matrix | None = None
+        cls,
+        obj: bpy.types.Object,
+        mesh: bpy.types.Mesh,
+        position: Matrix | None = None,
+        preserve_z: bool = False,
+        original: ifcopenshell.entity_instance | None = None,
     ) -> Union[tuple, dict]:
+        """
+        :param preserve_z: Keep each point's Z instead of flattening to 2D (e.g. FALL/slope annotations).
+        :param original: The curve being edited. A 3D circle takes its plane from it.
+        """
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        circle_rotation = Matrix.Identity(3)
+        if original and original.is_a("IfcCircle"):
+            placement = ifcopenshell.util.placement.get_axis2placement(original.Position)
+            circle_rotation = Matrix(placement.tolist()).to_3x3()
 
         if position is None:
             position = Matrix()
@@ -2603,14 +2620,24 @@ class Model(bonsai.core.tool.Model):
         curves = []
         for loop in loops:
             if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
-                v1, v2 = loop[0].verts
-                mid = v1.co.lerp(v2.co, 0.5)
-                mid = ((position_i @ mid) / unit_scale).to_2d()
-                v1 = ((position_i @ v1.co) / unit_scale).to_2d()
-                radius = (mid - v1).length
-                curves.append(
-                    tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
-                )
+                v1, v2 = [(position_i @ v.co) / unit_scale for v in loop[0].verts]
+                mid = v1.lerp(v2, 0.5)
+                if preserve_z:
+                    # The two verts are a diameter along the local Y axis.
+                    y_axis = circle_rotation.col[1]
+                    diameter = v2 - v1
+                    if diameter.dot(y_axis) < 0:
+                        diameter.negate()
+                    rotation = y_axis.rotation_difference(diameter).to_matrix() @ circle_rotation
+                    placement = tmp.createIfcAxis2Placement3D(
+                        tmp.createIfcCartesianPoint(list(mid)),
+                        tmp.createIfcDirection(list(rotation.col[2])),
+                        tmp.createIfcDirection(list(rotation.col[0])),
+                    )
+                else:
+                    mid, v1 = mid.to_2d(), v1.to_2d()
+                    placement = tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid)))
+                curves.append(tmp.createIfcCircle(placement, (mid - v1).length))
             else:
                 loop_verts: list[bmesh.types.BMVert] = []
                 for i, edge in enumerate(loop):
@@ -2646,10 +2673,12 @@ class Model(bonsai.core.tool.Model):
 
                 if tmp.schema != "IFC2X3" and any([is_in_group(v, "IFCARCINDEX") for v in loop_verts]):
                     # We need to specify segments
-                    coord_list: list[list[float]] = [
-                        list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts
-                    ]
-                    points = tmp.createIfcCartesianPointList2D(coord_list)
+                    coords = [(position_i @ v.co) / unit_scale for v in loop_verts]
+                    coord_list: list[list[float]] = [list(co if preserve_z else co.to_2d()) for co in coords]
+                    if preserve_z:
+                        points = tmp.createIfcCartesianPointList3D(coord_list)
+                    else:
+                        points = tmp.createIfcCartesianPointList2D(coord_list)
                     i = 0
                     segments = []
                     total_verts = len(loop_verts)
@@ -2673,21 +2702,45 @@ class Model(bonsai.core.tool.Model):
                         segments[-1][0] = last_segment_indices
                     curves.append(tmp.createIfcIndexedPolyCurve(points, segments))
                 elif tmp.schema == "IFC2X3":
-                    points = [
-                        tmp.createIfcCartesianPoint(list(((position_i @ v.co) / unit_scale).to_2d()))
-                        for v in loop_verts
-                    ]
+                    coords = [(position_i @ v.co) / unit_scale for v in loop_verts]
+                    points = [tmp.createIfcCartesianPoint(list(co if preserve_z else co.to_2d())) for co in coords]
                     if is_closed:
                         points.append(points[0])
                     curves.append(tmp.createIfcPolyline(points))
                 else:  # Pure straight polyline, no segments required
-                    coord_list = [list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts]
+                    coords = [(position_i @ v.co) / unit_scale for v in loop_verts]
+                    coord_list = [list(co if preserve_z else co.to_2d()) for co in coords]
                     if is_closed:
                         coord_list.append(coord_list[0])
-                    points = tmp.createIfcCartesianPointList2D(coord_list)
+                    if preserve_z:
+                        points = tmp.createIfcCartesianPointList3D(coord_list)
+                    else:
+                        points = tmp.createIfcCartesianPointList2D(coord_list)
                     curves.append(tmp.createIfcIndexedPolyCurve(points))
 
         return {"ifc_file": tmp, "curves": curves}
+
+    @classmethod
+    def should_preserve_curve_z(
+        cls, curve: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance | None = None
+    ) -> bool:
+        """Whether an edited curve is saved in 3D: it is 3D already, or it is a fall / slope annotation."""
+        if (
+            element
+            and element.is_a("IfcAnnotation")
+            and ifcopenshell.util.element.get_predefined_type(element)
+            in ("FALL", "SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT")
+        ):
+            return True
+        if curve.is_a("IfcIndexedPolyCurve"):
+            return curve.Points.is_a("IfcCartesianPointList3D")
+        elif curve.is_a("IfcPolyline"):
+            return len(curve.Points[0].Coordinates) == 3
+        elif curve.is_a("IfcCompositeCurve"):
+            return any(cls.should_preserve_curve_z(segment.ParentCurve) for segment in curve.Segments)
+        elif curve.is_a("IfcCircle"):
+            return curve.Position.is_a("IfcAxis2Placement3D")
+        return False
 
     @classmethod
     def get_booleaned_obj(cls, obj: bpy.types.Object) -> Union[bpy.types.Object, None]:
