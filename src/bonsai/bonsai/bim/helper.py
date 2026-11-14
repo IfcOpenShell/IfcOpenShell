@@ -37,6 +37,15 @@ from ifcopenshell.util.doc import (
 
 import bonsai.tool as tool
 
+# Geometry libraries, shared by the project's loading settings and the add-on preferences.
+# Kept here rather than in bim.module.project, which bim.ui cannot import without a cycle.
+GEOMETRY_LIBRARY_ITEMS = [
+    ("opencascade", "OpenCASCADE", "Best for stability and accuracy"),
+    ("cgal", "CGAL", "Best for speed"),
+    ("cgal-simple", "CGAL Simple", "CGAL without booleans"),
+    ("hybrid-cgal-simple-opencascade", "Hybrid CGAL-OCC", "First CGAL then fallback to OCC"),
+]
+
 if TYPE_CHECKING:
     import bonsai.bim.prop
     from bonsai.bim.module.search.prop import BIMFilterGroup
