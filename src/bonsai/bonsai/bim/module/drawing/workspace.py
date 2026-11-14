@@ -223,7 +223,8 @@ class AnnotationToolUI:
 
     @classmethod
     def draw_edit_object_interface(cls, context):
-        if DecoratorData.get_text_data(bpy.context.active_object):
+        obj = bpy.context.active_object
+        if tool.Ifc.get_entity(obj) and DecoratorData.get_text_data(obj):
             add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
         if bpy.ops.bim.copy_annotation_to_drawing.poll():
             row = cls.layout.row(align=True)
@@ -250,6 +251,10 @@ class AnnotationToolUI:
         row.operator("bim.launch_annotation_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="")
 
         add_layout_hotkey_operator(cls.layout, "Add", "S_A", "Create a new annotation")
+
+        if object_type in ("ELEVATION", "SECTION"):
+            row = cls.layout.row(align=True)
+            row.prop(cls.props, "is_manual_reference")
 
         if object_type in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
             row = cls.layout.row(align=True)
@@ -335,7 +340,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
     def hotkey_S_A(self):
         if bpy.ops.bim.add_annotation.poll():
-            bpy.ops.bim.add_annotation()
+            bpy.ops.bim.add_annotation("INVOKE_DEFAULT")
 
     def hotkey_S_E(self):
         if not bpy.context.active_object:
