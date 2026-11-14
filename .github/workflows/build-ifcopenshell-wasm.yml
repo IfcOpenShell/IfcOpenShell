@@ -4,6 +4,11 @@ permissions: {}
 
 on:
   workflow_dispatch:
+    inputs:
+      only-common-schemas:
+        description: Build only common IFC schemas
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -52,6 +57,8 @@ jobs:
           install: binary
 
       - name: Build
+        env:
+          BUILD_ONLY_COMMON_SCHEMAS: ${{ inputs.only-common-schemas && 'ON' || 'OFF' }}
         run: |
           ./IfcOpenShell/pyodide/build_pyodide.sh
           FILE=`echo dist/ifcopenshell-*.whl`
