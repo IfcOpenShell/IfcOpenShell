@@ -526,12 +526,25 @@ class BIMCameraProperties(PropertyGroup):
         name="Cut Mode",
         update=get_update_layer_callback("cut_mode", "CutMode"),
     )
+    freestyle_ifc_only: BoolProperty(
+        name="IFC Elements Only",
+        description="Restrict Freestyle linework to IFC elements, ignoring plain Blender "
+        "objects (e.g. entourage) so that high poly non-IFC geometry doesn't slow down the render",
+        default=False,
+        update=get_update_layer_callback("freestyle_ifc_only", "FreestyleIfcOnly"),
+    )
 
     # EPset_Drawing.
     has_underlay: BoolProperty(
         name="Underlay",
         default=False,
         update=update_has_underlay,
+    )
+    show_sheet_references: BoolProperty(
+        name="Show Sheet References",
+        description="Show the sheet reference below the drawing number in section and elevation markers",
+        default=True,
+        update=get_update_layer_callback("show_sheet_references", "ShowSheetReferences"),
     )
     has_linework: BoolProperty(
         name="Linework",
@@ -628,6 +641,7 @@ class BIMCameraProperties(PropertyGroup):
         cut_mode: Literal["BISECT", "OPENCASCADE"]
 
         has_underlay: bool
+        show_sheet_references: bool
         has_linework: bool
         has_annotation: bool
         target_view: TargetView
