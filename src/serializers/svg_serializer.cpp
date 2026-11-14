@@ -438,9 +438,20 @@ void svg_serializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, std
 					center = ellipse->Location();
 				}
 
-				// Make sure the arc segment is entirely inside bounding box:
-				growBoundingBox(center.X() - r1, center.Y() - r1);
-				growBoundingBox(center.X() + r1, center.Y() + r1);
+				// Grow the bounding box by the drawn arc only; a full circle/ellipse by its full extent.
+				if (closed) {
+					growBoundingBox(center.X() - r1, center.Y() - r1);
+					growBoundingBox(center.X() + r1, center.Y() + r1);
+				} else {
+					// Endpoints are added above; sample the interior for axis extrema (#2629).
+					const int arc_bbox_samples = 32;
+					for (int si = 1; si < arc_bbox_samples; ++si) {
+						const double u = u1 + (u2 - u1) * (static_cast<double>(si) / arc_bbox_samples);
+						gp_Pnt pu;
+						curve->D0(u, pu);
+						growBoundingBox(pu.X(), pu.Y());
+					}
+				}
 
 				// Calculate the angle between 2d vecs to have signed result
 				const gp_Dir& d = conic->Position().XDirection();
