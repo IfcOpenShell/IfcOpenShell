@@ -59,6 +59,20 @@ class TestUnassignMaterialIFC2X3(test.bootstrap.IFC2X3):
         assert len(self.file.by_type("IfcWallType")) == 2
         assert len(self.file.by_type("IfcMaterialLayerSet")) == 1
 
+    def test_unassign_type_preserves_shared_usage_on_other_types(self):
+        types = [ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType") for _ in range(2)]
+        walls = [ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall") for _ in range(2)]
+        for wall, wall_type in zip(walls, types):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[wall], relating_type=wall_type)
+        rel = ifcopenshell.api.material.assign_material(self.file, products=types, type="IfcMaterialLayerSet")
+        layer_set = rel.RelatingMaterial
+        ifcopenshell.api.material.assign_material(self.file, products=walls, type="IfcMaterialLayerSetUsage")
+        ifcopenshell.api.material.unassign_material(self.file, products=[types[0]])
+        assert ifcopenshell.util.element.get_material(walls[0], should_inherit=False) is None
+        usage = ifcopenshell.util.element.get_material(walls[1], should_inherit=False)
+        assert usage.ForLayerSet == layer_set
+        assert ifcopenshell.util.element.get_material(types[1]) == layer_set
+
     def test_unassign_material_layer_set_usage_from_element(self):
         element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
@@ -139,6 +153,20 @@ class TestUnassignMaterialIFC2X3(test.bootstrap.IFC2X3):
 
 
 class TestUnassignMaterialIFC4(test.bootstrap.IFC4, TestUnassignMaterialIFC2X3):
+    def test_unassign_type_preserves_shared_profile_usage_on_other_types(self):
+        types = [ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBeamType") for _ in range(2)]
+        beams = [ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBeam") for _ in range(2)]
+        for beam, beam_type in zip(beams, types):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[beam], relating_type=beam_type)
+        rel = ifcopenshell.api.material.assign_material(self.file, products=types, type="IfcMaterialProfileSet")
+        profile_set = rel.RelatingMaterial
+        ifcopenshell.api.material.assign_material(self.file, products=beams, type="IfcMaterialProfileSetUsage")
+        ifcopenshell.api.material.unassign_material(self.file, products=[types[0]])
+        assert ifcopenshell.util.element.get_material(beams[0], should_inherit=False) is None
+        usage = ifcopenshell.util.element.get_material(beams[1], should_inherit=False)
+        assert usage.ForProfileSet == profile_set
+        assert ifcopenshell.util.element.get_material(types[1]) == profile_set
+
     def test_unassign_material_profile_set_from_type(self):
         element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         ifcopenshell.api.material.assign_material(self.file, products=[element1], type="IfcMaterialProfileSet")
