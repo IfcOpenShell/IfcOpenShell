@@ -273,8 +273,10 @@ class TestGenerateStructuralModel(NewIfc):
                 tool.Geometry.link(representation, obj.data)
             obj.select_set(True)
         bpy.context.view_layer.update()
-        bpy.ops.bim.generate_structural_model()
+        before = ifc.to_string()
+        assert bpy.ops.bim.generate_structural_model() == {"CANCELLED"}
         assert "Skipped 1 objects with missing or unsupported materials" in capsys.readouterr().out
+        assert ifc.to_string() == before
         assert not ifc.by_type("IfcStructuralCurveMember")
         material = ifcopenshell.api.material.add_material(ifc, name="Steel")
         ifcopenshell.api.material.assign_material(ifc, products=[beam], material=material)
@@ -384,10 +386,82 @@ class TestGenerateStructuralModel(NewIfc):
             tool.Ifc.link(source, obj)
             obj.select_set(True)
 
-        assert bpy.ops.bim.generate_structural_model(structural_model=model.id()) == {"FINISHED"}
+        assert bpy.ops.bim.generate_structural_model(structural_model=model.id()) == {"CANCELLED"}
         message = "ambiguous source relationships" if source_count else "No eligible profile beams"
         assert message in capsys.readouterr().out
         assert member in ifc.by_type("IfcStructuralCurveMember")
+
+    def test_invalid_snapped_orientation_cancels_without_changes(self, capsys):
+        ifc = tool.Ifc.get()
+        model_context = ifcopenshell.util.representation.get_context(ifc, "Model")
+        body = ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model_context
+        )
+        profile = ifcopenshell.api.profile.add_parameterized_profile(ifc, ifc_class="IfcRectangleProfileDef")
+        profile.XDim, profile.YDim = 0.2, 0.3
+        ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        source = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcColumn")
+        material = ifcopenshell.api.material.add_material(ifc, name="Steel")
+        ifcopenshell.api.material.assign_material(ifc, products=[source], material=material)
+        representation = ifcopenshell.api.geometry.add_profile_representation(
+            ifc, context=body, profile=profile, depth=3
+        )
+        ifcopenshell.api.geometry.assign_representation(ifc, product=source, representation=representation)
+        obj = bpy.data.objects.new("Column", bpy.data.meshes.new("Column"))
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(source, obj)
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        other_source = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcColumn")
+        ifcopenshell.api.material.assign_material(ifc, products=[other_source], material=material)
+        other_representation = ifcopenshell.api.geometry.add_profile_representation(
+            ifc, context=body, profile=profile, depth=3
+        )
+        ifcopenshell.api.geometry.assign_representation(ifc, product=other_source, representation=other_representation)
+        other_obj = bpy.data.objects.new("Other column", bpy.data.meshes.new("Other column"))
+        bpy.context.scene.collection.objects.link(other_obj)
+        tool.Ifc.link(other_source, other_obj)
+        other_obj.location.x = 4
+        other_obj.select_set(True)
+        bpy.context.view_layer.update()
+        assert bpy.ops.bim.generate_structural_model() == {"FINISHED"}
+        member = ifcopenshell.util.structural.get_structural_members(source)[0]
+        other_member = ifcopenshell.util.structural.get_structural_members(other_source)[0]
+        for item in (member, other_member):
+            start = min(
+                item.ConnectedBy, key=lambda rel: tool.Ifc.get_object(rel.RelatedStructuralConnection).location.z
+            )
+            external = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember")
+            ifcopenshell.api.structural.add_structural_member_connection(
+                ifc,
+                relating_structural_member=external,
+                related_structural_connection=start.RelatedStructuralConnection,
+            )
+        other_obj.location.x = 5
+        bpy.context.view_layer.update()
+        tool.Structural.get_structural_props().generation_merge_tolerance = 0.1
+        before = ifc.to_string()
+        history_before = list(IfcStore.history)
+        future_before = list(IfcStore.future)
+        objects_before = set(bpy.data.objects)
+        positions_before = {obj: obj.location.copy() for obj in objects_before}
+        axis = np.array(((0.0, 0.05, 0.05), (0.0, 1.0, 0.0)))
+        profile_direction = np.array((0.0, 1.0, 0.0))
+        get_member_data = tool.Structural.get_physical_member_data
+        with mock.patch.object(
+            tool.Structural,
+            "get_physical_member_data",
+            side_effect=lambda source_obj: (axis, profile_direction)
+            if source_obj == obj
+            else get_member_data(source_obj),
+        ):
+            assert bpy.ops.bim.generate_structural_model() == {"CANCELLED"}
+        assert "Profile orientation is parallel to the updated structural member" in capsys.readouterr().out
+        assert ifc.to_string() == before
+        assert IfcStore.history == history_before
+        assert IfcStore.future == future_before
+        assert set(bpy.data.objects) == objects_before
+        assert all(obj.location == position for obj, position in positions_before.items())
 
     @pytest.mark.parametrize("reverse_link", [False, True])
     @pytest.mark.parametrize("scene_tolerance", [None, 0.2])

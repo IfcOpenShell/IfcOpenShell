@@ -82,7 +82,9 @@ class Structural(bonsai.core.tool.Structural):
         return data[0] if data else None
 
     @classmethod
-    def get_physical_section(cls, source):
+    def get_physical_section(
+        cls, source: ifcopenshell.entity_instance
+    ) -> tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance] | None:
         representation = ifcopenshell.util.representation.get_representation(source, "Model", "Body", "MODEL_VIEW")
         if (
             not representation
@@ -104,11 +106,13 @@ class Structural(bonsai.core.tool.Structural):
         return profile, materials[0]
 
     @classmethod
-    def assign_member_section(cls, member, source):
+    def assign_member_section(
+        cls,
+        member: ifcopenshell.entity_instance,
+        source: ifcopenshell.entity_instance,
+        section: tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance],
+    ) -> None:
         file = tool.Ifc.get()
-        section = cls.get_physical_section(source)
-        if section is None:
-            raise ValueError("A linked physical element requires a section and exactly one material")
         profile, material = section
         source_set = ifcopenshell.util.element.get_material(source, should_skip_usage=True)
         if (
