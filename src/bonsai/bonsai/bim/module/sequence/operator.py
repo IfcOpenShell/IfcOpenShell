@@ -71,9 +71,14 @@ class EnableStatusFilters(bpy.types.Operator):
                     elif pset_name == "EPset_Status":  # Our secret sauce
                         statuses_used.update([s.wrappedValue for s in enum_values])
             elif element.Name == "UserDefinedStatus":
-                status: str = element.NominalValue.wrappedValue
+                for value in element.EnumerationValues or ():
+                    statuses_used[value.wrappedValue] += 1
+                    user_defined_statuses.add(value.wrappedValue)
+
+        for element in ifc_file.by_type("IfcPropertySingleValue"):
+            if element.Name == "UserDefinedStatus" and element.NominalValue:
                 statuses_used[element.NominalValue.wrappedValue] += 1
-                user_defined_statuses.add(status)
+                user_defined_statuses.add(element.NominalValue.wrappedValue)
 
         statuses = ["No Status"]
         statuses.extend(tool.Sequence.ELEMENT_STATUSES)
