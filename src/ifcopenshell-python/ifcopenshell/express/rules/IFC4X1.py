@@ -12384,3 +12384,7 @@ def IfcVectorSum(arg1, arg2):
         else:
             result = IfcVector(Orientation=vec1, Magnitude=0.0)
     return result
+
+
+# Entity-level EXPRESS UNIQUE clauses, emitted from express_parser for ifcopenshell.validate.
+uniqueness_rules = {'IfcApplication': [('UR1', ('ApplicationIdentifier',)), ('UR2', ('ApplicationFullName', 'Version'))], 'IfcPropertyEnumeration': [('UR1', ('Name',))], 'IfcRoot': [('UR1', ('GlobalId',))]}
