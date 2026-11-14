@@ -20,9 +20,7 @@ Editing shared data through either member or element can affect both, as well
 as other elements using the same profile or material. An alternative section
 cannot be tested independently by editing that shared data.
 
-The panel reports differences between linked members and their elements.
 Select the physical beams or columns and use **(Re)Generate from Selected** to
 refresh their members' axes, orientations, sections and materials. This can
 overwrite manual changes to the analysis model, but does not update the
-building. Comparisons require the relevant objects to be loaded. Generation is
-available for IFC4 and IFC4X3.
+building. Generation is available for IFC4 and IFC4X3.
