@@ -181,6 +181,9 @@ class Ids:
 
 
 class Specification:
+    # Canonical facet order per the Schema/ids.xsd requirementsType sequence (see buildingSMART/IDS#344).
+    FACET_ORDER = ("entity", "partOf", "classification", "attribute", "property", "material")
+
     def __init__(
         self,
         name="Unnamed",
@@ -228,7 +231,7 @@ class Specification:
                 facet_type = facet_type[0].lower() + facet_type[1:]
                 facets.setdefault(facet_type, []).append(facet.asdict(clause_type))
             # Canonicalise ordering as per XSD requirements
-            for facet_type in ("entity", "partOf", "classification", "attribute", "property", "material"):
+            for facet_type in self.FACET_ORDER:
                 if facet_type in facets:
                     results[clause_type][facet_type] = facets[facet_type]
             if clause_type == "applicability":
@@ -255,8 +258,9 @@ class Specification:
 
     def parse_clause(self, clause):
         results = []
-        for name, facets in clause.items():
-            if name not in ["entity", "attribute", "classification", "partOf", "property", "material"]:
+        # Iterate in canonical order so that output does not depend on the clause's document order.
+        for name in self.FACET_ORDER:
+            if (facets := clause.get(name)) is None:
                 continue
             if not isinstance(facets, list):
                 facets = [facets]
