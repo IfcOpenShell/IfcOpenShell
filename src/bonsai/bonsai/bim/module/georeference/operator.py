@@ -33,6 +33,22 @@ class AddGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):
         core.add_georeferencing(tool.Georeference)
 
 
+class ImportGeoreferencingFromBlenderGIS(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.import_georeferencing_from_blendergis"
+    bl_label = "Import Georeferencing From BlenderGIS"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Read the CRS and scene origin set by the BlenderGIS addon and use them as the "
+        "Projected CRS and Map Conversion. Does nothing if BlenderGIS has not georeferenced "
+        "the active scene"
+    )
+
+    def _execute(self, context):
+        message = core.import_georeferencing_from_blendergis(tool.Ifc, tool.Georeference)
+        if isinstance(message, str):
+            self.report({"WARNING"}, message)
+
+
 class EnableEditingGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_georeferencing"
     bl_label = "Enable Editing Georeferencing"
