@@ -21,7 +21,7 @@ kernels = [
             reason=f"{kernel} geometry kernel is unavailable",
         ),
     )
-    for kernel in ("manifold", "opencascade", "cgal")
+    for kernel in ("manifold", "opencascade", "cgal", "smlib")
 ]
 
 print(testdata)
