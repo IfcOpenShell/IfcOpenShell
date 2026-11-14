@@ -738,13 +738,16 @@ class Client:
         This API replaces Domain
         """
         endpoint = f"Dictionary/v{version}/Classes"
-        params = {"Uri": dictionary_uri}
-        for param, value in {
+        # UseNestedClasses, offset and limit are always sent; ClassType and languageCode use "" for no filter.
+        params = {
+            "Uri": dictionary_uri,
             "UseNestedClasses": use_nested_classes,
-            "ClassType": class_type,
-            "languageCode": language_code,
             "offset": offset,
             "limit": limit,
+        }
+        for param, value in {
+            "ClassType": class_type,
+            "languageCode": language_code,
         }.items():
             if value:
                 params[param] = value
