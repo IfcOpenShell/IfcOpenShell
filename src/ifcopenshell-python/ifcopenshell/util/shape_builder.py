@@ -688,7 +688,12 @@ class ShapeBuilder:
     ) -> ifcopenshell.entity_instance:
         """Create an IfcEllipse, optionally trimmed to an arc.
 
-        If neither ``trim_points`` nor ``trim_points_mask`` is provided, a full IfcEllipse is returned.
+        If the two semi-axes are equal, the curve is geometrically a circle and an
+        IfcCircle is created instead of an IfcEllipse, so that downstream consumers
+        that special-case circles (e.g. DXF arc/circle export) recognise it as such.
+
+        If neither ``trim_points`` nor ``trim_points_mask`` is provided, a full IfcEllipse
+        (or IfcCircle) is returned.
         Trimming points must be given in counter-clockwise order. For example, to get the arc
         above the Y-axis use mask ``(0, 2)``; below the Y-axis use ``(2, 0)``.
 
@@ -702,16 +707,19 @@ class ShapeBuilder:
         :param ref_x_direction: Direction of the local X axis.
         :param trim_points_mask: Pair of cardinal-point indices (0–3) used when ``trim_points`` is empty.
             See :meth:`get_trim_points_from_mask` for index definitions.
-        :return: IfcEllipse (untrimmed) or IfcTrimmedCurve (trimmed).
+        :return: IfcEllipse/IfcCircle (untrimmed) or IfcTrimmedCurve (trimmed).
         """
         ifc_position = self.create_axis2_placement_2d(position, ref_x_direction)
-        ifc_ellipse = self.file.createIfcEllipse(
-            Position=ifc_position, SemiAxis1=x_axis_radius, SemiAxis2=y_axis_radius
-        )
+        if x_axis_radius == y_axis_radius:
+            ifc_curve = self.file.createIfcCircle(Position=ifc_position, Radius=x_axis_radius)
+        else:
+            ifc_curve = self.file.createIfcEllipse(
+                Position=ifc_position, SemiAxis1=x_axis_radius, SemiAxis2=y_axis_radius
+            )
 
         if not trim_points:
             if not trim_points_mask:
-                return ifc_ellipse
+                return ifc_curve
             trim_points = self.get_trim_points_from_mask(
                 x_axis_radius, y_axis_radius, trim_points_mask, position_offset=position
             )
@@ -719,10 +727,10 @@ class ShapeBuilder:
         trim1 = [self.file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(trim_points[0]))]
         trim2 = [self.file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(trim_points[1]))]
 
-        trim_ellipse = self.file.createIfcTrimmedCurve(
-            BasisCurve=ifc_ellipse, Trim1=trim1, Trim2=trim2, SenseAgreement=True, MasterRepresentation="CARTESIAN"
+        trim_curve = self.file.createIfcTrimmedCurve(
+            BasisCurve=ifc_curve, Trim1=trim1, Trim2=trim2, SenseAgreement=True, MasterRepresentation="CARTESIAN"
         )
-        return trim_ellipse
+        return trim_curve
 
     def profile(
         self,
