@@ -449,6 +449,24 @@ class BIM_PT_structural_analysis_models(Panel):
             draw_attributes(self.props.structural_analysis_model_attributes, self.layout)
 
 
+class BIM_PT_generate_structural_model(Panel):
+    bl_label = "Generate Structural Model (Beams & Columns)"
+    bl_idname = "BIM_PT_generate_structural_model"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_structural"
+
+    @classmethod
+    def poll(cls, context):
+        file = tool.Ifc.get()
+        return file and file.schema != "IFC2X3"
+
+    def draw(self, context):
+        self.layout.prop(tool.Structural.get_structural_props(), "generation_merge_tolerance")
+        self.layout.operator("bim.generate_structural_model", icon="MOD_SIMPLIFY")
+
+
 class BIM_UL_structural_analysis_models(UIList):
     def draw_item(
         self,
