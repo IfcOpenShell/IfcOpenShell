@@ -41,6 +41,18 @@ class TestAssignObject(test.bootstrap.IFC4):
         assert ifcopenshell.util.element.get_aggregate(subelement2) == element
         assert rel.is_a("IfcRelAggregates")
 
+    def test_refusing_to_aggregate_an_object_under_itself_or_a_descendant(self):
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        space = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSpace")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[storey], relating_object=building)
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[space], relating_object=storey)
+        with pytest.raises(ValueError):
+            ifcopenshell.api.aggregate.assign_object(self.file, products=[building], relating_object=building)
+        with pytest.raises(ValueError):
+            ifcopenshell.api.aggregate.assign_object(self.file, products=[building], relating_object=space)
+        assert ifcopenshell.util.element.get_aggregate(building) is None
+
     def test_doing_nothing_if_the_aggregate_is_already_assigned(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSite")
         subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
