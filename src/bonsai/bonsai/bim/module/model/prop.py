@@ -1346,6 +1346,33 @@ class BIMDoorProperties(PropertyGroup):
         update=update_door,
     )
 
+    # Handle properties
+    handle_size: bpy.props.FloatVectorProperty(
+        name="Handle Size",
+        size=3,
+        subtype="XYZ_LENGTH",
+        default=(0.120, 0.040, 0.020),
+        description="Bounding-box dimensions of the door handle (width, depth, thickness) in metres",
+        update=update_door,
+    )
+    handle_inset_from_edge: bpy.props.FloatProperty(
+        name="Handle Inset",
+        subtype="DISTANCE",
+        default=0.060,
+        description="Distance from the panel edge to the handle centre",
+        update=update_door,
+    )
+    handle_height_above_floor: bpy.props.FloatProperty(
+        name="Handle Height",
+        subtype="DISTANCE",
+        default=1.000,
+        min=0.0,
+        soft_min=0.700,
+        soft_max=1.200,
+        description="Centre-of-handle height above the floor — ISO 21542 specifies 850–1050 mm for accessible doors",
+        update=update_door,
+    )
+
     # Material properties
     lining_material: bpy.props.EnumProperty(name="Lining Material", items=get_materials, options=set())
     framing_material: bpy.props.EnumProperty(name="Framing Material", items=get_materials, options=set())
@@ -1382,6 +1409,11 @@ class BIMDoorProperties(PropertyGroup):
         panel_width_ratio: float
         frame_thickness: float
         frame_depth: float
+
+        # Handle.
+        handle_size: tuple[float, float, float]
+        handle_inset_from_edge: float
+        handle_height_above_floor: float
 
         # Material.
         panel_material: str
@@ -1436,7 +1468,13 @@ class BIMDoorProperties(PropertyGroup):
 
     def get_panel_kwargs(self, convert_to_project_units=False, lining_data=None):
         transom_thickness = lining_data["transom_thickness"] if lining_data else self.transom_thickness
-        kwargs = {"panel_depth": self.panel_depth, "panel_width_ratio": self.panel_width_ratio}
+        kwargs = {
+            "panel_depth": self.panel_depth,
+            "panel_width_ratio": self.panel_width_ratio,
+            "handle_size": tuple(self.handle_size),
+            "handle_inset_from_edge": self.handle_inset_from_edge,
+            "handle_height_above_floor": self.handle_height_above_floor,
+        }
 
         if transom_thickness:
             kwargs["frame_thickness"] = self.frame_thickness
