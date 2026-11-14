@@ -45,3 +45,24 @@ class TestAddPsetAsTemplate(NewFile):
         assert pset_template.is_a("IfcPropertySetTemplate")
         assert len(templates := pset_template.HasPropertyTemplates) == 2
         assert set(t.Name for t in templates) == {"Foo", "Bar"}
+
+    def test_ifc4x3_specification_and_null_nominal_value(self):
+        ifc = ifcopenshell.file(schema="IFC4X3_ADD2")
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcWall()
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Pset_Custom")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"PropA": "ValueA"})
+        pset.HasProperties[0].Specification = "IFC4X3 spec text"
+        prop_b = ifc.create_entity("IfcPropertySingleValue", Name="PropB", Specification="Null nominal")
+        pset.HasProperties = list(pset.HasProperties) + [prop_b]
+
+        library = ifcopenshell.file()
+        pset_template = subject.add_pset_as_template("Pset_Custom", library)
+        assert pset_template.is_a("IfcPropertySetTemplate")
+        templates = {t.Name: t for t in pset_template.HasPropertyTemplates}
+        assert set(templates.keys()) == {"PropA", "PropB"}
+        assert templates["PropA"].Description == "IFC4X3 spec text"
+        assert templates["PropA"].PrimaryMeasureType == "IfcLabel"
+        assert templates["PropB"].Description == "Null nominal"
+        assert templates["PropB"].PrimaryMeasureType == "IfcLabel"
+
