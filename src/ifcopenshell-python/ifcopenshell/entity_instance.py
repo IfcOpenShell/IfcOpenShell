@@ -27,9 +27,12 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable, Sequence
-from typing import Any, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 from . import ifcopenshell_wrapper, settings
+
+if TYPE_CHECKING:
+    import ifcopenshell.util.schema
 
 try:
     import logging
@@ -82,6 +85,11 @@ class entity_instance_mixin:
 
         print(wall.__class__) # <class 'ifcopenshell.entity_instance'>
     """
+
+    @property
+    def schema(self) -> ifcopenshell.util.schema.IFC_SCHEMA:
+        """General IFC schema version this instance belongs to: IFC2X3, IFC4, IFC4X3."""
+        return self.file.schema
 
     def __getattr__(self, name: str) -> Any:
         if name in ("this", "thisown") or name.startswith("_swig_"):
