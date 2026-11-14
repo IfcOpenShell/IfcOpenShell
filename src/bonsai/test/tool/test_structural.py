@@ -115,7 +115,17 @@ class TestLoadCases(NewFile):
         model, point, case, activity = self.make_loaded_model(ifc_file, "IfcStructuralLoadGroup", "LOAD_CASE")
         assert not model.LoadedBy
         assert subject.get_load_cases(model) == [case]
-        assert subject.get_loaded_items(case) == {point}
+
+    def test_loads_in_a_load_group_within_the_case_count(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc_file)
+        model, point, case, activity = self.make_loaded_model(ifc_file, "IfcStructuralLoadGroup", "LOAD_CASE")
+        ifcopenshell.api.group.unassign_group(ifc_file, products=[activity], group=case)
+        group = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcStructuralLoadGroup")
+        group.PredefinedType = "LOAD_GROUP"
+        ifcopenshell.api.group.assign_group(ifc_file, products=[activity], group=group)
+        ifcopenshell.api.group.assign_group(ifc_file, products=[group], group=case)
+        assert subject.get_load_cases(model) == [case]
 
     def test_a_model_is_loaded_by_what_it_lists_only(self):
         ifc_file = ifcopenshell.file(schema="IFC4")

@@ -162,38 +162,21 @@ class Structural(bonsai.core.tool.Structural):
         cases = [g for g in ifc_file.by_type("IfcStructuralLoadGroup") if cls.is_load_case(g)]
         if model is None:
             return cases
-        if model.LoadedBy:
-            return list(model.LoadedBy)
-        models = {m: cls.get_model_items(m) for m in ifc_file.by_type("IfcStructuralAnalysisModel")}
+        if loaded_by := ifcopenshell.util.structural.get_model_load_groups(model):
+            return loaded_by
+        models = {
+            m: set(ifcopenshell.util.structural.get_model_items(m))
+            for m in ifc_file.by_type("IfcStructuralAnalysisModel")
+        }
         inferred = []
         for case in cases:
-            if case.LoadGroupFor or not (loaded := cls.get_loaded_items(case)):
+            if case.LoadGroupFor:
                 continue
-            if [m for m, items in models.items() if loaded <= items] == [model]:
+            activities = ifcopenshell.util.structural.get_group_activities(case)
+            loaded = {ifcopenshell.util.structural.get_activity_item(a) for a in activities} - {None}
+            if loaded and [m for m, items in models.items() if loaded <= items] == [model]:
                 inferred.append(case)
         return inferred
-
-    @classmethod
-    def get_model_items(cls, model: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
-        """The structural items grouped into an analysis model"""
-        return {obj for rel in model.IsGroupedBy or [] for obj in rel.RelatedObjects}
-
-    @classmethod
-    def get_loaded_items(cls, group: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
-        """The structural items with loads in a load group, directly or in the groups within it"""
-        items, groups, seen = set(), [group], set()
-        while groups:
-            group = groups.pop()
-            if group.id() in seen:
-                continue
-            seen.add(group.id())
-            for rel in group.IsGroupedBy or []:
-                for obj in rel.RelatedObjects:
-                    if obj.is_a("IfcStructuralLoadGroup"):
-                        groups.append(obj)
-                    elif obj.is_a("IfcStructuralActivity") and (connects := obj.AssignedToStructuralItem):
-                        items.add(connects[0].RelatingElement)
-        return items
 
     @classmethod
     def get_model_rotation(cls, load: ifcopenshell.entity_instance) -> Union[np.ndarray, None]:
