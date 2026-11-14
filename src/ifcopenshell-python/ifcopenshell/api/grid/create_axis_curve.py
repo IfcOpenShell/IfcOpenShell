@@ -58,6 +58,8 @@ def create_axis_curve(
 
     .. code:: python
 
+        import numpy as np
+
         # A pretty standard rectangular grid, with only two axes.
         grid = ifcopenshell.api.root.create_entity(model, ifc_class="IfcGrid")
         axis_a = ifcopenshell.api.grid.create_grid_axis(model,
