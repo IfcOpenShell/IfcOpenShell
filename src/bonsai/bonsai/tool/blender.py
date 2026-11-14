@@ -1161,14 +1161,19 @@ class Blender(bonsai.core.tool.Blender):
         selected_objects: Sequence[bpy.types.Object] = (),
         clear_previous_selection=True,
     ) -> None:
+        """Reapply a selection, ignoring objects that cannot be selected, e.g. in an excluded collection."""
         if clear_previous_selection:
             for obj in context.selected_objects:
-                obj.select_set(False)
+                cls.set_object_selection(obj, False)
         for obj in selected_objects:
-            obj.select_set(True)
-        context.view_layer.objects.active = active_object
-        if active_object:
-            active_object.select_set(True)
+            cls.set_object_selection(obj, True)
+        try:
+            context.view_layer.objects.active = active_object
+        except RuntimeError:  # Object's collection may be excluded/hidden in the view layer.
+            context.view_layer.objects.active = None
+        else:
+            if active_object:
+                cls.set_object_selection(active_object, True)
 
     class ObjectsSelectionArgs(NamedTuple):
         context: bpy.types.Context
