@@ -370,16 +370,10 @@ function setTheme(theme) {
   $(":root").css("color-scheme", theme);
   var stylesheet = $("#tabulator-stylesheet");
   if (theme === "light") {
-    stylesheet.attr(
-      "href",
-      "https://unpkg.com/tabulator-tables/dist/css/tabulator_site.min.css"
-    );
+    stylesheet.attr("href", "/static/css/tabulator_site.min.css");
     $("#toggle-theme").html('<i class="fas fa-sun"></i>');
   } else if (theme === "dark") {
-    stylesheet.attr(
-      "href",
-      "https://unpkg.com/tabulator-tables/dist/css/tabulator_site_dark.min.css"
-    );
+    stylesheet.attr("href", "/static/css/tabulator_site_dark.min.css");
     $("#toggle-theme").html('<i class="fas fa-moon"></i>');
   } else if (theme === "blender") {
     $("#toggle-theme").html('<i class="fas fa-adjust"></i>');
