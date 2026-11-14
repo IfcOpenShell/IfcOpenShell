@@ -385,6 +385,52 @@ Scenario: Align elements - fail due to selection criteria
     When the object "IfcDoor/Door" is selected
     Then I press "bim.hotkey(hotkey='S_C')" and expect error "Error: At least two objects must be selected to match alignments."
 
+Scenario: Align a window hosted in a wall to the wall's exterior, centerline and interior faces
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "wall_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL300'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{wall_type}"
+    And I press "bim.add_occurrence"
+    And the object "IfcWall/Wall" is selected
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWindowType"
+    And the variable "window_type" is "[e for e in {ifc}.by_type('IfcWindowType') if e.Name == 'WT01'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{window_type}"
+    And I press "bim.add_occurrence"
+    Then the object "IfcWindow/Window" bottom left corner is at "0,0,1"
+    And the object "IfcWindow/Window" top right corner is at "0.9,0.05,2.2"
+    And the object "IfcWindow/Window" filling opening is in sync
+    When the object "IfcWindow/Window" is selected
+    And additionally the object "IfcWall/Wall" is selected
+    And I press "bim.hotkey(hotkey='S_V')"
+    Then the object "IfcWindow/Window" bottom left corner is at "0,0.25,1"
+    And the object "IfcWindow/Window" top right corner is at "0.9,0.3,2.2"
+    And the object "IfcWindow/Window" filling opening is in sync
+    When I press "bim.hotkey(hotkey='S_C')"
+    Then the object "IfcWindow/Window" bottom left corner is at "0,0.125,1"
+    And the object "IfcWindow/Window" top right corner is at "0.9,0.175,2.2"
+    And the object "IfcWindow/Window" filling opening is in sync
+    When I press "bim.hotkey(hotkey='S_X')"
+    Then the object "IfcWindow/Window" bottom left corner is at "0,0,1"
+    And the object "IfcWindow/Window" top right corner is at "0.9,0.05,2.2"
+    And the object "IfcWindow/Window" filling opening is in sync
+
+Scenario: Align a window with no host - fail due to selection criteria
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "wall_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL300'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{wall_type}"
+    And I press "bim.add_occurrence"
+    And I deselect all objects
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWindowType"
+    And the variable "window_type" is "[e for e in {ifc}.by_type('IfcWindowType') if e.Name == 'WT01'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{window_type}"
+    And I press "bim.add_occurrence"
+    When the object "IfcWindow/Window" is selected
+    And additionally the object "IfcWall/Wall" is selected
+    Then I press "bim.hotkey(hotkey='S_C')" and expect error "Error: At least two vertically layered elements must be selected to match alignments."
+
 Scenario: Add a slab
     Given an empty IFC project
     And I load the demo construction library
