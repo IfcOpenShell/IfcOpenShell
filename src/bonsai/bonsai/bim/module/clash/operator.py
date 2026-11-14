@@ -428,10 +428,10 @@ class SelectClash(bpy.types.Operator):
 
         tool.Spatial.select_products(products, unhide=True)
         ClashDecorator.install(bpy.context)
-        target = Vector(clash["p1"])
+        target = tool.Clash.convert_clash_point_to_blender(clash["p1"])
         tool.Clash.look_at(target, target + Vector((5, 5, 5)))
-        self.props.p1 = clash["p1"]
-        self.props.p2 = clash["p2"]
+        self.props.p1 = target
+        self.props.p2 = tool.Clash.convert_clash_point_to_blender(clash["p2"])
         self.props.active_clash_text = clash["type"].title() + " " + str(round(clash["distance"] * 1000)) + "mm"
         return {"FINISHED"}
 
