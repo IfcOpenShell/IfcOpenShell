@@ -25,6 +25,7 @@ import bonsai.tool as tool
 class AddLibrary(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_library"
     bl_label = "Add Library"
+    bl_description = "Add a new library to the project"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -34,6 +35,7 @@ class AddLibrary(bpy.types.Operator, tool.Ifc.Operator):
 class RemoveLibrary(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_library"
     bl_label = "Remove Library"
+    bl_description = "Remove the library and all of its references from the project"
     bl_options = {"REGISTER", "UNDO"}
     library: bpy.props.IntProperty()
 
@@ -44,6 +46,7 @@ class RemoveLibrary(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingLibraryReferences(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_library_references"
     bl_label = "Enable Editing Library References"
+    bl_description = "List the references belonging to the selected library"
     bl_options = {"REGISTER", "UNDO"}
     library: bpy.props.IntProperty()
 
@@ -54,6 +57,7 @@ class EnableEditingLibraryReferences(bpy.types.Operator, tool.Ifc.Operator):
 class DisableEditingLibraryReferences(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_library_references"
     bl_label = "Disable Editing Library References"
+    bl_description = "Close the list of references belonging to the selected library"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -63,6 +67,7 @@ class DisableEditingLibraryReferences(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingLibrary(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_library"
     bl_label = "Enable Editing Library"
+    bl_description = "Load the attributes of the active library for editing"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -72,6 +77,7 @@ class EnableEditingLibrary(bpy.types.Operator, tool.Ifc.Operator):
 class DisableEditingLibrary(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_library"
     bl_label = "Disable Editing Library"
+    bl_description = "Close the library editing form without saving changes"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -81,6 +87,7 @@ class DisableEditingLibrary(bpy.types.Operator, tool.Ifc.Operator):
 class EditLibrary(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_library"
     bl_label = "Edit Library"
+    bl_description = "Save the edited attributes to the library"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -90,6 +97,7 @@ class EditLibrary(bpy.types.Operator, tool.Ifc.Operator):
 class AddLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_library_reference"
     bl_label = "Add Library Reference"
+    bl_description = "Add a new reference to the active library"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -99,6 +107,7 @@ class AddLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
 class RemoveLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_library_reference"
     bl_label = "Remove Library Reference"
+    bl_description = "Remove the reference from the library"
     bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
 
@@ -109,6 +118,7 @@ class RemoveLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_library_reference"
     bl_label = "Enable Editing Library Reference"
+    bl_description = "Load the attributes of the selected library reference for editing"
     bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
 
@@ -119,6 +129,7 @@ class EnableEditingLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
 class DisableEditingLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_library_reference"
     bl_label = "Disable Editing Library Reference"
+    bl_description = "Close the library reference editing form without saving changes"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -128,6 +139,7 @@ class DisableEditingLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
 class EditLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_library_reference"
     bl_label = "Edit Library Reference"
+    bl_description = "Save the edited attributes to the library reference"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -137,6 +149,7 @@ class EditLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
 class AssignLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_library_reference"
     bl_label = "Assign Library Reference"
+    bl_description = "Assign the library reference to the active object"
     bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
 
@@ -149,6 +162,7 @@ class AssignLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
 class UnassignLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_library_reference"
     bl_label = "Unassign Library Reference"
+    bl_description = "Unassign the library reference from the active object"
     bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
 
