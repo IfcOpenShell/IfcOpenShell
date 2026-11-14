@@ -40,23 +40,6 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), bonsai.core.tool.Structural)
 
 
-class TestGetAnalysisModelMembers(NewFile):
-    def test_only_members_of_the_requested_model(self):
-        ifc = ifcopenshell.file(schema="IFC4")
-        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
-        other_model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
-        member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember")
-        other_member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralSurfaceMember")
-        point = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralPointConnection")
-        ifcopenshell.api.structural.assign_structural_analysis_model(
-            ifc, products=[member, point], structural_analysis_model=model
-        )
-        ifcopenshell.api.structural.assign_structural_analysis_model(
-            ifc, products=[other_member], structural_analysis_model=other_model
-        )
-        assert subject.get_analysis_model_members(model) == [member]
-
-
 class TestFindNearbyConnection(NewFile):
     def test_zero_tolerance_does_not_merge_coincident_points(self):
         assert subject.find_nearby_connection((0, 0, 0), [((0, 0, 0), "first")], 0) is None

@@ -465,33 +465,6 @@ class BIM_PT_generate_structural_model(Panel):
     def draw(self, context):
         self.layout.prop(tool.Structural.get_structural_props(), "generation_merge_tolerance")
         self.layout.operator("bim.generate_structural_model", icon="MOD_SIMPLIFY")
-        model = tool.Structural.get_current_structural_analysis_model()
-        if not model:
-            return
-        changes = tool.Structural.get_member_changes(model)
-        if changes:
-            self.layout.label(text="Linked members have changed or ambiguous sources", icon="ERROR")
-        for change in changes:
-            member, source = change["member"], change["source"]
-            box = self.layout.box()
-            box.label(text=f"{member.Name or member.is_a()} (#{member.id()})")
-            if source:
-                box.label(text=f"Source: {source.Name or source.is_a()} (#{source.id()})")
-            if change["reason"] == "MULTIPLE_SOURCES":
-                box.label(text="Multiple source elements", icon="ERROR")
-            elif change["reason"] == "UNAVAILABLE":
-                box.label(text="Cannot compare source and member axes", icon="ERROR")
-            else:
-                if change["section_changed"]:
-                    box.label(text="Section or material differs from the element", icon="ERROR")
-                if change["orientation_changed"]:
-                    box.label(text="Profile orientation differs", icon="ERROR")
-                for point in change["points"]:
-                    member_position = ", ".join(f"{value:.9g}" for value in point["member_point"])
-                    source_position = ", ".join(f"{value:.9g}" for value in point["source_point"])
-                    box.label(text=f"{point['endpoint']} member (m): {member_position}")
-                    box.label(text=f"{point['endpoint']} source (m): {source_position}")
-                    box.label(text=f"Difference: {point['distance']:.6g} m; tolerance: {change['tolerance']:.6g} m")
 
 
 class BIM_UL_structural_analysis_models(UIList):

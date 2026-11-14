@@ -21,7 +21,7 @@ from __future__ import annotations
 import fractions
 import json
 import math
-from typing import TYPE_CHECKING, Any, Literal, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Union
 
 import bpy
 import ifcopenshell
@@ -51,114 +51,7 @@ if TYPE_CHECKING:
     )
 
 
-class StructuralAxisChange(TypedDict):
-    endpoint: str
-    member_point: tuple[float, float, float]
-    source_point: tuple[float, float, float]
-    distance: float
-
-
-class StructuralMemberChange(TypedDict):
-    member: ifcopenshell.entity_instance
-    source: Union[ifcopenshell.entity_instance, None]
-    reason: Literal["AXIS", "ORIENTATION", "SECTION", "MULTIPLE_SOURCES", "UNAVAILABLE"]
-    tolerance: float
-    points: list[StructuralAxisChange]
-    orientation_changed: bool
-    section_changed: bool
-
-
 class Structural(bonsai.core.tool.Structural):
-    @classmethod
-    def get_analysis_model_members(cls, model):
-        return [
-            item
-            for relation in model.IsGroupedBy or ()
-            for item in relation.RelatedObjects
-            if item.is_a("IfcStructuralMember")
-        ]
-
-    @classmethod
-    def get_member_changes(cls, model: ifcopenshell.entity_instance) -> list[StructuralMemberChange]:
-        changes: list[StructuralMemberChange] = []
-        props = cls.get_structural_props()
-        tolerance = max(props.generation_merge_tolerance, 1e-8)
-        for member in cls.get_analysis_model_members(model):
-            if not member.is_a("IfcStructuralCurveMember"):
-                continue
-            sources = ifcopenshell.util.structural.get_building_elements(member)
-            if not sources:
-                continue
-            change: StructuralMemberChange = {
-                "member": member,
-                "source": sources[0] if len(sources) == 1 else None,
-                "reason": "MULTIPLE_SOURCES",
-                "tolerance": tolerance,
-                "points": [],
-                "orientation_changed": False,
-                "section_changed": False,
-            }
-            if len(sources) != 1:
-                changes.append(change)
-                continue
-            source_obj = tool.Ifc.get_object(sources[0])
-            member_obj = tool.Ifc.get_object(member)
-            data = cls.get_physical_member_data(source_obj) if source_obj else None
-            if (
-                data is None
-                or not member_obj
-                or member_obj.type != "MESH"
-                or len(member_obj.data.vertices) != 2
-                or not member.Axis
-            ):
-                change["reason"] = "UNAVAILABLE"
-                changes.append(change)
-                continue
-            axis, profile_direction = data
-            physical_section = cls.get_physical_section(sources[0])
-            material_set = ifcopenshell.util.element.get_material(member, should_skip_usage=True)
-            member_profiles = (
-                material_set.MaterialProfiles if material_set and material_set.is_a("IfcMaterialProfileSet") else ()
-            ) or ()
-            change["section_changed"] = (
-                not physical_section
-                or len(member_profiles) != 1
-                or (member_profiles[0].Profile, member_profiles[0].Material) != physical_section
-            )
-            member_axis = np.array([member_obj.matrix_world @ vertex.co for vertex in member_obj.data.vertices])
-            # Blender mesh coordinates and transforms use single precision.
-            precision = 2 * np.finfo(np.float32).eps * max(1.0, np.abs(member_axis).max(), np.abs(axis).max())
-            change["tolerance"] = float(max(tolerance, precision))
-            change["reason"] = "AXIS"
-            for index, endpoint in enumerate(("Start", "End")):
-                member_point, source_point = member_axis[index], axis[index]
-                distance = float(np.linalg.norm(member_point - source_point))
-                if distance > change["tolerance"]:
-                    change["points"].append(
-                        {
-                            "endpoint": endpoint,
-                            "member_point": (float(member_point[0]), float(member_point[1]), float(member_point[2])),
-                            "source_point": (float(source_point[0]), float(source_point[1]), float(source_point[2])),
-                            "distance": distance,
-                        }
-                    )
-            direction = member_axis[1] - member_axis[0]
-            if np.linalg.norm(direction) < 1e-9:
-                change["reason"] = "UNAVAILABLE"
-                changes.append(change)
-                continue
-            expected = cls.get_member_orientation(profile_direction, direction)
-            actual = np.asarray(member_obj.matrix_world)[:3, :3] @ np.asarray(member.Axis.DirectionRatios)
-            actual = cls.get_member_orientation(actual, direction)
-            change["orientation_changed"] = (
-                expected is None or actual is None or bool(np.linalg.norm(actual - expected) > 1e-6)
-            )
-            if change["points"] or change["orientation_changed"] or change["section_changed"]:
-                if not change["points"]:
-                    change["reason"] = "ORIENTATION" if change["orientation_changed"] else "SECTION"
-                changes.append(change)
-        return changes
-
     @classmethod
     def is_generated_connection(cls, connection):
         relations = connection.ConnectsStructuralMembers or ()
