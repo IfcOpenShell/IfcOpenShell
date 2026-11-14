@@ -30,6 +30,7 @@ bl_info = {
 
 import importlib
 import logging
+import sys
 import types
 
 import bpy
@@ -40,11 +41,19 @@ logger = logging.getLogger("sverchok.ifc")
 
 def get_blender_addon_package_by_name(addon_name: str) -> types.ModuleType:
     # Check for legacy addons.
-    # Make an exception for sverchok as it keeps getting installed by all kind of names
-    # and then hacks `sverchok` into `sys.modules`.
-    if addon_name in bpy.context.preferences.addons or addon_name == "sverchok":
+    if addon_name in bpy.context.preferences.addons:
         return importlib.import_module(addon_name)
-    elif bpy.app.version < (4, 2, 0):
+
+    # Sverchok is installed under many names (e.g. "sverchok-master") and only
+    # hacks `sverchok` into `sys.modules` once its own registration has run.
+    if addon_name == "sverchok":
+        for package_name in bpy.context.preferences.addons.keys():
+            if package_name.startswith(("sverchok-", "sverchok_")):
+                return importlib.import_module(package_name)
+        if "sverchok" in sys.modules:
+            return sys.modules["sverchok"]
+
+    if bpy.app.version < (4, 2, 0):
         raise ModuleNotFoundError
 
     # Check for Blender extensions.
