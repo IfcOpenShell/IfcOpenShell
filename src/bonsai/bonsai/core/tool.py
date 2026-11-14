@@ -1224,6 +1224,7 @@ class Type:
 
 @interface
 class Unit:
+    def add_structural_units(cls): pass
     def clear_active_unit(cls): pass
     def disable_editing_units(cls): pass
     def enable_editing_units(cls): pass

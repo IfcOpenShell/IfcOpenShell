@@ -21,6 +21,8 @@ import ifcopenshell
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+import ifcopenshell.util.unit
+import pytest
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -42,6 +44,58 @@ class TestParseDistanceString(NewFile):
         assert subject.parse_distance_string("5'6\"") == (True, 1.6764)
         assert subject.parse_distance_string("-5'6\"") == (True, -1.6764)
         assert subject.parse_distance_string("invalid") == (False, 0.0)
+
+
+class TestAddStructuralUnits(NewFile):
+    def get_units(self, system: str) -> dict[str, tuple[str, float]]:
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        bpy.context.scene.unit_settings.system = system
+        units = subject.add_structural_units()
+        return {
+            u.UnitType: (ifcopenshell.util.unit.get_unit_symbol(u), ifcopenshell.util.unit.get_unit_scale(u))
+            for u in units
+        }
+
+    def test_metric(self):
+        units = self.get_units("METRIC")
+        assert units["FORCEUNIT"] == ("kN", 1e3)
+        assert units["TORQUEUNIT"] == ("kN.m", 1e3)
+        assert units["LINEARFORCEUNIT"] == ("kN/m", 1e3)
+        assert units["LINEARMOMENTUNIT"] == ("kN.m/m", 1e3)
+        assert units["PLANARFORCEUNIT"] == ("kN/m2", 1e3)
+        assert units["LINEARSTIFFNESSUNIT"] == ("kN/m", 1e3)
+        assert units["ROTATIONALSTIFFNESSUNIT"] == ("kN.m/rad", 1e3)
+        assert units["MODULUSOFLINEARSUBGRADEREACTIONUNIT"] == ("kN/m2", 1e3)
+        assert units["MODULUSOFROTATIONALSUBGRADEREACTIONUNIT"] == ("kN.m/m.rad", 1e3)
+        assert units["MODULUSOFSUBGRADEREACTIONUNIT"] == ("kN/m3", 1e3)
+        assert units["MODULUSOFELASTICITYUNIT"] == ("N/mm2", pytest.approx(1e6))
+        assert units["SHEARMODULUSUNIT"] == ("N/mm2", pytest.approx(1e6))
+        assert units["MASSDENSITYUNIT"][0] == "kg/m3"  # get_unit_scale counts mass in grams
+        assert len(units) == 13
+
+    def test_imperial(self):
+        kip, foot, inch = 4448.2216153, 0.3048, 0.0254
+        units = self.get_units("IMPERIAL")
+        assert units["FORCEUNIT"] == ("kip", pytest.approx(kip))
+        assert units["TORQUEUNIT"] == ("kip.ft", pytest.approx(kip * foot))
+        assert units["LINEARFORCEUNIT"] == ("kip/ft", pytest.approx(kip / foot))
+        assert units["PLANARFORCEUNIT"] == ("lbf/ft2", pytest.approx(4.4482216153 / foot**2))
+        assert units["LINEARSTIFFNESSUNIT"] == ("kip/in", pytest.approx(kip / inch))
+        assert units["ROTATIONALSTIFFNESSUNIT"] == ("kip.ft/rad", pytest.approx(kip * foot))
+        assert units["MODULUSOFELASTICITYUNIT"] == ("kip/in2", pytest.approx(kip / inch**2))
+        assert units["MASSDENSITYUNIT"][0] == "lb/ft3"
+        assert len(units) == 13
+
+    def test_assigning_them_replaces_none_of_the_scene_units(self):
+        ifc = ifcopenshell.api.project.create_file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc)
+        bpy.context.scene.unit_settings.system = "METRIC"
+        ifcopenshell.api.unit.assign_unit(ifc, units=subject.add_structural_units())
+        assert ifcopenshell.util.unit.get_project_unit(ifc, "LENGTHUNIT").Prefix == "MILLI"
+        assert ifcopenshell.util.unit.get_project_unit(ifc, "PLANEANGLEUNIT") is None
 
 
 class TestClearActiveUnit(NewFile):
