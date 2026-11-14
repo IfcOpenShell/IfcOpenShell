@@ -648,6 +648,15 @@ class Usecase:
         self.existing_contexts.append(context)
         return context
 
+    def get_angle_conversion_factor(self) -> float:
+        """Library plane angles to project plane angles, e.g. radians to degrees. A file without a
+        plane angle unit is in radians, IFC's default."""
+        if (factor := getattr(self, "_angle_conversion_factor", None)) is None:
+            library_scale = ifcopenshell.util.unit.calculate_unit_scale(self.library, "PLANEANGLEUNIT")
+            factor = library_scale / ifcopenshell.util.unit.calculate_unit_scale(self.file, "PLANEANGLEUNIT")
+            self._angle_conversion_factor = factor
+        return factor
+
     def file_add(
         self, element: ifcopenshell.entity_instance, conversion_factor: float | None = None
     ) -> ifcopenshell.entity_instance:
@@ -792,6 +801,11 @@ class Usecase:
         def is_length_measure(attribute: W.attribute) -> bool:
             return "<type IfcLengthMeasure: <real>>" in str(attribute.type_of_attribute())
 
+        def is_plane_angle_measure(attribute: W.attribute) -> bool:
+            # Only attributes declared as angles, e.g. IfcRevolvedAreaSolid.Angle. An angle wrapped in a
+            # select (a property value) may carry its own unit, so it is left alone.
+            return "<type IfcPlaneAngleMeasure: <real>>" in str(attribute.type_of_attribute())
+
         def apply_to_array(arr: Any, func: Callable[[Any], Any]) -> Any:
             if isinstance(arr, tuple):
                 return tuple(apply_to_array(sub, func) for sub in arr)
@@ -824,6 +838,8 @@ class Usecase:
                 attributes = get_attributes()
                 if is_length_measure(attributes[attr_index]):
                     attr_value *= get_conversion_factor()
+                elif is_plane_angle_measure(attributes[attr_index]):
+                    attr_value *= self.get_angle_conversion_factor()
 
             attrs[attr_index] = attr_value
 
