@@ -134,6 +134,7 @@ extra-paths = [
     "src/ifccsv",
     "src/ifcdiff",
     "src/ifcfm",
+    "src/ifcmcp",
     "src/ifcopenshell-python",
     "src/ifcpatch",
     "src/ifctester",

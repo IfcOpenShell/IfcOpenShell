@@ -225,6 +225,9 @@ def main() -> None:
         (package_path / "ifccityjson",  REPO_PATH / "src/ifccityjson/ifccityjson"),
         (package_path / "ifcclash",     REPO_PATH / "src/ifcclash/ifcclash"),
         (package_path / "ifcpatch",     REPO_PATH / "src/ifcpatch/ifcpatch"),
+        (package_path / "ifcquery",     REPO_PATH / "src/ifcquery/ifcquery"),
+        (package_path / "ifcedit",      REPO_PATH / "src/ifcedit/ifcedit"),
+        (package_path / "ifcmcp",       REPO_PATH / "src/ifcmcp/ifcmcp"),
         (package_path / "ifctester",    REPO_PATH / "src/ifctester/ifctester"),
         (package_path / "ifcfm",        REPO_PATH / "src/ifcfm/ifcfm"),
     )

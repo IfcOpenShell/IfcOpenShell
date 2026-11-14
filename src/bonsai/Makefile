@@ -187,6 +187,9 @@ endif
 	cd ../ifcdiff && make dist && mv dist/*.whl ../bonsai/build/wheels/
 	cd ../ifccsv && make dist && mv dist/*.whl ../bonsai/build/wheels/
 	cd ../ifcpatch && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifcquery && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifcedit && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifcmcp && make dist && mv dist/*.whl ../bonsai/build/wheels/
 	cd ../ifc4d && make dist && mv dist/*.whl ../bonsai/build/wheels/
 	cd ../ifc5d && make dist && mv dist/*.whl ../bonsai/build/wheels/
 	cd ../ifccityjson && make dist && mv dist/*.whl ../bonsai/build/wheels/
