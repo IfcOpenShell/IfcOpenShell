@@ -21,6 +21,8 @@
 #include "base_utils.h"
 #include "wire_utils.h"
 
+#include <algorithm>
+
 #include <BRepOffsetAPI_MakePipeShell.hxx>
 #include <Geom_Plane.hxx>
 #include <ShapeAnalysis_Surface.hxx>
@@ -69,6 +71,41 @@ namespace {
 		return true;
 	}
 
+	// Straight directrix segments meeting below this angle polygonise a curve rather than
+	// turn a corner. BRepFill_PipeShell mitres every kink and on chords of a few
+	// millimetres the trims fail (#435), so such a directrix is swept as a polyhedron.
+	const double tessellation_kink = 0.1;
+
+	bool has_tessellation_kinks(const taxonomy::loop::ptr& loop) {
+		auto straight = [](const taxonomy::edge::ptr& e) {
+			return !e->basis || e->basis->kind() == taxonomy::LINE;
+		};
+		auto tangent = [](const taxonomy::edge::ptr& e, Eigen::Vector3d& t) {
+			auto a = std::get_if<taxonomy::point3::ptr>(&e->start);
+			auto b = std::get_if<taxonomy::point3::ptr>(&e->end);
+			if (!a || !b) {
+				return false;
+			}
+			t = (*b)->ccomponents() - (*a)->ccomponents();
+			return t.norm() > 0.;
+		};
+		const auto& edges = loop->children;
+		const size_t corners = edges.size() - (loop->closed.value_or(false) ? 0 : 1);
+		for (size_t k = 0; k < corners; ++k) {
+			const auto& e0 = edges[k];
+			const auto& e1 = edges[(k + 1) % edges.size()];
+			Eigen::Vector3d t0, t1;
+			if (!straight(e0) || !straight(e1) || !tangent(e0, t0) || !tangent(e1, t1)) {
+				continue;
+			}
+			const double angle = std::acos(std::clamp(t0.normalized().dot(t1.normalized()), -1., 1.));
+			if (angle > 1.e-9 && angle < tessellation_kink) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	bool contains_circular_segments(const TopoDS_Wire& w) {
 		for (TopoDS_Iterator it(w); it.More(); it.Next()) {
 			const auto& e = TopoDS::Edge(it.Value());
@@ -89,6 +126,16 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 	Eigen::Vector3d mean;
 
 	auto curve = scs->curve;
+
+	if (auto directrix = std::dynamic_pointer_cast<taxonomy::loop>(curve); directrix && has_tessellation_kinks(directrix)) {
+		try {
+			auto shell = scs->to_polyhedron(settings_);
+			logger_.notice("GEO", 259, "Sweeping a tessellated directrix as a polyhedron", scs->instance);
+			return convert(shell, result);
+		} catch (const std::exception& e) {
+			logger_.notice("GEO", 260, std::string("Tessellated directrix not swept as a polyhedron: ") + e.what(), scs->instance);
+		}
+	}
 
 	// Apply temporary offset if the geometry is far away from origin
 	// Re: https://github.com/IfcOpenShell/IfcOpenShell/issues/7408
