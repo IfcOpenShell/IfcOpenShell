@@ -44,6 +44,29 @@ class TestParseDistanceString(NewFile):
         assert subject.parse_distance_string("invalid") == (False, 0.0)
 
 
+class TestAddDerivedUnitOperator(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        metre = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT")
+        second = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="TIMEUNIT")
+
+        props = tool.Unit.get_unit_props()
+        props.derived_unit_types = "LINEARVELOCITYUNIT"
+        bpy.ops.bim.add_derived_unit_element()
+        bpy.ops.bim.add_derived_unit_element()
+        props.derived_unit_elements[0].unit = str(metre.id())
+        props.derived_unit_elements[1].unit = str(second.id())
+        props.derived_unit_elements[1].exponent = -1
+        bpy.ops.bim.add_derived_unit()
+
+        unit = ifc.by_type("IfcDerivedUnit")[0]
+        assert unit.UnitType == "LINEARVELOCITYUNIT"
+        assert {(e.Unit, e.Exponent) for e in unit.Elements} == {(metre, 1), (second, -1)}
+        assert len(props.derived_unit_elements) == 0
+
+
 class TestClearActiveUnit(NewFile):
     def test_run(self):
         props = tool.Unit.get_unit_props()
