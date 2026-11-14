@@ -622,7 +622,10 @@ class StructuralModelGeneration(bpy.types.Operator, tool.Ifc.Operator):
 class GenerateStructuralModel(StructuralModelGeneration):
     bl_idname = "bim.generate_structural_model"
     bl_label = "(Re)Generate from Selected"
-    bl_description = "Generate or refresh structural members from selected profile beams and columns"
+    bl_description = (
+        "Generate or refresh members from selected beams and columns; "
+        "editing shared sections or materials can affect physical elements"
+    )
     bl_options = {"REGISTER", "UNDO"}
     structural_model: bpy.props.IntProperty(default=0, options={"HIDDEN", "SKIP_SAVE"})
 

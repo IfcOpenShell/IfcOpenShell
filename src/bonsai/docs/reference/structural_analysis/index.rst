@@ -14,8 +14,11 @@ Generate Structural Model (Beams & Columns)
 
 Select profile-based beams or columns and use **(Re)Generate from Selected** to
 create linked structural curve members. Each supported element must have one
-material and an extruded section. The member shares its section and material
-with the element; editing shared data can therefore affect both.
+material and an extruded section. The member shares the section profile and
+material with the element, and shares its profile set when one is assigned.
+Editing shared data through either member or element can affect both, as well
+as other elements using the same profile or material. An alternative section
+cannot be tested independently by editing that shared data.
 
 The panel reports differences between linked members and their elements.
 Select the physical beams or columns and use **(Re)Generate from Selected** to
