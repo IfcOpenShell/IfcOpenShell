@@ -20,6 +20,8 @@ import datetime
 
 import pytest
 
+import ifcopenshell.api.control
+import ifcopenshell.api.nest
 import ifcopenshell.api.sequence
 import test.bootstrap
 
@@ -41,6 +43,73 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task2.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task2.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
+
+    def test_moving_a_task_to_working_days_when_it_gains_a_calendar(self):
+        task = self._create_task("P2D")
+        assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
+        assert task.TaskTime.ScheduleFinish == "2000-01-02T17:00:00"
+
+        ifcopenshell.api.control.assign_control(
+            self.file, relating_control=self._create_weekday_calendar(), related_objects=[task]
+        )
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        assert task.TaskTime.ScheduleStart == "2000-01-03T09:00:00"
+        assert task.TaskTime.ScheduleFinish == "2000-01-04T17:00:00"
+
+    def test_moving_nested_tasks_to_working_days_when_their_parent_gains_a_calendar(self):
+        parent = ifcopenshell.api.sequence.add_task(self.file)
+        task = self._create_task("P2D")
+        ifcopenshell.api.nest.assign_object(self.file, related_objects=[task], relating_object=parent)
+
+        ifcopenshell.api.control.assign_control(
+            self.file, relating_control=self._create_weekday_calendar(), related_objects=[parent]
+        )
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=parent)
+        assert task.TaskTime.ScheduleStart == "2000-01-03T09:00:00"
+        assert task.TaskTime.ScheduleFinish == "2000-01-04T17:00:00"
+
+    def test_counting_every_day_again_when_a_task_loses_its_calendar(self):
+        calendar = self._create_weekday_calendar()
+        task = ifcopenshell.api.sequence.add_task(self.file)
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_objects=[task])
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file,
+            task_time=task_time,
+            attributes={"ScheduleStart": datetime.date(1999, 12, 31), "ScheduleDuration": "P2D"},
+        )
+        assert task.TaskTime.ScheduleFinish == "2000-01-03T17:00:00"
+
+        ifcopenshell.api.control.unassign_control(self.file, relating_control=calendar, related_objects=[task])
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        assert task.TaskTime.ScheduleStart == "1999-12-31T09:00:00"
+        assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
+
+    def test_keeping_the_span_of_a_task_without_a_duration_when_it_gains_a_calendar(self):
+        task = ifcopenshell.api.sequence.add_task(self.file)
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+        task_time.ScheduleStart = "2000-01-01T09:00:00"
+        task_time.ScheduleFinish = "2000-01-01T13:00:00"
+
+        ifcopenshell.api.control.assign_control(
+            self.file, relating_control=self._create_weekday_calendar(), related_objects=[task]
+        )
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        assert task.TaskTime.ScheduleStart == "2000-01-03T09:00:00"
+        assert task.TaskTime.ScheduleFinish == "2000-01-03T13:00:00"
+
+    def test_not_finishing_a_task_without_a_duration_on_a_non_working_day(self):
+        task = ifcopenshell.api.sequence.add_task(self.file)
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+        task_time.ScheduleStart = "2000-01-01T09:00:00"
+        task_time.ScheduleFinish = "2000-01-07T17:00:00"
+
+        ifcopenshell.api.control.assign_control(
+            self.file, relating_control=self._create_weekday_calendar(), related_objects=[task]
+        )
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        assert task.TaskTime.ScheduleStart == "2000-01-03T09:00:00"
+        assert task.TaskTime.ScheduleFinish == "2000-01-10T17:00:00"
 
     def test_only_cascading_to_successors_not_predecessors(self):
         task = self._create_task("P1D")
@@ -167,6 +236,18 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
             attributes={"ScheduleStart": datetime.date(2000, 1, 1), "ScheduleDuration": duration},
         )
         return task
+
+    def _create_weekday_calendar(self):
+        self.file.create_entity("IfcProject")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
+        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar)
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(
+            self.file, parent=work_time, recurrence_type="WEEKLY"
+        )
+        ifcopenshell.api.sequence.edit_recurrence_pattern(
+            self.file, recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]}
+        )
+        return calendar
 
     def _create_sequence(self, predecessor, successor, relationship, lag=None):
         rel = ifcopenshell.api.sequence.assign_sequence(
