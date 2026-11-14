@@ -57,6 +57,7 @@ classes = (
     ui.BIM_PT_profile_psets,
     ui.BIM_PT_work_schedule_psets,
     ui.BIM_PT_zone_psets,
+    ui.BIM_PT_system_psets,
     ui.BIM_PT_bulk_property_editor,
     ui.BIM_PT_rename_parameters,
     ui.BIM_PT_add_edit_custom_properties,
@@ -74,6 +75,7 @@ def register():
     bpy.types.Scene.ProfilePsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
     bpy.types.Scene.WorkSchedulePsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
     bpy.types.Scene.ZonePsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
+    bpy.types.Scene.SystemPsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
     bpy.types.Scene.GlobalPsetProperties = bpy.props.PointerProperty(type=prop.GlobalPsetProperties)
 
 
@@ -87,4 +89,5 @@ def unregister():
     del bpy.types.Scene.ProfilePsetProperties
     del bpy.types.Scene.WorkSchedulePsetProperties
     del bpy.types.Scene.ZonePsetProperties
+    del bpy.types.Scene.SystemPsetProperties
     del bpy.types.Scene.GlobalPsetProperties
