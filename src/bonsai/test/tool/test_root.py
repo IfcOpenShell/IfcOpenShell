@@ -284,6 +284,13 @@ class TestAssignClass(NewFile):
         psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
         assert psets == {}
 
+    def test_quads_are_preserved_in_the_viewport(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.primitive_cube_add()
+        obj = bpy.context.active_object
+        bpy.ops.bim.assign_class(ifc_class="IfcBuildingElementProxy", predefined_type="ELEMENT", userdefined_type="")
+        assert len(obj.data.polygons) == 6
+
     def test_alternative_assign_ifc_class(self):
         # Setup project
         tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
