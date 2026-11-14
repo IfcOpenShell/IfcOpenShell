@@ -866,6 +866,10 @@ class DecoratorData:
                     results.append((obj, handler.decorators["HIDDEN_LINE"]))
                 else:
                     results.append((obj, handler.decorators["MISC"]))
+            elif tool.Drawing.get_text_literal(obj, return_list=True):
+                # Annotations from other authoring tools (e.g. ArchiCAD) have no matching
+                # decorator key but still carry IfcTextLiteral items.
+                results.append((obj, handler.decorators["TEXT"]))
 
         return results
 
