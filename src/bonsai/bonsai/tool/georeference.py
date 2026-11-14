@@ -160,9 +160,6 @@ class Georeference(bonsai.core.tool.Georeference):
 
     @classmethod
     def import_true_north(cls) -> None:
-        if tool.Ifc.get_schema() == "IFC2X3":
-            return
-
         props = cls.get_georeference_props()
         props.is_changing_angle = True
         props.true_north_abscissa = "0"

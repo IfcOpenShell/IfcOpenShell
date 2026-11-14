@@ -103,7 +103,6 @@ class Qto(bonsai.core.tool.Qto):
         base_qto_definition = None
         base_qto_definition_name: Union[str, None] = None
         for rel in product.IsDefinedBy or []:
-            definition = rel.RelatingPropertyDefinition
             if not rel.is_a("IfcRelDefinesByProperties"):
                 continue
             definition = rel.RelatingPropertyDefinition
