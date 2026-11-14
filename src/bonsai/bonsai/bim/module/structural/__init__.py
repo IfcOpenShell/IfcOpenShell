@@ -88,7 +88,6 @@ classes = (
     operator.EditBoundaryCondition,
     operator.ToggleFilterBoundaryConditions,
     prop.StructuralAnalysisModel,
-    prop.StructuralGenerationLink,
     prop.StructuralActivity,
     prop.StructuralLoad,
     prop.BoundaryCondition,

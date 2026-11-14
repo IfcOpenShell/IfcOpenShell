@@ -156,15 +156,6 @@ class StructuralAnalysisModel(PropertyGroup):
         ifc_definition_id: int
 
 
-class StructuralGenerationLink(PropertyGroup):
-    model_guid: StringProperty(name="Analysis Model GlobalId")
-    member_guid: StringProperty(name="Structural Member GlobalId")
-
-    if TYPE_CHECKING:
-        model_guid: str
-        member_guid: str
-
-
 class StructuralActivity(PropertyGroup):
     name: StringProperty(name="Name")
     applied_load_class: StringProperty(name="Applied Load Class")
@@ -225,7 +216,6 @@ class BIMStructuralProperties(PropertyGroup):
         min=0.0,
         default=0.01,
     )
-    generation_links: CollectionProperty(type=StructuralGenerationLink)
     load_case_attributes: CollectionProperty(name="Load Case Attributes", type=Attribute)
     load_case_has_self_weight: BoolProperty(name="Include Self-Weight", default=False)
     load_case_self_weight: FloatVectorProperty(
@@ -369,7 +359,6 @@ class BIMStructuralProperties(PropertyGroup):
         current_structural_analysis_model_id: int
         building: str
         generation_merge_tolerance: float
-        generation_links: bpy.types.bpy_prop_collection_idprop[StructuralGenerationLink]
         load_case_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         load_case_has_self_weight: bool
         load_case_self_weight: tuple[float, float, float]

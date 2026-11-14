@@ -61,7 +61,7 @@ class StructuralAxisChange(TypedDict):
 class StructuralMemberChange(TypedDict):
     member: ifcopenshell.entity_instance
     source: Union[ifcopenshell.entity_instance, None]
-    reason: Literal["AXIS", "ORIENTATION", "SECTION", "MISSING_SOURCE", "MULTIPLE_SOURCES", "UNAVAILABLE"]
+    reason: Literal["AXIS", "ORIENTATION", "SECTION", "MULTIPLE_SOURCES", "UNAVAILABLE"]
     tolerance: float
     points: list[StructuralAxisChange]
     orientation_changed: bool
@@ -83,17 +83,16 @@ class Structural(bonsai.core.tool.Structural):
         changes: list[StructuralMemberChange] = []
         props = cls.get_structural_props()
         tolerance = max(props.generation_merge_tolerance, 1e-8)
-        tracked = {item.member_guid for item in props.generation_links if item.model_guid == model.GlobalId}
         for member in cls.get_analysis_model_members(model):
             if not member.is_a("IfcStructuralCurveMember"):
                 continue
             sources = ifcopenshell.util.structural.get_building_elements(member)
-            if not sources and member.GlobalId not in tracked:
+            if not sources:
                 continue
             change: StructuralMemberChange = {
                 "member": member,
                 "source": sources[0] if len(sources) == 1 else None,
-                "reason": "MISSING_SOURCE" if not sources else "MULTIPLE_SOURCES",
+                "reason": "MULTIPLE_SOURCES",
                 "tolerance": tolerance,
                 "points": [],
                 "orientation_changed": False,
