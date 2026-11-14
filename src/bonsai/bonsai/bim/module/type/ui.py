@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell.util.element
 from bpy.types import Panel
 
 import bonsai.bim.module.type.prop as type_prop
@@ -106,6 +107,7 @@ class BIM_PT_type(Panel):
             else:
                 row.label(text="No Relating Type")
                 row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
+                row.operator("bim.convert_to_type", icon="ADD", text="Convert to Type")
 
 
 class BIM_PT_type_attributes(Panel):
@@ -159,3 +161,15 @@ class BIM_PT_type_attributes(Panel):
 
 def add_object_button(self, context):
     self.layout.operator("bim.add_occurrence", icon="PLUGIN")
+
+
+def object_context_menu(self, context):
+    obj = context.active_object
+    if not (obj and (element := tool.Ifc.get_entity(obj))):
+        return
+    if not element.is_a("IfcProduct") or element.is_a("IfcTypeProduct"):
+        return
+    if ifcopenshell.util.element.get_type(element):
+        return
+    self.layout.separator()
+    self.layout.operator("bim.convert_to_type", icon="PLUGIN")
