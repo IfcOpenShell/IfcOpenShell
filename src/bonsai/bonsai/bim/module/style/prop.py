@@ -32,6 +32,7 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 
 import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.style.data import StylesData
 from bonsai.bim.prop import Attribute, StrProperty
 
@@ -52,7 +53,8 @@ def get_reflectance_methods(self: "BIMStylesProperties", context: bpy.types.Cont
 
 def update_style_name(self: "Style", context: bpy.types.Context) -> None:
     style = tool.Ifc.get().by_id(self.ifc_definition_id)
-    tool.Style.rename_style(style, self.name)
+    with IfcStore.track_transaction_outside_operator("Rename Style"):
+        tool.Style.rename_style(style, self.name)
 
 
 class Style(PropertyGroup):
