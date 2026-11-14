@@ -234,3 +234,27 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.ScheduleStart == "2020-01-01T09:00:00"
         assert task_time.ScheduleFinish == "2020-01-09T17:00:00"
         assert task_time.ScheduleDuration == "P7D"
+
+
+class TestEditTaskTimeDurationRoundTrip(test.bootstrap.IFC4):
+    """Regression tests for #6964: an IfcDuration written as an attribute
+    edit must not gain or lose precision, since it is only a string write,
+    not a recalculation."""
+
+    def test_a_duration_with_a_fractional_second_is_preserved(self):
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file,
+            task_time=task_time,
+            attributes={"ScheduleDuration": "PT2H29M59.999867S"},
+        )
+        assert task_time.ScheduleDuration == "PT2H29M59.999867S"
+
+    def test_dimitrios_exact_value_is_preserved(self):
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file,
+            task_time=task_time,
+            attributes={"ScheduleDuration": "PT2H30M"},
+        )
+        assert task_time.ScheduleDuration == "PT2H30M"
