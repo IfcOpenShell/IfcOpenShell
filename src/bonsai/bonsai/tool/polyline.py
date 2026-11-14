@@ -35,6 +35,8 @@ class Polyline(bonsai.core.tool.Polyline):
     @dataclass
     class PolylineUI:
         _D: str = ""
+        _L: str = ""
+        _W: str = ""
         _A: str = ""  # Relative to previous polyline points
         _WORLD_ANGLE: str = ""  # Relative to World Origin. Only used for specific operation. Not used on the UI.
         _X: str = ""
@@ -61,7 +63,7 @@ class Polyline(bonsai.core.tool.Polyline):
         def get_formatted_value(self, attribute_name):
             value = self.get_number_value(attribute_name)
             context = bpy.context
-            if value is None:
+            if value is None or value == "":
                 return None
             if attribute_name == "A":
                 value = float(self.get_text_value(attribute_name))
@@ -77,6 +79,7 @@ class Polyline(bonsai.core.tool.Polyline):
         snap_angle: float = None
         is_input_on: bool = None
         lock_axis: bool = False
+        supports_rectangle: bool = False
         # angle_axis_start: Vector
         # angle_axis_end: Vector
         axis_method: Literal["X", "Y", "Z", None] = None
@@ -203,6 +206,9 @@ class Polyline(bonsai.core.tool.Polyline):
             input_ui.set_value("D", distance)
             input_ui.set_value("A", angle)
             input_ui.set_value("WORLD_ANGLE", orientation_angle)
+            if cls.is_rectangle_mode(tool_state):
+                # In rectangle mode the A field shows the rectangle rotation, not the leg angle.
+                input_ui.set_value("A", math.degrees(tool.Model.get_polyline_settings().rectangle_angle))
             return
 
     @classmethod
@@ -585,6 +591,123 @@ class Polyline(bonsai.core.tool.Polyline):
         polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         polyline_points.remove(len(polyline_points) - 1)
+
+    @classmethod
+    def remove_intermediate_polyline_points(cls) -> None:
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
+        if len(polyline_points) >= 3:
+            for i in range(len(polyline_points) - 2):
+                polyline_points.remove(1)
+
+    @classmethod
+    def is_rectangle_mode(cls, tool_state=None) -> bool:
+        if tool.Model.get_polyline_settings().drawing_type != "RECTANGLE":
+            return False
+        if tool_state is not None and not tool_state.supports_rectangle:
+            return False
+        if tool_state is not None and tool_state.plane_method not in (None, "XY"):
+            return False
+        return True
+
+    @classmethod
+    def get_rectangle_anchor(cls) -> Optional[Vector]:
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
+        if not polyline_data or not polyline_data[0].polyline_points:
+            return None
+        point = polyline_data[0].polyline_points[0]
+        return Vector((point.x, point.y, point.z))
+
+    @classmethod
+    def get_rectangle_axes(cls, angle: float) -> tuple[Vector, Vector]:
+        # Length and width axes of a rectangle frame rotated by angle (radians) counter-clockwise about Z.
+        return (
+            Vector((math.cos(angle), math.sin(angle), 0.0)),
+            Vector((-math.sin(angle), math.cos(angle), 0.0)),
+        )
+
+    @classmethod
+    def get_rectangle_dimensions(cls, anchor: Vector, corner: Vector) -> tuple[float, float]:
+        # Signed length and width of the rectangle from its first corner to the opposite corner,
+        # expressed in the rotated frame given by the scene rectangle angle.
+        axes = cls.get_rectangle_axes(tool.Model.get_polyline_settings().rectangle_angle)
+        delta = Vector((corner.x - anchor.x, corner.y - anchor.y, 0.0))
+        return delta.dot(axes[0]), delta.dot(axes[1])
+
+    @classmethod
+    def rectangle_corners(cls, anchor: Vector, corner: Vector) -> list[Vector]:
+        # The four corners of the rectangle defined by two opposite corners and the scene rectangle
+        # angle. With an angle of zero this reproduces the axis-aligned rectangle.
+        e_l, e_w = cls.get_rectangle_axes(tool.Model.get_polyline_settings().rectangle_angle)
+        length, width = cls.get_rectangle_dimensions(anchor, corner)
+        p1 = Vector((anchor.x, anchor.y, anchor.z))
+        p2 = p1 + Vector((e_w.x * width, e_w.y * width, 0.0))
+        p3 = Vector((corner.x, corner.y, corner.z))
+        p4 = p1 + Vector((e_l.x * length, e_l.y * length, 0.0))
+        return [p1, p2, p3, p4]
+
+    @classmethod
+    def calculate_rectangle_from_mouse(
+        cls, context: bpy.types.Context, input_ui: PolylineUI, tool_state: ToolState
+    ) -> None:
+        # Rectangle mode: derive L/W (in the rotated frame) and the hidden X/Y from the current
+        # snapping point, keeping the typed angle untouched.
+        polyline_props = tool.Model.get_polyline_props()
+        snap_prop = polyline_props.snap_mouse_point[0]
+        if tool.Ifc.get():
+            default_container_elevation = tool.Root.get_default_container_elevation()
+        else:
+            default_container_elevation = 0.0
+        z = default_container_elevation if tool_state.use_default_container else snap_prop.z
+        if tool_state.plane_method == "XY":
+            z = tool_state.plane_origin.z
+        corner = Vector((snap_prop.x, snap_prop.y, z))
+        input_ui.set_value("X", corner.x)
+        input_ui.set_value("Y", corner.y)
+        input_ui.set_value("Z", corner.z)
+
+        anchor = cls.get_rectangle_anchor()
+        if anchor is None:
+            return
+        length, width = cls.get_rectangle_dimensions(anchor, corner)
+        input_ui.set_value("L", length)
+        input_ui.set_value("W", width)
+        input_ui.set_value("WORLD_ANGLE", math.degrees(math.atan2(corner.y - anchor.y, corner.x - anchor.x)))
+
+    @classmethod
+    def calculate_x_y_and_z_from_rectangle(
+        cls, context: bpy.types.Context, input_ui: PolylineUI, tool_state: ToolState
+    ) -> None:
+        # Rectangle mode: apply typed L/W/A by computing the opposite corner of the rotated frame.
+        anchor = cls.get_rectangle_anchor()
+        if anchor is None:
+            return
+        settings = tool.Model.get_polyline_settings()
+        angle = settings.rectangle_angle
+        if tool_state.input_type == "A":
+            a_text = input_ui.get_text_value("A")
+            if a_text:
+                angle = radians(float(a_text))
+                settings.rectangle_angle = angle
+        l_text = input_ui.get_text_value("L")
+        w_text = input_ui.get_text_value("W")
+        length = float(l_text) if l_text else 0.0
+        width = float(w_text) if w_text else 0.0
+        e_l, e_w = cls.get_rectangle_axes(angle)
+        corner = anchor + Vector((e_l.x * length + e_w.x * width, e_l.y * length + e_w.y * width, 0.0))
+        corner.z = anchor.z
+        if tool_state.plane_method == "XY":
+            corner.z = tool_state.plane_origin.z
+        elif tool_state.use_default_container and tool.Ifc.get():
+            corner.z = tool.Root.get_default_container_elevation()
+        input_ui.set_value("L", length)
+        input_ui.set_value("W", width)
+        input_ui.set_value("A", math.degrees(angle))
+        input_ui.set_value("X", corner.x)
+        input_ui.set_value("Y", corner.y)
+        input_ui.set_value("Z", corner.z)
 
     @classmethod
     def move_polyline_to_measure(cls, context: bpy.types.Context, input_ui: PolylineUI) -> None:
