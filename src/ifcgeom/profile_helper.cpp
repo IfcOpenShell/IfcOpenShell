@@ -1,21 +1,45 @@
 #include "profile_helper.h"
 
+#include <algorithm>
+
 using namespace ifcopenshell::geom;
 
-taxonomy::loop::ptr ifcopenshell::geom::fillet_loop(taxonomy::loop::ptr loop, double radius) {
+taxonomy::loop::ptr ifcopenshell::geom::fillet_loop(taxonomy::loop::ptr loop, double radius, double tolerance) {
+	const bool closed = loop->closed.value_or(
+		std::get<taxonomy::point3::ptr>(loop->children.front()->start) == std::get<taxonomy::point3::ptr>(loop->children.back()->end));
+	// polygon_from_points() shares a point between the end of one edge and the start
+	// of the next. The fillet splits that point into two tangent points.
+	for (auto& e : loop->children) {
+		e->end = taxonomy::make<taxonomy::point3>(*std::get<taxonomy::point3::ptr>(e->end)->components_);
+	}
 	std::vector<profile_point_with_edges_3d> pps(loop->children.size());
 	const auto child_count = static_cast<int>(loop->children.size());
+	std::vector<double> lengths(child_count);
 	for (int b = 0; b < child_count; ++b) {
+		lengths[b] = (std::get<taxonomy::point3::ptr>(loop->children[b]->end)->ccomponents() - std::get<taxonomy::point3::ptr>(loop->children[b]->start)->ccomponents()).norm();
+	}
+	// Corner 0 is between the last and the first edge, which only exists on a closed loop
+	for (int b = closed ? 0 : 1; b < child_count; ++b) {
 		int c = (b + child_count - 1) % child_count;
 		pps[b] = {
 			std::get<taxonomy::point3::ptr>(loop->children[c]->start)->ccomponents(),
 			radius, loop->children[c], loop->children[b]
 		};
 	}
+	int skipped = 0;
 	size_t i = pps.size();
 	while (i--) {
 		const auto& p = pps[i];
 		if (p.radius && *p.radius > 0.) {
+			// Informal proposition: the fillet radius may not exceed the length of the first
+			// and last segment, nor half the length of an inner segment
+			const int h = (static_cast<int>(i) + child_count - 1) % child_count;
+			const double limit_previous = lengths[h] / (!closed && h == 0 ? 1. : 2.);
+			const double limit_next = lengths[i] / (!closed && static_cast<int>(i) == child_count - 1 ? 1. : 2.);
+			if (*p.radius > limit_previous || *p.radius > limit_next) {
+				++skipped;
+				continue;
+			}
 
 			auto p0 = std::get<taxonomy::point3::ptr>(p.previous->start)->ccomponents();
 			auto p1a = std::get<taxonomy::point3::ptr>(p.previous->end)->ccomponents();
@@ -25,11 +49,20 @@ taxonomy::loop::ptr ifcopenshell::geom::fillet_loop(taxonomy::loop::ptr loop, do
 			auto ba_ = p0 - p1a;
 			auto bc_ = p2 - p1b;
 
+			if (ba_.norm() < tolerance || bc_.norm() < tolerance) {
+				continue;
+			}
+
 			auto ba = ba_.normalized();
 			auto bc = bc_.normalized();
 
-			const double angle = std::acos(ba.dot(bc));
+			const double angle = std::acos(std::clamp(ba.dot(bc), -1., 1.));
 			const double inset = *p.radius / std::tan(angle / 2.);
+
+			// A straight corner yields an arc shorter than the tolerance
+			if ((ba - bc).norm() * inset < tolerance) {
+				continue;
+			}
 
 			std::get<taxonomy::point3::ptr>(p.previous->end)->components() += ba * inset;
 			std::get<taxonomy::point3::ptr>(p.next->start)->components() += bc * inset;
@@ -38,20 +71,20 @@ taxonomy::loop::ptr ifcopenshell::geom::fillet_loop(taxonomy::loop::ptr loop, do
 			e->start = p.previous->end;
 			e->end = p.next->start;
 
-			// @todo untested from here.
-
-			auto ab = ba.cross(bc);
-
-			auto O = std::get<taxonomy::point3::ptr>(p.previous->end)->ccomponents().head<3>() + ab * *p.radius;
+			const Eigen::Vector3d normal = bc.cross(ba).normalized();
+			const Eigen::Vector3d O = p1a + (ba + bc).normalized() * (*p.radius / std::sin(angle / 2.));
 
 			auto c = taxonomy::make<taxonomy::circle>();
-			c->matrix = taxonomy::make<taxonomy::matrix4>(O, ab);
+			c->matrix = taxonomy::make<taxonomy::matrix4>(O, normal);
 			c->radius = *p.radius;
 			e->basis = c;
 
 			loop->children.insert(std::find(loop->children.begin(), loop->children.end(), p.next), e);
 		}
 	};
+	if (skipped) {
+		ifcopenshell::logger::root().warning("GEO", 330, "Skipped " + std::to_string(skipped) + " fillets with a radius exceeding the segment length on:", loop->instance);
+	}
 	return loop;
 }
 
