@@ -14,7 +14,10 @@ import ifcopenshell.api.profile
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.util.structural
+import ifcopenshell.util.unit
 import numpy as np
 import pytest
 from mathutils import Vector
@@ -271,14 +274,13 @@ class TestGenerateStructuralModel(NewIfc):
         beam = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBeam")
         wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
         for element, name in ((beam, "Beam"), (wall, "Wall"), (None, "Non-IFC")):
+            obj = bpy.data.objects.new(name, bpy.data.meshes.new(name))
+            bpy.context.scene.collection.objects.link(obj)
             if element:
                 representation = ifcopenshell.api.geometry.add_profile_representation(
                     ifc, context=body, profile=profile, depth=3
                 )
                 ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=representation)
-            obj = bpy.data.objects.new(name, bpy.data.meshes.new(name))
-            bpy.context.scene.collection.objects.link(obj)
-            if element:
                 tool.Ifc.link(element, obj)
                 tool.Geometry.link(representation, obj.data)
             obj.select_set(True)
@@ -553,6 +555,7 @@ class TestGenerateStructuralModel(NewIfc):
         material = ifcopenshell.api.material.add_material(ifc, name="Steel")
         tool.Structural.get_structural_props().generation_merge_tolerance = tolerance
         sources = []
+        obj = None
         for index, height in enumerate((0.0, 3.05 if tolerance else 3.0)):
             source = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcColumn", name=f"Column {index}")
             ifcopenshell.api.material.assign_material(ifc, products=[source], material=material)
@@ -566,6 +569,7 @@ class TestGenerateStructuralModel(NewIfc):
             obj.location.z = height
             obj.select_set(True)
             sources.append(source)
+        assert obj is not None
         bpy.context.view_layer.objects.active = obj
         bpy.context.view_layer.update()
 
