@@ -560,7 +560,8 @@ class application(QtWidgets.QApplication):
 
         def HandleSelection(self, X, Y):
             v = self._display.Context
-            v.Select()
+            # The SWIG binding of AIS_InteractiveContext.Select() has no zero-argument overload.
+            v.Select(True)
             v.InitSelected()
             if v.MoreSelected():
                 ais = v.SelectedInteractive()
