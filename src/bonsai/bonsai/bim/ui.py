@@ -525,6 +525,17 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         size=4,
         description="Color of not selected verts/edges (used in profile editing mode)",
     )
+    gizmo_icon_max_size: bpy.props.IntProperty(
+        name="Max Gizmo Icon Size",
+        description=(
+            "Largest on-screen size of gizmo icons, in pixels. Icons keep their model size when zoomed out "
+            "and stop growing past this size when zoomed in. Set to 0 to keep icons at their model size"
+        ),
+        default=40,
+        min=0,
+        soft_max=200,
+        subtype="PIXEL",
+    )
     clip_box_cap_color: bpy.props.FloatVectorProperty(
         name="Clip Box Caps Color",
         subtype="COLOR",
@@ -729,6 +740,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         decorator_color_special: tuple[float, float, float, float]
         decorator_color_error: tuple[float, float, float, float]
         decorator_color_background: tuple[float, float, float, float]
+        gizmo_icon_max_size: int
         opening_focus_opacity: int
         bsdd_load_preview_dictionaries: bool
         bsdd_load_inactive_dictionaries: bool
@@ -859,6 +871,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.row().prop(self, "decorator_color_special")
         layout.row().prop(self, "decorator_color_error")
         layout.row().prop(self, "decorator_color_background")
+        layout.row().prop(self, "gizmo_icon_max_size")
         bonsai.bim.helper.draw_expandable_panel(
             layout,
             context,
