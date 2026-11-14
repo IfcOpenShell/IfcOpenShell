@@ -990,7 +990,7 @@ class Material(Facet):
                         [
                             getattr(item, "Name", None),
                             getattr(item, "Category", None),
-                            item.Material.Name,
+                            getattr(item.Material, "Name", None),
                             getattr(item.Material, "Category", None),
                         ]
                     )
@@ -998,7 +998,12 @@ class Material(Facet):
                 values = {material.Name}
                 for item in material.MaterialProfiles or []:
                     values.update(
-                        [item.Name, item.Category, item.Material.Name, getattr(item.Material, "Category", None)]
+                        [
+                            item.Name,
+                            item.Category,
+                            getattr(item.Material, "Name", None),
+                            getattr(item.Material, "Category", None),
+                        ]
                     )
             elif material.is_a("IfcMaterialConstituentSet"):
                 values = {material.Name}
