@@ -113,6 +113,9 @@ namespace {
 
 template <>
 int convert_to_ifc(ifcopenshell::file& f, const opencascade::handle<Geom_Curve>& c, IfcSchema::IfcCurve& curve, bool advanced) {
+	if (c.IsNull()) {
+		return 0;
+	}
 	if (c->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
         opencascade::handle<Geom_TrimmedCurve> trim = opencascade::handle<Geom_TrimmedCurve>::DownCast(c);
 		const opencascade::handle<Geom_Curve> basis = trim->BasisCurve();
@@ -288,6 +291,9 @@ int convert_to_ifc(ifcopenshell::file& f, const opencascade::handle<Geom_Curve>&
 
 template <>
 int convert_to_ifc(ifcopenshell::file& f, const opencascade::handle<Geom_Surface>& s, IfcSchema::IfcSurface& surface, bool advanced) {
+	if (s.IsNull()) {
+		return 0;
+	}
 	if (s->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
 		opencascade::handle<Geom_Plane> plane = opencascade::handle<Geom_Plane>::DownCast(s);
 		IfcSchema::IfcAxis2Placement3D place;
@@ -564,6 +570,9 @@ int convert_to_ifc(ifcopenshell::file& f, const TopoDS_Wire& wire, IfcSchema::If
 template <>
 int convert_to_ifc(ifcopenshell::file& f, const TopoDS_Face& fa, IfcSchema::IfcFace& face, bool advanced) {
 	opencascade::handle<Geom_Surface> surf = BRep_Tool::Surface(fa);
+	if (surf.IsNull()) {
+		return 0;
+	}
 	TopExp_Explorer exp(fa, TopAbs_WIRE);
 	std::vector<IfcSchema::IfcFaceBound> bounds;
 	int index = 0;
