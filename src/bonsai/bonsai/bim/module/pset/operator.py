@@ -126,6 +126,9 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
                 elif prop.value_type == "IfcPropertyEnumeratedValue":
                     value_name = metadata.get_value_name()
                     value = [e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected]
+                elif prop.value_type == "IfcPropertyBoundedValue":
+                    properties[metadata.name] = tool.Pset.get_bounded_value_dict(prop) or None
+                    continue
                 else:
                     continue
                 # None (a purge/skip-creation signal, handled by edit_pset/edit_qto before any
@@ -277,6 +280,8 @@ class CopyPropertyToSelection(bpy.types.Operator, tool.Ifc.Operator):
         elif prop.value_type == "IfcPropertyEnumeratedValue":
             value_name = prop.metadata.get_value_name()
             prop_value = [e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected]
+        elif prop.value_type == "IfcPropertyBoundedValue":
+            prop_value = tool.Pset.get_bounded_value_dict(prop) or None
         else:
             self.report({"ERROR"}, f"Unsupport value type: '{prop.value_type}'.")
             return {"CANCELLED"}

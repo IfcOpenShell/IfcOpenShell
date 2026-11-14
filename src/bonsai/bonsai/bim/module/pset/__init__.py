@@ -39,6 +39,7 @@ classes = (
     operator.BIM_OT_add_edit_custom_property,
     operator.BIM_OT_bulk_remove_psets,
     prop.IfcPropertyEnumeratedValue,
+    prop.IfcPropertyBoundedValue,
     prop.IfcProperty,
     prop.PsetProperties,
     prop.RenamePropertyEntry,
