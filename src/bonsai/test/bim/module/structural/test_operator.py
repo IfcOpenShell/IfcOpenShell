@@ -450,6 +450,7 @@ class TestGenerateStructuralModel(NewIfc):
         bpy.ops.bim.generate_structural_model()
         member = ifc.by_type("IfcStructuralCurveMember")[0]
         assert not tool.Structural.get_member_changes(model)
+        tool.Structural.get_structural_props().generation_merge_tolerance = 0
         obj.location.x = 0.00001
         bpy.context.view_layer.update()
         assert tool.Structural.get_member_changes(model)
@@ -510,7 +511,7 @@ class TestGenerateStructuralModel(NewIfc):
         assert ifc.to_string() == ifc_after_update
         assert tool.Ifc.get_object(member).location.x == pytest.approx(2)
         assert not tool.Structural.get_member_changes(model)
-        assert props.generation_merge_tolerance == pytest.approx(0.0 if scene_tolerance is None else scene_tolerance)
+        assert props.generation_merge_tolerance == pytest.approx(0.01 if scene_tolerance is None else scene_tolerance)
         assert ifcopenshell.util.element.get_pset(model, "BBIM_StructuralGeneration")["MergeTolerance"] == 0.1
         assert ifcopenshell.util.element.get_pset(nodes[0], "BBIM_StructuralGeneration")["Generated"] is True
         member_pset = ifcopenshell.util.element.get_pset(member, "BBIM_StructuralGeneration")

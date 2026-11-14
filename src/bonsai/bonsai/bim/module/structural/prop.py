@@ -198,7 +198,7 @@ class BIMStructuralProperties(PropertyGroup):
         subtype="DISTANCE",
         unit="LENGTH",
         min=0.0,
-        default=0.0,
+        default=0.01,
     )
     generation_links: CollectionProperty(type=StructuralGenerationLink)
     load_case_attributes: CollectionProperty(name="Load Case Attributes", type=Attribute)
