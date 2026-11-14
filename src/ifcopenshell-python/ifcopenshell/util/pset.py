@@ -251,3 +251,12 @@ def convert_applicable_entities_to_query(applicable_entities: list[ApplicableEnt
             part += f', PredefinedType="{entity.predefined_type}"'
         parts.append(part)
     return " + ".join(parts)
+def get_safe_property(element, pset_name: str, prop_name: str, default=None):
+    """
+    Safely retrieve a property value from an element's psets without raising KeyErrors.
+    """
+    try:
+        psets = get_psets(element)
+        return psets.get(pset_name, {}).get(prop_name, default)
+    except Exception:
+        return default
