@@ -203,7 +203,11 @@ class AssignGroup(bpy.types.Operator, tool.Ifc.Operator):
         if not products:
             return
         new_drawing = tool.Drawing.get_group_drawing(group)
-        new_camera = tool.Ifc.get_object(new_drawing) or tool.Drawing.import_drawing(new_drawing)
+        try:
+            new_camera = tool.Ifc.get_object(new_drawing) or tool.Drawing.import_drawing(new_drawing)
+        except tool.Drawing.CameraGeometryError as e:
+            self.report({"WARNING"}, str(e))
+            return
         for product in products:
             if obj := tool.Ifc.get_object(product):
                 tool.Drawing.ensure_annotation_in_drawing_plane(obj, camera=new_camera)
