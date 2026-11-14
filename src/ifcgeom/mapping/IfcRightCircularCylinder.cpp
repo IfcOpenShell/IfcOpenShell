@@ -21,21 +21,38 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geom;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRightCircularCylinder&) {
-	// @todo
-	return nullptr;
-	/*
+#include <boost/math/constants/constants.hpp>
 
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRightCircularCylinder& inst) {
 	const double r = inst.Radius() * length_unit_;
 	const double h = inst.Height() * length_unit_;
 
-	BRepPrimAPI_MakeCylinder builder(r, h);
-	gp_Trsf trsf;
-	ifcopenshell::geom::Kernel::convert(inst.Position(),trsf);
+	const double precision = settings_.get<settings::Precision>().get();
+	if (r < precision || h < precision) {
+		logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 89, "Non-positive radius or height encountered for:", inst);
+		return nullptr;
+	}
 
-	// IfcCsgPrimitive3D.Position has unit scale factor
-	shape = builder.Solid().Moved(trsf);
+	auto circle = taxonomy::make<taxonomy::circle>();
+	circle->radius = r;
+	circle->matrix = taxonomy::make<taxonomy::matrix4>();
 
-	return true;
-	*/
+	auto edge = taxonomy::make<taxonomy::edge>();
+	edge->basis = circle;
+	edge->start = 0.;
+	edge->end = 2 * boost::math::constants::pi<double>();
+
+	auto loop = taxonomy::make<taxonomy::loop>();
+	loop->children = { edge };
+	loop->external = true;
+
+	auto face = taxonomy::make<taxonomy::face>();
+	face->children.push_back(loop);
+
+	return taxonomy::make<taxonomy::extrusion>(
+		taxonomy::cast<taxonomy::matrix4>(map(inst.Position())),
+		face,
+		taxonomy::make<taxonomy::direction3>(0, 0, 1),
+		h
+	);
 }
