@@ -174,7 +174,7 @@ def create_annotation_occurrence(context):
     tool.Collector.assign(obj)
 
     if relating_type_rep is None and props.object_type == "IMAGE":
-        bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", use_existing_object_by_name=obj.name)
+        bpy.ops.bim.add_reference_image("INVOKE_DEFAULT")
 
     if representation := ifcopenshell.util.representation.get_representation(element, ifc_context):
         bonsai.core.geometry.switch_representation(
