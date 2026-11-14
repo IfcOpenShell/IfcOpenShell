@@ -18,6 +18,7 @@
 
 import math
 import os
+import xml.etree.ElementTree as ET
 from collections.abc import Generator, Iterator
 from functools import cache
 from math import acos, atan, cos, degrees, pi, radians, sin
@@ -40,12 +41,127 @@ from gpu_extras.batch import batch_for_shader
 from mathutils import Matrix, Vector
 
 import bonsai.bim.module.drawing.helper as helper
+import bonsai.bim.module.drawing.svg_overlay as svg_overlay
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
 from bonsai.bim.module.drawing.helper import format_distance
 from bonsai.bim.module.drawing.shaders import add_offsets, add_verts_sequence
 
 UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
+
+
+class SvgOverlay:
+    installed = None
+    key = None
+    drawing = None
+    batches = None
+    shader = None
+
+    @classmethod
+    def refresh(cls):
+        cls.key = cls.drawing = cls.batches = None
+        for window in bpy.context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == "VIEW_3D":
+                    area.tag_redraw()
+
+    @classmethod
+    def install(cls):
+        if bpy.app.background:
+            return
+        if cls.installed is None:
+            cls.installed = SpaceView3D.draw_handler_add(cls.draw, (), "WINDOW", "POST_VIEW")
+        cls.refresh()
+
+    @classmethod
+    def uninstall(cls):
+        if cls.installed is not None:
+            try:
+                SpaceView3D.draw_handler_remove(cls.installed, "WINDOW")
+            except ValueError:
+                pass
+            cls.installed = None
+        cls.shader = None
+        cls.refresh()
+
+    @classmethod
+    def draw(cls):
+        # Resolve the context for each region, never the region that installed the handler.
+        context = bpy.context
+        scene, space, region_3d = context.scene, context.space_data, context.region_data
+        if not scene or not scene.DocProperties.should_draw_svg_overlay:
+            return
+        camera = scene.camera
+        if (
+            not isinstance(space, SpaceView3D)
+            or not region_3d
+            or region_3d.view_perspective != "CAMERA"
+            or camera is None
+            or camera.data.type != "ORTHO"
+            or (space.use_local_camera and space.camera != camera)
+            or not tool.Ifc.get()
+        ):
+            return
+        drawing = tool.Ifc.get_entity(camera)
+        if not drawing or not drawing.is_a("IfcAnnotation") or drawing.ObjectType != "DRAWING":
+            return
+        key = (scene.as_pointer(), camera.as_pointer())
+        if cls.key != key:
+            cls.key, cls.drawing, cls.batches = key, None, None
+            document = tool.Drawing.get_drawing_document(drawing)
+            path = tool.Drawing.get_document_uri(document) if document else None
+            if path:
+                try:
+                    cls.drawing = svg_overlay.parse_svg(Path(path).read_text(encoding="utf-8"))
+                except (OSError, UnicodeError, ET.ParseError, ValueError) as error:
+                    print(f"SVG overlay: unable to read final drawing '{path}': {error}")
+        if cls.drawing is None:
+            return
+        if cls.batches is None:
+            cls.shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+            groups = []
+            for stroke in cls.drawing.strokes:
+                vertices = [
+                    (*svg_overlay.paper_to_camera(point, cls.drawing.view_box, 1, 1), 0)
+                    for edge in stroke.segments
+                    for point in edge
+                ]
+                if groups and groups[-1][0][1:] == stroke[1:]:
+                    groups[-1][1].extend(vertices)
+                else:
+                    groups.append((stroke, vertices))
+            cls.batches = [
+                (stroke, batch_for_shader(cls.shader, "LINES", {"pos": vertices})) for stroke, vertices in groups
+            ]
+
+        frame = camera.data.view_frame(scene=scene)
+        left, right = min(v.x for v in frame), max(v.x for v in frame)
+        bottom, top = min(v.y for v in frame), max(v.y for v in frame)
+        depth = -(camera.data.clip_start + camera.data.clip_end) / 2
+        matrix = camera.matrix_world @ Matrix.Translation(((left + right) / 2, (bottom + top) / 2, depth))
+        matrix @= Matrix.Diagonal((right - left, top - bottom, 1, 1))
+        p0 = location_3d_to_region_2d(context.region, region_3d, matrix @ Vector((-0.5, 0, 0)))
+        p1 = location_3d_to_region_2d(context.region, region_3d, matrix @ Vector((0.5, 0, 0)))
+        if p0 is None or p1 is None:
+            return
+        pixels_per_unit = (p1 - p0).length / cls.drawing.view_box[2]
+        blend, depth_test, depth_mask = gpu.state.blend_get(), gpu.state.depth_test_get(), gpu.state.depth_mask_get()
+        try:
+            gpu.state.blend_set("ALPHA")
+            gpu.state.depth_test_set("NONE")
+            gpu.state.depth_mask_set(False)
+            with gpu.matrix.push_pop():
+                gpu.matrix.multiply_matrix(matrix)
+                cls.shader.bind()
+                cls.shader.uniform_float("viewportSize", gpu.state.viewport_get()[2:])
+                for stroke, batch in cls.batches:
+                    cls.shader.uniform_float("color", stroke.color)
+                    cls.shader.uniform_float("lineWidth", stroke.width * pixels_per_unit)
+                    batch.draw(cls.shader)
+        finally:
+            gpu.state.blend_set(blend)
+            gpu.state.depth_test_set(depth_test)
+            gpu.state.depth_mask_set(depth_mask)
 
 
 class profile_consequential:

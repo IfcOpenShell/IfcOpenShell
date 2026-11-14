@@ -68,7 +68,7 @@ import bonsai.core.geometry
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.drawing.data import DecoratorData, ElementValuesData
-from bonsai.bim.module.drawing.decoration import CutDecorator
+from bonsai.bim.module.drawing.decoration import CutDecorator, SvgOverlay
 from bonsai.bim.module.drawing.prop import (
     RASTER_STYLE_PROPERTIES_EXCLUDE,
     RasterStyleProperty,
@@ -481,6 +481,9 @@ class CreateDrawing(bpy.types.Operator):
 
                 with profile("Combine SVG layers"):
                     svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
+
+            if self.props.should_draw_svg_overlay:
+                SvgOverlay.refresh()
 
             if self.open_viewer:
                 drawing_uri = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_document(self.drawing))
