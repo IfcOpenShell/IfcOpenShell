@@ -671,7 +671,13 @@ class BIMCameraProperties(PropertyGroup):
         # Rounding is necessary to avoid float garbage differences
         # forcing unnecessary representation update.
         def round_(f: float) -> float:
-            return round(f, 6)
+            # "+ 0.0" normalises -0.0 to 0.0. round() keeps the sign of zero and
+            # json.dumps writes it out as "-0.0", so without this a matrix differing
+            # only in a zero's sign serialises to a different string forever: the
+            # cached blob never matches and the camera datablock is rebuilt on every
+            # create_drawing (resetting every PropertyGroup on it). Reflected plan
+            # views hit this because get_camera_shape_matrix negates mat[1][1].
+            return round(f, 6) + 0.0
 
         representation = json.dumps(
             {
