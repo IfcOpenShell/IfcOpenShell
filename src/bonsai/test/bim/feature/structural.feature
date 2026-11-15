@@ -30,6 +30,23 @@ Scenario: Add element - a structural curve member
     Then the object "Item/IfcEdge/115" exists
     And I evaluate expression "assert {ifc}.by_type('IfcStructuralCurveMember')[0].Axis.DirectionRatios == (0.0, 0.0, 1.0)"
 
+Scenario: Edit a structural curve member's edge to lie along its axis
+    Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Name" property to "Foo"
+    And I set the "Definition" property to "IfcStructuralItem"
+    And I set the "Class" property to "IfcStructuralCurveMember"
+    And I set the "Representation" property to "Edge"
+    And I click "OK"
+    And I make the collection "IfcStructuralItem" visible
+    And I select the object "IfcStructuralCurveMember/Foo"
+    And I toggle edit mode
+    And I select the object "Item/IfcEdge/115"
+    And I toggle edit mode
+    When I evaluate expression "import bmesh; mesh = bpy.context.edit_object.data; bm = bmesh.from_edit_mesh(mesh); bm.verts.ensure_lookup_table(); bm.verts[1].co = (0.0, 0.0, 3.0); bmesh.update_edit_mesh(mesh)"
+    And I evaluate expression "obj = bpy.context.edit_object; bpy.ops.object.mode_set(mode='OBJECT'); tool.Geometry.edit_meshlike_item(obj)"
+    Then I evaluate expression "assert {ifc}.by_type('IfcStructuralCurveMember')[0].Axis.DirectionRatios == (1.0, 0.0, 0.0)"
+
 Scenario: Add element - a structural curve connection
     Given an empty IFC project
     And I trigger "Add Element"

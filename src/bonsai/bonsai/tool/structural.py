@@ -55,6 +55,44 @@ class Structural(bonsai.core.tool.Structural):
         return obj.BIMStructuralProperties
 
     @classmethod
+    def turn_axis_off_edge(
+        cls, item: ifcopenshell.entity_instance, start: tuple[float, ...], end: tuple[float, ...]
+    ) -> None:
+        """Turn a structural curve item's Axis when its edge has come to lie along it.
+
+        Axis must not be parallel to the edge, as it is when the end of a new,
+        horizontal edge is moved straight up to make a column. It is then
+        turned to the local z square to the edge or, for an edge along z, to
+        the local x. An axis not along the edge is left as it is.
+
+        :param item: An IfcStructuralCurveMember or IfcStructuralCurveConnection.
+        :param start: The edge's start, in the item's object coordinates.
+        :param end: The edge's end, in the item's object coordinates.
+        """
+        if not (item.is_a("IfcStructuralCurveMember") or item.is_a("IfcStructuralCurveConnection")):
+            return
+        if tool.Ifc.get().schema == "IFC2X3":
+            return
+        edge = [b - a for a, b in zip(start, end)]
+        length = math.hypot(*edge)
+        if length == 0:
+            return
+        edge = [c / length for c in edge]
+        if item.Axis:
+            axis = item.Axis.DirectionRatios
+            size = math.hypot(*axis)
+            if size and abs(sum(a * e for a, e in zip(axis, edge))) / size < 0.999:
+                return
+        for candidate in ((0.0, 0.0, 1.0), (1.0, 0.0, 0.0)):
+            along = sum(c * e for c, e in zip(candidate, edge))
+            square = [c - along * e for c, e in zip(candidate, edge)]
+            if (size := math.hypot(*square)) > 0.1:
+                break
+        ifcopenshell.api.structural.edit_structural_item_axis(
+            tool.Ifc.get(), structural_item=item, axis=tuple(c / size for c in square)
+        )
+
+    @classmethod
     def disable_editing_structural_analysis_model(cls) -> None:
         props = cls.get_structural_props()
         props.active_structural_analysis_model_id = 0
