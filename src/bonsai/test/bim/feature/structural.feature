@@ -13,7 +13,7 @@ Scenario: Add element - a structural point connection
     When I make the collection "IfcStructuralItem" visible
     And I select the object "IfcStructuralPointConnection/Foo"
     And I toggle edit mode
-    Then the object "Item/IfcVertexPoint/66" exists
+    Then the object "Item/IfcVertexPoint/112" exists
 
 Scenario: Add element - a structural curve member
     Given an empty IFC project
@@ -27,7 +27,7 @@ Scenario: Add element - a structural curve member
     When I make the collection "IfcStructuralItem" visible
     And I select the object "IfcStructuralCurveMember/Foo"
     And I toggle edit mode
-    Then the object "Item/IfcEdge/69" exists
+    Then the object "Item/IfcEdge/115" exists
 
 Scenario: Add element - a structural surface member
     Given an empty IFC project
@@ -41,7 +41,7 @@ Scenario: Add element - a structural surface member
     When I make the collection "IfcStructuralItem" visible
     And I select the object "IfcStructuralSurfaceMember/Foo"
     And I toggle edit mode
-    Then the object "Item/IfcFaceSurface/88" exists
+    Then the object "Item/IfcFaceSurface/134" exists
 
 Scenario: Load structural analysis models
     Given an empty IFC project

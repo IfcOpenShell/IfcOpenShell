@@ -81,6 +81,12 @@ def draw_boundary_condition_ui(
         draw_boundary_condition_read_only_ui(layout, boundary_condition)
 
 
+def get_unit_symbol_for_measure(measure_class: str) -> str:
+    """The project's unit for a measure class such as IfcLinearStiffnessMeasure, or "" if undeclared."""
+    special_type = tool.Pset.get_special_type_for_measure_class(measure_class)
+    return tool.Pset.get_unit_symbol_for_special_type(special_type, tool.Ifc.get()) if special_type else ""
+
+
 def draw_boundary_condition_editable_ui(
     layout: bpy.types.UILayout, props: Union[BIMStructuralProperties, BIMObjectStructuralProperties]
 ) -> None:
@@ -97,6 +103,8 @@ def draw_boundary_condition_editable_ui(
                 val_row.prop(attribute, "bool_value", text="")
             else:
                 val_row.prop(attribute, "float_value", text="")
+                if unit := get_unit_symbol_for_measure(attribute.enum_value):
+                    val_row.label(text=unit)
             if attribute.is_optional:
                 val_row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 

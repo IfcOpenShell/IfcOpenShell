@@ -8,12 +8,13 @@ import ifcopenshell
 import ifcopenshell.api.group
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
+import ifcopenshell.api.unit
 from mathutils import Vector
 
 import bonsai.tool as tool
 from bonsai.bim.module.structural.data import LoadGroupDecorationData
 from bonsai.bim.module.structural.decorator import LoadsDecorator
-from bonsai.bim.module.structural.operator import PickStructuralLoads
+from bonsai.bim.module.structural.operator import PickStructuralLoads, get_load_unit_symbol
 from test.bim.bootstrap import NewFile
 
 
@@ -142,3 +143,26 @@ class TestLoadCaseSelfWeight(NewFile):
         props.load_case_has_self_weight = False
         bpy.ops.bim.edit_structural_load_case()
         assert load_case.SelfWeightCoefficients is None
+
+
+class TestGetLoadUnitSymbol(NewFile):
+    def make_file(self) -> ifcopenshell.file:
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc)  # millimetres
+        return ifc
+
+    def test_composing_force_over_length_when_no_load_units_are_declared(self):
+        self.make_file()
+        assert get_load_unit_symbol("IfcStructuralPointConnection") == "N"
+        assert get_load_unit_symbol("IfcStructuralCurveMember") == "N/mm"
+        assert get_load_unit_symbol("IfcStructuralSurfaceMember") == "N/mm2"
+
+    def test_using_the_declared_load_units(self):
+        ifc = self.make_file()
+        bpy.context.scene.unit_settings.system = "METRIC"
+        ifcopenshell.api.unit.assign_unit(ifc, units=tool.Unit.add_structural_units())
+        assert get_load_unit_symbol("IfcStructuralPointConnection") == "kN"
+        assert get_load_unit_symbol("IfcStructuralCurveMember") == "kN/m"
+        assert get_load_unit_symbol("IfcStructuralSurfaceMember") == "kN/m2"

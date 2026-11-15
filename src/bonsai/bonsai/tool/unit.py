@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, Any, Literal, Union
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.unit
 import ifcopenshell.util.unit
 from lark import Lark, Transformer
 
@@ -358,6 +359,64 @@ class Unit(bonsai.core.tool.Unit):
         bim_props = tool.Blender.get_bim_props()
         if (name := getattr(bim_props, f"{unit_type[:-4].lower()}_unit")) != "NONE":
             return name
+
+    @classmethod
+    def add_structural_units(cls) -> list[ifcopenshell.entity_instance]:
+        """Units for the forces, stiffnesses and material values of structural analysis.
+
+        Without them a millimetre project reads a load of 5 meant as kN/m2 as 5 N/mm2.
+        These are the units engineers write, whatever the length unit: kN, kN/m, kN/m2,
+        kN.m, N/mm2 and kg/m3 in a metric scene; kip, kip/ft, psf, kip.ft, ksi and pcf
+        in an imperial one. Pressure is left alone, as building services use it too.
+        """
+        ifc_file = tool.Ifc.get()
+
+        def derived(
+            unit_type: str, *elements: tuple[ifcopenshell.entity_instance, int]
+        ) -> ifcopenshell.entity_instance:
+            # Built element by element: kN.m/m repeats the metre, which a dict cannot hold.
+            return ifc_file.create_entity(
+                "IfcDerivedUnit",
+                Elements=[ifc_file.create_entity("IfcDerivedUnitElement", Unit=u, Exponent=e) for u, e in elements],
+                UnitType=unit_type,
+            )
+
+        radian = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="PLANEANGLEUNIT")
+        if bpy.context.scene.unit_settings.system == "IMPERIAL":
+            force = ifcopenshell.api.unit.add_conversion_based_unit(ifc_file, name="kip")
+            lbf = ifcopenshell.api.unit.add_conversion_based_unit(ifc_file, name="lbf")
+            length = ifcopenshell.api.unit.add_conversion_based_unit(ifc_file, name="foot")
+            inch = ifcopenshell.api.unit.add_conversion_based_unit(ifc_file, name="inch")
+            pound = ifcopenshell.api.unit.add_conversion_based_unit(ifc_file, name="pound")
+            area_force = (lbf, 1), (length, -2)  # psf
+            stiffness = (force, 1), (inch, -1)
+            modulus = (force, 1), (inch, -2)  # ksi
+            density = (pound, 1), (length, -3)  # pcf
+        else:
+            force = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="FORCEUNIT", prefix="KILO")
+            length = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="LENGTHUNIT")
+            newton = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="FORCEUNIT")
+            millimetre = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="LENGTHUNIT", prefix="MILLI")
+            kilogram = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="MASSUNIT", prefix="KILO")
+            area_force = (force, 1), (length, -2)
+            stiffness = (force, 1), (length, -1)
+            modulus = (newton, 1), (millimetre, -2)
+            density = (kilogram, 1), (length, -3)
+        return [
+            force,
+            derived("TORQUEUNIT", (force, 1), (length, 1)),
+            derived("LINEARFORCEUNIT", (force, 1), (length, -1)),
+            derived("LINEARMOMENTUNIT", (force, 1), (length, 1), (length, -1)),
+            derived("PLANARFORCEUNIT", *area_force),
+            derived("LINEARSTIFFNESSUNIT", *stiffness),
+            derived("ROTATIONALSTIFFNESSUNIT", (force, 1), (length, 1), (radian, -1)),
+            derived("MODULUSOFLINEARSUBGRADEREACTIONUNIT", (force, 1), (length, -2)),
+            derived("MODULUSOFROTATIONALSUBGRADEREACTIONUNIT", (force, 1), (length, 1), (length, -1), (radian, -1)),
+            derived("MODULUSOFSUBGRADEREACTIONUNIT", (force, 1), (length, -3)),
+            derived("MODULUSOFELASTICITYUNIT", *modulus),
+            derived("SHEARMODULUSUNIT", *modulus),
+            derived("MASSDENSITYUNIT", *density),
+        ]
 
     @classmethod
     def is_si_unit(cls, name: str) -> bool:
