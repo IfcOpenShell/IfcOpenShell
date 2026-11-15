@@ -20,7 +20,17 @@
 
 import math
 
+import bpy
+import ifcopenshell
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
+import ifcopenshell.api.profile
+import ifcopenshell.api.root
+import ifcopenshell.api.structural
+import numpy as np
+
 import bonsai.core.tool
+import bonsai.tool as tool
 from bonsai.tool.structural import Structural as subject
 from test.bim.bootstrap import NewFile
 
@@ -28,6 +38,89 @@ from test.bim.bootstrap import NewFile
 class TestImplementsTool(NewFile):
     def test_run(self):
         assert isinstance(subject(), bonsai.core.tool.Structural)
+
+
+class TestGetAnalysisModelMembers(NewFile):
+    def test_only_members_of_the_requested_model(self):
+        ifc = ifcopenshell.file(schema="IFC4")
+        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        other_model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember")
+        other_member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralSurfaceMember")
+        point = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralPointConnection")
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc, products=[member, point], structural_analysis_model=model
+        )
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc, products=[other_member], structural_analysis_model=other_model
+        )
+        assert subject.get_analysis_model_members(model) == [member]
+
+
+class TestFindNearbyConnection(NewFile):
+    def test_zero_tolerance_does_not_merge_coincident_points(self):
+        assert subject.find_nearby_connection((0, 0, 0), [((0, 0, 0), "first")], 0) is None
+
+    def test_finds_nearest_connection_within_tolerance(self):
+        connections = [((0, 0, 0), "first"), ((0.09, 0, 0), "second")]
+        assert subject.find_nearby_connection((0.08, 0, 0), connections, 0.1) == "second"
+        assert subject.find_nearby_connection((1, 0, 0), connections, 0.1) is None
+
+
+class TestIsGeneratedConnection(NewFile):
+    def test_only_connections_of_linked_curve_members_are_generated(self):
+        ifc = ifcopenshell.file(schema="IFC4")
+        node = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralPointConnection")
+        member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember")
+        source = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBeam")
+        assert not subject.is_generated_connection(node)
+        ifcopenshell.api.structural.assign_product(ifc, relating_product=source, related_object=member)
+        ifcopenshell.api.structural.add_structural_member_connection(
+            ifc, relating_structural_member=member, related_structural_connection=node
+        )
+        assert subject.is_generated_connection(node)
+        external = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember")
+        ifcopenshell.api.structural.add_structural_member_connection(
+            ifc, relating_structural_member=external, related_structural_connection=node
+        )
+        assert not subject.is_generated_connection(node)
+
+
+class TestGetPhysicalMemberAxis(NewFile):
+    def test_profile_orientation_is_projected_onto_the_member_section(self):
+        direction = subject.get_member_orientation(np.array((0.0, 0.0, 1.0)), np.array((1.0, 0.0, 1.0)))
+        assert np.allclose(direction, (-(2**-0.5), 0.0, 2**-0.5))
+        assert subject.get_member_orientation(np.array((0.0, 0.0, 1.0)), np.array((0.0, 0.0, 1.0))) is None
+        assert subject.get_member_orientation(np.array((0.0, 0.0, 1.0)), np.zeros(3)) is None
+
+    def test_profile_extrusion_and_object_placement(self):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        model = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        profile = ifcopenshell.api.profile.add_parameterized_profile(ifc, ifc_class="IfcRectangleProfileDef")
+        profile.XDim, profile.YDim = 0.2, 0.3
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcColumn")
+        representation = ifcopenshell.api.geometry.add_profile_representation(
+            ifc, context=body, profile=profile, depth=3
+        )
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=representation)
+        obj = bpy.data.objects.new("Column", None)
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(element, obj)
+        obj.location = (2, 4, 1)
+        bpy.context.view_layer.update()
+        start, end = subject.get_physical_member_axis(obj)
+        assert np.allclose(start, (2, 4, 1))
+        assert np.allclose(end, (2, 4, 4))
+        obj.rotation_euler.y = math.pi / 2
+        bpy.context.view_layer.update()
+        start, end = subject.get_physical_member_axis(obj)
+        assert np.allclose(start, (2, 4, 1))
+        assert np.allclose(end, (5, 4, 1), atol=1e-6)
 
 
 class TestGetInPlaneComponents(NewFile):

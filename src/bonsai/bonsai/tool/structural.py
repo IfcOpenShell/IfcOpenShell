@@ -21,14 +21,20 @@ from __future__ import annotations
 import fractions
 import json
 import math
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, Union
 
 import bpy
 import ifcopenshell
 import ifcopenshell.api.context
+import ifcopenshell.api.material
 import ifcopenshell.api.structural
 import ifcopenshell.util.attribute
+import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.structural
+import ifcopenshell.util.unit
+import numpy as np
 
 import bonsai.bim.helper
 import bonsai.core.tool
@@ -45,7 +51,321 @@ if TYPE_CHECKING:
     )
 
 
+class StructuralAxisChange(TypedDict):
+    endpoint: str
+    member_point: tuple[float, float, float]
+    source_point: tuple[float, float, float]
+    distance: float
+
+
+class StructuralMemberChange(TypedDict):
+    member: ifcopenshell.entity_instance
+    source: Union[ifcopenshell.entity_instance, None]
+    reason: Literal["AXIS", "ORIENTATION", "SECTION", "MISSING_SOURCE", "MULTIPLE_SOURCES", "UNAVAILABLE"]
+    tolerance: float
+    points: list[StructuralAxisChange]
+    orientation_changed: bool
+    section_changed: bool
+
+
 class Structural(bonsai.core.tool.Structural):
+    @classmethod
+    def get_analysis_model_members(cls, model):
+        return [
+            item
+            for relation in model.IsGroupedBy or ()
+            for item in relation.RelatedObjects
+            if item.is_a("IfcStructuralMember")
+        ]
+
+    @classmethod
+    def refresh_analysis_model_members(cls):
+        props = cls.get_structural_props()
+        index = props.active_structural_model_member_index
+        active_id = (
+            props.structural_model_members[index].ifc_definition_id
+            if 0 <= index < len(props.structural_model_members)
+            else 0
+        )
+        model = cls.get_current_structural_analysis_model() if tool.Ifc.get() else None
+        members = (
+            sorted(cls.get_analysis_model_members(model), key=lambda member: (member.Name or "", member.id()))
+            if model
+            else []
+        )
+        if [(item.ifc_definition_id, item.name) for item in props.structural_model_members] == [
+            (member.id(), member.Name or "Unnamed") for member in members
+        ]:
+            return
+        props.structural_model_members.clear()
+        props.active_structural_model_member_index = -1
+        for index, member in enumerate(members):
+            item = props.structural_model_members.add()
+            item.name = member.Name or "Unnamed"
+            item.ifc_definition_id = member.id()
+            if member.id() == active_id:
+                props.active_structural_model_member_index = index
+
+    @classmethod
+    def refresh_analysis_model_member_details(cls):
+        from bonsai.bim.module.structural.data import StructuralModelMemberData
+
+        props = cls.get_structural_props()
+        index = props.active_structural_model_member_index
+        file = tool.Ifc.get()
+        member_id = (
+            props.structural_model_members[index].ifc_definition_id
+            if file and 0 <= index < len(props.structural_model_members)
+            else 0
+        )
+        member = file.by_id(member_id) if member_id else None
+        expanded = (
+            {item.key: item.is_expanded for item in props.structural_member_details}
+            if member_id == props.structural_member_details_id
+            else {}
+        )
+        rows = []
+        if member:
+            StructuralModelMemberData.load(member)
+            rows = StructuralModelMemberData.build_tree(StructuralModelMemberData.data)
+        if member_id == props.structural_member_details_id and [
+            item.key for item in props.structural_member_details
+        ] == [row["key"] for row in rows]:
+            for item, row in zip(props.structural_member_details, rows):
+                item["value"] = row["value"]
+            return
+        props.structural_member_details.clear()
+        props.structural_member_details_id = member_id
+        for row in rows:
+            item = props.structural_member_details.add()
+            item.name = row["name"]
+            item["value"] = row["value"]
+            item.key = row["key"]
+            item.parent = row["parent"]
+            item.level = row["level"]
+            item.has_children = row["has_children"]
+            item.is_expanded = expanded.get(item.key, False)
+
+    @classmethod
+    def get_member_changes(cls, model: ifcopenshell.entity_instance) -> list[StructuralMemberChange]:
+        return [
+            change
+            for member in cls.get_analysis_model_members(model)
+            if (change := cls.get_member_change(model, member)) is not None
+        ]
+
+    @classmethod
+    def get_member_change(cls, model, member) -> Union[StructuralMemberChange, None]:
+        if not member.is_a("IfcStructuralCurveMember"):
+            return None
+        props = cls.get_structural_props()
+        tolerance = max(props.generation_merge_tolerance, 1e-8)
+        sources = ifcopenshell.util.structural.get_building_elements(member)
+        if not sources and not any(
+            item.model_guid == model.GlobalId and item.member_guid == member.GlobalId for item in props.generation_links
+        ):
+            return None
+        change: StructuralMemberChange = {
+            "member": member,
+            "source": sources[0] if len(sources) == 1 else None,
+            "reason": "MISSING_SOURCE" if not sources else "MULTIPLE_SOURCES",
+            "tolerance": tolerance,
+            "points": [],
+            "orientation_changed": False,
+            "section_changed": False,
+        }
+        if len(sources) != 1:
+            return change
+        source_obj = tool.Ifc.get_object(sources[0])
+        member_obj = tool.Ifc.get_object(member)
+        data = cls.get_physical_member_data(source_obj) if source_obj else None
+        if (
+            data is None
+            or not member_obj
+            or member_obj.type != "MESH"
+            or len(member_obj.data.vertices) != 2
+            or not member.Axis
+        ):
+            change["reason"] = "UNAVAILABLE"
+            return change
+        axis, profile_direction = data
+        physical_section = cls.get_physical_section(sources[0])
+        material_set = ifcopenshell.util.element.get_material(member, should_skip_usage=True)
+        member_profiles = (
+            material_set.MaterialProfiles if material_set and material_set.is_a("IfcMaterialProfileSet") else ()
+        ) or ()
+        change["section_changed"] = (
+            not physical_section
+            or len(member_profiles) != 1
+            or (member_profiles[0].Profile, member_profiles[0].Material) != physical_section
+        )
+        member_axis = np.array([member_obj.matrix_world @ vertex.co for vertex in member_obj.data.vertices])
+        # Blender mesh coordinates and transforms use single precision.
+        precision = 2 * np.finfo(np.float32).eps * max(1.0, np.abs(member_axis).max(), np.abs(axis).max())
+        change["tolerance"] = float(max(tolerance, precision))
+        change["reason"] = "AXIS"
+        for index, endpoint in enumerate(("Start", "End")):
+            member_point, source_point = member_axis[index], axis[index]
+            distance = float(np.linalg.norm(member_point - source_point))
+            if distance > change["tolerance"]:
+                change["points"].append(
+                    {
+                        "endpoint": endpoint,
+                        "member_point": (float(member_point[0]), float(member_point[1]), float(member_point[2])),
+                        "source_point": (float(source_point[0]), float(source_point[1]), float(source_point[2])),
+                        "distance": distance,
+                    }
+                )
+        direction = member_axis[1] - member_axis[0]
+        if np.linalg.norm(direction) < 1e-9:
+            change["reason"] = "UNAVAILABLE"
+            return change
+        expected = cls.get_member_orientation(profile_direction, direction)
+        actual = np.asarray(member_obj.matrix_world)[:3, :3] @ np.asarray(member.Axis.DirectionRatios)
+        actual = cls.get_member_orientation(actual, direction)
+        change["orientation_changed"] = (
+            expected is None or actual is None or bool(np.linalg.norm(actual - expected) > 1e-6)
+        )
+        if not (change["points"] or change["orientation_changed"] or change["section_changed"]):
+            return None
+        if not change["points"]:
+            change["reason"] = "ORIENTATION" if change["orientation_changed"] else "SECTION"
+        return change
+
+    @classmethod
+    def is_generated_connection(cls, connection):
+        relations = connection.ConnectsStructuralMembers or ()
+        if not relations:
+            return False
+        for relation in relations:
+            member = relation.RelatingStructuralMember
+            sources = ifcopenshell.util.structural.get_building_elements(member)
+            if not member.is_a("IfcStructuralCurveMember") or len(sources) != 1:
+                return False
+            if not (sources[0].is_a("IfcBeam") or sources[0].is_a("IfcColumn")):
+                return False
+        return True
+
+    @classmethod
+    def find_nearby_connection(cls, point, connections, tolerance):
+        if tolerance <= 0:
+            return None
+        nearby = (
+            (np.linalg.norm(np.asarray(point) - np.asarray(position)), connection)
+            for position, connection in connections
+        )
+        return min((item for item in nearby if item[0] <= tolerance), default=(None, None), key=lambda item: item[0])[1]
+
+    @classmethod
+    def get_physical_member_axis(cls, obj):
+        data = cls.get_physical_member_data(obj)
+        return data[0] if data else None
+
+    @classmethod
+    def get_physical_section(cls, source):
+        representation = ifcopenshell.util.representation.get_representation(source, "Model", "Body", "MODEL_VIEW")
+        if (
+            not representation
+            or len(representation.Items) != 1
+            or not representation.Items[0].is_a("IfcExtrudedAreaSolid")
+        ):
+            return None
+        materials = [material for material in ifcopenshell.util.element.get_materials(source) if material]
+        if len(materials) != 1:
+            return None
+        profile = representation.Items[0].SweptArea
+        material_set = ifcopenshell.util.element.get_material(source, should_skip_usage=True)
+        if material_set and material_set.is_a("IfcMaterialProfileSet"):
+            profiles = material_set.MaterialProfiles or ()
+            if len(profiles) != 1 or profiles[0].Profile != profile or profiles[0].Material != materials[0]:
+                return None
+        elif not material_set or not material_set.is_a("IfcMaterial"):
+            return None
+        return profile, materials[0]
+
+    @classmethod
+    def get_member_sections(cls, member):
+        material = ifcopenshell.util.element.get_material(member, should_skip_usage=True)
+        if material and material.is_a("IfcMaterialProfileSet"):
+            if material.CompositeProfile:
+                return [material.CompositeProfile]
+            return [item.Profile for item in material.MaterialProfiles or () if item.Profile]
+        return []
+
+    @classmethod
+    def assign_member_section(cls, member, source):
+        file = tool.Ifc.get()
+        section = cls.get_physical_section(source)
+        if section is None:
+            raise ValueError("A linked physical element requires a section and exactly one material")
+        profile, material = section
+        source_set = ifcopenshell.util.element.get_material(source, should_skip_usage=True)
+        if (
+            source_set
+            and source_set.is_a("IfcMaterialProfileSet")
+            and len(source_set.MaterialProfiles or ()) == 1
+            and source_set.MaterialProfiles[0].Profile == profile
+            and source_set.MaterialProfiles[0].Material == material
+        ):
+            material_set = source_set
+        else:
+            existing = ifcopenshell.util.element.get_material(member, should_skip_usage=True)
+            if (
+                existing
+                and existing.is_a("IfcMaterialProfileSet")
+                and len(existing.MaterialProfiles or ()) == 1
+                and existing.MaterialProfiles[0].Profile == profile
+                and existing.MaterialProfiles[0].Material == material
+            ):
+                return
+            material_set = ifcopenshell.api.material.add_material_set(file, set_type="IfcMaterialProfileSet")
+            ifcopenshell.api.material.add_profile(file, profile_set=material_set, material=material, profile=profile)
+        if ifcopenshell.util.element.get_material(member, should_skip_usage=True) != material_set:
+            ifcopenshell.api.material.assign_material(file, products=[member], material=material_set)
+
+    @classmethod
+    def get_physical_member_data(cls, obj):
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcBeam") and not element.is_a("IfcColumn"):
+            return None
+        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if (
+            not representation
+            or len(representation.Items) != 1
+            or not representation.Items[0].is_a("IfcExtrudedAreaSolid")
+        ):
+            return None
+        extrusion = representation.Items[0]
+        direction = np.array(extrusion.ExtrudedDirection.DirectionRatios, dtype=float)
+        direction /= np.linalg.norm(direction)
+        scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        placement = ifcopenshell.util.placement.get_placement(extrusion.Position, should_return_si=True)
+        matrix = np.asarray(obj.matrix_world) @ placement
+        start = matrix[:3, 3]
+        end = start + matrix[:3, :3] @ direction * extrusion.Depth * scale
+        if np.linalg.norm(end - start) < 1e-9:
+            return None
+        profile = extrusion.SweptArea
+        profile_placement = (
+            ifcopenshell.util.placement.get_placement(profile.Position)
+            if profile.is_a("IfcParameterizedProfileDef") and profile.Position
+            else np.eye(4)
+        )
+        # Structural local X follows the extrusion; local Z follows the profile's Y axis.
+        return (start, end), (matrix @ profile_placement)[:3, 1]
+
+    @classmethod
+    def get_member_orientation(cls, profile_direction, member_direction):
+        direction_length = np.linalg.norm(member_direction)
+        if direction_length < 1e-9:
+            return None
+        direction = member_direction / direction_length
+        orientation = profile_direction - np.dot(profile_direction, direction) * direction
+        length = np.linalg.norm(orientation)
+        if length < 1e-9:
+            return None
+        return orientation / length
+
     @classmethod
     def get_structural_props(cls) -> BIMStructuralProperties:
         return bpy.context.scene.BIMStructuralProperties
@@ -177,6 +497,7 @@ class Structural(bonsai.core.tool.Structural):
     @classmethod
     def set_current_structural_analysis_model(cls, model: ifcopenshell.entity_instance) -> None:
         cls.get_structural_props().current_structural_analysis_model_id = model.id()
+        cls.refresh_analysis_model_members()
 
     @classmethod
     def assign_to_current_structural_analysis_model(cls, element: ifcopenshell.entity_instance) -> None:
