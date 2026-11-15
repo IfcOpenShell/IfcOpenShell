@@ -26,6 +26,7 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import ifcopenshell.api.structural
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.schema
@@ -823,6 +824,11 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                 obj=obj,
                 representation=representation,
             )
+            if (element.is_a("IfcStructuralCurveMember") or element.is_a("IfcStructuralCurveConnection")) and (
+                tool.Ifc.get().schema != "IFC2X3"
+            ):
+                # Axis is mandatory: the local z, upwards and square to the edge, which runs along local x.
+                ifcopenshell.api.structural.edit_structural_item_axis(tool.Ifc.get(), structural_item=element)
         elif representation_template == "FACE":
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())

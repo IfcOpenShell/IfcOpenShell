@@ -28,6 +28,18 @@ Scenario: Add element - a structural curve member
     And I select the object "IfcStructuralCurveMember/Foo"
     And I toggle edit mode
     Then the object "Item/IfcEdge/115" exists
+    And I evaluate expression "assert {ifc}.by_type('IfcStructuralCurveMember')[0].Axis.DirectionRatios == (0.0, 0.0, 1.0)"
+
+Scenario: Add element - a structural curve connection
+    Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Name" property to "Foo"
+    And I set the "Definition" property to "IfcStructuralItem"
+    And I set the "Class" property to "IfcStructuralCurveConnection"
+    And I set the "Representation" property to "Edge"
+    When I click "OK"
+    Then the object "IfcStructuralCurveConnection/Foo" data is a "Edge" representation of "Model/Reference/GRAPH_VIEW"
+    And I evaluate expression "assert {ifc}.by_type('IfcStructuralCurveConnection')[0].Axis.DirectionRatios == (0.0, 0.0, 1.0)"
 
 Scenario: Add element - a structural surface member
     Given an empty IFC project
