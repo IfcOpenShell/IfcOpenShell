@@ -34,6 +34,7 @@ def refresh():
     StructuralConnectionData.is_loaded = False
     StructuralAnalysisModelsData.is_loaded = False
     StructuralLoadCasesData.is_loaded = False
+    StructuralLoadCombinationsData.is_loaded = False
     StructuralLoadsData.is_loaded = False
     BoundaryConditionsData.is_loaded = False
     LoadGroupDecorationData.is_loaded = False
@@ -45,6 +46,14 @@ def refresh():
     if LoadsDecorator.is_installed:
         LoadsDecorator.update()
         tool.Blender.update_all_viewports()
+
+
+def get_load_combinations() -> list[ifcopenshell.entity_instance]:
+    return [g for g in tool.Ifc.get().by_type("IfcStructuralLoadGroup") if g.PredefinedType == "LOAD_COMBINATION"]
+
+
+def get_load_cases_and_combinations() -> list[ifcopenshell.entity_instance]:
+    return list(tool.Ifc.get().by_type("IfcStructuralLoadCase")) + get_load_combinations()
 
 
 class LoadGroupDecorationData:
@@ -67,7 +76,7 @@ class LoadGroupDecorationData:
         props = tool.Structural.get_structural_props()
         if props.activity_type == "Action":
             # Without an analysis model, loads can still be shown by load case.
-            groups = (m.LoadedBy or []) if m else tool.Ifc.get().by_type("IfcStructuralLoadCase")
+            groups = (m.LoadedBy or []) if m else get_load_cases_and_combinations()
             for g in groups:
                 ret.append((str(g.id()), (g.Name or "Unnamed") + kinds.get(g.PredefinedType, ""), ""))
                 related_objects = [rel.RelatedObjects for rel in g.IsGroupedBy]
@@ -434,6 +443,34 @@ class StructuralLoadCasesData:
             if not load.Name or not load.is_a(props.applicable_structural_load_types):
                 continue
             results.append((str(load.id()), load.Name or "Unnamed", ""))
+        return results
+
+
+class StructuralLoadCombinationsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"load_combinations": cls.load_combinations()}
+        cls.is_loaded = True
+
+    @classmethod
+    def load_combinations(cls) -> list[dict]:
+        results = []
+        for combination in get_load_combinations():
+            load_cases = [
+                o for rel in combination.IsGroupedBy for o in rel.RelatedObjects if o.is_a("IfcStructuralLoadCase")
+            ]
+            results.append(
+                {
+                    "id": combination.id(),
+                    "name": combination.Name or "Unnamed",
+                    "purpose": combination.Purpose or "",
+                    "total_load_cases": len(load_cases),
+                    "model_ids": [m.id() for m in combination.LoadGroupFor],
+                }
+            )
         return results
 
 

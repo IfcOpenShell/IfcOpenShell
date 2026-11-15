@@ -175,6 +175,18 @@ class BoundaryCondition(PropertyGroup):
         number_of_inverse_references: int
 
 
+class StructuralLoadCombinationFactor(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    is_included: BoolProperty(name="Included", description="Include this load case in the load combination")
+    factor: FloatProperty(name="Factor", description="The factor this load case is multiplied by", default=1.0)
+
+    if TYPE_CHECKING:
+        ifc_definition_id: int
+        is_included: bool
+        factor: float
+
+
 class BIMStructuralProperties(PropertyGroup):
     structural_analysis_model_attributes: CollectionProperty(
         name="Structural Analysis Model Attributes", type=Attribute
@@ -194,6 +206,9 @@ class BIMStructuralProperties(PropertyGroup):
     )
     active_load_case_id: IntProperty(name="Active Load Case Id")
     load_group_editing_type: StringProperty(name="Load Group Editing Type")
+    load_combination_attributes: CollectionProperty(name="Load Combination Attributes", type=Attribute)
+    active_load_combination_id: IntProperty(name="Active Load Combination Id")
+    load_combination_factors: CollectionProperty(name="Load Combination Factors", type=StructuralLoadCombinationFactor)
     # load_group_attributes: CollectionProperty(name="Load Group Attributes", type=Attribute)
     active_load_group_id: IntProperty(name="Active Load Group Id")
     applicable_structural_load_types: EnumProperty(
@@ -327,6 +342,9 @@ class BIMStructuralProperties(PropertyGroup):
         load_case_self_weight: tuple[float, float, float]
         active_load_case_id: int
         load_group_editing_type: str
+        load_combination_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        active_load_combination_id: int
+        load_combination_factors: bpy.types.bpy_prop_collection_idprop[StructuralLoadCombinationFactor]
         active_load_group_id: int
         applicable_structural_load_types: str
         applicable_structural_loads: str
