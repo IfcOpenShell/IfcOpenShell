@@ -83,24 +83,26 @@ class TestPinSceneCameraToOtherViewports(NewFile):
         assert calls == [(previous_camera, subject.get_view3d_space())]
 
     def test_pins_only_other_camera_views_that_follow_the_scene_camera(self, monkeypatch):
+        from unittest.mock import Mock
+
         previous_camera = object()
-        active_space = types.SimpleNamespace(
+        active_space = Mock(
             camera=None,
             region_3d=types.SimpleNamespace(view_perspective="CAMERA"),
             use_local_camera=False,
         )
-        following_space = types.SimpleNamespace(
+        following_space = Mock(
             camera=None,
             region_3d=types.SimpleNamespace(view_perspective="CAMERA"),
             use_local_camera=False,
         )
         local_camera = object()
-        local_space = types.SimpleNamespace(
+        local_space = Mock(
             camera=local_camera,
             region_3d=types.SimpleNamespace(view_perspective="CAMERA"),
             use_local_camera=True,
         )
-        perspective_space = types.SimpleNamespace(
+        perspective_space = Mock(
             camera=None,
             region_3d=types.SimpleNamespace(view_perspective="PERSP"),
             use_local_camera=False,
