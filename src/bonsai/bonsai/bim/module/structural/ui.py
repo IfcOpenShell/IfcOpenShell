@@ -82,6 +82,12 @@ def draw_boundary_condition_ui(
         draw_boundary_condition_read_only_ui(layout, boundary_condition)
 
 
+def get_unit_symbol_for_measure(measure_class: str) -> str:
+    """The project's unit for a measure class such as IfcLinearStiffnessMeasure, or "" if undeclared."""
+    special_type = tool.Pset.get_special_type_for_measure_class(measure_class)
+    return tool.Pset.get_unit_symbol_for_special_type(special_type, tool.Ifc.get()) if special_type else ""
+
+
 def draw_boundary_condition_editable_ui(
     layout: bpy.types.UILayout, props: Union[BIMStructuralProperties, BIMObjectStructuralProperties]
 ) -> None:
@@ -98,6 +104,8 @@ def draw_boundary_condition_editable_ui(
                 val_row.prop(attribute, "bool_value", text="")
             else:
                 val_row.prop(attribute, "float_value", text="")
+                if unit := get_unit_symbol_for_measure(attribute.enum_value):
+                    val_row.label(text=unit)
             if attribute.is_optional:
                 val_row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
@@ -107,7 +115,9 @@ def draw_boundary_condition_read_only_ui(layout: bpy.types.UILayout, boundary_co
         split = layout.split(factor=0.55, align=True)
         split.label(text=attribute["name"])
         val_row = split.row(align=True)
-        if attribute["is_bool"]:
+        if attribute["value"] is None:
+            val_row.label(text="Unset (Unknown)")
+        elif attribute["is_bool"]:
             val_row.label(text="", icon="CHECKBOX_HLT" if attribute["value"] else "CHECKBOX_DEHLT")
         else:
             val_row.label(text=str(attribute["value"]))
@@ -247,9 +257,22 @@ class BIM_PT_structural_member(Panel):
             else:
                 row = self.layout.row()
                 row.operator("bim.enable_editing_structural_item_axis", text="Edit Axis", icon="GREASEPENCIL")
+        elif StructuralMemberData.data["active_object_class"] == "IfcStructuralSurfaceMember":
+            box = self.layout.box()
+            row = box.row(align=True)
+            pt = StructuralMemberData.data.get("predefined_type") or "NOTDEFINED"
+            row.label(text=f"Type: {pt}", icon="MESH_PLANE")
+            row = box.row(align=True)
+            thickness = StructuralMemberData.data.get("thickness")
+            if thickness is not None:
+                unit_symbol = StructuralMemberData.data.get("length_unit") or ""
+                suffix = f" {unit_symbol}" if unit_symbol else ""
+                row.label(text=f"Thickness: {thickness:g}{suffix}")
+            else:
+                row.label(text="Thickness: Unset (edit in Attributes)", icon="ERROR")
         else:
             row = self.layout.row()
-            row.label(text="TODO")
+            row.label(text=StructuralMemberData.data["active_object_class"] or "Structural Member")
 
 
 def get_load_case_eye(load_case: int) -> str:
@@ -400,7 +423,7 @@ class BIM_PT_structural_connection(Panel):
                 )
         else:
             row = self.layout.row()
-            row.label(text="TODO")
+            row.label(text=StructuralConnectionData.data["active_object_class"] or "Structural Connection")
 
 
 class BIM_PT_structural_analysis_models(Panel):
@@ -666,7 +689,11 @@ class BIM_PT_structural_load_cases(Panel):
 
     def draw_load_case_ui(self, load_case):
         row = self.layout.row(align=True)
-        row.label(text=load_case["name"], icon="CON_CLAMPTO")
+        label_text = load_case["name"]
+        if load_case.get("self_weight"):
+            sw = load_case["self_weight"]
+            label_text += f" (SW: {sw[0]:g}, {sw[1]:g}, {sw[2]:g})"
+        row.label(text=label_text, icon="CON_CLAMPTO")
         op = row.operator(
             "bim.show_structural_load_case", text="", icon=get_load_case_eye(load_case["id"]), emboss=False
         )
@@ -702,12 +729,21 @@ class BIM_PT_structural_load_cases(Panel):
             op.structural_analysis_model = model["id"]
             row.label(text=model["name"])
 
+    def draw_load_case_attributes_ui(self, layout):
+        draw_attributes(self.props.load_case_attributes, layout)
+        box = layout.box()
+        box.prop(self.props, "load_case_has_self_weight", text="Self-Weight")
+        if self.props.load_case_has_self_weight:
+            row = box.row(align=True)
+            row.prop(self.props, "load_case_self_weight", text="")
+            row.operator("bim.set_self_weight_downwards", text="", icon="LOOP_BACK")
+
     def draw_editable_load_case_ui(self):
         bonsai.bim.helper.draw_expandable_panel(
             self.layout,
             bpy.context,
             "Attributes",
-            lambda layout, context: draw_attributes(self.props.load_case_attributes, layout),
+            lambda layout, context: self.draw_load_case_attributes_ui(layout),
             panel_id="structural_load_case_attributes",
         )
 

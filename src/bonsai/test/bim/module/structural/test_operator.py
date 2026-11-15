@@ -14,6 +14,7 @@ import ifcopenshell.api.profile
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
+import ifcopenshell.api.unit
 import ifcopenshell.util.structural
 import numpy as np
 import pytest
@@ -24,7 +25,11 @@ from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.structural.data import LoadGroupDecorationData, StructuralModelMemberData
 from bonsai.bim.module.structural.data import refresh as refresh_structural_data
 from bonsai.bim.module.structural.decorator import LoadsDecorator
-from bonsai.bim.module.structural.operator import PickStructuralLoads, StructuralMemberAssignmentStatus
+from bonsai.bim.module.structural.operator import (
+    PickStructuralLoads,
+    StructuralMemberAssignmentStatus,
+    get_load_unit_symbol,
+)
 from bonsai.bim.module.structural.ui import (
     BIM_PT_generate_structural_model,
     BIM_PT_structural_model_members,
@@ -1055,3 +1060,57 @@ class TestShowStructuralModelMembers(NewIfc):
         assert objects[0].visible_get()
         assert not objects[1].select_get()
         assert bpy.context.view_layer.objects.active == objects[0]
+
+
+class TestLoadCaseSelfWeight(NewFile):
+    def test_edit_and_clear_self_weight(self):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        load_case = ifc.createIfcStructuralLoadCase(
+            GlobalId=ifcopenshell.guid.new(),
+            Name="Dead Load",
+            PredefinedType="LOAD_CASE",
+            ActionType="PERMANENT_G",
+            ActionSource="DEAD_LOAD_G",
+        )
+        props = tool.Structural.get_structural_props()
+
+        bpy.ops.bim.enable_editing_structural_load_case(load_case=load_case.id())
+        assert props.load_case_has_self_weight is False
+        assert tuple(props.load_case_self_weight) == (0.0, 0.0, -1.0)
+
+        props.load_case_has_self_weight = True
+        props.load_case_self_weight = (0.5, 0.0, -1.0)
+        bpy.ops.bim.edit_structural_load_case()
+        assert list(load_case.SelfWeightCoefficients) == [0.5, 0.0, -1.0]
+
+        bpy.ops.bim.enable_editing_structural_load_case(load_case=load_case.id())
+        assert props.load_case_has_self_weight is True
+        assert tuple(props.load_case_self_weight) == (0.5, 0.0, -1.0)
+
+        props.load_case_has_self_weight = False
+        bpy.ops.bim.edit_structural_load_case()
+        assert load_case.SelfWeightCoefficients is None
+
+
+class TestGetLoadUnitSymbol(NewFile):
+    def make_file(self) -> ifcopenshell.file:
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc)  # millimetres
+        return ifc
+
+    def test_composing_force_over_length_when_no_load_units_are_declared(self):
+        self.make_file()
+        assert get_load_unit_symbol("IfcStructuralPointConnection") == "N"
+        assert get_load_unit_symbol("IfcStructuralCurveMember") == "N/mm"
+        assert get_load_unit_symbol("IfcStructuralSurfaceMember") == "N/mm2"
+
+    def test_using_the_declared_load_units(self):
+        ifc = self.make_file()
+        bpy.context.scene.unit_settings.system = "METRIC"
+        ifcopenshell.api.unit.assign_unit(ifc, units=tool.Unit.add_structural_units())
+        assert get_load_unit_symbol("IfcStructuralPointConnection") == "kN"
+        assert get_load_unit_symbol("IfcStructuralCurveMember") == "kN/m"
+        assert get_load_unit_symbol("IfcStructuralSurfaceMember") == "kN/m2"
