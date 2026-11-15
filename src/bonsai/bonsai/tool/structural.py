@@ -349,11 +349,14 @@ class Structural(bonsai.core.tool.Structural):
                     new.bool_value = False if new.is_null else value
                     new.data_type = "boolean"
                     new.enum_value = "IfcBoolean"
+                elif value is None and "IfcBoolean" in enum_items:
+                    new.bool_value = False
+                    new.data_type = "boolean"
+                    new.enum_value = "IfcBoolean"
                 else:
-                    print(value)
                     new.float_value = 0 if new.is_null else value
                     new.data_type = "float"
-                    new.enum_value = next(i for i in enum_items if i != "IfcBoolean")
+                    new.enum_value = next((i for i in enum_items if i != "IfcBoolean"), enum_items[0])
 
     @classmethod
     def export_and_apply_boundary_condition_attributes(
