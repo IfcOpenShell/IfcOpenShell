@@ -52,8 +52,9 @@ class TestAssignSceneUnits:
         ifc.run("unit.add_si_unit", unit_type="TIMEUNIT", prefix="time_prefix").should_be_called().will_return(
             "timeunit"
         )
+        unit.add_structural_units().should_be_called().will_return(["structuralunit"])
         ifc.run(
-            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "massunit", "timeunit"]
+            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "massunit", "timeunit", "structuralunit"]
         ).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
@@ -68,7 +69,8 @@ class TestAssignSceneUnits:
         ifc.run("unit.add_si_unit", unit_type="LENGTHUNIT", prefix="length_prefix").should_be_called().will_return(
             "lengthunit"
         )
-        ifc.run("unit.assign_unit", units=["lengthunit"]).should_be_called()
+        unit.add_structural_units().should_be_called().will_return(["structuralunit"])
+        ifc.run("unit.assign_unit", units=["lengthunit", "structuralunit"]).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
     def test_creating_and_assigning_imperial_units(self, ifc, unit):
@@ -87,8 +89,9 @@ class TestAssignSceneUnits:
         ifc.run("unit.add_conversion_based_unit", name="volume_name").should_be_called().will_return("volumeunit")
         ifc.run("unit.add_conversion_based_unit", name="mass_name").should_be_called().will_return("massunit")
         ifc.run("unit.add_conversion_based_unit", name="time_name").should_be_called().will_return("timeunit")
+        unit.add_structural_units().should_be_called().will_return(["structuralunit"])
         ifc.run(
-            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "massunit", "timeunit"]
+            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "massunit", "timeunit", "structuralunit"]
         ).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
@@ -106,7 +109,8 @@ class TestAssignSceneUnits:
             "lengthunit"
         )
         ifc.run("unit.add_conversion_based_unit", name="area_name").should_be_called().will_return("areaunit")
-        ifc.run("unit.assign_unit", units=["lengthunit", "areaunit"]).should_be_called()
+        unit.add_structural_units().should_be_called().will_return(["structuralunit"])
+        ifc.run("unit.assign_unit", units=["lengthunit", "areaunit", "structuralunit"]).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
 

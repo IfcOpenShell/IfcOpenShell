@@ -27,10 +27,17 @@ SUPPORTED_PYVERSIONS := py311 py313
 # Blender extensions platform allows just one build per platform per version,
 # so we add suffix for different Python versions builds.
 SEMVER_SUFFIX:=
+# Blender 4.5 LTS is supported until July 2027 - https://www.blender.org/releases/4-5/
+BLENDER_VERSION_MIN_py311:=4.5.0
+# Blender 5.1+ requires Python 3.13.
+BLENDER_VERSION_MIN_py313:=5.1.0
 
 ifdef PYVERSION
 ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
 $(error Unsupported PYVERSION=$(PYVERSION). Must be one of $(SUPPORTED_PYVERSIONS))
+endif
+ifndef BLENDER_VERSION_MIN_$(PYVERSION)
+$(error BLENDER_VERSION_MIN_$(PYVERSION) is not set)
 endif
 
 PYMINOR:=$(subst py3,,$(PYVERSION))
@@ -241,10 +248,7 @@ else
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/pyproject.toml
 endif
 
-# Blender 5.1+ requires Python 3.13.
-ifeq ($(PYVERSION), py313)
-	$(SED) 's/blender_version_min = "4\.2\.0"/blender_version_min = "5.1.0"/' build/bonsai/blender_manifest.toml
-endif
+	$(SED) 's/^blender_version_min = "BLENDER_VERSION_MIN"/blender_version_min = "$(BLENDER_VERSION_MIN_$(PYVERSION))"/' build/bonsai/blender_manifest.toml
 ifeq ($(PYVERSION), py311)
 	$(SED) 's/^# blender_version_max = /blender_version_max = /' build/bonsai/blender_manifest.toml
 endif

@@ -378,6 +378,9 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 elif obj.data is not None:
                     new_obj = tool.Geometry.recreate_object_with_data(obj, None)
 
+            if is_structural:
+                tool.Structural.assign_to_current_structural_analysis_model(element)
+
             # Accomodate existing importers to Blender from other formats that set custom props
             if self.props_to_pset:
                 custom_props = {}
@@ -549,6 +552,10 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             ifc_context = int(props.contexts or "0") or None
             if ifc_context:
                 ifc_context = tool.Ifc.get().by_id(ifc_context)
+        if representation_template in ("VERTEX", "EDGE", "FACE"):
+            # Structural items' topology is labelled 'Reference', as IfcStructuralItem requires.
+            tool.Structural.ensure_representation_contexts()
+            ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Reference", "GRAPH_VIEW")
 
         if representation_template in (
             "EMPTY",
@@ -575,6 +582,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             should_add_representation=False,
         )
         element.Description = props.description or None
+        if element.is_a("IfcStructuralItem"):
+            tool.Structural.assign_to_current_structural_analysis_model(element)
 
         if representation_template == "EMTPY" or not ifc_context:
             pass

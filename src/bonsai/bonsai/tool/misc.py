@@ -118,6 +118,7 @@ class Misc(bonsai.core.tool.Misc):
             (5, 0): 10032,
             (5, 1): 10032,
             (5, 2): 10800,
+            (5, 3): 10800,
         }
 
         @classmethod

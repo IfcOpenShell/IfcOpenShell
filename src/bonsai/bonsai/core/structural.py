@@ -30,6 +30,7 @@ def add_structural_analysis_model(
     ifc: type[tool.Ifc], structural: type[tool.Structural]
 ) -> ifcopenshell.entity_instance:
     result = ifc.run("structural.add_structural_analysis_model")
+    structural.set_current_structural_analysis_model(result)
     structural.load_structural_analysis_models()
     structural.ensure_representation_contexts()
     return result

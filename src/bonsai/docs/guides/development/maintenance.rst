@@ -49,7 +49,9 @@ When a new Blender version is released and supported:
    * - File
      - What to update
    * - ``.github/workflows/publish-bonsai-unstable.yml``
-     - Blender download URL
+     - ``BLENDER_VERSION``
+   * - ``.github/workflows/test-bonsai.yml``
+     - ``BLENDER_VERSION``
 
 Blender's Bundled Python Version Updated
 -----------------------------------------

@@ -18,7 +18,7 @@
 
 from collections.abc import Iterable
 from math import sin
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, Union
 
 import bmesh
 import bpy
@@ -80,6 +80,9 @@ ProcessedLoad = TypedDict(
 
 
 class ShaderInfo:
+    # Values of a load being edited, by load id, shown in place of its own until the edit is confirmed or cancelled.
+    preview: dict[int, dict[str, Union[float, None]]] = {}
+
     def __init__(self) -> None:
         self.is_empty = True
         self.shader = DecorationShader()
@@ -88,6 +91,8 @@ class ShaderInfo:
         self.surface_members: dict[str, MemberInfo] = {}
         self.text_info = []
         self.info = []
+        self.pickables = []
+        self.tagging_object = None
         self.force_unit = ""
         self.moment_unit = ""
         self.linear_force_unit = ""
@@ -97,6 +102,9 @@ class ShaderInfo:
     def update(self) -> None:
         self.info = []
         self.text_info = []
+        # Arrows that stand for one applied load, so that they can be picked in the viewport to edit it.
+        self.pickables = []
+        self.tagging_object = None
         self.curve_members = {}
         self.point_members = {}
         self.surface_members = {}
@@ -105,124 +113,53 @@ class ShaderInfo:
         self.get_linear_loads()
         self.get_point_loads()
         self.get_planar_loads()
+        self.tag_new_entries(None)
         if len(self.info):
             self.is_empty = False
 
     def get_force_units(self) -> None:
-        def get_unit_symbol(unit: ifcopenshell.entity_instance) -> str:
-            prefix_symbols = {
-                "EXA": "E",
-                "PETA": "P",
-                "TERA": "T",
-                "GIGA": "G",
-                "MEGA": "M",
-                "KILO": "k",
-                "HECTO": "h",
-                "DECA": "da",
-                "DECI": "d",
-                "CENTI": "c",
-                "MILLI": "m",
-                "MICRO": "μ",
-                "NANO": "n",
-                "PICO": "p",
-                "FEMTO": "f",
-                "ATTO": "a",
-            }
+        # Only units assigned to the project apply. A derived unit the project does not declare is composed
+        # from its force and length units (N/mm in a mm project). IFC does not say what an undeclared unit is,
+        # and ifcopenshell.util.unit.calculate_unit_scale takes it as SI (N/m), so declaring it is safer.
+        ifc_file = tool.Ifc.get()
+        project_units = {
+            t: ifcunit.get_project_unit(ifc_file, t)
+            for t in ("FORCEUNIT", "LENGTHUNIT", "TORQUEUNIT", "LINEARFORCEUNIT", "LINEARMOMENTUNIT", "PLANARFORCEUNIT")
+        }
+        linear_force_units = [u for u in [project_units["LINEARFORCEUNIT"]] if u]
+        linear_moment_units = [u for u in [project_units["LINEARMOMENTUNIT"]] if u]
+        planar_force_units = [u for u in [project_units["PLANARFORCEUNIT"]] if u]
 
-            unit_symbols = {
-                # si units
-                "CUBIC_METRE": "m3",
-                "GRAM": "g",
-                "SECOND": "s",
-                "SQUARE_METRE": "m2",
-                "METRE": "m",
-                "NEWTON": "N",
-                "PASCAL": "Pa",
-                # conversion based units
-                "pound-force": "lbf",
-                "pound-force per square inch": "psi",
-                "thou": "th",
-                "inch": "in",
-                "foot": "ft",
-                "yard": "yd",
-                "mile": "mi",
-                "square thou": "th2",
-                "square inch": "in2",
-                "square foot": "ft2",
-                "square yard": "yd2",
-                "acre": "ac",
-                "square mile": "mi2",
-                "cubic thou": "th3",
-                "cubic inch": "in3",
-                "cubic foot": "ft3",
-                "cubic yard": "yd3",
-                "cubic mile": "mi3",
-                "litre": "L",
-                "fluid ounce UK": "fl oz",
-                "fluid ounce US": "fl oz",
-                "pint UK": "pt",
-                "pint US": "pt",
-                "gallon UK": "gal",
-                "gallon US": "gal",
-                "degree": "°",
-                "ounce": "oz",
-                "pound": "lb",
-                "ton UK": "ton",
-                "ton US": "ton",
-                "lbf": "lbf",
-                "kip": "kip",
-                "psi": "psi",
-                "ksi": "ksi",
-                "minute": "min",
-                "hour": "hr",
-                "day": "day",
-                "btu": "btu",
-                "fahrenheit": "°F",
-            }
-            symbol = ""
-            if unit.is_a("IfcSIUnit"):
-                symbol += prefix_symbols.get(unit.Prefix, "")
-            symbol += unit_symbols.get(unit.Name.replace("METER", "METRE"), "?")
-            return symbol
+        force_unit = project_units["FORCEUNIT"]
+        self.force_unit = ifcunit.get_unit_symbol(force_unit) if force_unit else "N"
 
-        length_units = [u for u in tool.Ifc.get().by_type("IfcNamedUnit") if u.UnitType == "LENGTHUNIT"]
-        force_units = [u for u in tool.Ifc.get().by_type("IfcNamedUnit") if u.UnitType == "FORCEUNIT"]
-        linear_force_units = [u for u in tool.Ifc.get().by_type("IfcDerivedUnit") if u.UnitType == "LINEARFORCEUNIT"]
-        linear_moment_units = [u for u in tool.Ifc.get().by_type("IfcDerivedUnit") if u.UnitType == "LINEARMOMENTUNIT"]
-        planar_force_units = [u for u in tool.Ifc.get().by_type("IfcDerivedUnit") if u.UnitType == "PLANARFORCEUNIT"]
+        length_unit = project_units["LENGTHUNIT"]
+        length_unit = ifcunit.get_unit_symbol(length_unit) if length_unit else "m"
+        torque_unit = project_units["TORQUEUNIT"]
+        self.moment_unit = ifcunit.get_unit_symbol(torque_unit) if torque_unit else self.force_unit + "." + length_unit
 
-        conversion_force_unit = [u for u in force_units if u.is_a("IfcConversionBasedUnit")]
-        if len(conversion_force_unit) == 0:
-            conversion_force_unit.append(force_units[0])
-        self.force_unit = ifcunit.get_unit_symbol(conversion_force_unit[0])
-
-        conversion_length_unit = [u for u in length_units if u.is_a("IfcConversionBasedUnit")]
-        if len(conversion_length_unit) == 0:
-            conversion_length_unit.append(length_units[0])
-        length_unit = ifcunit.get_unit_symbol(conversion_length_unit[0])
-        self.moment_unit = self.force_unit + "." + length_unit
-
-        first = ""
-        second = ""
-        for e in linear_force_units[0].Elements:
+        # Derived units missing from the file are composed from the force and length units.
+        first = self.force_unit
+        second = length_unit
+        for e in linear_force_units[0].Elements if linear_force_units else ():
             if e.Unit.UnitType == "FORCEUNIT":
                 first = ifcunit.get_unit_symbol(e.Unit)
             if e.Unit.UnitType == "LENGTHUNIT":
                 second = ifcunit.get_unit_symbol(e.Unit)
         self.linear_force_unit = first + "/" + second
 
-        first = ""
-        second = ""
-        for e in linear_moment_units[0].Elements:
+        first = self.force_unit
+        second = length_unit
+        for e in linear_moment_units[0].Elements if linear_moment_units else ():
             if e.Unit.UnitType == "FORCEUNIT":
                 first = ifcunit.get_unit_symbol(e.Unit)
             if e.Unit.UnitType == "LENGTHUNIT":
                 second = ifcunit.get_unit_symbol(e.Unit)
         self.linear_moment_unit = first + "." + second + "/" + second
 
-        first = ""
-        second = ""
-        for e in planar_force_units[0].Elements:
+        first = self.force_unit
+        second = length_unit + "2"
+        for e in planar_force_units[0].Elements if planar_force_units else ():
             if e.Unit.UnitType == "FORCEUNIT":
                 first = ifcunit.get_unit_symbol(e.Unit)
             if e.Unit.UnitType == "LENGTHUNIT":
@@ -325,10 +262,24 @@ class ShaderInfo:
                     recursive_subgroups(subgorups, rec_limit - 1, activity_type, factor=total_factor)
 
         props = tool.Structural.get_structural_props()
-        group_definition_id = int(props.load_group_to_show)
         file = tool.Ifc.get()
-        groups = [file.by_id(group_definition_id)]
-        recursive_subgroups(groups, 10, props.activity_type)
+        try:
+            group = file.by_id(int(props.load_group_to_show))
+        except (ValueError, RuntimeError):
+            return  # No load group is chosen, or the chosen one was removed.
+        if group.is_a("IfcStructuralLoadGroup"):
+            recursive_subgroups([group], 10, props.activity_type)
+
+    def tag_new_entries(self, obj: Union[bpy.types.Object, None]) -> None:
+        """Mark the drawing data added so far without an item as belonging to the item just drawn.
+
+        Each load type draws one structural item at a time, calling this with the next item before
+        drawing it, so that a load's arrows and values hide with their item.
+        """
+        if self.tagging_object is not None:
+            for entry in self.info + self.text_info:
+                entry.setdefault("object", self.tagging_object)
+        self.tagging_object = obj.name if obj else None
 
     def get_planar_loads(self) -> None:
         """get the necessary information to render the planar load representation in 3D and its text information"""
@@ -338,6 +289,7 @@ class ShaderInfo:
         maximum = 0
         for value in list_of_surfaces.values():
             surf = value["member"]
+            self.tag_new_entries(tool.Ifc.get_object(surf))
             activity_list = value["activities"]
             if len(activity_list) == 0:
                 continue
@@ -439,16 +391,58 @@ class ShaderInfo:
         rotation = placement[0:3, 0:3]
         return rotation
 
-    def get_curve_member_rotation(self, curve_member: ifcopenshell.entity_instance) -> np.ndarray:
-        """returns the rotation matrix of a structural surface member"""
-        z = curve_member.Axis.DirectionRatios
-        edge = curve_member.Representation.Representations[0].Items[0]
-        origin = edge.EdgeStart.VertexGeometry.Coordinates
-        end = edge.EdgeEnd.VertexGeometry.Coordinates
-        x = [c2 - c1 for c1, c2 in zip(origin, end)]
-        placement = ifcopenshell.util.placement.a2p(origin, z, x)
-        rotation = placement[0:3, 0:3]
-        return rotation
+    def get_curve_member_rotation(self, curve_member: ifcopenshell.entity_instance) -> np.ndarray | None:
+        """returns the rotation matrix of a structural curve member"""
+        edge = None
+        if getattr(curve_member, "Representation", None):
+            for rep in curve_member.Representation.Representations or ():
+                for item in getattr(rep, "Items", None) or ():
+                    if (
+                        item.is_a("IfcEdge")
+                        and getattr(item, "EdgeStart", None)
+                        and getattr(item.EdgeStart, "VertexGeometry", None)
+                        and getattr(item, "EdgeEnd", None)
+                        and getattr(item.EdgeEnd, "VertexGeometry", None)
+                    ):
+                        edge = item
+                        break
+                if edge:
+                    break
+        if edge:
+            origin = edge.EdgeStart.VertexGeometry.Coordinates
+            end = edge.EdgeEnd.VertexGeometry.Coordinates
+            x = [c2 - c1 for c1, c2 in zip(origin, end)]
+            x_norm = float(np.linalg.norm(x))
+            if x_norm > 1e-9:
+                x_unit = np.asarray(x, dtype=float) / x_norm
+                axis_dir = getattr(curve_member, "Axis", None)
+                z = axis_dir.DirectionRatios if axis_dir else None
+                if z is not None:
+                    z_norm = float(np.linalg.norm(z))
+                    if (
+                        z_norm <= 1e-9
+                        or float(np.linalg.norm(np.cross(np.asarray(z, dtype=float) / z_norm, x_unit))) < 1e-6
+                    ):
+                        z = None
+                if z is None:
+                    for candidate in ((0.0, 1.0, 0.0), (1.0, 0.0, 0.0), (0.0, 0.0, 1.0)):
+                        if float(np.linalg.norm(np.cross(candidate, x_unit))) >= 1e-6:
+                            z = candidate
+                            break
+                # Local x runs along the edge and local z lies in the plane of Axis and the edge.
+                # a2p would keep Axis and tilt x instead, off a sloped member.
+                y_unit = np.cross(np.asarray(z, dtype=float), x_unit)
+                y_unit /= np.linalg.norm(y_unit)
+                z_unit = np.cross(x_unit, y_unit)
+                return np.column_stack((x_unit, y_unit, z_unit))
+        member_name = (
+            getattr(curve_member, "Name", None) or getattr(curve_member, "GlobalId", None) or f"#{curve_member.id()}"
+        )
+        print(
+            f"WARNING: Structural curve member '{member_name}' (#{curve_member.id()}) has no valid IfcEdge topology; "
+            "skipping load drawing."
+        )
+        return None
 
     def get_activity_transform_matrix(
         self, activity: ifcopenshell.entity_instance, element_rotation_matrix: np.ndarray
@@ -470,6 +464,7 @@ class ShaderInfo:
         list_of_point_connections = self.point_members
         for value in list_of_point_connections.values():
             conn = value["member"]
+            self.tag_new_entries(tool.Ifc.get_object(conn))
             activity_list = value["activities"]
             if len(activity_list) == 0:
                 continue
@@ -477,89 +472,322 @@ class ShaderInfo:
             if blender_object.type == "MESH":
                 conn_location = blender_object.matrix_world @ blender_object.data.vertices[0].co
                 rotation = self.get_point_connection_rotation(conn)
+                self.get_point_force_args(activity_list, conn_location, rotation)
+                # Moments keep their own symbol; forces are drawn above.
                 loads = self.get_point_loads_values(activity_list, rotation)
-                self.get_point_shader_args(loads, conn_location, rotation)
+                self.get_point_moment_args(loads[3:], conn_location, rotation)
 
-    def get_point_shader_args(self, loads: Iterable, location: np.ndarray, rotation: np.ndarray) -> None:
-        """get the args to the point shader"""
-        location = np.array(location)
-        indices = []
-        direction_dict: dict[str, tuple[npt.NDArray, ...]] = {
-            "fx": (np.array((1, 0, 0)), np.array((0, 1, 0)), np.array((0, 0, 1))),
-            "fy": (np.array((0, 1, 0)), np.array((1, 0, 0)), np.array((0, 0, 1))),
-            "fz": (np.array((0, 0, 1)), np.array((0, 1, 0)), np.array((1, 0, 0))),
-            "mx": (np.array((0, 1, 0)), np.array((0, 0, 1))),
-            "my": (np.array((1, 0, 0)), np.array((0, 0, 1))),
-            "mz": (np.array((1, 0, 0)), np.array((0, 1, 0))),
-        }
-        keys = ["fx", "fy", "fz", "mx", "my", "mz"]
+    def get_point_force_args(
+        self, activity_list: list[tuple[ifcopenshell.entity_instance, float]], location: Vector, rotation: np.ndarray
+    ) -> None:
+        """Draw the point forces applied at a point"""
+        # In the order they were applied, which is how a tip-to-tail chain is usually drawn.
+        items = sorted(activity_list, key=lambda item: item[0].id())
+        forces = [self.get_point_loads_values([item], rotation)[:3] for item in items]
+        self.draw_point_forces(forces, location, rotation, [item[0].id() for item in items])
+
+    def draw_point_forces(
+        self,
+        forces: list[np.ndarray],
+        location: Vector,
+        rotation: np.ndarray,
+        activities: Union[list[int], None] = None,
+    ) -> None:
+        """Draw point forces at a point from the point outwards, to scale, as chosen by force_display:
+        the components or resultant of their sum, or each force added by the parallelogram law or tip to tail.
+
+        forces: the X, Y and Z components of each force, in the reference frame being shown
+        activities: the id of the activity applying each force, if any
+        """
         props = tool.Structural.get_structural_props()
-        reference_frame = props.reference_frame
-        if reference_frame == "LOCAL_COORDS":
-            for key in keys:
-                tup = direction_dict[key]
-                li = []
-                for item in tup:
-                    li.append(rotation @ item)
-                direction_dict[key] = li
+        location = np.array(location)
+        if props.reference_frame == "LOCAL_COORDS":
+            forces = [rotation @ force for force in forces]
+        kept = [
+            (force, activity)
+            for force, activity in zip(forces, activities or [0] * len(forces))
+            if np.linalg.norm(force)
+        ]
+        if not kept:
+            return
+        forces = [force for force, _ in kept]
+        activities = [activity for _, activity in kept]
+        # Arrows can be picked to edit their load only when they stand for one applied load.
+        single = activities[0] if len(activities) == 1 else 0
+        resultant = sum(forces)
 
-        for i, key in enumerate(keys):
-            if loads[i] == 0:
-                continue
-            color = (1, 0, 0, 1)
-            if i in [1, 4]:
-                color = (0, 1, 0, 1)
-            elif i in [2, 5]:
-                color = (0, 0, 1, 1)
-            d1 = -(direction_dict[key][0] * loads[i])
-            d1 = d1 / np.linalg.norm(d1)
-            if i < 3:
-                d2 = direction_dict[key][1]
-                d3 = direction_dict[key][2]
-                p1 = location
-                p2 = location + d1 + d2
-                p3 = location + d1 - d2
-                p4 = location + d1 + d3
-                p5 = location + d1 - d3
-                position = [p1, p2, p3, p4, p5]
-                indices = [(0, 1, 2), (0, 3, 4)]
-                c1 = (0, 0, 0)
-                c2 = (1, 1, 0)
-                c3 = (-1, 1, 0)
-                coords_for_shader = [c1, c2, c3, c2, c3]
-                shader = self.shader.new("SINGLE FORCE")
-                self.info.append(
-                    {
-                        "shader": shader,
-                        "args": {"position": position, "coord": coords_for_shader},
-                        "indices": indices,
-                        "uniforms": [["color", color], ["spacing", 0.2]],
-                    }
-                )
-                self.text_info.append({"position": location + d1, "text": f"{loads[i]:.2f} {self.force_unit}"})
+        # All forces share one scale so that their lengths compare, as in a graphical solution.
+        longest = max(np.linalg.norm(resultant), *(np.linalg.norm(force) for force in forces))
+        if props.force_scale:
+            scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get()) / props.force_scale
+        else:
+            scale = 2 / longest
+        # Arrowheads, shafts and dashes are sized to the longest arrow, so they read the same at any scale.
+        size = longest * scale
+
+        # Components lie on the axes, so they get no angle.
+        axes = rotation if props.reference_frame == "LOCAL_COORDS" else np.eye(3)
+        values = axes.T @ resultant
+        axis_colors = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1)]
+        components = [
+            (values[j] * axes[:, j], axis_colors[j], False, single) for j in range(3) if abs(values[j]) > 1e-9
+        ]
+        colors = [(0.3, 0.8, 1, 1), (1, 0.4, 0.8, 1), (1, 0.9, 0.3, 1), (0.5, 1, 0.5, 1)]
+
+        mode = props.force_display
+        if mode in ("PARALLELOGRAM", "TIP_TO_TAIL"):
+            # A single force has nothing to add to, so show it resolved into its components instead:
+            # they are the legs of its parallelogram, and it is the diagonal.
+            vectors = (
+                components
+                if len(forces) == 1
+                else [(f, colors[i % len(colors)], True, activities[i]) for i, f in enumerate(forces)]
+            )
+            show_resultant = len(vectors) > 1
+        elif mode == "RESULTANT":
+            vectors, show_resultant = [], True
+        else:
+            vectors = components
+            # A resultant drawn over a single component would only hide it.
+            show_resultant = mode == "BOTH" and len(components) > 1
+
+        start = location
+        running = np.zeros(3)
+        arcs_at_tail: dict[tuple, int] = {}
+        reference_axes: dict[tuple, tuple] = {}
+        # In a tip-to-tail chain every tip is the next tail, so labels go at the middle of each arrow, outside
+        # the polygon the chain and its resultant make; elsewhere tails are shared, so labels go at the tips.
+        chain = np.cumsum([np.zeros(3)] + [vector for vector, *_ in vectors], axis=0) * scale + location
+        centre = chain.mean(axis=0) if mode == "TIP_TO_TAIL" else None
+        for i, (vector, color, has_angle, activity) in enumerate(vectors):
+            tail = start if mode == "TIP_TO_TAIL" else location
+            if mode == "PARALLELOGRAM" and i:
+                # Complete the parallelogram of the vectors so far and this one. Each side is coloured
+                # as the vector it is parallel to; the sum of the vectors so far is a resultant, in white.
+                corner = location + (running + vector) * scale
+                running_color = vectors[0][1] if i == 1 else (1, 1, 1, 1)
+                self.add_dashed_line(location + running * scale, corner, size, color)
+                self.add_dashed_line(location + vector * scale, corner, size, running_color)
+                if i < len(vectors) - 1:
+                    self.add_dashed_line(location, corner, size, (1, 1, 1, 1))  # An intermediate resultant.
+            tip = tail + vector * scale
+            label = f"{np.linalg.norm(vector):.{props.force_decimals}f} {self.force_unit}"
+            if centre is None:
+                self.add_force_arrow(tail, tip, color, label, size, activity=activity)
             else:
-                d2 = d2 = direction_dict[key][1]
-                p1 = location - d2
-                p2 = location + d1 + d2
-                p3 = location - d1 + d2
-                position = [p1, p2, p3]
-                indices = [(0, 1, 2)]
-                c1 = (-1, 0, 0)
-                c2 = (1, 1, 0)
-                c3 = (1, -1, 0)
-                coords_for_shader = [c1, c2, c3]
-                shader = self.shader.new("SINGLE MOMENT")
-                self.info.append(
-                    {
-                        "shader": shader,
-                        "args": {"position": position, "coord": coords_for_shader},
-                        "indices": indices,
-                        "uniforms": [["color", color]],
-                    }
+                side = self.get_label_side(vector, (tail + tip) / 2 - centre)
+                self.add_force_arrow(
+                    tail, tip, color, label, size, label_away=side, label_at_middle=True, activity=activity
                 )
-                self.text_info.append(
-                    {"position": location + 0.25 * (d1 + d2), "text": f"{loads[i]:.2f} {self.moment_unit}"}
-                )
+            if props.show_force_angles and has_angle:
+                self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes)
+            start = tip
+            running = running + vector
+
+        if show_resultant:
+            label = f"{'R = ' if len(forces) > 1 else ''}{np.linalg.norm(resultant):.{props.force_decimals}f} {self.force_unit}"
+            if abs(resultant[1]) < 1e-9 and not props.show_force_angles:
+                label += f" at {np.degrees(np.arctan2(resultant[2], resultant[0])):.{props.angle_decimals}f} deg"
+            # Alpha 2 because the shader caps opacity at half of it; the resultant draws fully opaque.
+            # Labelled to the side, as a resultant often runs along one of the forces: outside the chain's
+            # polygon, or else above.
+            tip = location + resultant * scale
+            outside = np.array((0, 0, 1.0)) if centre is None else (location + tip) / 2 - centre
+            self.add_force_arrow(
+                location,
+                tip,
+                (1, 1, 1, 2),
+                label,
+                size,
+                spacing=0.3,
+                label_away=self.get_label_side(resultant, outside),
+                label_at_middle=centre is not None,
+                activity=single,
+            )
+            if props.show_force_angles:
+                self.add_force_angle(location, resultant, size, (1, 1, 1, 1), arcs_at_tail, reference_axes)
+        self.add_reference_axes(reference_axes, size)
+
+    def add_force_angle(
+        self,
+        tail: np.ndarray,
+        vector: np.ndarray,
+        size: float,
+        color: tuple,
+        arcs_at_tail: dict[tuple, int],
+        reference_axes: dict[tuple, tuple],
+    ) -> None:
+        """Mark a force's angle from a horizontal reference axis, as an arc in the X-Z plane"""
+        if abs(vector[1]) > 1e-9 * np.linalg.norm(vector):
+            return  # Not in the X-Z plane, so one angle does not describe it.
+        props = tool.Structural.get_structural_props()
+        end = np.degrees(np.arctan2(vector[2], vector[0]))
+        start = 0.0
+        if props.angle_reference == "HORIZONTAL" and vector[0] < -1e-9 * np.linalg.norm(vector):
+            # Measured from -X, so that the angle is the acute one statics texts draw.
+            start = 180.0
+            end = end if end > 0 else end + 360
+        if abs(end - start) < 0.01:
+            return
+        key = tuple(np.round(tail, 6))
+        arcs_at_tail.setdefault(key, 0)
+        # Arcs sharing a tail get growing radii so that they do not overlap.
+        radius = size * (0.18 + 0.05 * arcs_at_tail[key])
+        arcs_at_tail[key] += 1
+        reference_axes.setdefault((key, start), (tail, start, []))[2].append((radius, color))
+        steps = max(4, int(abs(end - start) / 5))
+        points = [
+            tail + radius * np.array((np.cos(a), 0, np.sin(a))) for a in np.radians(np.linspace(start, end, steps + 1))
+        ]
+        for a, b in zip(points, points[1:]):
+            self.add_dashed_line(a, b, size, color, dashed=False)
+        middle = np.radians((start + end) / 2)
+        outward = np.array((np.cos(middle), 0, np.sin(middle)))
+        # Away from the arc, and above or below the reference axis so small angles keep off the lines.
+        away = outward + np.array((0, 0, np.sign(vector[2])))
+        angle = abs(end - start) if props.angle_reference == "HORIZONTAL" else end
+        self.text_info.append(
+            {
+                "position": tail + radius * outward,
+                "text": f"θ = {angle:.{props.angle_decimals}f}°",
+                "color": color,
+                "away": away / np.linalg.norm(away),
+            }
+        )
+
+    def add_reference_axes(self, reference_axes: dict[tuple, tuple], size: float) -> None:
+        """Draw the horizontal axes angles are measured from, each band coloured as the arc that starts in it"""
+        for tail, start, arcs in reference_axes.values():
+            direction = np.array((np.cos(np.radians(start)), 0, 0))
+            arcs.sort(key=lambda arc: arc[0])
+            band_start = 0.0
+            for i, (radius, color) in enumerate(arcs):
+                # Bands end just past their arc, before the next arc out; the last runs on to the axis' length.
+                band_end = radius + size * 0.04 if i < len(arcs) - 1 else max(radius + size * 0.04, size * 0.45)
+                self.add_dashed_line(tail + direction * band_start, tail + direction * band_end, size, color)
+                band_start = band_end
+
+    def get_label_side(self, vector: np.ndarray, towards: np.ndarray) -> np.ndarray:
+        """Get the direction square to a vector, in the X-Z plane where possible, on the side of towards"""
+        direction = vector / np.linalg.norm(vector)
+        side = np.array((-direction[2], 0, direction[0]))
+        if not np.linalg.norm(side):
+            side = self.get_perpendicular_axes(direction)[0]
+        if np.dot(side, towards) < 0 or (abs(np.dot(side, towards)) < 1e-9 and side[2] < 0):
+            side = -side
+        return side / np.linalg.norm(side)
+
+    def get_perpendicular_axes(self, direction: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        helper = np.array((0, 0, 1)) if abs(direction[2]) < 0.9 else np.array((1, 0, 0))
+        d2 = np.cross(direction, helper)
+        d2 = d2 / np.linalg.norm(d2)
+        return d2, np.cross(direction, d2)
+
+    def add_force_arrow(
+        self,
+        tail: np.ndarray,
+        tip: np.ndarray,
+        color: tuple,
+        label: str,
+        size: float,
+        spacing: float = 0.2,
+        label_away: Union[np.ndarray, None] = None,
+        label_at_middle: bool = False,
+        activity: int = 0,
+    ) -> None:
+        """Add an arrow from tail to tip, its head and shaft sized to size, the longest arrow drawn with it"""
+        length = np.linalg.norm(tip - tail)
+        if not length:
+            return
+        direction = (tip - tail) / length
+        # The shader works in units of a fifth of size: the head is 2 * spacing of them long.
+        unit = size / 5
+        d2, d3 = self.get_perpendicular_axes(direction)
+        d2, d3 = d2 * unit, d3 * unit
+        self.info.append(
+            {
+                "shader": self.shader.new("SINGLE FORCE"),
+                "args": {
+                    "position": [tip, tail + d2, tail - d2, tail + d3, tail - d3],
+                    "coord": [
+                        (0, 0, 0),
+                        (1, length / unit, 0),
+                        (-1, length / unit, 0),
+                        (1, length / unit, 0),
+                        (-1, length / unit, 0),
+                    ],
+                },
+                "indices": [(0, 1, 2), (0, 3, 4)],
+                "uniforms": [["color", color], ["spacing", spacing]],
+            }
+        )
+        if activity:
+            pickable = {"tail": tail, "tip": tip, "activity": activity, "info": len(self.info) - 1}
+            self.pickables.append(pickable)
+        # Labelled beside the tip, as arrows often share their tail.
+        away = direction if label_away is None else label_away
+        position = (tail + tip) / 2 if label_at_middle else tip
+        self.text_info.append({"position": position, "text": label, "color": color, "away": away})
+
+    def add_dashed_line(
+        self, start: np.ndarray, end: np.ndarray, size: float, color: tuple, dashed: bool = True
+    ) -> None:
+        width = size * 0.003
+        length = np.linalg.norm(end - start)
+        if not length:
+            return
+        d2, d3 = self.get_perpendicular_axes((end - start) / length)
+        position, indices = [], []
+        for axis in (d2, d3):
+            n = len(position)
+            position += [start + width * axis, start - width * axis, end + width * axis, end - width * axis]
+            indices += [(n, n + 1, n + 2), (n + 1, n + 3, n + 2)]
+        self.info.append(
+            {
+                "shader": self.shader.new("DASHED LINE"),
+                "args": {"position": position, "coord": [(1, 0, 0), (-1, 0, 0), (1, length, 0), (-1, length, 0)] * 2},
+                "indices": indices,
+                # A spacing far longer than the line draws it solid.
+                "uniforms": [["color", color], ["spacing", size * 0.03 if dashed else size * 1000]],
+            }
+        )
+
+    def get_point_moment_args(self, moments: Iterable, location: np.ndarray, rotation: np.ndarray) -> None:
+        """get the args to the point shader for the X, Y and Z moments at a point"""
+        location = np.array(location)
+        directions: list[tuple[npt.NDArray, npt.NDArray]] = [
+            (np.array((0, 1, 0)), np.array((0, 0, 1))),
+            (np.array((1, 0, 0)), np.array((0, 0, 1))),
+            (np.array((1, 0, 0)), np.array((0, 1, 0))),
+        ]
+        if tool.Structural.get_structural_props().reference_frame == "LOCAL_COORDS":
+            directions = [(rotation @ a, rotation @ b) for a, b in directions]
+        colors = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1)]
+
+        for moment, (direction, d2), color in zip(moments, directions, colors):
+            if moment == 0:
+                continue
+            d1 = -(direction * moment)
+            d1 = d1 / np.linalg.norm(d1)
+            self.info.append(
+                {
+                    "shader": self.shader.new("SINGLE MOMENT"),
+                    "args": {
+                        "position": [location - d2, location + d1 + d2, location - d1 + d2],
+                        "coord": [(-1, 0, 0), (1, 1, 0), (1, -1, 0)],
+                    },
+                    "indices": [(0, 1, 2)],
+                    "uniforms": [["color", color]],
+                }
+            )
+            decimals = tool.Structural.get_structural_props().force_decimals
+            self.text_info.append(
+                {
+                    "position": location + 0.25 * (d1 + d2),
+                    "text": f"{moment:.{decimals}f} {self.moment_unit}",
+                    "color": color,
+                }
+            )
 
     def get_point_loads_values(
         self, activity_list: list[tuple[ifcopenshell.entity_instance, float]], element_rotation_matrix: np.ndarray
@@ -571,10 +799,11 @@ class ShaderInfo:
             activity = item[0]
             factor = item[1]
             load = activity.AppliedLoad
+            preview = self.preview.get(load.id()) if load else None
+            values = {attr: preview.get(attr) if preview is not None else getattr(load, attr, 0) for attr in attr_list}
             temp = np.zeros(6)
             for i, attr in enumerate(attr_list):
-                value = 0 if getattr(load, attr, 0) is None else getattr(load, attr, 0)
-                temp[i] += value * factor
+                temp[i] += (values[attr] or 0) * factor
             transform_3 = self.get_activity_transform_matrix(activity, element_rotation_matrix)
             transform_6 = np.zeros((6, 6))
             transform_6[0:3, 0:3] = transform_3
@@ -595,6 +824,7 @@ class ShaderInfo:
         list_of_curve_members = self.curve_members
         for value in list_of_curve_members.values():
             member = value["member"]
+            self.tag_new_entries(tool.Ifc.get_object(member))
             activity_list = value["activities"]
             if len(activity_list) == 0:
                 continue
@@ -606,12 +836,11 @@ class ShaderInfo:
             start_co = blender_object.matrix_world @ blender_object.data.vertices[0].co
             end_co = blender_object.matrix_world @ blender_object.data.vertices[1].co
             x_axis = Vector(end_co - start_co).normalized()
-            z_direction = getattr(member, "Axis")
-            # local coordinates
-            z_axis = Vector(getattr(z_direction, "DirectionRatios", None)).normalized()
-            y_axis = z_axis.cross(x_axis).normalized()
-            z_axis = x_axis.cross(y_axis).normalized()
             rotation = self.get_curve_member_rotation(member)
+            if rotation is None:
+                continue
+            y_axis = Vector(rotation[:, 1]).normalized()
+            z_axis = Vector(rotation[:, 2]).normalized()
 
             props = tool.Structural.get_structural_props()
             reference_frame = props.reference_frame
@@ -652,7 +881,8 @@ class ShaderInfo:
                         pos = sub_item["pos"]
                         values = sub_item["values"]
                         pos_vector = start_co + x_axis * pos
-                        self.get_point_shader_args(values, pos_vector, rotation)
+                        self.draw_point_forces([np.array(values[:3])], pos_vector, rotation)
+                        self.get_point_moment_args(values[3:], pos_vector, rotation)
             if linear_loads is None:
                 continue
             keys = ["fx", "fy", "fz", "mx", "my", "mz"]
@@ -698,7 +928,7 @@ class ShaderInfo:
                             self.text_info.append(
                                 {
                                     "position": -1 * direction * func / maxforce + start_co + x_axis * current.x,
-                                    "text": f"{func:.2f} {unit}",
+                                    "text": f"{func:.{props.force_decimals}f} {unit}",
                                 }
                             )
 
@@ -725,7 +955,7 @@ class ShaderInfo:
                                 self.text_info.append(
                                     {
                                         "position": -1 * direction * func / maxforce + start_co + x_axis * nextitem.x,
-                                        "text": f"{func:.2f} {unit}",
+                                        "text": f"{func:.{props.force_decimals}f} {unit}",
                                     }
                                 )
 
