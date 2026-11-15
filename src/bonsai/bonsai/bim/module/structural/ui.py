@@ -204,7 +204,7 @@ class BIM_PT_connected_structural_members(Panel):
                 and self.props.active_connects_structural_member == connection["id"]
             ):
                 row.operator("bim.disable_editing_structural_connection_condition", text="", icon="CANCEL")
-                row.enabled = connection["is_active_condition"]
+                row.enabled = not connection["is_active_condition"]
                 draw_boundary_condition_ui(self.layout.box(), connection["condition"], connection["id"], self.props)
             elif self.props.active_connects_structural_member:
                 op = row.operator("bim.remove_structural_connection_condition", text="", icon="X")
