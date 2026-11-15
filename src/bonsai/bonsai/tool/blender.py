@@ -399,9 +399,7 @@ class Blender(bonsai.core.tool.Blender):
                 yield space
 
     @classmethod
-    def pin_scene_camera_to_other_viewports(
-        cls, camera: bpy.types.Object, active_space: bpy.types.SpaceView3D
-    ) -> None:
+    def pin_scene_camera_to_other_viewports(cls, camera: bpy.types.Object, active_space: bpy.types.SpaceView3D) -> None:
         for space in cls.get_view3d_spaces():
             if space == active_space or space.use_local_camera:
                 continue
