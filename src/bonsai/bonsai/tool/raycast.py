@@ -53,6 +53,8 @@ _offscreen_size: tuple[int, int] | None = None
 _obj_list: list[[bpy.types.Object, bool]] = []
 
 _SNAP_RADIUS_PX = 10  # half-size of the readback region around the cursor
+_SNAP_POINT_SIZE_PX = 3.0  # size of the vertices drawn in the wireframe ID buffer
+_MAX_WIREFRAME_HITS = 32  # max number of distinct vertices/edges decoded around the cursor
 
 
 def _create_encoding_shader() -> gpu.types.GPUShader:
@@ -68,7 +70,13 @@ def _create_encoding_shader() -> gpu.types.GPUShader:
     shader_info.vertex_out(iface)
     shader_info.fragment_out(0, "VEC4", "FragColor")
 
-    shader_info.vertex_source("void main() {\n  slot_id = vert_slot;\n  gl_Position = MVP * vec4(pos, 1.0);\n}\n")
+    shader_info.vertex_source(
+        "void main() {\n"
+        "  slot_id = vert_slot;\n"
+        "  gl_Position = MVP * vec4(pos, 1.0);\n"
+        f"  gl_PointSize = {_SNAP_POINT_SIZE_PX:.1f};\n"
+        "}\n"
+    )
     shader_info.fragment_source(
         "vec4 encode(float f) {\n"
         "  ivec4 c;\n"
@@ -101,25 +109,29 @@ def _create_vert_format() -> GPUVertFormat:
     return fmt
 
 
-def _find_closest_wireframe_pixel(buffer_data, cx, cy):
-    """Scan *buffer_data* (list of rows) for the closest non-zero pixel
-    to (cx, cy). Used for points a lines detection.  Returns ``(encoded_value, dx, dy)`` or None."""
-    best_dist = float("inf")
-    best = None
+def _find_wireframe_pixels(buffer_data, cx, cy, limit: int = _MAX_WIREFRAME_HITS) -> list[int]:
+    """Scan *buffer_data* (list of rows) and return the distinct encoded
+    values found in it, closest to (cx, cy) first, at most *limit* of them.
+
+    A dense drawing has several vertices and edges inside the readback region.
+    Returning only the closest pixel would hide a vertex that is a couple of
+    pixels further away than an unrelated edge, so all of them are decoded and
+    the regular snap sorting picks the best candidate."""
+    best: dict[int, int] = {}
     for y, row in enumerate(buffer_data):
+        dy = y - cy
         for x, px in enumerate(row):
             r, g, b, a = px
             if r == 0 and g == 0 and b == 0 and a == 0:
                 continue
             val = _decode_wireframe_pixel(r, g, b, a)
-            if val > 0:
-                dx = x - cx
-                dy = y - cy
-                d2 = dx * dx + dy * dy
-                if d2 < best_dist:
-                    best_dist = d2
-                    best = (val, dx, dy)
-    return best
+            if val <= 0:
+                continue
+            dx = x - cx
+            d2 = dx * dx + dy * dy
+            if d2 < best.get(val, 1 << 30):
+                best[val] = d2
+    return sorted(best, key=best.__getitem__)[:limit]
 
 
 def _get_solid_triangles(obj: bpy.types.Object) -> list[tuple[tuple, tuple, tuple]]:
@@ -564,7 +576,11 @@ def _get_wireframe_render_ops(
     entry is ``(snap_obj, pts_start, n_pts, lines_start, n_lines)``.
     """
 
-    render_ops: list[tuple[GPUBatch, Matrix, int]] = []
+    # Lines are drawn first and points last: the buffer has no depth test, so
+    # the last primitive drawn wins the pixel and a vertex must not be hidden
+    # by the edges that end on it (or by the edges of another object).
+    line_ops: list[tuple[GPUBatch, Matrix, int]] = []
+    point_ops: list[tuple[GPUBatch, Matrix, int]] = []
     obj_slots: list[tuple] = []  # [(snap_obj, pts_start, n_pts, lines_start, n_lines), ...]
 
     slot = 1  # slot 0 = background
@@ -584,20 +600,20 @@ def _get_wireframe_render_ops(
         if pts_data is not None:
             batch, n_pts, _ = pts_data
             pts_start = slot
-            render_ops.append((batch, world_mat, slot))
+            point_ops.append((batch, world_mat, slot))
             slot += n_pts
 
         lines_data = batches.get("LINES")
         if lines_data is not None:
             batch, n_lines, _ = lines_data
             lines_start = slot
-            render_ops.append((batch, world_mat, slot))
+            line_ops.append((batch, world_mat, slot))
             slot += n_lines
 
         if n_pts > 0 or n_lines > 0:
             obj_slots.append((snap_obj, pts_start, n_pts, lines_start, n_lines))
 
-    return render_ops, obj_slots
+    return line_ops + point_ops, obj_slots
 
 
 def _create_wireframe_snaps(
@@ -605,10 +621,10 @@ def _create_wireframe_snaps(
 ) -> tuple[list[dict], None]:
     """Decode the wireframe readback buffer into vertex/edge snaps.
 
-    Finds the closest non-zero pixel to the cursor, maps its encoded slot ID
-    back to a vertex or edge via ``obj_slots``, then builds the candidate
-    snaps (Vertex, Edge, Edge Center, plus endpoint Vertex snaps within the
-    snap threshold).
+    Collects every vertex and edge drawn around the cursor, maps each encoded
+    slot ID back to its vertex or edge via ``obj_slots``, then builds the
+    candidate snaps (Vertex, Edge, Edge Center, plus endpoint Vertex snaps
+    within the snap threshold).
 
     Args:
         context: Blender context.
@@ -626,10 +642,9 @@ def _create_wireframe_snaps(
     w, h, mx, my, read_x, read_y = mouse_read_rect
     centre = (mx - int(read_x), my - int(read_y))
     pixel_data = last_buf.to_list()
-    best = _find_closest_wireframe_pixel(pixel_data, *centre)
-    if best is None:
+    hits = _find_wireframe_pixels(pixel_data, *centre)
+    if not hits:
         return [], None
-    encoded, dx, dy = best
 
     # Decode and build snap dicts
 
@@ -644,95 +659,96 @@ def _create_wireframe_snaps(
     except Exception:
         loc = ray_target
 
-    for snap_obj, pts_start, n_pts, lines_start, n_lines in obj_slots:
-        if n_pts > 0 and pts_start <= encoded < pts_start + n_pts:
-            vi = encoded - pts_start
-            batches = _wireframe_batch_cache.get((get_decorator_cache_token(), snap_obj.as_pointer()))
-            if batches:
-                pts_data = batches.get("POINTS")
-                if pts_data:
-                    _, _, coords = pts_data
-                    if vi < len(coords):
-                        local_pos = Vector(coords[vi])
-                        world_pos = snap_obj.matrix_world @ local_pos
-                        # Compute proper 3D distance from vertex to view ray
-                        proj = tool.Cad.point_on_edge(world_pos, (ray_target, loc))
-                        distance = (world_pos - proj).length
-                        snaps.append(
-                            {
-                                "object": snap_obj,
-                                "type": "Vertex",
-                                "point": world_pos,
-                                "distance": distance,
-                                "group": "Wireframe",
-                            }
-                        )
-            break
+    cache_token = get_decorator_cache_token()
+    seen_verts: set[tuple[float, float, float]] = set()
 
-        if n_lines > 0 and lines_start <= encoded < lines_start + n_lines:
-            ei = encoded - lines_start
-            batches = _wireframe_batch_cache.get((get_decorator_cache_token(), snap_obj.as_pointer()))
-            if batches:
-                lines_data = batches.get("LINES")
-                if lines_data:
-                    _, _, edge_pairs = lines_data
-                    if ei < len(edge_pairs):
-                        c0, c1 = edge_pairs[ei]
-                        mw = snap_obj.matrix_world
-                        v0 = mw @ Vector(c0)
-                        v1 = mw @ Vector(c1)
+    def add_vertex(snap_obj: bpy.types.Object, world_pos: Vector, max_distance: float | None = None) -> None:
+        key = (round(world_pos.x, 6), round(world_pos.y, 6), round(world_pos.z, 6))
+        if key in seen_verts:
+            return
+        # Compute proper 3D distance from vertex to view ray
+        proj = tool.Cad.point_on_edge(world_pos, (ray_target, loc))
+        distance = (world_pos - proj).length
+        if max_distance is not None and distance >= max_distance:
+            return
+        seen_verts.add(key)
+        snaps.append(
+            {
+                "object": snap_obj,
+                "type": "Vertex",
+                "point": world_pos,
+                "distance": distance,
+                "group": "Wireframe",
+            }
+        )
 
-                        # Compute closest point on edge to view ray
-                        intersection = tool.Cad.intersect_edges_v2((ray_target, loc), (v0, v1))
-                        if intersection[0] is not None and tool.Cad.is_point_on_edge(intersection[1], (v0, v1)):
-                            edge_point = intersection[1].copy()
-                            distance = (intersection[1] - intersection[0]).length
-                        else:
-                            # Fallback to midpoint if lines are parallel
-                            edge_point = (v0 + v1) / 2
-                            proj = tool.Cad.point_on_edge(edge_point, (ray_target, loc))
-                            distance = (edge_point - proj).length
+    for encoded in hits:
+        for snap_obj, pts_start, n_pts, lines_start, n_lines in obj_slots:
+            if n_pts > 0 and pts_start <= encoded < pts_start + n_pts:
+                vi = encoded - pts_start
+                batches = _wireframe_batch_cache.get((cache_token, snap_obj.as_pointer()))
+                if batches:
+                    pts_data = batches.get("POINTS")
+                    if pts_data:
+                        _, _, coords = pts_data
+                        if vi < len(coords):
+                            add_vertex(snap_obj, snap_obj.matrix_world @ Vector(coords[vi]))
+                break
 
-                        snaps.append(
-                            {
-                                "object": snap_obj,
-                                "type": "Edge",
-                                "point": edge_point,
-                                "edge_verts": (v0, v1),
-                                "distance": distance,
-                                "group": "Wireframe",
-                            }
-                        )
+            if n_lines > 0 and lines_start <= encoded < lines_start + n_lines:
+                ei = encoded - lines_start
+                batches = _wireframe_batch_cache.get((cache_token, snap_obj.as_pointer()))
+                if batches:
+                    lines_data = batches.get("LINES")
+                    if lines_data:
+                        _, _, edge_pairs = lines_data
+                        if ei < len(edge_pairs):
+                            c0, c1 = edge_pairs[ei]
+                            mw = snap_obj.matrix_world
+                            v0 = mw @ Vector(c0)
+                            v1 = mw @ Vector(c1)
 
-                        # Edge Center snap (midpoint)
-                        mid = (v0 + v1) / 2  # TODO Allow divisions by other values
-                        mid_proj = tool.Cad.point_on_edge(mid, (ray_target, loc))
-                        mid_dist = (mid - mid_proj).length
-                        snaps.append(
-                            {
-                                "object": snap_obj,
-                                "type": "Edge Center",
-                                "point": mid,
-                                "distance": mid_dist,
-                                "group": "Wireframe",
-                            }
-                        )
+                            # Compute closest point on edge to view ray
+                            intersection = tool.Cad.intersect_edges_v2((ray_target, loc), (v0, v1))
+                            if intersection[0] is not None and tool.Cad.is_point_on_edge(intersection[1], (v0, v1)):
+                                edge_point = intersection[1].copy()
+                                distance = (intersection[1] - intersection[0]).length
+                            else:
+                                # Fallback to midpoint if lines are parallel
+                                edge_point = (v0 + v1) / 2
+                                proj = tool.Cad.point_on_edge(edge_point, (ray_target, loc))
+                                distance = (edge_point - proj).length
 
-                        # Also include vertex snaps for edge endpoints
-                        for vtx in (v0, v1):
-                            proj = tool.Cad.point_on_edge(vtx, (ray_target, loc))
-                            vtx_dist = (vtx - proj).length
-                            if vtx_dist < snap_threshold:
+                            snaps.append(
+                                {
+                                    "object": snap_obj,
+                                    "type": "Edge",
+                                    "point": edge_point,
+                                    "edge_verts": (v0, v1),
+                                    "distance": distance,
+                                    "group": "Wireframe",
+                                }
+                            )
+
+                            # Edge Center snap (midpoint)
+                            mid = (v0 + v1) / 2  # TODO Allow divisions by other values
+                            mid_proj = tool.Cad.point_on_edge(mid, (ray_target, loc))
+                            mid_dist = (mid - mid_proj).length
+                            if mid_dist < snap_threshold:
                                 snaps.append(
                                     {
                                         "object": snap_obj,
-                                        "type": "Vertex",
-                                        "point": vtx,
-                                        "distance": vtx_dist,
+                                        "type": "Edge Center",
+                                        "point": mid,
+                                        "distance": mid_dist,
                                         "group": "Wireframe",
                                     }
                                 )
-            break
+
+                            # Also include vertex snaps for edge endpoints
+                            for vtx in (v0, v1):
+                                add_vertex(snap_obj, vtx, max_distance=snap_threshold)
+                break
 
     return snaps, None
 
@@ -1122,6 +1138,7 @@ class Raycast(bonsai.core.tool.Raycast):
 
         gpu.state.blend_set("NONE")
         gpu.state.face_culling_set("NONE")
+        gpu.state.point_size_set(_SNAP_POINT_SIZE_PX)
 
         read_size = 2 * _SNAP_RADIUS_PX + 1
         read_x = max(0, min(mx - _SNAP_RADIUS_PX, w - read_size))
