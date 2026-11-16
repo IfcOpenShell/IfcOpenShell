@@ -1,5 +1,6 @@
 # This file was generated with the assistance of an AI coding tool.
 
+import math
 from types import SimpleNamespace
 from unittest import mock
 
@@ -57,6 +58,69 @@ class TestEnableEditingStructuralItemAxis(NewFile):
 
         bpy.ops.bim.edit_structural_item_axis()
         assert abs(Vector(member.Axis.DirectionRatios).normalized().z) < 1e-6
+
+    def add_member(self) -> tuple:
+        props = tool.Root.get_root_props()
+        props.ifc_product, props.ifc_class, props.representation_template = (
+            "IfcStructuralItem",
+            "IfcStructuralCurveMember",
+            "EDGE",
+        )
+        bpy.ops.bim.add_element(skip_dialog=True)
+        member = tool.Ifc.get().by_type("IfcStructuralCurveMember")[-1]
+        obj = tool.Ifc.get_object(member)
+        bpy.context.view_layer.objects.active = obj
+        return member, obj
+
+    def test_keeping_the_axis_of_a_member_rotated_as_a_whole(self):
+        # Axis is relative to the member's placement, as its edge is, so it turns with the member.
+        bpy.ops.bim.create_project()
+        member, obj = self.add_member()
+        obj.rotation_euler = (0.0, math.radians(90), 0.0)
+        obj.location = (2.0, 3.0, 4.0)
+        bpy.context.view_layer.update()
+        bpy.ops.bim.enable_editing_structural_item_axis()
+        empty = tool.Structural.get_object_structural_props(obj).axis_empty
+        assert tool.Structural.get_object_structural_props(obj).axis_angle == pytest.approx(0.0)
+        # At the edge's start, wherever the member is.
+        assert (empty.matrix_world.translation - obj.matrix_world @ obj.data.vertices[0].co).length < 1e-6
+        bpy.ops.bim.edit_structural_item_axis()
+        assert tuple(Vector(member.Axis.DirectionRatios)) == pytest.approx((0.0, 0.0, 1.0), abs=1e-6)
+
+    def test_projecting_an_axis_nearly_along_the_member(self):
+        bpy.ops.bim.create_project()
+        member, obj = self.add_member()
+        angle = math.radians(1)
+        ifcopenshell.api.structural.edit_structural_item_axis(
+            tool.Ifc.get(), structural_item=member, axis=(math.cos(angle), 0.0, math.sin(angle))
+        )
+        bpy.ops.bim.enable_editing_structural_item_axis()
+        bpy.ops.bim.edit_structural_item_axis()
+        assert tuple(Vector(member.Axis.DirectionRatios)) == pytest.approx((0.0, 0.0, 1.0), abs=1e-6)
+
+    def test_rolling_the_axis_about_the_member(self):
+        bpy.ops.bim.create_project()
+        member, obj = self.add_member()
+        obj.rotation_euler = (0.0, 0.0, math.radians(90))  # Along world Y; the roll is about the member itself.
+        bpy.context.view_layer.update()
+        bpy.ops.bim.enable_editing_structural_item_axis()
+        tool.Structural.get_object_structural_props(obj).axis_angle = 90.0
+        bpy.ops.bim.edit_structural_item_axis()
+        assert tuple(Vector(member.Axis.DirectionRatios)) == pytest.approx((0.0, -1.0, 0.0), abs=1e-6)
+
+
+class TestAddCurveItem(NewFile):
+    def test_adding_a_curve_member_in_ifc2x3_which_has_no_axis(self):
+        tool.Project.get_project_props().export_schema = "IFC2X3"
+        bpy.ops.bim.create_project()
+        props = tool.Root.get_root_props()
+        props.ifc_product, props.ifc_class, props.representation_template = (
+            "IfcStructuralItem",
+            "IfcStructuralCurveMember",
+            "EDGE",
+        )
+        bpy.ops.bim.add_element(skip_dialog=True)
+        assert tool.Ifc.get().by_type("IfcStructuralCurveMember")
 
 
 class TestLoadStructuralLoads(NewFile):

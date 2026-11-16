@@ -29,6 +29,7 @@ import ifcopenshell.api.context
 import ifcopenshell.api.structural
 import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
+from mathutils import Matrix, Vector
 
 import bonsai.bim.helper
 import bonsai.core.tool
@@ -53,6 +54,38 @@ class Structural(bonsai.core.tool.Structural):
     @classmethod
     def get_object_structural_props(cls, obj: bpy.types.Object) -> BIMObjectStructuralProperties:
         return obj.BIMStructuralProperties
+
+    @classmethod
+    def get_default_item_axes(cls, edge: Vector) -> Matrix:
+        """A curve item's local axes before any roll, as columns: x along its edge, z as near up as is square to it.
+
+        :param edge: The edge's direction, in the item's own coordinates.
+        """
+        return edge.normalized().to_track_quat("X", "Z").to_matrix()
+
+    @classmethod
+    def get_item_axis_roll(cls, edge: Vector, axis: Vector) -> Union[float, None]:
+        """The angle in degrees a curve item's local axes are rolled about its edge from their default, for its z
+        axis to be its Axis, or None if its Axis gives no z axis, being along the edge.
+
+        As IFC defines a curve item's local axes, z is Axis less its component along the edge, so an Axis a little
+        off square is projected rather than refused. Both are in the item's own coordinates.
+        """
+        x = edge.normalized()
+        z = axis.normalized()
+        z = z - z.dot(x) * x
+        if z.length < 1e-6:
+            return None
+        default = cls.get_default_item_axes(edge)
+        # Rolled by a about x, z becomes cos(a) z0 - sin(a) y0.
+        return math.degrees(math.atan2(-z.dot(default.col[1]), z.dot(default.col[2])))
+
+    @classmethod
+    def get_item_axes(cls, obj: bpy.types.Object, roll: float) -> Matrix:
+        """The world matrix of a curve item's local axes at its edge's start, rolled about the edge by degrees"""
+        start, end = obj.data.vertices[0].co, obj.data.vertices[1].co
+        axes = cls.get_default_item_axes(end - start) @ Matrix.Rotation(math.radians(roll), 3, "X")
+        return obj.matrix_world @ Matrix.Translation(start) @ axes.to_4x4()
 
     @classmethod
     def disable_editing_structural_analysis_model(cls) -> None:
