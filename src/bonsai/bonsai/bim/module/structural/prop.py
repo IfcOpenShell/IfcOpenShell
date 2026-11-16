@@ -36,6 +36,7 @@ import bonsai.tool as tool
 from bonsai.bim.module.structural.data import (
     BoundaryConditionsData,
     LoadGroupDecorationData,
+    StructuralAnalysisModelsData,
     StructuralLoadCasesData,
     StructuralLoadsData,
 )
@@ -50,6 +51,16 @@ def get_load_groups_to_show(self: "BIMStructuralProperties", context: bpy.types.
 
 def update_unused_loads_only(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
     bpy.ops.bim.load_structural_loads()
+
+
+def get_buildings(self: "BIMStructuralProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    if not StructuralAnalysisModelsData.is_loaded:
+        StructuralAnalysisModelsData.load()
+    index = self.active_structural_analysis_model_index
+    if not 0 <= index < len(self.structural_analysis_models):
+        return []
+    model_id = self.structural_analysis_models[index].ifc_definition_id
+    return StructuralAnalysisModelsData.data["unserved_buildings"].get(model_id, [])
 
 
 def update_activity_type(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
@@ -196,6 +207,7 @@ class BIMStructuralProperties(PropertyGroup):
     active_structural_analysis_model_index: IntProperty(name="Active Structural Analysis Model Index")
     active_structural_analysis_model_id: IntProperty(name="Active Structural Analysis Model Id")
     current_structural_analysis_model_id: IntProperty(name="Current Structural Analysis Model Id")
+    building: EnumProperty(items=get_buildings, name="Building")
     load_case_attributes: CollectionProperty(name="Load Case Attributes", type=Attribute)
     load_case_has_self_weight: BoolProperty(name="Include Self-Weight", default=False)
     load_case_self_weight: FloatVectorProperty(
@@ -337,6 +349,7 @@ class BIMStructuralProperties(PropertyGroup):
         active_structural_analysis_model_index: int
         active_structural_analysis_model_id: int
         current_structural_analysis_model_id: int
+        building: str
         load_case_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         load_case_has_self_weight: bool
         load_case_self_weight: tuple[float, float, float]

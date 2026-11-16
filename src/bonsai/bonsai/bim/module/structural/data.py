@@ -320,8 +320,33 @@ class StructuralAnalysisModelsData:
             "active_model_ids": cls.active_model_ids(),
             "current_model": cls.current_model(),
             "models": cls.models(),
+            "buildings": cls.buildings(),
+            "served_buildings": cls.served_buildings(),
+            "unserved_buildings": cls.unserved_buildings(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def buildings(cls) -> list[tuple[str, str, str]]:
+        return [(str(b.id()), b.Name or "Unnamed", "") for b in tool.Ifc.get().by_type("IfcBuilding")]
+
+    @classmethod
+    def served_buildings(cls) -> dict[int, list[tuple[int, str]]]:
+        results = {}
+        for model in tool.Ifc.get().by_type("IfcStructuralAnalysisModel"):
+            buildings = [b for rel in model.ServicesBuildings or () for b in rel.RelatedBuildings]
+            results[model.id()] = [(b.id(), b.Name or "Unnamed") for b in buildings]
+        return results
+
+    @classmethod
+    def unserved_buildings(cls) -> dict[int, list[tuple[str, str, str]]]:
+        """The buildings each model does not serve yet, as the choices to assign it to"""
+        buildings = tool.Ifc.get().by_type("IfcBuilding")
+        results = {}
+        for model in tool.Ifc.get().by_type("IfcStructuralAnalysisModel"):
+            served = {b for rel in model.ServicesBuildings or () for b in rel.RelatedBuildings}
+            results[model.id()] = [(str(b.id()), b.Name or "Unnamed", "") for b in buildings if b not in served]
+        return results
 
     @classmethod
     def total_models(cls):
