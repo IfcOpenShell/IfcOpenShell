@@ -55,7 +55,11 @@ def update_unused_loads_only(self: "BIMStructuralProperties", context: bpy.types
 def get_buildings(self: "BIMStructuralProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not StructuralAnalysisModelsData.is_loaded:
         StructuralAnalysisModelsData.load()
-    return StructuralAnalysisModelsData.data["buildings"]
+    index = self.active_structural_analysis_model_index
+    if not 0 <= index < len(self.structural_analysis_models):
+        return []
+    model_id = self.structural_analysis_models[index].ifc_definition_id
+    return StructuralAnalysisModelsData.data["unserved_buildings"].get(model_id, [])
 
 
 def update_activity_type(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:

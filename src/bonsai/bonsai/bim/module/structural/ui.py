@@ -462,13 +462,13 @@ class BIM_PT_structural_analysis_models(Panel):
             op = row.operator("bim.unassign_structural_analysis_model_from_building", text="", icon="X")
             op.structural_analysis_model = model_id
             op.building = building_id
-        if StructuralAnalysisModelsData.data["buildings"]:
+        if not StructuralAnalysisModelsData.data["buildings"]:
+            box.label(text="No building in the project", icon="INFO")
+        elif StructuralAnalysisModelsData.data["unserved_buildings"].get(model_id):
             row = box.row(align=True)
             prop_with_search(row, self.props, "building", text="")
             op = row.operator("bim.assign_structural_analysis_model_to_building", text="", icon="ADD")
             op.structural_analysis_model = model_id
-        else:
-            box.label(text="No building in the project", icon="INFO")
 
 
 class BIM_UL_structural_analysis_models(UIList):
