@@ -142,6 +142,21 @@ class TestConnectPath(test.bootstrap.IFC4):
         rel2 = self.connect_path(wall3, wall1, "ATPATH", "ATEND")
         assert len(self.file.by_type("IfcRelConnectsPathElements")) == 1
 
+    def test_storing_connection_priorities(self):
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        rel = ifcopenshell.api.geometry.connect_path(
+            self.file,
+            relating_element=wall1,
+            related_element=wall2,
+            relating_connection="ATEND",
+            related_connection="ATSTART",
+            relating_priorities=[100, 100],
+            related_priorities=[0],
+        )
+        assert list(rel.RelatingPriorities) == [100, 100]
+        assert list(rel.RelatedPriorities) == [0]
+
     def connect_path(
         self,
         relating_element,

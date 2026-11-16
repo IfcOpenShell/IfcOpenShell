@@ -92,7 +92,7 @@ def join_walls_LV(
     geometry: type[tool.Geometry],
     joiner: DumbWallJoiner,
     model: type[tool.Model],
-    join_type: Literal["L", "V"] = "L",
+    join_type: Literal["L", "V", "BUTT"] = "L",
 ) -> None:
     selected_objs = [
         o for o in blender.get_selected_objects() if (e := ifc.get_entity(o)) and model.get_usage_type(e) == "LAYER2"
@@ -108,7 +108,10 @@ def join_walls_LV(
     for obj in selected_objs:
         geometry.clear_scale(obj)
 
-    joiner.connect(another_selected_object, active_obj)
+    if join_type == "BUTT":
+        joiner.connect(another_selected_object, active_obj, is_butt=True)
+    else:
+        joiner.connect(another_selected_object, active_obj)
 
 
 def offset_walls(ifc: type[tool.Ifc], blender: type[tool.Blender], model: type[tool.Model], offset_type: OffsetType):

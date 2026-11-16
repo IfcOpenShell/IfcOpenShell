@@ -241,3 +241,30 @@ class TestVerticalHeightFromExtrusionDepth:
         positive = subject.vertical_height_from_extrusion_depth(3.0, math.radians(30))
         negative = subject.vertical_height_from_extrusion_depth(3.0, math.radians(-30))
         assert positive == pytest.approx(negative)
+
+
+class TestJoinWallsLV:
+    def _make_deps(self):
+        from unittest.mock import MagicMock
+
+        obj1, obj2 = object(), object()
+        ifc = MagicMock()
+        ifc.get_entity.side_effect = lambda o: {obj1: "wall1", obj2: "wall2"}[o]
+        blender = MagicMock()
+        blender.get_selected_objects.return_value = [obj1, obj2]
+        blender.get_active_object.return_value = obj2
+        geometry = MagicMock()
+        joiner = MagicMock()
+        model = MagicMock()
+        model.get_usage_type.return_value = "LAYER2"
+        return obj1, obj2, ifc, blender, geometry, joiner, model
+
+    def test_default_l_join_calls_connect_without_butt(self):
+        obj1, obj2, ifc, blender, geometry, joiner, model = self._make_deps()
+        subject.join_walls_LV(ifc, blender, geometry, joiner, model)
+        joiner.connect.assert_called_once_with(obj1, obj2)
+
+    def test_butt_join_passes_is_butt_true(self):
+        obj1, obj2, ifc, blender, geometry, joiner, model = self._make_deps()
+        subject.join_walls_LV(ifc, blender, geometry, joiner, model, join_type="BUTT")
+        joiner.connect.assert_called_once_with(obj1, obj2, is_butt=True)

@@ -1836,14 +1836,31 @@ class DumbWallJoiner:
         self.set_axis(element1, p1, p2)
         tool.Model.recreate_wall(element1, wall1)
 
-    def connect(self, obj1: bpy.types.Object, obj2: bpy.types.Object) -> None:
+    def connect(self, obj1: bpy.types.Object, obj2: bpy.types.Object, is_butt: bool = False) -> None:
         wall1 = tool.Ifc.get_entity(obj1)
         wall2 = tool.Ifc.get_entity(obj2)
         if tool.Ifc.is_moved(obj1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj1)
         if tool.Ifc.is_moved(obj2):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj2)
-        ifcopenshell.api.geometry.connect_wall(tool.Ifc.get(), wall1=wall1, wall2=wall2)
+        relating_priorities = None
+        related_priorities = None
+        if is_butt:
+            def _layer_count(wall: ifcopenshell.entity_instance) -> int:
+                material = ifcopenshell.util.element.get_material(wall, should_skip_usage=True)
+                if material and material.is_a("IfcMaterialLayerSet"):
+                    return len(material.MaterialLayers)
+                return 0
+
+            relating_priorities = [100] * _layer_count(wall1)
+            related_priorities = [0] * _layer_count(wall2)
+        ifcopenshell.api.geometry.connect_wall(
+            tool.Ifc.get(),
+            wall1=wall1,
+            wall2=wall2,
+            relating_priorities=relating_priorities,
+            related_priorities=related_priorities,
+        )
         tool.Model.recreate_wall(wall1, obj1)
         tool.Model.recreate_wall(wall2, obj2)
 

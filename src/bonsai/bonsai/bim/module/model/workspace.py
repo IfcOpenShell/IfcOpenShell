@@ -82,6 +82,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
         ("bim.hotkey", {"type": "R", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_R")]}),
         ("bim.hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
+        ("bim.hotkey", {"type": "T", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_T")]}),
         ("bim.hotkey", {"type": "U", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_U")]}),
         ("bim.hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
         ("bim.hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
@@ -854,6 +855,14 @@ class EditObjectUI:
                 row, "Trim", "S_T", "Connects and trims two non-parallel elements into a joint", ui_context
             )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(
+                row,
+                "Butt",
+                "A_T",
+                "Connects two non-parallel walls into a butt joint where the first selected wall runs through",
+                ui_context,
+            )
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Unjoin Walls", "S_U", "", ui_context)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Merge", "S_M", "Merge selected Elements", ui_context)
@@ -1448,6 +1457,17 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
     def hotkey_A_O(self):
         bpy.ops.bim.toggle_host_openings()
+
+    def hotkey_A_T(self):
+        if not bpy.context.selected_objects:
+            return
+        if self.active_material_usage == "LAYER2":
+            try:
+                core.join_walls_LV(
+                    tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model, join_type="BUTT"
+                )
+            except core.RequireTwoWallsError as e:
+                self.report({"ERROR"}, str(e))
 
     def hotkey_C_E(self):
         if not bpy.context.selected_objects:

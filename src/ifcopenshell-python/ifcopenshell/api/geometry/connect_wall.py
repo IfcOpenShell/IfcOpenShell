@@ -32,6 +32,8 @@ def connect_wall(
     wall1: ifcopenshell.entity_instance,
     wall2: ifcopenshell.entity_instance,
     is_atpath: bool = False,
+    relating_priorities: Optional[list[int]] = None,
+    related_priorities: Optional[list[int]] = None,
 ) -> Optional[ifcopenshell.entity_instance]:
     matrix1i = np.linalg.inv(ifcopenshell.util.placement.get_placement(wall1.ObjectPlacement))
     matrix2 = ifcopenshell.util.placement.get_placement(wall2.ObjectPlacement)
@@ -61,4 +63,6 @@ def connect_wall(
         related_element=wall2,
         relating_connection=wall1_end,
         related_connection=wall2_end,
+        relating_priorities=relating_priorities,
+        related_priorities=related_priorities,
     )

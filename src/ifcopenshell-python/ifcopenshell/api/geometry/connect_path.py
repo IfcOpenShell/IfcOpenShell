@@ -32,6 +32,8 @@ def connect_path(
     related_connection: str = "NOTDEFINED",
     description: Optional[str] = None,
     connection_geometry: Optional[ifcopenshell.entity_instance] = None,
+    relating_priorities: Optional[list[int]] = None,
+    related_priorities: Optional[list[int]] = None,
 ) -> ifcopenshell.entity_instance:
     incompatible_connections: list[ifcopenshell.entity_instance] = []
     for rel in relating_element.ConnectedTo:
@@ -79,6 +81,6 @@ def connect_path(
         RelatedElement=related_element,
         RelatingConnectionType=relating_connection,
         RelatedConnectionType=related_connection,
-        RelatingPriorities=[],
-        RelatedPriorities=[],
+        RelatingPriorities=relating_priorities or [],
+        RelatedPriorities=related_priorities or [],
     )
