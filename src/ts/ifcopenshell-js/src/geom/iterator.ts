@@ -8,6 +8,7 @@ export type IteratorFilter = number[] | string[];
 
 /** Optional native iterator configuration. */
 export interface IteratorOptions {
+  /** The published WASM build is single-threaded; values above 1 throw. */
   numThreads?: number;
   include?: IteratorFilter;
   exclude?: IteratorFilter;
@@ -37,5 +38,13 @@ export class Iterator extends IfcOpenshellGeomIterator {
     if (!handle || handle.ptr === 0) throw new IfcOpenShellError('Failed to create iterator');
     super(handle);
     this.sourceFile = file;
+  }
+
+  /**
+   * Returns and clears the runtime-wide log, which is where the geometry kernels report skipped elements.
+   * It is shared with `parse.getLog()` and every other iterator, so a second read returns only what was logged since.
+   */
+  override getLog(): string {
+    return ifcopenshell.parse.getLog();
   }
 }

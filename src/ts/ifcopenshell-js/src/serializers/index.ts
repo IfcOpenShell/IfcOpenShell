@@ -39,7 +39,7 @@ export interface ExportResult {
 export interface ExportOptions {
   /** Previously loaded geometry kernel. Defaults to `passthrough`. */
   kernel?: string;
-  /** Number of native geometry iterator threads. */
+  /** Number of native geometry iterator threads. The published WASM build is single-threaded; values above 1 throw. */
   numThreads?: number;
   /**
    * Abort the export between geometry elements. Checked between synchronous

@@ -110,6 +110,7 @@ async function initialize(options: InitOptions): Promise<IfcOpenShell> {
     loadPlugin: (kind, id) => loadPlugin(raw, kind, id),
     loadedPlugins: () => raw.loadedPlugins(),
   };
+  raw.parse.setLogFormatText();
   raw.setInstanceFactory(adoptInstance);
   return Object.freeze(runtime);
 }
