@@ -88,6 +88,32 @@ class Structural(bonsai.core.tool.Structural):
         return obj.matrix_world @ Matrix.Translation(start) @ axes.to_4x4()
 
     @classmethod
+    def turn_axis_off_edge(
+        cls, item: ifcopenshell.entity_instance, start: tuple[float, ...], end: tuple[float, ...]
+    ) -> None:
+        """Give a curve item its default Axis when its edge has come to lie along its Axis.
+
+        An Axis along the edge gives no local z, as when the end of a new, horizontal edge is moved straight up to
+        make a column. It is then replaced by the default local z, as Edit Axis shows it at 0 degrees. An Axis that
+        gives a local z is kept, as is everything in IFC2X3, which has no Axis.
+
+        :param item: An IfcStructuralCurveMember or IfcStructuralCurveConnection; other items are left alone.
+        :param start: The edge's start, in the item's own coordinates.
+        :param end: The edge's end, in the item's own coordinates.
+        """
+        if not (item.is_a("IfcStructuralCurveMember") or item.is_a("IfcStructuralCurveConnection")):
+            return
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return
+        edge = Vector(end) - Vector(start)
+        if edge.length < 1e-9:
+            return
+        if item.Axis and cls.get_item_axis_roll(edge, Vector(item.Axis.DirectionRatios)) is not None:
+            return
+        axis = cls.get_default_item_axes(edge).col[2]
+        ifcopenshell.api.structural.edit_structural_item_axis(tool.Ifc.get(), structural_item=item, axis=tuple(axis))
+
+    @classmethod
     def disable_editing_structural_analysis_model(cls) -> None:
         props = cls.get_structural_props()
         props.active_structural_analysis_model_id = 0
