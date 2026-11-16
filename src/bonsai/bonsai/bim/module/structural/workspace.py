@@ -38,7 +38,12 @@ class StructuralTool(WorkSpaceTool):
     bl_widget = None
     bl_keymap = tool.Blender.get_default_selection_keypmap() + (
         ("bim.structural_hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
+        ("bim.structural_hotkey", {"type": "B", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_B")]}),
+        ("bim.structural_hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.structural_hotkey", {"type": "L", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_L")]}),
+        ("bim.structural_hotkey", {"type": "E", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_E")]}),
+        ("bim.structural_hotkey", {"type": "P", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_P")]}),
+        ("bim.structural_hotkey", {"type": "P", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_P")]}),
     )
 
     def draw_settings(context, layout, ws_tool):
@@ -80,7 +85,37 @@ class StructuralToolUI:
 
     @classmethod
     def draw_selected_object_interface(cls, context):
-        add_layout_hotkey(cls.layout, "Apply Load", "S_L", "Apply a force to the selected structural items")
+        elements = [e for o in context.selected_objects if (e := tool.Ifc.get_entity(o))]
+        if not (items := tool.Structural.get_structural_items(elements)):
+            return
+        row = cls.layout.row(align=True)
+        has_connections = any(i.is_a("IfcStructuralConnection") for i in items)
+        if has_connections and any(i.is_a("IfcStructuralMember") for i in items):
+            add_layout_hotkey(row, "Connect", "S_C", bpy.ops.bim.connect_structural_items.__doc__)
+        if has_connections:
+            add_layout_hotkey(row, "Support", "S_B", bpy.ops.bim.add_structural_support.__doc__)
+
+        if model := tool.Structural.get_current_structural_analysis_model():
+            in_model = [tool.Structural.is_in_structural_analysis_model(i, model) for i in items]
+            if not all(in_model):
+                add_layout_hotkey(row, "Assign", "C_P", "Assign the selected structural items to the current model")
+            if any(in_model):
+                add_layout_hotkey(
+                    row, "Unassign", "A_P", "Unassign the selected structural items from the current model"
+                )
+
+        add_layout_hotkey(row, "Apply Load", "S_L", "Apply a force to the selected structural items")
+
+        active = tool.Ifc.get_entity(context.active_object)
+        if active and active.is_a() in ("IfcStructuralCurveMember", "IfcStructuralCurveConnection"):
+            props = tool.Structural.get_object_structural_props(context.active_object)
+            if props.is_editing_axis:
+                row = cls.layout.row(align=True)
+                row.prop(props, "axis_angle")
+                row.operator("bim.edit_structural_item_axis", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_structural_item_axis", text="", icon="CANCEL")
+            else:
+                add_layout_hotkey(row, "Edit Axis", "A_E", "Rotate the cross-section of the active curve item")
 
     @classmethod
     def draw_type_selection_interface(cls, context):
@@ -128,5 +163,26 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_S_A(self):
         bpy.ops.bim.add_structural_item()
 
+    def hotkey_S_B(self):
+        bpy.ops.bim.add_structural_support("INVOKE_DEFAULT")
+
+    def hotkey_S_C(self):
+        bpy.ops.bim.connect_structural_items()
+
     def hotkey_S_L(self):
         bpy.ops.bim.apply_structural_load("INVOKE_DEFAULT")
+
+    def hotkey_A_E(self):
+        obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(obj) if obj else None
+        if not element or element.is_a() not in ("IfcStructuralCurveMember", "IfcStructuralCurveConnection"):
+            self.report({"INFO"}, "Make a curve member or curve connection active to edit its axis.")
+            return
+        if not tool.Structural.get_object_structural_props(obj).is_editing_axis:
+            bpy.ops.bim.enable_editing_structural_item_axis()
+
+    def hotkey_C_P(self):
+        bpy.ops.bim.assign_structural_items_to_current_model()
+
+    def hotkey_A_P(self):
+        bpy.ops.bim.assign_structural_items_to_current_model(unassign=True)
