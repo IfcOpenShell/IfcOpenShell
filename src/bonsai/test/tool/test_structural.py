@@ -20,7 +20,11 @@
 
 import math
 
+import ifcopenshell
+import pytest
+
 import bonsai.core.tool
+import bonsai.tool as tool
 from bonsai.tool.structural import Structural as subject
 from test.bim.bootstrap import NewFile
 
@@ -71,3 +75,31 @@ class TestGetSimpleSlope(NewFile):
         rise, run = subject.get_simple_slope(3, 7.1)
         assert math.isclose(math.hypot(rise, run), 1)
         assert math.isclose(rise / run, 7.1 / 3)
+
+
+class TestGetStructuralItemPredefinedTypes(NewFile):
+    def test_a_curve_member_without_userdefined(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        types = subject.get_structural_item_predefined_types("IfcStructuralCurveMember")
+        assert "RIGID_JOINED_MEMBER" in types
+        assert "NOTDEFINED" in types
+        assert "USERDEFINED" not in types
+
+    def test_a_connection_has_none(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        assert subject.get_structural_item_predefined_types("IfcStructuralPointConnection") == []
+
+
+class TestGetStructuralItemRepresentationTemplate(NewFile):
+    def test_run(self):
+        assert subject.get_structural_item_representation_template("IfcStructuralPointConnection") == "VERTEX"
+        assert subject.get_structural_item_representation_template("IfcStructuralCurveMember") == "EDGE"
+        assert subject.get_structural_item_representation_template("IfcStructuralCurveConnection") == "EDGE"
+        assert subject.get_structural_item_representation_template("IfcStructuralSurfaceMember") == "FACE"
+        assert subject.get_structural_item_representation_template("IfcStructuralSurfaceConnection") == "FACE"
+
+    def test_an_item_of_no_dimension(self):
+        with pytest.raises(ValueError):
+            subject.get_structural_item_representation_template("IfcStructuralItem")

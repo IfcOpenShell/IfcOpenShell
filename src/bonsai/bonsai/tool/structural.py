@@ -158,6 +158,27 @@ class Structural(bonsai.core.tool.Structural):
         return z / length, x / length
 
     @classmethod
+    def get_structural_item_predefined_types(cls, ifc_class: str) -> list[str]:
+        """The predefined types an item of this class can be added with, USERDEFINED left out."""
+        declaration = tool.Ifc.schema().declaration_by_name(ifc_class).as_entity()
+        assert declaration
+        for attribute in declaration.all_attributes():
+            if attribute.name() == "PredefinedType":
+                return [t for t in ifcopenshell.util.attribute.get_enum_items(attribute) if t != "USERDEFINED"]
+        return []
+
+    @classmethod
+    def get_structural_item_representation_template(cls, ifc_class: str) -> str:
+        """The Add Element representation template for the topology of a structural item."""
+        if ifc_class.startswith("IfcStructuralPoint"):
+            return "VERTEX"
+        elif ifc_class.startswith("IfcStructuralCurve"):
+            return "EDGE"
+        elif ifc_class.startswith("IfcStructuralSurface"):
+            return "FACE"
+        raise ValueError(f"{ifc_class} is not a point, curve or surface structural item")
+
+    @classmethod
     def get_current_structural_analysis_model(cls) -> Union[ifcopenshell.entity_instance, None]:
         """Get the model that new structural items and load cases are assigned to.
 

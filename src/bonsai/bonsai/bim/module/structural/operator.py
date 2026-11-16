@@ -342,6 +342,36 @@ class SetCurrentStructuralAnalysisModel(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddStructuralItem(bpy.types.Operator):
+    bl_idname = "bim.add_structural_item"
+    bl_label = "Add Structural Item"
+    bl_description = (
+        "Add a structural item of the class chosen in the Structural Tool at the 3D cursor, "
+        "in the current structural analysis model"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project loaded.")
+            return False
+        return True
+
+    def execute(self, context):
+        props = tool.Structural.get_structural_props()
+        ifc_class = props.structural_item_class
+        rprops = tool.Root.get_root_props()
+        rprops.ifc_product = "IfcStructuralItem"
+        rprops.ifc_class = ifc_class
+        if tool.Structural.get_structural_item_predefined_types(ifc_class):
+            rprops.ifc_predefined_type = props.structural_item_predefined_type
+        rprops.representation_template = tool.Structural.get_structural_item_representation_template(ifc_class)
+        rprops.name = ""
+        rprops.description = ""
+        return bpy.ops.bim.add_element(skip_dialog=True)
+
+
 class EditStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_structural_analysis_model"
     bl_label = "Edit Structural Analysis Model"

@@ -24,6 +24,7 @@ import bpy
 from bpy.types import WorkSpaceTool
 
 import bonsai.tool as tool
+from bonsai.bim.module.structural.data import StructuralAnalysisModelsData
 
 
 class StructuralTool(WorkSpaceTool):
@@ -36,6 +37,7 @@ class StructuralTool(WorkSpaceTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.structural")
     bl_widget = None
     bl_keymap = tool.Blender.get_default_selection_keypmap() + (
+        ("bim.structural_hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.structural_hotkey", {"type": "L", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_L")]}),
     )
 
@@ -63,8 +65,8 @@ class StructuralToolUI:
             row.label(text="No IFC Project", icon="ERROR")
             return
 
-        # if not StructuralData.is_loaded:
-        #     StructuralData.load()
+        if not StructuralAnalysisModelsData.is_loaded:
+            StructuralAnalysisModelsData.load()
 
         cls.draw_type_selection_interface(context)
 
@@ -74,7 +76,7 @@ class StructuralToolUI:
 
     @classmethod
     def draw_default_interface(cls):
-        pass
+        add_layout_hotkey(cls.layout, "Add", "S_A", "Add a structural item of the chosen class at the 3D cursor")
 
     @classmethod
     def draw_selected_object_interface(cls, context):
@@ -82,7 +84,18 @@ class StructuralToolUI:
 
     @classmethod
     def draw_type_selection_interface(cls, context):
-        pass
+        row = cls.layout.row(align=True)
+        row.prop(cls.props, "structural_item_class", text="")
+        if tool.Structural.get_structural_item_predefined_types(cls.props.structural_item_class):
+            row.prop(cls.props, "structural_item_predefined_type", text="")
+
+        row = cls.layout.row(align=True)
+        if not StructuralAnalysisModelsData.data["models"]:
+            row.operator("bim.add_structural_analysis_model", text="Add Analysis Model", icon="ADD")
+        elif current := StructuralAnalysisModelsData.data["current_model"]:
+            row.menu("BIM_MT_structural_analysis_models", text=current["name"], icon="MOD_SIMPLIFY")
+        else:
+            row.menu("BIM_MT_structural_analysis_models", text="No Current Analysis Model", icon="ERROR")
 
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
@@ -111,6 +124,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
     def draw(self, context):
         pass
+
+    def hotkey_S_A(self):
+        bpy.ops.bim.add_structural_item()
 
     def hotkey_S_L(self):
         bpy.ops.bim.apply_structural_load("INVOKE_DEFAULT")

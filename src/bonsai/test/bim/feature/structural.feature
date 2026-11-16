@@ -43,6 +43,41 @@ Scenario: Add element - a structural surface member
     And I toggle edit mode
     Then the object "Item/IfcFaceSurface/134" exists
 
+Scenario: Add structural item - a curve member of the chosen predefined type in the current model
+    Given an empty IFC project
+    And I press "bim.add_structural_analysis_model"
+    And I set "scene.BIMStructuralProperties.structural_item_class" to "IfcStructuralCurveMember"
+    And I set "scene.BIMStructuralProperties.structural_item_predefined_type" to "PIN_JOINED_MEMBER"
+    When I press "bim.add_structural_item"
+    Then the object "IfcStructuralCurveMember/Unnamed" is an "IfcStructuralCurveMember"
+    And the object "IfcStructuralCurveMember/Unnamed" data is a "Edge" representation of "Model/Reference/GRAPH_VIEW"
+    And I evaluate expression "assert tool.Ifc.get().by_type('IfcStructuralCurveMember')[0].PredefinedType == 'PIN_JOINED_MEMBER'"
+    And I evaluate expression "assert tool.Ifc.get().by_type('IfcStructuralCurveMember')[0].HasAssignments[0].RelatingGroup.is_a('IfcStructuralAnalysisModel')"
+
+Scenario: Add structural item - a surface member
+    Given an empty IFC project
+    And I set "scene.BIMStructuralProperties.structural_item_class" to "IfcStructuralSurfaceMember"
+    When I press "bim.add_structural_item"
+    Then the object "IfcStructuralSurfaceMember/Unnamed" data is a "Face" representation of "Model/Reference/GRAPH_VIEW"
+
+Scenario: Add structural item - a point connection, which has no predefined type
+    Given an empty IFC project
+    And I set "scene.BIMStructuralProperties.structural_item_class" to "IfcStructuralPointConnection"
+    When I press "bim.add_structural_item"
+    Then the object "IfcStructuralPointConnection/Unnamed" data is a "Vertex" representation of "Model/Reference/GRAPH_VIEW"
+
+Scenario: Add structural item - a curve connection
+    Given an empty IFC project
+    And I set "scene.BIMStructuralProperties.structural_item_class" to "IfcStructuralCurveConnection"
+    When I press "bim.add_structural_item"
+    Then the object "IfcStructuralCurveConnection/Unnamed" data is a "Edge" representation of "Model/Reference/GRAPH_VIEW"
+
+Scenario: Add structural item - with the Structural Tool hotkey
+    Given an empty IFC project
+    And I set "scene.BIMStructuralProperties.structural_item_class" to "IfcStructuralPointConnection"
+    When I press "bim.structural_hotkey(hotkey='S_A')"
+    Then the object "IfcStructuralPointConnection/Unnamed" is an "IfcStructuralPointConnection"
+
 Scenario: Load structural analysis models
     Given an empty IFC project
     When I press "bim.load_structural_analysis_models"
