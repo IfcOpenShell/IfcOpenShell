@@ -63,5 +63,55 @@ def test_file(filepath: Path, expected_result: Result):
             assert len(results) == 0
 
 
+@pytest.mark.parametrize("attributes,expected_count", [("$,$,$,$", 4), ("3,1.E-05,#2,#5", 4), ("*,*,*,*", 0)])
+@pytest.mark.parametrize(
+    "backend",
+    [
+        "memory",
+        "lazy",
+        pytest.param(
+            "rocksdb",
+            marks=pytest.mark.skipif(
+                not hasattr(ifcopenshell.ifcopenshell_wrapper, "RocksDbSerializer"), reason="RocksDB not available"
+            ),
+        ),
+    ],
+)
+def test_derived_attributes(tmp_path, attributes, expected_count, backend):
+    filepath = tmp_path / "derived.ifc"
+    filepath.write_text(
+        f"""ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION((''),'2;1');
+FILE_NAME('','',(''),(''),'','','');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCCARTESIANPOINT((0.,0.,0.));
+#2=IFCAXIS2PLACEMENT3D(#1,$,$);
+#3=IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,1.E-05,#2,$);
+#5=IFCDIRECTION((0.,1.));
+#4=IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Body','Model',{attributes},#3,$,.MODEL_VIEW.,$);
+ENDSEC;
+END-ISO-10303-21;
+"""
+    )
+    if backend == "rocksdb":
+        rocks = tmp_path / "derived.rdb"
+        ifcopenshell.convert_path_to_rocksdb(str(filepath), str(rocks))
+        model = ifcopenshell.open(rocks)
+    else:
+        model = ifcopenshell.open(filepath, lazy=backend == "lazy")
+    logger = ifcopenshell.validate.json_logger()
+    ifcopenshell.validate.validate(model, logger)
+    errors = [s for s in logger.statements if s["message"] == "Attribute is derived in subtype"]
+    assert len(errors) == expected_count
+    assert all(s["instance"].id() == 4 for s in errors)
+    if not expected_count:
+        output = tmp_path / "roundtrip.ifc"
+        model.write(str(output))
+        assert "'Body','Model',*,*,*,*,#3" in output.read_text()
+
+
 if __name__ == "__main__":
     pytest.main(["-sx", __file__])

@@ -386,6 +386,7 @@ express::base ifcopenshell::impl::rocks_db_file_storage::create(const ifcopenshe
         throw std::runtime_error("Requires and entity or type declaration");
     }
     auto data = ifcopenshell::make_pointer_type<instance_data>(file, decl, instance_name, rocks_db_attribute_storage{});
+    data->populate_derived_();
     {
         std::lock_guard<std::mutex> lock(instance_cache_mutex_);
         if (instance_name) {
@@ -412,6 +413,7 @@ express::base ifcopenshell::impl::in_memory_file_storage::create(const ifcopensh
         throw std::runtime_error("Requires and entity or type declaration");
     }
     auto data = ifcopenshell::make_pointer_type<instance_data>(file, decl, instance_name, decl->as_entity() ? in_memory_attribute_storage(decl->as_entity()->attribute_count()) : in_memory_attribute_storage(1));
+    data->populate_derived_();
     if (instance_name) {
         byid_.insert({instance_name, data});
     } else {
