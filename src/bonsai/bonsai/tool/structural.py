@@ -157,6 +157,93 @@ class Structural(bonsai.core.tool.Structural):
         length = math.hypot(x, z)
         return z / length, x / length
 
+    # The applied load each kind of structural item takes, and the loads it can take.
+    APPLIED_LOADS = {
+        "IfcStructuralPointConnection": (
+            "IfcStructuralPointAction",
+            ("IfcStructuralLoadTemperature", "IfcStructuralLoadSingleForce", "IfcStructuralLoadSingleDisplacement"),
+        ),
+        "IfcStructuralCurveMember": (
+            "IfcStructuralLinearAction",
+            ("IfcStructuralLoadTemperature", "IfcStructuralLoadLinearForce"),
+        ),
+        "IfcStructuralSurfaceMember": (
+            "IfcStructuralPlanarAction",
+            ("IfcStructuralLoadTemperature", "IfcStructuralLoadPlanarForce"),
+        ),
+    }
+
+    @classmethod
+    def get_load_targets(
+        cls,
+        objects: list[bpy.types.Object],
+        load: Union[ifcopenshell.entity_instance, None],
+        group: Union[ifcopenshell.entity_instance, None],
+    ) -> list[ifcopenshell.entity_instance]:
+        """The structural items of these objects a load would be applied to in a load group: those that can take it
+        and don't already have it there"""
+        if not load or not group:
+            return []
+        targets = []
+        for obj in objects:
+            if not (element := tool.Ifc.get_entity(obj)) or element.is_a() not in cls.APPLIED_LOADS:
+                continue
+            if not any(load.is_a(c) for c in cls.APPLIED_LOADS[element.is_a()][1]):
+                continue
+            if any(a.AppliedLoad == load for a in cls.get_group_activities(element, group)):
+                continue
+            targets.append(element)
+        return targets
+
+    @classmethod
+    def follow_active_item_load(cls) -> None:
+        """While a load group's applied loads are being edited, set its load picker to the first load the active
+        structural item has there, so the picker shows the load at the item selected. Only Blender properties change.
+        """
+        props = cls.get_structural_props()
+        if props.load_group_editing_type == "ACTIVITY" and props.active_load_group_id:
+            group_id = props.active_load_group_id
+        else:
+            group_id = props.active_load_case_id
+        obj = bpy.context.active_object
+        if not group_id or not obj or not (element := tool.Ifc.get_entity(obj)):
+            return
+        if element.is_a() not in cls.APPLIED_LOADS:
+            return
+        try:
+            group = tool.Ifc.get().by_id(group_id)
+        except RuntimeError:
+            return
+        load = next((a.AppliedLoad for a in cls.get_group_activities(element, group) if a.AppliedLoad), None)
+        if not load or not load.Name:
+            return  # The picker lists named loads only.
+        try:
+            if props.applicable_structural_load_types != load.is_a():
+                props.applicable_structural_load_types = load.is_a()
+            props.applicable_structural_loads = str(load.id())
+        except TypeError:
+            pass  # Not offered for the current selection.
+
+    @classmethod
+    def get_group_activities(
+        cls, item: ifcopenshell.entity_instance, group: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
+        """The applied loads on a structural item in a load case or load group, directly or through a load group
+        within it"""
+
+        def is_in_group(activity: ifcopenshell.entity_instance) -> bool:
+            for rel in activity.HasAssignments:
+                if not rel.is_a("IfcRelAssignsToGroup") or not (assigned := rel.RelatingGroup):
+                    continue
+                if assigned == group or any(
+                    r.is_a("IfcRelAssignsToGroup") and r.RelatingGroup == group for r in assigned.HasAssignments
+                ):
+                    return True
+            return False
+
+        activities = [r.RelatedStructuralActivity for r in item.AssignedStructuralActivity]
+        return [a for a in activities if a and is_in_group(a)]
+
     @classmethod
     def get_current_structural_analysis_model(cls) -> Union[ifcopenshell.entity_instance, None]:
         """Get the model that new structural items and load cases are assigned to.

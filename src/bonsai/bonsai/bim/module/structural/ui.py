@@ -531,6 +531,27 @@ class BIM_UL_structural_analysis_models(UIList):
                 op.structural_analysis_model = item.ifc_definition_id
 
 
+def draw_apply_load_button(layout: bpy.types.UILayout, props, group_id: int) -> None:
+    """The button applying the chosen load to the selected items, saying which, or that none would take it"""
+    ifc_file = tool.Ifc.get()
+    try:
+        load = ifc_file.by_id(int(props.applicable_structural_loads)) if props.applicable_structural_loads else None
+        group = ifc_file.by_id(group_id)
+    except (RuntimeError, ValueError):
+        load, group = None, None
+    targets = tool.Structural.get_load_targets(bpy.context.selected_objects, load, group)
+    names = [t.Name or "Unnamed" for t in targets]
+    if not targets:
+        text = "Select items to apply it to"
+    elif len(names) <= 3:
+        text = f"Apply to {', '.join(names)}"
+    else:
+        text = f"Apply to {len(names)} items"
+    row = layout.row(align=True)
+    row.enabled = bool(targets)
+    row.operator("bim.add_structural_activity", text=text, icon="ADD").load_group = group_id
+
+
 class BIM_PT_structural_load_cases(Panel):
     bl_label = "Structural Load Cases"
     bl_idname = "BIM_PT_structural_load_cases"
@@ -632,7 +653,7 @@ class BIM_PT_structural_load_cases(Panel):
         row = box.row(align=True)
         row.prop(self.props, "applicable_structural_load_types", text="")
         row.prop(self.props, "applicable_structural_loads", text="")
-        row.operator("bim.add_structural_activity", text="", icon="ADD").load_group = load_case["id"]
+        draw_apply_load_button(box, self.props, load_case["id"])
 
         if not load_case["load_groups"]:
             row = box.row(align=True)
@@ -652,8 +673,7 @@ class BIM_PT_structural_load_cases(Panel):
         row = layout.row(align=True)
         row.prop(self.props, "applicable_structural_load_types", text="")
         row.prop(self.props, "applicable_structural_loads", text="")
-        op = row.operator("bim.add_structural_activity", text="", icon="ADD")
-        op.load_group = load_group["id"]
+        draw_apply_load_button(layout, self.props, load_group["id"])
         layout.template_list(
             "BIM_UL_structural_activities",
             "",

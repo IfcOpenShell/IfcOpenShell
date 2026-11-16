@@ -945,40 +945,21 @@ class AddStructuralActivity(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "No structural load of the chosen type to apply.")
             return {"CANCELLED"}
         self.file = tool.Ifc.get()
-        for obj in context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            applied_load_class = self.props.applicable_structural_load_types
-
-            allowed_load_classes = {
-                "IfcStructuralPointConnection": [
-                    "IfcStructuralLoadTemperature",
-                    "IfcStructuralLoadSingleForce",
-                    "IfcStructuralLoadSingleDisplacement",
-                ],
-                "IfcStructuralCurveMember": ["IfcStructuralLoadTemperature", "IfcStructuralLoadLinearForce"],
-                "IfcStructuralSurfaceMember": ["IfcStructuralLoadTemperature", "IfcStructuralLoadPlanarForce"],
-            }
-
-            applicable_activity_class = {
-                "IfcStructuralPointConnection": "IfcStructuralPointAction",
-                "IfcStructuralCurveMember": "IfcStructuralLinearAction",
-                "IfcStructuralSurfaceMember": "IfcStructuralPlanarAction",
-            }
-
-            if applied_load_class not in allowed_load_classes[element.is_a()]:
-                continue
-
-            ifc_class = applicable_activity_class[element.is_a()]
-
+        load = self.file.by_id(int(self.props.applicable_structural_loads))
+        group = self.file.by_id(self.load_group)
+        # The selected items that can take the load and don't have it here already, as the button says.
+        targets = tool.Structural.get_load_targets(context.selected_objects, load, group)
+        if not targets:
+            self.report({"WARNING"}, "No selected item can take this load, or they all have it here already.")
+            return {"CANCELLED"}
+        for element in targets:
             activity = ifcopenshell.api.structural.add_structural_activity(
                 self.file,
-                ifc_class=ifc_class,
-                applied_load=self.file.by_id(int(self.props.applicable_structural_loads)),
+                ifc_class=tool.Structural.APPLIED_LOADS[element.is_a()][0],
+                applied_load=load,
                 structural_member=element,
             )
-            ifcopenshell.api.group.assign_group(self.file, products=[activity], group=self.file.by_id(self.load_group))
+            ifcopenshell.api.group.assign_group(self.file, products=[activity], group=group)
         bpy.ops.bim.enable_editing_structural_load_group_activities(load_group=self.load_group)
         return {"FINISHED"}
 
