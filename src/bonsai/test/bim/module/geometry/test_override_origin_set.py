@@ -152,6 +152,29 @@ def world_footprint(element):
     return np.array(sorted(map(tuple, np.round(world, 6))))
 
 
+def add_structural_item(ifc_class, representation_template):
+    root_props = tool.Root.get_root_props()
+    root_props.ifc_product = "IfcStructuralItem"
+    root_props.ifc_class = ifc_class
+    root_props.representation_template = representation_template
+    bpy.ops.bim.add_element(skip_dialog=True)
+    # Structural items live in a collection that is hidden by default.
+    tool.Blender.get_layer_collection(bpy.data.collections.get("IfcStructuralItem")).hide_viewport = False
+    return bpy.context.active_object
+
+
+def world_topology(element):
+    """Every point of the element's topology, the face's plane included, in world coordinates."""
+    matrix = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
+    points = []
+    for representation in element.Representation.Representations:
+        for item in representation.Items:
+            for entity in tool.Ifc.get().traverse(item):
+                if entity.is_a("IfcCartesianPoint"):
+                    points.append((matrix @ np.array([*entity.Coordinates, 1.0]))[:3])
+    return np.array(sorted(map(tuple, np.round(points, 6))))
+
+
 class TestOverrideOriginSet(NewIfc):
     def test_an_extrusion_keeps_its_world_position_and_its_profile(self):
         obj = add_extruded_wall()
@@ -321,3 +344,35 @@ class TestOverrideOriginSet(NewIfc):
         bpy.ops.bim.override_origin_set(obj=type_obj.name, origin_type="ORIGIN_CURSOR")
         assert close(tuple(occurrence.location), tuple(Vector((0.0, 10.0, 0.0)) + local_move))
         assert close(world_bbox(tool.Ifc.get_entity(occurrence)), before)
+
+    def test_a_structural_curve_member_keeps_its_world_position(self):
+        obj = add_structural_item("IfcStructuralCurveMember", "EDGE")
+        element = tool.Ifc.get_entity(obj)
+        before = world_topology(element)
+        set_origin_to_cursor(obj)
+        assert tuple(obj.location) == CURSOR
+        assert close(world_topology(element), before)
+        assert body(obj).RepresentationType == "Edge"
+
+    def test_a_structural_surface_member_keeps_its_world_position_and_plane(self):
+        obj = add_structural_item("IfcStructuralSurfaceMember", "FACE")
+        element = tool.Ifc.get_entity(obj)
+        before = world_topology(element)
+        plane = body(obj).Items[0].FaceSurface.Position
+        axes = (plane.Axis, plane.RefDirection)
+        set_origin_to_cursor(obj)
+        assert tuple(obj.location) == CURSOR
+        assert close(world_topology(element), before)
+        face = body(obj).Items[0]
+        assert face.is_a("IfcFaceSurface")
+        assert (face.FaceSurface.Position.Axis, face.FaceSurface.Position.RefDirection) == axes
+
+    def test_a_structural_point_connection_keeps_its_world_position(self):
+        bpy.context.scene.cursor.location = (1.0, 2.0, 0.0)
+        obj = add_structural_item("IfcStructuralPointConnection", "VERTEX")
+        element = tool.Ifc.get_entity(obj)
+        before = world_topology(element)
+        set_origin_to_cursor(obj)
+        assert tuple(obj.location) == CURSOR
+        assert close(world_topology(element), before)
+        assert body(obj).RepresentationType == "Vertex"
