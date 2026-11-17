@@ -31,7 +31,7 @@ def remove_structural_analysis_model(
         remove.
     :return: None
     """
-    for rel in structural_analysis_model.IsGroupedBy or []:
+    for rel in (structural_analysis_model.IsGroupedBy or ()) + (structural_analysis_model.ServicesBuildings or ()):
         history = rel.OwnerHistory
         file.remove(rel)
         if history:

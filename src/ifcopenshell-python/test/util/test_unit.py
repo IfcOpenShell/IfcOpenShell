@@ -403,6 +403,16 @@ class TestGetUnitSymbol(test.bootstrap.IFC4):
         )
         assert subject.get_unit_symbol(modulus) == "N/m2"
 
+    def test_rotational_stiffness_has_a_radian_symbol(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT", prefix="KILO")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
+        radian = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="PLANEANGLEUNIT")
+        stiffness = ifcopenshell.api.unit.add_derived_unit(
+            self.file, "ROTATIONALSTIFFNESSUNIT", None, {force: 1, length: 1, radian: -1}
+        )
+        assert subject.get_unit_symbol(stiffness) == "kN.m/rad"
+
     def test_unnamed_derived_unit_still_composes_a_symbol_without_crashing(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT")

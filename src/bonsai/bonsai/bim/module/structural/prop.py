@@ -25,6 +25,7 @@ from bpy.props import (
     CollectionProperty,
     EnumProperty,
     FloatProperty,
+    FloatVectorProperty,
     IntProperty,
     PointerProperty,
     StringProperty,
@@ -35,6 +36,7 @@ import bonsai.tool as tool
 from bonsai.bim.module.structural.data import (
     BoundaryConditionsData,
     LoadGroupDecorationData,
+    StructuralAnalysisModelsData,
     StructuralLoadCasesData,
     StructuralLoadsData,
 )
@@ -49,6 +51,16 @@ def get_load_groups_to_show(self: "BIMStructuralProperties", context: bpy.types.
 
 def update_unused_loads_only(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
     bpy.ops.bim.load_structural_loads()
+
+
+def get_buildings(self: "BIMStructuralProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    if not StructuralAnalysisModelsData.is_loaded:
+        StructuralAnalysisModelsData.load()
+    index = self.active_structural_analysis_model_index
+    if not 0 <= index < len(self.structural_analysis_models):
+        return []
+    model_id = self.structural_analysis_models[index].ifc_definition_id
+    return StructuralAnalysisModelsData.data["unserved_buildings"].get(model_id, [])
 
 
 def update_activity_type(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
@@ -174,6 +186,18 @@ class BoundaryCondition(PropertyGroup):
         number_of_inverse_references: int
 
 
+class StructuralLoadCombinationFactor(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    is_included: BoolProperty(name="Included", description="Include this load case in the load combination")
+    factor: FloatProperty(name="Factor", description="The factor this load case is multiplied by", default=1.0)
+
+    if TYPE_CHECKING:
+        ifc_definition_id: int
+        is_included: bool
+        factor: float
+
+
 class BIMStructuralProperties(PropertyGroup):
     structural_analysis_model_attributes: CollectionProperty(
         name="Structural Analysis Model Attributes", type=Attribute
@@ -183,9 +207,20 @@ class BIMStructuralProperties(PropertyGroup):
     active_structural_analysis_model_index: IntProperty(name="Active Structural Analysis Model Index")
     active_structural_analysis_model_id: IntProperty(name="Active Structural Analysis Model Id")
     current_structural_analysis_model_id: IntProperty(name="Current Structural Analysis Model Id")
+    building: EnumProperty(items=get_buildings, name="Building")
     load_case_attributes: CollectionProperty(name="Load Case Attributes", type=Attribute)
+    load_case_has_self_weight: BoolProperty(name="Include Self-Weight", default=False)
+    load_case_self_weight: FloatVectorProperty(
+        name="Self-Weight Coefficients",
+        size=3,
+        default=(0.0, 0.0, -1.0),
+        description="Self-weight coefficients (X, Y, Z) in the analysis model's axes",
+    )
     active_load_case_id: IntProperty(name="Active Load Case Id")
     load_group_editing_type: StringProperty(name="Load Group Editing Type")
+    load_combination_attributes: CollectionProperty(name="Load Combination Attributes", type=Attribute)
+    active_load_combination_id: IntProperty(name="Active Load Combination Id")
+    load_combination_factors: CollectionProperty(name="Load Combination Factors", type=StructuralLoadCombinationFactor)
     # load_group_attributes: CollectionProperty(name="Load Group Attributes", type=Attribute)
     active_load_group_id: IntProperty(name="Active Load Group Id")
     applicable_structural_load_types: EnumProperty(
@@ -314,9 +349,15 @@ class BIMStructuralProperties(PropertyGroup):
         active_structural_analysis_model_index: int
         active_structural_analysis_model_id: int
         current_structural_analysis_model_id: int
+        building: str
         load_case_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        load_case_has_self_weight: bool
+        load_case_self_weight: tuple[float, float, float]
         active_load_case_id: int
         load_group_editing_type: str
+        load_combination_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        active_load_combination_id: int
+        load_combination_factors: bpy.types.bpy_prop_collection_idprop[StructuralLoadCombinationFactor]
         active_load_group_id: int
         applicable_structural_load_types: str
         applicable_structural_loads: str

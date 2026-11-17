@@ -51,6 +51,7 @@ from .remove_structural_connection_condition import (
 from .remove_structural_load import remove_structural_load
 from .remove_structural_load_case import remove_structural_load_case
 from .remove_structural_load_group import remove_structural_load_group
+from .unassign_from_building import unassign_from_building
 from .unassign_structural_analysis_model import unassign_structural_analysis_model
 from .unassign_structural_load_combination import unassign_structural_load_combination
 from .unassign_structural_load_group import unassign_structural_load_group
@@ -84,6 +85,7 @@ __all__ = [
     "remove_structural_load",
     "remove_structural_load_case",
     "remove_structural_load_group",
+    "unassign_from_building",
     "unassign_structural_analysis_model",
     "unassign_structural_load_combination",
     "unassign_structural_load_group",

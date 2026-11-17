@@ -22,6 +22,7 @@ from math import degrees
 from typing import TYPE_CHECKING, Literal, Union
 
 import bpy
+import ifcopenshell.api.attribute
 import ifcopenshell.api.group
 import ifcopenshell.api.structural
 import ifcopenshell.util.unit
@@ -382,6 +383,43 @@ class DisableEditingStructuralAnalysisModel(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AssignStructuralAnalysisModelToBuilding(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_structural_analysis_model_to_building"
+    bl_label = "Assign to Building"
+    bl_description = "Record that the structural analysis model serves the chosen building"
+    bl_options = {"REGISTER", "UNDO"}
+    structural_analysis_model: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        props = tool.Structural.get_structural_props()
+        if not props.building:
+            self.report({"WARNING"}, "The project has no building to assign.")
+            return {"CANCELLED"}
+        ifc_file = tool.Ifc.get()
+        core.assign_to_building(
+            tool.Ifc,
+            structural_analysis_model=ifc_file.by_id(self.structural_analysis_model),
+            building=ifc_file.by_id(int(props.building)),
+        )
+
+
+class UnassignStructuralAnalysisModelFromBuilding(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.unassign_structural_analysis_model_from_building"
+    bl_label = "Unassign from Building"
+    bl_description = "Stop the structural analysis model serving this building"
+    bl_options = {"REGISTER", "UNDO"}
+    structural_analysis_model: bpy.props.IntProperty()
+    building: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        core.unassign_from_building(
+            tool.Ifc,
+            structural_analysis_model=ifc_file.by_id(self.structural_analysis_model),
+            building=ifc_file.by_id(self.building),
+        )
+
+
 class AssignStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_structural_analysis_model"
     bl_label = "Assign Structural Analysis Model"
@@ -587,7 +625,7 @@ class EditStructuralConnectionCS(bpy.types.Operator, tool.Ifc.Operator):
 class AssignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_structural_load_case"
     bl_label = "Assign Structural Load Case"
-    bl_description = "Assign the load case to this structural analysis model"
+    bl_description = "Assign the load case or combination to this structural analysis model"
     bl_options = {"REGISTER", "UNDO"}
     structural_analysis_model: bpy.props.IntProperty()
     load_case: bpy.props.IntProperty()
@@ -605,7 +643,7 @@ class AssignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
 class UnassignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_structural_load_case"
     bl_label = "Unassign Structural Load Case"
-    bl_description = "Unassign the load case from this structural analysis model"
+    bl_description = "Unassign the load case or combination from this structural analysis model"
     bl_options = {"REGISTER", "UNDO"}
     structural_analysis_model: bpy.props.IntProperty()
     load_case: bpy.props.IntProperty()
@@ -639,6 +677,10 @@ class EditStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = tool.Structural.get_structural_props()
         attributes = bonsai.bim.helper.export_attributes(props.load_case_attributes)
+        if props.load_case_has_self_weight:
+            attributes["SelfWeightCoefficients"] = list(props.load_case_self_weight)
+        else:
+            attributes["SelfWeightCoefficients"] = None
         self.file = tool.Ifc.get()
         ifcopenshell.api.structural.edit_structural_load_case(
             self.file,
@@ -672,16 +714,37 @@ class EnableEditingStructuralLoadCase(bpy.types.Operator):
         self.props = tool.Structural.get_structural_props()
         self.props.active_load_case_id = self.load_case
         self.props.load_case_attributes.clear()
+        load_case_entity = tool.Ifc.get().by_id(self.load_case)
         bonsai.bim.helper.import_attributes(
-            tool.Ifc.get().by_id(self.load_case),
+            load_case_entity,
             self.props.load_case_attributes,
             callback=self.import_attributes_callback,
         )
+        coeffs = getattr(load_case_entity, "SelfWeightCoefficients", None)
+        if coeffs:
+            self.props.load_case_has_self_weight = True
+            self.props.load_case_self_weight = tuple(coeffs)
+        else:
+            self.props.load_case_has_self_weight = False
+            self.props.load_case_self_weight = (0.0, 0.0, -1.0)
         return {"FINISHED"}
 
     def import_attributes_callback(self, name: str, prop: object, data: object) -> None | Literal[False]:
         if name in ["SelfWeightCoefficients"]:
             return False
+
+
+class SetSelfWeightDownwards(bpy.types.Operator):
+    bl_idname = "bim.set_self_weight_downwards"
+    bl_label = "Reset Self-Weight Downwards"
+    bl_description = "Reset self-weight coefficients to downwards gravity (0, 0, -1) in the analysis model's axes"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+        props = tool.Structural.get_structural_props()
+        props.load_case_has_self_weight = True
+        props.load_case_self_weight = (0.0, 0.0, -1.0)
+        return {"FINISHED"}
 
 
 class DisableEditingStructuralLoadCase(bpy.types.Operator):
@@ -693,6 +756,131 @@ class DisableEditingStructuralLoadCase(bpy.types.Operator):
         props = tool.Structural.get_structural_props()
         props.active_load_case_id = 0
         return {"FINISHED"}
+
+
+class AddStructuralLoadCombination(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_structural_load_combination"
+    bl_label = "Add Load Combination"
+    bl_description = "Add a load combination, in which load cases are added up, each times a factor"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        combination = ifcopenshell.api.structural.add_structural_load_combination(
+            tool.Ifc.get(), name="Load Combination"
+        )
+        tool.Structural.assign_to_current_structural_analysis_model(combination)
+        bpy.ops.bim.enable_editing_structural_load_combination(load_combination=combination.id())
+        return {"FINISHED"}
+
+
+class EnableEditingStructuralLoadCombination(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_structural_load_combination"
+    bl_label = "Enable Editing Load Combination"
+    bl_description = "Edit the load combination and the factors of its load cases"
+    bl_options = {"REGISTER", "UNDO"}
+    load_combination: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = tool.Structural.get_structural_props()
+        combination = tool.Ifc.get().by_id(self.load_combination)
+        props.active_load_combination_id = combination.id()
+        props.load_combination_attributes.clear()
+        bonsai.bim.helper.import_attributes(
+            combination, props.load_combination_attributes, callback=self.import_attributes_callback
+        )
+        factors = get_load_combination_factors(combination)
+        props.load_combination_factors.clear()
+        for load_case in tool.Ifc.get().by_type("IfcStructuralLoadCase"):
+            new = props.load_combination_factors.add()
+            new.name = load_case.Name or "Unnamed"
+            new.ifc_definition_id = load_case.id()
+            new.is_included = load_case in factors
+            new.factor = factors.get(load_case, 1.0)
+        return {"FINISHED"}
+
+    def import_attributes_callback(self, name: str, prop: object, data: dict) -> None | Literal[False]:
+        # These mean nothing for a combination, and its PredefinedType is what makes it one.
+        if name in ("ObjectType", "PredefinedType", "ActionType", "ActionSource"):
+            return False
+        # A Coefficient multiplies every factor: only shown if the file sets one.
+        if name == "Coefficient" and data.get("Coefficient") is None:
+            return False
+
+
+class DisableEditingStructuralLoadCombination(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_structural_load_combination"
+    bl_label = "Disable Editing Load Combination"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = tool.Structural.get_structural_props()
+        props.active_load_combination_id = 0
+        return {"FINISHED"}
+
+
+class EditStructuralLoadCombination(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_structural_load_combination"
+    bl_label = "Edit Load Combination"
+    bl_description = "Save the load combination's attributes and the factors of its load cases"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = tool.Structural.get_structural_props()
+        ifc_file = tool.Ifc.get()
+        combination = ifc_file.by_id(props.active_load_combination_id)
+        attributes = bonsai.bim.helper.export_attributes(props.load_combination_attributes)
+        ifcopenshell.api.attribute.edit_attributes(ifc_file, product=combination, attributes=attributes)
+        factors = get_load_combination_factors(combination)
+        for row in props.load_combination_factors:
+            try:
+                load_case = ifc_file.by_id(row.ifc_definition_id)
+            except RuntimeError:  # Removed while the combination was being edited
+                continue
+            # Blender keeps the factor in single precision: 1.35 would be written 1.35000002.
+            factor = float(f"{row.factor:.7g}")
+            if not row.is_included:
+                if load_case in factors:
+                    ifcopenshell.api.structural.unassign_structural_load_combination(
+                        ifc_file, load_case=load_case, load_combination=combination
+                    )
+            elif factors.get(load_case) is None or f"{factors[load_case]:.7g}" != f"{factor:.7g}":
+                ifcopenshell.api.structural.assign_structural_load_combination(
+                    ifc_file, load_case=load_case, load_combination=combination, factor=factor
+                )
+        bpy.ops.bim.disable_editing_structural_load_combination()
+        return {"FINISHED"}
+
+
+class RemoveStructuralLoadCombination(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_structural_load_combination"
+    bl_label = "Remove Load Combination"
+    bl_description = "Remove the load combination. Its load cases are kept"
+    bl_options = {"REGISTER", "UNDO"}
+    load_combination: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.structural.remove_structural_load_group(
+            ifc_file, load_group=ifc_file.by_id(self.load_combination)
+        )
+        return {"FINISHED"}
+
+
+def get_load_combination_factors(
+    combination: ifcopenshell.entity_instance,
+) -> dict[ifcopenshell.entity_instance, float]:
+    """The factor of each load case in a combination, not counting its Coefficient
+
+    A load case grouped without a factor counts once, and one grouped more than once
+    counts for the sum, as analysis programs add them up.
+    """
+    factors: dict[ifcopenshell.entity_instance, float] = {}
+    for rel in combination.IsGroupedBy:
+        factor = rel.Factor if rel.is_a("IfcRelAssignsToGroupByFactor") else 1.0
+        for load_case in rel.RelatedObjects:
+            if load_case.is_a("IfcStructuralLoadCase"):
+                factors[load_case] = factors.get(load_case, 0.0) + factor
+    return factors
 
 
 class AddStructuralLoadGroup(bpy.types.Operator, tool.Ifc.Operator):
@@ -866,6 +1054,12 @@ def get_force_components(props: "StructuralForceInput") -> tuple[float, float, f
 
 def get_load_unit_symbol(category: str) -> str:
     ifc_file = tool.Ifc.get()
+    unit_type = {"IfcStructuralCurveMember": "LINEARFORCEUNIT", "IfcStructuralSurfaceMember": "PLANARFORCEUNIT"}.get(
+        category
+    )
+    if unit_type and (unit := ifcopenshell.util.unit.get_project_unit(ifc_file, unit_type)):
+        return ifcopenshell.util.unit.get_unit_symbol(unit)
+    # Undeclared: the force unit over the length unit, as readers of the file take it.
     force_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "FORCEUNIT")
     length_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT")
     symbol = ifcopenshell.util.unit.get_unit_symbol(force_unit) if force_unit else "N"
@@ -1319,7 +1513,9 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
 class ShowStructuralLoadCase(bpy.types.Operator):
     bl_idname = "bim.show_structural_load_case"
     bl_label = "Show Load Case"
-    bl_description = "Show the loads of this load case in the viewport, or stop showing them if they are shown"
+    bl_description = (
+        "Show the loads of this load case or combination in the viewport, or stop showing them if they are shown"
+    )
     bl_options = {"REGISTER"}
     load_case: bpy.props.IntProperty()
 
@@ -1331,7 +1527,7 @@ class ShowStructuralLoadCase(bpy.types.Operator):
         try:
             props.load_group_to_show = str(self.load_case)
         except TypeError:
-            self.report({"WARNING"}, "This load case is not in the current analysis model.")
+            self.report({"WARNING"}, "This load case or combination is not in the current analysis model.")
             return {"CANCELLED"}
         props.show_loads = True
         return {"FINISHED"}

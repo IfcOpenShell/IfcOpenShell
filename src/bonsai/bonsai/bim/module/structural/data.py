@@ -34,6 +34,7 @@ def refresh():
     StructuralConnectionData.is_loaded = False
     StructuralAnalysisModelsData.is_loaded = False
     StructuralLoadCasesData.is_loaded = False
+    StructuralLoadCombinationsData.is_loaded = False
     StructuralLoadsData.is_loaded = False
     BoundaryConditionsData.is_loaded = False
     LoadGroupDecorationData.is_loaded = False
@@ -45,6 +46,14 @@ def refresh():
     if LoadsDecorator.is_installed:
         LoadsDecorator.update()
         tool.Blender.update_all_viewports()
+
+
+def get_load_combinations() -> list[ifcopenshell.entity_instance]:
+    return [g for g in tool.Ifc.get().by_type("IfcStructuralLoadGroup") if g.PredefinedType == "LOAD_COMBINATION"]
+
+
+def get_load_cases_and_combinations() -> list[ifcopenshell.entity_instance]:
+    return tool.Structural.get_load_cases() + get_load_combinations()
 
 
 class LoadGroupDecorationData:
@@ -67,7 +76,7 @@ class LoadGroupDecorationData:
         props = tool.Structural.get_structural_props()
         if props.activity_type == "Action":
             # Without an analysis model, loads can still be shown by load case.
-            groups = tool.Structural.get_load_cases(m)
+            groups = tool.Structural.get_load_cases(m) if m else get_load_cases_and_combinations()
             for g in groups:
                 ret.append((str(g.id()), (g.Name or "Unnamed") + kinds.get(g.PredefinedType, ""), ""))
                 related_objects = [rel.RelatedObjects for rel in g.IsGroupedBy]
@@ -106,8 +115,10 @@ class StructuralBoundaryConditionsData:
         condition = element.AppliedCondition
         attributes = []
         for name, value in condition.get_info().items():
-            if name in ["id", "type"] or value is None:
+            if name in ["id", "type", "Name"]:
                 continue
+            if hasattr(value, "wrappedValue"):
+                value = value.wrappedValue
             attributes.append({"name": name, "value": value, "is_bool": isinstance(value, bool)})
         return {"id": condition.id(), "type": condition.is_a(), "attributes": attributes}
 
@@ -164,7 +175,15 @@ class StructuralMemberData:
 
     @classmethod
     def load(cls):
-        cls.data = {"active_object_class": cls.active_object_class()}
+        obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(obj) if obj else None
+        unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT") if element else None
+        cls.data = {
+            "active_object_class": element.is_a() if element else None,
+            "thickness": getattr(element, "Thickness", None) if element else None,
+            "length_unit": ifcopenshell.util.unit.get_unit_symbol(unit) if unit else "",
+            "predefined_type": getattr(element, "PredefinedType", None) if element else None,
+        }
         cls.is_loaded = True
 
     @classmethod
@@ -301,8 +320,33 @@ class StructuralAnalysisModelsData:
             "active_model_ids": cls.active_model_ids(),
             "current_model": cls.current_model(),
             "models": cls.models(),
+            "buildings": cls.buildings(),
+            "served_buildings": cls.served_buildings(),
+            "unserved_buildings": cls.unserved_buildings(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def buildings(cls) -> list[tuple[str, str, str]]:
+        return [(str(b.id()), b.Name or "Unnamed", "") for b in tool.Ifc.get().by_type("IfcBuilding")]
+
+    @classmethod
+    def served_buildings(cls) -> dict[int, list[tuple[int, str]]]:
+        results = {}
+        for model in tool.Ifc.get().by_type("IfcStructuralAnalysisModel"):
+            buildings = [b for rel in model.ServicesBuildings or () for b in rel.RelatedBuildings]
+            results[model.id()] = [(b.id(), b.Name or "Unnamed") for b in buildings]
+        return results
+
+    @classmethod
+    def unserved_buildings(cls) -> dict[int, list[tuple[str, str, str]]]:
+        """The buildings each model does not serve yet, as the choices to assign it to"""
+        buildings = tool.Ifc.get().by_type("IfcBuilding")
+        results = {}
+        for model in tool.Ifc.get().by_type("IfcStructuralAnalysisModel"):
+            served = {b for rel in model.ServicesBuildings or () for b in rel.RelatedBuildings}
+            results[model.id()] = [(str(b.id()), b.Name or "Unnamed", "") for b in buildings if b not in served]
+        return results
 
     @classmethod
     def total_models(cls):
@@ -385,6 +429,9 @@ class StructuralLoadCasesData:
                 {
                     "id": load_case.id(),
                     "name": load_case.Name or "Unnamed",
+                    "self_weight": tuple(load_case.SelfWeightCoefficients)
+                    if load_case.SelfWeightCoefficients
+                    else None,
                     "load_groups": load_groups,
                     "activities": activities,
                     "model_ids": [m.id() for m in load_case.LoadGroupFor],
@@ -421,6 +468,34 @@ class StructuralLoadCasesData:
             if not load.Name or not load.is_a(props.applicable_structural_load_types):
                 continue
             results.append((str(load.id()), load.Name or "Unnamed", ""))
+        return results
+
+
+class StructuralLoadCombinationsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"load_combinations": cls.load_combinations()}
+        cls.is_loaded = True
+
+    @classmethod
+    def load_combinations(cls) -> list[dict]:
+        results = []
+        for combination in get_load_combinations():
+            load_cases = [
+                o for rel in combination.IsGroupedBy for o in rel.RelatedObjects if o.is_a("IfcStructuralLoadCase")
+            ]
+            results.append(
+                {
+                    "id": combination.id(),
+                    "name": combination.Name or "Unnamed",
+                    "purpose": combination.Purpose or "",
+                    "total_load_cases": len(load_cases),
+                    "model_ids": [m.id() for m in combination.LoadGroupFor],
+                }
+            )
         return results
 
 
