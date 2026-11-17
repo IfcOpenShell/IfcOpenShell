@@ -25,11 +25,8 @@ import ifcopenshell
 import ifcopenshell.api.group
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
-import numpy as np
-
-import ifcopenshell
-import ifcopenshell.api.structural
 import ifcopenshell.guid
+import numpy as np
 import pytest
 
 import bonsai.core.tool
@@ -212,6 +209,8 @@ class TestIsInStructuralAnalysisModel(NewFile):
             ifc, products=[member], structural_analysis_model=model
         )
         assert subject.is_in_structural_analysis_model(member, model)
+
+
 class TestLoadCases(NewFile):
     def make_loaded_model(self, ifc_file, case_class, predefined_type):
         model = ifcopenshell.api.structural.add_structural_analysis_model(ifc_file)
