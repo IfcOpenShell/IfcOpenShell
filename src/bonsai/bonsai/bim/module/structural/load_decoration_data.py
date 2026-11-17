@@ -109,7 +109,6 @@ def box_crosses_segments(
     return False
 
 
-
 class ScreenGrid:
     """Label boxes and lines on screen, kept by the cells of a grid they touch, so that a label being placed is
     tested only against those near it, as this runs on every redraw with as many labels as loads shown"""
