@@ -105,3 +105,19 @@ def test_setting_logical():
     inst.LayerOn = True
     assert inst.LayerOn is True
     assert ".T." in str(inst)
+
+
+def test_setting_boolean():
+    f = ifcopenshell.file(schema="IFC4")
+    inst = f.createIfcWindowType(ParameterTakesPrecedence=True)
+    assert inst.ParameterTakesPrecedence is True
+    inst.ParameterTakesPrecedence = False
+    assert inst.ParameterTakesPrecedence is False
+    inst.ParameterTakesPrecedence = 1
+    assert inst.ParameterTakesPrecedence is True
+    inst.ParameterTakesPrecedence = 0
+    assert inst.ParameterTakesPrecedence is False
+    for invalid in ("no", "yes", 2, -1, 1.5):
+        with pytest.raises(Exception):
+            inst.ParameterTakesPrecedence = invalid
+        assert inst.ParameterTakesPrecedence is False
