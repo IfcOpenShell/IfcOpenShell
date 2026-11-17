@@ -718,7 +718,11 @@ class ShaderInfo:
                     ],
                 },
                 "indices": [(0, 1, 2), (0, 3, 4)],
-                "uniforms": [["color", color], ["spacing", spacing]],
+                # The shader sizes the shaft and the head from spacing, so the thickness scales them together.
+                "uniforms": [
+                    ["color", color],
+                    ["spacing", float(spacing * tool.Structural.get_structural_props().arrow_thickness)],
+                ],
             }
         )
         if activity:
