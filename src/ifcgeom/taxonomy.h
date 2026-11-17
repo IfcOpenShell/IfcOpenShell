@@ -283,9 +283,17 @@ typedef item const* ptr;
 
 			struct IFC_GEOM_API matrix4 : public item, public eigen_base<Eigen::Matrix4d> {
 			private:
+				static Eigen::Vector3d stable_normalized(const Eigen::Vector3d& v) {
+					const double scale = v.cwiseAbs().maxCoeff();
+					if (scale == 0.0) {
+						return v;
+					}
+					return (v / scale).normalized();
+				}
+
 				void init(const Eigen::Vector3d& o, const Eigen::Vector3d& z, const Eigen::Vector3d& x) {
-					auto Z = z.normalized();
-					auto Y = Z.cross(x).normalized();
+					auto Z = stable_normalized(z);
+					auto Y = stable_normalized(Z.cross(x));
 					auto X = Y.cross(Z);
 					components_ = new Eigen::Matrix4d;
 					(*components_) <<
