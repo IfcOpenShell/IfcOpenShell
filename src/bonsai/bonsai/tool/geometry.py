@@ -2429,6 +2429,28 @@ class Geometry(bonsai.core.tool.Geometry):
         tool.Feature.get_boolean_props().is_editing = False
 
     @classmethod
+    def get_face_surface_axes(
+        cls, element: Union[ifcopenshell.entity_instance, None], context: ifcopenshell.entity_instance
+    ) -> tuple[Union[npt.NDArray[np.float64], None], Union[npt.NDArray[np.float64], None]]:
+        """The normal and local x of the face surface an element has in a context
+
+        A structural surface item's plane gives its local axes, which a new
+        face replacing it keeps.
+
+        :return: normal and local x, or None and None if it has no face surface
+        """
+        if element is None:
+            return None, None
+        representation = ifcopenshell.util.representation.get_representation(element, context)
+        if representation is None:
+            return None, None
+        for item in representation.Items:
+            if item.is_a("IfcFaceSurface") and item.FaceSurface.is_a("IfcPlane"):
+                matrix = ifcopenshell.util.placement.get_placement(item.FaceSurface.Position)
+                return matrix[:3, 2], matrix[:3, 0]
+        return None, None
+
+    @classmethod
     def edit_meshlike_item(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         """
         :return: New IfcRepresentationItem or ``None`` if mesh hasn't changed.
@@ -2460,9 +2482,15 @@ class Geometry(bonsai.core.tool.Geometry):
         elif item.is_a("IfcEdge"):
             new_item = builder.edge(start=verts[0], end=verts[1])
         elif item.is_a("IfcFaceSurface"):
-            new_item = builder.face_surface([verts[i] for i in faces[0]])
+            # The mesh of a face is triangulated: the face is the union of its polygons
+            outer, inners = builder.get_mesh_boundaries(verts, faces)
+            matrix = ifcopenshell.util.placement.get_placement(item.FaceSurface.Position)
+            new_item = builder.face_surface(
+                verts[outer], [verts[i] for i in inners], normal=matrix[:3, 2], x_axis=matrix[:3, 0]
+            )
         elif item.is_a("IfcFace"):
-            new_item = builder.face([verts[i] for i in faces[0]])
+            outer, inners = builder.get_mesh_boundaries(verts, faces)
+            new_item = builder.face(verts[outer], [verts[i] for i in inners])
         else:
             new_item = builder.mesh(verts, faces)
         for inverse in tool.Ifc.get().get_inverse(item):
