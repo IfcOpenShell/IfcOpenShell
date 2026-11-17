@@ -29,9 +29,16 @@ class QWidget;
 
 namespace bonsaiviewer::components::buttons {
 
+// Ribbon tool button: icon over text, accent-tinted SVG icon. The optional
+// sizes make a compact variant possible (the "Display" tab packs many
+// buttons on one line); the defaults keep the original look for every
+// existing call site.
 QToolButton* makeButton(const QString& text,
                         const QString& icon_path,
-                        QWidget* parent);
+                        QWidget* parent,
+                        int icon_size = 20,
+                        int min_width = 90,
+                        int min_height = 68);
 
 QWidget* makeButtonGroup(const QString& title,
                          const QList<QToolButton*>& buttons,
