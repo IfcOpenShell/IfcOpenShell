@@ -656,8 +656,11 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
             representation_data["profile_set_usage"] = tool.Geometry.get_profile_set_usage(product)
             representation_data["text_literal"] = tool.Geometry.get_text_literal(old_representation)
 
-        # TODO: replace with core.add_representation?
-        new_representation = ifcopenshell.api.geometry.add_representation(self.file, **representation_data)
+        if tool.Geometry.is_structural_face_mesh(obj, context_of_items):
+            new_representation = tool.Geometry.add_structural_face_representation(obj, context_of_items)
+        else:
+            # TODO: replace with core.add_representation?
+            new_representation = ifcopenshell.api.geometry.add_representation(self.file, **representation_data)
         if new_representation is None:
             self.report({"ERROR"}, "Error creating representation for Blender object.")
             return {"CANCELLED"}
