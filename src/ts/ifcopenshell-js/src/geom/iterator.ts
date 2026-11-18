@@ -28,9 +28,7 @@ export interface IteratorLogEntry {
 }
 
 /** Synchronous native iterator. Load schema, mapping and kernel plugins before construction. */
-export class Iterator extends (IfcOpenshellGeomIterator as unknown as new (
-  source: IfcOpenshellGeomIterator
-) => Omit<IfcOpenshellGeomIterator, 'getLog'>) {
+export class Iterator extends IfcOpenshellGeomIterator {
   private readonly sourceFile: File;
 
   constructor(
@@ -55,8 +53,7 @@ export class Iterator extends (IfcOpenshellGeomIterator as unknown as new (
   }
 
   /** Returns this iterator's accumulated messages without clearing them. */
-  getLog(): IteratorLogEntry[] {
-    const log = IfcOpenshellGeomIterator.prototype.getLog.call(this);
-    return log.split('\n').filter(line => line.trim()).map(line => JSON.parse(line) as IteratorLogEntry);
+  getLogEntries(): IteratorLogEntry[] {
+    return this.getLog().split('\n').filter(line => line.trim()).map(line => JSON.parse(line) as IteratorLogEntry);
   }
 }

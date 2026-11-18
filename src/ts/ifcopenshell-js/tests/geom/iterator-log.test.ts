@@ -42,7 +42,7 @@ DATA;
 ENDSEC;
 END-ISO-10303-21;`;
 
-describeOrSkip('Iterator.getLog', () => {
+describeOrSkip('Iterator.getLogEntries', () => {
   it('reports why the manifold kernel skipped an element', async () => {
     const runtime = await ifcopenshell.init();
     await runtime.loadPlugin('schema', 'ifc4');
@@ -52,7 +52,7 @@ describeOrSkip('Iterator.getLog', () => {
     using iterator = new geom.Iterator(new geom.Settings(), model, { geometryLibrary: 'manifold' });
     expect(iterator.initialize()).toBe(true);
     while (iterator.next());
-    const entries: geom.IteratorLogEntry[] = iterator.getLog();
+    const entries: geom.IteratorLogEntry[] = iterator.getLogEntries();
     expect(entries).toEqual(expect.arrayContaining([
       expect.objectContaining({
         level: 'warning',
@@ -61,7 +61,7 @@ describeOrSkip('Iterator.getLog', () => {
         product: expect.stringContaining("'Degenerate'"),
       }),
     ]));
-    expect(iterator.getLog()).toEqual(entries);
+    expect(iterator.getLogEntries()).toEqual(entries);
   });
 
   it.each([undefined, [14, 19, 23, 27], ['IfcBuildingElementProxy']])(
@@ -93,8 +93,8 @@ describeOrSkip('Iterator.getLog', () => {
       }
       expect(firstIds.sort((a, b) => a - b)).toEqual([19, 27]);
       expect(secondIds.sort((a, b) => a - b)).toEqual([19, 27]);
-      const firstEntries = first.getLog();
-      const secondEntries = second.getLog();
+      const firstEntries = first.getLogEntries();
+      const secondEntries = second.getLogEntries();
       for (const [entries, ownName, otherName] of [
         [firstEntries, 'First "job"', 'Second job'],
         [secondEntries, 'Second job', 'First "job"'],
@@ -105,8 +105,8 @@ describeOrSkip('Iterator.getLog', () => {
         expect(entries.every(entry => !entry.product?.includes(otherName))).toBe(true);
       }
       runtime.raw.parse.getLog();
-      expect(first.getLog()).toEqual(firstEntries);
-      expect(second.getLog()).toEqual(secondEntries);
+      expect(first.getLogEntries()).toEqual(firstEntries);
+      expect(second.getLogEntries()).toEqual(secondEntries);
     },
   );
 });
