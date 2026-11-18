@@ -636,6 +636,12 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_selection_outline_c(int on) {
 extern "C" EMSCRIPTEN_KEEPALIVE int  ifcv_selection_outline_is_on_c() {
     return (g_app && g_app->ready && g_app->core.selectionOutlineEnabled()) ? 1 : 0;
 }
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_backface_culling_c(int on) {
+    if (g_app && g_app->ready) g_app->core.setBackfaceCulling(on != 0);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int  ifcv_backface_culling_is_on_c() {
+    return (g_app && g_app->ready && g_app->core.backfaceCulling()) ? 1 : 0;
+}
 
 // ===========================================================================
 // Scripting API (web/ifcviewer.js wraps these into the IfcViewer object)
