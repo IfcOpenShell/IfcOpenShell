@@ -15,8 +15,22 @@ export interface IteratorOptions {
   geometryLibrary?: string;
 }
 
+/** One JSON message emitted by the iterator's native logger. */
+export interface IteratorLogEntry {
+  level: 'Performance' | 'Debug' | 'notice' | 'warning' | 'error';
+  message: string;
+  time: string;
+  code?: string;
+  /** IFC STEP representation of the product being processed. */
+  product?: string;
+  /** IFC STEP representation of the instance associated with the message. */
+  instance?: string;
+}
+
 /** Synchronous native iterator. Load schema, mapping and kernel plugins before construction. */
-export class Iterator extends IfcOpenshellGeomIterator {
+export class Iterator extends (IfcOpenshellGeomIterator as unknown as new (
+  source: IfcOpenshellGeomIterator
+) => Omit<IfcOpenshellGeomIterator, 'getLog'>) {
   private readonly sourceFile: File;
 
   constructor(
@@ -40,11 +54,9 @@ export class Iterator extends IfcOpenshellGeomIterator {
     this.sourceFile = file;
   }
 
-  /**
-   * Returns and clears the runtime-wide log, which is where the geometry kernels report skipped elements.
-   * It is shared with `parse.getLog()` and every other iterator, so a second read returns only what was logged since.
-   */
-  override getLog(): string {
-    return ifcopenshell.parse.getLog();
+  /** Returns this iterator's accumulated messages without clearing them. */
+  getLog(): IteratorLogEntry[] {
+    const log = IfcOpenshellGeomIterator.prototype.getLog.call(this);
+    return log.split('\n').filter(line => line.trim()).map(line => JSON.parse(line) as IteratorLogEntry);
   }
 }

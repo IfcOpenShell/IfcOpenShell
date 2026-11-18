@@ -119,8 +119,7 @@ struct ifcopenshell_parse_instance_list_t {
 };
 
 struct ifcopenshell_geom_iterator_t {
-    ifcopenshell::geom::iterator* ptr;
-    bool owned;
+    std::shared_ptr<ifcopenshell::geom::iterator> ptr;
 };
 
 struct ifcopenshell_geom_settings_t {

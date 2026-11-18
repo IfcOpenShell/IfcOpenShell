@@ -48,7 +48,7 @@
  * C++ type, and destruction policy. Optional arguments select value or shared
  * pointer storage and define how an empty value is detected.
  */
-IFCAPI_HANDLE(iterator, ifcopenshell::geom::iterator, delete)
+IFCAPI_HANDLE(iterator, ifcopenshell::geom::iterator, shared_ptr, shared_ptr)
 IFCAPI_HANDLE(settings, ifcopenshell::geom::settings, delete)
 IFCAPI_HANDLE(geometry_serializer, ifcopenshell::geom::geometry_serializer, delete)
 IFCAPI_HANDLE(serializer, ifcopenshell::geom::serializer, delete)
@@ -419,19 +419,35 @@ private:
     std::shared_ptr<ifcopenshell::geom::geometry_serializer> serializer_;
 };
 
-inline std::unique_ptr<ifcopenshell::geom::iterator> create_iterator(
+namespace detail {
+
+inline std::shared_ptr<ifcopenshell::geom::iterator> make_iterator(
+    const std::string& geometry_library,
+    ifcopenshell::geom::settings& settings,
+    ifcopenshell::file* file,
+    const std::vector<ifcopenshell::geom::filter_function>& filters,
+    int num_threads) {
+    auto logger = std::make_shared<ifcopenshell::logger>();
+    logger->set_output(static_cast<std::ostream*>(nullptr), static_cast<std::ostream*>(nullptr));
+    logger->output_format(ifcopenshell::logger::FMT_JSON);
+    auto kernel = ifcopenshell::geom::kernels::construct(file, geometry_library, settings, *logger);
+    return std::shared_ptr<ifcopenshell::geom::iterator>(
+        new ifcopenshell::geom::iterator(std::move(kernel), settings, file, filters, num_threads, *logger),
+        [logger](ifcopenshell::geom::iterator* iterator) { delete iterator; });
+}
+
+}
+
+inline std::shared_ptr<ifcopenshell::geom::iterator> create_iterator(
     const std::string& geometry_library_cpp,
     ifcopenshell::geom::settings* settings_cpp,
     ifcopenshell::file* file_cpp,
     int num_threads
 ) {
-    auto* settings_ptr = settings_cpp;
-    auto kernel = ifcopenshell::geom::kernels::construct(file_cpp, geometry_library_cpp, *settings_ptr);
-    return std::make_unique<ifcopenshell::geom::iterator>(
-        std::move(kernel), *settings_ptr, file_cpp, num_threads);
+    return detail::make_iterator(geometry_library_cpp, *settings_cpp, file_cpp, {}, num_threads);
 }
 
-inline std::unique_ptr<ifcopenshell::geom::iterator> create_iterator_with_include_exclude(
+inline std::shared_ptr<ifcopenshell::geom::iterator> create_iterator_with_include_exclude(
     const std::string& geometry_library_cpp,
     ifcopenshell::geom::settings* settings_cpp,
     ifcopenshell::file* file_cpp,
@@ -439,16 +455,14 @@ inline std::unique_ptr<ifcopenshell::geom::iterator> create_iterator_with_includ
     bool include,
     int num_threads
 ) {
-    auto* settings_ptr = settings_cpp;
-    auto kernel = ifcopenshell::geom::kernels::construct(file_cpp, geometry_library_cpp, *settings_ptr);
     std::set<std::string> elems_set(elems_cpp.begin(), elems_cpp.end());
     ifcopenshell::geom::entity_filter ef{include, false, elems_set};
-    return std::make_unique<ifcopenshell::geom::iterator>(
-        std::move(kernel), *settings_ptr, file_cpp,
+    return detail::make_iterator(
+        geometry_library_cpp, *settings_cpp, file_cpp,
         std::vector<ifcopenshell::geom::filter_function>{ef}, num_threads);
 }
 
-inline std::unique_ptr<ifcopenshell::geom::iterator> create_iterator_with_include_exclude_globalid(
+inline std::shared_ptr<ifcopenshell::geom::iterator> create_iterator_with_include_exclude_globalid(
     const std::string& geometry_library_cpp,
     ifcopenshell::geom::settings* settings_cpp,
     ifcopenshell::file* file_cpp,
@@ -456,19 +470,17 @@ inline std::unique_ptr<ifcopenshell::geom::iterator> create_iterator_with_includ
     bool include,
     int num_threads
 ) {
-    auto* settings_ptr = settings_cpp;
-    auto kernel = ifcopenshell::geom::kernels::construct(file_cpp, geometry_library_cpp, *settings_ptr);
     std::set<std::string> elems_set(elems_cpp.begin(), elems_cpp.end());
     ifcopenshell::geom::attribute_filter af;
     af.attribute_name = "GlobalId";
     af.populate(elems_set);
     af.include = include;
-    return std::make_unique<ifcopenshell::geom::iterator>(
-        std::move(kernel), *settings_ptr, file_cpp,
+    return detail::make_iterator(
+        geometry_library_cpp, *settings_cpp, file_cpp,
         std::vector<ifcopenshell::geom::filter_function>{af}, num_threads);
 }
 
-inline std::unique_ptr<ifcopenshell::geom::iterator> create_iterator_with_include_exclude_id(
+inline std::shared_ptr<ifcopenshell::geom::iterator> create_iterator_with_include_exclude_id(
     const std::string& geometry_library_cpp,
     ifcopenshell::geom::settings* settings_cpp,
     ifcopenshell::file* file_cpp,
@@ -476,12 +488,10 @@ inline std::unique_ptr<ifcopenshell::geom::iterator> create_iterator_with_includ
     bool include,
     int num_threads
 ) {
-    auto* settings_ptr = settings_cpp;
-    auto kernel = ifcopenshell::geom::kernels::construct(file_cpp, geometry_library_cpp, *settings_ptr);
     std::set<int> elems_set(elems_cpp.begin(), elems_cpp.end());
     ifcopenshell::geom::instance_id_filter af(include, false, elems_set);
-    return std::make_unique<ifcopenshell::geom::iterator>(
-        std::move(kernel), *settings_ptr, file_cpp,
+    return detail::make_iterator(
+        geometry_library_cpp, *settings_cpp, file_cpp,
         std::vector<ifcopenshell::geom::filter_function>{af}, num_threads);
 }
 

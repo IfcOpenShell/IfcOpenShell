@@ -26,6 +26,19 @@ DATA;
 #12=IFCPRODUCTDEFINITIONSHAPE($,$,(#11));
 #13=IFCLOCALPLACEMENT($,#2);
 #14=IFCBUILDINGELEMENTPROXY('0YvctVUKr0kugbFTf53O9L',$,'Degenerate',$,$,#13,#12,$,.NOTDEFINED.);
+#15=IFCRECTANGLEPROFILEDEF(.AREA.,$,$,1.,1.);
+#16=IFCEXTRUDEDAREASOLID(#15,#2,#8,1.);
+#17=IFCSHAPEREPRESENTATION(#10,'Body','SweptSolid',(#16));
+#18=IFCPRODUCTDEFINITIONSHAPE($,$,(#17));
+#19=IFCBUILDINGELEMENTPROXY('0YvctVUKr0kugbFTf53O9M',$,'Valid',$,$,#13,#18,$,.NOTDEFINED.);
+#20=IFCEXTRUDEDAREASOLID(#7,#2,#8,2.);
+#21=IFCSHAPEREPRESENTATION(#10,'Body','SweptSolid',(#20));
+#22=IFCPRODUCTDEFINITIONSHAPE($,$,(#21));
+#23=IFCBUILDINGELEMENTPROXY('0YvctVUKr0kugbFTf53O9N',$,'Degenerate',$,$,#13,#22,$,.NOTDEFINED.);
+#24=IFCEXTRUDEDAREASOLID(#15,#2,#8,2.);
+#25=IFCSHAPEREPRESENTATION(#10,'Body','SweptSolid',(#24));
+#26=IFCPRODUCTDEFINITIONSHAPE($,$,(#25));
+#27=IFCBUILDINGELEMENTPROXY('0YvctVUKr0kugbFTf53O9O',$,'Valid',$,$,#13,#26,$,.NOTDEFINED.);
 ENDSEC;
 END-ISO-10303-21;`;
 
@@ -37,8 +50,63 @@ describeOrSkip('Iterator.getLog', () => {
     await runtime.loadPlugin('kernel', 'manifold');
     using model = ifcopenshell.open(new TextEncoder().encode(source));
     using iterator = new geom.Iterator(new geom.Settings(), model, { geometryLibrary: 'manifold' });
-    if (iterator.initialize()) while (iterator.next());
-    expect(iterator.getLog()).toContain('Manifold kernel: failed to convert extrusion');
-    expect(iterator.getLog()).toBe('');
+    expect(iterator.initialize()).toBe(true);
+    while (iterator.next());
+    const entries: geom.IteratorLogEntry[] = iterator.getLog();
+    expect(entries).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        level: 'warning',
+        message: expect.stringContaining('Manifold kernel: failed to convert extrusion'),
+        time: expect.any(String),
+        product: expect.stringContaining("'Degenerate'"),
+      }),
+    ]));
+    expect(iterator.getLog()).toEqual(entries);
   });
+
+  it.each([undefined, [14, 19, 23, 27], ['IfcBuildingElementProxy']])(
+    'keeps interleaved iterators isolated with include %j',
+    async (include) => {
+      const runtime = await ifcopenshell.init();
+      await runtime.loadPlugin('schema', 'ifc4');
+      await runtime.loadPlugin('mapping', 'ifc4');
+      await runtime.loadPlugin('kernel', 'manifold');
+      using firstModel = ifcopenshell.open(new TextEncoder().encode(source.replaceAll('Degenerate', 'First "job"')));
+      using secondModel = ifcopenshell.open(new TextEncoder().encode(source.replaceAll('Degenerate', 'Second job')));
+      using first = new geom.Iterator(new geom.Settings(), firstModel, { geometryLibrary: 'manifold', include });
+      using second = new geom.Iterator(new geom.Settings(), secondModel, { geometryLibrary: 'manifold', include });
+      expect(first.initialize()).toBe(true);
+      expect(second.initialize()).toBe(true);
+      const firstIds = [first.get()!.id()];
+      const secondIds = [second.get()!.id()];
+      let firstActive = true;
+      let secondActive = true;
+      while (firstActive || secondActive) {
+        if (firstActive) {
+          firstActive = first.next();
+          if (firstActive) firstIds.push(first.get()!.id());
+        }
+        if (secondActive) {
+          secondActive = second.next();
+          if (secondActive) secondIds.push(second.get()!.id());
+        }
+      }
+      expect(firstIds.sort((a, b) => a - b)).toEqual([19, 27]);
+      expect(secondIds.sort((a, b) => a - b)).toEqual([19, 27]);
+      const firstEntries = first.getLog();
+      const secondEntries = second.getLog();
+      for (const [entries, ownName, otherName] of [
+        [firstEntries, 'First "job"', 'Second job'],
+        [secondEntries, 'Second job', 'First "job"'],
+      ] as const) {
+        const warnings = entries.filter(entry => entry.message.includes('Manifold kernel: failed to convert extrusion'));
+        expect(warnings).toHaveLength(2);
+        expect(warnings.every(entry => entry.product?.includes(ownName))).toBe(true);
+        expect(entries.every(entry => !entry.product?.includes(otherName))).toBe(true);
+      }
+      runtime.raw.parse.getLog();
+      expect(first.getLog()).toEqual(firstEntries);
+      expect(second.getLog()).toEqual(secondEntries);
+    },
+  );
 });
