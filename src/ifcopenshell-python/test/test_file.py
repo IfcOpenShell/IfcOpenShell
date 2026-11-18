@@ -87,6 +87,40 @@ class TestTransaction(test.bootstrap.IFC4):
         self.file.redo()
         assert rel.RelatingObject is None
 
+    def test_that_you_can_undo_and_redo_batched_deletion_of_an_aggregate_and_its_members(self):
+        elements = [self.file.createIfcWall(GlobalId=str(i)) for i in range(3)]
+        rel = self.file.createIfcRelAggregates(RelatedObjects=elements)
+        ids = [element.id() for element in elements]
+        rel_id = rel.id()
+        self.file.begin_transaction()
+        self.file.batch()
+        for element in elements + [rel]:
+            self.file.remove(element)
+        self.file.unbatch()
+        self.file.end_transaction()
+        assert len(list(self.file)) == 0
+        self.file.undo()
+        assert [element.id() for element in self.file.by_id(rel_id).RelatedObjects] == ids
+        self.file.redo()
+        assert len(list(self.file)) == 0
+
+    def test_that_a_batched_deletion_restores_every_attribute_of_a_shared_inverse(self):
+        wall = self.file.createIfcWall(GlobalId="wall")
+        pset = self.file.createIfcPropertySet(GlobalId="pset")
+        rel = self.file.createIfcRelDefinesByProperties(RelatedObjects=[wall], RelatingPropertyDefinition=pset)
+        wall_id, pset_id = wall.id(), pset.id()
+        self.file.begin_transaction()
+        self.file.batch()
+        self.file.remove(wall)
+        self.file.remove(pset)
+        self.file.unbatch()
+        self.file.end_transaction()
+        assert rel.RelatedObjects == ()
+        assert rel.RelatingPropertyDefinition is None
+        self.file.undo()
+        assert rel.RelatedObjects == (self.file.by_id(wall_id),)
+        assert rel.RelatingPropertyDefinition == self.file.by_id(pset_id)
+
     def test_that_you_can_undo_and_redo_deletion_with_aggregated_inverse_relationships(self):
         element = self.file.createIfcWall(GlobalId="id")
         rel = self.file.createIfcRelAggregates()
