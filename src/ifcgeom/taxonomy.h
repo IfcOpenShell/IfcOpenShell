@@ -285,6 +285,7 @@ typedef item const* ptr;
 			private:
 				static Eigen::Vector3d stable_normalized(const Eigen::Vector3d& v) {
 					// Preserve the original computation when numerically safe.
+					const double squared_norm = v.squaredNorm();
 					if (std::isnormal(squared_norm)) {
 						return v / std::sqrt(squared_norm);
 					}
