@@ -284,6 +284,11 @@ typedef item const* ptr;
 			struct IFC_GEOM_API matrix4 : public item, public eigen_base<Eigen::Matrix4d> {
 			private:
 				static Eigen::Vector3d stable_normalized(const Eigen::Vector3d& v) {
+					// Preserve the original computation when numerically safe.
+					if (std::isnormal(squared_norm)) {
+						return v / std::sqrt(squared_norm);
+					}
+
 					const double scale = v.cwiseAbs().maxCoeff();
 					if (scale == 0.0) {
 						return v;
