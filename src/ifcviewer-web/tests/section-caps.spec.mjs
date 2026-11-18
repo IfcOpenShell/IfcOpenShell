@@ -48,10 +48,15 @@ test('section cuts are capped, and the caps can be turned off and restyled', asy
   await settle(page);
   expect(Buffer.compare(capped, await shot(page)), 'the caps did not come back').toBe(0);
 
+  await page.evaluate(() => window.viewer.setSectionCapStyle({ outlineWidth: 0 }));
+  await settle(page);
+  const unoutlined = await shot(page);
+  expect(Buffer.compare(capped, unoutlined), 'removing the cut outline changed nothing').not.toBe(0);
+
   await page.evaluate(() => window.viewer.setSectionCapStyle({ hatch: 'none' }));
   await settle(page);
   const unhatched = await shot(page);
-  expect(Buffer.compare(capped, unhatched), 'removing the hatch changed nothing').not.toBe(0);
+  expect(Buffer.compare(unoutlined, unhatched), 'removing the hatch changed nothing').not.toBe(0);
   expect(Buffer.compare(hollow, unhatched), 'an unhatched cap should still be filled').not.toBe(0);
 
   // X-ray is for seeing through, so it draws no caps whatever the setting.

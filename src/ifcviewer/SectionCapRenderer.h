@@ -42,6 +42,11 @@ struct SectionCapStyle {
     float hatch_color[4] = {0.0f, 0.0f, 0.0f, 0.55f};
     // Blended over the cut object's own colour; alpha 0 keeps that colour.
     float fill_color[4]  = {0.0f, 0.0f, 0.0f, 0.0f};
+    // The bold line along the cut edge, drawn just inside the cap. Width 0
+    // draws none. Two cut objects that touch are told apart by colour alone,
+    // so same-coloured neighbours get no line between them.
+    float outline_width_px = 2.0f;
+    float outline_color[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 };
 
 // Caps section cuts: fills the cross-section where a section plane slices
