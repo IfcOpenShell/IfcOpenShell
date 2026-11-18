@@ -132,7 +132,7 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 	if (auto directrix = std::dynamic_pointer_cast<taxonomy::loop>(curve); directrix && has_tessellation_kinks(directrix)) {
 		try {
 			auto shell = scs->to_polyhedron(settings_);
-			logger_.notice("GEO", 259, "Sweeping a tessellated directrix as a polyhedron", scs->instance);
+			logger_.warning("GEO", 259, "Sweeping a tessellated directrix as a polyhedron", scs->instance);
 			return convert(shell, result);
 		} catch (const std::exception& e) {
 			logger_.notice("GEO", 260, std::string("Tessellated directrix not swept as a polyhedron: ") + e.what(), scs->instance);
