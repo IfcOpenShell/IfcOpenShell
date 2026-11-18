@@ -36,6 +36,8 @@
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
 
+#include "ViewportGridSpec.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -591,6 +593,30 @@ extern "C" EMSCRIPTEN_KEEPALIVE void clear_scene_c() {
     g_app->federation.clear();
 }
 
+// Load the embedded sample .ifcview (mounted into MEMFS via --embed-file in
+// CMakeLists.txt). It stays on the synchronous MEMFS read and bypasses the
+// source registry, so it has no source id.
+static bool loadEmbeddedSample(AppState* app) {
+    const std::uint32_t sample_id = app->core.loadIfcViewFromPath("/sample.ifcview");
+    if (!sample_id) {
+        Log::warn() << "ifcviewer-web: sample .ifcview load failed";
+        return false;
+    }
+    // Tell the federation directly, otherwise the first-model false-origin
+    // guess never runs for a page that only ever shows the sample.
+    app->federation.onModelLoadedWithoutSource(sample_id);
+    return true;
+}
+
+// Append the embedded sample again, for host pages that start empty
+// (clear_scene_c at boot) and offer it on demand.
+extern "C" EMSCRIPTEN_KEEPALIVE int load_sample_c() {
+    if (!g_app || !g_app->ready) return 0;
+    const bool ok = loadEmbeddedSample(g_app);
+    g_app->host.requestFrame();
+    return ok ? 1 : 0;
+}
+
 // Viewport-navigation entry points for the the host page (web/ifcviewer.js) toolbar (buttons that
 // mirror the keyboard hotkeys). Each schedules a frame.
 extern "C" EMSCRIPTEN_KEEPALIVE void view_all_c() {
@@ -628,6 +654,101 @@ extern "C" EMSCRIPTEN_KEEPALIVE void show_all_c()         { if (g_app && g_app->
 extern "C" EMSCRIPTEN_KEEPALIVE void hide_all_c()         { if (g_app && g_app->ready) g_app->core.hideAll(); }
 extern "C" EMSCRIPTEN_KEEPALIVE void toggle_xray_c()      { if (g_app && g_app->ready) g_app->core.toggleXray(); }
 extern "C" EMSCRIPTEN_KEEPALIVE int  xray_is_active_c()   { return (g_app && g_app->ready && g_app->core.xrayActive()) ? 1 : 0; }
+
+// Ground grid visibility, plus sparse RGB line grids (plane 0=XY, 1=XZ, 2=YZ).
+// Pass a negative colour component to keep the plane-default axis colour.
+extern "C" EMSCRIPTEN_KEEPALIVE void set_grid_visible_c(int visible) {
+    if (g_app && g_app->ready) g_app->core.setGridVisible(visible != 0);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int grid_is_visible_c() {
+    return (g_app && g_app->ready && g_app->core.gridVisible()) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void toggle_grid_c() {
+    if (g_app && g_app->ready) g_app->core.toggleGrid();
+}
+
+// World-space axes through the scene origin. `size` is metres either side
+// (bidirectional AxesHelper). Default 1000.
+extern "C" EMSCRIPTEN_KEEPALIVE void set_origin_axes_visible_c(int visible) {
+    if (g_app && g_app->ready) g_app->core.setOriginAxesVisible(visible != 0);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int origin_axes_visible_c() {
+    return (g_app && g_app->ready && g_app->core.originAxesVisible()) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void toggle_origin_axes_c() {
+    if (g_app && g_app->ready) g_app->core.toggleOriginAxes();
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void set_origin_axes_size_c(float size_metres) {
+    if (g_app && g_app->ready) g_app->core.setOriginAxesSize(size_metres);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE float origin_axes_size_c() {
+    return (g_app && g_app->ready) ? g_app->core.originAxesSize() : 1000.0f;
+}
+
+// Floor fade. near/far factors are multiples of the camera distance.
+// mode 1 = linear, 2 = exp2. Colour follows the background.
+extern "C" EMSCRIPTEN_KEEPALIVE void set_fog_c(int enabled, int mode,
+                                               float near_factor, float far_factor,
+                                               float density) {
+    if (g_app && g_app->ready) g_app->core.setFog(enabled != 0, mode, near_factor, far_factor, density);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void set_fog_enabled_c(int enabled) {
+    if (g_app && g_app->ready) g_app->core.setFogEnabled(enabled != 0);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int fog_is_enabled_c() {
+    return (g_app && g_app->ready && g_app->core.fogEnabled()) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void toggle_fog_c() {
+    if (g_app && g_app->ready) g_app->core.toggleFog();
+}
+// out: enabled, mode, nearFactor, farFactor, density
+extern "C" EMSCRIPTEN_KEEPALIVE void get_fog_c(float* out) {
+    if (!out) return;
+    if (!g_app || !g_app->ready) {
+        out[0] = 1.0f; out[1] = 1.0f; out[2] = 0.35f; out[3] = 2.2f; out[4] = 0.002f;
+        return;
+    }
+    out[0] = g_app->core.fogEnabled() ? 1.0f : 0.0f;
+    out[1] = float(g_app->core.fogMode());
+    out[2] = g_app->core.fogNearFactor();
+    out[3] = g_app->core.fogFarFactor();
+    out[4] = g_app->core.fogDensity();
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void grid_upsert_c(
+    const char* id_utf8,
+    double ox, double oy, double oz,
+    int plane,
+    float spacing, int divisions,
+    float color_u_r, float color_u_g, float color_u_b,
+    float color_v_r, float color_v_g, float color_v_b,
+    float opacity,
+    int visible) {
+    if (!g_app || !g_app->ready || !id_utf8 || !*id_utf8) return;
+
+    ViewportGridSpec spec;
+    spec.id        = id_utf8;
+    spec.origin    = Eigen::Vector3d(ox, oy, oz);
+    spec.plane     = static_cast<ViewportGridSpec::Plane>(std::clamp(plane, 0, 2));
+    spec.spacing   = spacing;
+    spec.divisions = divisions;
+    spec.opacity   = opacity < 0.0f ? 1.0f : std::clamp(opacity, 0.0f, 1.0f);
+    spec.visible   = visible != 0;
+
+    const bool custom_u = color_u_r >= 0.0f && color_u_g >= 0.0f && color_u_b >= 0.0f;
+    const bool custom_v = color_v_r >= 0.0f && color_v_g >= 0.0f && color_v_b >= 0.0f;
+    if (!custom_u || !custom_v) spec.applyDefaultAxisColors();
+    if (custom_u) spec.color_u = Eigen::Vector3f(color_u_r, color_u_g, color_u_b);
+    if (custom_v) spec.color_v = Eigen::Vector3f(color_v_r, color_v_g, color_v_b);
+
+    g_app->core.upsertViewportGrid(spec);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int grid_remove_c(const char* id_utf8) {
+    if (!g_app || !g_app->ready || !id_utf8 || !*id_utf8) return 0;
+    return g_app->core.removeViewportGrid(id_utf8) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void grid_clear_c() {
+    if (g_app && g_app->ready) g_app->core.clearViewportGrids();
+}
 extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_selection_outline_c(int on) {
     if (!g_app || !g_app->ready) return;
     g_app->core.setSelectionOutlineEnabled(on != 0);
@@ -658,6 +779,18 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_get_camera_c(float* out) {
     out[0] = s.target.x(); out[1] = s.target.y(); out[2] = s.target.z();
     out[3] = s.distance;   out[4] = s.yaw;        out[5] = s.pitch;
     out[6] = eye.x();      out[7] = eye.y();      out[8] = eye.z();
+}
+// CSS pixels of a world point on the canvas, y down. Returns 0 when the point
+// is behind the camera. World (0,0,0) is the axes intersection. The survey
+// point is the false origin in metres, so a host pins its readout there.
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_project_world_c(float x, float y, float z,
+                                                         float* out) {
+    if (!g_app || !g_app->ready || !out) return 0;
+    float css_x = 0.0f, css_y = 0.0f;
+    if (!g_app->core.projectWorldToCss(x, y, z, css_x, css_y)) return 0;
+    out[0] = css_x;
+    out[1] = css_y;
+    return 1;
 }
 extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_camera_c(float tx, float ty, float tz,
                                                        float dist, float yaw, float pitch) {
@@ -1031,19 +1164,10 @@ int main(int /*argc*/, char** /*argv*/) {
         g_app->core.buildPickPipeline();
         g_app->core.buildSelectionOutlinePipelines();
 
-        // Load the embedded sample .ifcview (mounted into MEMFS via
-        // --embed-file in CMakeLists.txt). The sample stays on the
-        // synchronous MEMFS read; user-picked files go through the
-        // Blob.slice byte-range path (load_ifcview_from_blob_c) so large
-        // .ifcview files never enter the wasm heap.
-        if (const std::uint32_t sample_id = g_app->core.loadIfcViewFromPath("/sample.ifcview")) {
-            // Bypasses the source registry, so tell the federation directly —
-            // otherwise the first-model false-origin guess never runs for a
-            // page that only ever shows the sample.
-            g_app->federation.onModelLoadedWithoutSource(sample_id);
-        } else {
-            Log::warn() << "ifcviewer-web: sample .ifcview load failed";
-        }
+        // User-picked files go through the Blob.slice byte-range path
+        // (load_ifcview_from_blob_c) so large .ifcview files never enter
+        // the wasm heap.
+        loadEmbeddedSample(g_app);
 
         g_app->ready = true;
 

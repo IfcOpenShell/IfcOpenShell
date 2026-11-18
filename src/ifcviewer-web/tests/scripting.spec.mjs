@@ -3,7 +3,8 @@ import { test, expect } from '@playwright/test';
 // The JavaScript scripting API (web/ifcviewer.js + the _ifcv_* wasm exports),
 // driven against the real GPU through /scripting.html — the demo page whose
 // buttons ARE the API. Everything runs against the embedded sample .ifcview
-// (a slab, a wall and a beam), so no fixture file is needed.
+// (a slab, a wall and a beam), loaded with the page's Load sample button, so
+// no fixture file is needed.
 //
 // Each assertion pins a capability a host page depends on: read/set camera,
 // read/set multi-selection, enumerate objects by GlobalId, per-object
@@ -26,6 +27,10 @@ async function open(page) {
   // never came up — a real failure, not a flake.
   await page.waitForFunction(() => !!(window.viewer && window.viewer.isLive()), null,
     { timeout: 30_000 });
+  // The page starts empty; the sample comes in through its button.
+  await page.waitForFunction(() => document.getElementById('sample-btn').onclick, null,
+    { timeout: 30_000 });
+  await page.click('#sample-btn');
   // The object table fills once the (async) element-metadata fetch lands.
   await page.waitForFunction(
     () => document.querySelectorAll('#object-table tr[data-id]').length > 0,
@@ -213,7 +218,10 @@ test('overrides object colour, and clears back to the baked colour', async ({ pa
 test('the demo page buttons drive the same API', async ({ page }) => {
   const errors = await open(page);
 
+  const tab = (name) => page.getByRole('tab', { name }).click();
+
   // Select walls → the readout and the table highlight both follow.
+  await tab('Selection');
   await page.click('#sel-walls');
   await expect(page.locator('#selection-readout')).toContainText('IfcWall');
   await expect(page.locator('#object-table tr.selected')).toHaveCount(1);
@@ -223,6 +231,7 @@ test('the demo page buttons drive the same API', async ({ page }) => {
   expect(await page.evaluate(() => window.viewer.getSelection().length)).toBe(2);
 
   // Hide the selection through the button, then show all again.
+  await tab('Visibility');
   await page.click('#vis-hide-sel');
   await expect(page.locator('#vis-hint')).toContainText('2 object(s) hidden');
   await page.click('#vis-show-all');
@@ -238,6 +247,7 @@ test('the demo page buttons drive the same API', async ({ page }) => {
   expect(Buffer.compare(before, await shot(page))).toBe(0);
 
   // Camera buttons move the camera and the readout tracks it.
+  await tab('Camera');
   await page.click('#cam-top');
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => window.viewer.getCamera().pitch)).toBeCloseTo(90, 0);

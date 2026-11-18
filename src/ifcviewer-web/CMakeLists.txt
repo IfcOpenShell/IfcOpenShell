@@ -115,7 +115,7 @@ target_link_options(IfcViewerWeb PRIVATE
     # EMSCRIPTEN_KEEPALIVE alone keeps the symbols in the binary but doesn't
     # add them to Module. ccall lets the host page (web/ifcviewer.js) pass a JS string (the ?model
     # URL) to load_ifcview_from_url_c without manual heap marshalling.
-    "-sEXPORTED_FUNCTIONS=['_main','_malloc','_free','_raf_tick_c','_load_ifcview_from_source_c','_clear_scene_c','_ifcv_on_range_done','_ifcv_chunks_resident_c','_ifcv_chunks_total_c','_ifcv_model_count_c','_ifcv_model_resident_c','_ifcv_model_total_c','_ifcv_bytes_total_c','_ifcv_bytes_needed_c','_ifcv_bytes_loaded_c','_view_all_c','_frame_selection_c','_toggle_projection_c','_projection_is_ortho_c','_standard_view_c','_toggle_fly_c','_fly_is_active_c','_hide_selected_c','_isolate_selected_c','_show_all_c','_hide_all_c','_toggle_xray_c','_xray_is_active_c','_toggle_section_c','_clear_section_c','_section_is_active_c','_ifcv_get_camera_c','_ifcv_set_camera_c','_ifcv_set_ortho_c','_ifcv_set_nav_preset_c','_ifcv_set_background_c','_ifcv_get_selection_c','_ifcv_get_active_object_c','_ifcv_apply_selection_c','_ifcv_set_visible_c','_ifcv_get_hidden_c','_ifcv_set_color_c','_ifcv_clear_colors_c','_ifcv_request_objects_c','_ifcv_set_selection_outline_c','_ifcv_selection_outline_is_on_c','_ifcv_set_federation_unit_c','_ifcv_set_false_origin_c','_ifcv_get_false_origin_c','_ifcv_set_model_transform_c','_ifcv_clear_model_transform_c','_ifcv_set_model_name_c','_ifcv_get_model_georef_c','_ifcv_get_frame_stats_c','_ifcv_unload_model_c','_ifcv_load_model_c','_ifcv_model_unloaded_c','_ifcv_model_vram_bytes_c']"
+    "-sEXPORTED_FUNCTIONS=['_main','_malloc','_free','_raf_tick_c','_load_ifcview_from_source_c','_clear_scene_c','_load_sample_c','_ifcv_on_range_done','_ifcv_chunks_resident_c','_ifcv_chunks_total_c','_ifcv_model_count_c','_ifcv_model_resident_c','_ifcv_model_total_c','_ifcv_bytes_total_c','_ifcv_bytes_needed_c','_ifcv_bytes_loaded_c','_view_all_c','_frame_selection_c','_toggle_projection_c','_projection_is_ortho_c','_standard_view_c','_toggle_fly_c','_fly_is_active_c','_hide_selected_c','_isolate_selected_c','_show_all_c','_hide_all_c','_toggle_xray_c','_xray_is_active_c','_toggle_section_c','_clear_section_c','_section_is_active_c','_ifcv_get_camera_c','_ifcv_set_camera_c','_ifcv_set_ortho_c','_ifcv_set_nav_preset_c','_ifcv_set_background_c','_ifcv_get_selection_c','_ifcv_get_active_object_c','_ifcv_apply_selection_c','_ifcv_set_visible_c','_ifcv_get_hidden_c','_ifcv_set_color_c','_ifcv_clear_colors_c','_ifcv_request_objects_c','_ifcv_set_selection_outline_c','_ifcv_selection_outline_is_on_c','_ifcv_set_federation_unit_c','_ifcv_set_false_origin_c','_ifcv_get_false_origin_c','_ifcv_project_world_c','_set_grid_visible_c','_grid_is_visible_c','_toggle_grid_c','_grid_upsert_c','_grid_remove_c','_grid_clear_c','_set_origin_axes_visible_c','_origin_axes_visible_c','_toggle_origin_axes_c','_set_origin_axes_size_c','_origin_axes_size_c','_set_fog_c','_set_fog_enabled_c','_fog_is_enabled_c','_toggle_fog_c','_get_fog_c','_ifcv_set_model_transform_c','_ifcv_clear_model_transform_c','_ifcv_set_model_name_c','_ifcv_get_model_georef_c','_ifcv_get_frame_stats_c','_ifcv_unload_model_c','_ifcv_load_model_c','_ifcv_model_unloaded_c','_ifcv_model_vram_bytes_c']"
     # ccall: the host page (web/ifcviewer.js) passes the ?model URL string to load_ifcview_from_url_c,
     # and the nav-preset name to ifcv_set_nav_preset_c.
     # HEAPU8: lets tooling/tests read the wasm heap size (e.g. to verify a large
@@ -187,3 +187,88 @@ foreach(static_src IN LISTS IFCVIEWERWEB_STATIC)
     list(APPEND IFCVIEWERWEB_STATIC_OUT "${static_dst}")
 endforeach()
 add_custom_target(IfcViewerWebStatic ALL DEPENDS ${IFCVIEWERWEB_STATIC_OUT})
+
+# Publish the linked module (and the JS helper) wherever the pages and the
+# bonsaiweb app actually load them. build-web/ stays the compile output;
+# these copies are what `web/` and the vendor tree serve.
+#
+#   src/ifcviewer-web/web/          example pages (IfcViewerWeb.js + .wasm)
+#   IfcOpenShell-bonsaiweb/.../vendor/@ifcopenshell/viewer
+#                                   IfcViewerWeb.js, IfcViewerWeb.wasm, ifcviewer.js
+#
+# The vendor path assumes the bonsaiweb checkout is a sibling of this repo
+# (.../AECGeeks/IfcOpenShell and .../AECGeeks/IfcOpenShell-bonsaiweb). Override
+# it, or set it empty to skip that copy. The directory is checked at build
+# time so a missing checkout does not fail the wasm link.
+set(IFCVIEWERWEB_BONSAIWEB_VENDOR_DIR
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../IfcOpenShell-bonsaiweb/src/bonsaiweb/vendor/@ifcopenshell/viewer"
+    CACHE PATH
+    "Copy IfcViewerWeb.js, IfcViewerWeb.wasm, and ifcviewer.js here after each build. Empty skips the copy.")
+
+set(IFCVIEWERWEB_PUBLISH_MODULE_JS "${CMAKE_CURRENT_BINARY_DIR}/IfcViewerWeb.js")
+set(IFCVIEWERWEB_PUBLISH_MODULE_WASM "${CMAKE_CURRENT_BINARY_DIR}/IfcViewerWeb.wasm")
+set(IFCVIEWERWEB_PUBLISH_HELPER "${CMAKE_CURRENT_SOURCE_DIR}/web/ifcviewer.js")
+
+set(IFCVIEWERWEB_PUBLISH_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/publish-ifcviewer.cmake")
+file(CONFIGURE OUTPUT "${IFCVIEWERWEB_PUBLISH_SCRIPT}" CONTENT [=[
+if(NOT DEFINED DEST OR DEST STREQUAL "")
+    message(FATAL_ERROR "publish-ifcviewer.cmake: DEST is required")
+endif()
+if(NOT EXISTS "${DEST}")
+    message(STATUS "Skipping IfcViewerWeb publish; directory does not exist: ${DEST}")
+    return()
+endif()
+
+# Empty src skips that file (the example-page folder already owns ifcviewer.js).
+function(publish_one src name)
+    if(src STREQUAL "")
+        return()
+    endif()
+    if(NOT EXISTS "${src}")
+        message(FATAL_ERROR "publish-ifcviewer.cmake: missing ${src}")
+    endif()
+    execute_process(
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${src}" "${DEST}/${name}"
+        COMMAND_ERROR_IS_FATAL ANY)
+endfunction()
+
+publish_one("${JS}" "IfcViewerWeb.js")
+publish_one("${WASM}" "IfcViewerWeb.wasm")
+publish_one("${HELPER}" "ifcviewer.js")
+]=] @ONLY)
+
+set(IFCVIEWERWEB_PUBLISH_OUT)
+foreach(publish_dest IN ITEMS
+        "${CMAKE_CURRENT_SOURCE_DIR}/web"
+        "${IFCVIEWERWEB_BONSAIWEB_VENDOR_DIR}")
+    if(publish_dest STREQUAL "")
+        continue()
+    endif()
+    cmake_path(ABSOLUTE_PATH publish_dest NORMALIZE)
+    # web/ already contains the helper; only the linked module is published there.
+    # The vendor tree needs the helper as well (bonsaiweb imports that copy).
+    if(publish_dest STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}/web")
+        set(publish_helper "")
+        set(publish_stamp "${CMAKE_CURRENT_BINARY_DIR}/publish-web.stamp")
+    else()
+        set(publish_helper "${IFCVIEWERWEB_PUBLISH_HELPER}")
+        set(publish_stamp "${CMAKE_CURRENT_BINARY_DIR}/publish-bonsaiweb.stamp")
+    endif()
+    add_custom_command(
+        OUTPUT "${publish_stamp}"
+        COMMAND ${CMAKE_COMMAND}
+            -DDEST=${publish_dest}
+            -DJS=${IFCVIEWERWEB_PUBLISH_MODULE_JS}
+            -DWASM=${IFCVIEWERWEB_PUBLISH_MODULE_WASM}
+            -DHELPER=${publish_helper}
+            -P "${IFCVIEWERWEB_PUBLISH_SCRIPT}"
+        COMMAND ${CMAKE_COMMAND} -E touch "${publish_stamp}"
+        DEPENDS
+            IfcViewerWeb
+            "${IFCVIEWERWEB_PUBLISH_HELPER}"
+            "${IFCVIEWERWEB_PUBLISH_SCRIPT}"
+        COMMENT "Publishing IfcViewerWeb to ${publish_dest}"
+        VERBATIM)
+    list(APPEND IFCVIEWERWEB_PUBLISH_OUT "${publish_stamp}")
+endforeach()
+add_custom_target(IfcViewerWebPublish ALL DEPENDS ${IFCVIEWERWEB_PUBLISH_OUT})

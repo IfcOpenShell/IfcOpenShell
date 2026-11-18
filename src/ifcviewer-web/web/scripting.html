@@ -5,19 +5,42 @@
 <title>IfcViewer (web) — JavaScript API</title>
 <style>
   :root { color-scheme: dark; }
-  html, body { margin: 0; min-height: 100%; background: #0f1117; color: #c8ccd6;
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0f1117; color: #c8ccd6;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  header { padding: 12px 16px; border-bottom: 1px solid #232833; }
+  body { display: flex; flex-direction: column; }
+  header { flex: 0 0 auto; padding: 12px 16px; border-bottom: 1px solid #232833; }
   header h1 { margin: 0; font-size: 15px; font-weight: 600; }
   header p  { margin: 4px 0 0; font-size: 12px; color: #8a93a6; }
   header a  { color: #7f9bd6; }
-  .layout { display: flex; gap: 16px; padding: 16px; align-items: flex-start; flex-wrap: wrap; }
-  #viewer-box { position: relative; width: 640px; height: 460px; max-width: 100%;
+  .layout { flex: 1 1 auto; min-height: 0; display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .viewer-pane { display: flex; flex-direction: column; min-height: 0; padding: 16px;
+    border-right: 1px solid #232833; }
+  #viewer-box { position: relative; flex: 1 1 auto; min-height: 0;
     border: 1px solid #232833; border-radius: 6px; overflow: hidden; background: #1a1d24; }
   #viewer-canvas { display: block; width: 100%; height: 100%; outline: none; }
+  #origin-readout { position: fixed; z-index: 12; pointer-events: none;
+    transform: translate(10px, -50%);
+    font: 11px/1.2 ui-monospace, Menlo, Consolas, monospace;
+    color: #d7dbe3; background: rgba(15, 17, 23, .72);
+    border-radius: 3px; padding: 2px 6px; white-space: pre; }
+  #origin-readout.moved { color: #f6e05e; }
+  #origin-readout.docked { transform: none; }
   #marquee { position: absolute; display: none; z-index: 5; pointer-events: none;
     border: 1px solid #4a9eff; background: rgba(74, 158, 255, 0.15); }
-  .sidebar { flex: 1 1 340px; min-width: 320px; display: flex; flex-direction: column; gap: 14px; }
+  .sidebar { min-height: 0; display: flex; flex-direction: column; }
+  .tab-bar { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 2px; padding: 10px 16px 0;
+    border-bottom: 1px solid #232833; }
+  .tab-bar button { background: none; color: #8a93a6; border-radius: 4px 4px 0 0;
+    padding: 7px 12px; border-bottom: 2px solid transparent; }
+  .tab-bar button:hover { color: #c8ccd6; filter: none; }
+  .tab-bar button[aria-selected=true] { color: #c8ccd6; border-bottom-color: #4a9eff; }
+  .tab-panels { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 16px; }
+  #object-table thead th { position: sticky; top: 0; background: #151821; }
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: none; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+    .viewer-pane { border-right: none; border-bottom: 1px solid #232833; }
+  }
   .card { border: 1px solid #232833; border-radius: 6px; background: #151821; }
   .card h2 { margin: 0; padding: 9px 12px; font-size: 12px; font-weight: 600;
     letter-spacing: .04em; text-transform: uppercase; color: #8a93a6;
@@ -32,6 +55,9 @@
   button:disabled { opacity: .5; cursor: default; filter: none; }
   input[type=number] { background: #0f1117; color: #c8ccd6; border: 1px solid #2b3244;
     border-radius: 4px; padding: 5px 6px; font-size: 12px; width: 66px; }
+  input[type=number].wide { width: 108px; }
+  select { background: #0f1117; color: #c8ccd6; border: 1px solid #2b3244;
+    border-radius: 4px; padding: 5px 6px; font-size: 12px; }
   input[type=color] { width: 34px; height: 27px; padding: 0; background: #0f1117;
     border: 1px solid #2b3244; border-radius: 4px; cursor: pointer; }
   label.field { display: flex; gap: 5px; align-items: center; font-size: 12px; color: #8a93a6; }
@@ -50,6 +76,7 @@
   .empty { color: #6f7988; font-size: 12px; padding: 10px 12px; }
   .pill { font-size: 11px; color: #6f7988; font-weight: 400; text-transform: none;
     letter-spacing: 0; }
+  .hint a, .card h2 a { color: #7f9bd6; }
 </style>
 </head>
 <body>
@@ -58,46 +85,65 @@
   <p>Every control below is plain DOM driving the <code>viewer</code> object from
      <code>ifcviewer.js</code> — read this page's source, each button is one call.
      It is also on <code>window.viewer</code>, so you can drive it from the devtools console.
-     &nbsp;<a href="index.html">↩ all examples</a></p>
+     &nbsp;<a href="index.html">↩ all examples</a>
+     &nbsp;<a href="FEDERATION.md">federation</a></p>
 </header>
 
 <div class="layout">
-  <div>
+  <div class="viewer-pane">
     <div id="viewer-box">
       <canvas id="viewer-canvas" width="1280" height="920"></canvas>
       <div id="marquee"></div>
+      <div id="origin-readout" hidden></div>
     </div>
     <div class="hint">Drag to orbit · scroll to zoom · <b>right-click to select</b>
-      (drag right-click to box-select several, shift+right-click to add)</div>
+      (drag right-click to box-select several, shift+right-click to add) · click the amber survey marker for the false origin</div>
     <div class="row" style="margin-top:10px">
       <button id="browse-btn" class="secondary">Add .ifcview…</button>
+      <button id="sample-btn" class="secondary">Load sample</button>
       <input id="file-input" type="file" accept=".ifcview" multiple style="display:none">
       <span class="pill" id="scene-hint">Starting WebGPU…</span>
     </div>
   </div>
 
   <div class="sidebar">
-    <div class="card">
-      <h2>Camera <span class="pill">getCamera · setCamera</span></h2>
+    <nav class="tab-bar" id="tab-bar" role="tablist"></nav>
+    <div class="tab-panels">
+    <div class="card" data-tab="Camera">
+      <h2>Camera <span class="pill">getCamera · setCamera · setStandardView · viewAll</span></h2>
       <div class="body">
         <div class="readout mono" id="camera-readout">—</div>
         <div class="row" style="margin-top:10px">
+          <label class="field">target x <input class="wide" type="number" id="cam-tx" step="any"></label>
+          <label class="field">y <input class="wide" type="number" id="cam-ty" step="any"></label>
+          <label class="field">z <input class="wide" type="number" id="cam-tz" step="any"></label>
+        </div>
+        <div class="row">
           <label class="field">yaw <input type="number" id="cam-yaw" step="15"></label>
           <label class="field">pitch <input type="number" id="cam-pitch" step="15"></label>
           <label class="field">dist <input type="number" id="cam-distance" step="1"></label>
           <button id="cam-apply">Set</button>
+          <button class="secondary" id="cam-read" type="button">Read</button>
         </div>
         <div class="row">
-          <button class="secondary" id="cam-top">Top</button>
-          <button class="secondary" id="cam-front">Front</button>
+          <button class="secondary" id="cam-front" type="button">Front</button>
+          <button class="secondary" id="cam-back" type="button">Back</button>
+          <button class="secondary" id="cam-left" type="button">Left</button>
+          <button class="secondary" id="cam-right" type="button">Right</button>
+          <button class="secondary" id="cam-top" type="button">Top</button>
+          <button class="secondary" id="cam-bottom" type="button">Bottom</button>
+        </div>
+        <div class="row">
+          <button class="secondary" id="cam-all" type="button">View all</button>
           <button class="secondary" id="cam-ortho">Toggle ortho</button>
           <button class="secondary" id="cam-save">Save view</button>
           <button class="secondary" id="cam-restore" disabled>Restore</button>
         </div>
+        <div class="hint">The sample load guesses a false origin and moves the amber survey marker off world 0, 0, 0. Target x, y, z are metres in the drawing frame that shifts with that marker. The Federation tab shows where the marker sits in the world. The long red and green lines stay on world 0, 0, 0. The RGB triad while you drag sits on the target.</div>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-tab="Selection">
       <h2>Selection <span class="pill">getSelection · setSelection</span></h2>
       <div class="body">
         <div class="readout mono" id="selection-readout">nothing selected</div>
@@ -111,7 +157,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-tab="Visibility">
       <h2>Visibility &amp; colour <span class="pill">setVisible · setColor</span></h2>
       <div class="body">
         <div class="row">
@@ -132,7 +178,142 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-tab="Grid">
+      <h2>Grid <span class="pill">setGridVisible · upsertGrid</span></h2>
+      <div class="body">
+        <div class="row">
+          <label class="field"><input type="checkbox" id="grid-enabled" checked> Show grid</label>
+        </div>
+        <div class="row">
+          <label class="field">plane
+            <select id="grid-plane">
+              <option value="xy" selected>XY</option>
+              <option value="xz">XZ</option>
+              <option value="yz">YZ</option>
+            </select>
+          </label>
+          <label class="field">spacing
+            <input type="number" id="grid-spacing" min="0.001" step="0.1" value="1"></label>
+          <label class="field">divisions
+            <input type="number" id="grid-divisions" min="1" step="1" value="50"></label>
+          <label class="field">opacity
+            <input type="number" id="grid-opacity" min="0.05" max="1" step="0.05" value="0.7"></label>
+        </div>
+        <div class="hint" id="grid-size">Size 100 × 100. A stronger line every 10.</div>
+      </div>
+    </div>
+
+    <div class="card" data-tab="Fog">
+      <h2>Fog <span class="pill">setFog</span></h2>
+      <div class="body">
+        <div class="row">
+          <label class="field"><input type="checkbox" id="fog-enabled" checked> Fade the floor</label>
+          <label class="field">mode
+            <select id="fog-mode">
+              <option value="linear" selected>Linear</option>
+              <option value="exp2">Exp2</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label class="field">near × dist
+            <input type="number" id="fog-near" min="0.05" step="0.05" value="0.35"></label>
+          <label class="field">far × dist
+            <input type="number" id="fog-far" min="0.1" step="0.1" value="2.2"></label>
+          <label class="field">density
+            <input type="number" id="fog-density" min="0" step="0.001" value="0.002"></label>
+        </div>
+        <div class="hint" id="fog-hint">Near and far are multiples of the camera distance. The floor fades into the background.</div>
+      </div>
+    </div>
+
+    <div class="card" data-tab="Axes">
+      <h2>Origin axes <span class="pill">setOriginAxes</span></h2>
+      <div class="body">
+        <div class="row">
+          <label class="field"><input type="checkbox" id="origin-axes" checked> X and Y through the origin</label>
+          <label class="field">size (m)
+            <input type="number" id="origin-size" min="1" step="100" value="1000"></label>
+        </div>
+        <div class="hint">Metres either side of world 0, 0, 0, on X (red) and Y (green). The amber survey marker is the false origin. Click it for its coordinates, in the federation unit. The Federation tab edits it.</div>
+      </div>
+    </div>
+
+    <div class="card" data-tab="Federation">
+      <h2>Federation <span class="pill">setFederationUnit · setFalseOrigin · setModelTransform</span></h2>
+      <div class="body">
+        <div class="readout mono" id="fed-readout">—</div>
+        <div class="hint">The red and green lines cross at world 0, 0, 0 and stay there.
+          Each model is placed in that world at its own coordinates. The false origin is the amber survey marker, and it can move.
+          <a href="FEDERATION.md">How federation works.</a></div>
+
+        <div class="row">
+          <label class="field">unit
+            <select id="fed-unit">
+              <option value="METRE|">metre</option>
+              <option value="METRE|MILLI">millimetre</option>
+              <option value="METRE|CENTI">centimetre</option>
+              <option value="foot|">foot</option>
+              <option value="inch|">inch</option>
+            </select>
+          </label>
+          <button class="secondary" id="fed-unit-apply" type="button">Set unit</button>
+        </div>
+
+        <div class="row">
+          <label class="field">false origin x <input class="wide" type="number" id="fo-x" step="any" value="0"></label>
+          <label class="field">y <input class="wide" type="number" id="fo-y" step="any" value="0"></label>
+          <label class="field">z <input class="wide" type="number" id="fo-z" step="any" value="0"></label>
+          <label class="field">grid north ° <input type="number" id="fo-rz" step="any" value="0"></label>
+        </div>
+        <div class="row">
+          <button id="fo-apply" type="button">Set false origin</button>
+          <button class="secondary" id="fo-zero" type="button">False origin 0, 0, 0</button>
+          <button class="secondary" id="fo-read" type="button">Read current</button>
+        </div>
+        <div class="hint">Set false origin turns off the automatic guess. The axes, the grid and the models stay where they are. The survey marker moves to the new point. Changing the unit does not convert the numbers; it changes what a number means.</div>
+
+        <div class="row">
+          <label class="field">model
+            <select id="xf-source"><option value="">no source yet</option></select>
+          </label>
+          <label class="field">point a is
+            <select id="xf-frame">
+              <option value="global">global (map unit)</option>
+              <option value="local">local (project unit)</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label class="field">a x <input class="wide" type="number" id="xf-ax" step="any" value="0"></label>
+          <label class="field">y <input class="wide" type="number" id="xf-ay" step="any" value="0"></label>
+          <label class="field">z <input class="wide" type="number" id="xf-az" step="any" value="0"></label>
+        </div>
+        <div class="row">
+          <label class="field">b x <input class="wide" type="number" id="xf-bx" step="any" value="0"></label>
+          <label class="field">y <input class="wide" type="number" id="xf-by" step="any" value="0"></label>
+          <label class="field">z <input class="wide" type="number" id="xf-bz" step="any" value="0"></label>
+        </div>
+        <div class="row">
+          <label class="field">rx ° <input type="number" id="xf-rx" step="any" value="0"></label>
+          <label class="field">ry ° <input type="number" id="xf-ry" step="any" value="0"></label>
+          <label class="field">rz ° <input type="number" id="xf-rz" step="any" value="0"></label>
+        </div>
+        <div class="row">
+          <label class="field">pivot x <input class="wide" type="number" id="xf-px" step="any" value="0"></label>
+          <label class="field">y <input class="wide" type="number" id="xf-py" step="any" value="0"></label>
+          <label class="field">z <input class="wide" type="number" id="xf-pz" step="any" value="0"></label>
+        </div>
+        <div class="row">
+          <button id="xf-apply" type="button">Place model</button>
+          <button class="secondary" id="xf-clear" type="button">Clear placement</button>
+        </div>
+        <div class="readout mono" id="georef-readout">Add a .ifcview to place it. The embedded sample has no source id.</div>
+        <div class="hint">Place model rotates it about the pivot, then slides it so point a lands on point b. b and the pivot are in the federation unit. You can set this before the file finishes loading.</div>
+      </div>
+    </div>
+
+    <div class="card" data-tab="Objects">
       <h2>Objects <span class="pill" id="object-count">getObjects</span></h2>
       <table id="object-table">
         <thead><tr><th>GlobalId</th><th>Name</th><th>Type</th><th>Model</th>
@@ -140,6 +321,7 @@
         <tbody></tbody>
       </table>
       <div class="empty" id="object-empty">Loading the element table…</div>
+    </div>
     </div>
   </div>
 </div>
@@ -153,11 +335,32 @@
   // ---------------------------------------------------------------------------
   const $ = (id) => document.getElementById(id);
 
+  // ---- Tabs: one per card, the open one is kept in the URL hash.
+  const tabCards = [...document.querySelectorAll('.card[data-tab]')];
+  const tabButtons = tabCards.map((card) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('role', 'tab');
+    btn.textContent = card.dataset.tab;
+    btn.onclick = () => { history.replaceState(null, '', '#' + card.dataset.tab.toLowerCase()); showTab(card.dataset.tab); };
+    $('tab-bar').appendChild(btn);
+    return btn;
+  });
+  function showTab(name) {
+    const want = tabCards.find((c) => c.dataset.tab.toLowerCase() === String(name).toLowerCase()) || tabCards[0];
+    tabCards.forEach((c, i) => {
+      c.hidden = c !== want;
+      tabButtons[i].setAttribute('aria-selected', String(c === want));
+    });
+    document.querySelector('.tab-panels').scrollTop = 0;
+  }
+  showTab(location.hash.slice(1));
+  window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
+
   let viewer  = null;
   let objects = [];       // the whole element table, from viewer.getObjects()
   let models  = [];       // one name per loaded model, in load order
   let savedView = null;   // a getCamera() snapshot, for the Restore button
-  let cameraInputsSeeded = false;
 
   // Resolve any CSS colour (including the hsl() below) to {r, g, b} channels —
   // which is one of the shapes viewer.setColor() accepts.
@@ -181,19 +384,84 @@
 
   // ---- Rendering the page from viewer state ---------------------------------
 
+  function fmtCam(n) {
+    if (!Number.isFinite(n)) return '';
+    const abs = Math.abs(n);
+    const digits = abs >= 1000 ? 2 : abs >= 10 ? 3 : 4;
+    return n.toFixed(digits);
+  }
+  function fmtAngle(n) { return Number.isFinite(n) ? n.toFixed(1) : ''; }
+
+  const camIds = ['cam-tx', 'cam-ty', 'cam-tz', 'cam-yaw', 'cam-pitch', 'cam-distance'];
+  // True while a box is being edited. The frame loop must not write the live
+  // camera back over those boxes: blur happens before the Set click, and one
+  // frame in between puts the old numbers back, so Set appears to do nothing
+  // and the value jumps.
+  let camHold = false;
+  let camExact = null;   // camera the boxes were last filled from, unrounded
+
+  function camFocused() {
+    return camIds.some((id) => document.activeElement === $(id));
+  }
+  function fillCameraInputs(c, force) {
+    if (!force && (camHold || camFocused())) return;
+    const set = (id, text) => {
+      const el = $(id);
+      if (el.value !== text) el.value = text;
+    };
+    set('cam-tx', fmtCam(c.target[0]));
+    set('cam-ty', fmtCam(c.target[1]));
+    set('cam-tz', fmtCam(c.target[2]));
+    set('cam-yaw', fmtAngle(c.yaw));
+    set('cam-pitch', fmtAngle(c.pitch));
+    set('cam-distance', fmtCam(c.distance));
+    camExact = c;
+  }
+  // A box still showing the formatted camera keeps the exact value. Sending
+  // the rounded text back would nudge the view. An empty or half-typed box
+  // is not a number yet.
+  function readEdited(id, exact, format) {
+    const raw = $(id).value.trim();
+    if (raw === '' || raw === '-' || raw === '.' || raw === '-.') return null;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return null;
+    if (camExact && format(exact) === format(n)) return exact;
+    return n;
+  }
+  function applyCameraForm() {
+    const base = camExact || viewer.getCamera();
+    const tx = readEdited('cam-tx', base.target[0], fmtCam);
+    const ty = readEdited('cam-ty', base.target[1], fmtCam);
+    const tz = readEdited('cam-tz', base.target[2], fmtCam);
+    const yaw = readEdited('cam-yaw', base.yaw, fmtAngle);
+    const pitch = readEdited('cam-pitch', base.pitch, fmtAngle);
+    const distance = readEdited('cam-distance', base.distance, fmtCam);
+    if ([tx, ty, tz, yaw, pitch, distance].some((n) => n == null)) return false;
+    viewer.setCamera({ target: [tx, ty, tz], yaw, pitch, distance });
+    camExact = viewer.getCamera();
+    return true;
+  }
+  function releaseCamHold() {
+    setTimeout(() => { if (!camFocused()) camHold = false; }, 0);
+  }
+
   function renderCamera(c) {
-    const f = (n) => n.toFixed(1);
+    const ang = (n) => n.toFixed(1);
     $('camera-readout').textContent =
-      `yaw    ${f(c.yaw)}°\npitch  ${f(c.pitch)}°\n` +
-      `target ${c.target.map(f).join(', ')}\n` +
-      `eye    ${c.eye.map(f).join(', ')}\n` +
-      `dist   ${f(c.distance)}  (${c.ortho ? 'orthographic' : 'perspective'})`;
-    if (!cameraInputsSeeded) {
-      cameraInputsSeeded = true;
-      $('cam-yaw').value      = c.yaw.toFixed(0);
-      $('cam-pitch').value    = c.pitch.toFixed(0);
-      $('cam-distance').value = c.distance.toFixed(0);
+      `yaw    ${ang(c.yaw)}°\npitch  ${ang(c.pitch)}°\n` +
+      `target ${c.target.map(fmtCam).join(', ')}\n` +
+      `eye    ${c.eye.map(fmtCam).join(', ')}\n` +
+      `dist   ${fmtCam(c.distance)}  (${c.ortho ? 'orthographic' : 'perspective'})`;
+    const fogHint = $('fog-hint');
+    if (fogHint && viewer) {
+      const fog = viewer.fog();
+      const start = c.distance * fog.near;
+      const end = c.distance * fog.far;
+      fogHint.textContent = fog.enabled
+        ? `Relative to the camera. At this view the fade runs from ${start.toFixed(0)} m to ${end.toFixed(0)} m, into the background. Density is for Exp2.`
+        : 'Fog is off. The floor stays at full strength out to the grid edge.';
     }
+    fillCameraInputs(c);
   }
 
   function renderSelection(ids) {
@@ -250,10 +518,45 @@
     }
   }
 
+  let fedInputsTouched = false;
+  let fedSeed = '';
+
+  function fmtFed(n) {
+    if (!Number.isFinite(n)) return '—';
+    const abs = Math.abs(n);
+    const digits = abs >= 1000 ? 2 : abs >= 10 ? 3 : 4;
+    return n.toFixed(digits);
+  }
+  function fillFalseOrigin(o) {
+    $('fo-x').value = o.xyz[0];
+    $('fo-y').value = o.xyz[1];
+    $('fo-z').value = o.xyz[2];
+    $('fo-rz').value = o.rzDeg;
+  }
+  function renderFederation(v) {
+    const api = v || viewer;
+    if (!api) return;
+    const o = api.getFalseOrigin();
+    const mag = Math.hypot(o.xyz[0], o.xyz[1], o.xyz[2]);
+    const how = o.explicit ? 'set by you' :
+      (mag > 1e-4 || Math.abs(o.rzDeg) > 1e-3 ? 'guessed from the first model' : 'no shift yet');
+    $('fed-readout').textContent =
+      `world origin    0, 0, 0     where X and Y cross\n` +
+      `false origin    ${o.xyz.map(fmtFed).join(', ')} ${o.unit}   the survey marker\n` +
+      `                ${how}\n` +
+      `grid north      ${o.rzDeg.toFixed(2)}°`;
+    const seed = `${o.xyz.join(',')}|${o.rzDeg}|${o.explicit}`;
+    if (!fedInputsTouched && seed !== fedSeed) {
+      fedSeed = seed;
+      fillFalseOrigin(o);
+    }
+  }
+
   async function refreshObjects() {
     objects = await viewer.getObjects();
     $('object-count').textContent = `${objects.length} objects · ${models.length} model(s)`;
-    $('scene-hint').textContent = models.join(', ');
+    $('scene-hint').textContent = models.length ? models.join(', ') : 'No models loaded';
+    $('object-empty').textContent = 'No objects. Load the sample or add a .ifcview.';
     renderTable();
     renderSelection(viewer.getSelection());
   }
@@ -263,30 +566,59 @@
   if (!navigator.gpu) $('scene-hint').textContent = 'navigator.gpu missing — needs a WebGPU browser';
   $('viewer-canvas').addEventListener('contextmenu', (ev) => ev.preventDefault());
 
+  // Sidecar format this page will load. Must match IFCVIEW_VERSION.
+  const SIDECAR_FORMAT_VERSION = 19;
+  $('browse-btn').textContent = `Add .ifcview v${SIDECAR_FORMAT_VERSION}…`;
+
   IfcViewer.create({
     canvas: $('viewer-canvas'),
+    sidecarFormatVersion: SIDECAR_FORMAT_VERSION,
     // The camera has no change event — it moves on every frame you drag — so
     // the readout is the one thing worth polling. Everything else is event-driven.
-    onFrame: (v) => renderCamera(v.getCamera()),
+    onFrame: (v) => {
+      renderCamera(v.getCamera());
+      renderFederation(v);
+    },
   }).then(async (v) => {
     viewer = window.viewer = v;
+    viewer.bindOriginReadout($('origin-readout'));
     await viewer.ready;
 
-    // The wasm ships with a small sample model (a slab, a wall and a beam), so
-    // there is something to drive before you add a file of your own.
-    models = ['sample.ifcview'];
+    // The wasm boots with a small sample model (a slab, a wall and a beam).
+    // Start empty instead; the Load sample button brings it back.
+    viewer.clearScene();
     await refreshObjects();
 
     // ---- Camera: read (1) and set (2) ---------------------------------------
 
     // setCamera takes any subset of what getCamera returns; omitted fields hold.
-    $('cam-apply').onclick = () => viewer.setCamera({
-      yaw:      Number($('cam-yaw').value),
-      pitch:    Number($('cam-pitch').value),
-      distance: Number($('cam-distance').value),
-    });
-    $('cam-top').onclick     = () => viewer.setStandardView(4);
-    $('cam-front').onclick   = () => viewer.setStandardView(0);
+    // target is the orbit pivot: the RGB triad drawn while you drag.
+    for (const id of camIds) {
+      $(id).addEventListener('focus', () => { camHold = true; });
+      $(id).addEventListener('input', () => { camHold = true; });
+      // Spinner clicks and leaving the box both fire change, before the next
+      // frame can restore the previous text.
+      $(id).addEventListener('change', () => { applyCameraForm(); releaseCamHold(); });
+      $(id).addEventListener('blur', releaseCamHold);
+    }
+    // mousedown runs before the box blurs, so the typed value is still there
+    // even if a frame lands between mouseup and click.
+    $('cam-apply').onmousedown = (ev) => {
+      ev.preventDefault();
+      if (applyCameraForm()) camHold = false;
+    };
+    $('cam-apply').onclick = () => { if (applyCameraForm()) camHold = false; };
+    $('cam-read').onclick = () => { camHold = false; fillCameraInputs(viewer.getCamera(), true); };
+    // id: 0 Front, 1 Back, 2 Left, 3 Right, 4 Top, 5 Bottom. These keep the
+    // current target and only change the direction you look from.
+    const standardViews = [
+      ['cam-front', 0], ['cam-back', 1], ['cam-left', 2],
+      ['cam-right', 3], ['cam-top', 4], ['cam-bottom', 5],
+    ];
+    for (const [id, view] of standardViews) {
+      $(id).onclick = () => viewer.setStandardView(view);
+    }
+    $('cam-all').onclick     = () => viewer.viewAll();
     $('cam-ortho').onclick   = () => viewer.setCamera({ ortho: !viewer.getCamera().ortho });
     $('cam-save').onclick    = () => {
       savedView = viewer.getCamera();
@@ -332,13 +664,174 @@
     };
     $('colour-clear').onclick = () => { viewer.clearColors(); renderTable(); };
 
+    // ---- Grid: master switch, then upsert the base grid ------------------------
+
+    const applyGrid = () => {
+      const spacing = Number($('grid-spacing').value);
+      const divisions = Number($('grid-divisions').value);
+      const opacity = Number($('grid-opacity').value);
+      if (!(spacing > 0) || !(divisions >= 1) || !(opacity >= 0)) return;
+      const size = Math.round(2 * spacing * divisions * 1000) / 1000;
+      $('grid-size').textContent = `Size ${size} × ${size}. A stronger line every 10.`;
+      viewer.upsertGrid({
+        id: 'base',
+        plane: $('grid-plane').value,
+        spacing,
+        divisions,
+        opacity,
+        visible: true,
+      });
+      viewer.setGridVisible($('grid-enabled').checked);
+    };
+    $('grid-enabled').onchange = () => viewer.setGridVisible($('grid-enabled').checked);
+    for (const id of ['grid-plane', 'grid-spacing', 'grid-divisions', 'grid-opacity']) {
+      $(id).oninput = applyGrid;
+      $(id).onchange = applyGrid;
+    }
+    $('grid-enabled').checked = viewer.gridVisible();
+
+    // ---- Fog: near/far are multiples of the camera distance -------------------
+
+    const applyFog = () => {
+      const near = Number($('fog-near').value);
+      const far = Number($('fog-far').value);
+      const density = Number($('fog-density').value);
+      if (!(near > 0) || !(far > near) || !(density >= 0)) return;
+      viewer.setFog({
+        enabled: $('fog-enabled').checked,
+        mode: $('fog-mode').value,
+        near,
+        far,
+        density,
+      });
+    };
+    $('fog-enabled').onchange = applyFog;
+    for (const id of ['fog-mode', 'fog-near', 'fog-far', 'fog-density']) {
+      $(id).oninput = applyFog;
+      $(id).onchange = applyFog;
+    }
+    const fog0 = viewer.fog();
+    $('fog-enabled').checked = fog0.enabled;
+    $('fog-mode').value = fog0.mode === 2 ? 'exp2' : 'linear';
+    $('fog-near').value = fog0.near;
+    $('fog-far').value = fog0.far;
+    $('fog-density').value = fog0.density;
+
+    // ---- Origin axes: X/Y through world 0. The survey marker is drawn with them.
+
+    const applyOriginAxes = () => {
+      const size = Number($('origin-size').value);
+      if (!(size > 0)) return;
+      viewer.setOriginAxes({ size, visible: $('origin-axes').checked });
+    };
+    $('origin-axes').onchange = applyOriginAxes;
+    $('origin-size').oninput = applyOriginAxes;
+    $('origin-size').onchange = applyOriginAxes;
+    viewer.setOriginAxes({ size: 1000, visible: true });
+    $('origin-axes').checked = viewer.originAxesVisible();
+    $('origin-size').value = viewer.originAxesSize();
+
+    // ---- Federation: unit, false origin, per-model placement ------------------
+
+    const sources = [];
+
+    function applyFalseOrigin(xyz, rzDeg) {
+      viewer.setFalseOrigin({ xyz, rzDeg });
+      fedInputsTouched = false;
+      fedSeed = '';
+      renderFederation(viewer);
+    }
+    for (const id of ['fo-x', 'fo-y', 'fo-z', 'fo-rz']) {
+      $(id).oninput = () => { fedInputsTouched = true; };
+    }
+    $('fed-unit-apply').onclick = () => {
+      const parts = $('fed-unit').value.split('|');
+      viewer.setFederationUnit({ name: parts[0], prefix: parts[1] || '' });
+      renderFederation(viewer);
+    };
+    $('fo-apply').onclick = () => applyFalseOrigin(
+      [Number($('fo-x').value), Number($('fo-y').value), Number($('fo-z').value)],
+      Number($('fo-rz').value) || 0);
+    $('fo-zero').onclick = () => applyFalseOrigin([0, 0, 0], 0);
+    $('fo-read').onclick = () => {
+      fedInputsTouched = false;
+      fedSeed = '';
+      renderFederation(viewer);
+    };
+
+    const num = (id) => Number($(id).value) || 0;
+    function rememberSource(id, name) {
+      if (sources.some((s) => s.id === id)) return;
+      sources.push({ id, name });
+      const sel = $('xf-source');
+      if (sel.options.length === 1 && sel.options[0].value === '') sel.remove(0);
+      const opt = document.createElement('option');
+      opt.value = String(id);
+      opt.textContent = `${name} · source ${id}`;
+      sel.appendChild(opt);
+      refreshGeoref();
+    }
+    function refreshGeoref() {
+      const raw = $('xf-source').value;
+      if (raw === '') {
+        $('georef-readout').textContent =
+          'Add a .ifcview to place it. The embedded sample has no source id.';
+        return;
+      }
+      const g = viewer.getModelGeoref(Number(raw));
+      if (!g) {
+        $('georef-readout').textContent =
+          'Still loading. A placement set now is applied when the model arrives.';
+        return;
+      }
+      $('georef-readout').textContent =
+        (g.hasCoordinateOperation ? 'map conversion: yes' : 'map conversion: no') +
+        `\nproject length → m   ${g.projectLengthToMeters}` +
+        `\nmap unit → m         ${g.mapUnitToMeters}`;
+    }
+    $('xf-source').onchange = refreshGeoref;
+    $('xf-apply').onclick = () => {
+      if ($('xf-source').value === '') return;
+      viewer.setModelTransform(Number($('xf-source').value), {
+        aFrame: $('xf-frame').value,
+        a: [num('xf-ax'), num('xf-ay'), num('xf-az')],
+        b: [num('xf-bx'), num('xf-by'), num('xf-bz')],
+        rotationDeg: [num('xf-rx'), num('xf-ry'), num('xf-rz')],
+        pivot: [num('xf-px'), num('xf-py'), num('xf-pz')],
+      });
+    };
+    $('xf-clear').onclick = () => {
+      if ($('xf-source').value === '') return;
+      viewer.clearModelTransform(Number($('xf-source').value));
+    };
+    viewer.onModelLoaded((d) => {
+      if (!sources.some((s) => s.id === d.sourceId)) rememberSource(d.sourceId, 'source ' + d.sourceId);
+      refreshGeoref();
+      renderFederation(viewer);
+    });
+
     // ---- Objects (5): the table above, and federating in more models ----------
 
     $('browse-btn').onclick = () => $('file-input').click();
+    $('sample-btn').onclick = async () => {
+      if (!viewer.loadSample()) {
+        $('scene-hint').textContent = 'This build has no embedded sample.';
+        return;
+      }
+      models.push('sample.ifcview');
+      await refreshObjects();
+    };
     $('file-input').onchange = async (ev) => {
       for (const file of ev.target.files) {
-        await viewer.addFile(file);
+        let sid;
+        try {
+          sid = await viewer.addFile(file, { name: file.name });
+        } catch (err) {
+          $('scene-hint').textContent = `${file.name}: ${err.message}`;
+          continue;
+        }
         models.push(file.name);
+        rememberSource(sid, file.name);
       }
       ev.target.value = '';
       // The new model's metadata has to land before its objects can be listed;
