@@ -28,6 +28,7 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 
+import bonsai.tool as tool
 from bonsai.bim.module.unit.data import UnitsData
 from bonsai.bim.prop import Attribute
 
@@ -42,6 +43,51 @@ def get_conversion_unit_types(self: "BIMUnitProperties", context: bpy.types.Cont
     if not UnitsData.is_loaded:
         UnitsData.load()
     return UnitsData.data["conversion_unit_types"]
+
+
+def get_derived_unit_types(self: "BIMUnitProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    if not UnitsData.is_loaded:
+        UnitsData.load()
+    return UnitsData.data["derived_unit_types"]
+
+
+# Named unit types a derived unit can be built from (see tool.Unit.DERIVED_UNIT_COMPOSITIONS),
+# with the label of their picker. Each gets a `derived_<type>` EnumProperty below.
+DERIVED_COMPONENT_LABELS = {
+    "LENGTHUNIT": "Length",
+    "AREAUNIT": "Area",
+    "VOLUMEUNIT": "Volume",
+    "MASSUNIT": "Mass",
+    "TIMEUNIT": "Time",
+    "FORCEUNIT": "Force",
+    "PRESSUREUNIT": "Pressure",
+    "ENERGYUNIT": "Energy",
+    "POWERUNIT": "Power",
+    "PLANEANGLEUNIT": "Angle",
+    "THERMODYNAMICTEMPERATUREUNIT": "Temperature",
+    "AMOUNTOFSUBSTANCEUNIT": "Amount of Substance",
+    "LUMINOUSINTENSITYUNIT": "Luminous Intensity",
+    "LUMINOUSFLUXUNIT": "Luminous Flux",
+}
+
+
+def derived_component_property(unit_type: str) -> EnumProperty:
+    def get_items(self: "BIMUnitProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+        from bonsai.bim.prop import cache_string
+
+        if not tool.Ifc.get():
+            return [("0", "Default", "")]
+        return [
+            (cache_string(i), cache_string(label), cache_string(description))
+            for i, label, description in tool.Unit.get_component_unit_choices(unit_type)
+        ]
+
+    label = DERIVED_COMPONENT_LABELS[unit_type]
+    return EnumProperty(
+        items=get_items,
+        name=label,
+        description=f"{label} unit to build the derived unit from. Entries marked + are added to the file",
+    )
 
 
 def get_named_unit_types(self: "BIMUnitProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -71,6 +117,21 @@ class BIMUnitProperties(PropertyGroup):
     unit_classes: EnumProperty(items=get_unit_classes, name="Unit Classes")
     conversion_unit_types: EnumProperty(items=get_conversion_unit_types, name="Conversion Unit Types")
     named_unit_types: EnumProperty(items=get_named_unit_types, name="Named Unit Types")
+    derived_unit_types: EnumProperty(items=get_derived_unit_types, name="Derived Unit Types")
+    derived_lengthunit: derived_component_property("LENGTHUNIT")
+    derived_areaunit: derived_component_property("AREAUNIT")
+    derived_volumeunit: derived_component_property("VOLUMEUNIT")
+    derived_massunit: derived_component_property("MASSUNIT")
+    derived_timeunit: derived_component_property("TIMEUNIT")
+    derived_forceunit: derived_component_property("FORCEUNIT")
+    derived_pressureunit: derived_component_property("PRESSUREUNIT")
+    derived_energyunit: derived_component_property("ENERGYUNIT")
+    derived_powerunit: derived_component_property("POWERUNIT")
+    derived_planeangleunit: derived_component_property("PLANEANGLEUNIT")
+    derived_thermodynamictemperatureunit: derived_component_property("THERMODYNAMICTEMPERATUREUNIT")
+    derived_amountofsubstanceunit: derived_component_property("AMOUNTOFSUBSTANCEUNIT")
+    derived_luminousintensityunit: derived_component_property("LUMINOUSINTENSITYUNIT")
+    derived_luminousfluxunit: derived_component_property("LUMINOUSFLUXUNIT")
     unit_attributes: CollectionProperty(name="Unit Attributes", type=Attribute)
 
     if TYPE_CHECKING:
@@ -81,4 +142,19 @@ class BIMUnitProperties(PropertyGroup):
         unit_classes: str
         conversion_unit_types: str
         named_unit_types: str
+        derived_unit_types: str
+        derived_lengthunit: str
+        derived_areaunit: str
+        derived_volumeunit: str
+        derived_massunit: str
+        derived_timeunit: str
+        derived_forceunit: str
+        derived_pressureunit: str
+        derived_energyunit: str
+        derived_powerunit: str
+        derived_planeangleunit: str
+        derived_thermodynamictemperatureunit: str
+        derived_amountofsubstanceunit: str
+        derived_luminousintensityunit: str
+        derived_luminousfluxunit: str
         unit_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]

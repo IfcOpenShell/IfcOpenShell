@@ -1224,6 +1224,7 @@ class Type:
 
 @interface
 class Unit:
+    def add_derived_unit(cls, unit_type, component_units=None): pass
     def add_structural_units(cls): pass
     def clear_active_unit(cls): pass
     def disable_editing_units(cls): pass
@@ -1238,6 +1239,7 @@ class Unit:
     def import_units(cls): pass
     def is_si_unit(cls, name): pass
     def is_unit_class(cls, unit, ifc_class): pass
+    def resolve_unit_choice(cls, unit_type, choice): pass
     def set_active_unit(cls, unit): pass
 
 @interface

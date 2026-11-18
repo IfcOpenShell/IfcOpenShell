@@ -170,6 +170,30 @@ class TestAddSIUnit:
         assert subject.add_si_unit(ifc, unit, unit_type="unit_type") == "unit"
 
 
+class TestAddDerivedUnit:
+    def test_run(self, ifc, unit):
+        unit.add_derived_unit("unit_type", {}).should_be_called().will_return("unit")
+        unit.get_assigned_unit_of_type("unit").should_be_called().will_return("assigned_unit")
+        unit.import_units().should_be_called()
+        assert subject.add_derived_unit(ifc, unit, unit_type="unit_type") == "unit"
+
+    def test_building_from_chosen_component_units(self, ifc, unit):
+        unit.resolve_unit_choice("FORCEUNIT", "+CONV:kip").should_be_called().will_return("kip")
+        unit.resolve_unit_choice("LENGTHUNIT", "0").should_be_called().will_return(None)
+        unit.add_derived_unit("unit_type", {"FORCEUNIT": "kip"}).should_be_called().will_return("unit")
+        unit.get_assigned_unit_of_type("unit").should_be_called().will_return("assigned_unit")
+        unit.import_units().should_be_called()
+        choices = {"FORCEUNIT": "+CONV:kip", "LENGTHUNIT": "0"}
+        assert subject.add_derived_unit(ifc, unit, unit_type="unit_type", component_choices=choices) == "unit"
+
+    def test_assigning_the_unit_if_no_unit_of_its_type_is_assigned(self, ifc, unit):
+        unit.add_derived_unit("unit_type", {}).should_be_called().will_return("unit")
+        unit.get_assigned_unit_of_type("unit").should_be_called().will_return(None)
+        ifc.run("unit.assign_unit", units=["unit"]).should_be_called()
+        unit.import_units().should_be_called()
+        assert subject.add_derived_unit(ifc, unit, unit_type="unit_type") == "unit"
+
+
 class TestAddContextDependentUnit:
     def test_run(self, ifc, unit):
         ifc.run("unit.add_context_dependent_unit", unit_type="unit_type", name="name").should_be_called().will_return(
