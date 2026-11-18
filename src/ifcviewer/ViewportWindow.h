@@ -259,6 +259,7 @@ public:
     // (env / persisted setting) and live from the Settings dialog.
     void applyNavPreset(const char* name);
     void setBackfaceCulling(bool enabled);
+    void setSectionCapsEnabled(bool enabled);
 
 
     // Queue a one-shot framebuffer capture: the next rendered frame is

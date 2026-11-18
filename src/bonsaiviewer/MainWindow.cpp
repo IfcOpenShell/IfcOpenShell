@@ -528,6 +528,15 @@ void MainWindow::setupStatus() {
                     vp->setBackfaceCulling(enabled);
             });
 
+    // Section caps: same story.
+    if (auto* vp = viewport_widget_->viewport())
+        vp->setSectionCapsEnabled(AppSettings::instance().sectionCaps());
+    connect(&AppSettings::instance(), &AppSettings::sectionCapsChanged, this,
+            [this](bool enabled) {
+                if (auto* vp = viewport_widget_->viewport())
+                    vp->setSectionCapsEnabled(enabled);
+            });
+
     connect(session_state_, &bonsaiviewer::SessionState::statusMessageChanged,
             this, [this](const QString& mode, const QString& detail) {
         status_mode_label_->setText(mode);

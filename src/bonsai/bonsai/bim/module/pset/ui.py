@@ -210,6 +210,8 @@ def draw_psetqto_ui(
                 display_value = get_display_value(nominal_value)
                 if unit_symbol := prop["UnitSymbol"]:
                     display_value = f"{display_value} {unit_symbol}"
+                elif prop["UnitUndefined"] and prop["NominalValue"] not in (None, ""):
+                    display_value = f"{display_value} ({tool.Pset.UNDEFINED_UNIT_LABEL} unit)"
                 op = row.operator("bim.select_similar", text=display_value, icon="NONE", emboss=False)
                 op.key = '"' + pset["Name"].replace('"', '\\"') + '"."' + prop["Name"].replace('"', '\\"') + '"'
                 # calculate sum of all selected objects

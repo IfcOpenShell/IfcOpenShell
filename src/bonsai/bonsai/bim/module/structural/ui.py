@@ -35,6 +35,7 @@ from bonsai.bim.module.structural.data import (
     StructuralConnectionData,
     StructuralItemLoadsData,
     StructuralLoadCasesData,
+    StructuralLoadCombinationsData,
     StructuralLoadsData,
     StructuralMemberData,
 )
@@ -204,7 +205,7 @@ class BIM_PT_connected_structural_members(Panel):
                 and self.props.active_connects_structural_member == connection["id"]
             ):
                 row.operator("bim.disable_editing_structural_connection_condition", text="", icon="CANCEL")
-                row.enabled = connection["is_active_condition"]
+                row.enabled = not connection["is_active_condition"]
                 draw_boundary_condition_ui(self.layout.box(), connection["condition"], connection["id"], self.props)
             elif self.props.active_connects_structural_member:
                 op = row.operator("bim.remove_structural_connection_condition", text="", icon="X")
@@ -467,9 +468,31 @@ class BIM_PT_structural_analysis_models(Panel):
                 self.props,
                 "active_structural_analysis_model_index",
             )
+            self.draw_served_buildings()
 
         if self.props.active_structural_analysis_model_id:
             draw_attributes(self.props.structural_analysis_model_attributes, self.layout)
+
+    def draw_served_buildings(self) -> None:
+        index = self.props.active_structural_analysis_model_index
+        if not 0 <= index < len(self.props.structural_analysis_models):
+            return
+        model_id = self.props.structural_analysis_models[index].ifc_definition_id
+        box = self.layout.box()
+        box.label(text="Serves Buildings", icon="HOME")
+        for building_id, name in StructuralAnalysisModelsData.data["served_buildings"].get(model_id, []):
+            row = box.row(align=True)
+            row.label(text=name)
+            op = row.operator("bim.unassign_structural_analysis_model_from_building", text="", icon="X")
+            op.structural_analysis_model = model_id
+            op.building = building_id
+        if not StructuralAnalysisModelsData.data["buildings"]:
+            box.label(text="No building in the project", icon="INFO")
+        elif StructuralAnalysisModelsData.data["unserved_buildings"].get(model_id):
+            row = box.row(align=True)
+            prop_with_search(row, self.props, "building", text="")
+            op = row.operator("bim.assign_structural_analysis_model_to_building", text="", icon="ADD")
+            op.structural_analysis_model = model_id
 
 
 class BIM_UL_structural_analysis_models(UIList):
@@ -639,6 +662,87 @@ class BIM_PT_structural_load_cases(Panel):
             self.props,
             "active_load_group_activity_index",
         )
+
+
+class BIM_PT_structural_load_combinations(Panel):
+    bl_label = "Structural Load Combinations"
+    bl_idname = "BIM_PT_structural_load_combinations"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_structural"
+
+    @classmethod
+    def poll(cls, context):
+        file = tool.Ifc.get()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
+
+    def draw(self, context):
+        if not StructuralLoadCombinationsData.is_loaded:
+            StructuralLoadCombinationsData.load()
+        if not StructuralLoadCasesData.is_loaded:
+            StructuralLoadCasesData.load()
+
+        self.props = tool.Structural.get_structural_props()
+
+        row = self.layout.row()
+        row.operator("bim.add_structural_load_combination", icon="ADD")
+
+        for combination in StructuralLoadCombinationsData.data["load_combinations"]:
+            self.draw_combination_ui(combination)
+
+    def draw_combination_ui(self, combination: dict[str, Any]) -> None:
+        row = self.layout.row(align=True)
+        text = combination["name"]
+        if combination["purpose"]:
+            text += f" ({combination['purpose']})"
+        # An empty combination has nothing to add up, and analysis programs refuse it.
+        row.label(text=text, icon="ERROR" if not combination["total_load_cases"] else "MOD_ARRAY")
+        op = row.operator(
+            "bim.show_structural_load_case", text="", icon=get_load_case_eye(combination["id"]), emboss=False
+        )
+        op.load_case = combination["id"]
+
+        active_id = self.props.active_load_combination_id
+        if active_id == combination["id"]:
+            row.operator("bim.edit_structural_load_combination", text="", icon="CHECKMARK")
+            row.operator("bim.disable_editing_structural_load_combination", text="", icon="CANCEL")
+        else:
+            if not active_id:
+                op = row.operator("bim.enable_editing_structural_load_combination", text="", icon="GREASEPENCIL")
+                op.load_combination = combination["id"]
+            op = row.operator("bim.remove_structural_load_combination", text="", icon="X")
+            op.load_combination = combination["id"]
+
+        if active_id == combination["id"]:
+            draw_attributes(self.props.load_combination_attributes, self.layout)
+            self.draw_factors_ui()
+            self.draw_models_ui(combination)
+
+    def draw_factors_ui(self) -> None:
+        box = self.layout.box()
+        box.label(text="Load Cases and Factors", icon="CON_CLAMPTO")
+        if not self.props.load_combination_factors:
+            box.label(text="No Load Cases Found")
+        for factor in self.props.load_combination_factors:
+            row = box.row(align=True)
+            row.prop(factor, "is_included", text=factor.name)
+            sub = row.row(align=True)
+            sub.enabled = factor.is_included
+            sub.prop(factor, "factor", text="")
+
+    def draw_models_ui(self, combination: dict[str, Any]) -> None:
+        box = self.layout.box()
+        box.label(text="Analysis Models", icon="MOD_SIMPLIFY")
+        for model in StructuralLoadCasesData.data["models"]:
+            row = box.row(align=True)
+            if model["id"] in combination["model_ids"]:
+                op = row.operator("bim.unassign_structural_load_case", text="", icon="CHECKBOX_HLT", emboss=False)
+            else:
+                op = row.operator("bim.assign_structural_load_case", text="", icon="CHECKBOX_DEHLT", emboss=False)
+            op.load_case = combination["id"]
+            op.structural_analysis_model = model["id"]
+            row.label(text=model["name"])
 
 
 class BIM_UL_structural_activities(UIList):

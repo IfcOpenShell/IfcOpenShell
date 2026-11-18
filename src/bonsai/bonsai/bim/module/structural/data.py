@@ -34,6 +34,7 @@ def refresh():
     StructuralConnectionData.is_loaded = False
     StructuralAnalysisModelsData.is_loaded = False
     StructuralLoadCasesData.is_loaded = False
+    StructuralLoadCombinationsData.is_loaded = False
     StructuralLoadsData.is_loaded = False
     BoundaryConditionsData.is_loaded = False
     LoadGroupDecorationData.is_loaded = False
@@ -45,6 +46,14 @@ def refresh():
     if LoadsDecorator.is_installed:
         LoadsDecorator.update()
         tool.Blender.update_all_viewports()
+
+
+def get_load_combinations() -> list[ifcopenshell.entity_instance]:
+    return [g for g in tool.Ifc.get().by_type("IfcStructuralLoadGroup") if g.PredefinedType == "LOAD_COMBINATION"]
+
+
+def get_load_cases_and_combinations() -> list[ifcopenshell.entity_instance]:
+    return tool.Structural.get_load_cases() + get_load_combinations()
 
 
 class LoadGroupDecorationData:
@@ -67,7 +76,7 @@ class LoadGroupDecorationData:
         props = tool.Structural.get_structural_props()
         if props.activity_type == "Action":
             # Without an analysis model, loads can still be shown by load case.
-            groups = (m.LoadedBy or []) if m else tool.Ifc.get().by_type("IfcStructuralLoadCase")
+            groups = tool.Structural.get_load_cases(m) if m else get_load_cases_and_combinations()
             for g in groups:
                 ret.append((str(g.id()), (g.Name or "Unnamed") + kinds.get(g.PredefinedType, ""), ""))
                 related_objects = [rel.RelatedObjects for rel in g.IsGroupedBy]
@@ -223,12 +232,12 @@ class StructuralItemLoadsData:
         cls, group: ifcopenshell.entity_instance
     ) -> tuple[ifcopenshell.entity_instance, Union[ifcopenshell.entity_instance, None]]:
         """The load case a load group belongs to, and the group itself if it is a group within the case"""
-        if not group.is_a("IfcStructuralLoadCase"):
+        if not tool.Structural.is_load_case(group):
             for rel in group.HasAssignments:
                 if (
                     rel.is_a("IfcRelAssignsToGroup")
                     and rel.RelatingGroup
-                    and rel.RelatingGroup.is_a("IfcStructuralLoadCase")
+                    and tool.Structural.is_load_case(rel.RelatingGroup)
                 ):
                     return rel.RelatingGroup, group
         return group, None
@@ -268,7 +277,7 @@ class StructuralItemLoadsData:
                     }
                 )
                 if load and load.is_a("IfcStructuralLoadSingleForce") and activity.GlobalOrLocal != "LOCAL_COORDS":
-                    entry["forces"].append(tuple(getattr(load, a) or 0.0 for a in ("ForceX", "ForceY", "ForceZ")))
+                    entry["forces"].append(tool.Structural.get_force(load))
         for entry in cases.values():
             entry["resultant"] = cls.get_resultant_label(entry.pop("forces"))
             # In the order applied, as they are drawn tip to tail.
@@ -295,8 +304,8 @@ class StructuralItemLoadsData:
         loaded = {entry["id"] for entry in cls.load_cases()}
         return [
             g.Name or "Unnamed"
-            for g in model.LoadedBy or []
-            if g.is_a("IfcStructuralLoadCase") and g.id() not in loaded
+            for g in tool.Structural.get_load_cases(model)
+            if tool.Structural.is_load_case(g) and g.id() not in loaded
         ]
 
 
@@ -311,8 +320,33 @@ class StructuralAnalysisModelsData:
             "active_model_ids": cls.active_model_ids(),
             "current_model": cls.current_model(),
             "models": cls.models(),
+            "buildings": cls.buildings(),
+            "served_buildings": cls.served_buildings(),
+            "unserved_buildings": cls.unserved_buildings(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def buildings(cls) -> list[tuple[str, str, str]]:
+        return [(str(b.id()), b.Name or "Unnamed", "") for b in tool.Ifc.get().by_type("IfcBuilding")]
+
+    @classmethod
+    def served_buildings(cls) -> dict[int, list[tuple[int, str]]]:
+        results = {}
+        for model in tool.Ifc.get().by_type("IfcStructuralAnalysisModel"):
+            buildings = [b for rel in model.ServicesBuildings or () for b in rel.RelatedBuildings]
+            results[model.id()] = [(b.id(), b.Name or "Unnamed") for b in buildings]
+        return results
+
+    @classmethod
+    def unserved_buildings(cls) -> dict[int, list[tuple[str, str, str]]]:
+        """The buildings each model does not serve yet, as the choices to assign it to"""
+        buildings = tool.Ifc.get().by_type("IfcBuilding")
+        results = {}
+        for model in tool.Ifc.get().by_type("IfcStructuralAnalysisModel"):
+            served = {b for rel in model.ServicesBuildings or () for b in rel.RelatedBuildings}
+            results[model.id()] = [(str(b.id()), b.Name or "Unnamed", "") for b in buildings if b not in served]
+        return results
 
     @classmethod
     def total_models(cls):
@@ -371,7 +405,7 @@ class StructuralLoadCasesData:
     @classmethod
     def load_cases(cls):
         results = []
-        for load_case in tool.Ifc.get().by_type("IfcStructuralLoadCase"):
+        for load_case in tool.Structural.get_load_cases():
             load_groups = []
             activities = []
             for rel in load_case.IsGroupedBy or []:
@@ -434,6 +468,34 @@ class StructuralLoadCasesData:
             if not load.Name or not load.is_a(props.applicable_structural_load_types):
                 continue
             results.append((str(load.id()), load.Name or "Unnamed", ""))
+        return results
+
+
+class StructuralLoadCombinationsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"load_combinations": cls.load_combinations()}
+        cls.is_loaded = True
+
+    @classmethod
+    def load_combinations(cls) -> list[dict]:
+        results = []
+        for combination in get_load_combinations():
+            load_cases = [
+                o for rel in combination.IsGroupedBy for o in rel.RelatedObjects if o.is_a("IfcStructuralLoadCase")
+            ]
+            results.append(
+                {
+                    "id": combination.id(),
+                    "name": combination.Name or "Unnamed",
+                    "purpose": combination.Purpose or "",
+                    "total_load_cases": len(load_cases),
+                    "model_ids": [m.id() for m in combination.LoadGroupFor],
+                }
+            )
         return results
 
 
