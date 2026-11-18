@@ -422,6 +422,9 @@
     return ((clamp(a) << 24) | (clamp(b) << 16) | (clamp(g) << 8) | clamp(r)) >>> 0;
   }
 
+  // Section cap hatch patterns, in the order the wasm numbers them.
+  const SECTION_CAP_HATCHES = ['none', 'diagonal', 'cross'];
+
   // Boot a viewer bound to `opts.canvas`. Resolves to the API object once the
   // wasm runtime is initialised; `api.ready` resolves once the GPU app is live.
   async function create(opts) {
@@ -444,6 +447,8 @@
     // objectsById puts the IFC identity back onto a selection read.
     let objectIndex = null;
     let objectsById = null;
+    // Mirrors SectionCapStyle's defaults in the wasm; setSectionCapStyle merges into it.
+    const sectionCapStyle = { hatch: 'diagonal', spacing: 8, lineWidth: 1, color: '#0000008c', fill: null };
 
     // The per-frame loop: poll for the app pointer (published once the GPU
     // device is ready), then drive the C tick. It is registered from
@@ -874,6 +879,48 @@
       },
       backfaceCullingEnabled: function () {
         return Module._ifcv_backface_culling_is_on_c() !== 0;
+      },
+
+      // ---- Section caps ----------------------------------------------------
+
+      // Fill the cross-section where a section plane cuts through a solid, so
+      // a cut wall or slab reads as solid instead of hollow (on by default).
+      // Caps are never drawn in x-ray. Only closed meshes cap correctly, and
+      // transparent objects are left uncapped.
+      setSectionCaps: function (on) {
+        Module._ifcv_set_section_caps_c(on ? 1 : 0);
+      },
+      sectionCapsEnabled: function () {
+        return Module._ifcv_section_caps_is_on_c() !== 0;
+      },
+
+      // How the caps are drawn. Any subset of:
+      //   hatch      'diagonal' (default), 'cross' or 'none'
+      //   spacing    CSS pixels between hatch lines (default 8); fixed on
+      //              screen, so it does not change as you zoom
+      //   lineWidth  CSS pixels (default 1)
+      //   color      hatch line colour, as setColor takes it; its alpha is
+      //              the line opacity (default '#0000008c')
+      //   fill       cap colour, or null (default) for the cut object's own
+      //              colour; an alpha below 255 blends the two
+      // Omitted fields keep their current value.
+      setSectionCapStyle: function (style) {
+        style = style || {};
+        if (style.hatch !== undefined && SECTION_CAP_HATCHES.indexOf(style.hatch) < 0) {
+          throw new Error('setSectionCapStyle: hatch must be one of ' +
+                          SECTION_CAP_HATCHES.join(', ') + ', got ' + style.hatch);
+        }
+        Object.keys(sectionCapStyle).forEach(function (k) {
+          if (style[k] !== undefined) sectionCapStyle[k] = style[k];
+        });
+        const c = packColor(sectionCapStyle.color);
+        const f = packColor(sectionCapStyle.fill);
+        const ch = function (rgba, shift) { return ((rgba >>> shift) & 0xFF) / 255; };
+        Module._ifcv_set_section_cap_style_c(
+          SECTION_CAP_HATCHES.indexOf(sectionCapStyle.hatch),
+          sectionCapStyle.spacing, sectionCapStyle.lineWidth,
+          ch(c, 0), ch(c, 8), ch(c, 16), ch(c, 24),
+          ch(f, 0), ch(f, 8), ch(f, 16), ch(f, 24));
       },
 
       // Model bookkeeping (ordered by load). Progress is per-model chunk counts.
