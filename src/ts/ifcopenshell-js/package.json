@@ -50,7 +50,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vitest/browser": "^4.1.12",
     "@vitest/browser-playwright": "^4.1.12",
     "eslint": "^10.15.0",
     "playwright": "^1.55.1",
