@@ -151,6 +151,35 @@ class TestGetCombinationFactors(test.bootstrap.IFC4):
         assert subject.get_combination_factors(combination) == {dead: 1.35}
 
 
+class TestGetCombinationFactorsIFC2X3(test.bootstrap.IFC2X3):
+    def add_group(self, predefined_type, coefficient=None):
+        return self.file.createIfcStructuralLoadGroup(
+            ifcopenshell.guid.new(),
+            PredefinedType=predefined_type,
+            ActionType="NOTDEFINED",
+            ActionSource="NOTDEFINED",
+            Coefficient=coefficient,
+        )
+
+    def test_a_load_combination_group_gives_its_cases_its_coefficient(self):
+        dead = self.add_group("LOAD_CASE")
+        live = self.add_group("LOAD_CASE")
+        combination = self.add_group("LOAD_COMBINATION")
+        for case, coefficient in ((dead, 1.35), (live, 1.5)):
+            group = self.add_group("LOAD_COMBINATION_GROUP", coefficient)
+            ifcopenshell.api.group.assign_group(self.file, products=[case], group=group)
+            ifcopenshell.api.group.assign_group(self.file, products=[group], group=combination)
+        assert subject.get_combination_factors(combination) == {dead: 1.35, live: 1.5}
+
+    def test_the_coefficient_of_the_combination_applies_too(self):
+        dead = self.add_group("LOAD_CASE")
+        combination = self.add_group("LOAD_COMBINATION", 2.0)
+        group = self.add_group("LOAD_COMBINATION_GROUP")
+        ifcopenshell.api.group.assign_group(self.file, products=[dead], group=group)
+        ifcopenshell.api.group.assign_group(self.file, products=[group, dead], group=combination)
+        assert subject.get_combination_factors(combination) == {dead: 4.0}
+
+
 class TestGetModelLoadGroupsAndCases(test.bootstrap.IFC4, StructuralModel):
     def test_a_model_loaded_by_load_cases(self):
         self.make_frame()
