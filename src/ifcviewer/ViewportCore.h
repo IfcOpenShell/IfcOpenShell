@@ -54,6 +54,7 @@
 #include "ModelLookup.h"
 #include "InstancedGeometry.h"
 #include "ModelGpuData.h"
+#include "SectionCapRenderer.h"
 #include "SectionGizmoRenderer.h"
 #include "SectionPlane.h"
 #include "SelectionState.h"
@@ -826,6 +827,24 @@ public:
     void setSelectionOutlineEnabled(bool on) { selection_outline_enabled_ = on; }
     bool selectionOutlineEnabled() const     { return selection_outline_enabled_; }
 
+    // ---- Section caps ------------------------------------------------------
+    //
+    // Fill the cross-section where a section plane cuts through a solid (see
+    // SectionCapRenderer). On by default; never drawn in x-ray, where the
+    // point is to see through.
+    void setSectionCapsEnabled(bool enabled);
+    bool sectionCapsEnabled() const { return section_caps_enabled_; }
+    void setSectionCapStyle(const SectionCapStyle& style);
+    const SectionCapStyle& sectionCapStyle() const { return section_cap_style_; }
+
+    // Build the accumulation pipeline; buildPipelines() calls it.
+    bool buildSectionCapPipeline();
+
+    // Accumulate the cap parity for this frame. Must be encoded before the
+    // main pass, which composites the result. Returns false when there is
+    // nothing to cap.
+    bool encodeSectionCapAccumPass(WGPUCommandEncoder enc);
+
     // ---- Pick + raycast (#84-t) -------------------------------------------
     //
     // Build the pick pipeline. Reuses the main shader module's
@@ -1228,6 +1247,10 @@ private:
     // Lifted out of the Qt-coupled OverlayRenderer so one identical gizmo draws
     // everywhere; the desktop's OverlayRenderer no longer draws it.
     SectionGizmoRenderer section_gizmo_;
+    SectionCapRenderer   section_caps_;
+    WGPURenderPipeline   section_cap_accum_pipeline_ = nullptr;
+    bool                 section_caps_enabled_       = true;
+    SectionCapStyle      section_cap_style_;
     // Corner axis gizmo + orbit pivot indicator, likewise shared by desktop +
     // web. Same lift out of the Qt-coupled OverlayRenderer.
     AxisIndicatorRenderer axis_indicator_;

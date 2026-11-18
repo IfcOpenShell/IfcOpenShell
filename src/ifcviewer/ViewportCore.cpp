@@ -600,6 +600,17 @@ void ViewportCore::setBackfaceCulling(bool enabled) {
     host_->requestFrame();
 }
 
+void ViewportCore::setSectionCapsEnabled(bool enabled) {
+    if (section_caps_enabled_ == enabled) return;
+    section_caps_enabled_ = enabled;
+    host_->requestFrame();
+}
+
+void ViewportCore::setSectionCapStyle(const SectionCapStyle& style) {
+    section_cap_style_ = style;
+    host_->requestFrame();
+}
+
 void ViewportCore::setBackgroundColor(float r, float g, float b, float a) {
     Eigen::Vector4f next{r, g, b, a};
     if (background_color_ == next) return;
@@ -1082,6 +1093,18 @@ fn srgbToLinear(s: vec3<f32>) -> vec3<f32> {
     return select(hi, lo, s <= vec3<f32>(0.04045));
 }
 
+// Selection tint. bit 0 = in selection (cool blue mix), bit 1 = active
+// (slightly stronger blue mix). Matches the GL main shader.
+fn selectionTint(base: vec3<f32>, object_id: u32) -> vec3<f32> {
+    var color = base;
+    if (object_id < arrayLength(&sel_flags)) {
+        let flags = sel_flags[object_id];
+        if ((flags & 1u) != 0u) { color = mix(color, vec3<f32>(0.2, 0.6, 1.0), 0.45); }
+        if ((flags & 2u) != 0u) { color = mix(color, vec3<f32>(0.4, 0.8, 1.0), 0.40); }
+    }
+    return color;
+}
+
 @fragment
 fn fs_main(in: VsOut, @builtin(front_facing) front_facing: bool) -> @location(0) vec4<f32> {
     if (is_section_clipped(in.world_pos)) { discard; }
@@ -1096,15 +1119,7 @@ fn fs_main(in: VsOut, @builtin(front_facing) front_facing: bool) -> @location(0)
     let key  = max(dot(n, u_frame.light_dir.xyz), 0.0);
     let fill = max(dot(n, u_frame.fill_dir.xyz),  0.0) * 0.35;
 
-    var color = in.color.xyz * (ambient + (key + fill) * 0.7);
-
-    // Selection tint. bit 0 = in selection (cool blue mix), bit 1 = active
-    // (slightly stronger blue mix). Matches the GL main shader.
-    if (in.object_id < arrayLength(&sel_flags)) {
-        let flags = sel_flags[in.object_id];
-        if ((flags & 1u) != 0u) { color = mix(color, vec3<f32>(0.2, 0.6, 1.0), 0.45); }
-        if ((flags & 2u) != 0u) { color = mix(color, vec3<f32>(0.4, 0.8, 1.0), 0.40); }
-    }
+    let color = selectionTint(in.color.xyz * (ambient + (key + fill) * 0.7), in.object_id);
 
     // Cancel the swap chain's implicit linear→sRGB encoding so the final
     // bytes match the GL backend (see srgbToLinear above). Alpha is
@@ -1126,6 +1141,16 @@ fn fs_mask(in: VsOut) -> @location(0) f32 {
     if (in.object_id >= arrayLength(&sel_flags)) { discard; }
     if ((sel_flags[in.object_id] & 1u) == 0u) { discard; }
     return 1.0;
+}
+
+// Section cap parity (see SectionCapRenderer). Blended additively with no
+// depth test: a back face adds the object's colour and a count of one, a front
+// face takes them away again.
+@fragment
+fn fs_cap_accum(in: VsOut, @builtin(front_facing) front_facing: bool) -> @location(0) vec4<f32> {
+    if (is_section_clipped(in.world_pos)) { discard; }
+    let color = selectionTint(in.color.xyz, in.object_id);
+    return vec4<f32>(color, 1.0) * select(1.0, -1.0, front_facing);
 }
 
 // --------------------------- Pick pipeline ---------------------------------
@@ -1387,6 +1412,10 @@ bool ViewportCore::buildPipelines() {
     // Section-plane gizmo (shared desktop + web). Optional — a failure just
     // means no gizmo, not a dead viewport.
     section_gizmo_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
+
+    // Section caps. Optional as well: without them a cut just reads hollow.
+    section_caps_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
+    buildSectionCapPipeline();
 
     // Corner axis gizmo + orbit pivot indicator (shared desktop + web).
     // Also optional: a failure costs the indicator, not the viewport.
@@ -1759,13 +1788,15 @@ void ViewportCore::applyBudgetToPool() {
 
 std::uint64_t ViewportCore::attachmentBytesPerPixel() {
     // Sizes follow the formats in ensureDepthTexture / ensureMsaaColorTexture /
-    // ensureSelectionOutlineTextures / createPickAttachments.
+    // ensureSelectionOutlineTextures / SectionCapRenderer::ensureTarget /
+    // createPickAttachments.
     constexpr std::uint64_t msaa = kViewportSampleCount;
     return 4 * msaa          // msaa colour, 4 B/sample (any 8-bit RGBA surface)
          + 4 * msaa          // depth32 msaa
          + 1 * msaa          // selection mask msaa (R8)
          + 1                 // selection mask resolve (R8)
          + 4                 // selection scratch (RGBA8)
+         + 8                 // section cap accumulation (RGBA16F)
          + 4 + 8 + 16 + 4;   // pick: R32Uint id, RGBA16F normal, RGBA32F position, depth32
 }
 
@@ -2180,6 +2211,8 @@ void ViewportCore::shutdown() {
     if (main_pipeline_no_cull_)      { wgpuRenderPipelineRelease(main_pipeline_no_cull_);     main_pipeline_no_cull_ = nullptr; }
     if (main_pipeline_transparent_)  { wgpuRenderPipelineRelease(main_pipeline_transparent_); main_pipeline_transparent_ = nullptr; }
     section_gizmo_.destroy();
+    section_caps_.destroy();
+    if (section_cap_accum_pipeline_) { wgpuRenderPipelineRelease(section_cap_accum_pipeline_); section_cap_accum_pipeline_ = nullptr; }
     axis_indicator_.destroy();
     if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
     if (pipeline_layout_)      { wgpuPipelineLayoutRelease(pipeline_layout_);     pipeline_layout_ = nullptr; }
@@ -5192,6 +5225,7 @@ bool ViewportCore::ensureRenderAttachments(int width_px, int height_px) {
             ensureMsaaColorTexture(width_px, height_px);
             ensureHizTextures(width_px, height_px);
             ensureSelectionOutlineTextures(width_px, height_px);
+            section_caps_.ensureTarget(width_px, height_px);
             createPickAttachments(width_px, height_px);
         },
         [&]() { releaseRenderAttachments(); },
@@ -5217,6 +5251,7 @@ void ViewportCore::releaseRenderAttachments() {
     releaseMsaaColorTexture();
     releaseHizTextures();
     releaseSelectionOutlineTextures();
+    section_caps_.releaseTarget();
     releasePickResources();
 }
 
@@ -5457,6 +5492,86 @@ void ViewportCore::releaseEdgeResources() {
     if (edge_shader_module_)   { wgpuShaderModuleRelease(edge_shader_module_);edge_shader_module_ = nullptr; }
     if (edge_pipeline_layout_) { wgpuPipelineLayoutRelease(edge_pipeline_layout_); edge_pipeline_layout_ = nullptr; }
     if (edge_bgl_)             { wgpuBindGroupLayoutRelease(edge_bgl_);       edge_bgl_ = nullptr; }
+}
+
+// ===========================================================================
+// Section caps: buildSectionCapPipeline + encodeSectionCapAccumPass. The
+// composite half lives in SectionCapRenderer.
+// ===========================================================================
+
+bool ViewportCore::buildSectionCapPipeline() {
+    WGPUBlendState blend = {};
+    blend.color.srcFactor = WGPUBlendFactor_One;
+    blend.color.dstFactor = WGPUBlendFactor_One;
+    blend.color.operation = WGPUBlendOperation_Add;
+    blend.alpha           = blend.color;
+
+    WGPUColorTargetState target = {};
+    target.format    = SectionCapRenderer::kAccumFormat;
+    target.blend     = &blend;
+    target.writeMask = WGPUColorWriteMask_All;
+
+    WGPUFragmentState frag = {};
+    frag.module      = main_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_cap_accum");
+    frag.targetCount = 1;
+    frag.targets     = &target;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout             = pipeline_layout_;
+    rp_desc.label              = svFromCStr("ifcviewer-wgpu.section_cap_accum_pipeline");
+    rp_desc.vertex.module      = main_shader_module_;
+    rp_desc.vertex.entryPoint  = svFromCStr("vs_main");
+    rp_desc.vertex.bufferCount = 0;
+    rp_desc.fragment           = &frag;
+    rp_desc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
+    // Both faces, untested against depth: the parity needs every one of them.
+    rp_desc.primitive.cullMode = WGPUCullMode_None;
+    rp_desc.multisample.count  = 1;
+    rp_desc.multisample.mask   = 0xFFFFFFFFu;
+
+    section_cap_accum_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    if (!section_cap_accum_pipeline_) {
+        Log::warn() << "wgpu section cap pipeline creation failed";
+        return false;
+    }
+    return true;
+}
+
+bool ViewportCore::encodeSectionCapAccumPass(WGPUCommandEncoder enc) {
+    if (!section_caps_enabled_ || section_planes_.empty() || xrayActive()) return false;
+    if (!section_cap_accum_pipeline_ || !section_caps_.ready() || !frame_bind_group_) return false;
+
+    WGPURenderPassColorAttachment color = {};
+    color.view       = section_caps_.accumView();
+    color.loadOp     = WGPULoadOp_Clear;
+    color.storeOp    = WGPUStoreOp_Store;
+    color.clearValue = {0.0, 0.0, 0.0, 0.0};
+    color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount = 1;
+    pass_desc.colorAttachments     = &color;
+    pass_desc.label                = svFromCStr("ifcviewer-wgpu.section_cap_accum_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    wgpuRenderPassEncoderSetPipeline(pass, section_cap_accum_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
+
+    // The opaque half of the main pass's draw stream. Transparent objects
+    // are left uncapped.
+    for (const auto& [session_model_id, m] : models_gpu_) {
+        if (!m.drawable()) continue;
+        for (const auto& c : m.chunks) {
+            if (!c.bind_group || c.opaque_visible_vertices == 0) continue;
+            wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
+            wgpuRenderPassEncoderDraw(pass, c.opaque_visible_vertices, 1, 0, 0);
+        }
+    }
+
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+    return true;
 }
 
 // ===========================================================================
@@ -8007,6 +8122,8 @@ void ViewportCore::render() {
 
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
 
+    const bool section_caps = encodeSectionCapAccumPass(enc);
+
     WGPURenderPassColorAttachment color = {};
     color.view          = msaa_color_view_;
     color.resolveTarget = view;
@@ -8081,6 +8198,11 @@ void ViewportCore::render() {
     int viewport_w_px = 0, viewport_h_px = 0;
     host_->framebufferSize(viewport_w_px, viewport_h_px);
     const float dpr = host_->dpr();
+
+    // Over the whole scene, under every overlay.
+    if (section_caps) {
+        section_caps_.encodeComposite(pass, vp_this_frame, section_planes_, dpr, section_cap_style_);
+    }
 
     OverlayFrame overlay_frame;
     overlay_frame.view_proj          = vp_this_frame;
