@@ -900,11 +900,11 @@ public:
     bool buildHitFlagsPipelines();
 
     // Encode a hit-bitmask pass scissored to (x,y,w,h): zero the bits, draw
-    // every visible chunk (or only the opaque draws) with `pipeline`, copy the
-    // bitmask into hit_flags_staging_buffer_ and submit. Clamps the rect in
-    // place and reports the byte count to map. False if nothing is pickable
-    // or the rect is empty.
-    bool encodeHitFlagsPassToStaging(WGPURenderPipeline pipeline, bool opaque_only,
+    // every visible chunk with `pipeline`, copy the bitmask into
+    // hit_flags_staging_buffer_ and submit. Clamps the rect in place and
+    // reports the byte count to map. False if nothing is pickable or the rect
+    // is empty.
+    bool encodeHitFlagsPassToStaging(WGPURenderPipeline pipeline,
                                      int& x, int& y, int& w, int& h,
                                      std::uint64_t& needed_bytes_out);
     // Read the (already-mapped) hit bitmask → the object ids whose bit is set.
@@ -912,7 +912,7 @@ public:
     std::vector<std::uint32_t> collectMappedHitIds(std::uint64_t needed_bytes);
 
     // encodeHitFlagsPassToStaging + a blocking map → the ids. Desktop.
-    std::vector<std::uint32_t> hitFlagsPick(WGPURenderPipeline pipeline, bool opaque_only,
+    std::vector<std::uint32_t> hitFlagsPick(WGPURenderPipeline pipeline,
                                             int x, int y, int w, int h);
 
     // The object whose section cap is drawn at the pixel, or 0. Where solids
@@ -1014,7 +1014,7 @@ public:
                                   std::function<void(std::uint32_t)> cb);
     // Async sibling of hitFlagsPick. Shares the marquee's in-flight state, so
     // one issued while a box pick is mapping is dropped → cb({}).
-    void hitFlagsPickAsync(WGPURenderPipeline pipeline, bool opaque_only,
+    void hitFlagsPickAsync(WGPURenderPipeline pipeline,
                            int x, int y, int w, int h,
                            std::function<void(std::vector<std::uint32_t>)> cb);
 #endif

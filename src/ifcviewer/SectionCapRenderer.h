@@ -41,10 +41,11 @@ struct SectionCapStyle {
     // sRGB, straight alpha. The hatch lines are blended over the fill.
     float hatch_color[4] = {0.0f, 0.0f, 0.0f, 0.55f};
     // Blended over the cut object's own colour; alpha 0 keeps that colour.
+    // The fill is always as opaque as the object, whatever its colour.
     float fill_color[4]  = {0.0f, 0.0f, 0.0f, 0.0f};
     // The bold line along the cut edge, drawn just inside the cap. Width 0
-    // draws none. Two cut objects that touch are told apart by colour alone,
-    // so same-coloured neighbours get no line between them.
+    // draws none. Two cut objects that touch are told apart by colour and
+    // opacity alone, so neighbours that share both get no line between them.
     float outline_width_px = 2.0f;
     float outline_color[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 };
@@ -53,12 +54,13 @@ struct SectionCapStyle {
 // through a solid, so a cut model reads as solid instead of hollow.
 //
 // It works on parity. ViewportCore draws the clipped scene into `accumView()`
-// with additive blending, back faces as +(colour, 1) and front faces as
-// -(colour, 1). Everything that survives the clip lies behind the point where
-// a pixel's view ray enters the kept region, so the faces of a closed solid
-// cancel unless that entry point is inside it. What is left is the colour of
-// the solid being cut and a count of 1. encodeComposite() then paints those
-// pixels at the depth of the entry point.
+// with additive blending, back faces as +(colour * opacity, opacity) and
+// front faces as the negative. Everything that survives the clip lies behind
+// the point where a pixel's view ray enters the kept region, so the faces of
+// a closed solid cancel unless that entry point is inside it. What is left is
+// the colour and opacity of the solid being cut. encodeComposite() then
+// paints those pixels at the depth of the entry point, as see-through as the
+// object is.
 //
 // Meshes that are not closed leave a wrong count and get a wrong cap.
 class SectionCapRenderer {

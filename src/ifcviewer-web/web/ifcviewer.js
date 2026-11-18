@@ -886,8 +886,9 @@
 
       // Fill the cross-section where a section plane cuts through a solid, so
       // a cut wall or slab reads as solid instead of hollow (on by default).
-      // Caps are never drawn in x-ray. Only closed meshes cap correctly, and
-      // transparent objects are left uncapped.
+      // Caps are never drawn in x-ray. Only closed meshes cap correctly. A
+      // transparent object's cap is filled at the object's own opacity, so
+      // you see through it; the hatch and outline keep theirs.
       setSectionCaps: function (on) {
         Module._ifcv_set_section_caps_c(on ? 1 : 0);
       },
@@ -907,8 +908,8 @@
       //   outlineWidth  CSS pixels of the bold line along the cut edge
       //                 (default 2, at most 6 device pixels); 0 for none
       //   outlineColor  its colour (default '#000000')
-      // The outline separates touching cut objects by colour alone, so
-      // same-coloured neighbours get no line between them.
+      // The outline separates touching cut objects by colour and opacity
+      // alone, so neighbours that share both get no line between them.
       // Omitted fields keep their current value.
       setSectionCapStyle: function (style) {
         style = style || {};
