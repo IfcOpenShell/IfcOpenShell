@@ -73,6 +73,10 @@ struct CapUniforms {
 };
 
 @group(0) @binding(0) var accum: texture_2d<f32>;
+
+// Below this the accumulated opacity cannot be told from the rounding the
+// accumulation leaves behind, so an object this transparent goes uncapped.
+const kMinOpacity = 0.01;
 @group(0) @binding(1) var<uniform> u: CapUniforms;
 
 @vertex
@@ -97,11 +101,11 @@ fn hatchLines(along: f32) -> f32 {
     return 1.0 - smoothstep(half - 0.5, half + 0.5, dist);
 }
 
-// Coverage of the cut outline at cap pixel `p`, whose object colour is `own`:
-// how far inside the outline width the nearest pixel is that either has no cap
-// or belongs to a cap of another colour. A boundary between two caps is drawn
-// by both, so each takes half the width there.
-fn outlineCoverage(p: vec2<i32>, own: vec3<f32>) -> f32 {
+// Coverage of the cut outline at cap pixel `p`, whose object colour and
+// opacity are `own`: how far inside the outline width the nearest pixel is
+// that either has no cap or belongs to a cap that looks different. A boundary
+// between two caps is drawn by both, so each takes half the width there.
+fn outlineCoverage(p: vec2<i32>, own: vec4<f32>) -> f32 {
     let w = u.outline_width_px;
     if (w <= 0.0) { return 0.0; }
     let max_p = vec2<i32>(textureDimensions(accum)) - vec2<i32>(1, 1);
@@ -114,9 +118,9 @@ fn outlineCoverage(p: vec2<i32>, own: vec3<f32>) -> f32 {
             var reach = w;
             if (q.x >= 0 && q.y >= 0 && q.x <= max_p.x && q.y <= max_p.y) {
                 let s = textureLoad(accum, q, 0);
-                if (abs(s.a) >= 0.5) {
-                    let d = abs(s.rgb / s.a - own);
-                    if (max(d.x, max(d.y, d.z)) < 0.05) { continue; }
+                if (abs(s.a) >= kMinOpacity) {
+                    let d = abs(vec4<f32>(s.rgb / s.a, abs(s.a)) - own);
+                    if (max(max(d.x, d.y), max(d.z, d.w)) < 0.05) { continue; }
                     reach = w * 0.5;
                 }
             }
@@ -137,7 +141,7 @@ fn fs_main(@builtin(position) pos: vec4<f32>) -> FsOut {
     let acc = textureLoad(accum, vec2<i32>(pos.xy), 0);
     // The winding of a mirrored instance is reversed, which only flips the
     // sign of everything it accumulates.
-    if (abs(acc.a) < 0.5) { discard; }
+    if (abs(acc.a) < kMinOpacity) { discard; }
 
     // The pixel's view ray, from the near plane (t = 0) to the far (t = 1).
     let size = vec2<f32>(textureDimensions(accum));
@@ -167,23 +171,30 @@ fn fs_main(@builtin(position) pos: vec4<f32>) -> FsOut {
     }
     if (t_enter <= 0.0 || t_enter >= t_exit) { discard; }
 
-    let own = acc.rgb / acc.a;
-    var color = mix(own, u.fill_color.rgb, u.fill_color.a);
+    let own = vec4<f32>(acc.rgb / acc.a, min(abs(acc.a), 1.0));
+    var color = mix(own.rgb, u.fill_color.rgb, u.fill_color.a);
+    // The fill is as see-through as the object; the lines keep their own
+    // opacity so the cut still reads on a glass pane.
+    var alpha = own.a;
 
     // 0.7071 turns x + y into a distance across 45-degree lines.
     var lines = 0.0;
     if (u.hatch >= 1u) { lines = hatchLines((pos.x + pos.y) * 0.70710678); }
     if (u.hatch >= 2u) { lines = max(lines, hatchLines((pos.x - pos.y) * 0.70710678)); }
-    color = mix(color, u.hatch_color.rgb, u.hatch_color.a * lines);
-    color = mix(color, u.outline_color.rgb,
-                u.outline_color.a * outlineCoverage(vec2<i32>(pos.xy), own));
+    let hatch = u.hatch_color.a * lines;
+    color = mix(color, u.hatch_color.rgb, hatch);
+    alpha = mix(alpha, 1.0, hatch);
+    let outline = u.outline_color.a * outlineCoverage(vec2<i32>(pos.xy), own);
+    color = mix(color, u.outline_color.rgb, outline);
+    alpha = mix(alpha, 1.0, outline);
 
     // A hair behind the plane, so the section gizmo lying in it still passes
     // its depth test.
     let clip = u.view_proj * vec4<f32>(o + dir * (t_enter * 1.001), 1.0);
 
     var out: FsOut;
-    out.color = vec4<f32>(srgbToLinear(color), 1.0);
+    // Straight alpha out; the SrcAlpha blend factor does the premultiply.
+    out.color = vec4<f32>(srgbToLinear(color), alpha);
     out.depth = clamp(clip.z / clip.w, 0.0, 1.0);
     return out;
 }
@@ -233,8 +244,16 @@ bool SectionCapRenderer::init(WGPUDevice device, WGPUQueue queue,
     sm_desc.label       = svFromCStr("ifcviewer-wgpu.section_cap_wgsl");
     shader_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
 
+    WGPUBlendState blend = {};
+    blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+    blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.color.operation = WGPUBlendOperation_Add;
+    blend.alpha.srcFactor = WGPUBlendFactor_One;
+    blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.alpha.operation = WGPUBlendOperation_Add;
     WGPUColorTargetState ct = {};
     ct.format    = color_format;
+    ct.blend     = &blend;
     ct.writeMask = WGPUColorWriteMask_All;
 
     WGPUFragmentState frag = {};
