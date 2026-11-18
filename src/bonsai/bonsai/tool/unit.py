@@ -361,6 +361,39 @@ class Unit(bonsai.core.tool.Unit):
             return name
 
     @classmethod
+    def get_unit_label(cls, unit: ifcopenshell.entity_instance) -> str:
+        """Picker label for a unit, e.g. "inch (in)" or "MILLIMETRE (mm)"."""
+        name = getattr(unit, "Name", None) or unit.is_a()
+        if unit.is_a("IfcSIUnit") and unit.Prefix:
+            name = f"{unit.Prefix}{name}"
+        symbol = ifcopenshell.util.unit.get_unit_symbol(unit)
+        return f"{name} ({symbol})" if symbol else name
+
+    @classmethod
+    def get_distinct_units(
+        cls, units: list[ifcopenshell.entity_instance], preferred_id: int = 0
+    ) -> list[ifcopenshell.entity_instance]:
+        """Collapse units a user can't tell apart -- same class, type, label and scale -- to one.
+
+        Files routinely hold such copies: every conversion-based unit (foot, inch, ...) carries
+        its own METRE as its conversion factor's unit. The lowest STEP id represents each group,
+        so the choice is stable across redraws, unless `preferred_id` (e.g. a property's current
+        Unit) is in the group, in which case it is kept so that selection stays representable.
+        The caller's order is preserved.
+        """
+        groups: dict[tuple, ifcopenshell.entity_instance] = {}
+        for unit in sorted(units, key=lambda u: u.id()):
+            try:
+                scale = f"{ifcopenshell.util.unit.get_unit_scale(unit):.12g}"
+            except Exception:
+                scale = str(unit.id())  # Unscalable: never merge it with anything.
+            key = (unit.is_a(), getattr(unit, "UnitType", None), cls.get_unit_label(unit), scale)
+            if key not in groups or unit.id() == preferred_id:
+                groups[key] = unit
+        kept = set(groups.values())
+        return [u for u in units if u in kept]
+
+    @classmethod
     def add_structural_units(cls) -> list[ifcopenshell.entity_instance]:
         """Units for the forces, stiffnesses and material values of structural analysis.
 
