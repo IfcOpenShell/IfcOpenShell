@@ -90,6 +90,23 @@ def add_context_dependent_unit(
     return result
 
 
+def add_derived_unit(
+    ifc: type[tool.Ifc],
+    unit: type[tool.Unit],
+    unit_type: str,
+    component_choices: dict[str, str] | None = None,
+) -> ifcopenshell.entity_instance:
+    component_units = {}
+    for component_type, choice in (component_choices or {}).items():
+        if component_unit := unit.resolve_unit_choice(component_type, choice):
+            component_units[component_type] = component_unit
+    result = unit.add_derived_unit(unit_type, component_units)
+    if not unit.get_assigned_unit_of_type(result):
+        ifc.run("unit.assign_unit", units=[result])
+    unit.import_units()
+    return result
+
+
 def add_conversion_based_unit(ifc: type[tool.Ifc], unit: type[tool.Unit], name: str) -> ifcopenshell.entity_instance:
     result = ifc.run("unit.add_conversion_based_unit", name=name)
     if not unit.get_assigned_unit_of_type(result):
