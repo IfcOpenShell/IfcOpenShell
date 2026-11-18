@@ -866,6 +866,16 @@
       toggleXray:   function () { Module._toggle_xray_c(); },
       xrayActive:   function () { return Module._xray_is_active_c() !== 0; },
 
+      // Backface culling of opaque geometry (on by default). Turn it off to
+      // draw back faces too, for models whose faces are single-sided or wound
+      // the wrong way round and would otherwise show holes.
+      setBackfaceCulling: function (on) {
+        Module._ifcv_set_backface_culling_c(on ? 1 : 0);
+      },
+      backfaceCullingEnabled: function () {
+        return Module._ifcv_backface_culling_is_on_c() !== 0;
+      },
+
       // Model bookkeeping (ordered by load). Progress is per-model chunk counts.
       modelCount: function () { return Module._ifcv_model_count_c ? Module._ifcv_model_count_c() : 0; },
       modelProgress: function (i) {
