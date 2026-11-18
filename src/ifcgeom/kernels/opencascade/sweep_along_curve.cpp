@@ -133,7 +133,7 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 			logger_.warning("GEO", 259, "Sweeping a tessellated directrix as a polyhedron", scs->instance);
 			return convert(shell, result);
 		} catch (const std::exception& e) {
-			logger_.notice("GEO", 260, std::string("Tessellated directrix not swept as a polyhedron: ") + e.what(), scs->instance);
+			logger_.warning("GEO", 260, std::string("Tessellated directrix not swept as a polyhedron: ") + e.what(), scs->instance);
 		}
 	}
 
