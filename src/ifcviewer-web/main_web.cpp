@@ -642,6 +642,29 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_backface_culling_c(int on) {
 extern "C" EMSCRIPTEN_KEEPALIVE int  ifcv_backface_culling_is_on_c() {
     return (g_app && g_app->ready && g_app->core.backfaceCulling()) ? 1 : 0;
 }
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_section_caps_c(int on) {
+    if (g_app && g_app->ready) g_app->core.setSectionCapsEnabled(on != 0);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int  ifcv_section_caps_is_on_c() {
+    return (g_app && g_app->ready && g_app->core.sectionCapsEnabled()) ? 1 : 0;
+}
+// hatch: 0 none, 1 diagonal, 2 cross. Sizes in CSS pixels; colours are sRGB
+// with straight alpha, 0..1.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_section_cap_style_c(
+        int hatch, float spacing_px, float line_width_px,
+        float hatch_r, float hatch_g, float hatch_b, float hatch_a,
+        float fill_r, float fill_g, float fill_b, float fill_a) {
+    if (!g_app || !g_app->ready) return;
+    SectionCapStyle s;
+    s.hatch         = hatch == 0 ? SectionCapStyle::Hatch::None
+                    : hatch == 2 ? SectionCapStyle::Hatch::Cross
+                                 : SectionCapStyle::Hatch::Diagonal;
+    s.spacing_px    = spacing_px;
+    s.line_width_px = line_width_px;
+    s.hatch_color[0] = hatch_r; s.hatch_color[1] = hatch_g; s.hatch_color[2] = hatch_b; s.hatch_color[3] = hatch_a;
+    s.fill_color[0]  = fill_r;  s.fill_color[1]  = fill_g;  s.fill_color[2]  = fill_b;  s.fill_color[3]  = fill_a;
+    g_app->core.setSectionCapStyle(s);
+}
 
 // ===========================================================================
 // Scripting API (web/ifcviewer.js wraps these into the IfcViewer object)
