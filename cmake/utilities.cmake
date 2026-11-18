@@ -609,6 +609,7 @@ function(avoid_debug_imported_config_fallback)
     foreach(_target ${ARGN})
         if(TARGET ${_target})
             set_target_properties(${_target} PROPERTIES
+                MAP_IMPORTED_CONFIG_RELEASE "RELEASE;RELWITHDEBINFO;MINSIZEREL"
                 MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RELWITHDEBINFO;RELEASE;MINSIZEREL"
                 MAP_IMPORTED_CONFIG_MINSIZEREL "MINSIZEREL;RELEASE;RELWITHDEBINFO"
             )
