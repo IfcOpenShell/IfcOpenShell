@@ -237,3 +237,19 @@ TEST_CASE("applyMarqueeToSelection: replace / add / remove", "[camera][selection
         REQUIRE(core.hiddenCount() == 1);
     }
 }
+
+TEST_CASE("section gizmo is hit where it is drawn at fractional display scaling", "[section]") {
+    // An 800x600 logical window at 150% scaling. Mouse positions are logical.
+    struct ScaledHost : MockHost {
+        void  framebufferSize(int& w, int& h) const override { w = 1200; h = 900; }
+        float dpr() const override { return 1.5f; }
+    };
+    ScaledHost host; ViewportCore core(&host);
+    core.setCamera(0, 0, 0, /*dist*/10, /*yaw*/0, /*pitch*/30);
+    // At the orbit target, so the gizmo's origin is at the window centre.
+    REQUIRE(core.addSectionPlaneAtSurface({0, 0, 0}, {0, 0, 1}, 1.0f));
+
+    REQUIRE(core.hitTestSectionGizmo(400, 300) == 0);
+    // The framebuffer centre, where an integer-truncated ratio put it.
+    REQUIRE(core.hitTestSectionGizmo(600, 450) == -1);
+}

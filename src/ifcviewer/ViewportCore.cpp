@@ -8481,9 +8481,9 @@ void ViewportCore::clearSectionPlanes() {
 void ViewportCore::sectionLogicalViewport(int& w, int& h) const {
     int fb_w = 0, fb_h = 0;
     host_->framebufferSize(fb_w, fb_h);
-    const int dpr = std::max(1, int(host_->dpr()));
-    w = fb_w / dpr;
-    h = fb_h / dpr;
+    const float dpr = host_->dpr();
+    w = int(std::lround(float(fb_w) / dpr));
+    h = int(std::lround(float(fb_h) / dpr));
 }
 
 int ViewportCore::hitTestSectionGizmo(int x, int y) {
