@@ -195,6 +195,56 @@ class TestUndefinedVersusDefaultUnits(NewFile):
         assert bonsai.bim.prop.get_unit_enum_items_for_special_type("", ifc) == [("0", "Default", "")]
 
 
+class TestDuplicateUnitsAreListedOnce(NewFile):
+    """Each conversion-based unit carries its own hidden METRE (its conversion factor's unit),
+    so a foot + inch project used to list "METRE (m)" twice in every length picker."""
+
+    def setup_foot_and_inch_project(self):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        foot = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="foot")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[foot])
+        inch = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="inch")
+        return ifc, foot, inch
+
+    def test_identical_metres_appear_once(self):
+        ifc, foot, inch = self.setup_foot_and_inch_project()
+        assert len([u for u in ifc.by_type("IfcSIUnit") if u.UnitType == "LENGTHUNIT"]) == 2
+        labels = [i[1] for i in bonsai.bim.prop.get_unit_enum_items_for_special_type("LENGTH", ifc)]
+        assert labels == ["Default (ft)", "foot (ft)", "inch (in)", "METRE (m)"]
+
+    def test_the_lowest_id_represents_a_group(self):
+        ifc, foot, inch = self.setup_foot_and_inch_project()
+        metres = sorted(u.id() for u in ifc.by_type("IfcSIUnit") if u.UnitType == "LENGTHUNIT")
+        ids = [i[0] for i in bonsai.bim.prop.get_unit_enum_items_for_special_type("LENGTH", ifc)]
+        assert str(metres[0]) in ids
+        assert str(metres[1]) not in ids
+
+    def test_a_property_using_a_duplicate_keeps_it_selectable_without_a_second_entry(self):
+        ifc, foot, inch = self.setup_foot_and_inch_project()
+        second_metre = max((u for u in ifc.by_type("IfcSIUnit") if u.UnitType == "LENGTHUNIT"), key=lambda u: u.id())
+
+        element = ifc.createIfcWall()
+        prop = ifc.createIfcPropertySingleValue(
+            Name="Foo", NominalValue=ifc.createIfcLengthMeasure(2.0), Unit=second_metre
+        )
+        metadata = import_single_property(ifc, element, prop)
+
+        items = bonsai.bim.prop.get_attribute_unit_enum_items(metadata, bpy.context)
+        assert [i[1] for i in items].count("METRE (m)") == 1
+        assert str(second_metre.id()) in [i[0] for i in items]
+        assert metadata.unit_id_enum == str(second_metre.id())
+
+    def test_distinct_units_with_the_same_type_are_kept(self):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        mm = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT", prefix="MILLI")
+        m = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT")
+        assert tool.Unit.get_distinct_units([mm, m]) == [mm, m]
+
+
 class TestGetUnitEnumItemsForSpecialType(NewFile):
     def test_matches_the_attribute_wrapper_output(self):
         # Regression test for extracting get_unit_enum_items_for_special_type out of

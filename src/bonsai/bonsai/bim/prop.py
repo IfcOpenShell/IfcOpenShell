@@ -123,7 +123,7 @@ def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> 
 
 
 def get_unit_enum_items_for_special_type(
-    special_type: str, ifc_file: Union[ifcopenshell.file, None]
+    special_type: str, ifc_file: Union[ifcopenshell.file, None], preferred_id: int = 0
 ) -> tool.Blender.BLENDER_ENUM_ITEMS:
     """Items for a unit-override picker: a "no override" entry plus every candidate unit
     matching `special_type`, filtered per-caller since candidates depend on the measure type
@@ -133,6 +133,8 @@ def get_unit_enum_items_for_special_type(
     IfcUnitAssignment defines a unit for `special_type`, and "Undefined" when it doesn't -- in
     that case a value without its own Unit has no unit at all, so calling it "Default" would
     wrongly imply one exists.
+
+    Indistinguishable duplicate units are listed once (see `tool.Unit.get_distinct_units`).
     """
     if not ifc_file or not tool.Pset.is_measurable_special_type(special_type):
         return [(cache_string("0"), cache_string("Default"), "")]
@@ -151,11 +153,9 @@ def get_unit_enum_items_for_special_type(
             tool.Pset.UNDEFINED_UNIT_DESCRIPTION,
         )
     items: list[tuple[str, str, str]] = [no_override_item]
-    for unit in tool.Pset.get_candidate_units_for_special_type(special_type, ifc_file):
-        name = getattr(unit, "Name", None) or unit.is_a()
-        symbol = ifcopenshell.util.unit.get_unit_symbol(unit)
-        label = f"{name} ({symbol})" if symbol else name
-        items.append((cache_string(str(unit.id())), cache_string(label), ""))
+    candidates = tool.Pset.get_candidate_units_for_special_type(special_type, ifc_file)
+    for unit in tool.Unit.get_distinct_units(candidates, preferred_id):
+        items.append((cache_string(str(unit.id())), cache_string(tool.Unit.get_unit_label(unit)), ""))
     return items
 
 
@@ -167,14 +167,11 @@ def get_attribute_unit_enum_items(prop: "Attribute", context: bpy.types.Context)
     match an already-seeded unit_id can never raise "enum not found".
     """
     ifc_file = tool.Ifc.get()
-    items = get_unit_enum_items_for_special_type(prop.special_type, ifc_file)
+    items = get_unit_enum_items_for_special_type(prop.special_type, ifc_file, preferred_id=prop.unit_id)
 
     if prop.unit_id and prop.unit_id not in {int(i[0]) for i in items}:
         own_unit = ifc_file.by_id(prop.unit_id)
-        name = getattr(own_unit, "Name", None) or own_unit.is_a()
-        symbol = ifcopenshell.util.unit.get_unit_symbol(own_unit)
-        label = f"{name} ({symbol})" if symbol else name
-        items.append((cache_string(str(prop.unit_id)), cache_string(label), ""))
+        items.append((cache_string(str(prop.unit_id)), cache_string(tool.Unit.get_unit_label(own_unit)), ""))
 
     return items
 
