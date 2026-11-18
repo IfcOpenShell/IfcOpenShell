@@ -86,6 +86,15 @@ public:
                          const std::vector<SectionPlane>& planes,
                          float device_pixel_ratio, const SectionCapStyle& style);
 
+    // Whether the view ray through (ndc_x, ndc_y) enters the kept region
+    // through a section plane, which is where a cap can be. Fills the entry
+    // point and that plane's normal. The composite shader makes the same test
+    // per pixel. Pure math, no GPU.
+    static bool rayEntry(const Eigen::Matrix4f& view_proj,
+                         const std::vector<SectionPlane>& planes,
+                         float ndc_x, float ndc_y,
+                         Eigen::Vector3f& point_out, Eigen::Vector3f& normal_out);
+
 private:
     WGPUDevice          device_         = nullptr;
     WGPUQueue           queue_          = nullptr;

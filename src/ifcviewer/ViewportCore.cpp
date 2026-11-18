@@ -1232,6 +1232,17 @@ fn fs_boxpick(in: VsOutPick) {
     if (word >= arrayLength(&hit_flags)) { return; }
     atomicOr(&hit_flags[word], 1u << (in.object_id & 31u));
 }
+
+// Section cap pick. Flips the bit instead of setting it, so over one pixel an
+// object keeps its bit only if an odd number of its faces survive the clip
+// along the ray — which is the object the cap there belongs to.
+@fragment
+fn fs_cappick(in: VsOutPick) {
+    if (is_section_clipped(in.world_pos)) { discard; }
+    let word = in.object_id >> 5u;
+    if (word >= arrayLength(&hit_flags)) { return; }
+    atomicXor(&hit_flags[word], 1u << (in.object_id & 31u));
+}
 )";
 } // namespace
 
@@ -5538,9 +5549,25 @@ bool ViewportCore::buildSectionCapPipeline() {
     return true;
 }
 
+bool ViewportCore::sectionCapsActive() const {
+    return section_caps_enabled_ && !section_planes_.empty() && !xrayActive()
+        && section_cap_accum_pipeline_ && section_caps_.ready();
+}
+
+bool ViewportCore::sectionCapRayEntry(int x_pixels, int y_pixels,
+                                      Eigen::Vector3f& point_out,
+                                      Eigen::Vector3f& normal_out) const {
+    if (!sectionCapsActive() || configured_w_ <= 0 || configured_h_ <= 0) return false;
+    Eigen::Matrix4f view, proj;
+    buildViewProj(view, proj);
+    const float ndc_x = (float(x_pixels) + 0.5f) / float(configured_w_) * 2.0f - 1.0f;
+    const float ndc_y = 1.0f - (float(y_pixels) + 0.5f) / float(configured_h_) * 2.0f;
+    return SectionCapRenderer::rayEntry(proj * view, section_planes_, ndc_x, ndc_y,
+                                        point_out, normal_out);
+}
+
 bool ViewportCore::encodeSectionCapAccumPass(WGPUCommandEncoder enc) {
-    if (!section_caps_enabled_ || section_planes_.empty() || xrayActive()) return false;
-    if (!section_cap_accum_pipeline_ || !section_caps_.ready() || !frame_bind_group_) return false;
+    if (!sectionCapsActive() || !frame_bind_group_) return false;
 
     WGPURenderPassColorAttachment color = {};
     color.view       = section_caps_.accumView();
@@ -6181,17 +6208,18 @@ bool ViewportCore::buildPickPipeline() {
         Log::warn() << "wgpu pick pipeline creation failed";
         return false;
     }
-    // The x-ray marquee variant rides along so no caller has to know about it.
+    // The hit-bitmask variants ride along so no caller has to know about them.
     // A failure here is not fatal: picksInRect falls back to the depth-tested
-    // read, which is the pre-x-ray behaviour rather than a broken viewport.
-    buildBoxPickPipeline();
+    // read and a section cap is simply not pickable, rather than a broken
+    // viewport.
+    buildHitFlagsPipelines();
     return true;
 }
 
-bool ViewportCore::buildBoxPickPipeline() {
-    // No colour targets: fs_boxpick's only output is the atomic bit it sets, so
-    // the pass writes no image at all. A render pass still needs one attachment
-    // — the pick depth view serves, bound read-only.
+bool ViewportCore::buildHitFlagsPipelines() {
+    // No colour targets: the fragment's only output is the atomic bit it
+    // touches, so the pass writes no image at all. A render pass still needs
+    // one attachment — the pick depth view serves, bound read-only.
     WGPUFragmentState frag = {};
     frag.module      = main_shader_module_;
     frag.entryPoint  = svFromCStr("fs_boxpick");
@@ -6224,8 +6252,13 @@ bool ViewportCore::buildBoxPickPipeline() {
     rp_desc.multisample.mask    = 0xFFFFFFFFu;
 
     box_pick_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
-    if (!box_pick_pipeline_) {
-        Log::warn() << "wgpu box-pick pipeline creation failed";
+
+    frag.entryPoint = svFromCStr("fs_cappick");
+    rp_desc.label   = svFromCStr("ifcviewer-wgpu.cap_pick_pipeline");
+    cap_pick_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+
+    if (!box_pick_pipeline_ || !cap_pick_pipeline_) {
+        Log::warn() << "wgpu hit-bitmask pipeline creation failed";
         return false;
     }
     return true;
@@ -6344,6 +6377,7 @@ void ViewportCore::releasePickResources() {
     }
     if (pick_pipeline_)            { wgpuRenderPipelineRelease(pick_pipeline_); pick_pipeline_ = nullptr; }
     if (box_pick_pipeline_)        { wgpuRenderPipelineRelease(box_pick_pipeline_); box_pick_pipeline_ = nullptr; }
+    if (cap_pick_pipeline_)        { wgpuRenderPipelineRelease(cap_pick_pipeline_); cap_pick_pipeline_ = nullptr; }
     if (box_pick_staging_buffer_)  {
         wgpuBufferRelease(box_pick_staging_buffer_);
         box_pick_staging_buffer_ = nullptr;
@@ -6472,6 +6506,11 @@ std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
     if (!ensurePickAttachments(configured_w_, configured_h_)
         || !pick_staging_buffer_) return 0;
     if (normal_out && !pick_normal_staging_buffer_) return 0;
+
+    // A cap is in front of everything the pick pass can see.
+    if (const std::uint32_t cap_id = pickSectionCapAt(x_pixels, y_pixels, normal_out)) {
+        return cap_id;
+    }
 
     encodePickReadbackToStaging(x_pixels, y_pixels, normal_out != nullptr);
 
@@ -6691,6 +6730,22 @@ void ViewportCore::toggleXray() {
 #if defined(__EMSCRIPTEN__)
 void ViewportCore::pickObjectAtAsync(int x_pixels, int y_pixels,
                                      std::function<void(std::uint32_t)> cb) {
+    // A cap is in front of everything the pick pass can see, so ask for it
+    // first and fall back to what is visible.
+    Eigen::Vector3f point, normal;
+    if (sectionCapRayEntry(x_pixels, y_pixels, point, normal)) {
+        hitFlagsPickAsync(cap_pick_pipeline_, /*opaque_only=*/true, x_pixels, y_pixels, 1, 1,
+            [this, x_pixels, y_pixels, cb = std::move(cb)](std::vector<std::uint32_t> ids) mutable {
+                if (!ids.empty()) { if (cb) cb(ids.front()); return; }
+                pickVisibleObjectAtAsync(x_pixels, y_pixels, std::move(cb));
+            });
+        return;
+    }
+    pickVisibleObjectAtAsync(x_pixels, y_pixels, std::move(cb));
+}
+
+void ViewportCore::pickVisibleObjectAtAsync(int x_pixels, int y_pixels,
+                                            std::function<void(std::uint32_t)> cb) {
     // Async sibling of pickObjectAt for the web build, where the blocking
     // map-spin would hang the JS event loop. Encodes the same pick pass, then
     // maps the staging buffer with a spontaneous callback (AllowSpontaneous +
@@ -6871,10 +6926,11 @@ std::vector<std::uint32_t> ViewportCore::collectMappedBoxPickIds(
     return out;
 }
 
-bool ViewportCore::encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
-                                              std::uint64_t& needed_bytes_out) {
+bool ViewportCore::encodeHitFlagsPassToStaging(WGPURenderPipeline pipeline, bool opaque_only,
+                                               int& x, int& y, int& w, int& h,
+                                               std::uint64_t& needed_bytes_out) {
     if (w <= 0 || h <= 0) return false;
-    if (!box_pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return false;
+    if (!pipeline || !device_ || !queue_ || models_gpu_.empty()) return false;
     if (!hit_flags_buffer_ || hit_flags_words_ == 0) return false;
     if (configured_w_ <= 0 || configured_h_ <= 0) return false;
     if (x < 0) { w += x; x = 0; }
@@ -6921,21 +6977,23 @@ bool ViewportCore::encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
     pass_desc.colorAttachmentCount   = 0;
     pass_desc.colorAttachments       = nullptr;
     pass_desc.depthStencilAttachment = &depth;
-    pass_desc.label                  = svFromCStr("ifcviewer-wgpu.xray_box_pick_pass");
+    pass_desc.label                  = svFromCStr("ifcviewer-wgpu.hit_flags_pass");
 
     WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
     // The scissor is what makes this a BOX pick: geometry is drawn full-screen
-    // as usual, and only fragments landing in the marquee survive to set a bit.
+    // as usual, and only fragments landing in the rect survive to touch a bit.
     wgpuRenderPassEncoderSetScissorRect(pass, std::uint32_t(x), std::uint32_t(y),
                                         std::uint32_t(w), std::uint32_t(h));
-    wgpuRenderPassEncoderSetPipeline(pass, box_pick_pipeline_);
+    wgpuRenderPassEncoderSetPipeline(pass, pipeline);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
     for (const auto& [session_model_id, m] : models_gpu_) {
         if (!m.drawable()) continue;
         for (const auto& c : m.chunks) {
-            if (!c.bind_group || c.total_visible_vertices == 0) continue;
+            const std::uint32_t verts =
+                opaque_only ? c.opaque_visible_vertices : c.total_visible_vertices;
+            if (!c.bind_group || verts == 0) continue;
             wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
-            wgpuRenderPassEncoderDraw(pass, c.total_visible_vertices, 1, 0, 0);
+            wgpuRenderPassEncoderDraw(pass, verts, 1, 0, 0);
         }
     }
     wgpuRenderPassEncoderEnd(pass);
@@ -6953,7 +7011,7 @@ bool ViewportCore::encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
     return true;
 }
 
-std::vector<std::uint32_t> ViewportCore::collectMappedXrayHitIds(std::uint64_t needed_bytes) {
+std::vector<std::uint32_t> ViewportCore::collectMappedHitIds(std::uint64_t needed_bytes) {
     std::vector<std::uint32_t> out;
     const std::uint32_t* words = static_cast<const std::uint32_t*>(
         wgpuBufferGetConstMappedRange(hit_flags_staging_buffer_, 0, needed_bytes));
@@ -6973,26 +7031,43 @@ std::vector<std::uint32_t> ViewportCore::collectMappedXrayHitIds(std::uint64_t n
     return out;
 }
 
+std::vector<std::uint32_t> ViewportCore::hitFlagsPick(WGPURenderPipeline pipeline,
+                                                      bool opaque_only,
+                                                      int x, int y, int w, int h) {
+    std::uint64_t hit_bytes = 0;
+    if (!encodeHitFlagsPassToStaging(pipeline, opaque_only, x, y, w, h, hit_bytes)) return {};
+    struct MapReq { bool done = false; bool ok = false; };
+    MapReq req;
+    WGPUBufferMapCallbackInfo mcb = {};
+    mcb.mode = kAsyncCbMode;
+    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                      void* ud1, void* /*ud2*/) {
+        auto* r = static_cast<MapReq*>(ud1);
+        r->done = true;
+        r->ok   = (status == WGPUMapAsyncStatus_Success);
+    };
+    mcb.userdata1 = &req;
+    wgpuBufferMapAsync(hit_flags_staging_buffer_, WGPUMapMode_Read, 0, hit_bytes, mcb);
+    while (!req.done) waitTickInstance(instance_);
+    if (!req.ok) return {};
+    return collectMappedHitIds(hit_bytes);
+}
+
+std::uint32_t ViewportCore::pickSectionCapAt(int x_pixels, int y_pixels,
+                                             Eigen::Vector3f* normal_out) {
+    Eigen::Vector3f point, normal;
+    if (!sectionCapRayEntry(x_pixels, y_pixels, point, normal)) return 0;
+    const auto ids = hitFlagsPick(cap_pick_pipeline_, /*opaque_only=*/true,
+                                  x_pixels, y_pixels, 1, 1);
+    if (ids.empty()) return 0;
+    if (normal_out) *normal_out = normal;
+    return ids.front();
+}
+
 std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h) {
     // X-ray: select through, via the depth-less bitmask pass.
     if (xrayActive() && box_pick_pipeline_) {
-        std::uint64_t hit_bytes = 0;
-        if (!encodeXrayBoxPickToStaging(x, y, w, h, hit_bytes)) return {};
-        struct MapReq { bool done = false; bool ok = false; };
-        MapReq req;
-        WGPUBufferMapCallbackInfo mcb = {};
-        mcb.mode = kAsyncCbMode;
-        mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
-                          void* ud1, void* /*ud2*/) {
-            auto* r = static_cast<MapReq*>(ud1);
-            r->done = true;
-            r->ok   = (status == WGPUMapAsyncStatus_Success);
-        };
-        mcb.userdata1 = &req;
-        wgpuBufferMapAsync(hit_flags_staging_buffer_, WGPUMapMode_Read, 0, hit_bytes, mcb);
-        while (!req.done) waitTickInstance(instance_);
-        if (!req.ok) return {};
-        return collectMappedXrayHitIds(hit_bytes);
+        return hitFlagsPick(box_pick_pipeline_, /*opaque_only=*/false, x, y, w, h);
     }
 
     std::uint64_t padded_bpr = 0, needed_bytes = 0;
@@ -7016,41 +7091,51 @@ std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h)
 }
 
 #if defined(__EMSCRIPTEN__)
-void ViewportCore::picksInRectAsync(int x, int y, int w, int h,
-                                    std::function<void(std::vector<std::uint32_t>)> cb) {
+void ViewportCore::hitFlagsPickAsync(WGPURenderPipeline pipeline, bool opaque_only,
+                                     int x, int y, int w, int h,
+                                     std::function<void(std::vector<std::uint32_t>)> cb) {
     auto miss = [&cb]() { if (cb) cb({}); };
     if (box_pick_async_in_flight_) { miss(); return; }
 
-    // X-ray: select through. Same spontaneous-map dance, but the mapped buffer
-    // is a per-object bitmask rather than a rect of the object_id image, so the
-    // rect dims the other callback walks are not needed here.
-    if (xrayActive() && box_pick_pipeline_) {
-        std::uint64_t hit_bytes = 0;
-        if (!encodeXrayBoxPickToStaging(x, y, w, h, hit_bytes)) { miss(); return; }
-        box_pick_async_bytes_     = hit_bytes;
-        box_pick_async_xray_      = true;
-        box_pick_async_in_flight_ = true;
-        box_pick_async_cb_        = std::move(cb);
+    // Same spontaneous-map dance as the object_id rect, but the mapped buffer
+    // is a per-object bitmask, so the rect dims that callback walks are not
+    // needed here.
+    std::uint64_t hit_bytes = 0;
+    if (!encodeHitFlagsPassToStaging(pipeline, opaque_only, x, y, w, h, hit_bytes)) { miss(); return; }
+    box_pick_async_bytes_     = hit_bytes;
+    box_pick_async_xray_      = true;
+    box_pick_async_in_flight_ = true;
+    box_pick_async_cb_        = std::move(cb);
 
-        WGPUBufferMapCallbackInfo xcb = {};
-        xcb.mode = kAsyncCbMode;
-        xcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
-                          void* ud1, void* /*ud2*/) {
-            auto* self = static_cast<ViewportCore*>(ud1);
-            std::vector<std::uint32_t> ids;
-            if (status == WGPUMapAsyncStatus_Success) {
-                ids = self->collectMappedXrayHitIds(self->box_pick_async_bytes_);
-            }
-            auto done = std::move(self->box_pick_async_cb_);
-            self->box_pick_async_cb_        = nullptr;
-            self->box_pick_async_in_flight_ = false;
-            self->box_pick_async_xray_      = false;
-            if (done) done(std::move(ids));
-        };
-        xcb.userdata1 = this;
-        wgpuBufferMapAsync(hit_flags_staging_buffer_, WGPUMapMode_Read, 0, hit_bytes, xcb);
+    WGPUBufferMapCallbackInfo xcb = {};
+    xcb.mode = kAsyncCbMode;
+    xcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                      void* ud1, void* /*ud2*/) {
+        auto* self = static_cast<ViewportCore*>(ud1);
+        std::vector<std::uint32_t> ids;
+        if (status == WGPUMapAsyncStatus_Success) {
+            ids = self->collectMappedHitIds(self->box_pick_async_bytes_);
+        }
+        auto done = std::move(self->box_pick_async_cb_);
+        self->box_pick_async_cb_        = nullptr;
+        self->box_pick_async_in_flight_ = false;
+        self->box_pick_async_xray_      = false;
+        if (done) done(std::move(ids));
+    };
+    xcb.userdata1 = this;
+    wgpuBufferMapAsync(hit_flags_staging_buffer_, WGPUMapMode_Read, 0, hit_bytes, xcb);
+}
+
+void ViewportCore::picksInRectAsync(int x, int y, int w, int h,
+                                    std::function<void(std::vector<std::uint32_t>)> cb) {
+    // X-ray: select through, via the depth-less bitmask pass.
+    if (xrayActive() && box_pick_pipeline_) {
+        hitFlagsPickAsync(box_pick_pipeline_, /*opaque_only=*/false, x, y, w, h, std::move(cb));
         return;
     }
+
+    auto miss = [&cb]() { if (cb) cb({}); };
+    if (box_pick_async_in_flight_) { miss(); return; }
 
     std::uint64_t padded_bpr = 0, needed_bytes = 0;
     if (!encodeBoxPickToStaging(x, y, w, h, padded_bpr, needed_bytes)) { miss(); return; }

@@ -64,3 +64,38 @@ test('section cuts are capped, and the caps can be turned off and restyled', asy
 
   expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
 });
+
+test('clicking a cap selects the object it cuts through', async ({ page }) => {
+  await page.goto('/scripting.html');
+  await page.waitForFunction(() => !!(window.viewer && window.viewer.isLive()),
+                             null, { timeout: 30_000 });
+  await page.waitForTimeout(1500);
+
+  const box = await page.locator('#viewer-canvas').boundingBox();
+  const at = (fx, fy) => [box.x + box.width * fx, box.y + box.height * fy];
+  const beamEnd = at(0.525, 0.535);
+  const beamMiddle = at(0.385, 0.435);
+
+  await page.evaluate(() => window.viewer.module._toggle_section_c());
+  await page.mouse.click(...beamEnd);
+  await page.waitForTimeout(900);
+  await page.mouse.move(...beamEnd);
+  await page.mouse.down();
+  await page.mouse.move(...beamMiddle, { steps: 8 });
+  await page.mouse.up();
+  // Leave the section tool, which claims the left button, so a click selects.
+  await page.evaluate(() => window.viewer.module._toggle_section_c());
+  await settle(page);
+
+  // The beam's cut face now sits where the middle of the beam was. The right
+  // button selects in the default nav preset.
+  await page.mouse.click(...at(0.41, 0.452), { button: 'right' });
+  await settle(page);
+
+  const picked = await page.evaluate(async () => {
+    const v = window.viewer;
+    const byId = new Map((await v.getObjects()).map((o) => [o.objectId, o.type]));
+    return v.getSelection().map((id) => byId.get(id));
+  });
+  expect(picked).toEqual(['IfcBeam']);
+});

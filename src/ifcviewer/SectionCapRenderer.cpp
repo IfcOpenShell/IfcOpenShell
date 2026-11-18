@@ -111,6 +111,7 @@ fn fs_main(@builtin(position) pos: vec4<f32>) -> FsOut {
     // Where the ray enters the kept region, the intersection of the planes'
     // negative half-spaces. No cap unless it enters through a plane: a ray
     // that starts inside is looking at the model from within the cut.
+    // SectionCapRenderer::rayEntry is the CPU copy of this.
     var t_enter = 0.0;
     var t_exit  = 1.0;
     for (var i = 0u; i < u.clip_count; i = i + 1u) {
@@ -299,6 +300,38 @@ void SectionCapRenderer::encodeComposite(WGPURenderPassEncoder pass,
     wgpuRenderPassEncoderSetPipeline(pass, pipeline_);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, bind_group_, 0, nullptr);
     wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
+}
+
+bool SectionCapRenderer::rayEntry(const Eigen::Matrix4f& view_proj,
+                                  const std::vector<SectionPlane>& planes,
+                                  float ndc_x, float ndc_y,
+                                  Eigen::Vector3f& point_out, Eigen::Vector3f& normal_out) {
+    const Eigen::Matrix4f inv = view_proj.inverse();
+    const Eigen::Vector4f o4 = inv * Eigen::Vector4f(ndc_x, ndc_y, 0.0f, 1.0f);
+    const Eigen::Vector4f f4 = inv * Eigen::Vector4f(ndc_x, ndc_y, 1.0f, 1.0f);
+    const Eigen::Vector3f o   = o4.head<3>() / o4.w();
+    const Eigen::Vector3f dir = f4.head<3>() / f4.w() - o;
+
+    float t_enter = 0.0f;
+    float t_exit  = 1.0f;
+    int   entered = -1;
+    const int n = std::min<int>(int(planes.size()), kMaxPlanes);
+    for (int i = 0; i < n; ++i) {
+        const float f0 = planes[i].n.dot(o) + planes[i].d;
+        const float fd = planes[i].n.dot(dir);
+        if (fd < 0.0f) {
+            const float t = -f0 / fd;
+            if (t > t_enter) { t_enter = t; entered = i; }
+        } else if (fd > 0.0f) {
+            t_exit = std::min(t_exit, -f0 / fd);
+        } else if (f0 > 0.0f) {
+            return false;
+        }
+    }
+    if (entered < 0 || t_enter >= t_exit) return false;
+    point_out  = o + dir * t_enter;
+    normal_out = planes[entered].n;
+    return true;
 }
 
 void SectionCapRenderer::destroy() {
