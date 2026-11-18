@@ -5842,19 +5842,18 @@ void ViewportCore::encodeSelectionMaskPass(WGPUCommandEncoder enc) {
 
 void ViewportCore::encodeSelectionOutlinePass(WGPUCommandEncoder enc,
                                               WGPUTextureView surface_view,
-                                              int dpr) {
+                                              float dpr) {
     if (!selectionOutlineActive() || !surface_view || !sel_dilate_h_pipeline_) return;
 
     // Ring widths in LOGICAL pixels, scaled here so the halo looks the same
     // on a HiDPI canvas as it does on a 1x one.
-    const float scale = float(std::max(1, dpr));
     SelOutlineUniforms u = {};
     u.inner_color[0] = 1.0f; u.inner_color[1] = 1.0f;
     u.inner_color[2] = 1.0f; u.inner_color[3] = 1.0f;
     u.outer_color[0] = 0.04f; u.outer_color[1] = 0.04f;
     u.outer_color[2] = 0.04f; u.outer_color[3] = 0.85f;
-    u.inner_radius   = 2.0f * scale;
-    u.outer_radius   = 3.0f * scale;
+    u.inner_radius   = 2.0f * dpr;
+    u.outer_radius   = 3.0f * dpr;
     wgpuQueueWriteBuffer(queue_, sel_outline_uniform_buffer_, 0, &u, sizeof(u));
 
     if (!sel_dilate_bind_group_) {
@@ -8081,7 +8080,7 @@ void ViewportCore::render() {
     // Build the per-frame OverlayFrame snapshot.
     int viewport_w_px = 0, viewport_h_px = 0;
     host_->framebufferSize(viewport_w_px, viewport_h_px);
-    const int dpr_int = std::max(1, int(host_->dpr()));
+    const float dpr = host_->dpr();
 
     OverlayFrame overlay_frame;
     overlay_frame.view_proj          = vp_this_frame;
@@ -8094,12 +8093,12 @@ void ViewportCore::render() {
     overlay_frame.camera_fov_y_deg   = camera_fov_y_deg_;
     overlay_frame.viewport_w_px      = viewport_w_px;
     overlay_frame.viewport_h_px      = viewport_h_px;
-    overlay_frame.device_pixel_ratio = dpr_int;
+    overlay_frame.device_pixel_ratio = dpr;
 
     // Section-plane gizmo — shared renderer, drawn for desktop + web from here.
     // (The desktop's OverlayRenderer no longer draws it, to avoid doubling.)
     section_gizmo_.encode(pass, vp_this_frame, section_planes_,
-                          viewport_w_px, viewport_h_px, dpr_int, section_selected_index_);
+                          viewport_w_px, viewport_h_px, dpr, section_selected_index_);
 
     // Orbit pivot indicator — same shared-renderer story. Drawn while the host
     // has it gated on (drag) or an afterglow is still running; in the latter
@@ -8123,7 +8122,7 @@ void ViewportCore::render() {
     // Edge silhouette + HiZ resolve, before the surface-targeted overlays.
     if (edges_enabled_) encodeEdgePass(enc, view);
 
-    encodeSelectionOutlinePass(enc, view, dpr_int);
+    encodeSelectionOutlinePass(enc, view, dpr);
 
     int hiz_submitted_slot = -1;
     if (hiz_enabled_) hiz_submitted_slot = encodeHizResolve(enc);

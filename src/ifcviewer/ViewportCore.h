@@ -821,7 +821,7 @@ public:
     // `dpr` scales the ring widths so they hold their apparent size on a
     // HiDPI canvas. No-op when nothing is selected.
     void encodeSelectionOutlinePass(WGPUCommandEncoder enc,
-                                    WGPUTextureView surface_view, int dpr);
+                                    WGPUTextureView surface_view, float dpr);
 
     void setSelectionOutlineEnabled(bool on) { selection_outline_enabled_ = on; }
     bool selectionOutlineEnabled() const     { return selection_outline_enabled_; }

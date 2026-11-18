@@ -305,14 +305,13 @@ bool SectionGizmoRenderer::init(WGPUDevice device, WGPUQueue queue,
 
 void SectionGizmoRenderer::encode(WGPURenderPassEncoder pass, const Eigen::Matrix4f& view_proj,
                                   const std::vector<SectionPlane>& planes,
-                                  int viewport_w_px, int viewport_h_px, int device_pixel_ratio,
+                                  int viewport_w_px, int viewport_h_px, float device_pixel_ratio,
                                   int selected_index) {
     if (!pipeline_ || planes.empty()) return;
     wgpuRenderPassEncoderSetPipeline(pass, pipeline_);
     wgpuRenderPassEncoderSetVertexBuffer(pass, 0, vertex_buffer_, 0, WGPU_WHOLE_SIZE);
 
-    const float dpr    = float(std::max(1, device_pixel_ratio));
-    const float line_w = 5.0f * dpr;
+    const float line_w = 5.0f * device_pixel_ratio;
     const float vw     = float(viewport_w_px);
     const float vh     = float(viewport_h_px);
     const int   n      = std::min<int>(int(planes.size()), kMaxPlanes);
