@@ -107,6 +107,13 @@ def add_derived_unit(
     return result
 
 
+def add_unit_from_choice(unit: type[tool.Unit], unit_type: str, choice: str) -> ifcopenshell.entity_instance | None:
+    """Create (or fetch) the unit a picker's "+ new unit" choice names, without assigning it."""
+    result = unit.resolve_unit_choice(unit_type, choice)
+    unit.import_units()
+    return result
+
+
 def add_conversion_based_unit(ifc: type[tool.Ifc], unit: type[tool.Unit], name: str) -> ifcopenshell.entity_instance:
     result = ifc.run("unit.add_conversion_based_unit", name=name)
     if not unit.get_assigned_unit_of_type(result):

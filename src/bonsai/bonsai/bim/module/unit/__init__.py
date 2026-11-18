@@ -26,6 +26,7 @@ classes = (
     operator.AddDerivedUnit,
     operator.AddMonetaryUnit,
     operator.AddSIUnit,
+    operator.AddUnitFromChoice,
     operator.AssignSceneUnits,
     operator.AssignUnit,
     operator.ConvertUnits,

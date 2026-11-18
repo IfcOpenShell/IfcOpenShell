@@ -123,7 +123,7 @@ def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> 
 
 
 def get_unit_enum_items_for_special_type(
-    special_type: str, ifc_file: Union[ifcopenshell.file, None], preferred_id: int = 0
+    special_type: str, ifc_file: Union[ifcopenshell.file, None], preferred_id: int = 0, include_new: bool = False
 ) -> tool.Blender.BLENDER_ENUM_ITEMS:
     """Items for a unit-override picker: a "no override" entry plus every candidate unit
     matching `special_type`, filtered per-caller since candidates depend on the measure type
@@ -135,6 +135,8 @@ def get_unit_enum_items_for_special_type(
     wrongly imply one exists.
 
     Indistinguishable duplicate units are listed once (see `tool.Unit.get_distinct_units`).
+    With `include_new`, catalog units not in the file yet follow, marked "+" (identifiers like
+    "+CONV:psf", see `tool.Unit.get_new_unit_choices`); the caller must create them on pick.
     """
     if not ifc_file or not tool.Pset.is_measurable_special_type(special_type):
         return [(cache_string("0"), cache_string("Default"), "")]
@@ -156,6 +158,10 @@ def get_unit_enum_items_for_special_type(
     candidates = tool.Pset.get_candidate_units_for_special_type(special_type, ifc_file)
     for unit in tool.Unit.get_distinct_units(candidates, preferred_id):
         items.append((cache_string(str(unit.id())), cache_string(tool.Unit.get_unit_label(unit)), ""))
+    if include_new:
+        when = "added to the file when picked, without changing the project defaults"
+        for identifier, label, description in tool.Unit.get_new_unit_choices(f"{special_type}UNIT", when):
+            items.append((cache_string(identifier), cache_string(label), cache_string(description)))
     return items
 
 
@@ -167,9 +173,11 @@ def get_attribute_unit_enum_items(prop: "Attribute", context: bpy.types.Context)
     match an already-seeded unit_id can never raise "enum not found".
     """
     ifc_file = tool.Ifc.get()
-    items = get_unit_enum_items_for_special_type(prop.special_type, ifc_file, preferred_id=prop.unit_id)
+    items = get_unit_enum_items_for_special_type(
+        prop.special_type, ifc_file, preferred_id=prop.unit_id, include_new=True
+    )
 
-    if prop.unit_id and prop.unit_id not in {int(i[0]) for i in items}:
+    if prop.unit_id and str(prop.unit_id) not in {i[0] for i in items}:
         own_unit = ifc_file.by_id(prop.unit_id)
         items.append((cache_string(str(prop.unit_id)), cache_string(tool.Unit.get_unit_label(own_unit)), ""))
 
@@ -177,7 +185,17 @@ def get_attribute_unit_enum_items(prop: "Attribute", context: bpy.types.Context)
 
 
 def update_attribute_unit_id(self: "Attribute", context: bpy.types.Context) -> None:
-    new_unit_id = int(tool.Blender.get_enum_safe(self, "unit_id_enum") or "0")
+    choice = tool.Blender.get_enum_safe(self, "unit_id_enum") or "0"
+    if choice.startswith("+"):
+        # A catalog unit not in the file yet: create it through an (undoable) operator, then
+        # select it. Re-setting the enum re-enters this callback with the real STEP id, which
+        # converts the value as for any other unit.
+        unit_props = tool.Unit.get_unit_props()
+        unit_props.last_added_unit_id = 0
+        bpy.ops.bim.add_unit_from_choice(unit_type=f"{self.special_type}UNIT", choice=choice)
+        self.unit_id_enum = str(unit_props.last_added_unit_id or self.unit_id)
+        return
+    new_unit_id = int(choice)
     if ifc_file := tool.Ifc.get():
         # Must run before self.unit_id is overwritten: convert_attribute_unit needs the OLD
         # unit_id to know what unit the current value is expressed in.
