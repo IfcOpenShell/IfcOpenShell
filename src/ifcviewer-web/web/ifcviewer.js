@@ -448,7 +448,8 @@
     let objectIndex = null;
     let objectsById = null;
     // Mirrors SectionCapStyle's defaults in the wasm; setSectionCapStyle merges into it.
-    const sectionCapStyle = { hatch: 'diagonal', spacing: 8, lineWidth: 1, color: '#0000008c', fill: null };
+    const sectionCapStyle = { hatch: 'diagonal', spacing: 8, lineWidth: 1, color: '#0000008c', fill: null,
+                              outlineWidth: 2, outlineColor: '#000000' };
 
     // The per-frame loop: poll for the app pointer (published once the GPU
     // device is ready), then drive the C tick. It is registered from
@@ -903,6 +904,11 @@
       //              the line opacity (default '#0000008c')
       //   fill       cap colour, or null (default) for the cut object's own
       //              colour; an alpha below 255 blends the two
+      //   outlineWidth  CSS pixels of the bold line along the cut edge
+      //                 (default 2, at most 6 device pixels); 0 for none
+      //   outlineColor  its colour (default '#000000')
+      // The outline separates touching cut objects by colour alone, so
+      // same-coloured neighbours get no line between them.
       // Omitted fields keep their current value.
       setSectionCapStyle: function (style) {
         style = style || {};
@@ -915,12 +921,15 @@
         });
         const c = packColor(sectionCapStyle.color);
         const f = packColor(sectionCapStyle.fill);
+        const o = packColor(sectionCapStyle.outlineColor);
         const ch = function (rgba, shift) { return ((rgba >>> shift) & 0xFF) / 255; };
         Module._ifcv_set_section_cap_style_c(
           SECTION_CAP_HATCHES.indexOf(sectionCapStyle.hatch),
           sectionCapStyle.spacing, sectionCapStyle.lineWidth,
           ch(c, 0), ch(c, 8), ch(c, 16), ch(c, 24),
-          ch(f, 0), ch(f, 8), ch(f, 16), ch(f, 24));
+          ch(f, 0), ch(f, 8), ch(f, 16), ch(f, 24),
+          sectionCapStyle.outlineWidth,
+          ch(o, 0), ch(o, 8), ch(o, 16), ch(o, 24));
       },
 
       // Model bookkeeping (ordered by load). Progress is per-model chunk counts.

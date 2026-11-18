@@ -44,11 +44,18 @@ struct CapUniforms {
     float clip_planes[kMaxPlanes][4];
     float hatch_color[4];
     float fill_color[4];
-    float spacing_px;      // physical pixels
-    float line_width_px;   // physical pixels
+    float outline_color[4];
+    float spacing_px;        // physical pixels
+    float line_width_px;     // physical pixels
     std::uint32_t hatch;
     std::uint32_t clip_count;
+    float outline_width_px;  // physical pixels
+    float _pad[3];
 };
+
+// The outline search is a square of taps this many pixels out, so the width
+// is capped rather than left to cost what it likes.
+constexpr float kMaxOutlineWidthPx = 6.0f;
 
 const char* SECTION_CAP_WGSL = R"WGSL(
 struct CapUniforms {
@@ -57,10 +64,12 @@ struct CapUniforms {
     clip_planes:   array<vec4<f32>, 6>,
     hatch_color:   vec4<f32>,
     fill_color:    vec4<f32>,
+    outline_color: vec4<f32>,
     spacing_px:    f32,
     line_width_px: f32,
     hatch:         u32,
     clip_count:    u32,
+    outline_width_px: f32,
 };
 
 @group(0) @binding(0) var accum: texture_2d<f32>;
@@ -86,6 +95,36 @@ fn hatchLines(along: f32) -> f32 {
     let dist = min(m, u.spacing_px - m);
     let half = u.line_width_px * 0.5;
     return 1.0 - smoothstep(half - 0.5, half + 0.5, dist);
+}
+
+// Coverage of the cut outline at cap pixel `p`, whose object colour is `own`:
+// how far inside the outline width the nearest pixel is that either has no cap
+// or belongs to a cap of another colour. A boundary between two caps is drawn
+// by both, so each takes half the width there.
+fn outlineCoverage(p: vec2<i32>, own: vec3<f32>) -> f32 {
+    let w = u.outline_width_px;
+    if (w <= 0.0) { return 0.0; }
+    let max_p = vec2<i32>(textureDimensions(accum)) - vec2<i32>(1, 1);
+    let r = i32(ceil(w));
+    var coverage = 0.0;
+    for (var dy = -r; dy <= r; dy = dy + 1) {
+        for (var dx = -r; dx <= r; dx = dx + 1) {
+            if (dx == 0 && dy == 0) { continue; }
+            let q = p + vec2<i32>(dx, dy);
+            var reach = w;
+            if (q.x >= 0 && q.y >= 0 && q.x <= max_p.x && q.y <= max_p.y) {
+                let s = textureLoad(accum, q, 0);
+                if (abs(s.a) >= 0.5) {
+                    let d = abs(s.rgb / s.a - own);
+                    if (max(d.x, max(d.y, d.z)) < 0.05) { continue; }
+                    reach = w * 0.5;
+                }
+            }
+            let dist = length(vec2<f32>(f32(dx), f32(dy)));
+            coverage = max(coverage, clamp(reach + 0.5 - dist, 0.0, 1.0));
+        }
+    }
+    return coverage;
 }
 
 struct FsOut {
@@ -128,14 +167,16 @@ fn fs_main(@builtin(position) pos: vec4<f32>) -> FsOut {
     }
     if (t_enter <= 0.0 || t_enter >= t_exit) { discard; }
 
-    var color = acc.rgb / acc.a;
-    color = mix(color, u.fill_color.rgb, u.fill_color.a);
+    let own = acc.rgb / acc.a;
+    var color = mix(own, u.fill_color.rgb, u.fill_color.a);
 
     // 0.7071 turns x + y into a distance across 45-degree lines.
     var lines = 0.0;
     if (u.hatch >= 1u) { lines = hatchLines((pos.x + pos.y) * 0.70710678); }
     if (u.hatch >= 2u) { lines = max(lines, hatchLines((pos.x - pos.y) * 0.70710678)); }
     color = mix(color, u.hatch_color.rgb, u.hatch_color.a * lines);
+    color = mix(color, u.outline_color.rgb,
+                u.outline_color.a * outlineCoverage(vec2<i32>(pos.xy), own));
 
     // A hair behind the plane, so the section gizmo lying in it still passes
     // its depth test.
@@ -276,6 +317,9 @@ void SectionCapRenderer::encodeComposite(WGPURenderPassEncoder pass,
     }
     std::memcpy(u.hatch_color, style.hatch_color, sizeof(u.hatch_color));
     std::memcpy(u.fill_color, style.fill_color, sizeof(u.fill_color));
+    std::memcpy(u.outline_color, style.outline_color, sizeof(u.outline_color));
+    u.outline_width_px =
+        std::clamp(style.outline_width_px * device_pixel_ratio, 0.0f, kMaxOutlineWidthPx);
     // A spacing under a pixel would divide by nearly nothing in the shader.
     u.spacing_px    = std::max(1.0f, style.spacing_px * device_pixel_ratio);
     u.line_width_px = style.line_width_px * device_pixel_ratio;

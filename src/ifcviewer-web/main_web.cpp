@@ -653,7 +653,9 @@ extern "C" EMSCRIPTEN_KEEPALIVE int  ifcv_section_caps_is_on_c() {
 extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_section_cap_style_c(
         int hatch, float spacing_px, float line_width_px,
         float hatch_r, float hatch_g, float hatch_b, float hatch_a,
-        float fill_r, float fill_g, float fill_b, float fill_a) {
+        float fill_r, float fill_g, float fill_b, float fill_a,
+        float outline_width_px,
+        float outline_r, float outline_g, float outline_b, float outline_a) {
     if (!g_app || !g_app->ready) return;
     SectionCapStyle s;
     s.hatch         = hatch == 0 ? SectionCapStyle::Hatch::None
@@ -663,6 +665,8 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_section_cap_style_c(
     s.line_width_px = line_width_px;
     s.hatch_color[0] = hatch_r; s.hatch_color[1] = hatch_g; s.hatch_color[2] = hatch_b; s.hatch_color[3] = hatch_a;
     s.fill_color[0]  = fill_r;  s.fill_color[1]  = fill_g;  s.fill_color[2]  = fill_b;  s.fill_color[3]  = fill_a;
+    s.outline_width_px = outline_width_px;
+    s.outline_color[0] = outline_r; s.outline_color[1] = outline_g; s.outline_color[2] = outline_b; s.outline_color[3] = outline_a;
     g_app->core.setSectionCapStyle(s);
 }
 
