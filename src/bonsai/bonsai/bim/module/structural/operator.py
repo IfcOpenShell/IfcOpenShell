@@ -790,7 +790,8 @@ class EnableEditingStructuralLoadCombination(bpy.types.Operator):
         )
         factors = get_load_combination_factors(combination)
         props.load_combination_factors.clear()
-        for load_case in tool.Ifc.get().by_type("IfcStructuralLoadCase"):
+        load_cases = [g for g in tool.Ifc.get().by_type("IfcStructuralLoadGroup") if tool.Structural.is_load_case(g)]
+        for load_case in load_cases:
             new = props.load_combination_factors.add()
             new.name = load_case.Name or "Unnamed"
             new.ifc_definition_id = load_case.id()
@@ -878,7 +879,7 @@ def get_load_combination_factors(
     for rel in combination.IsGroupedBy:
         factor = rel.Factor if rel.is_a("IfcRelAssignsToGroupByFactor") else 1.0
         for load_case in rel.RelatedObjects:
-            if load_case.is_a("IfcStructuralLoadCase"):
+            if tool.Structural.is_load_case(load_case):
                 factors[load_case] = factors.get(load_case, 0.0) + factor
     return factors
 

@@ -177,3 +177,40 @@ class TestStructuralLoadCombinationsData(LoadCombinationFile):
         LoadGroupDecorationData.load()
         ids = [i[0] for i in LoadGroupDecorationData.data["load_groups_to_show"]]
         assert str(combination.id()) in ids and str(self.dead.id()) in ids
+
+
+class TestLoadGroupsTypedLoadCase(LoadCombinationFile):
+    """A load case may be an IfcStructuralLoadGroup of type LOAD_CASE, as RFEM writes them"""
+
+    def make_file(self, with_model: bool = True) -> ifcopenshell.file:
+        ifc = super().make_file(with_model)
+        self.wind = ifc.createIfcStructuralLoadGroup(
+            GlobalId=ifcopenshell.guid.new(),
+            Name="Wind",
+            PredefinedType="LOAD_CASE",
+            ActionType="VARIABLE_Q",
+            ActionSource="WIND_W",
+        )
+        return ifc
+
+    def test_editing_its_factor(self):
+        ifc = self.make_file()
+        combination = ifcopenshell.api.structural.add_structural_load_combination(ifc, name="ULS 1")
+        bpy.ops.bim.enable_editing_structural_load_combination(load_combination=combination.id())
+        assert self.factor_rows() == {"Dead": (False, 1.0), "Imposed": (False, 1.0), "Wind": (False, 1.0)}
+        self.set_row("Wind", True, 1.5)
+        bpy.ops.bim.edit_structural_load_combination()
+        assert get_load_combination_factors(combination) == {self.wind: 1.5}
+        bpy.ops.bim.enable_editing_structural_load_combination(load_combination=combination.id())
+        assert self.factor_rows()["Wind"] == (True, 1.5)
+
+    def test_it_is_counted_in_the_list(self):
+        ifc = self.make_file()
+        combination = ifcopenshell.api.structural.add_structural_load_combination(ifc, name="ULS 1")
+        for case in (self.dead, self.wind):
+            ifcopenshell.api.structural.assign_structural_load_combination(
+                ifc, load_case=case, load_combination=combination
+            )
+        StructuralLoadCombinationsData.load()
+        (data,) = StructuralLoadCombinationsData.data["load_combinations"]
+        assert data["total_load_cases"] == 2
