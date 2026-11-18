@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
@@ -137,6 +139,65 @@ class TestIsMeasurableSpecialType(NewFile):
             assert subject.is_measurable_special_type(special_type) is False
         assert subject.is_measurable_special_type("LENGTH") is True
         assert subject.is_measurable_special_type("PRESSURE") is True
+
+
+class TestImportingAnExistingLogicalPropertyOffersAllThreeStates(NewFile):
+    @pytest.mark.parametrize("value, item", [(True, "TRUE"), (False, "FALSE"), ("UNKNOWN", "UNKNOWN")])
+    def test_run(self, value, item):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcBuildingStorey()
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Pset_BuildingStoreyCommon")
+        nominal_value = ifc.createIfcLogical(value)
+        pset.HasProperties = [ifc.createIfcPropertySingleValue(Name="AboveGround", NominalValue=nominal_value)]
+
+        obj = bpy.data.objects.new("Storey", None)
+        tool.Ifc.link(element, obj)
+        subject.import_pset_from_existing(pset, obj.PsetProperties, None)
+
+        metadata = obj.PsetProperties.properties["AboveGround"].metadata
+        assert metadata.data_type == "enum"
+        assert metadata.special_type == "LOGICAL"
+        assert json.loads(metadata.enum_items) == ["TRUE", "FALSE", "UNKNOWN"]
+        assert metadata.enum_value == item
+        assert metadata.get_value() == value
+
+
+class TestImportingALogicalTemplatePropertyOffersAllThreeStates(NewFile):
+    @pytest.mark.parametrize("item, value", [("TRUE", True), ("FALSE", False), ("UNKNOWN", "UNKNOWN")])
+    def test_run(self, item, value):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcBuildingStorey()
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Pset_BuildingStoreyCommon")
+        pset_template = ifc.createIfcPropertySetTemplate(
+            Name="Pset_BuildingStoreyCommon",
+            TemplateType="PSET_TYPEDRIVENOVERRIDE",
+            ApplicableEntity="IfcBuildingStorey",
+            HasPropertyTemplates=[
+                ifc.createIfcSimplePropertyTemplate(
+                    Name="AboveGround", TemplateType="P_SINGLEVALUE", PrimaryMeasureType="IfcLogical"
+                )
+            ],
+        )
+
+        obj = bpy.data.objects.new("Storey", None)
+        tool.Ifc.link(element, obj)
+        subject.import_pset_from_template(pset_template, pset, obj.PsetProperties)
+
+        metadata = obj.PsetProperties.properties["AboveGround"].metadata
+        assert metadata.data_type == "enum"
+        assert metadata.special_type == "LOGICAL"
+        assert json.loads(metadata.enum_items) == ["TRUE", "FALSE", "UNKNOWN"]
+        assert metadata.enum_value == "UNKNOWN"
+        assert metadata.is_null is True
+
+        metadata.is_null = False
+        metadata.enum_value = item
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"AboveGround": metadata.get_value()})
+        prop = pset.HasProperties[0]
+        assert prop.NominalValue.is_a("IfcLogical")
+        assert prop.NominalValue.wrappedValue == value
 
 
 class TestGetCandidateUnitsForSpecialType(NewFile):

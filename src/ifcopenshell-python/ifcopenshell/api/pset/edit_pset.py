@@ -491,6 +491,8 @@ class Usecase:
             "DOUBLE": float,
             "STRING": str,
         }[type_str]
+        if type_str == "LOGICAL" and isinstance(value, bool):
+            return value
         if type_str == "AGGREGATE OF DOUBLE":
             return [float(i) for i in value]
         elif type_str == "AGGREGATE OF INT":
