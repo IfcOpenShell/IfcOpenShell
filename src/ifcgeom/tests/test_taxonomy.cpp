@@ -529,8 +529,8 @@ TEST_CASE("matrix4 init does not collapse on underflowing axis ratios", "[taxono
     for (double t : {1e300, 1e100, 1.0, 1e-100, 1e-200, 1e-300}) {
         tx::matrix4 m(vector3(0.0, 0.0, 0.0), vector3(0.0, 0.0, t), vector3(0.0, 1.0, 0.0));
         const auto& c = m.ccomponents();
-        REQUIRE(c.col(0).isApprox(vector3(0.0, 1.0, 0.0)));
-        REQUIRE(c.col(1).isApprox(vector3(-1.0, 0.0, 0.0)));
-        REQUIRE(c.col(2).isApprox(vector3(0.0, 0.0, 1.0)));
+        REQUIRE(c.col(0).head<3>().isApprox(vector3(0.0, 1.0, 0.0)));
+        REQUIRE(c.col(1).head<3>().isApprox(vector3(-1.0, 0.0, 0.0)));
+        REQUIRE(c.col(2).head<3>().isApprox(vector3(0.0, 0.0, 1.0)));
     }
 }
