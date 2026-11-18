@@ -82,6 +82,8 @@ package = false
 
 preview-features = [
     "minimum-libc-version",
+    # Disable warning on running experimental `uv audit`.
+    "audit-command",
 ]
 
 # Ensure each dependecny has a wheel, no building from source.
