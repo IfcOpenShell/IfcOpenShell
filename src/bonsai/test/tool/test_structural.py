@@ -21,16 +21,11 @@
 import math
 from types import SimpleNamespace
 
-import ifcopenshell
-import ifcopenshell.api.group
-import ifcopenshell.api.root
-import ifcopenshell.api.structural
-import numpy as np
-
 import bpy
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
+import ifcopenshell.api.group
 import ifcopenshell.api.profile
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
