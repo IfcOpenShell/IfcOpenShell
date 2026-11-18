@@ -1028,19 +1028,8 @@ fn find_draw(vid: u32) -> u32 {
     return lo;
 }
 
-@vertex
-fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
-    // Saturate past the end (shouldn't happen given draw() count, but safe).
-    if (vid >= u_model.total_vertex_count) {
-        var degen: VsOut;
-        degen.clip_pos = vec4<f32>(0.0, 0.0, 0.0, 0.0);
-        return degen;
-    }
-
-    let draw_idx = find_draw(vid);
-    let local_v  = vid - prefix_sums[draw_idx];
-    let item     = visible_draws[draw_idx];
-
+// Vertex `local_v` of a visible draw.
+fn pullVertex(item: VisibleDraw, local_v: u32) -> VsOut {
     // Fetch the mesh-local index then the global vertex index.
     let mesh_local_index = indices[item.ebo_first_u32 + local_v];
     let v_global         = item.base_vertex + mesh_local_index;
@@ -1078,6 +1067,71 @@ fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
     out.color     = color;
     out.world_pos = world4.xyz;
     out.object_id = inst.object_id;
+    return out;
+}
+
+@vertex
+fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
+    // Saturate past the end (shouldn't happen given draw() count, but safe).
+    if (vid >= u_model.total_vertex_count) {
+        var degen: VsOut;
+        degen.clip_pos = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+        return degen;
+    }
+
+    let draw_idx = find_draw(vid);
+    return pullVertex(visible_draws[draw_idx], vid - prefix_sums[draw_idx]);
+}
+
+// Whether a draw's instance can have a section cap, and which way its faces
+// wind. 0 when its bounding box crosses no section plane: nothing is cut, and
+// whatever parity an open or badly wound mesh leaves must not be mistaken for
+// a cap. Otherwise +1, or -1 for a mirrored instance, whose triangles wind the
+// other way round on screen.
+fn capFacing(item: VisibleDraw) -> f32 {
+    let t  = instances[item.instance_idx].transform;
+    let mq = meshes[item.mesh_id];
+    let center = (t * vec4<f32>((mq.aabb_min.xyz + mq.aabb_max.xyz) * 0.5, 1.0)).xyz;
+    let half   = (mq.aabb_max.xyz - mq.aabb_min.xyz) * 0.5;
+    var crossed = false;
+    for (var i = 0; i < u_frame.clip_count; i = i + 1) {
+        let p = u_frame.clip_planes[i];
+        // The box's reach along the plane normal.
+        let reach = abs(dot(p.xyz, t[0].xyz)) * half.x
+                  + abs(dot(p.xyz, t[1].xyz)) * half.y
+                  + abs(dot(p.xyz, t[2].xyz)) * half.z;
+        if (abs(dot(p.xyz, center) + p.w) < reach) { crossed = true; }
+    }
+    if (!crossed) { return 0.0; }
+    let det = determinant(mat3x3<f32>(t[0].xyz, t[1].xyz, t[2].xyz));
+    return select(1.0, -1.0, det < 0.0);
+}
+
+struct VsOutCap {
+    @builtin(position) clip_pos: vec4<f32>,
+    @location(1) color:     vec4<f32>,
+    @location(2) world_pos: vec3<f32>,
+    @location(3) @interpolate(flat) object_id: u32,
+    @location(4) @interpolate(flat) facing: f32,
+};
+
+// vs_main for the section cap parity pass: instances that cannot be cut are
+// collapsed so they draw nothing.
+@vertex
+fn vs_cap_accum(@builtin(vertex_index) vid: u32) -> VsOutCap {
+    var out: VsOutCap;
+    if (vid >= u_model.total_vertex_count) { return out; }
+    let draw_idx = find_draw(vid);
+    let item     = visible_draws[draw_idx];
+    let facing   = capFacing(item);
+    if (facing == 0.0) { return out; }
+
+    let v = pullVertex(item, vid - prefix_sums[draw_idx]);
+    out.clip_pos  = v.clip_pos;
+    out.color     = v.color;
+    out.world_pos = v.world_pos;
+    out.object_id = v.object_id;
+    out.facing    = facing;
     return out;
 }
 
@@ -1144,14 +1198,14 @@ fn fs_mask(in: VsOut) -> @location(0) f32 {
 }
 
 // Section cap parity (see SectionCapRenderer). Blended additively with no
-// depth test: a back face adds the object's colour and opacity, a front face
-// takes them away again. The colour is weighted by the opacity so that what
-// is left over divides back out to the colour.
+// depth test: a face seen from inside its solid adds the object's colour and
+// opacity, one seen from outside takes them away again. The colour is weighted
+// by the opacity so that what is left over divides back out to the colour.
 @fragment
-fn fs_cap_accum(in: VsOut, @builtin(front_facing) front_facing: bool) -> @location(0) vec4<f32> {
+fn fs_cap_accum(in: VsOutCap, @builtin(front_facing) front_facing: bool) -> @location(0) vec4<f32> {
     if (is_section_clipped(in.world_pos)) { discard; }
     let color = selectionTint(in.color.xyz, in.object_id);
-    return vec4<f32>(color * in.color.a, in.color.a) * select(1.0, -1.0, front_facing);
+    return vec4<f32>(color * in.color.a, in.color.a) * select(1.0, -1.0, front_facing) * in.facing;
 }
 
 // --------------------------- Pick pipeline ---------------------------------
@@ -1176,19 +1230,9 @@ struct FsOutPick {
     @location(2) world_pos: vec4<f32>,
 };
 
-@vertex
-fn vs_pick(@builtin(vertex_index) vid: u32) -> VsOutPick {
+// Vertex `local_v` of a visible draw, for the pick passes.
+fn pullPickVertex(item: VisibleDraw, local_v: u32) -> VsOutPick {
     var out: VsOutPick;
-    if (vid >= u_model.total_vertex_count) {
-        out.clip_pos  = vec4<f32>(0.0, 0.0, 0.0, 0.0);
-        out.object_id = 0u;
-        out.world_pos = vec3<f32>(0.0, 0.0, 0.0);
-        return out;
-    }
-
-    let draw_idx = find_draw(vid);
-    let local_v  = vid - prefix_sums[draw_idx];
-    let item     = visible_draws[draw_idx];
     let mesh_local_index = indices[item.ebo_first_u32 + local_v];
     let v_global = item.base_vertex + mesh_local_index;
     let inst = instances[item.instance_idx];
@@ -1208,6 +1252,27 @@ fn vs_pick(@builtin(vertex_index) vid: u32) -> VsOutPick {
     out.object_id = inst.object_id;
     out.world_pos = world4.xyz;
     return out;
+}
+
+@vertex
+fn vs_pick(@builtin(vertex_index) vid: u32) -> VsOutPick {
+    // Zero-initialised: a collapsed vertex carrying the "no object" id.
+    var out: VsOutPick;
+    if (vid >= u_model.total_vertex_count) { return out; }
+    let draw_idx = find_draw(vid);
+    return pullPickVertex(visible_draws[draw_idx], vid - prefix_sums[draw_idx]);
+}
+
+// vs_pick for the section cap pick: like vs_cap_accum, instances that cannot
+// be cut draw nothing.
+@vertex
+fn vs_cappick(@builtin(vertex_index) vid: u32) -> VsOutPick {
+    var out: VsOutPick;
+    if (vid >= u_model.total_vertex_count) { return out; }
+    let draw_idx = find_draw(vid);
+    let item     = visible_draws[draw_idx];
+    if (capFacing(item) == 0.0) { return out; }
+    return pullPickVertex(item, vid - prefix_sums[draw_idx]);
 }
 
 @fragment
@@ -5533,7 +5598,7 @@ bool ViewportCore::buildSectionCapPipeline() {
     rp_desc.layout             = pipeline_layout_;
     rp_desc.label              = svFromCStr("ifcviewer-wgpu.section_cap_accum_pipeline");
     rp_desc.vertex.module      = main_shader_module_;
-    rp_desc.vertex.entryPoint  = svFromCStr("vs_main");
+    rp_desc.vertex.entryPoint  = svFromCStr("vs_cap_accum");
     rp_desc.vertex.bufferCount = 0;
     rp_desc.fragment           = &frag;
     rp_desc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
@@ -6254,8 +6319,9 @@ bool ViewportCore::buildHitFlagsPipelines() {
 
     box_pick_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
 
-    frag.entryPoint = svFromCStr("fs_cappick");
-    rp_desc.label   = svFromCStr("ifcviewer-wgpu.cap_pick_pipeline");
+    frag.entryPoint           = svFromCStr("fs_cappick");
+    rp_desc.vertex.entryPoint = svFromCStr("vs_cappick");
+    rp_desc.label             = svFromCStr("ifcviewer-wgpu.cap_pick_pipeline");
     cap_pick_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
 
     if (!box_pick_pipeline_ || !cap_pick_pipeline_) {

@@ -118,8 +118,8 @@ fn outlineCoverage(p: vec2<i32>, own: vec4<f32>) -> f32 {
             var reach = w;
             if (q.x >= 0 && q.y >= 0 && q.x <= max_p.x && q.y <= max_p.y) {
                 let s = textureLoad(accum, q, 0);
-                if (abs(s.a) >= kMinOpacity) {
-                    let d = abs(vec4<f32>(s.rgb / s.a, abs(s.a)) - own);
+                if (s.a >= kMinOpacity) {
+                    let d = abs(vec4<f32>(s.rgb / s.a, s.a) - own);
                     if (max(max(d.x, d.y), max(d.z, d.w)) < 0.05) { continue; }
                     reach = w * 0.5;
                 }
@@ -139,9 +139,9 @@ struct FsOut {
 @fragment
 fn fs_main(@builtin(position) pos: vec4<f32>) -> FsOut {
     let acc = textureLoad(accum, vec2<i32>(pos.xy), 0);
-    // The winding of a mirrored instance is reversed, which only flips the
-    // sign of everything it accumulates.
-    if (abs(acc.a) < kMinOpacity) { discard; }
+    // Only a positive remainder is a cap. A negative one is a surface with
+    // nothing behind it, seen from outside: an open mesh, not a cut solid.
+    if (acc.a < kMinOpacity) { discard; }
 
     // The pixel's view ray, from the near plane (t = 0) to the far (t = 1).
     let size = vec2<f32>(textureDimensions(accum));
@@ -171,7 +171,7 @@ fn fs_main(@builtin(position) pos: vec4<f32>) -> FsOut {
     }
     if (t_enter <= 0.0 || t_enter >= t_exit) { discard; }
 
-    let own = vec4<f32>(acc.rgb / acc.a, min(abs(acc.a), 1.0));
+    let own = vec4<f32>(acc.rgb / acc.a, min(acc.a, 1.0));
     var color = mix(own.rgb, u.fill_color.rgb, u.fill_color.a);
     // The fill is as see-through as the object; the lines keep their own
     // opacity so the cut still reads on a glass pane.

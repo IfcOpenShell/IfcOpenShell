@@ -62,7 +62,9 @@ struct SectionCapStyle {
 // paints those pixels at the depth of the entry point, as see-through as the
 // object is.
 //
-// Meshes that are not closed leave a wrong count and get a wrong cap.
+// Only an object whose bounding box crosses a section plane takes part, so
+// nothing behind the cut is capped by mistake. A mesh that is not closed can
+// still leave a wrong remainder where a plane does pass through it.
 class SectionCapRenderer {
 public:
     // Signed and blendable, which the accumulation needs.
