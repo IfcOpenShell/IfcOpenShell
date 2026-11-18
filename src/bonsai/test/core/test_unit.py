@@ -194,6 +194,13 @@ class TestAddDerivedUnit:
         assert subject.add_derived_unit(ifc, unit, unit_type="unit_type") == "unit"
 
 
+class TestAddUnitFromChoice:
+    def test_run(self, unit):
+        unit.resolve_unit_choice("PRESSUREUNIT", "+CONV:psf").should_be_called().will_return("unit")
+        unit.import_units().should_be_called()
+        assert subject.add_unit_from_choice(unit, unit_type="PRESSUREUNIT", choice="+CONV:psf") == "unit"
+
+
 class TestAddContextDependentUnit:
     def test_run(self, ifc, unit):
         ifc.run("unit.add_context_dependent_unit", unit_type="unit_type", name="name").should_be_called().will_return(

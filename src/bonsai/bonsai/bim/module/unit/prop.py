@@ -114,6 +114,7 @@ class BIMUnitProperties(PropertyGroup):
     units: CollectionProperty(name="Units", type=Unit)
     active_unit_index: IntProperty(name="Active Unit Index")
     active_unit_id: IntProperty(name="Active Unit Id")
+    last_added_unit_id: IntProperty(name="Last Added Unit Id", description="Set by bim.add_unit_from_choice")
     unit_classes: EnumProperty(items=get_unit_classes, name="Unit Classes")
     conversion_unit_types: EnumProperty(items=get_conversion_unit_types, name="Conversion Unit Types")
     named_unit_types: EnumProperty(items=get_named_unit_types, name="Named Unit Types")
@@ -139,6 +140,7 @@ class BIMUnitProperties(PropertyGroup):
         units: bpy.types.bpy_prop_collection_idprop[Unit]
         active_unit_index: int
         active_unit_id: int
+        last_added_unit_id: int
         unit_classes: str
         conversion_unit_types: str
         named_unit_types: str

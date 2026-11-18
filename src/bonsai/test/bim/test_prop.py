@@ -21,6 +21,7 @@ import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+import ifcopenshell.util.unit
 import pytest
 
 import bonsai.bim.prop
@@ -116,7 +117,7 @@ class TestGetAttributeUnitEnumItems(NewFile):
         assert identifiers[0] == "0"
         assert str(length_mm.id()) in identifiers
         assert str(length_m.id()) in identifiers
-        assert len(items) == 3  # Default + mm + m
+        assert len([i for i in items if not i[0].startswith("+")]) == 3  # Default + mm + m
 
     def test_returns_just_default_for_non_measurable_types(self):
         ifc = ifcopenshell.file()
@@ -161,7 +162,7 @@ class TestUndefinedVersusDefaultUnits(NewFile):
         metadata = import_single_property(ifc, element, prop)
 
         items = bonsai.bim.prop.get_attribute_unit_enum_items(metadata, bpy.context)
-        assert [i[:2] for i in items] == [("0", "Undefined")]
+        assert [i[:2] for i in items if not i[0].startswith("+")] == [("0", "Undefined")]
 
     def test_picker_reads_default_when_the_project_defines_a_unit(self):
         ifc = ifcopenshell.file()
@@ -245,6 +246,56 @@ class TestDuplicateUnitsAreListedOnce(NewFile):
         assert tool.Unit.get_distinct_units([mm, m]) == [mm, m]
 
 
+class TestPickingANewCatalogUnitForAProperty(NewFile):
+    def setup_pressure_property(self, value=6894.7572932):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        pascal = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="PRESSUREUNIT")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[pascal])
+        element = ifc.createIfcWall()
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcPressureMeasure(value))
+        return ifc, pascal, import_single_property(ifc, element, prop)
+
+    def test_the_picker_offers_catalog_units_not_in_the_file(self):
+        ifc, pascal, metadata = self.setup_pressure_property()
+        items = bonsai.bim.prop.get_attribute_unit_enum_items(metadata, bpy.context)
+        identifiers = [i[0] for i in items]
+        assert identifiers[:2] == ["0", str(pascal.id())]
+        for name in ("psi", "ksi", "psf", "ksf"):
+            assert f"+CONV:{name}" in identifiers
+        assert "+SI:KILO" in identifiers  # kPa
+        assert "+SI:" not in identifiers  # Pa is already in the file
+
+    def test_picking_one_creates_it_selects_it_and_converts_the_value(self):
+        ifc, pascal, metadata = self.setup_pressure_property(6894.7572932)  # 1 psi, in Pa
+        metadata.unit_id_enum = "+CONV:psi"
+
+        psi = next(u for u in ifc.by_type("IfcConversionBasedUnit") if u.Name == "psi")
+        assert metadata.unit_id == psi.id()
+        assert metadata.unit_id_enum == str(psi.id())
+        assert metadata.float_value == pytest.approx(1.0)
+        assert metadata.unit_symbol == "psi"
+        # Added to the file, not made the project default.
+        assert ifcopenshell.util.unit.get_project_unit(ifc, "PRESSUREUNIT") == pascal
+        # Now an ordinary entry, no longer a "+" one.
+        identifiers = [i[0] for i in bonsai.bim.prop.get_attribute_unit_enum_items(metadata, bpy.context)]
+        assert str(psi.id()) in identifiers
+        assert "+CONV:psi" not in identifiers
+
+    def test_derived_measures_offer_no_catalog_entries(self):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        items = bonsai.bim.prop.get_unit_enum_items_for_special_type("MOMENTOFINERTIA", ifc, include_new=True)
+        assert [i[0] for i in items] == ["0"]
+
+    def test_other_pickers_do_not_offer_catalog_entries(self):
+        ifc, pascal, metadata = self.setup_pressure_property()
+        items = bonsai.bim.prop.get_unit_enum_items_for_special_type("PRESSURE", ifc)
+        assert not any(i[0].startswith("+") for i in items)
+
+
 class TestGetUnitEnumItemsForSpecialType(NewFile):
     def test_matches_the_attribute_wrapper_output(self):
         # Regression test for extracting get_unit_enum_items_for_special_type out of
@@ -263,7 +314,8 @@ class TestGetUnitEnumItemsForSpecialType(NewFile):
 
         direct_items = bonsai.bim.prop.get_unit_enum_items_for_special_type(metadata.special_type, ifc)
         wrapper_items = bonsai.bim.prop.get_attribute_unit_enum_items(metadata, bpy.context)
-        assert direct_items == wrapper_items
+        # The attribute picker additionally offers "+" catalog units to create on pick.
+        assert direct_items == [i for i in wrapper_items if not i[0].startswith("+")]
 
     def test_returns_just_default_when_ifc_file_is_none(self):
         assert bonsai.bim.prop.get_unit_enum_items_for_special_type("LENGTH", None) == [("0", "Default", "")]

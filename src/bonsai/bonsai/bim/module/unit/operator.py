@@ -146,6 +146,19 @@ class AddDerivedUnit(bpy.types.Operator, tool.Ifc.Operator):
         core.add_derived_unit(tool.Ifc, tool.Unit, unit_type=self.unit_type, component_choices=choices)
 
 
+class AddUnitFromChoice(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_unit_from_choice"
+    bl_label = "Add Unit"
+    bl_description = "Add a catalog unit (e.g. psf) to the file without assigning it as a project default"
+    bl_options = {"REGISTER", "UNDO"}
+    unit_type: bpy.props.StringProperty()
+    choice: bpy.props.StringProperty(description='e.g. "+CONV:psf" (see tool.Unit.get_new_unit_choices)')
+
+    def _execute(self, context):
+        result = core.add_unit_from_choice(tool.Unit, unit_type=self.unit_type, choice=self.choice)
+        tool.Unit.get_unit_props().last_added_unit_id = result.id() if result else 0
+
+
 class AddContextDependentUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_context_dependent_unit"
     bl_label = "Add Context Dependent Unit"
