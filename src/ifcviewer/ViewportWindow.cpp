@@ -1497,6 +1497,10 @@ void ViewportWindow::setBackfaceCulling(bool enabled) {
     core_.setBackfaceCulling(enabled);
 }
 
+void ViewportWindow::setSectionCapsEnabled(bool enabled) {
+    core_.setSectionCapsEnabled(enabled);
+}
+
 // -----------------------------------------------------------------------------
 // One-shot framebuffer capture → PNG
 // -----------------------------------------------------------------------------
