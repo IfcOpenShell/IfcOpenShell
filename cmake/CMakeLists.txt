@@ -243,8 +243,9 @@ if(USE_CCACHE)
             set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
             # Not needed for Ninja.
             if(CMAKE_GENERATOR MATCHES "Visual Studio")
+                resolve_scoop_shim(CCACHE_EXECUTABLE ${CCACHE_FOUND})
                 file(COPY_FILE
-                    ${CCACHE_FOUND} ${CMAKE_BINARY_DIR}/cl.exe
+                    ${CCACHE_EXECUTABLE} ${CMAKE_BINARY_DIR}/cl.exe
                     ONLY_IF_DIFFERENT)
                 set(CMAKE_VS_GLOBALS
                     "CLToolExe=cl.exe"

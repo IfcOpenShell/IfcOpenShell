@@ -561,6 +561,28 @@ function(get_debug_variant NAME LIBRARY POSTFIX)
     set(${NAME} "${LIBRARY}" PARENT_SCOPE)
 endfunction()
 
+# Set NAME to the EXECUTABLE path resolved to the actual target, if it's a scoop shim,
+# otherwise set it to EXECUTABLE unchanged.
+#
+# Scoop exposes at PATH not actual executables, but shims.
+# E.g. `ccache.exe` is a shim that just runs actual executable from `ccache.shim`
+# next to it.
+# So copying shim itself breaks it, but we do need to copy `ccache.exe` as `cl.exe`
+# to support ccache on MSVC.
+#
+# Example:
+# - `resolve_scoop_shim(CCACHE "C:/scoop/shims/ccache.exe")`
+#   -> `CCACHE = "C:/scoop/apps/ccache/current/ccache.exe"`
+function(resolve_scoop_shim NAME EXECUTABLE)
+    cmake_path(REPLACE_EXTENSION EXECUTABLE ".shim" OUTPUT_VARIABLE SHIM_FILE)
+    if(EXISTS "${SHIM_FILE}")
+        file(STRINGS "${SHIM_FILE}" SHIM_PATH_LINE REGEX "^path *=")
+        string(REGEX REPLACE "^path *= *\"?([^\"]*)\"?$" "\\1" EXECUTABLE "${SHIM_PATH_LINE}")
+        file(TO_CMAKE_PATH "${EXECUTABLE}" EXECUTABLE)
+    endif()
+    set(${NAME} "${EXECUTABLE}" PARENT_SCOPE)
+endfunction()
+
 # When building specified config, cmake first tries to find target config by the exact match
 # (e.g. to find `-relwithdebinfo.cmake` dependency for RelWithDebInfo build),
 # but if it fails, it falls back to the first cmake config it can find, alphabetically.
