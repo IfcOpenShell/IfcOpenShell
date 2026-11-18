@@ -37,14 +37,19 @@ def assign_structural_load_combination(
     combination has its factor changed. A load case may be in any number of
     combinations, with a factor in each.
 
-    :param load_case: The IfcStructuralLoadCase to assign.
+    A load case is an IfcStructuralLoadCase, or an IfcStructuralLoadGroup
+    of type LOAD_CASE, as some programs, such as RFEM, write them.
+
+    :param load_case: The load case to assign.
     :param load_combination: The IfcStructuralLoadGroup of type
         LOAD_COMBINATION.
     :param factor: The factor the load case is multiplied by in this
         combination.
     :return: The IfcRelAssignsToGroupByFactor relationship
     """
-    if not load_case.is_a("IfcStructuralLoadCase"):
+    if not load_case.is_a("IfcStructuralLoadCase") and not (
+        load_case.is_a("IfcStructuralLoadGroup") and load_case.PredefinedType == "LOAD_CASE"
+    ):
         raise ValueError(f"Only load cases can be combined, not {load_case}")
     if load_combination.PredefinedType != "LOAD_COMBINATION":
         raise ValueError(f"{load_combination} is not a load combination")
