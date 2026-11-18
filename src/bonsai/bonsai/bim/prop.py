@@ -125,17 +125,32 @@ def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> 
 def get_unit_enum_items_for_special_type(
     special_type: str, ifc_file: Union[ifcopenshell.file, None]
 ) -> tool.Blender.BLENDER_ENUM_ITEMS:
-    """Items for a unit-override picker: "Default (<symbol>)" plus every candidate unit
+    """Items for a unit-override picker: a "no override" entry plus every candidate unit
     matching `special_type`, filtered per-caller since candidates depend on the measure type
     in question (unlike the globally-shared lists in `bonsai.bim.ui.EnumData`).
+
+    The "no override" entry (identifier "0") reads "Default (<symbol>)" when the project's
+    IfcUnitAssignment defines a unit for `special_type`, and "Undefined" when it doesn't -- in
+    that case a value without its own Unit has no unit at all, so calling it "Default" would
+    wrongly imply one exists.
     """
     if not ifc_file or not tool.Pset.is_measurable_special_type(special_type):
         return [(cache_string("0"), cache_string("Default"), "")]
 
-    default_symbol = tool.Pset.get_unit_symbol_for_special_type(special_type, ifc_file)
-    items: list[tuple[str, str, str]] = [
-        (cache_string("0"), cache_string(f"Default ({default_symbol})" if default_symbol else "Default"), "")
-    ]
+    if tool.Pset.get_project_unit_for_special_type(special_type, ifc_file):
+        default_symbol = tool.Pset.get_unit_symbol_for_special_type(special_type, ifc_file)
+        no_override_item = (
+            cache_string("0"),
+            cache_string(f"Default ({default_symbol})" if default_symbol else "Default"),
+            "Use the project default unit",
+        )
+    else:
+        no_override_item = (
+            cache_string("0"),
+            cache_string(tool.Pset.UNDEFINED_UNIT_LABEL),
+            tool.Pset.UNDEFINED_UNIT_DESCRIPTION,
+        )
+    items: list[tuple[str, str, str]] = [no_override_item]
     for unit in tool.Pset.get_candidate_units_for_special_type(special_type, ifc_file):
         name = getattr(unit, "Name", None) or unit.is_a()
         symbol = ifcopenshell.util.unit.get_unit_symbol(unit)

@@ -131,6 +131,70 @@ class TestGetAttributeUnitEnumItems(NewFile):
         assert [i[0] for i in items] == ["0"]
 
 
+class TestUndefinedVersusDefaultUnits(NewFile):
+    """Regression tests for #10074: when the project's IfcUnitAssignment defines no unit for a
+    measure type, the picker's no-override entry used to read "Default", implying a unit exists.
+    It must read "Undefined" instead, and only read "Default (<symbol>)" when one really does."""
+
+    def test_picker_reads_undefined_when_the_project_defines_no_unit(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        # A pressure unit exists in the file (usable as an override) but isn't assigned.
+        pascal = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="PRESSUREUNIT")
+
+        element = ifc.createIfcWall()
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcPressureMeasure(5.0))
+        metadata = import_single_property(ifc, element, prop)
+
+        items = bonsai.bim.prop.get_attribute_unit_enum_items(metadata, bpy.context)
+        assert items[0] == ("0", "Undefined", tool.Pset.UNDEFINED_UNIT_DESCRIPTION)
+        assert str(pascal.id()) in [i[0] for i in items]
+
+    def test_picker_reads_undefined_with_no_units_at_all(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+
+        element = ifc.createIfcWall()
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcAreaMeasure(5.0))
+        metadata = import_single_property(ifc, element, prop)
+
+        items = bonsai.bim.prop.get_attribute_unit_enum_items(metadata, bpy.context)
+        assert [i[:2] for i in items] == [("0", "Undefined")]
+
+    def test_picker_reads_default_when_the_project_defines_a_unit(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        pascal = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="PRESSUREUNIT")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[pascal])
+
+        element = ifc.createIfcWall()
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcPressureMeasure(5.0))
+        metadata = import_single_property(ifc, element, prop)
+
+        items = bonsai.bim.prop.get_attribute_unit_enum_items(metadata, bpy.context)
+        assert items[0][:2] == ("0", "Default (Pa)")
+
+    def test_picker_switches_from_undefined_to_default_once_a_unit_is_assigned(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        assert bonsai.bim.prop.get_unit_enum_items_for_special_type("AREA", ifc)[0][1] == "Undefined"
+
+        area = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="AREAUNIT")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[area])
+
+        assert bonsai.bim.prop.get_unit_enum_items_for_special_type("AREA", ifc)[0][1] == "Default (m2)"
+
+    def test_non_measurable_types_keep_the_plain_default_entry(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        assert bonsai.bim.prop.get_unit_enum_items_for_special_type("", ifc) == [("0", "Default", "")]
+
+
 class TestGetUnitEnumItemsForSpecialType(NewFile):
     def test_matches_the_attribute_wrapper_output(self):
         # Regression test for extracting get_unit_enum_items_for_special_type out of
