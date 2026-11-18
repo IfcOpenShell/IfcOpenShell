@@ -166,6 +166,11 @@ if(BUILD_IFCAPI)
                 --discovery-include-dir "${CMAKE_CURRENT_SOURCE_DIR}/../ifcgeom/kernels/manifold"
             )
         endif()
+        if(WITH_SMLIB)
+            list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_INCLUDE_ARGS
+                --discovery-include-dir "${CMAKE_CURRENT_SOURCE_DIR}/../ifcgeom/kernels/smlib"
+            )
+        endif()
         list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_INCLUDE_ARGS
             --discovery-include-dir "${CMAKE_CURRENT_SOURCE_DIR}/../ifcgeom/kernels/passthrough"
         )
@@ -217,6 +222,9 @@ if(BUILD_IFCAPI)
         endif()
         if(WITH_MANIFOLD)
             list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_DEFINE_ARGS --discovery-define IFOPSH_WITH_MANIFOLD)
+        endif()
+        if(WITH_SMLIB)
+            list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_DEFINE_ARGS --discovery-define IFOPSH_WITH_SMLIB)
         endif()
         if(WITH_ROCKSDB)
             list(APPEND IFCOPENSHELL_BINDINGS_DISCOVERY_DEFINE_ARGS --discovery-define IFOPSH_WITH_ROCKSDB)

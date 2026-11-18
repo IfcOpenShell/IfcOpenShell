@@ -4,6 +4,11 @@ add_executable(test_ifcopenshell_geometry
     test_ifcopenshell_geometry.cpp
     test_taxonomy.cpp
 )
+if(TARGET geometry_kernel_smlib)
+    target_sources(test_ifcopenshell_geometry PRIVATE test_smlib.cpp)
+    target_link_libraries(test_ifcopenshell_geometry PRIVATE geometry_kernel_smlib SMLib::SMLib SM_API::SM_API)
+    set(IFCGEOM_TEST_SMLIB_DLL_PATHS $<TARGET_FILE_DIR:SMLib::SMLib> $<TARGET_FILE_DIR:SM_API::SM_API>)
+endif()
 list(GET SCHEMA_VERSIONS -1 IFCGEOM_TEST_SCHEMA_VERSION)
 set(IFCGEOM_TEST_SCHEMA_TARGET parse_schema_ifc${IFCGEOM_TEST_SCHEMA_VERSION})
 set(IFCGEOM_TEST_MAPPING_TARGET geometry_mapping_ifc${IFCGEOM_TEST_SCHEMA_VERSION})
@@ -38,6 +43,7 @@ if(TARGET geometry_kernel_opencascade)
 endif()
 catch_discover_tests(test_ifcopenshell_geometry
     DL_PATHS
+        ${IFCGEOM_TEST_SMLIB_DLL_PATHS}
         $<TARGET_FILE_DIR:Catch2::Catch2>
         $<TARGET_FILE_DIR:Catch2::Catch2WithMain>
         $<TARGET_FILE_DIR:IfcGeom>
