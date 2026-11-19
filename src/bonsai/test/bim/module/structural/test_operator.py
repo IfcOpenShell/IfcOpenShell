@@ -11,7 +11,6 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.group
 import ifcopenshell.api.material
 import ifcopenshell.api.profile
-import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
 import ifcopenshell.api.unit
@@ -24,7 +23,6 @@ import pytest
 from mathutils import Vector
 
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.structural.data import LoadGroupDecorationData
 from bonsai.bim.module.structural.decorator import LoadsDecorator
 from bonsai.bim.module.structural.operator import PickStructuralLoads, get_load_unit_symbol
@@ -446,7 +444,7 @@ class TestGenerateStructuralModel(NewIfc):
         assert message in capsys.readouterr().out
         assert member in ifc.by_type("IfcStructuralCurveMember")
 
-    def test_invalid_snapped_orientation_cancels_without_changes(self, capsys):
+    def test_regenerating_replaces_the_generated_member(self, capsys):
         ifc = tool.Ifc.get()
         model_context = ifcopenshell.util.representation.get_context(ifc, "Model")
         body = ifcopenshell.api.context.add_context(
@@ -455,80 +453,6 @@ class TestGenerateStructuralModel(NewIfc):
         profile = ifcopenshell.api.profile.add_parameterized_profile(ifc, ifc_class="IfcRectangleProfileDef")
         profile.XDim, profile.YDim = 0.2, 0.3
         ifcopenshell.api.structural.add_structural_analysis_model(ifc)
-        source = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcColumn")
-        material = ifcopenshell.api.material.add_material(ifc, name="Steel")
-        ifcopenshell.api.material.assign_material(ifc, products=[source], material=material)
-        representation = ifcopenshell.api.geometry.add_profile_representation(
-            ifc, context=body, profile=profile, depth=3
-        )
-        ifcopenshell.api.geometry.assign_representation(ifc, product=source, representation=representation)
-        obj = bpy.data.objects.new("Column", bpy.data.meshes.new("Column"))
-        bpy.context.scene.collection.objects.link(obj)
-        tool.Ifc.link(source, obj)
-        obj.select_set(True)
-        bpy.context.view_layer.objects.active = obj
-        other_source = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcColumn")
-        ifcopenshell.api.material.assign_material(ifc, products=[other_source], material=material)
-        other_representation = ifcopenshell.api.geometry.add_profile_representation(
-            ifc, context=body, profile=profile, depth=3
-        )
-        ifcopenshell.api.geometry.assign_representation(ifc, product=other_source, representation=other_representation)
-        other_obj = bpy.data.objects.new("Other column", bpy.data.meshes.new("Other column"))
-        bpy.context.scene.collection.objects.link(other_obj)
-        tool.Ifc.link(other_source, other_obj)
-        other_obj.location.x = 4
-        other_obj.select_set(True)
-        bpy.context.view_layer.update()
-        assert bpy.ops.bim.generate_structural_model() == {"FINISHED"}
-        member = ifcopenshell.util.structural.get_structural_members(source)[0]
-        other_member = ifcopenshell.util.structural.get_structural_members(other_source)[0]
-        for item in (member, other_member):
-            start = min(
-                item.ConnectedBy, key=lambda rel: tool.Ifc.get_object(rel.RelatedStructuralConnection).location.z
-            )
-            external = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember")
-            ifcopenshell.api.structural.add_structural_member_connection(
-                ifc,
-                relating_structural_member=external,
-                related_structural_connection=start.RelatedStructuralConnection,
-            )
-        other_obj.location.x = 5
-        bpy.context.view_layer.update()
-        tool.Structural.get_structural_props().generation_merge_tolerance = 0.1
-        before = ifc.to_string()
-        history_before = list(IfcStore.history)
-        future_before = list(IfcStore.future)
-        objects_before = set(bpy.data.objects)
-        positions_before = {obj: obj.location.copy() for obj in objects_before}
-        axis = np.array(((0.0, 0.05, 0.05), (0.0, 1.0, 0.0)))
-        profile_direction = np.array((0.0, 1.0, 0.0))
-        get_member_data = tool.Structural.get_physical_member_data
-        with mock.patch.object(
-            tool.Structural,
-            "get_physical_member_data",
-            side_effect=lambda source_obj: (
-                (axis, profile_direction) if source_obj == obj else get_member_data(source_obj)
-            ),
-        ):
-            assert bpy.ops.bim.generate_structural_model() == {"CANCELLED"}
-        assert "Profile orientation is parallel to the updated structural member" in capsys.readouterr().out
-        assert ifc.to_string() == before
-        assert IfcStore.history == history_before
-        assert IfcStore.future == future_before
-        assert set(bpy.data.objects) == objects_before
-        assert all(obj.location == position for obj, position in positions_before.items())
-
-    @pytest.mark.parametrize("reverse_link", [False, True])
-    @pytest.mark.parametrize("scene_tolerance", [None, 0.2])
-    def test_explicit_refresh_of_linked_member(self, reverse_link, scene_tolerance, capsys):
-        ifc = tool.Ifc.get()
-        model_context = ifcopenshell.util.representation.get_context(ifc, "Model")
-        body = ifcopenshell.api.context.add_context(
-            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model_context
-        )
-        profile = ifcopenshell.api.profile.add_parameterized_profile(ifc, ifc_class="IfcRectangleProfileDef")
-        profile.XDim, profile.YDim = 0.2, 0.3
-        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
         source = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcColumn", name="Column")
         material = ifcopenshell.api.material.add_material(ifc, name="Steel")
         ifcopenshell.api.material.assign_material(ifc, products=[source], material=material)
@@ -539,74 +463,36 @@ class TestGenerateStructuralModel(NewIfc):
         obj = bpy.data.objects.new("Column", bpy.data.meshes.new("Column"))
         bpy.context.scene.collection.objects.link(obj)
         tool.Ifc.link(source, obj)
-        obj.location.z = 0.13
         obj.select_set(True)
         bpy.context.view_layer.objects.active = obj
         bpy.context.view_layer.update()
-        bpy.ops.bim.generate_structural_model()
-        member = ifc.by_type("IfcStructuralCurveMember")[0]
-        reopened = ifcopenshell.file.from_string(ifc.to_string())
-        assert ifcopenshell.util.structural.get_building_elements(reopened.by_guid(member.GlobalId)) == [
-            reopened.by_guid(source.GlobalId)
-        ]
-        if reverse_link:
-            relation = next(rel for rel in source.HasAssignments if rel.is_a("IfcRelAssignsToProduct"))
-            relation.RelatingProduct = source
-            relation.RelatedObjects = [member]
-        nodes = ifc.by_type("IfcStructuralPointConnection")
-        assert all(
-            not ifcopenshell.util.element.get_pset(item, "BBIM_StructuralGeneration")
-            for item in [model, member, *nodes]
+        assert bpy.ops.bim.generate_structural_model() == {"FINISHED"}
+        support = next(
+            rel.RelatedStructuralConnection
+            for rel in ifcopenshell.util.structural.get_structural_members(source)[0].ConnectedBy
+            if tool.Ifc.get_object(rel.RelatedStructuralConnection).location.z < 1
         )
-        for item, properties in (
-            (model, {"MergeTolerance": 0.1}),
-            (member, {"Source": source.GlobalId, "SourceAxis": "old", "Keep": "value"}),
-            (nodes[0], {"Generated": True}),
-        ):
-            pset = ifcopenshell.api.pset.add_pset(ifc, product=item, name="BBIM_StructuralGeneration")
-            ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties=properties)
-        props = tool.Structural.get_structural_props()
-        if scene_tolerance is None:
-            props.property_unset("generation_merge_tolerance")
-        else:
-            props.generation_merge_tolerance = scene_tolerance
+        condition = ifcopenshell.api.structural.add_structural_boundary_condition(ifc, name="Fixed", connection=support)
         obj.location.x = 2
         bpy.context.view_layer.update()
-        assert tool.Ifc.get_object(member).location.x == pytest.approx(0)
-        ifc_before_check = ifc.to_string()
-        history_before_check = len(IfcStore.history)
-        previous_transaction = IfcStore.history[-1]["key"]
         assert bpy.ops.bim.generate_structural_model() == {"FINISHED"}
-        assert len(IfcStore.history) == history_before_check + 1
-        update_transaction = IfcStore.history[-1]["key"]
-        ifc_after_update = ifc.to_string()
-        IfcStore.undo(until_key=previous_transaction)
-        assert ifc.to_string() == ifc_before_check
-        IfcStore.redo(until_key=update_transaction)
-        assert ifc.to_string() == ifc_after_update
-        assert tool.Ifc.get_object(member).location.x == pytest.approx(2)
-        assert props.generation_merge_tolerance == pytest.approx(0.01 if scene_tolerance is None else scene_tolerance)
-        assert ifcopenshell.util.element.get_pset(model, "BBIM_StructuralGeneration")["MergeTolerance"] == 0.1
-        assert ifcopenshell.util.element.get_pset(nodes[0], "BBIM_StructuralGeneration")["Generated"] is True
-        member_pset = ifcopenshell.util.element.get_pset(member, "BBIM_StructuralGeneration")
-        assert member_pset["Source"] == source.GlobalId
-        assert member_pset["SourceAxis"] == "old"
-        assert member_pset["Keep"] == "value"
-        member_obj = tool.Ifc.get_object(member)
-        tool.Structural.get_structural_props().generation_merge_tolerance = 0.1
-        member_obj.data.vertices[1].co.x = 0.3
-        bpy.context.view_layer.update()
-        member_obj.location.x = 2.15
-        bpy.context.view_layer.update()
-        assert member_obj.location.x == pytest.approx(2.15)
-        bpy.ops.bim.generate_structural_model()
-        assert member_obj.location.x == pytest.approx(2)
-        assert member_obj.data.vertices[1].co.x == pytest.approx(0)
-        tool.Geometry.delete_ifc_object(obj)
-        bpy.ops.bim.generate_structural_model()
-        assert "No eligible profile beams or columns selected" in capsys.readouterr().out
-        assert member in ifc.by_type("IfcStructuralCurveMember")
-        assert len(ifc.by_type("IfcStructuralPointConnection")) == 2
+        members = ifc.by_type("IfcStructuralCurveMember")
+        assert len(members) == 1
+        assert ifcopenshell.util.structural.get_structural_members(source) == members
+        assert tool.Ifc.get_object(members[0]).location.x == pytest.approx(2)
+        assert len(ifc.by_type("IfcStructuralPointConnection")) == 3
+        assert condition.id() and support.AppliedCondition == condition
+
+    def test_skipped_objects_are_named_and_selected(self, capsys):
+        obj = bpy.data.objects.new("Odd beam", bpy.data.meshes.new("Odd beam"))
+        bpy.context.scene.collection.objects.link(obj)
+        ifc = tool.Ifc.get()
+        ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        tool.Ifc.link(ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBeam"), obj)
+        obj.select_set(True)
+        assert bpy.ops.bim.generate_structural_model() == {"CANCELLED"}
+        assert "Odd beam" in capsys.readouterr().out
+        assert obj.select_get()
 
     @pytest.mark.parametrize("tolerance,point_count", [(0.0, 4), (0.1, 3)])
     @pytest.mark.parametrize("reverse_link", [False, True])

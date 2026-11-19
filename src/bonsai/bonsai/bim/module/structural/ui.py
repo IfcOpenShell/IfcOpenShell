@@ -511,6 +511,10 @@ class BIM_PT_generate_structural_model(Panel):
     def draw(self, context):
         self.layout.prop(tool.Structural.get_structural_props(), "generation_merge_tolerance")
         self.layout.operator("bim.generate_structural_model", icon="MOD_SIMPLIFY")
+        col = self.layout.column(align=True)
+        col.label(text="Single-profile sets are shared with", icon="INFO")
+        col.label(text="the building element: editing the")
+        col.label(text="member's profile or material edits both.")
 
 
 class BIM_UL_structural_analysis_models(UIList):
