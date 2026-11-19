@@ -364,6 +364,37 @@ def get_work_day_duration(
     return datetime.timedelta(hours=8)
 
 
+def get_work_duration(
+    value: str, duration_type: Optional[DURATION_TYPE], work_day: datetime.timedelta = datetime.timedelta(hours=8)
+):
+    """Read an IfcDuration as work days and work time
+
+    For a WORKTIME duration, the date part of the IfcDuration counts work
+    days and the time part counts work hours. Work hours of one work day or
+    more become work days. For example, PT24H with a work day of 8 hours
+    gives 3 work days.
+
+    :param value: The IfcDuration.
+    :param duration_type: The IfcTaskDurationEnum of the value.
+    :param work_day: The length of a work day.
+    :return: For ELAPSEDTIME, the duration. For WORKTIME, a duration with
+        the work days as days, and the remaining work time (less than one
+        work day) as seconds. Years and months do not change.
+    """
+    duration = ifcopenshell.util.date.parse_duration(value)
+    if duration_type == "ELAPSEDTIME" or not duration:
+        return duration
+    date_part, _, time_part = value.lstrip("-").partition("T")
+    date = ifcopenshell.util.date.parse_duration(date_part) if date_part != "P" else datetime.timedelta()
+    days = getattr(date, "tdelta", date)
+    work = days / datetime.timedelta(days=1) * work_day
+    if time_part:
+        work += ifcopenshell.util.date.parse_duration("PT" + time_part)
+    work_days, rest = divmod(work, work_day)
+    result = date - days + datetime.timedelta(days=work_days) + rest
+    return -result if value.startswith("-") else result
+
+
 @cache
 def is_calendar_applicable(day, calendar: ifcopenshell.entity_instance) -> bool:
     if not calendar or not calendar.WorkingTimes:

@@ -137,7 +137,9 @@ class Usecase:
             return
 
         duration = (
-            ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleDuration)
+            ifcopenshell.util.sequence.get_work_duration(
+                task.TaskTime.ScheduleDuration, task.TaskTime.DurationType, self.get_work_day(task)
+            )
             if task.TaskTime.ScheduleDuration
             else datetime.timedelta()
         )
@@ -148,7 +150,11 @@ class Usecase:
         for rel in ifcopenshell.util.sequence.get_sequence_assignment(task, "predecessor"):
             predecessor = rel.RelatingProcess
             predecessor_duration = (
-                ifcopenshell.util.date.ifc2datetime(predecessor.TaskTime.ScheduleDuration)
+                ifcopenshell.util.sequence.get_work_duration(
+                    predecessor.TaskTime.ScheduleDuration,
+                    predecessor.TaskTime.DurationType,
+                    self.get_work_day(predecessor),
+                )
                 if predecessor.TaskTime and predecessor.TaskTime.ScheduleDuration
                 else datetime.timedelta()
             )
@@ -330,6 +336,9 @@ class Usecase:
         if task.id() not in self.calendar_cache:
             self.calendar_cache[task.id()] = ifcopenshell.util.sequence.derive_calendar(task)
         return self.calendar_cache[task.id()]
+
+    def get_work_day(self, task: ifcopenshell.entity_instance) -> datetime.timedelta:
+        return ifcopenshell.util.sequence.get_work_day_duration(task, self.get_calendar(task))
 
     def offset_date(
         self, date: datetime.datetime, days: int, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance
