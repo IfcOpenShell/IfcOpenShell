@@ -524,6 +524,8 @@ class IfcOpenShell(QtoCalculator):
                                 value = cls.get_covering_area(element, geometry)
                                 value = cls.unit_converter.convert(value, "IfcAreaMeasure")
                             else:
+                                if ifcopenshell.util.shape.get_vertices(geometry).size == 0:
+                                    continue
                                 value = formula_functions[formula](geometry)
                                 assert isinstance(value, (float, int))
                                 value = cls.unit_converter.convert(value, IfcOpenShell.raw_functions[formula].measure)
