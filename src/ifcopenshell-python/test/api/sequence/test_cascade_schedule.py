@@ -206,6 +206,30 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         assert task2.TaskTime.ScheduleStart == "2000-01-03T13:00:00"
         assert task2.TaskTime.ScheduleFinish == "2000-01-04T08:00:00"
 
+    def test_cascading_lag_times_in_hours(self):
+        task = self._create_task("P1D")
+        task2 = self._create_task("PT2H")
+        task3 = self._create_task("PT2H")
+        self._create_sequence(task, task2, "START_START", lag="PT4H")
+        self._create_sequence(task, task3, "FINISH_FINISH", lag="-PT4H")
+
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        assert task2.TaskTime.ScheduleStart == "2000-01-01T13:00:00"
+        assert task2.TaskTime.ScheduleFinish == "2000-01-01T15:00:00"
+        assert task3.TaskTime.ScheduleStart == "2000-01-01T11:00:00"
+        assert task3.TaskTime.ScheduleFinish == "2000-01-01T13:00:00"
+
+    def test_cascading_a_ratio_lag_time_of_a_sub_day_predecessor(self):
+        task = self._create_task("PT6H")
+        task2 = self._create_task("PT1H")
+        rel = ifcopenshell.api.sequence.assign_sequence(self.file, relating_process=task, related_process=task2)
+        ifcopenshell.api.sequence.assign_lag_time(self.file, rel_sequence=rel, lag_value="P1D")
+        rel.TimeLag.LagValue = self.file.createIfcRatioMeasure(0.5)
+
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        assert task.TaskTime.ScheduleFinish == "2000-01-01T15:00:00"
+        assert task2.TaskTime.ScheduleStart == "2000-01-02T10:00:00"
+
     def _create_task(self, duration):
         task = ifcopenshell.api.sequence.add_task(self.file)
         if duration == "P0D":
