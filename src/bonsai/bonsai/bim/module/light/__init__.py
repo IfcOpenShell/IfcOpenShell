@@ -59,6 +59,8 @@ def register():
     bpy.types.Scene.BIMSolarProperties = bpy.props.PointerProperty(type=prop.BIMSolarProperties)
 
     if os.name != "nt":
+        # Permissions are lost due to a bug in Blender when installing the wheels.
+        # See https://projects.blender.org/blender/blender/issues/166849
         bin_path = Path(get_pyradiance_path()) / "bin"
         for file in bin_path.iterdir():
             file.chmod(file.stat().st_mode | stat.S_IEXEC)
