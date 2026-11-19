@@ -156,6 +156,20 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         assert task3.TaskTime.ScheduleStart == "1999-12-30T09:00:00"
         assert task3.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
 
+    def test_cascading_finish_to_start_for_sub_day_durations(self):
+        task = self._create_task("PT5H")
+        task2 = self._create_task("PT5H")
+        task3 = self._create_task("PT5H")
+        self._create_sequence(task, task2, "FINISH_START")
+        self._create_sequence(task2, task3, "FINISH_START")
+
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        assert task.TaskTime.ScheduleFinish == "2000-01-01T14:00:00"
+        assert task2.TaskTime.ScheduleStart == "2000-01-01T14:00:00"
+        assert task2.TaskTime.ScheduleFinish == "2000-01-02T11:00:00"
+        assert task3.TaskTime.ScheduleStart == "2000-01-02T11:00:00"
+        assert task3.TaskTime.ScheduleFinish == "2000-01-02T16:00:00"
+
     def _create_task(self, duration):
         task = ifcopenshell.api.sequence.add_task(self.file)
         if duration == "P0D":

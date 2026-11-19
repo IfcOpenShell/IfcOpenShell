@@ -117,16 +117,16 @@ class Usecase:
             self.handle_resource_calculation()
 
     def calculate_finish(self):
+        work_day = ifcopenshell.util.sequence.get_work_day_duration(self.task, self.calendar)
         finish = ifcopenshell.util.sequence.get_start_or_finish_date(
             ifcopenshell.util.date.ifc2datetime(self.task_time.ScheduleStart),
             ifcopenshell.util.sequence.get_work_duration(
-                self.task_time.ScheduleDuration,
-                self.task_time.DurationType,
-                ifcopenshell.util.sequence.get_work_day_duration(self.task, self.calendar),
+                self.task_time.ScheduleDuration, self.task_time.DurationType, work_day
             ),
             self.task_time.DurationType,
             self.calendar,
             date_type="FINISH",
+            work_day=work_day,
         )
         self.task_time.ScheduleFinish = ifcopenshell.util.date.datetime2ifc(finish, "IfcDateTime")
 

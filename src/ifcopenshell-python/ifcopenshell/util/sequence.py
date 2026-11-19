@@ -114,22 +114,20 @@ def get_start_or_finish_date(
     duration_type: DURATION_TYPE,
     calendar: ifcopenshell.entity_instance,
     date_type: Literal["START", "FINISH"] = "FINISH",
+    work_day: datetime.timedelta = datetime.timedelta(hours=8),
 ):
-    if not duration.days:
+    delta = getattr(duration, "tdelta", duration)
+    if not delta and not getattr(duration, "months", 0) and not getattr(duration, "years", 0):
         # Typically a milestone will have zero duration, so the start == finish
         return start
-    # We minus 1 because the start day itself is counted as a day
-    months = int(getattr(duration, "months", 0))
-    years = int(getattr(duration, "years", 0))
-    total_duration = duration.days + months * 30 + years * 12 * 30
-    duration = datetime.timedelta(days=total_duration - 1)
-
+    result = offset_date(start, -duration if date_type == "START" else duration, duration_type, calendar, work_day)
+    if duration_type == "ELAPSEDTIME":
+        if delta.seconds or delta.microseconds:
+            return result
+        calendar, work_day = None, datetime.timedelta(hours=8)  # 09:00 to 17:00, as before
     if date_type == "START":
-        duration = -duration
-    result = offset_date(start, duration, duration_type, calendar)
-    if date_type == "START":
-        return datetime.datetime.combine(result, datetime.time(9))
-    return datetime.datetime.combine(result, datetime.time(17))
+        return get_work_start(result, calendar, work_day)
+    return get_work_finish(result, calendar, work_day)
 
 
 def offset_date(

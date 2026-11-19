@@ -184,6 +184,29 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         )
         assert task_time.ScheduleFinish == "2000-01-05T17:00:00"
 
+    def test_elapsed_days_finish_at_17_with_any_work_day(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
+        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar)
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(self.file, parent=work_time)
+        for start, end in (("07:00:00", "12:00:00"), ("13:00:00", "17:00:00")):
+            ifcopenshell.api.sequence.add_time_period(
+                self.file, recurrence_pattern=pattern, start_time=start, end_time=end
+            )
+        task = self.file.createIfcTask()
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_objects=[task])
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file,
+            task_time=task_time,
+            attributes={
+                "DurationType": "ELAPSEDTIME",
+                "ScheduleDuration": "P1D",
+                "ScheduleStart": "2026-01-19T09:00:00",
+            },
+        )
+        assert task_time.ScheduleFinish == "2026-01-19T17:00:00"
+
     def test_zero_durations_are_allowed(self):
         task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
         ifcopenshell.api.sequence.edit_task_time(

@@ -265,6 +265,7 @@ class Usecase:
                 task.TaskTime.DurationType,
                 self.get_calendar(task),
                 date_type="FINISH",
+                work_day=self.get_work_day(task),
             )
             if potential_finish > finish:
                 start_ifc = ifcopenshell.util.date.datetime2ifc(start, "IfcDateTime")
@@ -284,6 +285,7 @@ class Usecase:
                         task.TaskTime.DurationType,
                         self.get_calendar(task),
                         date_type="START",
+                        work_day=self.get_work_day(task),
                     ),
                     "IfcDateTime",
                 )
@@ -300,6 +302,7 @@ class Usecase:
                     task.TaskTime.DurationType,
                     self.get_calendar(task),
                     date_type="START",
+                    work_day=self.get_work_day(task),
                 ),
                 "IfcDateTime",
             )
@@ -316,6 +319,7 @@ class Usecase:
                     task.TaskTime.DurationType,
                     self.get_calendar(task),
                     date_type="FINISH",
+                    work_day=self.get_work_day(task),
                 ),
                 "IfcDateTime",
             )
