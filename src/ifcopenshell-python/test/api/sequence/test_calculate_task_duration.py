@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api.pset
+import ifcopenshell.api.control
 import ifcopenshell.api.resource
 import ifcopenshell.api.root
 import ifcopenshell.api.sequence
@@ -46,7 +47,7 @@ class TestCalculateTaskDuration(test.bootstrap.IFC4):
         resource_time.ScheduleWork = "P3.5D"
         ifcopenshell.api.sequence.assign_process(self.file, relating_process=task, related_object=resource)
         ifcopenshell.api.sequence.calculate_task_duration(self.file, task=task)
-        assert task.TaskTime.ScheduleDuration == "P4D"
+        assert task.TaskTime.ScheduleDuration == "P3DT4H"
 
     def test_calculating_a_task_duration_without_a_work_schedule_defining_workday_duration(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
@@ -101,6 +102,37 @@ class TestCalculateTaskDuration(test.bootstrap.IFC4):
         resource = ifcopenshell.api.resource.add_resource(self.file, ifc_class="IfcLaborResource")
         resource_time = ifcopenshell.api.resource.add_resource_time(self.file, resource=resource)
         resource_time.ScheduleWork = "PT48H"
+        ifcopenshell.api.sequence.assign_process(self.file, relating_process=task, related_object=resource)
+        ifcopenshell.api.sequence.calculate_task_duration(self.file, task=task)
+        assert task.TaskTime.ScheduleDuration == "P2D"
+
+    def test_calculating_an_exact_duration_in_work_hours(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(self.file)
+        task = ifcopenshell.api.sequence.add_task(self.file, work_schedule=schedule)
+        resource = ifcopenshell.api.resource.add_resource(self.file, ifc_class="IfcLaborResource")
+        resource_time = ifcopenshell.api.resource.add_resource_time(self.file, resource=resource)
+        resource_time.ScheduleWork = "PT5H9M"
+        resource_time.ScheduleUsage = 2
+        ifcopenshell.api.sequence.assign_process(self.file, relating_process=task, related_object=resource)
+        ifcopenshell.api.sequence.calculate_task_duration(self.file, task=task)
+        assert task.TaskTime.ScheduleDuration == "PT2H34M30S"
+
+    def test_calculating_a_duration_with_the_work_day_of_the_calendar(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(self.file)
+        task = ifcopenshell.api.sequence.add_task(self.file, work_schedule=schedule)
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
+        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar)
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(self.file, parent=work_time)
+        for start, end in (("07:00:00", "12:00:00"), ("13:00:00", "17:00:00")):
+            ifcopenshell.api.sequence.add_time_period(
+                self.file, recurrence_pattern=pattern, start_time=start, end_time=end
+            )
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_objects=[task])
+        resource = ifcopenshell.api.resource.add_resource(self.file, ifc_class="IfcLaborResource")
+        resource_time = ifcopenshell.api.resource.add_resource_time(self.file, resource=resource)
+        resource_time.ScheduleWork = "PT18H"
         ifcopenshell.api.sequence.assign_process(self.file, relating_process=task, related_object=resource)
         ifcopenshell.api.sequence.calculate_task_duration(self.file, task=task)
         assert task.TaskTime.ScheduleDuration == "P2D"
