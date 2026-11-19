@@ -43,7 +43,7 @@ jobs:
         libcgal-dev nlohmann-json3-dev libeigen3-dev libtbb-dev
 
     - name: ccache
-      uses: hendrikmuhs/ccache-action@v1.2.24
+      uses: hendrikmuhs/ccache-action@v1.2.25
       with:
         # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
         install: binary
