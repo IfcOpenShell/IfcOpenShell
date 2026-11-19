@@ -63,6 +63,9 @@ def register():
         # See https://projects.blender.org/blender/blender/issues/166849
         bin_path = Path(get_pyradiance_path()) / "bin"
         for file in bin_path.iterdir():
+            # Skip already executable files (e.g. root-owned system installs, see #7156).
+            if os.access(file, os.X_OK):
+                continue
             file.chmod(file.stat().st_mode | stat.S_IEXEC)
 
 
