@@ -188,6 +188,57 @@ def is_working_day(day, calendar: ifcopenshell.entity_instance) -> bool:
     return is_working_day
 
 
+def get_time_periods(work_time: ifcopenshell.entity_instance) -> list[tuple[datetime.timedelta, datetime.timedelta]]:
+    """Get the time periods of a work time
+
+    :param work_time: The IfcWorkTime.
+    :return: The sorted (StartTime, EndTime) of each IfcTimePeriod of the
+        recurrence pattern, as durations from midnight. An empty list if the
+        work time has no time period.
+    """
+    periods = []
+    for period in work_time.RecurrencePattern.TimePeriods or [] if work_time.RecurrencePattern else []:
+        times = [ifcopenshell.util.date.ifc2datetime(t) for t in (period.StartTime, period.EndTime)]
+        periods.append(
+            tuple(
+                datetime.timedelta(hours=t.hour, minutes=t.minute, seconds=t.second, microseconds=t.microsecond)
+                for t in times
+            )
+        )
+    return sorted(periods)
+
+
+def get_work_periods(
+    day, calendar: Optional[ifcopenshell.entity_instance], work_day: datetime.timedelta = datetime.timedelta(hours=8)
+) -> list[tuple[datetime.timedelta, datetime.timedelta]]:
+    """Get the work periods of a day
+
+    The work periods are the IfcTimePeriod of the calendar working times that
+    apply to the day. If there is no time period, there is one work period
+    that starts at 09:00 and lasts the work day.
+
+    :param day: The date or datetime of the day.
+    :param calendar: The IfcWorkCalendar, or None.
+    :param work_day: The length of the work period if there is no time period.
+    :return: The sorted (start, end) of each work period, as durations from
+        midnight. An empty list if the day is not a working day.
+    """
+    if isinstance(day, datetime.datetime):
+        day = day.date()
+    is_applicable = calendar and is_calendar_applicable(day, calendar)
+    if is_applicable and not is_working_day(day, calendar):
+        return []
+    periods = []
+    if is_applicable:
+        for work_time in calendar.WorkingTimes:
+            if is_work_time_applicable_to_day(work_time, day):
+                periods.extend(get_time_periods(work_time))
+    if not periods:
+        start = min(datetime.timedelta(hours=9), datetime.timedelta(days=1) - work_day)
+        periods = [(start, start + work_day)]
+    return sorted(periods)
+
+
 @cache
 def is_calendar_applicable(day, calendar: ifcopenshell.entity_instance) -> bool:
     if not calendar or not calendar.WorkingTimes:
