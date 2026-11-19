@@ -161,3 +161,20 @@ class TestGetWorkStartAndFinish(test.bootstrap.IFC4):
     def test_keeping_a_datetime_in_work_hours(self):
         assert subject.get_work_start(at(MONDAY, 13, 44), None) == at(MONDAY, 13, 44)
         assert subject.get_work_finish(at(MONDAY, 13, 44), None) == at(MONDAY, 13, 44)
+
+
+class TestGetWorkDuration:
+    def test_converting_work_hours_of_one_work_day_or_more_to_work_days(self):
+        assert subject.get_work_duration("PT24H", "WORKTIME") == datetime.timedelta(days=3)
+        assert subject.get_work_duration("PT18H", "WORKTIME", 9 * H) == datetime.timedelta(days=2)
+
+    def test_reading_work_days_and_work_hours(self):
+        assert subject.get_work_duration("P1DT12H", "WORKTIME") == datetime.timedelta(days=2, hours=4)
+        assert subject.get_work_duration("PT5H", "WORKTIME") == 5 * H
+        assert subject.get_work_duration("P2D", "WORKTIME") == datetime.timedelta(days=2)
+
+    def test_reading_a_negative_work_duration(self):
+        assert subject.get_work_duration("-PT4H", "WORKTIME") == -4 * H
+
+    def test_reading_an_elapsed_duration_as_it_is(self):
+        assert subject.get_work_duration("PT24H", "ELAPSEDTIME") == datetime.timedelta(days=1)

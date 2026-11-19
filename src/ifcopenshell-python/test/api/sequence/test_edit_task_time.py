@@ -175,6 +175,15 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.ScheduleStart == "2000-01-01T09:00:00"
         assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
 
+    def test_work_hours_of_one_work_day_or_more_are_work_days(self):
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file,
+            task_time=task_time,
+            attributes={"ScheduleDuration": "PT24H", "ScheduleStart": "2000-01-03T09:00:00"},
+        )
+        assert task_time.ScheduleFinish == "2000-01-05T17:00:00"
+
     def test_zero_durations_are_allowed(self):
         task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
         ifcopenshell.api.sequence.edit_task_time(

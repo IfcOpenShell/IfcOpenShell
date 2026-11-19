@@ -119,7 +119,11 @@ class Usecase:
     def calculate_finish(self):
         finish = ifcopenshell.util.sequence.get_start_or_finish_date(
             ifcopenshell.util.date.ifc2datetime(self.task_time.ScheduleStart),
-            ifcopenshell.util.date.ifc2datetime(self.task_time.ScheduleDuration),
+            ifcopenshell.util.sequence.get_work_duration(
+                self.task_time.ScheduleDuration,
+                self.task_time.DurationType,
+                ifcopenshell.util.sequence.get_work_day_duration(self.task, self.calendar),
+            ),
             self.task_time.DurationType,
             self.calendar,
             date_type="FINISH",
