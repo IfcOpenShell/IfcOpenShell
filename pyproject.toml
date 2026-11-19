@@ -198,7 +198,7 @@ zizmor.cmd = "zizmor ."
 zizmor.help = "GitHub workflows security check"
 
 # `gh extension install --pin` has no effect if another version is already installed, so remove it first.
-actions-lock-setup.shell = "gh extension remove actions-lock; gh extension install github/gh-actions-lock --pin v0.4.1"
+actions-lock-setup.shell = "gh extension remove actions-lock; gh extension install github/gh-actions-lock --pin v0.5.0"
 actions-lock-setup.interpreter = ["posix", "pwsh"]
 actions-lock-setup.help = "Install pinned gh-actions-lock extension"
 
