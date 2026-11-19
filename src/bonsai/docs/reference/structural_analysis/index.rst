@@ -10,7 +10,7 @@ Structural Analysis
    Structural Analysis sub-tab.
 
 Generate Structural Model (Beams & Columns)
------------------------------------------
+--------------------------------------------
 
 Select profile-based beams or columns and use **Generate from Selected** to
 create linked structural curve members. Each supported element must have one

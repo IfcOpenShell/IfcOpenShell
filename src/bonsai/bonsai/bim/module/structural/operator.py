@@ -364,6 +364,7 @@ class GenerateStructuralModel(bpy.types.Operator):
         representation_context = ifcopenshell.util.representation.get_context(file, "Model", "Reference", "GRAPH_VIEW")
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(file)
         scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+        free_ends = []
 
         def create_item(ifc_class, name, start, end=None):
             mesh = bpy.data.meshes.new(name)
@@ -416,6 +417,8 @@ class GenerateStructuralModel(bpy.types.Operator):
                 if match is None:
                     match = create_node(position)
                     connections.append((position, match))
+                else:
+                    free_ends.append(tool.Ifc.get_object(source).name)
                 node_items.append(match)
             member = create_item(
                 "IfcStructuralCurveMember", source.Name or "Structural Member", actual_start, actual_end
@@ -430,6 +433,8 @@ class GenerateStructuralModel(bpy.types.Operator):
             created += 1
 
         self._report_skipped()
+        if free_ends:
+            self.report({"INFO"}, f"{len(set(free_ends))} members have free ends (not connected to other members)")
         self.report({"INFO"}, f"Generated {created} structural members")
         return {"FINISHED"}
 

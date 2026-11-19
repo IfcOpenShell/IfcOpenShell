@@ -54,13 +54,15 @@ if TYPE_CHECKING:
 class Structural(bonsai.core.tool.Structural):
     @classmethod
     def find_nearby_connection(cls, point, connections, tolerance):
-        if tolerance <= 0:
-            return None
+        # Merge exact coincidences (1e-6 m tolerance) regardless of user setting
+        min_tolerance = max(tolerance, 1e-6)
         nearby = (
             (np.linalg.norm(np.asarray(point) - np.asarray(position)), connection)
             for position, connection in connections
         )
-        return min((item for item in nearby if item[0] <= tolerance), default=(None, None), key=lambda item: item[0])[1]
+        return min(
+            (item for item in nearby if item[0] <= min_tolerance), default=(None, None), key=lambda item: item[0]
+        )[1]
 
     @classmethod
     def get_physical_section(

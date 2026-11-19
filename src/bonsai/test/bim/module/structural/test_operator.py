@@ -337,7 +337,7 @@ class TestGenerateStructuralModel(NewIfc):
         assert bpy.ops.bim.generate_structural_model() == {"CANCELLED"}
         assert "Odd beam" in capsys.readouterr().out
 
-    @pytest.mark.parametrize("tolerance,point_count", [(0.0, 4), (0.1, 3)])
+    @pytest.mark.parametrize("tolerance,point_count", [(0.0, 3), (0.1, 3)])
     def test_selected_columns_are_connected_and_assigned(self, tolerance, point_count):
         ifc = tool.Ifc.get()
         model_context = ifcopenshell.util.representation.get_context(ifc, "Model")

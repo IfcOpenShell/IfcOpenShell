@@ -210,7 +210,7 @@ class BIMStructuralProperties(PropertyGroup):
     building: EnumProperty(items=get_buildings, name="Building")
     generation_merge_tolerance: FloatProperty(
         name="Merge Tolerance",
-        description="Merge generated points and ignore axis differences within this distance; zero disables merging",
+        description="Merge generated points and ignore axis differences within this distance",
         subtype="DISTANCE",
         unit="LENGTH",
         min=0.0,
