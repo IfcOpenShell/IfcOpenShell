@@ -91,3 +91,16 @@ class TestCalculateTaskDuration(test.bootstrap.IFC4):
         ifcopenshell.api.sequence.assign_process(self.file, relating_process=subtask, related_object=resource)
         ifcopenshell.api.sequence.calculate_task_duration(self.file, task=subtask)
         assert subtask.TaskTime.ScheduleDuration == "P6D"
+
+    def test_calculating_a_task_duration_with_a_work_day_duration_of_24_hours(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(self.file)
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=schedule, name="Pset_WorkControlCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"WorkDayDuration": "PT24H"})
+        task = ifcopenshell.api.sequence.add_task(self.file, work_schedule=schedule)
+        resource = ifcopenshell.api.resource.add_resource(self.file, ifc_class="IfcLaborResource")
+        resource_time = ifcopenshell.api.resource.add_resource_time(self.file, resource=resource)
+        resource_time.ScheduleWork = "PT48H"
+        ifcopenshell.api.sequence.assign_process(self.file, relating_process=task, related_object=resource)
+        ifcopenshell.api.sequence.calculate_task_duration(self.file, task=task)
+        assert task.TaskTime.ScheduleDuration == "P2D"

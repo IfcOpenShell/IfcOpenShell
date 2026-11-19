@@ -250,6 +250,35 @@ def get_work_periods(
     return sorted(periods)
 
 
+def get_work_day_duration(
+    task: ifcopenshell.entity_instance, calendar: Optional[ifcopenshell.entity_instance] = None
+) -> datetime.timedelta:
+    """Get the length of a work day
+
+    The length is the sum of the IfcTimePeriod of the first calendar working
+    time that has time periods. If there is no time period, the length is the
+    Pset_WorkControlCommon.WorkDayDuration of the work schedule of the task.
+    If there is no value, the length is 8 hours.
+
+    :param task: The IfcTask.
+    :param calendar: The IfcWorkCalendar. If None, the calendar of the task.
+    :return: The length of a work day.
+    """
+    calendar = calendar or derive_calendar(task)
+    for work_time in calendar.WorkingTimes or [] if calendar else []:
+        if periods := get_time_periods(work_time):
+            return sum((end - start for start, end in periods), datetime.timedelta())
+    while task:
+        for rel in task.HasAssignments or []:
+            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule"):
+                pset = ifcopenshell.util.element.get_pset(rel.RelatingControl, "Pset_WorkControlCommon")
+                if pset and pset.get("WorkDayDuration"):
+                    return ifcopenshell.util.date.parse_duration(pset["WorkDayDuration"])
+                return datetime.timedelta(hours=8)
+        task = task.Nests[0].RelatingObject if task.Nests else None
+    return datetime.timedelta(hours=8)
+
+
 @cache
 def is_calendar_applicable(day, calendar: ifcopenshell.entity_instance) -> bool:
     if not calendar or not calendar.WorkingTimes:

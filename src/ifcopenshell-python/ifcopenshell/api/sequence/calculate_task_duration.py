@@ -21,7 +21,7 @@ from typing import Union
 
 import ifcopenshell.api.sequence
 import ifcopenshell.util.date
-import ifcopenshell.util.element
+import ifcopenshell.util.sequence
 
 
 def calculate_task_duration(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> None:
@@ -96,26 +96,7 @@ class Usecase:
             self.set_task_duration(duration)
 
     def calculate_seconds_per_workday(self) -> float:
-        def get_work_schedule(task):
-            for rel in task.HasAssignments or []:
-                if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule"):
-                    return rel.RelatingControl
-            for rel in task.Nests or []:
-                return get_work_schedule(rel.RelatingObject)
-
-        default_seconds_per_workday = 8 * 60 * 60
-        work_schedule = get_work_schedule(self.task)
-        if not work_schedule:
-            return default_seconds_per_workday
-        psets = ifcopenshell.util.element.get_psets(work_schedule)
-        if (
-            not psets
-            or "Pset_WorkControlCommon" not in psets
-            or "WorkDayDuration" not in psets["Pset_WorkControlCommon"]
-        ):
-            return default_seconds_per_workday
-        work_day_duration = ifcopenshell.util.date.ifc2datetime(psets["Pset_WorkControlCommon"]["WorkDayDuration"])
-        return work_day_duration.seconds
+        return ifcopenshell.util.sequence.get_work_day_duration(self.task).total_seconds()
 
     def calculate_max_resource_usage_duration(self) -> float:
         max_duration = 0
