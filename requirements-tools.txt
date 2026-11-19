@@ -1,5 +1,5 @@
 ruff==0.17.5
 poethepoet
-ty==0.0.100
+ty==0.0.101
 gersemi==0.29.2
 zizmor==1.32.0
