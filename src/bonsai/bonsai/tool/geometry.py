@@ -1453,6 +1453,8 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def record_object_materials(cls, obj: bpy.types.Object) -> None:
+        if obj.data is None:
+            return
         props = tool.Geometry.get_mesh_props(obj.data)
         props.material_checksum = cls.get_material_checksum(obj)
 
