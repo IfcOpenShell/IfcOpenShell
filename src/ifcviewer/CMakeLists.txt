@@ -264,7 +264,7 @@ else()
     else()
         # No zstd CONFIG package on this system — fall back to pkg-config.
         find_package(PkgConfig REQUIRED)
-        pkg_check_modules(ZSTD REQUIRED IMPORTED_TARGET libzstd)
+        pkg_check_modules(ZSTD REQUIRED IMPORTED_TARGET libzstd>=${ZSTD_MIN_VERSION})
         target_link_libraries(IfcViewerCore PUBLIC PkgConfig::ZSTD)
     endif()
 endif()
