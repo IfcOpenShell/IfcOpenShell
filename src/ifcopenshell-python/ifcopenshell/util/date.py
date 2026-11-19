@@ -232,7 +232,7 @@ def parse_duration(value: Union[str, None]) -> Union[datetime.timedelta, None]:
                 final_string = "P"
                 value_upper = value.upper()
                 for i, char in enumerate(value_upper):
-                    if char.isdigit():
+                    if char.isdigit() or (char == "." and final_string[-1].isdigit()):
                         final_string += char
                     elif char == "D":
                         final_string += "D"

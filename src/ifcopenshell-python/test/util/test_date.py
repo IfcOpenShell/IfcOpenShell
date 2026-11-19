@@ -54,3 +54,9 @@ class TestParseDuration:
         assert subject.parse_duration("1D 30MIN") == datetime.timedelta(days=1, minutes=30)
         # A lone "M" is still months, as in an ISO duration.
         assert subject.parse_duration("2M") == isodate.Duration(months=2)
+
+    def test_fuzzy_decimal_values(self):
+        assert subject.parse_duration("1.5H") == datetime.timedelta(hours=1.5)
+        assert subject.parse_duration("0.5D") == datetime.timedelta(hours=12)
+        assert subject.parse_duration("2.5 h") == datetime.timedelta(hours=2.5)
+        assert subject.parse_duration("1D 1.5H") == datetime.timedelta(days=1, hours=1.5)
