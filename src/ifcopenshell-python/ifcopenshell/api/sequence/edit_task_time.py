@@ -74,22 +74,25 @@ class Usecase:
         if attributes.get("ScheduleDuration", None) and "ScheduleFinish" in attributes.keys():
             del attributes["ScheduleFinish"]
 
+        # A start or finish with a time of day is kept as it is. A date without
+        # a time gets the first or last work instant of the next working day.
         duration_type = attributes.get("DurationType", self.task_time.DurationType)
+        work_day = ifcopenshell.util.sequence.get_work_day_duration(self.task, self.calendar)
         finish = attributes.get("ScheduleFinish", None)
-        if finish:
-            if isinstance(finish, str):
-                finish = datetime.datetime.fromisoformat(finish)
-            attributes["ScheduleFinish"] = datetime.datetime.combine(
-                ifcopenshell.util.sequence.get_soonest_working_day(finish, duration_type, self.calendar),
-                datetime.time(17),
+        if isinstance(finish, str):
+            finish = datetime.datetime.fromisoformat(finish) if "T" in finish else datetime.date.fromisoformat(finish)
+        if finish and not isinstance(finish, datetime.datetime):
+            day = ifcopenshell.util.sequence.get_soonest_working_day(finish, duration_type, self.calendar)
+            attributes["ScheduleFinish"] = ifcopenshell.util.sequence.get_work_finish(
+                datetime.datetime.combine(day + datetime.timedelta(days=1), datetime.time()), self.calendar, work_day
             )
         start = attributes.get("ScheduleStart", None)
-        if start:
-            if isinstance(start, str):
-                start = datetime.datetime.fromisoformat(start)
-            attributes["ScheduleStart"] = datetime.datetime.combine(
-                ifcopenshell.util.sequence.get_soonest_working_day(start, duration_type, self.calendar),
-                datetime.time(9),
+        if isinstance(start, str):
+            start = datetime.datetime.fromisoformat(start) if "T" in start else datetime.date.fromisoformat(start)
+        if start and not isinstance(start, datetime.datetime):
+            day = ifcopenshell.util.sequence.get_soonest_working_day(start, duration_type, self.calendar)
+            attributes["ScheduleStart"] = ifcopenshell.util.sequence.get_work_start(
+                datetime.datetime.combine(day, datetime.time()), self.calendar, work_day
             )
 
         for name, value in attributes.items():
