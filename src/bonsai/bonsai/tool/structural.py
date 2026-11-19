@@ -280,7 +280,7 @@ class Structural(bonsai.core.tool.Structural):
             raise ValueError("Select one connection with its members, or one member with its connections.")
         pairs = []
         for member in members:
-            connected = {r.RelatedStructuralConnection for r in member.ConnectedBy}
+            connected = ifcopenshell.util.structural.get_member_connections(member)
             pairs.extend((member, c) for c in connections if c not in connected)
         return pairs
 
@@ -329,9 +329,7 @@ class Structural(bonsai.core.tool.Structural):
         cls, element: ifcopenshell.entity_instance, model: ifcopenshell.entity_instance
     ) -> bool:
         """Whether the element is assigned to the structural analysis model."""
-        return any(
-            r.is_a("IfcRelAssignsToGroup") and r.RelatingGroup == model for r in getattr(element, "HasAssignments", ())
-        )
+        return model in ifcopenshell.util.structural.get_analysis_models(element)
 
     @classmethod
     def get_current_structural_analysis_model(cls) -> Union[ifcopenshell.entity_instance, None]:
