@@ -132,24 +132,109 @@ def get_start_or_finish_date(
     return datetime.datetime.combine(result, datetime.time(17))
 
 
-def offset_date(start, duration, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance):
+def offset_date(
+    start,
+    duration,
+    duration_type: DURATION_TYPE,
+    calendar: ifcopenshell.entity_instance,
+    work_day: datetime.timedelta = datetime.timedelta(hours=8),
+):
     current_date = start
     months = getattr(duration, "months", 0)
     years = getattr(duration, "years", 0)
+    delta = getattr(duration, "tdelta", duration)
+    sign = -1 if delta < datetime.timedelta() else 1
+    time = abs(delta) - datetime.timedelta(days=abs(delta).days)
+    days = sign * abs(delta).days + months * 30 + years * 12 * 30
 
-    abs_duration = abs(duration.days + months * 30 + years * 12 * 30)
-    date_offset = datetime.timedelta(days=1 if duration.days > 0 else -1)
+    abs_duration = abs(days)
+    date_offset = datetime.timedelta(days=1 if days > 0 else -1)
     while abs_duration > 0:
         if duration_type == "ELAPSEDTIME" or not is_calendar_applicable(current_date, calendar):
             abs_duration -= 1
         elif is_working_day(current_date, calendar):
             abs_duration -= 1
         current_date += date_offset
-    if duration.days > 0:
+    if days > 0:
         current_date = get_soonest_working_day(current_date, duration_type, calendar)
-    else:
+    elif days < 0 or not time:
         current_date = get_recent_working_day(current_date, duration_type, calendar)
+    if time and duration_type == "ELAPSEDTIME":
+        current_date += sign * time
+    elif time:
+        current_date = offset_work_time(current_date, sign * time, calendar, work_day)
     return current_date
+
+
+def offset_work_time(
+    start: datetime.datetime,
+    duration: datetime.timedelta,
+    calendar: Optional[ifcopenshell.entity_instance],
+    work_day: datetime.timedelta = datetime.timedelta(hours=8),
+) -> datetime.datetime:
+    """Offset a datetime by a work time, through the work periods of each day
+
+    :param start: The datetime to offset.
+    :param duration: The work time. A negative work time offsets back.
+    :param calendar: The IfcWorkCalendar, or None.
+    :param work_day: The length of a work day. See get_work_periods.
+    :return: The datetime after (or before) the work time. A result at the
+        limit of a work period stays at that limit.
+    """
+    sign = -1 if duration < datetime.timedelta() else 1
+    remaining = abs(duration)
+    day = start.date()
+    days_without_work = 0
+    while remaining and days_without_work < 366:
+        midnight = datetime.datetime.combine(day, datetime.time(), start.tzinfo)
+        periods = get_work_periods(day, calendar, work_day)
+        days_without_work = 0 if periods else days_without_work + 1
+        for period_start, period_end in periods if sign > 0 else reversed(periods):
+            period_start, period_end = midnight + period_start, midnight + period_end
+            if sign > 0 and start < period_end:
+                start = max(start, period_start)
+                step = min(remaining, period_end - start)
+            elif sign < 0 and start > period_start:
+                start = min(start, period_end)
+                step = min(remaining, start - period_start)
+            else:
+                continue
+            start += sign * step
+            remaining -= step
+            if not remaining:
+                break
+        day += datetime.timedelta(days=sign)
+    return start
+
+
+def get_work_start(
+    date: datetime.datetime,
+    calendar: Optional[ifcopenshell.entity_instance],
+    work_day: datetime.timedelta = datetime.timedelta(hours=8),
+) -> datetime.datetime:
+    """Get the first work instant at or after a datetime
+
+    A datetime in a work period does not change. A datetime at the end of a
+    work period, or out of the work periods, moves to the start of the next
+    work period.
+    """
+    instant = datetime.timedelta(microseconds=1)
+    return offset_work_time(date, instant, calendar, work_day) - instant
+
+
+def get_work_finish(
+    date: datetime.datetime,
+    calendar: Optional[ifcopenshell.entity_instance],
+    work_day: datetime.timedelta = datetime.timedelta(hours=8),
+) -> datetime.datetime:
+    """Get the last work instant at or before a datetime
+
+    A datetime in a work period does not change. A datetime at the start of
+    a work period, or out of the work periods, moves to the end of the
+    previous work period.
+    """
+    instant = datetime.timedelta(microseconds=1)
+    return offset_work_time(date, -instant, calendar, work_day) + instant
 
 
 def get_soonest_working_day(start, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance):
