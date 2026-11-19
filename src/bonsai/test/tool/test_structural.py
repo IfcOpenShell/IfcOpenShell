@@ -198,6 +198,12 @@ class TestGetSupportAttributes(NewFile):
         with pytest.raises(ValueError):
             subject.get_support_attributes("IfcBoundaryNodeCondition", hold_rotations=True)
 
+    def test_ifc2x3_cannot_hold_a_face(self):
+        # IFC2X3 calls the stiffnesses of a face LinearStiffnessByArea, and a face has no rotations.
+        tool.Ifc.set(ifcopenshell.file(schema="IFC2X3"))
+        with pytest.raises(ValueError):
+            subject.get_support_attributes("IfcBoundaryFaceCondition", hold_rotations=True)
+
 
 class TestIsInStructuralAnalysisModel(NewFile):
     def test_run(self):

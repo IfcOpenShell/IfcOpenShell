@@ -306,7 +306,8 @@ class Structural(bonsai.core.tool.Structural):
         attributes: dict[str, AttributeDict] = {}
         for attribute in declaration.all_attributes():
             name = attribute.name()
-            if name.startswith("Translational"):
+            # IFC2X3 calls the translational stiffnesses LinearStiffness.
+            if name.startswith(("Translational", "Linear")):
                 value = True
             elif name.startswith("Rotational"):
                 value = hold_rotations
