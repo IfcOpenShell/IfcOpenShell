@@ -18,6 +18,7 @@
 
 import datetime
 
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.sequence
 import ifcopenshell.util.sequence as subject
@@ -84,3 +85,29 @@ class TestExceptionTimes(test.bootstrap.IFC4):
         add_exception(self.file, calendar, thursday)
         assert subject.is_working_day(thursday, calendar) is False
         assert subject.get_work_periods(thursday, calendar) == []
+
+
+class TestGetWorkDayDuration(test.bootstrap.IFC4):
+    def add_task(self, work_day_duration=None):
+        if not self.file.by_type("IfcProject"):
+            ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(self.file)
+        if work_day_duration:
+            pset = ifcopenshell.api.pset.add_pset(self.file, product=schedule, name="Pset_WorkControlCommon")
+            ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"WorkDayDuration": work_day_duration})
+        return ifcopenshell.api.sequence.add_task(self.file, work_schedule=schedule)
+
+    def test_using_the_time_periods_of_the_calendar_first(self):
+        task = self.add_task("PT8H")
+        calendar = add_calendar(self.file, [("07:00:00", "12:00:00"), ("13:00:00", "17:00:00")])
+        assert subject.get_work_day_duration(task, calendar) == 9 * H
+
+    def test_using_the_work_day_duration_if_the_calendar_has_no_time_period(self):
+        task = self.add_task("PT7H30M")
+        assert subject.get_work_day_duration(task, add_calendar(self.file)) == 7.5 * H
+
+    def test_using_8_hours_if_there_is_no_value(self):
+        assert subject.get_work_day_duration(self.add_task()) == 8 * H
+
+    def test_reading_a_work_day_duration_of_24_hours(self):
+        assert subject.get_work_day_duration(self.add_task("PT24H")) == 24 * H
