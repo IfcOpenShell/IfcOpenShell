@@ -182,7 +182,8 @@ def is_working_day(day, calendar: ifcopenshell.entity_instance) -> bool:
     if not is_working_day:
         return is_working_day
     for work_time in calendar.ExceptionTimes or []:
-        if is_work_time_applicable_to_day(work_time, day):
+        # An exception with time periods removes only these hours, not the day.
+        if is_work_time_applicable_to_day(work_time, day) and not get_time_periods(work_time):
             is_working_day = False
             break
     return is_working_day
@@ -215,7 +216,8 @@ def get_work_periods(
 
     The work periods are the IfcTimePeriod of the calendar working times that
     apply to the day. If there is no time period, there is one work period
-    that starts at 09:00 and lasts the work day.
+    that starts at 09:00 and lasts the work day. The IfcTimePeriod of the
+    calendar exception times that apply to the day are removed.
 
     :param day: The date or datetime of the day.
     :param calendar: The IfcWorkCalendar, or None.
@@ -236,6 +238,15 @@ def get_work_periods(
     if not periods:
         start = min(datetime.timedelta(hours=9), datetime.timedelta(days=1) - work_day)
         periods = [(start, start + work_day)]
+    for work_time in calendar.ExceptionTimes or [] if is_applicable else []:
+        if is_work_time_applicable_to_day(work_time, day):
+            for exception_start, exception_end in get_time_periods(work_time):
+                periods = [
+                    period
+                    for start, end in periods
+                    for period in ((start, min(end, exception_start)), (max(start, exception_end), end))
+                    if period[0] < period[1]
+                ]
     return sorted(periods)
 
 

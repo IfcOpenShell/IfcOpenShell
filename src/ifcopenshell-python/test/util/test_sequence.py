@@ -55,3 +55,32 @@ class TestGetWorkPeriods(test.bootstrap.IFC4):
     def test_returning_no_period_on_a_day_without_work(self):
         calendar = add_calendar(self.file, [("07:00:00", "12:00:00")])
         assert subject.get_work_periods(SATURDAY, calendar) == []
+
+
+def add_exception(file, calendar, day, periods=None):
+    work_time = ifcopenshell.api.sequence.add_work_time(file, work_calendar=calendar, time_type="ExceptionTimes")
+    day_before, day_after = (day + datetime.timedelta(days=i) for i in (-1, 1))
+    ifcopenshell.api.sequence.edit_work_time(
+        file, work_time=work_time, attributes={"Start": day_before.isoformat(), "Finish": day_after.isoformat()}
+    )
+    if periods:
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(file, parent=work_time, recurrence_type="DAILY")
+        for start, end in periods:
+            ifcopenshell.api.sequence.add_time_period(file, recurrence_pattern=pattern, start_time=start, end_time=end)
+    subject.is_working_day.cache_clear()
+
+
+class TestExceptionTimes(test.bootstrap.IFC4):
+    def test_removing_only_the_hours_of_an_exception_with_time_periods(self):
+        calendar = add_calendar(self.file)
+        thursday = MONDAY + datetime.timedelta(days=3)
+        add_exception(self.file, calendar, thursday, [("13:00:00", "17:00:00")])
+        assert subject.is_working_day(thursday, calendar) is True
+        assert subject.get_work_periods(thursday, calendar) == [(9 * H, 13 * H)]
+
+    def test_removing_the_day_for_an_exception_without_time_period(self):
+        calendar = add_calendar(self.file)
+        thursday = MONDAY + datetime.timedelta(days=3)
+        add_exception(self.file, calendar, thursday)
+        assert subject.is_working_day(thursday, calendar) is False
+        assert subject.get_work_periods(thursday, calendar) == []
