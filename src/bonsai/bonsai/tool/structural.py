@@ -206,7 +206,7 @@ class Structural(bonsai.core.tool.Structural):
         attributes = dict(attributes)
         if (rotation := cls.get_model_rotation(load)) is None:
             return attributes
-        for prefix in ("Force", "Moment"):
+        for prefix in ("Force", "Moment", "LinearForce", "LinearMoment", "PlanarForce"):
             keys = [f"{prefix}{axis}" for axis in "XYZ"]
             if any(k in attributes for k in keys):
                 vector = np.array([attributes.get(k) or 0.0 for k in keys])

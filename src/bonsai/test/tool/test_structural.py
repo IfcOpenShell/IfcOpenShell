@@ -234,3 +234,18 @@ class TestModelAxes(NewFile):
         attributes = get_load_attributes(props, "IfcStructuralPointConnection", load)
         # Down in Blender is +Z in a model pointing Z down.
         assert np.allclose([attributes["ForceX"], attributes["ForceZ"]], (3.0, 10.0))
+
+    def test_line_and_area_loads_are_turned_too(self):
+        self.make_load(z_down=True)
+        load = ifcopenshell.api.structural.add_structural_load(tool.Ifc.get(), ifc_class="IfcStructuralLoadPlanarForce")
+        surface = ifcopenshell.api.root.create_entity(tool.Ifc.get(), ifc_class="IfcStructuralSurfaceMember")
+        model = tool.Ifc.get().by_type("IfcStructuralAnalysisModel")[0]
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            tool.Ifc.get(), products=[surface], structural_analysis_model=model
+        )
+        ifcopenshell.api.structural.add_structural_activity(
+            tool.Ifc.get(), applied_load=load, structural_member=surface, ifc_class="IfcStructuralPlanarAction"
+        )
+        assert subject.to_model_axes(load, {"PlanarForceZ": -2.0})["PlanarForceZ"] == 2.0
+        turned = subject.to_model_axes(load, {"LinearForceZ": -2.0, "LinearMomentY": 1.0})
+        assert (turned["LinearForceZ"], turned["LinearMomentY"]) == (2.0, -1.0)
