@@ -18,9 +18,7 @@
 
 from __future__ import annotations
 
-import fractions
 import json
-import math
 from typing import TYPE_CHECKING, Any, Union
 
 import bpy
@@ -111,37 +109,6 @@ class Structural(bonsai.core.tool.Structural):
         return model
 
     @classmethod
-    def get_in_plane_components(
-        cls,
-        mode: str,
-        magnitude: float = 0.0,
-        angle: float = 0.0,
-        rise: float = 0.0,
-        run: float = 0.0,
-        direction: str = "UP_RIGHT",
-    ) -> tuple[float, float]:
-        """Get the horizontal and vertical components of a force in a vertical plane.
-
-        :param mode: ANGLE for an angle in degrees above the horizontal, or SLOPE
-            for a rise over a run. Negative angles, rises or runs give downward
-            or leftward components.
-        :param direction: UP_RIGHT, UP_LEFT, DOWN_LEFT or DOWN_RIGHT. The angle or
-            slope is measured from the horizontal towards this quadrant, so that
-            40 degrees UP_LEFT points 140 degrees from +X.
-        :return: The horizontal (X) and vertical (Z) components.
-        """
-        if mode == "ANGLE":
-            x, z = magnitude * math.cos(math.radians(angle)), magnitude * math.sin(math.radians(angle))
-        elif length := math.hypot(rise, run):
-            x, z = magnitude * run / length, magnitude * rise / length
-        else:
-            return 0.0, 0.0
-        sign_x, sign_z = {"UP_RIGHT": (1, 1), "UP_LEFT": (-1, 1), "DOWN_LEFT": (-1, -1), "DOWN_RIGHT": (1, -1)}[
-            direction
-        ]
-        return sign_x * x, sign_z * z
-
-    @classmethod
     def is_load_case(cls, group: ifcopenshell.entity_instance) -> bool:
         """Whether a load group is a load case: an IfcStructuralLoadCase, or a load group typed LOAD_CASE, as
         some programs, such as RFEM, write them"""
@@ -221,24 +188,6 @@ class Structural(bonsai.core.tool.Structural):
         """A single force load's force, in Blender's axes"""
         attributes = cls.to_blender_axes(load, {a: getattr(load, a) for a in ("ForceX", "ForceY", "ForceZ")})
         return tuple(attributes[a] or 0.0 for a in ("ForceX", "ForceY", "ForceZ"))
-
-    @classmethod
-    def get_simple_slope(cls, x: float, z: float, max_denominator: int = 24) -> tuple[float, float]:
-        """Get a rise and run along the in-plane components x and z, as small whole numbers if they make one.
-
-        For example, components of -160 and -120 give a rise of -3 and a run of -4.
-        No force gives a rise and run of 1 and 1.
-        """
-        if not x and not z:
-            return 1.0, 1.0
-        if not x or not z:
-            return (math.copysign(1.0, z) if z else 0.0), (math.copysign(1.0, x) if x else 0.0)
-        exact = abs(z) / abs(x)
-        ratio = fractions.Fraction(exact).limit_denominator(max_denominator)
-        if ratio and math.isclose(float(ratio), exact, rel_tol=1e-6):
-            return math.copysign(ratio.numerator, z), math.copysign(ratio.denominator, x)
-        length = math.hypot(x, z)
-        return z / length, x / length
 
     @classmethod
     def get_current_structural_analysis_model(cls) -> Union[ifcopenshell.entity_instance, None]:
