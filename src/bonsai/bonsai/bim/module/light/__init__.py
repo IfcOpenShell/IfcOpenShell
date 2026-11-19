@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import importlib.util
+import os
 import stat
 from pathlib import Path
 
@@ -54,17 +55,27 @@ classes = (
 )
 
 
+def ensure_pyradiance_binaries_executable() -> None:
+    """Restore the exec bit Blender's wheel extraction drops, best effort. See #7156."""
+    if not pyradiance:
+        return
+    bin_path = Path(get_pyradiance_path()) / "bin"
+    if not bin_path.exists():
+        return
+    for file in bin_path.iterdir():
+        if not file.is_file() or os.access(file, os.X_OK):
+            continue
+        try:
+            file.chmod(file.stat().st_mode | stat.S_IEXEC)
+        except OSError:
+            pass
+
+
 def register():
     bpy.types.Scene.BIMRadianceExporeterProperies = bpy.props.PointerProperty(type=prop.RadianceExporterProperties)
     bpy.types.Scene.BIMSolarProperties = bpy.props.PointerProperty(type=prop.BIMSolarProperties)
 
-    if pyradiance:
-        pyradiance_path = Path(get_pyradiance_path())
-        bin_path = pyradiance_path / "bin"
-        if bin_path.exists():
-            for file in bin_path.iterdir():
-                if file.is_file():
-                    file.chmod(file.stat().st_mode | stat.S_IEXEC)
+    ensure_pyradiance_binaries_executable()
 
 
 def unregister():
