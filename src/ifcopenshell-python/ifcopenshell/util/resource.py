@@ -21,6 +21,7 @@ from typing import Any, Union
 import ifcopenshell.util.cost
 import ifcopenshell.util.date
 import ifcopenshell.util.element
+import ifcopenshell.util.sequence
 
 PRODUCTIVITY_PSET_DATA = Union[dict[str, Any], None]
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcConstructionResource.htm#Table-7.3.3.7.1.3.H
@@ -110,6 +111,22 @@ def get_task_assignments(resource: ifcopenshell.entity_instance) -> Union[ifcope
         if not rel.is_a("IfcRelAssignsToProcess"):
             continue
         return rel.RelatingProcess
+
+
+def get_calendar(resource: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    """Get the work calendar of a resource
+
+    :param resource: The IfcConstructionResource.
+    :return: The IfcWorkCalendar assigned to the resource, else to its parent
+        resource, else the calendar of its task.
+    """
+    parent = resource
+    while parent:
+        if calendar := ifcopenshell.util.sequence.get_calendar(parent):
+            return calendar
+        parent = parent.Nests[0].RelatingObject if parent.Nests else None
+    if task := get_task_assignments(resource):
+        return ifcopenshell.util.sequence.derive_calendar(task)
 
 
 def get_resource_required_work(resource: ifcopenshell.entity_instance) -> Union[str, None]:
