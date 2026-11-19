@@ -18,6 +18,7 @@
 
 import math
 import re
+from dataclasses import dataclass
 from math import degrees
 from typing import TYPE_CHECKING, Literal, Union
 
@@ -436,6 +437,304 @@ class GenerateStructuralModel(bpy.types.Operator):
         if free_ends:
             self.report({"INFO"}, f"{len(set(free_ends))} members have free ends (not connected to other members)")
         self.report({"INFO"}, f"Generated {created} structural members")
+        return {"FINISHED"}
+
+
+@dataclass(eq=False)
+class StructuralNodePlan:
+    node: ifcopenshell.entity_instance | None
+    position: np.ndarray
+    relations: list[ifcopenshell.entity_instance]
+
+
+class RegenerateStructuralModel(bpy.types.Operator):
+    # This file was generated with the assistance of an AI coding tool.
+    bl_idname = "bim.regenerate_structural_model"
+    bl_label = "Regenerate from Selected"
+    bl_description = "Update structural members from selected beams and columns"
+    bl_options = {"REGISTER", "UNDO"}
+
+    structural_model: int
+
+    def execute(self, context):
+        file = tool.Ifc.get()
+        if not file:
+            self.report({"WARNING"}, "No IFC project is loaded")
+            return {"CANCELLED"}
+        if file.schema == "IFC2X3":
+            self.report({"WARNING"}, "Structural model generation is not supported for IFC2X3")
+            return {"CANCELLED"}
+        model = (
+            file.by_id(self.structural_model)
+            if self.structural_model
+            else tool.Structural.get_current_structural_analysis_model()
+        )
+        if not model:
+            self.report({"WARNING"}, "Select a current structural analysis model first")
+            return {"CANCELLED"}
+
+        updates = []
+        skipped = 0
+        missing_material = 0
+        unresolved = 0
+        sections = {}
+        props = tool.Structural.get_structural_props()
+        objects = [
+            obj
+            for obj in context.selected_objects
+            if (element := tool.Ifc.get_entity(obj)) and (element.is_a("IfcBeam") or element.is_a("IfcColumn"))
+        ]
+        for obj in dict.fromkeys(objects):
+            element = tool.Ifc.get_entity(obj)
+            linked = ifcopenshell.util.structural.get_structural_members(element)
+            if any(
+                member.is_a("IfcStructuralCurveMember")
+                and len(ifcopenshell.util.structural.get_building_elements(member)) > 1
+                and any(member in rel.RelatedObjects for rel in model.IsGroupedBy or ())
+                for member in linked
+            ):
+                unresolved += 1
+                continue
+            data = tool.Structural.get_physical_member_data(obj)
+            if data is None:
+                skipped += 1
+                continue
+            section = tool.Structural.get_physical_section(element)
+            if not section:
+                missing_material += 1
+                continue
+            sections[element] = section
+            axis, profile_direction = data
+            if tool.Structural.get_member_orientation(profile_direction, axis[1] - axis[0]) is None:
+                skipped += 1
+                continue
+            managed = [
+                member
+                for member in linked
+                if member.is_a("IfcStructuralCurveMember")
+                and ifcopenshell.util.structural.get_building_elements(member) == [element]
+                and any(member in rel.RelatedObjects for rel in model.IsGroupedBy or ())
+            ]
+            if len(managed) == 1:
+                member = managed[0]
+                member_obj = tool.Ifc.get_object(member)
+                representation = ifcopenshell.util.representation.get_representation(
+                    member, "Model", "Reference", "GRAPH_VIEW"
+                )
+                if (
+                    not member.Axis
+                    or not member_obj
+                    or member_obj.type != "MESH"
+                    or len(member_obj.data.vertices) != 2
+                    or not representation
+                    or len(representation.Items) != 1
+                    or not representation.Items[0].is_a("IfcEdge")
+                ):
+                    skipped += 1
+                    continue
+                updates.append((member, axis, profile_direction))
+                continue
+            if linked:
+                skipped += 1
+                continue
+
+        if not updates:
+            message = (
+                f"Skipped {missing_material} objects with missing or unsupported materials"
+                if missing_material
+                else f"Preserved {unresolved} members with ambiguous source relationships"
+                if unresolved
+                else "No eligible structural members selected for regeneration"
+            )
+            self.report({"WARNING"}, message)
+            return {"CANCELLED"}
+
+        tolerance = props.generation_merge_tolerance
+
+        # Plan splits and merges before editing IFC so invalid orientations can cancel safely.
+        update_members = {member for member, axis, profile_direction in updates}
+        planned_nodes: list[StructuralNodePlan] = []
+        member_nodes: dict[ifcopenshell.entity_instance, dict[int, StructuralNodePlan]] = {}
+        node_requests = {}
+        for member, axis, profile_direction in updates:
+            member_obj = tool.Ifc.get_object(member)
+            relations = list(member.ConnectedBy or ())
+            if (
+                not member_obj
+                or len(relations) != 2
+                or not all(tool.Ifc.get_object(rel.RelatedStructuralConnection) for rel in relations)
+            ):
+                self.report({"WARNING"}, "Cannot update a member with unsupported connections")
+                return {"CANCELLED"}
+            member_nodes[member] = {}
+            for index, position in enumerate(axis):
+                previous = np.asarray(member_obj.matrix_world @ member_obj.data.vertices[index].co)
+                relation = min(
+                    relations,
+                    key=lambda item: np.linalg.norm(
+                        np.asarray(tool.Ifc.get_object(item.RelatedStructuralConnection).location) - previous
+                    ),
+                )
+                relations.remove(relation)
+                node_requests.setdefault(relation.RelatedStructuralConnection, []).append(
+                    (member, index, relation, position)
+                )
+
+        for node, requests in node_requests.items():
+            original = np.asarray(tool.Ifc.get_object(node).location)
+            clusters = []
+            for request in requests:
+                cluster = next(
+                    (items for items in clusters if np.linalg.norm(items[0][3] - request[3]) <= max(tolerance, 1e-8)),
+                    None,
+                )
+                if cluster is None:
+                    cluster = []
+                    clusters.append(cluster)
+                cluster.append(request)
+            closest = min(clusters, key=lambda items: np.linalg.norm(items[0][3] - original))
+            external = [
+                rel for rel in node.ConnectsStructuralMembers if rel.RelatingStructuralMember not in update_members
+            ]
+            if external and np.linalg.norm(closest[0][3] - original) > max(tolerance, 1e-8):
+                closest = None
+            for cluster in clusters:
+                position = original if external and cluster is closest else cluster[0][3]
+                existing = node if cluster is closest else None
+                relations = [request[2] for request in cluster] + (external if existing else [])
+                plan = StructuralNodePlan(node=existing, position=position, relations=relations)
+                planned_nodes.append(plan)
+                for member, index, relation, unused_position in cluster:
+                    member_nodes[member][index] = plan
+
+        removed_nodes = []
+        if tolerance > 0:
+            ordered_nodes = sorted(
+                planned_nodes,
+                key=lambda plan: bool(
+                    plan.node and (plan.node.AppliedCondition or plan.node.AssignedStructuralActivity)
+                ),
+                reverse=True,
+            )
+            retained = []
+            for plan in ordered_nodes:
+                node = plan.node
+                relations = plan.relations
+                protected = node and (node.AppliedCondition or node.AssignedStructuralActivity)
+                members = {rel.RelatingStructuralMember for rel in relations}
+                target = None
+                if not protected and members <= update_members:
+                    for candidate in retained:
+                        candidate_members = {rel.RelatingStructuralMember for rel in candidate.relations}
+                        if (
+                            candidate_members <= update_members
+                            and not members.intersection(candidate_members)
+                            and np.linalg.norm(plan.position - candidate.position) <= tolerance
+                        ):
+                            target = candidate
+                            break
+                if target is None:
+                    retained.append(plan)
+                    continue
+                target.relations.extend(relations)
+                for member, nodes in member_nodes.items():
+                    for index, item in nodes.items():
+                        if item is plan:
+                            member_nodes[member][index] = target
+                if node:
+                    removed_nodes.append(node)
+            retained_plans = set(retained)
+            planned_nodes = [plan for plan in planned_nodes if plan in retained_plans]
+
+        orientations = {}
+        for member, axis, profile_direction in updates:
+            start, end = (member_nodes[member][index].position for index in (0, 1))
+            axis_direction = tool.Structural.get_member_orientation(profile_direction, end - start)
+            if axis_direction is None:
+                self.report({"WARNING"}, "Profile orientation is parallel to the updated structural member")
+                return {"CANCELLED"}
+            member_obj = tool.Ifc.get_object(member)
+            axis_direction = np.linalg.solve(np.asarray(member_obj.matrix_world)[:3, :3], axis_direction)
+            orientations[member] = axis_direction / np.linalg.norm(axis_direction)
+
+        self._regeneration_data = (
+            file,
+            model,
+            updates,
+            sections,
+            tolerance,
+            planned_nodes,
+            removed_nodes,
+            member_nodes,
+            orientations,
+            skipped,
+            missing_material,
+            unresolved,
+        )
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _execute(self, context):
+        (
+            file,
+            model,
+            updates,
+            sections,
+            tolerance,
+            planned_nodes,
+            removed_nodes,
+            member_nodes,
+            orientations,
+            skipped,
+            missing_material,
+            unresolved,
+        ) = self._regeneration_data
+        tool.Structural.ensure_representation_contexts()
+        scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+
+        for plan in planned_nodes:
+            node = plan.node
+            for relation in plan.relations:
+                if relation.RelatedStructuralConnection != node:
+                    relation.RelatedStructuralConnection = node
+        for node in removed_nodes:
+            ifc_obj = tool.Ifc.get_object(node)
+            if ifc_obj:
+                tool.Geometry.delete_ifc_object(ifc_obj)
+
+        for plan in planned_nodes:
+            node, position = plan.node, plan.position
+            assert node is not None
+            node_obj = tool.Ifc.get_object(node)
+            node_obj.location = position
+            context.view_layer.update()
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=node_obj)
+
+        for member, axis, profile_direction in updates:
+            start, end = (member_nodes[member][index].position for index in (0, 1))
+            member_obj = tool.Ifc.get_object(member)
+            member_obj.location = start
+            member_obj.data.vertices[1].co = end - start
+            member_obj.data.update()
+            representation = ifcopenshell.util.representation.get_representation(
+                member, "Model", "Reference", "GRAPH_VIEW"
+            )
+            representation.Items[0].EdgeEnd.VertexGeometry.Coordinates = tuple(
+                float(value) for value in (end - start) / scale
+            )
+            ifcopenshell.api.structural.edit_structural_item_axis(
+                file, structural_item=member, axis=orientations[member]
+            )
+            source = ifcopenshell.util.structural.get_building_elements(member)[0]
+            tool.Structural.assign_member_section(member, source, sections[source])
+            context.view_layer.update()
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=member_obj)
+
+        if missing_material:
+            self.report({"WARNING"}, f"Skipped {missing_material} objects with missing or unsupported materials")
+        if unresolved:
+            self.report({"WARNING"}, f"Preserved {unresolved} members with ambiguous source relationships")
+        if not (unresolved or missing_material):
+            self.report({"INFO"}, f"Updated {len(updates)} structural members; skipped {skipped} objects")
         return {"FINISHED"}
 
 

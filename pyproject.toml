@@ -45,38 +45,17 @@ exclude = [
 preview = true
 select = [
     # Default Ruff rules.
-    # "E4",        # imports
-    # "E7",        # statements
-    "E9",          # io errors
-    # "F",         # pyflakes
-    #
-    "unused-import",
+    "E9",          # import and runtime errors
     "FA",          # future annotations
     "UP",          # pyupgrade
-    "unnecessary-iterable-allocation-for-first-element",
-    "unsorted-dunder-all",
     "I",           # import sorting
-    "unused-noqa",
-    "rule-codes-in-selectors",
-    "noqa-comments",
-    "rule-codes-in-suppression-comments",
-    # General util rules.
-    "invalid-rule-code",
-    "redirected-noqa",
-    "invalid-pyproject-toml",
-    "invalid-suppression-comment",
+    # Specific useful rules.
+    "F401",        # unused imports
+    "F841",        # unused variables
 ]
 ignore = [
     # Conflicts with Blender using annotations for props definitions.
-    "future-rewritable-type-annotation",
-    # Maybe will enable later:
-    "non-pep604-annotation-union", # Union[X,Y] to X | Y
-    "non-pep604-annotation-optional", # Optional to X | None
-    "redundant-open-modes", # Unnecessary mode argument
-    "yield-in-for-loop", # yield for -> yield from
-    "format-literals", # implicit references for positional format fields
-    "printf-string-formatting", # Replace % with .format
-    "f-string", # Replace .format with f-string
+    "UP007",  # Non-PEP 604 union annotations
 ]
 
 [tool.ty.rules]
