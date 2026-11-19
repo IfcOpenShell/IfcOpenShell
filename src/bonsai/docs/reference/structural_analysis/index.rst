@@ -15,15 +15,10 @@ Generate Structural Model (Beams & Columns)
 Select profile-based beams or columns and use **Generate from Selected** to
 create linked structural curve members. Each supported element must have one
 material and an extruded section. The member shares the section profile and
-material with the element, and shares its profile set when one is assigned.
-Editing shared data through either member or element can affect both, as well
-as other elements using the same profile or material. An alternative section
-cannot be tested independently by editing that shared data.
+material with the element, and shares its profile set when one is assigned, so
+editing shared data through either can affect both.
 
 Members are joined only where their ends fall within the merge tolerance of
-each other. Running the operator again on elements that already have a
-generated member deletes that member and generates it again, which discards
-manual changes to the analysis model but does not update the building. Point
-connections with a boundary condition or load are kept and reused. Objects that
-cannot be generated are listed in the report and left selected.
-Generation is available for IFC4 and IFC4X3.
+each other or of an existing point connection. Objects that cannot be
+generated, including those that already have a structural member, are listed
+in the report. Generation is available for IFC4 and IFC4X3.

@@ -18,7 +18,6 @@
 
 import math
 import re
-from dataclasses import dataclass
 from math import degrees
 from typing import TYPE_CHECKING, Literal, Union
 
@@ -307,50 +306,17 @@ class DisableEditingStructuralBoundaryCondition(bpy.types.Operator):
         return {"FINISHED"}
 
 
-@dataclass
-class StructuralModelGenerationData:
-    file: ifcopenshell.file
-    model: ifcopenshell.entity_instance
-    # Building element, centroid axis (start, end) and profile direction.
-    sources: list[tuple[ifcopenshell.entity_instance, np.ndarray, np.ndarray]]
-    sections: dict[ifcopenshell.entity_instance, tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]]
-    tolerance: float
-    # Previously generated members that are replaced by this generation.
-    stale_members: list[ifcopenshell.entity_instance]
-    skipped: list[str]
-    missing_material: list[str]
-    unresolved: list[str]
-
-
-class StructuralModelGeneration(bpy.types.Operator):
-    structural_model: int
-    _generation_data: StructuralModelGenerationData
+class GenerateStructuralModel(bpy.types.Operator):
+    bl_idname = "bim.generate_structural_model"
+    bl_label = "Generate from Selected"
+    bl_description = (
+        "Generate structural members from selected beams and columns.\n\n"
+        "A member shares the building element's material profile set when it has a single profile, "
+        "so editing that profile or material also edits the building element"
+    )
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        if self._prepare(context) == {"CANCELLED"}:
-            return {"CANCELLED"}
-        return IfcStore.execute_ifc_operator(self, context)
-
-    @staticmethod
-    def _select_objects(context, names):
-        for obj in context.view_layer.objects:
-            obj.select_set(obj.name in names)
-
-    def _report_problems(self, context, data):
-        problems = (
-            (data.missing_material, "with missing or unsupported materials"),
-            (data.unresolved, "with ambiguous source relationships"),
-            (data.skipped, "that cannot be generated"),
-        )
-        names = set()
-        for items, reason in problems:
-            if items:
-                self.report({"WARNING"}, f"Skipped {len(items)} objects {reason}: {', '.join(items)}")
-                names.update(items)
-        if names:
-            self._select_objects(context, names)
-
-    def _prepare(self, context):
         file = tool.Ifc.get()
         if not file:
             self.report({"WARNING"}, "No IFC project is loaded")
@@ -358,89 +324,42 @@ class StructuralModelGeneration(bpy.types.Operator):
         if file.schema == "IFC2X3":
             self.report({"WARNING"}, "Structural model generation is not supported for IFC2X3")
             return {"CANCELLED"}
-        model = (
-            file.by_id(self.structural_model)
-            if self.structural_model
-            else tool.Structural.get_current_structural_analysis_model()
-        )
-        if not model:
+        if not tool.Structural.get_current_structural_analysis_model():
             self.report({"WARNING"}, "Select a current structural analysis model first")
             return {"CANCELLED"}
 
-        sources = []
-        stale_members = []
-        skipped = []
-        missing_material = []
-        unresolved = []
-        sections: dict[
-            ifcopenshell.entity_instance, tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]
-        ] = {}
-        props = tool.Structural.get_structural_props()
-        objects = [
-            obj
-            for obj in context.selected_objects
-            if (element := tool.Ifc.get_entity(obj)) and (element.is_a("IfcBeam") or element.is_a("IfcColumn"))
-        ]
-        for obj in dict.fromkeys(objects):
+        # Each source is (element, centroid axis, profile direction, section).
+        self._sources = []
+        self._skipped = []
+        for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
-            linked = ifcopenshell.util.structural.get_structural_members(element)
-            if any(
-                member.is_a("IfcStructuralCurveMember")
-                and len(ifcopenshell.util.structural.get_building_elements(member)) > 1
-                and any(member in rel.RelatedObjects for rel in model.IsGroupedBy or ())
-                for member in linked
-            ):
-                unresolved.append(obj.name)
+            if not element or not (element.is_a("IfcBeam") or element.is_a("IfcColumn")):
                 continue
             data = tool.Structural.get_physical_member_data(obj)
-            if data is None:
-                skipped.append(obj.name)
-                continue
             section = tool.Structural.get_physical_section(element)
-            if not section:
-                missing_material.append(obj.name)
+            if (
+                not data
+                or not section
+                or ifcopenshell.util.structural.get_structural_members(element)
+                or tool.Structural.get_member_orientation(data[1], data[0][1] - data[0][0]) is None
+            ):
+                self._skipped.append(obj.name)
                 continue
-            axis, profile_direction = data
-            if tool.Structural.get_member_orientation(profile_direction, axis[1] - axis[0]) is None:
-                skipped.append(obj.name)
-                continue
-            managed = [
-                member
-                for member in linked
-                if member.is_a("IfcStructuralCurveMember")
-                and ifcopenshell.util.structural.get_building_elements(member) == [element]
-                and any(member in rel.RelatedObjects for rel in model.IsGroupedBy or ())
-            ]
-            # Regenerating replaces the previously generated member.
-            if len(managed) > 1 or len(managed) != len(linked):
-                skipped.append(obj.name)
-                continue
-            stale_members.extend(managed)
-            sections[element] = section
-            sources.append((element, axis, profile_direction))
-
-        data = StructuralModelGenerationData(
-            file=file,
-            model=model,
-            sources=sources,
-            sections=sections,
-            tolerance=props.generation_merge_tolerance,
-            stale_members=stale_members,
-            skipped=skipped,
-            missing_material=missing_material,
-            unresolved=unresolved,
-        )
-        if not sources:
-            self._report_problems(context, data)
+            self._sources.append((element, *data, section))
+        if not self._sources:
+            self._report_skipped()
             self.report({"WARNING"}, "No eligible profile beams or columns selected")
             return {"CANCELLED"}
-        self._generation_data = data
-        return {"FINISHED"}
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _report_skipped(self):
+        if self._skipped:
+            self.report({"WARNING"}, f"Skipped {len(self._skipped)} objects: {', '.join(self._skipped)}")
 
     def _execute(self, context):
-        data = self._generation_data
-        file, model, tolerance = data.file, data.model, data.tolerance
-        skipped = data.skipped
+        file = tool.Ifc.get()
+        model = tool.Structural.get_current_structural_analysis_model()
+        tolerance = tool.Structural.get_structural_props().generation_merge_tolerance
         tool.Structural.ensure_representation_contexts()
         representation_context = ifcopenshell.util.representation.get_context(file, "Model", "Reference", "GRAPH_VIEW")
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(file)
@@ -474,45 +393,23 @@ class StructuralModelGeneration(bpy.types.Operator):
         def create_node(position):
             return create_item("IfcStructuralPointConnection", "Structural Point", position)
 
-        reusable = []
-        for member in data.stale_members:
-            nodes = [rel.RelatedStructuralConnection for rel in member.ConnectedBy or ()]
-            tool.Geometry.delete_ifc_object(tool.Ifc.get_object(member))
-            for node in nodes:
-                if node.ConnectsStructuralMembers:
-                    continue
-                if node.AppliedCondition or node.AssignedStructuralActivity:
-                    reusable.append(node)
-                else:
-                    tool.Geometry.delete_ifc_object(tool.Ifc.get_object(node))
         connections = [
             (np.asarray(tool.Ifc.get_object(item).location), item)
-            for item in dict.fromkeys(
-                reusable
-                + [
-                    item
-                    for rel in model.IsGroupedBy or ()
-                    for item in rel.RelatedObjects
-                    if item.is_a("IfcStructuralPointConnection") and tool.Structural.is_generated_connection(item)
-                ]
-            )
-            if tool.Ifc.get_object(item)
+            for rel in model.IsGroupedBy or ()
+            for item in rel.RelatedObjects
+            if item.is_a("IfcStructuralPointConnection") and tool.Ifc.get_object(item)
         ]
 
         created = 0
-        for source, axis, profile_direction in data.sources:
-            source_name = tool.Ifc.get_object(source).name
+        for source, axis, profile_direction, section in self._sources:
             start, end = axis
             start_match = tool.Structural.find_nearby_connection(start, connections, tolerance)
             end_match = tool.Structural.find_nearby_connection(end, connections, tolerance)
             actual_start = next((position for position, item in connections if item == start_match), start)
             actual_end = next((position for position, item in connections if item == end_match), end)
-            if np.linalg.norm(actual_end - actual_start) < 1e-9:
-                skipped.append(source_name)
-                continue
             axis_direction = tool.Structural.get_member_orientation(profile_direction, actual_end - actual_start)
             if axis_direction is None:
-                skipped.append(source_name)
+                self._skipped.append(tool.Ifc.get_object(source).name)
                 continue
             node_items = []
             for position, match in ((actual_start, start_match), (actual_end, end_match)):
@@ -525,29 +422,16 @@ class StructuralModelGeneration(bpy.types.Operator):
             )
             ifcopenshell.api.structural.edit_structural_item_axis(file, structural_item=member, axis=axis_direction)
             ifcopenshell.api.structural.assign_product(file, relating_product=member, related_object=source)
-            tool.Structural.assign_member_section(member, source, data.sections[source])
+            tool.Structural.assign_member_section(member, source, section)
             for connection in node_items:
                 ifcopenshell.api.structural.add_structural_member_connection(
                     file, relating_structural_member=member, related_structural_connection=connection
                 )
             created += 1
 
-        self._report_problems(context, data)
+        self._report_skipped()
         self.report({"INFO"}, f"Generated {created} structural members")
         return {"FINISHED"}
-
-
-class GenerateStructuralModel(StructuralModelGeneration):
-    bl_idname = "bim.generate_structural_model"
-    bl_label = "Generate from Selected"
-    bl_description = (
-        "Generate structural members from selected beams and columns. Members previously generated from the "
-        "selection are deleted and generated again.\n\n"
-        "A member shares the building element's material profile set when it has a single profile, "
-        "so editing that profile or material also edits the building element"
-    )
-    bl_options = {"REGISTER", "UNDO"}
-    structural_model: bpy.props.IntProperty(default=0, options={"HIDDEN", "SKIP_SAVE"})
 
 
 class LoadStructuralAnalysisModels(bpy.types.Operator):
