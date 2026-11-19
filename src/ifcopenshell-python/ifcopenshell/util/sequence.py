@@ -22,6 +22,8 @@ from functools import cache
 from math import floor
 from typing import Literal, Optional, Union
 
+from dateutil.relativedelta import relativedelta
+
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 
@@ -143,7 +145,10 @@ def offset_date(
     delta = getattr(duration, "tdelta", duration)
     sign = -1 if delta < datetime.timedelta() else 1
     time = abs(delta) - datetime.timedelta(days=abs(delta).days)
-    days = sign * abs(delta).days + months * 30 + years * 12 * 30
+    if months or years:
+        # IfcDuration years and months are calendar years and months
+        current_date += relativedelta(years=int(years), months=int(months))
+    days = sign * abs(delta).days
 
     abs_duration = abs(days)
     date_offset = datetime.timedelta(days=1 if days > 0 else -1)
@@ -153,9 +158,10 @@ def offset_date(
         elif is_working_day(current_date, calendar):
             abs_duration -= 1
         current_date += date_offset
-    if days > 0:
+    direction = days or years * 12 + months
+    if direction > 0:
         current_date = get_soonest_working_day(current_date, duration_type, calendar)
-    elif days < 0 or not time:
+    elif direction < 0 or not time:
         current_date = get_recent_working_day(current_date, duration_type, calendar)
     if time and duration_type == "ELAPSEDTIME":
         current_date += sign * time

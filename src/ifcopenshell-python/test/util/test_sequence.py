@@ -21,6 +21,7 @@ import datetime
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.sequence
+import ifcopenshell.util.date
 import ifcopenshell.util.sequence as subject
 import test.bootstrap
 
@@ -148,6 +149,15 @@ class TestOffsetDate(test.bootstrap.IFC4):
 
     def test_offsetting_by_whole_days_as_before(self):
         assert self.offset(at(MONDAY, 9), datetime.timedelta(days=2)) == at(MONDAY + datetime.timedelta(days=2), 9)
+
+    def test_offsetting_by_calendar_months_and_years(self):
+        month, year = (ifcopenshell.util.date.parse_duration(d) for d in ("P1M", "P1Y"))
+        start = at(datetime.date(2026, 1, 31), 9)
+        assert self.offset(start, month, duration_type="ELAPSEDTIME") == at(datetime.date(2026, 2, 28), 9)
+        assert self.offset(at(datetime.date(2026, 2, 1), 9), month, duration_type="ELAPSEDTIME") == at(
+            datetime.date(2026, 3, 1), 9
+        )
+        assert self.offset(start, year, duration_type="ELAPSEDTIME") == at(datetime.date(2027, 1, 31), 9)
 
 
 class TestGetWorkStartAndFinish(test.bootstrap.IFC4):
