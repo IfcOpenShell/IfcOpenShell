@@ -353,7 +353,7 @@ def get_work_day_duration(
     :param calendar: The IfcWorkCalendar. If None, the calendar of the task.
     :return: The length of a work day.
     """
-    calendar = calendar or derive_calendar(task)
+    calendar = calendar or (derive_calendar(task) if task else None)
     for work_time in calendar.WorkingTimes or [] if calendar else []:
         if periods := get_time_periods(work_time):
             return sum((end - start for start, end in periods), datetime.timedelta())
