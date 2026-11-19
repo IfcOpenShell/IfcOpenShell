@@ -111,3 +111,53 @@ class TestGetWorkDayDuration(test.bootstrap.IFC4):
 
     def test_reading_a_work_day_duration_of_24_hours(self):
         assert subject.get_work_day_duration(self.add_task("PT24H")) == 24 * H
+
+
+def at(day, hours, minutes=0):
+    return datetime.datetime.combine(day, datetime.time(hours, minutes))
+
+
+class TestOffsetDate(test.bootstrap.IFC4):
+    def offset(self, start, duration, calendar=None, duration_type="WORKTIME"):
+        return subject.offset_date(start, duration, duration_type, calendar)
+
+    def test_offsetting_by_work_hours_in_the_same_day(self):
+        assert self.offset(at(MONDAY, 9), 5 * H) == at(MONDAY, 14)
+
+    def test_offsetting_by_work_hours_to_the_next_day(self):
+        assert self.offset(at(MONDAY, 14), 5 * H) == at(MONDAY + datetime.timedelta(days=1), 11)
+
+    def test_skipping_the_hours_between_time_periods(self):
+        calendar = add_calendar(self.file, [("07:00:00", "12:00:00"), ("13:00:00", "17:00:00")])
+        assert self.offset(at(MONDAY, 11), 2 * H, calendar) == at(MONDAY, 14)
+
+    def test_skipping_the_days_without_work(self):
+        calendar = add_calendar(self.file)
+        friday = MONDAY + datetime.timedelta(days=4)
+        assert self.offset(at(friday, 14), 5 * H, calendar) == at(MONDAY + datetime.timedelta(days=7), 11)
+
+    def test_offsetting_back_by_work_hours(self):
+        assert self.offset(at(MONDAY + datetime.timedelta(days=1), 11), -4 * H) == at(MONDAY, 15)
+
+    def test_offsetting_by_work_days_and_hours(self):
+        tuesday = MONDAY + datetime.timedelta(days=1)
+        assert self.offset(at(MONDAY, 13), datetime.timedelta(days=1, hours=4)) == at(tuesday, 17)
+
+    def test_offsetting_by_elapsed_hours(self):
+        assert self.offset(at(MONDAY, 14), 5 * H, duration_type="ELAPSEDTIME") == at(MONDAY, 19)
+
+    def test_offsetting_by_whole_days_as_before(self):
+        assert self.offset(at(MONDAY, 9), datetime.timedelta(days=2)) == at(MONDAY + datetime.timedelta(days=2), 9)
+
+
+class TestGetWorkStartAndFinish(test.bootstrap.IFC4):
+    def test_moving_a_datetime_out_of_work_hours_to_the_next_start(self):
+        assert subject.get_work_start(at(MONDAY, 17), None) == at(MONDAY + datetime.timedelta(days=1), 9)
+        assert subject.get_work_start(at(MONDAY, 7), None) == at(MONDAY, 9)
+
+    def test_moving_a_datetime_out_of_work_hours_to_the_previous_finish(self):
+        assert subject.get_work_finish(at(MONDAY + datetime.timedelta(days=1), 9), None) == at(MONDAY, 17)
+
+    def test_keeping_a_datetime_in_work_hours(self):
+        assert subject.get_work_start(at(MONDAY, 13, 44), None) == at(MONDAY, 13, 44)
+        assert subject.get_work_finish(at(MONDAY, 13, 44), None) == at(MONDAY, 13, 44)
