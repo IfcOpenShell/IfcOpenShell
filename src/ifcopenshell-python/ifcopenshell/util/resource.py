@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
 from typing import Any, Union
 
 import ifcopenshell.util.cost
@@ -143,12 +144,17 @@ def get_resource_required_work(resource: ifcopenshell.entity_instance) -> Union[
             seconds = (time_consumed.days * 24 * 60 * 60) + time_consumed.seconds
             productivity_ratio = seconds / quantity_produced
             required_work = total_quantity_to_produce * productivity_ratio
-            iso_string = f"PT{required_work / 60 / 60}H"
+            iso_string = ifcopenshell.util.date.datetime2ifc(datetime.timedelta(seconds=required_work), "IfcDuration")
         else:
             days = time_consumed.days + (time_consumed.seconds / (24 * 60 * 60))
             productivity_ratio = days / quantity_produced
             required_work = total_quantity_to_produce * productivity_ratio
-            iso_string = f"P{required_work}D"
+            # IfcDuration allows decimals for the seconds only.
+            calendar = get_calendar(resource)
+            work_day = ifcopenshell.util.sequence.get_work_day_duration(get_task_assignments(resource), calendar)
+            days, part_of_day = divmod(required_work, 1)
+            duration = datetime.timedelta(days=days) + part_of_day * work_day
+            iso_string = ifcopenshell.util.date.datetime2ifc(duration, "IfcDuration")
         return iso_string
 
 

@@ -20,6 +20,7 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.resource
 import ifcopenshell.api.root
 import ifcopenshell.api.sequence
+import ifcopenshell.util.resource
 import test.bootstrap
 
 
@@ -49,7 +50,7 @@ class TestCalculateResourceWork(test.bootstrap.IFC4):
         ifcopenshell.api.sequence.assign_product(self.file, relating_product=slab, related_object=task)
         ifcopenshell.api.sequence.assign_process(self.file, relating_process=task, related_object=resource)
         ifcopenshell.api.resource.calculate_resource_work(self.file, resource=resource)
-        assert resource.Usage.ScheduleWork == "P2.0D"
+        assert resource.Usage.ScheduleWork == "P2D"
 
     def test_calculating_resource_work_based_on_an_hourly_productivity_rate(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
@@ -74,7 +75,7 @@ class TestCalculateResourceWork(test.bootstrap.IFC4):
         ifcopenshell.api.sequence.assign_product(self.file, relating_product=slab, related_object=task)
         ifcopenshell.api.sequence.assign_process(self.file, relating_process=task, related_object=resource)
         ifcopenshell.api.resource.calculate_resource_work(self.file, resource=resource)
-        assert resource.Usage.ScheduleWork == "PT4.0H"
+        assert resource.Usage.ScheduleWork == "PT4H"
 
     def test_no_calculation_if_no_productivity_data_available(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
@@ -125,4 +126,32 @@ class TestCalculateResourceWork(test.bootstrap.IFC4):
         ifcopenshell.api.sequence.assign_product(self.file, relating_product=slab, related_object=task)
         ifcopenshell.api.sequence.assign_process(self.file, relating_process=task, related_object=resource)
         ifcopenshell.api.resource.calculate_resource_work(self.file, resource=resource)
-        assert resource.Usage.ScheduleWork == "PT0.5H"
+        assert resource.Usage.ScheduleWork == "PT30M"
+
+    def calculate_work(self, consumed, produced, volume):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        resource = ifcopenshell.api.resource.add_resource(self.file, ifc_class="IfcLaborResource")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=resource, name="EPset_Productivity")
+        properties = {
+            "BaseQuantityConsumed": consumed,
+            "BaseQuantityProducedName": "GrossVolume",
+            "BaseQuantityProducedValue": produced,
+        }
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties=properties)
+        slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=slab, name="Qto_SlabBaseQuantities")
+        ifcopenshell.api.pset.edit_qto(self.file, qto=qto, properties={"GrossVolume": volume})
+        task = ifcopenshell.api.sequence.add_task(self.file)
+        ifcopenshell.api.sequence.assign_product(self.file, relating_product=slab, related_object=task)
+        ifcopenshell.api.sequence.assign_process(self.file, relating_process=task, related_object=resource)
+        ifcopenshell.api.resource.calculate_resource_work(self.file, resource=resource)
+        return resource
+
+    def test_writing_decimals_for_the_seconds_only(self):
+        resource = self.calculate_work("PT1H", 7, 1)
+        assert resource.Usage.ScheduleWork == "PT8M34.285714S"
+        assert abs(ifcopenshell.util.resource.get_quantity(resource) - 1 / 7) < 1e-9
+
+    def test_writing_a_part_of_a_work_day_as_work_hours(self):
+        resource = self.calculate_work("P1D", 5, 16)
+        assert resource.Usage.ScheduleWork == "P3DT1H36M"
