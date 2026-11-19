@@ -192,10 +192,7 @@ class PolylineOperator:
             for action, settings in instructions.items():
                 if settings["icons"]:
                     for key in settings["keys"]:
-                        if bpy.app.version < (4, 3, 0) and key == "MOUSE_MMB_SCROLL":
-                            self.layout.label(text="MMB")
-                        else:
-                            self.layout.label(text="", icon=key)
+                        self.layout.label(text="", icon=key)
                     self.layout.label(text=action)
                 else:
                     key = settings["keys"][0]
