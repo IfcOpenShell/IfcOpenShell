@@ -1045,7 +1045,10 @@ class Drawing(bonsai.core.tool.Drawing):
         cls.import_camera_props(drawing, camera)
         tool.Ifc.link(drawing, obj)
 
-        obj.matrix_world = cls.get_camera_shape_matrix(drawing, shape)
+        # Apply the blender offset like other imported objects (#8205).
+        obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(
+            obj, np.array(cls.get_camera_shape_matrix(drawing, shape))
+        )
 
         tool.Geometry.record_object_position(obj)
         tool.Collector.assign(obj)
@@ -1066,7 +1069,10 @@ class Drawing(bonsai.core.tool.Drawing):
         else:
             obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
 
-        obj.matrix_world = cls.get_camera_shape_matrix(drawing, shape)
+        # Apply the blender offset like other imported objects (#8205).
+        obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(
+            obj, np.array(cls.get_camera_shape_matrix(drawing, shape))
+        )
         return obj
 
     @classmethod
