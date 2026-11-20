@@ -605,6 +605,31 @@ def get_work_finish(
     return offset_work_time(date, -instant, calendar, work_day) + instant
 
 
+def snap_date(
+    date: datetime.datetime,
+    date_type: Literal["START", "FINISH"],
+    calendar: Optional[ifcopenshell.entity_instance],
+    work_day: datetime.timedelta = datetime.timedelta(hours=8),
+) -> datetime.datetime:
+    """Move a start or finish of a task in work time to a work instant
+
+    A start is the instant when the work starts. A finish is the instant when
+    the work stops. Out of the work periods, a start moves to the start of the
+    next work period and a finish moves to the end of the previous work
+    period. For the task, all the instants of a pause in the work are the
+    same work instant.
+
+    :param date: The date to move.
+    :param date_type: START or FINISH.
+    :param calendar: The IfcWorkCalendar of the task, or None.
+    :param work_day: The length of a work day of the task.
+    :return: The start or finish.
+    """
+    if date_type == "START":
+        return get_work_start(date, calendar, work_day)
+    return get_work_finish(date, calendar, work_day)
+
+
 def get_soonest_working_day(start, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance):
     if duration_type == "ELAPSEDTIME" or not is_calendar_applicable(start, calendar):
         return start

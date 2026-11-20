@@ -219,8 +219,8 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         assert task3.TaskTime.ScheduleFinish == "2000-01-04T09:00:00"
         assert task3.TaskTime.EarlyStart == "2000-01-04T09:00:00"
         assert task3.TaskTime.EarlyFinish == "2000-01-04T09:00:00"
-        assert task3.TaskTime.LateStart == "2000-01-04T09:00:00"
-        assert task3.TaskTime.LateFinish == "2000-01-04T09:00:00"
+        assert task3.TaskTime.LateStart == "2000-01-03T17:00:00"
+        assert task3.TaskTime.LateFinish == "2000-01-03T17:00:00"
         assert task3.TaskTime.TotalFloat == "P0D"
         assert task3.TaskTime.FreeFloat == "P0D"
         assert task3.TaskTime.IsCritical is True
@@ -334,6 +334,33 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task2.TaskTime.EarlyStart == "2000-01-01T15:00:00"
         assert task2.TaskTime.LateStart == "2000-01-01T15:00:00"
+        assert task.TaskTime.IsCritical is True
+
+    def test_recalculating_finish_to_finish_with_a_sub_day_lag(self):
+        # Tasks of work hours: the lag gives an exact time. A task of work days would start at a day start.
+        self._add_work_schedule()
+        task = self._create_task("P1D")
+        task2 = self._create_task("PT8H")
+        self._create_sequence(task, task2, "FINISH_FINISH", lag="PT2H")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        assert task2.TaskTime.EarlyFinish == "2000-01-02T11:00:00"
+        assert task.TaskTime.LateFinish == "2000-01-01T17:00:00"
+        assert task.TaskTime.TotalFloat == "P0D"
+        assert task.TaskTime.IsCritical is True
+
+    def test_recalculating_start_to_start_with_a_sub_day_lag_to_the_end_of_a_day(self):
+        # Tasks of work hours: the lag gives an exact time. A task of work days would start at a day start.
+        self._add_work_schedule()
+        task = self._create_task("PT8H")
+        task2 = self._create_task("PT8H")
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file, task_time=task.TaskTime, attributes={"ScheduleStart": datetime.datetime(2000, 1, 1, 15)}
+        )
+        self._create_sequence(task, task2, "START_START", lag="PT2H")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        assert task2.TaskTime.EarlyStart == "2000-01-02T09:00:00"
+        assert task2.TaskTime.LateStart == "2000-01-02T09:00:00"
+        assert task.TaskTime.LateStart == "2000-01-01T15:00:00"
         assert task.TaskTime.IsCritical is True
 
     def test_recalculating_a_lag_as_a_ratio_of_the_predecessor_duration(self):

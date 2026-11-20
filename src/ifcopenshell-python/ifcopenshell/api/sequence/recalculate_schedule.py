@@ -223,12 +223,7 @@ class Usecase:
         calendar, work_day = node["calendar"], node["work_day"]
         if node["duration_type"] == "ELAPSEDTIME":
             calendar, work_day = None, datetime.timedelta(hours=8)  # 09:00 to 17:00, as before
-        snap = (
-            ifcopenshell.util.sequence.get_work_start
-            if date_type == "START"
-            else ifcopenshell.util.sequence.get_work_finish
-        )
-        return snap(date, calendar, work_day)
+        return ifcopenshell.util.sequence.snap_date(date, date_type, calendar, work_day)
 
     def get_date(self, node: dict, date: datetime.datetime, date_type: str) -> datetime.datetime:
         # The finish of the node from its start, or the start from its finish.
@@ -246,7 +241,7 @@ class Usecase:
                 result = ifcopenshell.util.sequence.offset_date(
                     date, lag, node["duration_type"], node["calendar"], node["work_day"]
                 )
-            results.append(self.snap(node, result, date_type) if edge["type"] in ("FS", "SF") else result)
+            results.append(self.snap(node, result, date_type))
         return max(results) if is_forward else min(results)
 
     def forward_pass(self, node) -> bool:

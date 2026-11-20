@@ -247,6 +247,19 @@ class TestGetWorkTime(test.bootstrap.IFC4):
         assert subject.get_work_time(at(MONDAY, 17), at(MONDAY + datetime.timedelta(days=1), 9), None) == 0 * H
 
 
+class TestSnapDate(test.bootstrap.IFC4):
+    def setup_calendar(self):
+        return add_calendar(self.file, [("08:00:00", "12:00:00"), ("13:00:00", "17:00:00")])
+
+    def test_moving_a_start_to_the_next_work_period(self):
+        calendar = self.setup_calendar()
+        assert subject.snap_date(at(SATURDAY, 10), "START", calendar) == at(MONDAY + datetime.timedelta(days=7), 8)
+
+    def test_moving_a_finish_to_the_previous_work_period(self):
+        calendar = self.setup_calendar()
+        assert subject.snap_date(at(SATURDAY, 10), "FINISH", calendar) == at(MONDAY + datetime.timedelta(days=4), 17)
+
+
 class TestGetWorkDuration:
     def test_converting_work_hours_of_one_work_day_or_more_to_work_days(self):
         assert subject.get_work_duration("PT24H", "WORKTIME") == datetime.timedelta(days=3)

@@ -241,6 +241,27 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         assert task.TaskTime.ScheduleFinish == "2000-01-01T15:00:00"
         assert task2.TaskTime.ScheduleStart == "2000-01-02T10:00:00"
 
+    def test_cascading_start_to_start_with_a_sub_day_lag_to_the_end_of_a_day(self):
+        # Tasks of work hours: the lag gives an exact time. A task of work days would start at a day start.
+        task = self._create_task("PT8H")
+        task2 = self._create_task("PT8H")
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file, task_time=task.TaskTime, attributes={"ScheduleStart": datetime.datetime(2000, 1, 1, 15)}
+        )
+        self._create_sequence(task, task2, "START_START", lag="PT2H")
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        assert task2.TaskTime.ScheduleStart == "2000-01-02T09:00:00"
+        assert task2.TaskTime.ScheduleFinish == "2000-01-02T17:00:00"
+
+    def test_cascading_finish_to_finish_with_a_sub_day_lag(self):
+        # Tasks of work hours: the lag gives an exact time. A task of work days would start at a day start.
+        task = self._create_task("P1D")
+        task2 = self._create_task("PT8H")
+        self._create_sequence(task, task2, "FINISH_FINISH", lag="PT2H")
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        assert task2.TaskTime.ScheduleStart == "2000-01-01T11:00:00"
+        assert task2.TaskTime.ScheduleFinish == "2000-01-02T11:00:00"
+
     def test_cascading_a_lag_as_a_ratio_of_the_predecessor_duration(self):
         # Tasks of work hours: the lag gives an exact time. A task of work days would start at a day start.
         task = self._create_task("PT8H")
