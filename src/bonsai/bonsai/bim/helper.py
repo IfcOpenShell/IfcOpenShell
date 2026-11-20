@@ -238,7 +238,7 @@ def import_attribute(
     elif data_type == "float":
         measure_class = attribute.type_of_attribute().declared_type().name()
         new.special_type = tool.Pset.get_special_type_for_measure_class(measure_class)
-        new.float_value = 0.0 if new.is_null else float(data[attribute.name()])
+        new["float_value"] = 0.0 if new.is_null else float(data[attribute.name()])
     elif data_type == "enum":
         attribute_type = attribute.type_of_attribute()
         is_logical = str(attribute_type) == "<type IfcLogical: <logical>>"

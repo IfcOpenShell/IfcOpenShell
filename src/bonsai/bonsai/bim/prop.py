@@ -319,6 +319,32 @@ def set_int_value(self: "Attribute", new_value: int) -> None:
     set_numerical_value(self, "int_value", new_value)
 
 
+def get_float_string_value(self: "Attribute") -> str:
+    value = self.get("float_value")
+    if value is None:
+        return "0.0"
+    return str(float(value))
+
+
+def set_float_string_value(self: "Attribute", new_value: str) -> None:
+    text = new_value.strip()
+    if not text:
+        parsed = 0.0
+    else:
+        try:
+            parsed = float(text)
+        except ValueError:
+            return
+    if not np.isfinite(parsed):
+        return
+    if self.value_min_constraint and parsed < self.value_min:
+        parsed = float(self.value_min)
+    elif self.value_max_constraint and parsed > self.value_max:
+        parsed = float(self.value_max)
+    self["float_value"] = parsed
+    update_attribute_value(self, bpy.context)
+
+
 def set_float_value(self: "Attribute", new_value: float) -> None:
     set_numerical_value(self, "float_value", new_value)
 
@@ -388,6 +414,12 @@ class Attribute(PropertyGroup):
         get=lambda self: float(self.get("float_value", 0.0)),
         set=set_float_value,
     )
+    float_string_value: StringProperty(
+        name="Value",
+        description=tooltip,
+        get=get_float_string_value,
+        set=set_float_string_value,
+    )
     enum_items: StringProperty(name="Value")
     """Json serialized mapping of enum items:
         Typically a dictionary of string identifiers to item names.
@@ -428,6 +460,7 @@ class Attribute(PropertyGroup):
         bool_value: bool
         int_value: int
         float_value: float
+        float_string_value: str
         enum_items: str
         enum_items_dynamic: str
         enum_descriptions: bpy.types.bpy_prop_collection_idprop[StrProperty]
@@ -503,7 +536,7 @@ class Attribute(PropertyGroup):
         elif data_type == "integer":
             return "int_value"
         elif data_type == "float":
-            return "float_value"
+            return "float_string_value" if display_only else "float_value"
         elif data_type == "enum":
             return "enum_value"
         elif data_type == "file":

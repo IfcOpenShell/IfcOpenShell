@@ -1582,7 +1582,8 @@ def update_attribute_search_value(self: "BIM_OT_attribute_search_values", contex
     if self.data_type == "integer":
         value = int(value)
     elif self.data_type == "float":
-        value = float(value)
+        parsed_float = float(value)
+        value = str(parsed_float) if attr_name == "float_string_value" else parsed_float
 
     setattr(attribute_obj, attr_name, value)
 
