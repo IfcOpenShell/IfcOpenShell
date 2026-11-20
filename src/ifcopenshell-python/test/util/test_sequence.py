@@ -98,6 +98,20 @@ class TestExceptionTimes(test.bootstrap.IFC4):
         days = [MONDAY + datetime.timedelta(days=i) for i in range(4)]
         assert [subject.is_working_day(day, calendar) for day in days] == [True, False, False, True]
 
+    def test_using_the_working_days_after_a_calendar_edit(self):
+        calendar = add_calendar(self.file)
+        thursday = MONDAY + datetime.timedelta(days=3)
+        assert subject.is_working_day(thursday, calendar) is True
+        work_time = ifcopenshell.api.sequence.add_work_time(
+            self.file, work_calendar=calendar, time_type="ExceptionTimes"
+        )
+        ifcopenshell.api.sequence.edit_work_time(
+            self.file, work_time=work_time, attributes={"Start": thursday.isoformat(), "Finish": thursday.isoformat()}
+        )
+        assert subject.is_working_day(thursday, calendar) is False
+        ifcopenshell.api.sequence.remove_work_time(self.file, work_time=work_time)
+        assert subject.is_working_day(thursday, calendar) is True
+
 
 class TestGetWorkDayDuration(test.bootstrap.IFC4):
     def add_task(self, work_day_duration=None):
