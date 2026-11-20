@@ -672,6 +672,14 @@ class Usecase:
             # file.add doesn't convert units for IfcLengthMeasure entities.
             if element.is_a("IfcLengthMeasure"):
                 return ifc_file.create_entity(element.is_a(), element.wrappedValue * get_conversion_factor())
+            if element.is_a("IfcPlaneAngleMeasure"):
+                from_angle = ifcopenshell.util.unit.get_project_unit(self.library, "PLANEANGLEUNIT", use_cache=True)
+                to_angle = ifcopenshell.util.unit.get_project_unit(ifc_file, "PLANEANGLEUNIT", use_cache=True)
+                if from_angle and to_angle and from_angle != to_angle:
+                    converted_angle = ifcopenshell.util.unit.convert_unit(
+                        element.wrappedValue, from_angle, to_angle
+                    )
+                    return ifc_file.create_entity(element.is_a(), converted_angle)
             return ifc_file.add(element)
 
         reuse_identities = self.reuse_identities

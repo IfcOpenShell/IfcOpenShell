@@ -843,3 +843,20 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
         ifcopenshell.api.material.add_material_set(self.file, set_type="IfcMaterialProfileSet", name="TestProfileSet")
         ifcopenshell.api.project.append_asset(self.file, library, column_type, assume_asset_uniqueness_by_name=False)
         assert len(self.file.by_type("IfcMaterialProfileSet")) == 2
+
+    def test_append_asset_converts_plane_angle_units(self):
+        library = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(library, "IfcProject")
+        lib_length = ifcopenshell.api.unit.add_si_unit(library, unit_type="LENGTHUNIT")
+        lib_angle = ifcopenshell.api.unit.add_conversion_based_unit(library, name="degree")
+        ifcopenshell.api.unit.assign_unit(library, units=[lib_length, lib_angle])
+
+        ifc_file = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc_file, "IfcProject")
+        proj_length = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="LENGTHUNIT")
+        proj_angle = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="PLANEANGLEUNIT")
+        ifcopenshell.api.unit.assign_unit(ifc_file, units=[proj_length, proj_angle])
+
+        angle_measure = library.create_entity("IfcPlaneAngleMeasure", 180.0)
+        new_angle = ifcopenshell.api.project.append_asset(ifc_file, library, angle_measure)
+        assert np.isclose(new_angle.wrappedValue, np.pi)
