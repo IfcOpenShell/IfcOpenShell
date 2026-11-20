@@ -124,9 +124,7 @@ def get_start_or_finish_date(
         return start
     result = offset_date(start, -duration if date_type == "START" else duration, duration_type, calendar, work_day)
     if duration_type == "ELAPSEDTIME":
-        if delta.seconds or delta.microseconds:
-            return result
-        calendar, work_day = None, datetime.timedelta(hours=8)  # 09:00 to 17:00, as before
+        return result  # Elapsed time does not stop out of the work periods
     if date_type == "START":
         return get_work_start(result, calendar, work_day)
     return get_work_finish(result, calendar, work_day)

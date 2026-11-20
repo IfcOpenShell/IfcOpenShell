@@ -198,6 +198,19 @@ class TestGetWorkStartAndFinish(test.bootstrap.IFC4):
         assert subject.get_work_finish(at(MONDAY, 13, 44), None) == at(MONDAY, 13, 44)
 
 
+class TestGetStartOrFinishDate(test.bootstrap.IFC4):
+    def test_adding_elapsed_days_as_24_hours(self):
+        calendar = add_calendar(self.file)
+        finish = subject.get_start_or_finish_date(at(MONDAY, 9), datetime.timedelta(days=1), "ELAPSEDTIME", calendar)
+        assert finish == at(MONDAY + datetime.timedelta(days=1), 9)
+
+    def test_finishing_a_work_day_at_the_end_of_the_work_period(self):
+        finish = subject.get_start_or_finish_date(at(MONDAY, 9), datetime.timedelta(days=1), "WORKTIME", None)
+        assert finish == at(MONDAY, 17)
+        start = subject.get_start_or_finish_date(at(MONDAY, 17), datetime.timedelta(days=1), "WORKTIME", None, "START")
+        assert start == at(MONDAY, 9)
+
+
 class TestGetWorkTime(test.bootstrap.IFC4):
     def test_summing_the_work_periods_between_two_datetimes(self):
         calendar = add_calendar(self.file, [("08:00:00", "12:00:00"), ("13:00:00", "17:00:00")])
