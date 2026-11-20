@@ -238,13 +238,15 @@ class Usecase:
         return ifcopenshell.util.sequence.get_work_day_duration(task, self.get_calendar(task))
 
     def get_work_hours(self, task: ifcopenshell.entity_instance) -> tuple:
-        # The work periods of the task. A milestone has no work periods.
+        # The work periods of the task. A milestone and a task in elapsed time have no work periods.
         task_time = task.TaskTime
         duration = task_time.ScheduleDuration if task_time else None
-        if not duration or not ifcopenshell.util.date.parse_duration(duration):
+        if (
+            not duration
+            or not ifcopenshell.util.date.parse_duration(duration)
+            or task_time.DurationType == "ELAPSEDTIME"
+        ):
             return None
-        if task_time.DurationType == "ELAPSEDTIME":
-            return None, datetime.timedelta(hours=8)  # 09:00 to 17:00, as before
         return self.get_calendar(task), self.get_work_day(task)
 
     def snap(self, task: ifcopenshell.entity_instance, date: datetime.datetime, date_type: str):

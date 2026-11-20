@@ -371,6 +371,22 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task2.TaskTime.EarlyStart == "2000-01-02T09:00:00"  # 14:00 + 16 hours is 06:00
 
+    def test_recalculating_a_task_in_elapsed_time(self):
+        self._add_work_schedule()
+        task = self._create_task("P1D")
+        task2 = self._create_task("P1D", "ELAPSEDTIME")
+        task3 = self._create_task("PT2H")
+        self._create_sequence(task, task2, "FINISH_START")
+        self._create_sequence(task2, task3, "FINISH_START")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        assert task2.TaskTime.EarlyStart == "2000-01-01T17:00:00"  # Elapsed time does not wait for the work periods
+        assert task2.TaskTime.EarlyFinish == "2000-01-02T17:00:00"
+        assert task2.TaskTime.LateFinish == "2000-01-03T09:00:00"
+        assert task2.TaskTime.TotalFloat == "PT16H"
+        assert task3.TaskTime.EarlyStart == "2000-01-03T09:00:00"
+        assert task.TaskTime.IsCritical is True
+        assert task3.TaskTime.IsCritical is True
+
     def test_recalculating_a_lag_as_a_ratio_of_the_predecessor_duration(self):
         # Tasks of work hours: the lag gives an exact time. A task of work days would start at a day start.
         self._add_work_schedule()

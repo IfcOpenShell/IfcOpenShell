@@ -222,15 +222,17 @@ class Usecase:
                 },
             )
 
+    def is_work(self, node: dict) -> bool:
+        # A task in work time. A milestone, a task in elapsed time and the start and finish of the network have no
+        # work periods.
+        return not node.get("is_virtual") and bool(node["duration"]) and node["duration_type"] != "ELAPSEDTIME"
+
     def snap(self, node: dict, date: datetime.datetime, date_type: str):
-        # A start moves to the next work instant of the node, a finish to the previous one. A milestone and the
-        # start and finish of the network do not move.
-        if node.get("is_virtual") or not node["duration"]:
+        # Only a task in work time moves to a work instant. A milestone, a task in elapsed time and the start and
+        # finish of the network have no work periods.
+        if not self.is_work(node):
             return date
-        calendar, work_day = node["calendar"], node["work_day"]
-        if node["duration_type"] == "ELAPSEDTIME":
-            calendar, work_day = None, datetime.timedelta(hours=8)  # 09:00 to 17:00, as before
-        return ifcopenshell.util.sequence.snap_date(date, date_type, calendar, work_day)
+        return ifcopenshell.util.sequence.snap_date(date, date_type, node["calendar"], node["work_day"])
 
     def get_date(self, node: dict, date: datetime.datetime, date_type: str) -> datetime.datetime:
         # The finish of the node from its start, or the start from its finish.
