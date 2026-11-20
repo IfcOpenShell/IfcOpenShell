@@ -363,6 +363,14 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         assert task.TaskTime.LateStart == "2000-01-01T15:00:00"
         assert task.TaskTime.IsCritical is True
 
+    def test_recalculating_a_lag_in_elapsed_time(self):
+        self._add_work_schedule()
+        task = self._create_task("PT5H")
+        task2 = self._create_task("P1D")
+        self._create_sequence(task, task2, "FINISH_START", lag="PT16H", lag_type="ELAPSEDTIME")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        assert task2.TaskTime.EarlyStart == "2000-01-02T09:00:00"  # 14:00 + 16 hours is 06:00
+
     def test_recalculating_a_lag_as_a_ratio_of_the_predecessor_duration(self):
         # Tasks of work hours: the lag gives an exact time. A task of work days would start at a day start.
         self._add_work_schedule()
@@ -372,6 +380,32 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task2.TaskTime.EarlyStart == "2000-01-02T13:00:00"
         assert task2.TaskTime.EarlyFinish == "2000-01-03T13:00:00"
+
+    def test_recalculating_a_ratio_lag_in_the_work_day_of_the_successor(self):
+        self._add_work_schedule()
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
+        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar)
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(
+            self.file, parent=work_time, recurrence_type="DAILY"
+        )
+        ifcopenshell.api.sequence.add_time_period(
+            self.file, recurrence_pattern=pattern, start_time="08:00:00", end_time="18:00:00"
+        )
+        task = self._create_task("P2D", calendar=calendar)  # 20 work hours
+        task2 = self._create_task("PT8H")  # 8 work hours a day
+        self._create_sequence(task, task2, "FINISH_START", lag=0.5)
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        assert task.TaskTime.EarlyFinish == "2000-01-02T18:00:00"
+        assert task2.TaskTime.EarlyStart == "2000-01-04T11:00:00"  # 10 work hours after 09:00
+
+    def test_recalculating_a_ratio_lag_in_elapsed_time(self):
+        self._add_work_schedule()
+        task = self._create_task("P2D")  # 16 work hours
+        task2 = self._create_task("P1D")
+        self._create_sequence(task, task2, "FINISH_START", lag=0.5, lag_type="ELAPSEDTIME")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        assert task.TaskTime.EarlyFinish == "2000-01-02T17:00:00"
+        assert task2.TaskTime.EarlyStart == "2000-01-03T09:00:00"  # 17:00 + 8 hours is 01:00
 
     def test_recalculating_with_the_work_day_duration_of_the_schedule(self):
         self._add_work_schedule()

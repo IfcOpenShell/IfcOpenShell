@@ -21,7 +21,6 @@ from typing import Optional, Union
 
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
-from ifcopenshell.util.sequence import DURATION_TYPE
 
 
 def cascade_schedule(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> None:
@@ -143,58 +142,24 @@ class Usecase:
 
         for rel in ifcopenshell.util.sequence.get_sequence_assignment(task, "predecessor"):
             predecessor = rel.RelatingProcess
-            if rel.SequenceType == "FINISH_START":
-                finish = self.get_task_time_attribute(predecessor, "ScheduleFinish")
-                if not finish:
-                    continue
-                lag = datetime.timedelta()
-                duration_type = "WORKTIME"
-                if rel.TimeLag:
-                    lag = ifcopenshell.util.sequence.get_lag_time(rel.TimeLag, task, predecessor)
-                    duration_type = rel.TimeLag.DurationType
-                for process in (task, predecessor):
-                    date = self.offset_date(finish, lag, duration_type, process)
-                    starts.append(
-                        ifcopenshell.util.sequence.get_work_start(date, *self.get_work_hours(process, duration_type))
-                    )
-            elif rel.SequenceType == "START_START":
-                start = self.get_task_time_attribute(predecessor, "ScheduleStart")
-                if not start:
-                    continue
-                if rel.TimeLag:
-                    lag = ifcopenshell.util.sequence.get_lag_time(rel.TimeLag, task, predecessor)
-                    duration_type = rel.TimeLag.DurationType
-                    for process in (task, predecessor):
-                        date = self.offset_date(start, lag, duration_type, process)
-                        starts.append(self.snap(process, date, "START", duration_type))
-                else:
-                    starts.append(self.snap(task, start, "START", task.TaskTime.DurationType))
-            elif rel.SequenceType == "FINISH_FINISH":
-                finish = self.get_task_time_attribute(predecessor, "ScheduleFinish")
-                if not finish:
-                    continue
-                if rel.TimeLag:
-                    lag = ifcopenshell.util.sequence.get_lag_time(rel.TimeLag, task, predecessor)
-                    duration_type = rel.TimeLag.DurationType
-                    for process in (task, predecessor):
-                        date = self.offset_date(finish, lag, duration_type, process)
-                        finishes.append(self.snap(process, date, "FINISH", duration_type))
-                else:
-                    finishes.append(self.snap(task, finish, "FINISH", task.TaskTime.DurationType))
-            elif rel.SequenceType == "START_FINISH":
-                start = self.get_task_time_attribute(predecessor, "ScheduleStart")
-                if not start:
-                    continue
-                lag = datetime.timedelta()
-                duration_type = "WORKTIME"
-                if rel.TimeLag:
-                    lag = ifcopenshell.util.sequence.get_lag_time(rel.TimeLag, task, predecessor)
-                    duration_type = rel.TimeLag.DurationType
-                for process in (task, predecessor):
-                    date = self.offset_date(start, lag, duration_type, process)
-                    finishes.append(
-                        ifcopenshell.util.sequence.get_work_finish(date, *self.get_work_hours(process, duration_type))
-                    )
+            if rel.SequenceType in ("FINISH_START", "FINISH_FINISH"):
+                date = self.get_task_time_attribute(predecessor, "ScheduleFinish")
+            elif rel.SequenceType in ("START_START", "START_FINISH"):
+                date = self.get_task_time_attribute(predecessor, "ScheduleStart")
+            else:
+                continue
+            if not date:
+                continue
+            if rel.TimeLag:
+                # The lag is work time of the task (WORKTIME) or continuous time (ELAPSEDTIME).
+                lag = ifcopenshell.util.sequence.get_lag_time(rel.TimeLag, task, predecessor)
+                date = ifcopenshell.util.sequence.offset_lag(
+                    date, lag, rel.TimeLag.DurationType, self.get_calendar(task), self.get_work_day(task)
+                )
+            if rel.SequenceType in ("FINISH_START", "START_START"):
+                starts.append(self.snap(task, date, "START"))
+            else:
+                finishes.append(self.snap(task, date, "FINISH"))
 
         # A task of work days starts at the start of a working day and finishes at the end of a working day.
         calendar, work_day, duration_type = self.get_calendar(task), self.get_work_day(task), task.TaskTime.DurationType
@@ -272,28 +237,15 @@ class Usecase:
     def get_work_day(self, task: ifcopenshell.entity_instance) -> datetime.timedelta:
         return ifcopenshell.util.sequence.get_work_day_duration(task, self.get_calendar(task))
 
-    def get_work_hours(
-        self, task: ifcopenshell.entity_instance, duration_type: DURATION_TYPE
-    ) -> tuple[Union[ifcopenshell.entity_instance, None], datetime.timedelta]:
-        # The calendar and the work day that give the work periods of the task.
-        if duration_type == "ELAPSEDTIME":
+    def get_work_hours(self, task: ifcopenshell.entity_instance) -> tuple:
+        # The work periods of the task.
+        task_time = task.TaskTime
+        if task_time and task_time.DurationType == "ELAPSEDTIME":
             return None, datetime.timedelta(hours=8)  # 09:00 to 17:00, as before
         return self.get_calendar(task), self.get_work_day(task)
 
-    def snap(self, task: ifcopenshell.entity_instance, date: datetime.datetime, date_type: str, duration_type):
-        # A start moves to the next work instant, a finish to the previous one.
-        return ifcopenshell.util.sequence.snap_date(date, date_type, *self.get_work_hours(task, duration_type))
-
-    def offset_date(
-        self,
-        date: datetime.datetime,
-        duration: datetime.timedelta,
-        duration_type: DURATION_TYPE,
-        task: ifcopenshell.entity_instance,
-    ) -> datetime.datetime:
-        return ifcopenshell.util.sequence.offset_date(
-            date, duration, duration_type, self.get_calendar(task), self.get_work_day(task)
-        )
+    def snap(self, task: ifcopenshell.entity_instance, date: datetime.datetime, date_type: str):
+        return ifcopenshell.util.sequence.snap_date(date, date_type, *self.get_work_hours(task))
 
     def get_task_time_attribute(
         self, task: ifcopenshell.entity_instance, attribute: str

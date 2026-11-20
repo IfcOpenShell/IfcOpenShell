@@ -247,6 +247,26 @@ class TestGetWorkTime(test.bootstrap.IFC4):
         assert subject.get_work_time(at(MONDAY, 17), at(MONDAY + datetime.timedelta(days=1), 9), None) == 0 * H
 
 
+class TestOffsetLag(test.bootstrap.IFC4):
+    def setup_calendar(self):
+        return add_calendar(self.file, [("08:00:00", "12:00:00"), ("13:00:00", "17:00:00")])
+
+    def test_offsetting_by_a_lag_in_work_time(self):
+        calendar = self.setup_calendar()
+        assert subject.offset_lag(at(MONDAY + datetime.timedelta(days=4), 16), 2 * H, "WORKTIME", calendar) == at(
+            MONDAY + datetime.timedelta(days=7), 9
+        )
+
+    def test_offsetting_by_a_lag_in_elapsed_time(self):
+        calendar = self.setup_calendar()
+        assert subject.offset_lag(at(MONDAY + datetime.timedelta(days=4), 17), 16 * H, "ELAPSEDTIME", calendar) == at(
+            SATURDAY, 9
+        )
+
+    def test_keeping_the_date_for_no_lag(self):
+        assert subject.offset_lag(at(SATURDAY, 10), datetime.timedelta(), "WORKTIME", None) == at(SATURDAY, 10)
+
+
 class TestSnapDate(test.bootstrap.IFC4):
     def setup_calendar(self):
         return add_calendar(self.file, [("08:00:00", "12:00:00"), ("13:00:00", "17:00:00")])

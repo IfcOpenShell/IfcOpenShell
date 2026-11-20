@@ -605,6 +605,31 @@ def get_work_finish(
     return offset_work_time(date, -instant, calendar, work_day) + instant
 
 
+def offset_lag(
+    date: datetime.datetime,
+    lag: datetime.timedelta,
+    lag_type: Optional[DURATION_TYPE],
+    calendar: Optional[ifcopenshell.entity_instance],
+    work_day: datetime.timedelta = datetime.timedelta(hours=8),
+    is_forward: bool = True,
+) -> datetime.datetime:
+    """Offset a date of a predecessor by the lag of a sequence
+
+    :param date: The date of the predecessor (forward), or of the successor
+        (backward).
+    :param lag: The lag, from get_lag_time.
+    :param lag_type: The IfcLagTime DurationType. ELAPSEDTIME is continuous
+        time. Other values are work time of the calendar.
+    :param calendar: The IfcWorkCalendar of the successor, or None.
+    :param work_day: The length of a work day of the successor.
+    :param is_forward: True to add the lag, False to subtract it.
+    :return: The offset date.
+    """
+    if not lag:
+        return date
+    return offset_date(date, lag if is_forward else negate_duration(lag), lag_type, calendar, work_day)
+
+
 def snap_date(
     date: datetime.datetime,
     date_type: Literal["START", "FINISH"],
