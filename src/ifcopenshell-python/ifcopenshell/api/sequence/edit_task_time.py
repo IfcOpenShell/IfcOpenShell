@@ -136,15 +136,14 @@ class Usecase:
     def calculate_duration(self):
         start = ifcopenshell.util.date.ifc2datetime(self.task_time.ScheduleStart)
         finish = ifcopenshell.util.date.ifc2datetime(self.task_time.ScheduleFinish)
-        current_date = datetime.date(start.year, start.month, start.day)
-        finish_date = datetime.date(finish.year, finish.month, finish.day)
-        duration = datetime.timedelta(days=1)
-        while current_date < finish_date:
-            if self.task_time.DurationType == "ELAPSEDTIME" or not self.calendar:
-                duration += datetime.timedelta(days=1)
-            elif ifcopenshell.util.sequence.is_working_day(current_date, self.calendar):
-                duration += datetime.timedelta(days=1)
-            current_date += datetime.timedelta(days=1)
+        if self.task_time.DurationType == "ELAPSEDTIME":
+            duration = finish - start
+        else:
+            # Work days and work hours, in the form of get_work_duration
+            work_day = ifcopenshell.util.sequence.get_work_day_duration(self.task, self.calendar)
+            work = ifcopenshell.util.sequence.get_work_time(start, finish, self.calendar, work_day)
+            work_days, rest = divmod(work, work_day)
+            duration = datetime.timedelta(days=work_days) + rest
         self.task_time.ScheduleDuration = ifcopenshell.util.date.datetime2ifc(duration, "IfcDuration")
 
     def get_task(self) -> ifcopenshell.entity_instance:

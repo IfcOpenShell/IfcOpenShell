@@ -198,6 +198,27 @@ class TestGetWorkStartAndFinish(test.bootstrap.IFC4):
         assert subject.get_work_finish(at(MONDAY, 13, 44), None) == at(MONDAY, 13, 44)
 
 
+class TestGetWorkTime(test.bootstrap.IFC4):
+    def test_summing_the_work_periods_between_two_datetimes(self):
+        calendar = add_calendar(self.file, [("08:00:00", "12:00:00"), ("13:00:00", "17:00:00")])
+        assert subject.get_work_time(at(MONDAY, 11), at(MONDAY, 14), calendar) == 2 * H
+
+    def test_skipping_the_days_without_work(self):
+        calendar = add_calendar(self.file, [("08:00:00", "12:00:00"), ("13:00:00", "17:00:00")])
+        assert (
+            subject.get_work_time(
+                at(MONDAY + datetime.timedelta(days=4), 16), at(MONDAY + datetime.timedelta(days=7), 9), calendar
+            )
+            == 2 * H
+        )
+
+    def test_returning_a_negative_work_time_for_a_finish_before_the_start(self):
+        assert subject.get_work_time(at(MONDAY, 14), at(MONDAY, 11), None) == -3 * H
+
+    def test_returning_no_work_time_for_the_same_work_instant(self):
+        assert subject.get_work_time(at(MONDAY, 17), at(MONDAY + datetime.timedelta(days=1), 9), None) == 0 * H
+
+
 class TestGetWorkDuration:
     def test_converting_work_hours_of_one_work_day_or_more_to_work_days(self):
         assert subject.get_work_duration("PT24H", "WORKTIME") == datetime.timedelta(days=3)

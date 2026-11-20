@@ -211,6 +211,34 @@ def offset_work_time(
     return start
 
 
+def get_work_time(
+    start: datetime.datetime,
+    finish: datetime.datetime,
+    calendar: Optional[ifcopenshell.entity_instance],
+    work_day: datetime.timedelta = datetime.timedelta(hours=8),
+) -> datetime.timedelta:
+    """Get the work time between two datetimes
+
+    :param start: The first datetime.
+    :param finish: The second datetime. If it is before the start, the work
+        time is negative.
+    :param calendar: The IfcWorkCalendar, or None.
+    :param work_day: The length of a work day. See get_work_periods.
+    :return: The sum of the work periods between the two datetimes.
+    """
+    if finish < start:
+        return -get_work_time(finish, start, calendar, work_day)
+    work = datetime.timedelta()
+    day = start.date()
+    while day <= finish.date():
+        midnight = datetime.datetime.combine(day, datetime.time(), start.tzinfo)
+        for period_start, period_end in get_work_periods(day, calendar, work_day):
+            overlap = min(finish, midnight + period_end) - max(start, midnight + period_start)
+            work += max(overlap, datetime.timedelta())
+        day += datetime.timedelta(days=1)
+    return work
+
+
 def get_work_start(
     date: datetime.datetime,
     calendar: Optional[ifcopenshell.entity_instance],
