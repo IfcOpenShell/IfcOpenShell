@@ -227,6 +227,10 @@ si_conversions = {
     "fahrenheit": 1.8,
 }
 
+# convert() matches names case-insensitively, but some names are not
+# lowercase, e.g. "gallon US".
+_si_conversions_lowercase = {name.lower(): factor for name, factor in si_conversions.items()}
+
 si_offsets = {
     "fahrenheit": -459.67,
 }
@@ -814,8 +818,7 @@ def convert(value: float, from_prefix: Optional[str], from_unit: str, to_prefix:
     :param to_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
     :return: The converted value.
     """
-    # Some names are not lowercase, e.g. "gallon US".
-    conversions = {name.lower(): factor for name, factor in si_conversions.items()}
+    conversions = _si_conversions_lowercase
     if from_unit.lower() in conversions:
         value *= conversions[from_unit.lower()]
     elif from_prefix:
