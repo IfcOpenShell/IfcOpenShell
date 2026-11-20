@@ -1310,6 +1310,12 @@ class LoadProjectElements(bpy.types.Operator):
                 f"Inspect from the Project panel.",
             )
 
+        if (unsorted_collection := bpy.data.collections.get("Unsorted")) and len(unsorted_collection.objects):
+            self.report(
+                {"WARNING"},
+                f"{len(unsorted_collection.objects)} element(s) have no spatial container and were placed in the hidden 'Unsorted' collection.",
+            )
+
         tool.Project.load_default_thumbnails()
         tool.Project.set_default_context()
         tool.Project.set_default_modeling_dimensions()
