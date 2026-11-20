@@ -321,6 +321,7 @@ def set_int_value(self: "Attribute", new_value: int) -> None:
 
 def set_float_value(self: "Attribute", new_value: float) -> None:
     set_numerical_value(self, "float_value", new_value)
+    self["_float_exact"] = float(self.get("float_value", new_value))
 
 
 def set_numerical_value(self: "Attribute", value_name: str, new_value: Union[float, int]) -> None:
@@ -463,6 +464,8 @@ class Attribute(PropertyGroup):
         value_name = self.get_value_name()
         if value_name == "enum_value":
             value = tool.Blender.get_enum_safe(self, "enum_value")
+        elif self.data_type == "float" and "_float_exact" in self:
+            value = float(self["_float_exact"])
         else:
             value = getattr(self, value_name, None)
         if self.special_type == "LOGICAL" and value != "UNKNOWN":
@@ -526,6 +529,8 @@ class Attribute(PropertyGroup):
             self.data_type = "string"
             value = str(value)
         setattr(self, self.get_value_name(), value)
+        if isinstance(value, float) and not isinstance(value, bool):
+            self["_float_exact"] = float(value)
 
 
 class ISODuration(PropertyGroup):

@@ -488,3 +488,25 @@ class TestGetAttributeUnitEnumItemsWithAMismatchedUnit(NewFile):
 
         items = bonsai.bim.prop.get_attribute_unit_enum_items(metadata, bpy.context)
         assert str(mismatched_unit.id()) in [i[0] for i in items]
+
+
+class TestAttributeFloatPrecision(NewFile):
+    def test_preserves_double_precision_float_attribute_value(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        storey = ifc.createIfcBuildingStorey(Name="Level 1", Elevation=320.15)
+
+        attrs = bpy.data.collections.new("Attrs")
+        props_collection = getattr(attrs, "test_attrs", None)
+        if props_collection is None:
+            # Reuse scene attribute collection if available, else test Attribute directly.
+            attr = bpy.context.scene.BIMProjectProperties.attributes.add()
+        else:
+            attr = props_collection.add()
+
+        declaration = storey.wrapped_data.declaration().as_entity()
+        elevation_attr = next(a for a in declaration.all_attributes() if a.name() == "Elevation")
+        bonsai.bim.helper.import_attribute(elevation_attr, attr.id_data.BIMProjectProperties.attributes, storey.get_info())
+        imported = attr.id_data.BIMProjectProperties.attributes[-1]
+        assert imported.get_value() == 320.15
