@@ -22,6 +22,7 @@
 #include <BOPAlgo_PaveFiller.hxx>
 #include <BOPAlgo_Alerts.hxx>
 #include <ShapeFix_Shape.hxx>
+#include <ShapeFix_Solid.hxx>
 #include <BRepCheck_Analyzer.hxx>
 #include <BRepCheck.hxx>
 #include <ShapeAnalysis_Edge.hxx>
@@ -1494,7 +1495,36 @@ TopoDS_Shape ifcopenshell::geom::util::ensure_fit_for_subtraction(const TopoDS_S
 		return shape;
 	}
 
-	TopoDS_Shape solid_or_compound_of_solids;
+    // An IFC advanced/faceted BRep with voids results into a compound of compounds, each representing a shell.
+    bool has_nested_compounds = true;
+    for (TopoDS_Iterator it(shape); it.More(); it.Next()) {
+        has_nested_compounds &= it.Value().ShapeType() == TopAbs_COMPOUND;
+    }
+    if (has_nested_compounds) {
+        BRep_Builder builder;
+        TopoDS_Solid solid;
+        builder.MakeSolid(solid);
+        for (TopoDS_Iterator it(shape); it.More(); it.Next()) {
+            if (!is_compound_of_faces(it.Value())) {
+                return shape;
+            }
+            auto child = ensure_fit_for_subtraction(it.Value(), tol);
+            if (!TopExp_Explorer(child, TopAbs_SHELL).More()) {
+                return shape;
+            }
+            for (TopExp_Explorer shells(child, TopAbs_SHELL); shells.More(); shells.Next()) {
+                builder.Add(solid, shells.Current());
+            }
+        }
+        ShapeFix_Solid fix(solid);
+        fix.SetPrecision(tol);
+        fix.SetMaxTolerance(tol);
+        fix.Perform();
+        auto result = fix.Shape();
+        return !result.IsNull() && TopExp_Explorer(result, TopAbs_SOLID).More() && BRepCheck_Analyzer(result).IsValid() ? result : shape;
+    }
+
+    TopoDS_Shape solid_or_compound_of_solids;
 	if (!create_solid_from_compound(shape, solid_or_compound_of_solids, tol)) {
 		return shape;
 	}
