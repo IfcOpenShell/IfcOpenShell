@@ -92,16 +92,7 @@ class Collector(bonsai.core.tool.Collector):
                 tool.Geometry.lock_object(obj)
             collection = cls._create_project_child_collection("IfcReferent")
             cls.link_collection_object_safe(collection, obj)
-        elif tool.Ifc.get_schema() == "IFC2X3" and element.is_a("IfcSpatialStructureElement"):
-            if tool.Geometry.is_locked(element):
-                tool.Geometry.lock_object(obj)
-            if collection := cls._create_own_collection(obj):
-                cls.link_collection_object_safe(collection, obj)
-                project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                cls.link_collection_child_safe(tool.Blender.get_object_bim_props(project_obj).collection, collection)
-            if not tool.Spatial.get_spatial_props().is_visible:
-                obj.hide_viewport = True
-        elif (
+        elif (tool.Ifc.get_schema() == "IFC2X3" and element.is_a("IfcSpatialStructureElement")) or (
             tool.Ifc.get_schema() != "IFC2X3"
             and element.is_a("IfcSpatialElement")
             and not element.is_a("IfcSpatialZone")
@@ -110,8 +101,23 @@ class Collector(bonsai.core.tool.Collector):
                 tool.Geometry.lock_object(obj)
             if collection := cls._create_own_collection(obj):
                 cls.link_collection_object_safe(collection, obj)
-                project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                cls.link_collection_child_safe(tool.Blender.get_object_bim_props(project_obj).collection, collection)
+                parent_col = None
+                if (aggregate := ifcopenshell.util.element.get_aggregate(element)) and (
+                    (tool.Ifc.get_schema() == "IFC2X3" and aggregate.is_a("IfcSpatialStructureElement"))
+                    or (
+                        tool.Ifc.get_schema() != "IFC2X3"
+                        and aggregate.is_a("IfcSpatialElement")
+                        and not aggregate.is_a("IfcSpatialZone")
+                    )
+                ):
+                    if aggregate_obj := tool.Ifc.get_object(aggregate):
+                        if not (parent_col := tool.Blender.get_object_bim_props(aggregate_obj).collection):
+                            cls.assign(aggregate_obj)
+                            parent_col = tool.Blender.get_object_bim_props(aggregate_obj).collection
+                if not parent_col:
+                    project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+                    parent_col = tool.Blender.get_object_bim_props(project_obj).collection
+                cls.link_collection_child_safe(parent_col, collection)
             if not tool.Spatial.get_spatial_props().is_visible:
                 obj.hide_viewport = True
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
