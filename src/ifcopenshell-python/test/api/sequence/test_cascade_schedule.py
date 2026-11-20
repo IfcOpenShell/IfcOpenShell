@@ -241,7 +241,24 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         assert task.TaskTime.ScheduleFinish == "2000-01-01T15:00:00"
         assert task2.TaskTime.ScheduleStart == "2000-01-02T10:00:00"
 
-    def _create_task(self, duration):
+    def test_cascading_a_lag_as_a_ratio_of_the_predecessor_duration(self):
+        # Tasks of work hours: the lag gives an exact time. A task of work days would start at a day start.
+        task = self._create_task("PT8H")
+        task2 = self._create_task("PT8H")
+        self._create_sequence(task, task2, "FINISH_START", lag=0.5)
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        assert task2.TaskTime.ScheduleStart == "2000-01-02T13:00:00"
+
+    def test_cascading_a_ratio_lag_of_an_elapsed_predecessor_as_work_hours(self):
+        # A ratio is a part of the time of the predecessor: half of 48 hours is 24 work hours, not one work day
+        task = self._create_task("P2D", duration_type="ELAPSEDTIME")
+        task2 = self._create_task("PT8H")
+        self._create_sequence(task, task2, "FINISH_START", lag=0.5)
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        assert task.TaskTime.ScheduleFinish == "2000-01-03T09:00:00"
+        assert task2.TaskTime.ScheduleStart == "2000-01-06T09:00:00"  # After 3 work days of 8 hours
+
+    def _create_task(self, duration, duration_type="WORKTIME"):
         task = ifcopenshell.api.sequence.add_task(self.file)
         if duration == "P0D":
             task.IsMilestone = True
@@ -249,16 +266,23 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
-            attributes={"ScheduleStart": datetime.date(2000, 1, 1), "ScheduleDuration": duration},
+            attributes={
+                "ScheduleStart": datetime.date(2000, 1, 1),
+                "ScheduleDuration": duration,
+                "DurationType": duration_type,
+            },
         )
         return task
 
-    def _create_sequence(self, predecessor, successor, relationship, lag=None):
+    def _create_sequence(self, predecessor, successor, relationship, lag=None, lag_type="WORKTIME"):
         rel = ifcopenshell.api.sequence.assign_sequence(
             self.file, relating_process=predecessor, related_process=successor
         )
         ifcopenshell.api.sequence.edit_sequence(self.file, rel_sequence=rel, attributes={"SequenceType": relationship})
-        if lag:
+        if isinstance(lag, float):  # An IfcRatioMeasure
+            value = self.file.createIfcRatioMeasure(lag)
+            rel.TimeLag = self.file.createIfcLagTime(DurationType=lag_type, LagValue=value)
+        elif lag:
             ifcopenshell.api.sequence.assign_lag_time(
-                self.file, rel_sequence=rel, lag_value=lag, duration_type="WORKTIME"
+                self.file, rel_sequence=rel, lag_value=lag, duration_type=lag_type
             )

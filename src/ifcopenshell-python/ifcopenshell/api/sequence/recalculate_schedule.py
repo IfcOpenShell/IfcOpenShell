@@ -167,9 +167,7 @@ class Usecase:
                         "lag_time": (
                             datetime.timedelta()
                             if not rel.TimeLag
-                            else ifcopenshell.util.sequence.get_work_duration(
-                                rel.TimeLag.LagValue.wrappedValue, rel.TimeLag.DurationType, work_day
-                            )
+                            else ifcopenshell.util.sequence.get_lag_time(rel.TimeLag, task, rel.RelatingProcess)
                         ),
                         "lag_type": rel.TimeLag.DurationType if rel.TimeLag else "WORKTIME",
                         "type": self.sequence_type_map[rel.SequenceType],
@@ -187,18 +185,14 @@ class Usecase:
         ]
 
         if not predecessor_types:
-            self.edges.append(
-                ("start", task.id(), {"lag_time": datetime.timedelta(), "lag_type": "WORKTIME", "type": "FS"})
-            )
+            self.edges.append(("start", task.id(), {"lag_time": None, "lag_type": "WORKTIME", "type": "FS"}))
             if task.TaskTime and task.TaskTime.ScheduleStart:
                 self.start_dates.append(ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleStart))
                 self.g.nodes[task.id()]["early_start"] = ifcopenshell.util.date.ifc2datetime(
                     task.TaskTime.ScheduleStart
                 )  # we assume this task is constrained to start on this date
         if not successor_types:
-            self.edges.append(
-                (task.id(), "finish", {"lag_time": datetime.timedelta(), "lag_type": "WORKTIME", "type": "FF"})
-            )
+            self.edges.append((task.id(), "finish", {"lag_time": None, "lag_type": "WORKTIME", "type": "FF"}))
 
     def update_task_times(self) -> None:
         for ifc_definition_id in self.g.nodes:
@@ -248,7 +242,7 @@ class Usecase:
         for node in nodes:
             result = date
             if edge["lag_time"]:
-                lag = edge["lag_time"] if is_forward else -edge["lag_time"]
+                lag = edge["lag_time"] if is_forward else ifcopenshell.util.sequence.negate_duration(edge["lag_time"])
                 result = ifcopenshell.util.sequence.offset_date(
                     date, lag, node["duration_type"], node["calendar"], node["work_day"]
                 )

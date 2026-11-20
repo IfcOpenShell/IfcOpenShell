@@ -335,6 +335,16 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         assert task2.TaskTime.LateStart == "2000-01-01T15:00:00"
         assert task.TaskTime.IsCritical is True
 
+    def test_recalculating_a_lag_as_a_ratio_of_the_predecessor_duration(self):
+        # Tasks of work hours: the lag gives an exact time. A task of work days would start at a day start.
+        self._add_work_schedule()
+        task = self._create_task("PT8H")
+        task2 = self._create_task("PT8H")
+        self._create_sequence(task, task2, "FINISH_START", lag=0.5)
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        assert task2.TaskTime.EarlyStart == "2000-01-02T13:00:00"
+        assert task2.TaskTime.EarlyFinish == "2000-01-03T13:00:00"
+
     def _add_work_schedule(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         self.work_schedule = ifcopenshell.api.sequence.add_work_schedule(self.file)

@@ -150,7 +150,7 @@ def get_start_or_finish_date(
         # A task of work days starts at the start of a working day: a part of a day counts as a full day.
         start = snap_task_date(start, "START", duration, duration_type, calendar, work_day)
     result = offset_date(
-        start, _negate_duration(duration) if date_type == "START" else duration, duration_type, calendar, work_day
+        start, negate_duration(duration) if date_type == "START" else duration, duration_type, calendar, work_day
     )
     if duration_type == "ELAPSEDTIME":
         return result  # Elapsed time does not stop out of the work periods
@@ -185,7 +185,8 @@ def _get_duration_parts(duration) -> tuple[float, datetime.timedelta, float, flo
     return sign * days, sign * (abs(delta) - datetime.timedelta(days=days)), months, years
 
 
-def _negate_duration(duration):
+def negate_duration(duration):
+    """Negate an IfcDuration or a timedelta"""
     if isinstance(duration, str):
         return duration[1:] if duration.startswith("-") else "-" + duration
     return -duration
@@ -769,6 +770,41 @@ def get_work_duration(
     work_days, rest = divmod(work, work_day)
     result = date - days + datetime.timedelta(days=work_days) + rest
     return -result if value.startswith("-") else result
+
+
+def get_lag_time(
+    lag_time: ifcopenshell.entity_instance,
+    task: ifcopenshell.entity_instance,
+    predecessor: ifcopenshell.entity_instance,
+) -> Optional[str]:
+    """Get the IfcLagTime of a sequence as an IfcDuration
+
+    An IfcRatioMeasure is a part of the time of the predecessor, as a
+    percentage lag in MS Project. A work day of the predecessor counts as
+    its nominal work day (see get_work_day_duration), and an elapsed day as
+    24 hours. Thus the lag is a time only: work hours for a WORKTIME lag,
+    hours for an ELAPSEDTIME lag. Hours do not become days.
+
+    :param lag_time: The IfcLagTime.
+    :param task: The successor IfcTask.
+    :param predecessor: The predecessor IfcTask. An IfcRatioMeasure is a
+        ratio of its ScheduleDuration.
+    :return: The lag as an IfcDuration, or None if there is no lag.
+    """
+    if lag_time.LagValue.is_a("IfcDuration"):
+        value = lag_time.LagValue.wrappedValue
+        return value if ifcopenshell.util.date.parse_duration(value) else None
+    task_time = predecessor.TaskTime
+    if not task_time or not task_time.ScheduleDuration:
+        return None
+    if task_time.DurationType == "ELAPSEDTIME":
+        day = datetime.timedelta(days=1)
+    else:
+        day = get_work_day_duration(predecessor)
+    duration = get_work_duration(task_time.ScheduleDuration, task_time.DurationType, day)
+    duration = getattr(duration, "tdelta", duration)
+    time = duration.days * day + (duration - datetime.timedelta(days=duration.days))
+    return _format_work_duration(0, time * lag_time.LagValue.wrappedValue) if time else None
 
 
 @cache

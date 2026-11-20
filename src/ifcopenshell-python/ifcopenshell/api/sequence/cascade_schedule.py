@@ -143,15 +143,6 @@ class Usecase:
 
         for rel in ifcopenshell.util.sequence.get_sequence_assignment(task, "predecessor"):
             predecessor = rel.RelatingProcess
-            predecessor_duration = (
-                ifcopenshell.util.sequence.get_work_duration(
-                    predecessor.TaskTime.ScheduleDuration,
-                    predecessor.TaskTime.DurationType,
-                    self.get_work_day(predecessor),
-                )
-                if predecessor.TaskTime and predecessor.TaskTime.ScheduleDuration
-                else datetime.timedelta()
-            )
             if rel.SequenceType == "FINISH_START":
                 finish = self.get_task_time_attribute(predecessor, "ScheduleFinish")
                 if not finish:
@@ -159,8 +150,7 @@ class Usecase:
                 lag = datetime.timedelta()
                 duration_type = "WORKTIME"
                 if rel.TimeLag:
-                    # updated to handle IfcRatioMeasure as a TimeLag value
-                    lag = self.get_lag_time(rel.TimeLag, task, predecessor, predecessor_duration)
+                    lag = ifcopenshell.util.sequence.get_lag_time(rel.TimeLag, task, predecessor)
                     duration_type = rel.TimeLag.DurationType
                 for process in (task, predecessor):
                     date = self.offset_date(finish, lag, duration_type, process)
@@ -172,7 +162,7 @@ class Usecase:
                 if not start:
                     continue
                 if rel.TimeLag:
-                    lag = self.get_lag_time(rel.TimeLag, task, predecessor, predecessor_duration)
+                    lag = ifcopenshell.util.sequence.get_lag_time(rel.TimeLag, task, predecessor)
                     duration_type = rel.TimeLag.DurationType
                     starts.append(self.offset_date(start, lag, duration_type, task))
                     starts.append(self.offset_date(start, lag, duration_type, predecessor))
@@ -183,7 +173,7 @@ class Usecase:
                 if not finish:
                     continue
                 if rel.TimeLag:
-                    lag = self.get_lag_time(rel.TimeLag, task, predecessor, predecessor_duration)
+                    lag = ifcopenshell.util.sequence.get_lag_time(rel.TimeLag, task, predecessor)
                     duration_type = rel.TimeLag.DurationType
                     finishes.append(self.offset_date(finish, lag, duration_type, task))
                     finishes.append(self.offset_date(finish, lag, duration_type, predecessor))
@@ -196,7 +186,7 @@ class Usecase:
                 lag = datetime.timedelta()
                 duration_type = "WORKTIME"
                 if rel.TimeLag:
-                    lag = self.get_lag_time(rel.TimeLag, task, predecessor, predecessor_duration)
+                    lag = ifcopenshell.util.sequence.get_lag_time(rel.TimeLag, task, predecessor)
                     duration_type = rel.TimeLag.DurationType
                 for process in (task, predecessor):
                     date = self.offset_date(start, lag, duration_type, process)
@@ -271,27 +261,6 @@ class Usecase:
                 self.cascade_task(nested_task, task_sequence=task_sequence + [task])
                 for nested_task in rel.RelatedObjects or []
             ]
-
-    def get_lag_time(
-        self,
-        lag_time: ifcopenshell.entity_instance,
-        task: ifcopenshell.entity_instance,
-        predecessor: ifcopenshell.entity_instance,
-        predecessor_duration: datetime.timedelta,
-    ) -> datetime.timedelta:
-        if lag_time.LagValue.is_a("IfcDuration"):
-            return ifcopenshell.util.sequence.get_work_duration(
-                lag_time.LagValue.wrappedValue, lag_time.DurationType, self.get_work_day(task)
-            )
-        # An IfcRatioMeasure is a ratio of the predecessor duration.
-        if predecessor.TaskTime and predecessor.TaskTime.DurationType == "ELAPSEDTIME":
-            work_day = datetime.timedelta(days=1)
-        else:
-            work_day = self.get_work_day(predecessor)
-        days = datetime.timedelta(days=predecessor_duration.days)
-        work = (predecessor_duration - days + predecessor_duration.days * work_day) * lag_time.LagValue.wrappedValue
-        work_days, rest = divmod(work, work_day)
-        return datetime.timedelta(days=work_days) + rest
 
     def get_calendar(self, task: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         if task.id() not in self.calendar_cache:
