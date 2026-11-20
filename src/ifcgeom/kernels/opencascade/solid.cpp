@@ -22,9 +22,14 @@
 #include <BRepPrimAPI_MakeHalfSpace.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
+#include "boolean_utils.h"
+#include "base_utils.h"
+
 #include <BRepAlgoAPI_Common.hxx>
 #include <ShapeFix_Solid.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopoDS.hxx>
 
 using namespace ifcopenshell::geom;
 using namespace ifcopenshell::geom::kernels;
@@ -79,19 +84,72 @@ bool open_cascade_kernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape
 		return true;
 	}
 
+	const double tol = settings_.get<settings::Precision>().get();
+	TopoDS_Shape outer_solid;
+	NCollection_List<TopoDS_Shape> void_operands;
+
 	for (auto& s : solid->children) {
 		TopoDS_Shape shl;
-		if (convert(s, shl)) {
-			if (shl.ShapeType() == TopAbs_SHELL) {
-				ShapeFix_Solid solid;
-				S = solid.SolidFromShell(TopoDS::Shell(shl));
+		if (!convert(s, shl)) {
+			logger_.warning("GEO", 201, "Ignored shell", s->instance);
+			continue;
+		}
+
+		TopoDS_Shape child_solid;
+		if (shl.ShapeType() == TopAbs_SOLID) {
+			child_solid = shl;
+		} else if (shl.ShapeType() == TopAbs_SHELL) {
+			ShapeFix_Solid solid_fixer;
+			child_solid = solid_fixer.SolidFromShell(TopoDS::Shell(shl));
+		} else if (shl.ShapeType() == TopAbs_COMPOUND) {
+			NCollection_List<TopoDS_Shape> faces;
+			for (TopExp_Explorer exp(shl, TopAbs_FACE); exp.More(); exp.Next()) {
+				faces.Append(exp.Current());
+			}
+			TopoDS_Shape sewn;
+			if (!faces.IsEmpty() && create_solid_from_faces(faces, sewn, tol, true)) {
+				if (sewn.ShapeType() == TopAbs_SOLID) {
+					child_solid = sewn;
+				} else if (sewn.ShapeType() == TopAbs_SHELL) {
+					ShapeFix_Solid solid_fixer;
+					child_solid = solid_fixer.SolidFromShell(TopoDS::Shell(sewn));
+				} else {
+					child_solid = sewn;
+				}
 			} else if (solid->children.size() == 1) {
-				S = shl;
+				child_solid = shl;
 			} else {
 				throw std::runtime_error("Unexpected configuration of subshapes");
 			}
+		} else if (solid->children.size() == 1) {
+			child_solid = shl;
 		} else {
-			logger_.warning("GEO", 201, "Ignored shell", s->instance);
+			throw std::runtime_error("Unexpected configuration of subshapes");
+		}
+
+		if (outer_solid.IsNull()) {
+			outer_solid = child_solid;
+		} else {
+			void_operands.Append(util::ensure_fit_for_subtraction(child_solid, tol));
+		}
+	}
+
+	if (!outer_solid.IsNull()) {
+		if (!void_operands.IsEmpty()) {
+			util::boolean_settings bst;
+			bst.attempt_2d = settings_.get<settings::BooleanAttempt2d>().get();
+			bst.debug = settings_.get<settings::DebugBooleanOperations>().get();
+			bst.precision = tol;
+			bst.logger = &logger_;
+
+			TopoDS_Shape cut_shape;
+			if (util::boolean_operation(bst, outer_solid, void_operands, BOPAlgo_CUT, cut_shape) && !cut_shape.IsNull()) {
+				S = cut_shape;
+			} else {
+				S = outer_solid;
+			}
+		} else {
+			S = outer_solid;
 		}
 	}
 	if (!S.IsNull()) {
