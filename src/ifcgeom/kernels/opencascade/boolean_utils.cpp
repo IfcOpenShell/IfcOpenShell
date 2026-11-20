@@ -22,7 +22,6 @@
 #include <BOPAlgo_PaveFiller.hxx>
 #include <BOPAlgo_Alerts.hxx>
 #include <ShapeFix_Shape.hxx>
-#include <ShapeFix_Solid.hxx>
 #include <BRepCheck_Analyzer.hxx>
 #include <BRepCheck.hxx>
 #include <ShapeAnalysis_Edge.hxx>
@@ -32,6 +31,7 @@
 #include <BRepAlgoAPI_Common.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepBndLib.hxx>
+#include <BRepClass3d_SolidClassifier.hxx>
 
 #include <vector>
 #include <thread>
@@ -1501,9 +1501,7 @@ TopoDS_Shape ifcopenshell::geom::util::ensure_fit_for_subtraction(const TopoDS_S
         has_nested_compounds &= it.Value().ShapeType() == TopAbs_COMPOUND;
     }
     if (has_nested_compounds) {
-        BRep_Builder builder;
-        TopoDS_Solid solid;
-        builder.MakeSolid(solid);
+        std::vector<TopoDS_Shape> children;
         for (TopoDS_Iterator it(shape); it.More(); it.Next()) {
             if (!is_compound_of_faces(it.Value())) {
                 return shape;
@@ -1512,16 +1510,45 @@ TopoDS_Shape ifcopenshell::geom::util::ensure_fit_for_subtraction(const TopoDS_S
             if (!TopExp_Explorer(child, TopAbs_SHELL).More()) {
                 return shape;
             }
+            children.push_back(child);
+        }
+        // The taxonomy maps the external shell first. Define this macro to infer it
+        // instead from the child whose bounding box extends furthest along +X.
+        std::size_t exterior = 0;
+#ifdef IFCOPENSHELL_BREP_VOID_EXTERIOR_BY_MAX_X
+        double maximum_x = -std::numeric_limits<double>::infinity();
+        for (std::size_t i = 0; i < children.size(); ++i) {
+            Bnd_Box box;
+            BRepBndLib::Add(children[i], box);
+            if (box.IsVoid() || box.IsOpenXmax()) {
+                return shape;
+            }
+            const double x = box.CornerMax().X();
+            if (x > maximum_x) {
+                maximum_x = x;
+                exterior = i;
+            }
+        }
+#endif
+        BRep_Builder builder;
+        TopoDS_Solid solid;
+        builder.MakeSolid(solid);
+        for (std::size_t i = 0; i < children.size(); ++i) {
+            auto& child = children[i];
+            BRepClass3d_SolidClassifier classifier(child);
+            classifier.PerformInfinitePoint(tol);
+            const auto expected = i == exterior ? TopAbs_OUT : TopAbs_IN;
+            if (classifier.State() != TopAbs_OUT && classifier.State() != TopAbs_IN) {
+                return shape;
+            }
+            if (classifier.State() != expected) {
+                child.Reverse();
+            }
             for (TopExp_Explorer shells(child, TopAbs_SHELL); shells.More(); shells.Next()) {
                 builder.Add(solid, shells.Current());
             }
         }
-        ShapeFix_Solid fix(solid);
-        fix.SetPrecision(tol);
-        fix.SetMaxTolerance(tol);
-        fix.Perform();
-        auto result = fix.Shape();
-        return !result.IsNull() && TopExp_Explorer(result, TopAbs_SOLID).More() && BRepCheck_Analyzer(result).IsValid() ? result : shape;
+        return BRepCheck_Analyzer(solid).IsValid() ? solid : shape;
     }
 
     TopoDS_Shape solid_or_compound_of_solids;
