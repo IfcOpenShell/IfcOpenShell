@@ -387,6 +387,16 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         assert task.TaskTime.IsCritical is True
         assert task3.TaskTime.IsCritical is True
 
+    def test_recalculating_a_negative_lag_before_a_task_in_elapsed_time(self):
+        self._add_work_schedule()
+        task = self._create_task("PT4H")
+        task2 = self._create_task("PT16H", "ELAPSEDTIME")
+        self._create_sequence(task, task2, "FINISH_START", lag="-PT4H")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        # 13:00 - 4 work hours is 09:00, the same work instant as 17:00 on the day before. The earliest applies.
+        assert task2.TaskTime.EarlyStart == "1999-12-31T17:00:00"
+        assert task2.TaskTime.EarlyFinish == "2000-01-01T09:00:00"
+
     def test_recalculating_a_lag_as_a_ratio_of_the_predecessor_duration(self):
         # Tasks of work hours: the lag gives an exact time. A task of work days would start at a day start.
         self._add_work_schedule()

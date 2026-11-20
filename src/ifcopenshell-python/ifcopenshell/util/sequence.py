@@ -623,11 +623,19 @@ def offset_lag(
     :param calendar: The IfcWorkCalendar of the successor, or None.
     :param work_day: The length of a work day of the successor.
     :param is_forward: True to add the lag, False to subtract it.
-    :return: The offset date.
+    :return: The offset date. For a lag in work time, the end of a pause in
+        the work (for example 17:00 and 09:00 the next day) gives the
+        earliest date (forward) or the latest date (backward).
     """
     if not lag:
         return date
-    return offset_date(date, lag if is_forward else negate_duration(lag), lag_type, calendar, work_day)
+    result = offset_date(date, lag if is_forward else negate_duration(lag), lag_type, calendar, work_day)
+    days, time, months, years = _get_duration_parts(lag)
+    if lag_type == "ELAPSEDTIME" or min(days, time / datetime.timedelta(days=1), months, years) >= 0:
+        return result  # A positive lag stops at the earliest (forward) or latest (backward) limit
+    if is_forward:
+        return get_work_finish(result, calendar, work_day)
+    return get_work_start(result, calendar, work_day)
 
 
 def snap_date(

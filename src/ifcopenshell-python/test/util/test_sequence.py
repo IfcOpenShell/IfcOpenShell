@@ -263,6 +263,19 @@ class TestOffsetLag(test.bootstrap.IFC4):
             SATURDAY, 9
         )
 
+    def test_giving_the_earliest_work_instant_forward_for_a_negative_lag(self):
+        calendar = self.setup_calendar()
+        assert subject.offset_lag(at(MONDAY + datetime.timedelta(days=7), 10), -2 * H, "WORKTIME", calendar) == at(
+            MONDAY + datetime.timedelta(days=4), 17
+        )
+
+    def test_giving_the_latest_work_instant_backward_for_a_negative_lag(self):
+        calendar = self.setup_calendar()
+        result = subject.offset_lag(
+            at(MONDAY + datetime.timedelta(days=4), 15), -2 * H, "WORKTIME", calendar, is_forward=False
+        )
+        assert result == at(MONDAY + datetime.timedelta(days=7), 8)
+
     def test_keeping_the_date_for_no_lag(self):
         assert subject.offset_lag(at(SATURDAY, 10), datetime.timedelta(), "WORKTIME", None) == at(SATURDAY, 10)
 
