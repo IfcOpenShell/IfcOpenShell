@@ -223,8 +223,9 @@ class Usecase:
             )
 
     def snap(self, node: dict, date: datetime.datetime, date_type: str):
-        # A start moves to the next work instant of the node, a finish to the previous one.
-        if node.get("is_virtual"):
+        # A start moves to the next work instant of the node, a finish to the previous one. A milestone and the
+        # start and finish of the network do not move.
+        if node.get("is_virtual") or not node["duration"]:
             return date
         calendar, work_day = node["calendar"], node["work_day"]
         if node["duration_type"] == "ELAPSEDTIME":
