@@ -292,6 +292,34 @@ class TestSnapDate(test.bootstrap.IFC4):
         calendar = self.setup_calendar()
         assert subject.snap_date(at(SATURDAY, 10), "FINISH", calendar) == at(MONDAY + datetime.timedelta(days=4), 17)
 
+    def test_stopping_the_work_after_a_strict_limit(self):
+        calendar = self.setup_calendar()
+        assert subject.snap_date(at(SATURDAY, 10), "FINISH", calendar, is_strict=True) == at(
+            MONDAY + datetime.timedelta(days=7), 8
+        )
+
+    def test_starting_the_work_before_a_strict_limit(self):
+        calendar = self.setup_calendar()
+        assert subject.snap_date(at(SATURDAY, 10), "START", calendar, is_forward=False) == at(
+            MONDAY + datetime.timedelta(days=7), 8
+        )
+        result = subject.snap_date(at(SATURDAY, 10), "START", calendar, is_forward=False, is_strict=True)
+        assert result == at(MONDAY + datetime.timedelta(days=4), 17)
+
+    def test_keeping_a_strict_finish_at_the_start_of_a_work_period(self):
+        calendar = self.setup_calendar()
+        monday = at(MONDAY + datetime.timedelta(days=7), 8)
+        assert subject.snap_date(monday, "FINISH", calendar, is_forward=False) == at(
+            MONDAY + datetime.timedelta(days=4), 17
+        )
+        assert subject.snap_date(monday, "FINISH", calendar, is_forward=False, is_strict=True) == monday
+
+    def test_keeping_a_date_in_a_work_period(self):
+        calendar = self.setup_calendar()
+        for date_type in ("START", "FINISH"):
+            for is_forward in (True, False):
+                assert subject.snap_date(at(MONDAY, 10), date_type, calendar, is_forward=is_forward) == at(MONDAY, 10)
+
 
 class TestGetWorkDuration:
     def test_converting_work_hours_of_one_work_day_or_more_to_work_days(self):

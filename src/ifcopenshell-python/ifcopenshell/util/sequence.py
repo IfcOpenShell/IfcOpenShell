@@ -643,6 +643,8 @@ def snap_date(
     date_type: Literal["START", "FINISH"],
     calendar: Optional[ifcopenshell.entity_instance],
     work_day: datetime.timedelta = datetime.timedelta(hours=8),
+    is_forward: bool = True,
+    is_strict: bool = False,
 ) -> datetime.datetime:
     """Move a start or finish of a task in work time to a work instant
 
@@ -656,11 +658,28 @@ def snap_date(
     :param date_type: START or FINISH.
     :param calendar: The IfcWorkCalendar of the task, or None.
     :param work_day: The length of a work day of the task.
+    :param is_forward: True for the earliest date at or after the date
+        (forward pass). False for the latest date at or before the date
+        (backward pass).
+    :param is_strict: True if the instant itself is a limit, not only the
+        work instant: for example after a lag in elapsed time. Forward, a
+        finish then moves to the start of the next work period: the work stops
+        after that instant. Backward, a start out of the work periods moves to
+        the end of the previous work period, and a finish at the start of a
+        work period stays there.
     :return: The start or finish.
     """
+    start = get_work_start(date, calendar, work_day)
+    finish = get_work_finish(date, calendar, work_day)
     if date_type == "START":
-        return get_work_start(date, calendar, work_day)
-    return get_work_finish(date, calendar, work_day)
+        if is_forward or start == date or not is_strict:
+            return start
+        return finish
+    if finish == date:
+        return finish
+    if is_forward:
+        return start if is_strict else finish
+    return date if is_strict and start == date else finish
 
 
 def get_soonest_working_day(start, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance):

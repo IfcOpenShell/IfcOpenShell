@@ -150,6 +150,7 @@ class Usecase:
                 continue
             if not date:
                 continue
+            lag = datetime.timedelta()
             if rel.TimeLag:
                 # The lag is work time of the task (WORKTIME) or continuous time (ELAPSEDTIME).
                 lag = ifcopenshell.util.sequence.get_lag_time(rel.TimeLag, task, predecessor)
@@ -159,7 +160,11 @@ class Usecase:
             if rel.SequenceType in ("FINISH_START", "START_START"):
                 starts.append(self.snap(task, date, "START"))
             else:
-                finishes.append(self.snap(task, date, "FINISH"))
+                # A finish after a finish, or after a limit in continuous time, stops after that instant.
+                is_elapsed = rel.TimeLag and rel.TimeLag.DurationType == "ELAPSEDTIME" and lag
+                is_strict = rel.SequenceType == "FINISH_FINISH" or bool(is_elapsed)
+                is_strict = is_strict or self.get_time(task) != self.get_time(predecessor)
+                finishes.append(self.snap(task, date, "FINISH", is_strict))
 
         # A task of work days starts at the start of a working day and finishes at the end of a working day.
         calendar, work_day, duration_type = self.get_calendar(task), self.get_work_day(task), task.TaskTime.DurationType
@@ -249,10 +254,16 @@ class Usecase:
             return None
         return self.get_calendar(task), self.get_work_day(task)
 
-    def snap(self, task: ifcopenshell.entity_instance, date: datetime.datetime, date_type: str):
+    def get_time(self, task: ifcopenshell.entity_instance) -> tuple:
+        # The time of the task: its work periods, and if it is in elapsed time.
+        task_time = task.TaskTime
+        is_elapsed = not task_time or not task_time.ScheduleDuration or task_time.DurationType == "ELAPSEDTIME"
+        return self.get_calendar(task), self.get_work_day(task), is_elapsed
+
+    def snap(self, task: ifcopenshell.entity_instance, date: datetime.datetime, date_type: str, is_strict=False):
         if not (hours := self.get_work_hours(task)):
             return date
-        return ifcopenshell.util.sequence.snap_date(date, date_type, *hours)
+        return ifcopenshell.util.sequence.snap_date(date, date_type, *hours, is_strict=is_strict)
 
     def get_task_time_attribute(
         self, task: ifcopenshell.entity_instance, attribute: str

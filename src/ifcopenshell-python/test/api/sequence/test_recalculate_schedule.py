@@ -397,6 +397,16 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         assert task2.TaskTime.EarlyStart == "1999-12-31T17:00:00"
         assert task2.TaskTime.EarlyFinish == "2000-01-01T09:00:00"
 
+    def test_recalculating_a_finish_after_a_lag_in_elapsed_time(self):
+        self._add_work_schedule()
+        task = self._create_task("PT5H")
+        task2 = self._create_task("PT2H")
+        self._create_sequence(task, task2, "FINISH_FINISH", lag="PT16H", lag_type="ELAPSEDTIME")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        # 14:00 + 16 hours is 06:00, out of the work periods. The work stops after 06:00, not at 17:00 before.
+        assert task2.TaskTime.EarlyFinish == "2000-01-02T09:00:00"
+        assert task2.TaskTime.EarlyStart == "2000-01-01T15:00:00"
+
     def test_recalculating_a_lag_as_a_ratio_of_the_predecessor_duration(self):
         # Tasks of work hours: the lag gives an exact time. A task of work days would start at a day start.
         self._add_work_schedule()

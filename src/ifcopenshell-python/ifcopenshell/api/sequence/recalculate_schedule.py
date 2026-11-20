@@ -227,12 +227,22 @@ class Usecase:
         # work periods.
         return not node.get("is_virtual") and bool(node["duration"]) and node["duration_type"] != "ELAPSEDTIME"
 
-    def snap(self, node: dict, date: datetime.datetime, date_type: str):
+    def is_raw(self, edge: dict, node: dict, other: dict) -> bool:
+        # True if the instants of the link are limits, not only work instants: a lag in elapsed time, or tasks in
+        # different time (other work periods, or elapsed time).
+        if edge["lag_type"] == "ELAPSEDTIME" and edge["lag_time"]:
+            return True
+        times = [(n["calendar"], n["work_day"], n["duration_type"] == "ELAPSEDTIME") for n in (node, other)]
+        return times[0] != times[1]
+
+    def snap(self, node: dict, date: datetime.datetime, date_type: str, is_forward: bool, is_strict: bool):
         # Only a task in work time moves to a work instant. A milestone, a task in elapsed time and the start and
         # finish of the network have no work periods.
         if not self.is_work(node):
             return date
-        return ifcopenshell.util.sequence.snap_date(date, date_type, node["calendar"], node["work_day"])
+        return ifcopenshell.util.sequence.snap_date(
+            date, date_type, node["calendar"], node["work_day"], is_forward, is_strict
+        )
 
     def get_date(self, node: dict, date: datetime.datetime, date_type: str) -> datetime.datetime:
         # The finish of the node from its start, or the start from its finish.
@@ -252,12 +262,12 @@ class Usecase:
             finish, node["duration"], node["duration_type"], node["calendar"], node["work_day"], is_forward
         )
 
-    def offset_link(self, date, edge: dict, successor: dict, node: dict, date_type: str, is_forward: bool):
+    def offset_link(self, date, edge: dict, successor: dict, node: dict, date_type: str, is_forward, is_strict):
         # The lag is work time of the successor (WORKTIME) or continuous time (ELAPSEDTIME).
         date = ifcopenshell.util.sequence.offset_lag(
             date, edge["lag_time"], edge["lag_type"], successor["calendar"], successor["work_day"], is_forward
         )
-        date = self.snap(node, date, date_type)
+        date = self.snap(node, date, date_type, is_forward, is_strict)
         # A task of work days starts at the start of a working day and finishes at the end of a working day.
         return ifcopenshell.util.sequence.snap_task_date(
             date, date_type, node["duration"], node["duration_type"], node["calendar"], node["work_day"], is_forward
@@ -277,7 +287,9 @@ class Usecase:
                     return False
                 date_type = "START" if edge["type"] in ("FS", "SS") else "FINISH"
                 dates = starts if date_type == "START" else finishes
-                dates.append(self.offset_link(date, edge, data, data, date_type, True))
+                # A finish after a finish, or after a limit in continuous time, stops after that instant.
+                is_strict = edge["type"] == "FF" or self.is_raw(edge, data, predecessor_data)
+                dates.append(self.offset_link(date, edge, data, data, date_type, True, is_strict))
             start, finish = max(starts, default=None), max(finishes, default=None)
             if finish and (start is None or self.get_date(data, start, "FINISH") <= finish):
                 data["early_start"], data["early_finish"] = self.get_dates_from_finish(data, finish, True)
@@ -295,7 +307,18 @@ class Usecase:
         if date is None:
             return None
         date_type = "FINISH" if edge["type"] in ("FS", "FF") else "START"
-        return date_type, self.offset_link(date, edge, successor_data, data, date_type, False)
+        # A start before a limit in continuous time starts before that instant.
+        is_strict = date_type == "START" and self.is_raw(edge, data, successor_data)
+        if edge["type"] in ("FF", "SF") and self.is_work(successor_data):
+            # A finish at the end of a work period is the same work instant as the start of the next work period:
+            # the latest of the two applies. A finish at the start of a work period stops after that instant.
+            calendar, work_day = successor_data["calendar"], successor_data["work_day"]
+            start = ifcopenshell.util.sequence.get_work_start(date, calendar, work_day)
+            is_late = start == date and ifcopenshell.util.sequence.get_work_finish(date, calendar, work_day) != date
+            date, is_strict = start, is_strict or (date_type == "FINISH" and is_late)
+        elif edge["type"] in ("FF", "SF") and date_type == "FINISH":
+            is_strict = self.is_raw(edge, data, successor_data)
+        return date_type, self.offset_link(date, edge, successor_data, data, date_type, False, is_strict)
 
     def backward_pass(self, node) -> bool:
         data = self.g.nodes[node]
