@@ -180,9 +180,6 @@ class Usecase:
         predecessor_types = [
             rel.SequenceType for rel in ifcopenshell.util.sequence.get_sequence_assignment(task, "predecessor")
         ]
-        successor_types = [
-            rel.SequenceType for rel in ifcopenshell.util.sequence.get_sequence_assignment(task, "successor")
-        ]
 
         if not predecessor_types:
             self.edges.append(("start", task.id(), {"lag_time": None, "lag_type": "WORKTIME", "type": "FS"}))
@@ -197,8 +194,8 @@ class Usecase:
                     calendar,
                     work_day,
                 )
-        if not successor_types:
-            self.edges.append((task.id(), "finish", {"lag_time": None, "lag_type": "WORKTIME", "type": "FF"}))
+        # Each task finishes before the end of the project, also a task with successors.
+        self.edges.append((task.id(), "finish", {"lag_time": None, "lag_type": "WORKTIME", "type": "FF"}))
 
     def update_task_times(self) -> None:
         for ifc_definition_id in self.g.nodes:
