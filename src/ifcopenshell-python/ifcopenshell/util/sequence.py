@@ -412,24 +412,14 @@ def is_calendar_applicable(day, calendar: ifcopenshell.entity_instance) -> bool:
 
 
 def is_day_in_work_time(day, work_time: ifcopenshell.entity_instance) -> bool:
-    is_day_in_work_time = True
     if isinstance(day, datetime.datetime):
         day = datetime.date(day.year, day.month, day.day)
-    # 4 IfcWorktime Start
-    if start := work_time[4]:
-        start = ifcopenshell.util.date.ifc2datetime(start)
-        if day > start:
-            is_day_in_work_time = True
-        else:
-            is_day_in_work_time = False
-    # 5 IfcWorktime Finish
-    if finish := work_time[5]:
-        finish = ifcopenshell.util.date.ifc2datetime(finish)
-        if day < finish:
-            is_day_in_work_time = True
-        else:
-            is_day_in_work_time = False
-    return is_day_in_work_time
+    # 4 IfcWorktime Start (0:00) and 5 IfcWorktime Finish (24:00) are in the work time
+    if (start := work_time[4]) and day < ifcopenshell.util.date.ifc2datetime(start):
+        return False
+    if (finish := work_time[5]) and day > ifcopenshell.util.date.ifc2datetime(finish):
+        return False
+    return True
 
 
 def is_work_time_applicable_to_day(work_time: ifcopenshell.entity_instance, day) -> bool:

@@ -61,9 +61,8 @@ class TestGetWorkPeriods(test.bootstrap.IFC4):
 
 def add_exception(file, calendar, day, periods=None):
     work_time = ifcopenshell.api.sequence.add_work_time(file, work_calendar=calendar, time_type="ExceptionTimes")
-    day_before, day_after = (day + datetime.timedelta(days=i) for i in (-1, 1))
     ifcopenshell.api.sequence.edit_work_time(
-        file, work_time=work_time, attributes={"Start": day_before.isoformat(), "Finish": day_after.isoformat()}
+        file, work_time=work_time, attributes={"Start": day.isoformat(), "Finish": day.isoformat()}
     )
     if periods:
         pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(file, parent=work_time, recurrence_type="DAILY")
@@ -86,6 +85,18 @@ class TestExceptionTimes(test.bootstrap.IFC4):
         add_exception(self.file, calendar, thursday)
         assert subject.is_working_day(thursday, calendar) is False
         assert subject.get_work_periods(thursday, calendar) == []
+
+    def test_including_the_start_and_finish_dates_of_an_exception(self):
+        calendar = add_calendar(self.file)
+        tuesday, wednesday = (MONDAY + datetime.timedelta(days=i) for i in (1, 2))
+        work_time = ifcopenshell.api.sequence.add_work_time(
+            self.file, work_calendar=calendar, time_type="ExceptionTimes"
+        )
+        ifcopenshell.api.sequence.edit_work_time(
+            self.file, work_time=work_time, attributes={"Start": tuesday.isoformat(), "Finish": wednesday.isoformat()}
+        )
+        days = [MONDAY + datetime.timedelta(days=i) for i in range(4)]
+        assert [subject.is_working_day(day, calendar) for day in days] == [True, False, False, True]
 
 
 class TestGetWorkDayDuration(test.bootstrap.IFC4):
