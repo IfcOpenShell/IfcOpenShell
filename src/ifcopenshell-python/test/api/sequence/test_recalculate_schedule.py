@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+import random
 
 import pytest
 
@@ -24,6 +25,8 @@ import ifcopenshell.api.control
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.sequence
+import ifcopenshell.util.date
+import ifcopenshell.util.sequence
 import test.bootstrap
 
 
@@ -73,6 +76,7 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         assert task2.TaskTime.LateFinish == "2026-01-12T11:00:00"
         assert task2.TaskTime.TotalFloat == "PT4H"  # Friday 15:00 to 17:00 and Monday 09:00 to 11:00
         assert task2.TaskTime.FreeFloat == "PT4H"
+        assert task2.TaskTime.IsCritical is False
         assert task.TaskTime.TotalFloat == "P0D"
 
     def test_recalculating_for_a_single_task(self):
@@ -363,6 +367,35 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         assert task.TaskTime.LateStart == "2000-01-01T15:00:00"
         assert task.TaskTime.IsCritical is True
 
+    def test_recalculating_floats_of_sub_day_paths(self):
+        self._add_work_schedule()
+        task, task2, task3, task4 = (self._create_task(d) for d in ("P1D", "PT3H", "PT5H", "PT1H"))
+        for predecessor, successor in ((task, task2), (task, task3), (task2, task4), (task3, task4)):
+            self._create_sequence(predecessor, successor, "FINISH_START")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        assert task2.TaskTime.EarlyFinish == "2000-01-02T12:00:00"
+        assert task2.TaskTime.LateFinish == "2000-01-02T14:00:00"
+        assert task2.TaskTime.TotalFloat == "PT2H"
+        assert task2.TaskTime.FreeFloat == "PT2H"
+        assert task2.TaskTime.IsCritical is False
+        assert task3.TaskTime.TotalFloat == "P0D"
+        assert task3.TaskTime.IsCritical is True
+        assert task4.TaskTime.EarlyStart == "2000-01-02T14:00:00"
+        assert task4.TaskTime.IsCritical is True
+
+    def test_recalculating_a_free_float_smaller_than_the_total_float(self):
+        self._add_work_schedule()
+        task, task2, task3, task4, task5 = (self._create_task(d) for d in ("P1D", "PT2H", "PT2H", "P1D", "PT1H"))
+        links = ((task, task2), (task2, task3), (task, task4), (task3, task5), (task4, task5))
+        for predecessor, successor in links:
+            self._create_sequence(predecessor, successor, "FINISH_START")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        assert task2.TaskTime.TotalFloat == "PT4H"
+        assert task2.TaskTime.FreeFloat == "P0D"
+        assert task3.TaskTime.TotalFloat == "PT4H"
+        assert task3.TaskTime.FreeFloat == "PT4H"
+        assert task5.TaskTime.EarlyStart == "2000-01-03T09:00:00"
+
     def test_recalculating_a_task_with_successors_that_finishes_last(self):
         self._add_work_schedule()
         task = self._create_task("P2D")
@@ -381,6 +414,10 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         self._create_sequence(task, task2, "FINISH_START", lag="PT16H", lag_type="ELAPSEDTIME")
         ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task2.TaskTime.EarlyStart == "2000-01-02T09:00:00"  # 14:00 + 16 hours is 06:00
+        assert task.TaskTime.LateFinish == "2000-01-01T17:00:00"  # 09:00 - 16 hours
+        assert task.TaskTime.TotalFloat == "PT3H"
+        assert task.TaskTime.FreeFloat == "PT3H"
+        assert task.TaskTime.IsCritical is False
 
     def test_recalculating_a_task_in_elapsed_time(self):
         self._add_work_schedule()
@@ -521,6 +558,19 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         assert task.TaskTime.EarlyStart == "2000-01-02T09:00:00"
         assert task.TaskTime.EarlyFinish == "2000-01-02T17:00:00"
 
+    def test_recalculating_a_milestone_after_a_lag(self):
+        self._add_work_schedule()
+        task = self._create_task("P1D")
+        task2 = self._create_task("P0D")
+        task3 = self._create_task("P0D")
+        self._create_sequence(task, task2, "START_START")
+        self._create_sequence(task, task3, "FINISH_START", lag="PT2H")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        assert task2.TaskTime.EarlyStart == task2.TaskTime.EarlyFinish == "2000-01-01T09:00:00"
+        assert task3.TaskTime.EarlyStart == task3.TaskTime.EarlyFinish == "2000-01-02T11:00:00"
+        assert task3.TaskTime.IsCritical is True
+        assert task2.TaskTime.TotalFloat == "P1DT2H"
+
     def test_recalculating_start_to_finish_with_a_sub_day_lag(self):
         self._add_work_schedule()
         task = self._create_task("P1D")
@@ -597,6 +647,114 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
             self.file, relating_process=predecessor, related_process=successor
         )
         ifcopenshell.api.sequence.edit_sequence(self.file, rel_sequence=rel, attributes={"SequenceType": relationship})
+        if isinstance(lag, float):  # An IfcRatioMeasure
+            value = self.file.createIfcRatioMeasure(lag)
+            rel.TimeLag = self.file.createIfcLagTime(DurationType=lag_type, LagValue=value)
+        elif lag:
+            ifcopenshell.api.sequence.assign_lag_time(
+                self.file, rel_sequence=rel, lag_value=lag, duration_type=lag_type
+            )
+
+
+class TestRecalculateScheduleNetworks(test.bootstrap.IFC4):
+    # Random networks of tasks. Each result must obey the rules of the critical path method.
+    durations = [("P0D", "WORKTIME"), ("PT3H", "WORKTIME"), ("P1D", "WORKTIME"), ("P1DT4H", "WORKTIME")]
+    durations += [("PT45M", "WORKTIME"), ("P3D", "ELAPSEDTIME"), ("PT16H", "ELAPSEDTIME"), (None, None)]
+    types = ["FINISH_START", "FINISH_START", "START_START", "FINISH_FINISH", "START_FINISH"]
+    lags = [None, None, ("P1D", "WORKTIME"), ("PT2H", "WORKTIME"), ("-PT2H", "WORKTIME"), ("-P1D", "WORKTIME")]
+    lags += [("PT16H", "ELAPSEDTIME"), (0.5, "WORKTIME"), ("PT30M", "WORKTIME")]
+
+    @pytest.mark.parametrize("seed", range(80))
+    def test_recalculating_a_network(self, seed):
+        rng = random.Random(seed)
+        tasks = self.create_network(rng)
+        for task in tasks:  # Each predecessor comes first
+            ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        schedule = {t: (t.TaskTime.ScheduleStart, t.TaskTime.ScheduleFinish) for t in tasks}
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        zero = datetime.timedelta()
+        for task in tasks:
+            time = task.TaskTime
+            assert schedule[task] == (time.EarlyStart, time.EarlyFinish)
+            calendar = ifcopenshell.util.sequence.derive_calendar(task)
+            work_day = ifcopenshell.util.sequence.get_work_day_duration(task, calendar)
+            duration_type = time.DurationType if time.ScheduleDuration else "ELAPSEDTIME"
+            duration = datetime.timedelta()
+            if time.ScheduleDuration:
+                duration = ifcopenshell.util.sequence.get_work_duration(time.ScheduleDuration, duration_type, work_day)
+            start, finish, late_start, late_finish = (
+                ifcopenshell.util.date.ifc2datetime(d)
+                for d in (time.EarlyStart, time.EarlyFinish, time.LateStart, time.LateFinish)
+            )
+            for start, finish in ((start, finish), (late_start, late_finish)):
+                expected = ifcopenshell.util.sequence.get_start_or_finish_date(
+                    start, duration, duration_type, calendar, "FINISH", work_day
+                )
+                if duration_type != "ELAPSEDTIME":  # The same work instant
+                    assert not ifcopenshell.util.sequence.get_work_time(expected, finish, calendar, work_day)
+                else:
+                    assert expected == finish
+            total_float = ifcopenshell.util.date.parse_duration(time.TotalFloat)
+            free_float = ifcopenshell.util.date.parse_duration(time.FreeFloat)
+            assert zero <= free_float <= total_float
+            assert time.IsCritical is (total_float == zero)
+        last = max(ifcopenshell.util.date.ifc2datetime(t.TaskTime.EarlyFinish) for t in tasks)
+        for task in tasks:
+            if ifcopenshell.util.date.ifc2datetime(task.TaskTime.EarlyFinish) == last:
+                assert task.TaskTime.IsCritical is True
+
+    def create_network(self, rng):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        self.work_schedule = ifcopenshell.api.sequence.add_work_schedule(self.file)
+        calendars = []
+        if rng.random() < 0.5:
+            calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
+            work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar)
+            pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(self.file, parent=work_time)
+            ifcopenshell.api.sequence.edit_recurrence_pattern(
+                self.file, recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]}
+            )
+            for start, end in (("08:00:00", "12:00:00"), ("13:00:00", "17:00:00")):
+                ifcopenshell.api.sequence.add_time_period(
+                    self.file, recurrence_pattern=pattern, start_time=start, end_time=end
+                )
+            exception = ifcopenshell.api.sequence.add_work_time(
+                self.file, work_calendar=calendar, time_type="ExceptionTimes"
+            )
+            ifcopenshell.api.sequence.edit_work_time(
+                self.file, work_time=exception, attributes={"Start": "2026-01-14", "Finish": "2026-01-14"}
+            )
+            calendars.append(calendar)
+        elif rng.random() < 0.5:
+            pset = ifcopenshell.api.pset.add_pset(self.file, product=self.work_schedule, name="Pset_WorkControlCommon")
+            ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"WorkDayDuration": "PT10H"})
+        tasks = []
+        for i in range(rng.randint(2, 7)):
+            task = ifcopenshell.api.sequence.add_task(self.file, work_schedule=self.work_schedule)
+            if calendars:
+                ifcopenshell.api.control.assign_control(
+                    self.file, relating_control=calendars[0], related_objects=[task]
+                )
+            duration, duration_type = rng.choice(self.durations)
+            if i == 0 and not duration:
+                duration, duration_type = "P1D", "WORKTIME"
+            attributes = {"ScheduleDuration": duration, "DurationType": duration_type}
+            if i == 0:
+                attributes["ScheduleStart"] = rng.choice(["2026-01-05T08:00:00", "2026-01-09T14:30:00"])
+            task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+            ifcopenshell.api.sequence.edit_task_time(
+                self.file, task_time=task_time, attributes={k: v for k, v in attributes.items() if v}
+            )
+            for predecessor in rng.sample(tasks, k=min(len(tasks), rng.choice([1, 1, 2]))):
+                lag = rng.choice(self.lags)
+                self.create_sequence(predecessor, task, rng.choice(self.types), *(lag or (None,)))
+            tasks.append(task)
+        return tasks
+
+    def create_sequence(self, predecessor, successor, relationship, lag=None, lag_type="WORKTIME"):
+        rel = ifcopenshell.api.sequence.assign_sequence(
+            self.file, relating_process=predecessor, related_process=successor, sequence_type=relationship
+        )
         if isinstance(lag, float):  # An IfcRatioMeasure
             value = self.file.createIfcRatioMeasure(lag)
             rel.TimeLag = self.file.createIfcLagTime(DurationType=lag_type, LagValue=value)
