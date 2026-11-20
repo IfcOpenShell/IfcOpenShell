@@ -1139,3 +1139,39 @@ class TestIsDrawingActive(NewFile):
         # addresses, so this assertion documents that assumption.
         assert bpy.app.background is True
         assert subject.is_drawing_active() is True
+
+
+class TestRegenerateStoreyAnnotation(NewFile):
+    def test_preserves_endpoint_order_when_storey_height_changes(self):
+        import ifcopenshell.api.geometry
+        import ifcopenshell.api.project
+        import ifcopenshell.api.unit
+        import ifcopenshell.util.representation
+
+        ifc = ifcopenshell.api.project.create_file()
+        ifcopenshell.api.unit.assign_unit(ifc)
+        tool.Ifc.set(ifc)
+        context = ifcopenshell.util.representation.get_context(ifc, "Plan", "Annotation")
+        cam_matrix = mathutils.Matrix.Rotation(math.pi / 2, 4, "X")
+        camera_obj = subject.create_camera("Elevation", cam_matrix, "ORTHO", "ELEVATION_VIEW")
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        tool.Ifc.link(drawing, camera_obj)
+
+        storey = ifc.createIfcBuildingStorey(Name="Level 1")
+        ifcopenshell.api.geometry.edit_object_placement(ifc, product=storey)
+
+        annotation = subject.generate_storey_annotation(drawing, storey, context)
+        # Flip endpoint order so the level mark sits on the opposite side.
+        rep = ifcopenshell.util.representation.get_representation(annotation, context)
+        rep.Items[0].Points.CoordList = [(-2.0, 0.0, 0.0), (2.0, 0.0, 0.0)]
+
+        # Change storey elevation (Z -> Y in elevation view).
+        mat = mathutils.Matrix.Translation((0.0, 0.0, 1.5))
+        ifcopenshell.api.geometry.edit_object_placement(ifc, product=storey, matrix=mat)
+
+        subject.regenerate_storey_annotation(drawing, annotation, storey, context)
+        updated_rep = ifcopenshell.util.representation.get_representation(annotation, context)
+        coords = updated_rep.Items[0].Points.CoordList
+        assert coords[0][0] < coords[1][0]
+        assert pytest.approx(coords[0][1]) == 1.5
+        assert pytest.approx(coords[1][1]) == 1.5
