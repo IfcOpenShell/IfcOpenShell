@@ -384,7 +384,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
         expr: (ADD | SUB | MUL | DIV) dim
 
-        NUMBER: /-?\\d+(?:\\.\\d+)?/
+        NUMBER: /-?\\d+(?:[.,]\\d+)?/
         ADD: "+"
         SUB: "-"
         MUL: "*"
@@ -395,7 +395,8 @@ class Polyline(bonsai.core.tool.Polyline):
 
         class InputTransform(Transformer):
             def NUMBER(self, n):
-                return float(n)
+                # Accept a comma as the decimal separator (#8262).
+                return float(n.replace(",", "."))
 
             def fraction(self, numbers):
                 return numbers[0] / numbers[1]
