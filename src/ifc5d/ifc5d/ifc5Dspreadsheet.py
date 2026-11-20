@@ -407,7 +407,7 @@ class Ifc5Dwriter:
         return "={}*{}".format(cell1, cell2)
 
     def sum_cells(self, list_of_cells):
-        return "=SUM({})".format(",".join(list_of_cells))
+        return "=SUM({})".format(",".join(cell.upper() for cell in list_of_cells))
 
     def get_visible_headers(self, schedule_id: int) -> list[str]:
         """Internal column keys shown in presentation formats, in panel order."""
