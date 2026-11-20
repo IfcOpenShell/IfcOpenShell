@@ -233,7 +233,7 @@ class Usecase:
     def get_date(self, node: dict, date: datetime.datetime, date_type: str) -> datetime.datetime:
         # The finish of the node from its start, or the start from its finish.
         return ifcopenshell.util.sequence.get_start_or_finish_date(
-            date, node["duration"], node["duration_type"], node["calendar"], date_type
+            date, node["duration"], node["duration_type"], node["calendar"], date_type, node["work_day"]
         )
 
     def offset_link(self, date, edge: dict, nodes: tuple, date_type: str, is_forward: bool):

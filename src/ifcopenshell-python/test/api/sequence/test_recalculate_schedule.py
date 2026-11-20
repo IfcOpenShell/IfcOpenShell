@@ -21,6 +21,7 @@ import datetime
 import pytest
 
 import ifcopenshell.api.control
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.sequence
 import test.bootstrap
@@ -344,6 +345,18 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task2.TaskTime.EarlyStart == "2000-01-02T13:00:00"
         assert task2.TaskTime.EarlyFinish == "2000-01-03T13:00:00"
+
+    def test_recalculating_with_the_work_day_duration_of_the_schedule(self):
+        self._add_work_schedule()
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=self.work_schedule, name="Pset_WorkControlCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"WorkDayDuration": "PT10H"})
+        task = self._create_task("P1D")
+        task2 = self._create_task("P1D")
+        self._create_sequence(task, task2, "FINISH_START")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        assert task.TaskTime.EarlyFinish == "2000-01-01T19:00:00"
+        assert task2.TaskTime.EarlyStart == "2000-01-02T09:00:00"
+        assert task2.TaskTime.EarlyFinish == "2000-01-02T19:00:00"
 
     def _add_work_schedule(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
