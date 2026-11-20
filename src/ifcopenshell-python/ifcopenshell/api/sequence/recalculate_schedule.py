@@ -115,8 +115,17 @@ class Usecase:
         self.g = nx.DiGraph()
         self.edges = []
         no_time, eight_hours = datetime.timedelta(), datetime.timedelta(hours=8)
-        self.g.add_node("start", duration=no_time, duration_type="ELAPSEDTIME", calendar=None, work_day=eight_hours)
-        self.g.add_node("finish", duration=no_time, duration_type="ELAPSEDTIME", calendar=None, work_day=eight_hours)
+        self.g.add_node(
+            "start", duration=no_time, duration_type="ELAPSEDTIME", calendar=None, work_day=eight_hours, is_virtual=True
+        )
+        self.g.add_node(
+            "finish",
+            duration=no_time,
+            duration_type="ELAPSEDTIME",
+            calendar=None,
+            work_day=eight_hours,
+            is_virtual=True,
+        )
         for rel in self.work_schedule.Controls:
             for related_object in rel.RelatedObjects:
                 if not related_object.is_a("IfcTask"):
@@ -162,6 +171,7 @@ class Usecase:
                                 rel.TimeLag.LagValue.wrappedValue, rel.TimeLag.DurationType, work_day
                             )
                         ),
+                        "lag_type": rel.TimeLag.DurationType if rel.TimeLag else "WORKTIME",
                         "type": self.sequence_type_map[rel.SequenceType],
                     },
                 )
@@ -177,14 +187,18 @@ class Usecase:
         ]
 
         if not predecessor_types:
-            self.edges.append(("start", task.id(), {"lag_time": 0, "type": "FS"}))
+            self.edges.append(
+                ("start", task.id(), {"lag_time": datetime.timedelta(), "lag_type": "WORKTIME", "type": "FS"})
+            )
             if task.TaskTime and task.TaskTime.ScheduleStart:
                 self.start_dates.append(ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleStart))
                 self.g.nodes[task.id()]["early_start"] = ifcopenshell.util.date.ifc2datetime(
                     task.TaskTime.ScheduleStart
                 )  # we assume this task is constrained to start on this date
         if not successor_types:
-            self.edges.append((task.id(), "finish", {"lag_time": 0, "type": "FF"}))
+            self.edges.append(
+                (task.id(), "finish", {"lag_time": datetime.timedelta(), "lag_type": "WORKTIME", "type": "FF"})
+            )
 
     def update_task_times(self) -> None:
         for ifc_definition_id in self.g.nodes:
@@ -198,9 +212,9 @@ class Usecase:
                 self.file,
                 task_time=task.TaskTime,
                 attributes={
-                    "FreeFloat": ifcopenshell.util.date.datetime2ifc(data["free_float"], "IfcDuration"),
-                    "TotalFloat": ifcopenshell.util.date.datetime2ifc(data["total_float"], "IfcDuration"),
-                    "IsCritical": data["total_float"].days == 0,
+                    "FreeFloat": data["free_float"],
+                    "TotalFloat": data["total_float"],
+                    "IsCritical": ifcopenshell.util.date.parse_duration(data["total_float"]).days == 0,
                     "EarlyStart": ifcopenshell.util.date.datetime2ifc(data["early_start"], "IfcDateTime"),
                     "EarlyFinish": ifcopenshell.util.date.datetime2ifc(data["early_finish"], "IfcDateTime"),
                     "LateStart": ifcopenshell.util.date.datetime2ifc(data["late_start"], "IfcDateTime"),
@@ -208,282 +222,108 @@ class Usecase:
                 },
             )
 
-    def offset_date(self, date: datetime.datetime, duration: datetime.timedelta, node: dict) -> datetime.datetime:
-        return ifcopenshell.util.sequence.offset_date(
-            date, duration or datetime.timedelta(), node["duration_type"], node["calendar"], node["work_day"]
-        )
-
-    def snap_task_date(self, node: dict, date: datetime.datetime, date_type: str, is_forward: bool):
-        # A task of work days starts at the start of a working day and finishes at the end of a working day.
-        return ifcopenshell.util.sequence.snap_task_date(
-            date, date_type, node["duration"], node["duration_type"], node["calendar"], node["work_day"], is_forward
-        )
-
-    def get_work_hours(self, node: dict) -> tuple[Optional[ifcopenshell.entity_instance], datetime.timedelta]:
-        # The calendar and the work day that give the work periods of the node.
+    def snap(self, node: dict, date: datetime.datetime, date_type: str):
+        # A start moves to the next work instant of the node, a finish to the previous one.
+        if node.get("is_virtual"):
+            return date
+        calendar, work_day = node["calendar"], node["work_day"]
         if node["duration_type"] == "ELAPSEDTIME":
-            return None, datetime.timedelta(hours=8)  # 09:00 to 17:00, as before
-        return node["calendar"], node["work_day"]
+            calendar, work_day = None, datetime.timedelta(hours=8)  # 09:00 to 17:00, as before
+        snap = (
+            ifcopenshell.util.sequence.get_work_start
+            if date_type == "START"
+            else ifcopenshell.util.sequence.get_work_finish
+        )
+        return snap(date, calendar, work_day)
+
+    def get_date(self, node: dict, date: datetime.datetime, date_type: str) -> datetime.datetime:
+        # The finish of the node from its start, or the start from its finish.
+        return ifcopenshell.util.sequence.get_start_or_finish_date(
+            date, node["duration"], node["duration_type"], node["calendar"], date_type
+        )
+
+    def offset_link(self, date, edge: dict, nodes: tuple, date_type: str, is_forward: bool):
+        # The lag is offset in the time of each task. The latest result applies (the earliest, back).
+        results = []
+        for node in nodes:
+            result = date
+            if edge["lag_time"]:
+                lag = edge["lag_time"] if is_forward else -edge["lag_time"]
+                result = ifcopenshell.util.sequence.offset_date(
+                    date, lag, node["duration_type"], node["calendar"], node["work_day"]
+                )
+            results.append(self.snap(node, result, date_type) if edge["type"] in ("FS", "SF") else result)
+        return max(results) if is_forward else min(results)
 
     def forward_pass(self, node) -> bool:
-        successors = self.g.successors(node)
-        predecessors = list(self.g.predecessors(node))
         data = self.g.nodes[node]
-
         if node == "start":
             data["early_start"] = min(self.start_dates)
-        else:
-            finishes = []
-            starts = []
-            if data.get("early_start") is not None:
-                data["early_start"] = self.snap_task_date(data, data["early_start"], "START", True)
-                data["early_finish"] = ifcopenshell.util.sequence.get_start_or_finish_date(
-                    data["early_start"],
-                    data["duration"],
-                    data["duration_type"],
-                    data["calendar"],
-                    date_type="FINISH",
-                )
-                return True  # we're done! We assume this task is constrained and finish processing it
-
-            for predecessor in predecessors:
+        elif data.get("early_start") is None:  # A task without predecessors keeps its start
+            starts, finishes = [], []
+            for predecessor in self.g.predecessors(node):
                 predecessor_data = self.g.nodes[predecessor]
                 edge = self.g[predecessor][node]
-                if edge["type"] == "FS":
-                    finish = predecessor_data.get("early_finish")
-                    if finish is None:
-                        return
-                    for node_data in (data, predecessor_data):
-                        date = self.offset_date(finish, edge["lag_time"], node_data)
-                        starts.append(ifcopenshell.util.sequence.get_work_start(date, *self.get_work_hours(node_data)))
-                elif edge["type"] == "SS":
-                    start = predecessor_data.get("early_start")
-                    if start is None:
-                        return
-                    if edge["lag_time"]:
-                        starts.append(self.offset_date(start, edge["lag_time"], data))
-                        starts.append(self.offset_date(start, edge["lag_time"], predecessor_data))
-                    else:
-                        starts.append(start)
-                elif edge["type"] == "FF":
-                    finish = predecessor_data.get("early_finish")
-                    if finish is None:
-                        return
-                    if edge["lag_time"]:
-                        finishes.append(self.offset_date(finish, edge["lag_time"], data))
-                        finishes.append(self.offset_date(finish, edge["lag_time"], predecessor_data))
-                    else:
-                        finishes.append(finish)
-                elif edge["type"] == "SF":
-                    start = predecessor_data.get("early_start")
-                    if start is None:
-                        return
-                    for node_data in (data, predecessor_data):
-                        date = self.offset_date(start, edge["lag_time"], node_data)
-                        finishes.append(
-                            ifcopenshell.util.sequence.get_work_finish(date, *self.get_work_hours(node_data))
-                        )
-            starts = [self.snap_task_date(data, d, "START", True) for d in starts]
-            finishes = [self.snap_task_date(data, d, "FINISH", True) for d in finishes]
-            if starts and finishes:
-                data["early_start"] = max(starts)
-                data["early_finish"] = max(finishes)
-                potential_finish = ifcopenshell.util.sequence.get_start_or_finish_date(
-                    data["early_start"],
-                    data["duration"],
-                    data["duration_type"],
-                    data["calendar"],
-                    date_type="FINISH",
-                )
-                if potential_finish > data["early_finish"]:
-                    data["early_finish"] = potential_finish
-                else:
-                    data["early_start"], data["early_finish"] = ifcopenshell.util.sequence.get_task_dates_from_finish(
-                        data["early_finish"], data["duration"], data["duration_type"], data["calendar"]
-                    )
-            elif finishes:
-                data["early_finish"] = max(finishes)
-            elif starts:
-                data["early_start"] = max(starts)
-            else:
-                print("How did this happen?")
-
-        if data.get("early_finish") is None:
-            data["early_finish"] = ifcopenshell.util.sequence.get_start_or_finish_date(
-                data["early_start"],
-                data["duration"],
-                data["duration_type"],
-                data["calendar"],
-                date_type="FINISH",
-            )
-        elif data.get("early_start") is None:
-            data["early_start"], data["early_finish"] = ifcopenshell.util.sequence.get_task_dates_from_finish(
-                data["early_finish"], data["duration"], data["duration_type"], data["calendar"]
-            )
-
+                date = predecessor_data.get("early_finish" if edge["type"] in ("FS", "FF") else "early_start")
+                if date is None:
+                    return False
+                date_type = "START" if edge["type"] in ("FS", "SS") else "FINISH"
+                dates = starts if date_type == "START" else finishes
+                dates.append(self.offset_link(date, edge, (data, predecessor_data), date_type, True))
+            start, finish = max(starts, default=None), max(finishes, default=None)
+            if finish and (start is None or self.get_date(data, start, "FINISH") <= finish):
+                data["early_start"], data["early_finish"] = self.get_date(data, finish, "START"), finish
+                return True
+            data["early_start"] = start
+        data["early_finish"] = self.get_date(data, data["early_start"], "FINISH")
         return True
+
+    def get_successor_limits(self, node, successor, is_early: bool) -> Optional[tuple[str, datetime.datetime]]:
+        # The latest start or finish of the node that keeps the early (or late) dates of the successor.
+        data, successor_data, edge = self.g.nodes[node], self.g.nodes[successor], self.g[node][successor]
+        date = successor_data.get(
+            ("early_" if is_early else "late_") + ("start" if edge["type"] in ("FS", "SS") else "finish")
+        )
+        if date is None:
+            return None
+        date_type = "FINISH" if edge["type"] in ("FS", "FF") else "START"
+        return date_type, self.offset_link(date, edge, (data, successor_data), date_type, False)
 
     def backward_pass(self, node) -> bool:
-        successors = list(self.g.successors(node))
-        predecessors = self.g.predecessors(node)
         data = self.g.nodes[node]
-        free_floats = []
-
         if node == "finish":
-            data["late_finish"] = data["early_finish"]
+            data["late_start"] = data["late_finish"] = data["early_finish"]
+            return True
+        limits = [self.get_successor_limits(node, successor, False) for successor in self.g.successors(node)]
+        if None in limits:
+            return False
+        start = min((date for date_type, date in limits if date_type == "START"), default=None)
+        finish = min((date for date_type, date in limits if date_type == "FINISH"), default=None)
+        if start and (finish is None or self.get_date(data, start, "FINISH") < finish):
+            data["late_start"], data["late_finish"] = start, self.get_date(data, start, "FINISH")
         else:
-            finishes = []
-            starts = []
-            for successor in successors:
-                successor_data = self.g.nodes[successor]
-                edge = self.g[node][successor]
-                if edge["type"] == "FS":
-                    start = successor_data.get("late_start")
-                    if start is None:
-                        return
-                    for node_data in (data, successor_data):
-                        date = self.offset_date(start, -(edge["lag_time"] or datetime.timedelta()), node_data)
-                        finishes.append(
-                            ifcopenshell.util.sequence.get_work_finish(date, *self.get_work_hours(node_data))
-                        )
-                    free_floats.append(
-                        self.calculate_free_float(
-                            data["early_finish"].date() + datetime.timedelta(days=1),
-                            successor_data["early_start"].date(),
-                            edge["lag_time"],
-                            data,
-                            successor_data,
-                        )
-                    )
-                elif edge["type"] == "SS":
-                    start = successor_data.get("late_start")
-                    if start is None:
-                        return
-                    if edge["lag_time"]:
-                        starts.append(self.offset_date(start, -edge["lag_time"], data))
-                        starts.append(self.offset_date(start, -edge["lag_time"], successor_data))
-                    else:
-                        starts.append(start)
-                    free_floats.append(
-                        self.calculate_free_float(
-                            data["early_start"],
-                            successor_data["early_start"],
-                            edge["lag_time"],
-                            data,
-                            successor_data,
-                        )
-                    )
-                elif edge["type"] == "FF":
-                    finish = successor_data.get("late_finish")
-                    if finish is None:
-                        return
-                    if edge["lag_time"]:
-                        finishes.append(self.offset_date(finish, -edge["lag_time"], data))
-                        finishes.append(self.offset_date(finish, -edge["lag_time"], successor_data))
-                    else:
-                        finishes.append(finish)
-                    free_floats.append(
-                        self.calculate_free_float(
-                            data["early_finish"],
-                            successor_data["early_finish"],
-                            edge["lag_time"],
-                            data,
-                            successor_data,
-                        )
-                    )
-                elif edge["type"] == "SF":
-                    finish = successor_data.get("late_finish")
-                    if finish is None:
-                        return
-                    for node_data in (data, successor_data):
-                        date = self.offset_date(finish, -(edge["lag_time"] or datetime.timedelta()), node_data)
-                        starts.append(ifcopenshell.util.sequence.get_work_start(date, *self.get_work_hours(node_data)))
-                    free_floats.append(
-                        self.calculate_free_float(
-                            data["early_start"],
-                            successor_data["early_finish"],
-                            edge["lag_time"],
-                            data,
-                            successor_data,
-                        )
-                    )
-            starts = [self.snap_task_date(data, d, "START", False) for d in starts]
-            finishes = [self.snap_task_date(data, d, "FINISH", False) for d in finishes]
-            if starts and finishes:
-                data["late_start"] = min(starts)
-                data["late_finish"] = min(finishes)
-                if self.offset_date(data["late_start"], data["duration"], data) < data["late_finish"]:
-                    data["late_finish"] = ifcopenshell.util.sequence.get_start_or_finish_date(
-                        data["late_start"],
-                        data["duration"],
-                        data["duration_type"],
-                        data["calendar"],
-                        date_type="FINISH",
-                    )
-                else:
-                    data["late_start"], data["late_finish"] = ifcopenshell.util.sequence.get_task_dates_from_finish(
-                        data["late_finish"], data["duration"], data["duration_type"], data["calendar"], is_forward=False
-                    )
-            elif finishes:
-                data["late_finish"] = min(finishes)
-            elif starts:
-                data["late_start"] = min(starts)
-            else:
-                print("How did this happen?")
+            data["late_start"], data["late_finish"] = self.get_date(data, finish, "START"), finish
 
-        if data.get("late_finish") is None:
-            data["late_finish"] = ifcopenshell.util.sequence.get_start_or_finish_date(
-                data["late_start"],
-                data["duration"],
-                data["duration_type"],
-                data["calendar"],
-                date_type="FINISH",
-            )
-        elif data.get("late_start") is None:
-            data["late_start"], data["late_finish"] = ifcopenshell.util.sequence.get_task_dates_from_finish(
-                data["late_finish"], data["duration"], data["duration_type"], data["calendar"], is_forward=False
-            )
-
-        if data["duration_type"] == "WORKTIME":
-            data["total_float"] = datetime.timedelta(
-                days=ifcopenshell.util.sequence.count_working_days(
-                    data["early_finish"], data["late_finish"], data["calendar"]
-                )
-            )
-        else:
-            data["total_float"] = data["late_finish"] - data["early_finish"]
-            # If the float is within the span of a single day, it may show as a 8 hours
-            if data["total_float"].seconds == 60 * 60 * 8:
-                data["total_float"] = datetime.timedelta(days=data["total_float"].days + 1)
-
-        data["free_float"] = min(free_floats) if free_floats else None
-        # If the float is within the span of a single day, it may show as a 8 hours
-        if data["free_float"] and data["free_float"].seconds == 60 * 60 * 8:
-            data["free_float"] = datetime.timedelta(days=data["free_float"].days + 1)
-
+        data["total_float"] = self.get_float(data, data["late_finish"])
+        early_limits = [self.get_successor_limits(node, successor, True) for successor in self.g.successors(node)]
+        data["free_float"] = self.get_float(
+            data,
+            min(
+                date if date_type == "FINISH" else self.get_date(data, date, "FINISH")
+                for date_type, date in early_limits
+            ),
+        )
         return True
 
-    def calculate_free_float(
-        self,
-        predecessor_date: datetime.datetime,
-        successor_date: datetime.datetime,
-        lag_time: datetime.timedelta,
-        predecessor_data: dict,
-        successor_data: dict,
-    ) -> datetime.timedelta:
-        if not lag_time:
-            min_successor_date = successor_date
-        else:
-            min_successor_date = min(
-                (
-                    self.offset_date(successor_date, -lag_time, predecessor_data),
-                    self.offset_date(successor_date, -lag_time, successor_data),
-                )
-            )
-        if predecessor_data["duration_type"] == "WORKTIME":
-            return datetime.timedelta(
-                days=ifcopenshell.util.sequence.count_working_days(
-                    predecessor_date, min_successor_date, predecessor_data["calendar"]
-                )
-            )
-        return min_successor_date - predecessor_date
+    def get_float(self, data: dict, finish: datetime.datetime) -> str:
+        # A float is work time in the calendar of the task, as in P6 and MS Project: the work days and work hours
+        # from the early finish to the finish (see get_work_duration_between). Thus 17:00 and 09:00 the next day
+        # give no float. A task in elapsed time has a float in elapsed time.
+        early_finish = data["early_finish"]
+        if data["duration_type"] == "ELAPSEDTIME" and data["duration"]:
+            return ifcopenshell.util.date.datetime2ifc(finish - early_finish, "IfcDuration")
+        calendar, work_day = data["calendar"], data["work_day"]
+        start, end = sorted((early_finish, finish))
+        start = ifcopenshell.util.sequence.get_work_start(start, calendar, work_day)
+        work = ifcopenshell.util.sequence.get_work_duration_between(start, max(start, end), calendar, work_day)
+        return "-" + work if finish < early_finish and work != "P0D" else work
