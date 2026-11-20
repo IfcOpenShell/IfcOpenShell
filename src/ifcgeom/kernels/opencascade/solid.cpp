@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "opencascade_kernel.h"
+#include "boolean_utils.h"
 
 #include <BRepPrimAPI_MakeHalfSpace.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
@@ -141,7 +142,7 @@ bool open_cascade_kernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape
                 builder.Add(compound, faces);
             }
         }
-        result = compound;
+        result = util::ensure_fit_for_subtraction(compound, settings_.get<settings::Precision>().get());
     }
     return true;
 }

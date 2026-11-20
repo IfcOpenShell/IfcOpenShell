@@ -7,9 +7,8 @@ import ifcopenshell.geom
 import ifcopenshell.util.shape
 
 
-def build_brep_with_void(schema, ifc_class):
-    """Build the boxes from issue #10249 with advanced or faceted faces."""
-    # Keep the reported loop orientations and SameSense values, including their inconsistencies.
+def build_brep_with_void(schema, ifc_class, voids_inwards=True):
+    """Build boxes with either inward or outward cavity normals from issue #10249."""
     model = ifcopenshell.file(schema=schema)
 
     def point(coords):
@@ -18,7 +17,7 @@ def build_brep_with_void(schema, ifc_class):
     def direction(coords):
         return model.createIfcDirection([float(c) for c in coords])
 
-    def box(lower, upper):
+    def box(lower, upper, void=False):
         vertices = {}
         edges = {}
 
@@ -62,6 +61,10 @@ def build_brep_with_void(schema, ifc_class):
                     index[other_axes[0]] = p
                     index[other_axes[1]] = q
                     corners.append(tuple(index))
+                # Keep each shell consistent, while varying the cavity's normal direction.
+                positive_normal = (side == 1) != void
+                if positive_normal != (axis != 1):
+                    corners.reverse()
                 if ifc_class == "IfcFacetedBrepWithVoids":
                     loop = model.createIfcPolyLoop([vertex(corner).VertexGeometry for corner in corners])
                     bound = model.createIfcFaceOuterBound(loop, True)
@@ -74,20 +77,65 @@ def build_brep_with_void(schema, ifc_class):
                 bound = model.createIfcFaceOuterBound(model.createIfcEdgeLoop(oriented_edges), True)
                 origin, normal, x_axis = planes[axis, side]
                 placement = model.createIfcAxis2Placement3D(point(origin), direction(normal), direction(x_axis))
-                faces.append(model.createIfcAdvancedFace([bound], model.createIfcPlane(placement), True))
+                faces.append(model.createIfcAdvancedFace([bound], model.createIfcPlane(placement), positive_normal))
         return model.createIfcClosedShell(faces)
 
     outer = box(0, 4)
-    inner = box(1, 2)
+    inner = box(1, 2, void=voids_inwards)
     return model, model.create_entity(ifc_class, outer, [inner])
 
 
 @pytest.mark.parametrize("schema", ["IFC4", "IFC4X3_ADD2"])
 @pytest.mark.parametrize("ifc_class", ["IfcAdvancedBrepWithVoids", "IfcFacetedBrepWithVoids"])
-def test_brep_with_void_volume_10249(schema, ifc_class):
+@pytest.mark.parametrize("boolean", [False, True])
+@pytest.mark.parametrize("reorient_shells", [False, True])
+@pytest.mark.parametrize("voids_inwards", [False, True], ids=["voids-outwards", "voids-inwards"])
+def test_brep_with_void_volume_10249(schema, ifc_class, boolean, reorient_shells, voids_inwards):
     # https://github.com/IfcOpenShell/IfcOpenShell/issues/10249
-    model, brep = build_brep_with_void(schema, ifc_class)
-    geometry = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), brep, geometry_library="opencascade")
+    model, brep = build_brep_with_void(schema, ifc_class, voids_inwards)
+    item = brep
+    if boolean:
+        # Remove x >= 3 without touching the enclosed [1, 2]^3 cavity.
+        profile = model.createIfcRectangleProfileDef("AREA", None, None, 2.0, 6.0)
+        placement = model.createIfcAxis2Placement3D(model.createIfcCartesianPoint((4.0, 2.0, -1.0)))
+        tool = model.createIfcExtrudedAreaSolid(profile, placement, model.createIfcDirection((0.0, 0.0, 1.0)), 6.0)
+        item = model.createIfcBooleanResult("DIFFERENCE", brep, tool)
+    geometry = ifcopenshell.geom.create_shape(
+        ifcopenshell.geom.settings(REORIENT_SHELLS=reorient_shells), item, geometry_library="opencascade"
+    )
     # The internal [1, 2]^3 box must be subtracted from the outer [0, 4]^3 box.
-    assert ifcopenshell.util.shape.get_volume(geometry) == pytest.approx(4.0**3 - 1.0**3)
-    assert ifcopenshell.util.shape.get_area(geometry) == pytest.approx(6.0 * (4.0**2 + 1.0**2))
+    assert ifcopenshell.util.shape.get_volume(geometry) == pytest.approx(47.0 if boolean else 63.0)
+    assert ifcopenshell.util.shape.get_area(geometry) == pytest.approx(86.0 if boolean else 102.0)
+
+
+@pytest.mark.parametrize("operator", ["DIFFERENCE", "UNION", "INTERSECTION"])
+@pytest.mark.parametrize("invalid_first", [False, True])
+def test_boolean_propagates_operand_conversion_failure(operator, invalid_first):
+    model = ifcopenshell.file(schema="IFC4")
+    profile = model.createIfcRectangleProfileDef("AREA", None, None, 2.0, 2.0)
+    placement = model.createIfcAxis2Placement3D(model.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+    valid = model.createIfcExtrudedAreaSolid(profile, placement, model.createIfcDirection((0.0, 0.0, 1.0)), 2.0)
+    invalid = model.createIfcSphere(placement, -1.0)
+    settings = ifcopenshell.geom.settings()
+    # A negative-radius sphere maps successfully, but OpenCASCADE cannot construct it.
+    assert ifcopenshell.ifcopenshell_wrapper.map_shape(settings, invalid) is not None
+    with pytest.raises(RuntimeError, match="Failed to process shape"):
+        ifcopenshell.geom.create_shape(settings, invalid, geometry_library="opencascade")
+    operands = (invalid, valid) if invalid_first else (valid, invalid)
+    boolean = model.createIfcBooleanResult(operator, *operands)
+    with pytest.raises(RuntimeError, match="Failed to process shape"):
+        ifcopenshell.geom.create_shape(settings, boolean, geometry_library="opencascade")
+
+
+@pytest.mark.parametrize("empty_first", [False, True])
+def test_boolean_accepts_empty_operand(empty_first):
+    model = ifcopenshell.file(schema="IFC4")
+    blocks = []
+    for x in (0.0, 5.0):
+        placement = model.createIfcAxis2Placement3D(model.createIfcCartesianPoint((x, 0.0, 0.0)))
+        blocks.append(model.createIfcBlock(placement, 2.0, 2.0, 2.0))
+    empty = model.createIfcBooleanResult("INTERSECTION", *blocks)
+    operands = (empty, blocks[0]) if empty_first else (blocks[0], empty)
+    boolean = model.createIfcBooleanResult("DIFFERENCE", *operands)
+    geometry = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), boolean, geometry_library="opencascade")
+    assert ifcopenshell.util.shape.get_volume(geometry) == pytest.approx(0.0 if empty_first else 8.0)
