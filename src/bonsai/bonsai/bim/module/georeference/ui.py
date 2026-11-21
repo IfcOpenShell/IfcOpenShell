@@ -102,6 +102,10 @@ class BIM_PT_gis(Panel):
                 row.prop(props, "coordinate_operation_class", text="")
                 row.operator("bim.add_georeferencing", icon="ADD", text="")
 
+        if tool.Ifc.get_schema() != "IFC2X3":
+            row = self.layout.row(align=True)
+            row.operator("bim.import_georeferencing_from_blendergis", icon="IMPORT", text="Import From BlenderGIS")
+
         if GeoreferenceData.data["projected_crs"]:
             row = self.layout.row(align=True)
             row.label(text="Projected CRS", icon="WORLD")
