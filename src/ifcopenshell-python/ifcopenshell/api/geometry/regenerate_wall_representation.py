@@ -98,6 +98,9 @@ def regenerate_wall_representation(
         the wall has no ``IfcMaterialLayerSet`` (the layer-set rebuild is the
         only mode this function knows; without layers there is nothing to
         regenerate and callers should leave the existing representation alone).
+        ``None`` is also returned, and the wall left unchanged, if its axis is
+        not a polyline, such as an arc, since only straight axes can be
+        regenerated.
     """
     return Regenerator(file).regenerate(wall, length=length, height=height, angle=angle)
 
@@ -122,7 +125,7 @@ class Regenerator:
         self.fallback_height = height / self.unit_scale
         self.fallback_angle = angle
         layers = self.get_layers(wall)
-        if not layers:
+        if not layers or self.has_unsupported_axis(wall):
             return
         reference = ifcopenshell.util.representation.get_reference_line(wall, self.fallback_length)
         self.reference_p1, self.reference_p2 = reference
@@ -567,6 +570,18 @@ class Regenerator:
         if not material or not material.is_a("IfcMaterialLayerSet"):
             return []
         return [PrioritisedLayer(getattr(l, "Priority", 0) or 0, l.LayerThickness) for l in material.MaterialLayers]
+
+    def has_unsupported_axis(self, wall) -> bool:
+        # get_reference_line() takes the first two points of a polyline, so an arc axis
+        # would come back as its chord, or as the fallback line if it isn't a polyline
+        if not (axis := ifcopenshell.util.representation.get_representation(wall, "Plan", "Axis", "GRAPH_VIEW")):
+            return False
+        for item in ifcopenshell.util.representation.resolve_representation(axis).Items:
+            if item.is_a("IfcPolyline"):
+                return False
+            if item.is_a("IfcIndexedPolyCurve"):
+                return any(segment.is_a("IfcArcIndex") for segment in item.Segments or ())
+        return True
 
     def combine_layers(self, layers, override_priorities):
         results = []
