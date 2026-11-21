@@ -532,7 +532,7 @@ class Pset(bonsai.core.tool.Pset):
         elif metadata.data_type == "integer":
             metadata.int_value = 0 if metadata.is_null else int(data[prop_template.Name])
         elif metadata.data_type == "float":
-            metadata.float_value = 0.0 if metadata.is_null else float(data[prop_template.Name])
+            metadata["float_value"] = 0.0 if metadata.is_null else float(data[prop_template.Name])
         elif metadata.data_type == "boolean":
             metadata.bool_value = False if metadata.is_null else bool(data[prop_template.Name])
 
