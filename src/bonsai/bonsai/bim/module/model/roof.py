@@ -24,13 +24,11 @@ import bmesh
 import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
-import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import shapely
 from bpypolyskel import bpypolyskel
 from mathutils import Quaternion, Vector
 
-import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
 from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig, IconSlot
@@ -523,49 +521,6 @@ def get_path_data(obj: bpy.types.Object) -> Union[dict[str, Any], None]:
     if not path_data["edges"] or not path_data["verts"]:
         return None
     return path_data
-
-
-class BIM_OT_add_roof(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "mesh.add_roof"
-    bl_label = "Roof"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Ifc.get() and context.mode == "OBJECT"
-
-    def _execute(self, context):
-        ifc_file = tool.Ifc.get()
-        if not ifc_file:
-            self.report({"ERROR"}, "You need to start IFC project first to create a roof.")
-            return {"CANCELLED"}
-
-        if context.active_object is not None:
-            spawn_location = context.active_object.location.copy()
-            context.active_object.select_set(False)
-        else:
-            spawn_location = bpy.context.scene.cursor.location.copy()
-
-        mesh = bpy.data.meshes.new("IfcRoof")
-        obj = bpy.data.objects.new("IfcRoof", mesh)
-        obj.location = spawn_location
-
-        body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-        bonsai.core.root.assign_class(
-            tool.Ifc,
-            tool.Collector,
-            tool.Root,
-            obj=obj,
-            ifc_class="IfcRoof",
-            should_add_representation=True,
-            context=body_context,
-        )
-        bpy.ops.object.select_all(action="DESELECT")
-        bpy.context.view_layer.objects.active = None
-        bpy.context.view_layer.objects.active = obj
-        tool.Blender.select_object(obj)
-        bpy.ops.bim.add_roof()
-        return {"FINISHED"}
 
 
 # UI operators
