@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import collections.abc
 import json
+import time
 from collections.abc import Callable, Iterable, Sequence
 from copy import deepcopy
 from math import atan, cos, degrees, pi, radians
@@ -89,6 +90,54 @@ if TYPE_CHECKING:
         BIMWallProperties,
         BIMWindowProperties,
     )
+
+
+# `Object.asset_generate_preview()` queues a *threaded* icon render job: see
+# blender/blender#105325, where Philipp Oeser notes that
+# `ED_asset_generate_preview` calls `UI_icon_render_id` as a job whereas
+# `previews_id_ensure` does not. That job calls `DEG_graph_build_from_view_layer`
+# on a worker thread, so it reads objects, meshes and materials that the main
+# thread may be rebuilding, and Blender segfaults in `DepsgraphNodeBuilder`.
+#
+# Python cannot cancel an in-flight preview job, so instead start them one at a
+# time and only once the scene has settled. This narrows the race; it does not
+# close it.
+PREVIEW_IDLE_SECONDS = 0.5
+
+# Object names, not Object references: the objects may be freed before we get here.
+_pending_previews: list[str] = []
+_last_scene_change: float = 0.0
+_preview_timer_running = False
+
+
+def note_scene_change(*args) -> None:
+    """depsgraph_update_post hook: remember when the scene last changed."""
+    global _last_scene_change
+    _last_scene_change = time.monotonic()
+
+
+def drain_preview_queue() -> Optional[float]:
+    """Start at most one queued preview render, once the scene is quiet."""
+    global _preview_timer_running
+    if not _pending_previews:
+        _preview_timer_running = False
+        return None
+    if time.monotonic() - _last_scene_change < PREVIEW_IDLE_SECONDS:
+        return PREVIEW_IDLE_SECONDS  # Still authoring; try again later.
+    name = _pending_previews.pop()
+    obj = bpy.data.objects.get(name)
+    if obj is not None and obj.data is not None:
+        obj.asset_generate_preview()
+    return PREVIEW_IDLE_SECONDS
+
+
+def queue_preview_render(obj: bpy.types.Object) -> None:
+    global _preview_timer_running
+    if obj.name not in _pending_previews:
+        _pending_previews.append(obj.name)
+    if not _preview_timer_running:
+        _preview_timer_running = True
+        bpy.app.timers.register(drain_preview_queue, first_interval=PREVIEW_IDLE_SECONDS)
 
 
 class Model(bonsai.core.tool.Model):
@@ -1561,7 +1610,8 @@ class Model(bonsai.core.tool.Model):
             # If object has .data we can use default Blender preview.
             # No need to preview to update, Blender will do it in background,
             # `preview.icon_id` doesn't change after `asset_generate_preview()`.
-            obj.asset_generate_preview()
+            # Deferred rather than started here: see the note by PREVIEW_IDLE_SECONDS.
+            queue_preview_render(obj)
         # Avoid issues with sqlite files.
         elif type(tool.Ifc.get()) is not ifcopenshell.file:
             return
