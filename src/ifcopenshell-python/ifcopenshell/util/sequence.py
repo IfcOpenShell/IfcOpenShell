@@ -22,6 +22,8 @@ from functools import cache
 from math import floor
 from typing import Literal, Optional, Union
 
+from dateutil.relativedelta import relativedelta
+
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 
@@ -114,42 +116,129 @@ def get_start_or_finish_date(
     duration_type: DURATION_TYPE,
     calendar: ifcopenshell.entity_instance,
     date_type: Literal["START", "FINISH"] = "FINISH",
+    work_day: datetime.timedelta = datetime.timedelta(hours=8),
 ):
-    if not duration.days:
+    delta = getattr(duration, "tdelta", duration)
+    if not delta and not getattr(duration, "months", 0) and not getattr(duration, "years", 0):
         # Typically a milestone will have zero duration, so the start == finish
         return start
-    # We minus 1 because the start day itself is counted as a day
-    months = int(getattr(duration, "months", 0))
-    years = int(getattr(duration, "years", 0))
-    total_duration = duration.days + months * 30 + years * 12 * 30
-    duration = datetime.timedelta(days=total_duration - 1)
-
+    result = offset_date(start, -duration if date_type == "START" else duration, duration_type, calendar, work_day)
+    if duration_type == "ELAPSEDTIME":
+        if delta.seconds or delta.microseconds:
+            return result
+        calendar, work_day = None, datetime.timedelta(hours=8)  # 09:00 to 17:00, as before
     if date_type == "START":
-        duration = -duration
-    result = offset_date(start, duration, duration_type, calendar)
-    if date_type == "START":
-        return datetime.datetime.combine(result, datetime.time(9))
-    return datetime.datetime.combine(result, datetime.time(17))
+        return get_work_start(result, calendar, work_day)
+    return get_work_finish(result, calendar, work_day)
 
 
-def offset_date(start, duration, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance):
+def offset_date(
+    start,
+    duration,
+    duration_type: DURATION_TYPE,
+    calendar: ifcopenshell.entity_instance,
+    work_day: datetime.timedelta = datetime.timedelta(hours=8),
+):
     current_date = start
     months = getattr(duration, "months", 0)
     years = getattr(duration, "years", 0)
+    delta = getattr(duration, "tdelta", duration)
+    sign = -1 if delta < datetime.timedelta() else 1
+    time = abs(delta) - datetime.timedelta(days=abs(delta).days)
+    if months or years:
+        # IfcDuration years and months are calendar years and months
+        current_date += relativedelta(years=int(years), months=int(months))
+    days = sign * abs(delta).days
 
-    abs_duration = abs(duration.days + months * 30 + years * 12 * 30)
-    date_offset = datetime.timedelta(days=1 if duration.days > 0 else -1)
+    abs_duration = abs(days)
+    date_offset = datetime.timedelta(days=1 if days > 0 else -1)
     while abs_duration > 0:
         if duration_type == "ELAPSEDTIME" or not is_calendar_applicable(current_date, calendar):
             abs_duration -= 1
         elif is_working_day(current_date, calendar):
             abs_duration -= 1
         current_date += date_offset
-    if duration.days > 0:
+    direction = days or years * 12 + months
+    if direction > 0:
         current_date = get_soonest_working_day(current_date, duration_type, calendar)
-    else:
+    elif direction < 0 or not time:
         current_date = get_recent_working_day(current_date, duration_type, calendar)
+    if time and duration_type == "ELAPSEDTIME":
+        current_date += sign * time
+    elif time:
+        current_date = offset_work_time(current_date, sign * time, calendar, work_day)
     return current_date
+
+
+def offset_work_time(
+    start: datetime.datetime,
+    duration: datetime.timedelta,
+    calendar: Optional[ifcopenshell.entity_instance],
+    work_day: datetime.timedelta = datetime.timedelta(hours=8),
+) -> datetime.datetime:
+    """Offset a datetime by a work time, through the work periods of each day
+
+    :param start: The datetime to offset.
+    :param duration: The work time. A negative work time offsets back.
+    :param calendar: The IfcWorkCalendar, or None.
+    :param work_day: The length of a work day. See get_work_periods.
+    :return: The datetime after (or before) the work time. A result at the
+        limit of a work period stays at that limit.
+    """
+    sign = -1 if duration < datetime.timedelta() else 1
+    remaining = abs(duration)
+    day = start.date()
+    days_without_work = 0
+    while remaining and days_without_work < 366:
+        midnight = datetime.datetime.combine(day, datetime.time(), start.tzinfo)
+        periods = get_work_periods(day, calendar, work_day)
+        days_without_work = 0 if periods else days_without_work + 1
+        for period_start, period_end in periods if sign > 0 else reversed(periods):
+            period_start, period_end = midnight + period_start, midnight + period_end
+            if sign > 0 and start < period_end:
+                start = max(start, period_start)
+                step = min(remaining, period_end - start)
+            elif sign < 0 and start > period_start:
+                start = min(start, period_end)
+                step = min(remaining, start - period_start)
+            else:
+                continue
+            start += sign * step
+            remaining -= step
+            if not remaining:
+                break
+        day += datetime.timedelta(days=sign)
+    return start
+
+
+def get_work_start(
+    date: datetime.datetime,
+    calendar: Optional[ifcopenshell.entity_instance],
+    work_day: datetime.timedelta = datetime.timedelta(hours=8),
+) -> datetime.datetime:
+    """Get the first work instant at or after a datetime
+
+    A datetime in a work period does not change. A datetime at the end of a
+    work period, or out of the work periods, moves to the start of the next
+    work period.
+    """
+    instant = datetime.timedelta(microseconds=1)
+    return offset_work_time(date, instant, calendar, work_day) - instant
+
+
+def get_work_finish(
+    date: datetime.datetime,
+    calendar: Optional[ifcopenshell.entity_instance],
+    work_day: datetime.timedelta = datetime.timedelta(hours=8),
+) -> datetime.datetime:
+    """Get the last work instant at or before a datetime
+
+    A datetime in a work period does not change. A datetime at the start of
+    a work period, or out of the work periods, moves to the end of the
+    previous work period.
+    """
+    instant = datetime.timedelta(microseconds=1)
+    return offset_work_time(date, -instant, calendar, work_day) + instant
 
 
 def get_soonest_working_day(start, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance):
@@ -182,10 +271,132 @@ def is_working_day(day, calendar: ifcopenshell.entity_instance) -> bool:
     if not is_working_day:
         return is_working_day
     for work_time in calendar.ExceptionTimes or []:
-        if is_work_time_applicable_to_day(work_time, day):
+        # An exception with time periods removes only these hours, not the day.
+        if is_work_time_applicable_to_day(work_time, day) and not get_time_periods(work_time):
             is_working_day = False
             break
     return is_working_day
+
+
+def get_time_periods(work_time: ifcopenshell.entity_instance) -> list[tuple[datetime.timedelta, datetime.timedelta]]:
+    """Get the time periods of a work time
+
+    :param work_time: The IfcWorkTime.
+    :return: The sorted (StartTime, EndTime) of each IfcTimePeriod of the
+        recurrence pattern, as durations from midnight. An empty list if the
+        work time has no time period.
+    """
+    periods = []
+    for period in work_time.RecurrencePattern.TimePeriods or [] if work_time.RecurrencePattern else []:
+        times = [ifcopenshell.util.date.ifc2datetime(t) for t in (period.StartTime, period.EndTime)]
+        periods.append(
+            tuple(
+                datetime.timedelta(hours=t.hour, minutes=t.minute, seconds=t.second, microseconds=t.microsecond)
+                for t in times
+            )
+        )
+    return sorted(periods)
+
+
+def get_work_periods(
+    day, calendar: Optional[ifcopenshell.entity_instance], work_day: datetime.timedelta = datetime.timedelta(hours=8)
+) -> list[tuple[datetime.timedelta, datetime.timedelta]]:
+    """Get the work periods of a day
+
+    The work periods are the IfcTimePeriod of the calendar working times that
+    apply to the day. If there is no time period, there is one work period
+    that starts at 09:00 and lasts the work day. The IfcTimePeriod of the
+    calendar exception times that apply to the day are removed.
+
+    :param day: The date or datetime of the day.
+    :param calendar: The IfcWorkCalendar, or None.
+    :param work_day: The length of the work period if there is no time period.
+    :return: The sorted (start, end) of each work period, as durations from
+        midnight. An empty list if the day is not a working day.
+    """
+    if isinstance(day, datetime.datetime):
+        day = day.date()
+    is_applicable = calendar and is_calendar_applicable(day, calendar)
+    if is_applicable and not is_working_day(day, calendar):
+        return []
+    periods = []
+    if is_applicable:
+        for work_time in calendar.WorkingTimes:
+            if is_work_time_applicable_to_day(work_time, day):
+                periods.extend(get_time_periods(work_time))
+    if not periods:
+        start = min(datetime.timedelta(hours=9), datetime.timedelta(days=1) - work_day)
+        periods = [(start, start + work_day)]
+    for work_time in calendar.ExceptionTimes or [] if is_applicable else []:
+        if is_work_time_applicable_to_day(work_time, day):
+            for exception_start, exception_end in get_time_periods(work_time):
+                periods = [
+                    period
+                    for start, end in periods
+                    for period in ((start, min(end, exception_start)), (max(start, exception_end), end))
+                    if period[0] < period[1]
+                ]
+    return sorted(periods)
+
+
+def get_work_day_duration(
+    task: ifcopenshell.entity_instance, calendar: Optional[ifcopenshell.entity_instance] = None
+) -> datetime.timedelta:
+    """Get the length of a work day
+
+    The length is the sum of the IfcTimePeriod of the first calendar working
+    time that has time periods. If there is no time period, the length is the
+    Pset_WorkControlCommon.WorkDayDuration of the work schedule of the task.
+    If there is no value, the length is 8 hours.
+
+    :param task: The IfcTask.
+    :param calendar: The IfcWorkCalendar. If None, the calendar of the task.
+    :return: The length of a work day.
+    """
+    calendar = calendar or (derive_calendar(task) if task else None)
+    for work_time in calendar.WorkingTimes or [] if calendar else []:
+        if periods := get_time_periods(work_time):
+            return sum((end - start for start, end in periods), datetime.timedelta())
+    while task:
+        for rel in task.HasAssignments or []:
+            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule"):
+                pset = ifcopenshell.util.element.get_pset(rel.RelatingControl, "Pset_WorkControlCommon")
+                if pset and pset.get("WorkDayDuration"):
+                    return ifcopenshell.util.date.parse_duration(pset["WorkDayDuration"])
+                return datetime.timedelta(hours=8)
+        task = task.Nests[0].RelatingObject if task.Nests else None
+    return datetime.timedelta(hours=8)
+
+
+def get_work_duration(
+    value: str, duration_type: Optional[DURATION_TYPE], work_day: datetime.timedelta = datetime.timedelta(hours=8)
+):
+    """Read an IfcDuration as work days and work time
+
+    For a WORKTIME duration, the date part of the IfcDuration counts work
+    days and the time part counts work hours. Work hours of one work day or
+    more become work days. For example, PT24H with a work day of 8 hours
+    gives 3 work days.
+
+    :param value: The IfcDuration.
+    :param duration_type: The IfcTaskDurationEnum of the value.
+    :param work_day: The length of a work day.
+    :return: For ELAPSEDTIME, the duration. For WORKTIME, a duration with
+        the work days as days, and the remaining work time (less than one
+        work day) as seconds. Years and months do not change.
+    """
+    duration = ifcopenshell.util.date.parse_duration(value)
+    if duration_type == "ELAPSEDTIME" or not duration:
+        return duration
+    date_part, _, time_part = value.lstrip("-").partition("T")
+    date = ifcopenshell.util.date.parse_duration(date_part) if date_part != "P" else datetime.timedelta()
+    days = getattr(date, "tdelta", date)
+    work = days / datetime.timedelta(days=1) * work_day
+    if time_part:
+        work += ifcopenshell.util.date.parse_duration("PT" + time_part)
+    work_days, rest = divmod(work, work_day)
+    result = date - days + datetime.timedelta(days=work_days) + rest
+    return -result if value.startswith("-") else result
 
 
 @cache
