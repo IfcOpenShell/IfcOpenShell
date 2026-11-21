@@ -2763,7 +2763,6 @@ void ifcopenshell::impl::in_memory_file_storage::materialize(instance_data* data
     lexer.reset_pool();
     register_inverses_ = true;
     data->storage_.emplace(std::move(storage));
-    data->populate_derived_();
     auto self = byid_.find(data->id());
     if (self != byid_.end()) {
         resolve_instance_references(self->second, lazy_bypassed_);

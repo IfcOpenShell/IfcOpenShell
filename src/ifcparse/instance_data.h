@@ -567,6 +567,7 @@ class IFC_PARSE_API instance_data {
       {
       }
       friend struct ifcopenshell::impl::in_memory_file_storage;
+      friend struct ifcopenshell::impl::rocks_db_file_storage;
 
       const ifcopenshell::declaration* declaration() const {
           return declaration_;
@@ -587,14 +588,12 @@ class IFC_PARSE_API instance_data {
       instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, in_memory_attribute_storage&& storage)
           : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::move(storage))
       {
-            populate_derived_();
       }
 
       instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, rocks_db_attribute_storage&& storage)
           : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::nullopt)
       {
           static_cast<void>(storage);
-          populate_derived_();
       }
 
       /*
