@@ -446,22 +446,35 @@ class SwitchRepresentation(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         provided_representation = tool.Ifc.get().by_id(self.ifc_definition_id)
         ifc_context = provided_representation.ContextOfItems
+        provided_identifier = provided_representation.RepresentationIdentifier
         for obj in tool.Blender.get_selected_objects():
             if not (element := tool.Ifc.get_entity(obj)) or obj.mode != "OBJECT":
                 continue
 
-            # Find representation to switch to.
-            if (active_representation := tool.Geometry.get_active_representation(obj)) is None:
+            active_representation = tool.Geometry.get_active_representation(obj)
+
+            if obj == context.active_object:
+                representation = provided_representation
+            elif active_representation is None:
                 # No active representation => probably has no representations.
                 continue
-            elif obj == context.active_object:
-                # Prioritize provided representation.
-                representation = provided_representation
-            elif active_representation.ContextOfItems == ifc_context:
-                # Prioritize already active representation if context matches.
-                representation = active_representation
+            elif (
+                active_representation.ContextOfItems == ifc_context
+                and active_representation.RepresentationIdentifier == provided_identifier
+            ):
+                # Already showing the correct representation — no geometry update needed.
+                continue
             else:
-                representation = ifcopenshell.util.representation.get_representation(element, ifc_context)
+                # Find a representation matching both the context and identifier.
+                representation = next(
+                    (
+                        r
+                        for r in ifcopenshell.util.representation.get_representations_iter(element)
+                        if r.ContextOfItems == ifc_context
+                        and r.RepresentationIdentifier == provided_identifier
+                    ),
+                    None,
+                )
                 if not representation:
                     continue
 
@@ -470,6 +483,7 @@ class SwitchRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
+                apply_openings=not self.disable_opening_subtractions,
             )
 
 
