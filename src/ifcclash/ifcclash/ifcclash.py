@@ -255,7 +255,7 @@ class Clasher:
             for source in clash_set.get("b", []):
                 del source["ifc"]
         with open(self.settings.output, "w", encoding="utf-8") as clashes_file:
-            json.dump(clash_sets, clashes_file, indent=4)
+            json.dump(clash_sets, clashes_file, indent=4, sort_keys=self.settings.sort_json_keys)
 
     def smart_group_clashes(self, clash_sets: list[ClashSet], max_clustering_distance: float):
         from collections import defaultdict
@@ -354,3 +354,4 @@ class ClashSettings:
     def __init__(self):
         self.logger: Logger = None
         self.output = "clashes.json"
+        self.sort_json_keys = False
