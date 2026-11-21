@@ -438,6 +438,30 @@ class TestRecordObjectPosition(NewFile):
         assert props.rotation_checksum == repr(tool.Blender.np_array_legacy(obj.matrix_world.to_3x3()).tobytes())
 
 
+class TestReimportElementRepresentations(NewFile):
+    def test_give_an_empty_its_first_mesh(self):
+        ifc = ifcopenshell.api.project.create_file(version="IFC4")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc, length={"is_metric": True, "raw": "METERS"})
+        model = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        tool.Ifc.set(ifc)
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSlab")
+        obj = bpy.data.objects.new("Slab", None)
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(element, obj)
+        representation = ifcopenshell.api.geometry.add_slab_representation(ifc, context=body, depth=0.2)
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=representation)
+
+        subject.reimport_element_representations(obj, representation)
+
+        obj = tool.Ifc.get_object(element)
+        assert isinstance(obj.data, bpy.types.Mesh)
+        assert obj.data.vertices
+
+
 class TestRemoveConnection(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
