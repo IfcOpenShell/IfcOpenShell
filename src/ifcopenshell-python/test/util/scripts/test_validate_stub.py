@@ -17,9 +17,35 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import ast
+
 import ifcopenshell.util.scripts.validate_stub as subject
 
 
 class TestValidateStub:
+    def test_resolve_property_wrapping_an_underscore_prefixed_function(self):
+        tree = ast.parse(
+            "class Geom:\n"
+            "    def _geometry_getter(self):\n"
+            "        return 1\n"
+            "    geometry = property(_geometry_getter)\n"
+        )
+        assert subject.get_names_tree(tree) == {"class Geom:": {("@property", "def geometry(self): ...")}}
+
+    def test_resolve_staticmethod_wrapping_an_underscore_prefixed_function(self):
+        tree = ast.parse("class Geom:\n    def _make(a, b):\n        return a\n    make = staticmethod(_make)\n")
+        assert subject.get_names_tree(tree) == {"class Geom:": {("@staticmethod", "def make(a, b): ...")}}
+
+    def test_resolve_property_getter_and_setter_with_underscore_prefix(self):
+        tree = ast.parse(
+            "class Geom:\n"
+            "    def _get(self):\n"
+            "        return 1\n"
+            "    def _set(self, value):\n"
+            "        pass\n"
+            "    value = property(_get, _set)\n"
+        )
+        assert subject.get_names_tree(tree) == {"class Geom:": {"value"}}
+
     def test_run(self):
         subject.main()
