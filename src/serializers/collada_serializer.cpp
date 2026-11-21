@@ -95,7 +95,7 @@ void collada_serializer::collada_exporter::collada_geometries::write(
 	for (std::vector<int>::const_iterator it = faces.begin(); !faces.empty(); it += 3) {
 
 		int current_material_id = 0;
-		if (material_it != material_ids.end()) {
+		if (it != faces.end() && material_it != material_ids.end()) {
 			// In order for the last range of equal material ids to be output as well, this loop iterates
 			// one element past the end of the vector. This needs to be observed when incrementing.
 			current_material_id = *(material_it++);
@@ -140,8 +140,7 @@ void collada_serializer::collada_exporter::collada_geometries::write(
 	typedef std::vector< std::pair<int, std::vector<unsigned long> > > linelist_t;
 	linelist_t linelist;
 
-	int num_lines = 0;
-	for ( std::vector<int>::const_iterator it = edges.begin(); it != edges.end(); ++num_lines) {
+	for ( std::vector<int>::const_iterator it = edges.begin(); it != edges.end(); ) {
 		const int i1 = *(it++);
 		const int i2 = *(it++);
 
@@ -150,7 +149,7 @@ void collada_serializer::collada_exporter::collada_geometries::write(
 		}
 
 		const int current_material_id = *(material_it++);
-		if ((previous_material_id != current_material_id) || (num_lines == 0)) {
+		if ((previous_material_id != current_material_id) || linelist.empty()) {
 			linelist.resize(linelist.size() + 1);
 		}
 
