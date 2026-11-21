@@ -126,13 +126,8 @@ def updateAxisAngle(self: "BIMObjectStructuralProperties", context: bpy.types.Co
         return
     obj = context.active_object
     assert obj and isinstance(obj.data, bpy.types.Mesh)
-    empty = self.axis_empty
-    x_axis = obj.data.vertices[1].co - obj.data.vertices[0].co
-    empty.location = obj.data.vertices[0].co
-    empty.rotation_mode = "QUATERNION"
-    empty.rotation_quaternion = x_axis.to_track_quat("X", "Z")
-    empty.rotation_mode = "XYZ"
-    empty.rotation_euler[0] = radians(self.axis_angle)
+    # Rolled about the item's own edge from its default axes, wherever the item is placed.
+    self.axis_empty.matrix_world = tool.Structural.get_item_axes(obj, self.axis_angle)
 
 
 def updateConnectionCS(self: "BIMObjectStructuralProperties", context: bpy.types.Context) -> None:

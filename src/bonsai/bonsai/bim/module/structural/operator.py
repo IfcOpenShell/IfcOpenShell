@@ -465,28 +465,16 @@ class EnableEditingStructuralItemAxis(bpy.types.Operator):
 
         self.file = tool.Ifc.get()
         item = self.file.by_id(oprops.ifc_definition_id)
-        z_axis = Vector(item.Axis.DirectionRatios).normalized() @ obj.matrix_world if item.Axis else None
-        x_axis = (obj.data.vertices[1].co - obj.data.vertices[0].co).normalized()
-        location = obj.data.vertices[0].co
+        # Axis and the edge are both in the item's own coordinates. Without an Axis, or with one along the edge (as
+        # when a member is stood up), it starts from the default axes.
+        edge = obj.data.vertices[1].co - obj.data.vertices[0].co
+        roll = tool.Structural.get_item_axis_roll(edge, Vector(item.Axis.DirectionRatios)) if item.Axis else None
         empty = bpy.data.objects.new("Item Axis", None)
         empty.empty_display_type = "ARROWS"
-        if z_axis:
-            y_axis = (z_axis.cross(x_axis)).normalized()
-            empty.matrix_world = Matrix(
-                (
-                    (x_axis[0], y_axis[0], z_axis[0], location[0]),
-                    (x_axis[1], y_axis[1], z_axis[1], location[1]),
-                    (x_axis[2], y_axis[2], z_axis[2], location[2]),
-                    (0, 0, 0, 1),
-                )
-            )
-        else:
-            empty.location = location
-            empty.rotation_mode = "QUATERNION"
-            empty.rotation_quaternion = x_axis.to_track_quat("X", "Z")
+        empty.matrix_world = tool.Structural.get_item_axes(obj, roll or 0.0)
 
-        props.axis_angle = degrees(empty.rotation_euler[0])
         props.axis_empty = empty
+        props.axis_angle = roll or 0.0
         context.scene.collection.objects.link(empty)
 
         props.is_editing_axis = True
@@ -517,8 +505,9 @@ class EditStructuralItemAxis(bpy.types.Operator, tool.Ifc.Operator):
         assert obj
         oprops = tool.Blender.get_object_bim_props(obj)
         props = tool.Structural.get_object_structural_props(obj)
-        relative_matrix = props.axis_empty.matrix_world @ obj.matrix_world.inverted()
-        z_axis = relative_matrix.col[2][0:3]
+        # Back into the item's own coordinates, which Axis is in.
+        local = obj.matrix_world.inverted() @ props.axis_empty.matrix_world
+        z_axis = tuple(local.to_3x3().col[2].normalized())
         self.file = tool.Ifc.get()
         ifcopenshell.api.structural.edit_structural_item_axis(
             self.file,
