@@ -74,7 +74,11 @@ auto get_related(ifcopenshell::logger& log, T t, F f, G g) {
     std::vector<V> acc;
     for (auto& u : li) {
         try {
-            auto vs = (u.template as<U>().*g)();
+            auto rel = u.template as<U>();
+            if (!rel) {
+                continue;
+            }
+            auto vs = (rel.*g)();
             if constexpr (std::is_base_of_v<express::base, decltype(vs)>) {
                 if (auto vv = vs.template as<V>()) {
                     acc.push_back(vv);
