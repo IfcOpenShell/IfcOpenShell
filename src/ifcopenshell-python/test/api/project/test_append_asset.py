@@ -18,6 +18,7 @@
 
 import numpy as np
 
+import ifcopenshell.api.aggregate
 import ifcopenshell.api.classification
 import ifcopenshell.api.context
 import ifcopenshell.api.cost
@@ -408,6 +409,29 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         ifcopenshell.api.feature.add_feature(library, feature=opening, element=element)
         ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
         assert self.file.by_type("IfcWall")[0].HasOpenings[0].RelatedOpeningElement.is_a("IfcOpeningElement")
+
+    def test_append_an_aggregate_with_its_parts_and_sub_aggregates_and_openings(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        top = ifcopenshell.api.root.create_entity(library, ifc_class="IfcElementAssembly", name="House_Module")
+        sub_assembly = ifcopenshell.api.root.create_entity(
+            library, ifc_class="IfcElementAssembly", name="Wall_Panel_SubAssembly"
+        )
+        part = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall", name="Panel Wall")
+        opening = ifcopenshell.api.root.create_entity(library, ifc_class="IfcOpeningElement")
+        ifcopenshell.api.feature.add_feature(library, feature=opening, element=part)
+        ifcopenshell.api.aggregate.assign_object(library, relating_object=sub_assembly, products=[part])
+        ifcopenshell.api.aggregate.assign_object(library, relating_object=top, products=[sub_assembly])
+
+        appended = ifcopenshell.api.project.append_asset(self.file, library=library, element=top)
+
+        assert len(self.file.by_type("IfcElementAssembly")) == 2
+        assert len(self.file.by_type("IfcWall")) == 1
+        assert len(self.file.by_type("IfcOpeningElement")) == 1
+        appended_sub = appended.IsDecomposedBy[0].RelatedObjects[0]
+        assert appended_sub.is_a("IfcElementAssembly")
+        appended_part = appended_sub.IsDecomposedBy[0].RelatedObjects[0]
+        assert appended_part.is_a("IfcWall")
+        assert appended_part.HasOpenings[0].RelatedOpeningElement.is_a("IfcOpeningElement")
 
     def test_append_a_product_with_unrelated_relationships_to_openings(self):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
