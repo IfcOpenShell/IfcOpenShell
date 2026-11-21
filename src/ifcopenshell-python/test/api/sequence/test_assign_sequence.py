@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.root
 import ifcopenshell.api.sequence
 import test.bootstrap
 
 
 # NOTE: sequence module features rely on entities introduced in IFC4
-# therefore no IFC2X3 tests
+# therefore only the IFC2X3 defaults are tested for that schema
 class TestAssignSequence(test.bootstrap.IFC4):
     def test_assigning_a_sequence(self):
         predecessor = ifcopenshell.api.sequence.add_task(self.file)
@@ -89,3 +90,14 @@ class TestAssignSequence(test.bootstrap.IFC4):
         backwards = ifcopenshell.api.sequence.assign_sequence(self.file, relating_process=task2, related_process=task1)
         assert forwards != backwards
         assert len(self.file.by_type("IfcRelSequence")) == 2
+
+
+class TestAssignSequenceIFC2X3(test.bootstrap.IFC2X3):
+    def test_setting_time_lag_default(self, monkeypatch):
+        monkeypatch.setattr(ifcopenshell.api.sequence, "cascade_schedule", lambda *args, **kwargs: None)
+        predecessor = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
+        successor = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
+        rel = ifcopenshell.api.sequence.assign_sequence(
+            self.file, relating_process=predecessor, related_process=successor
+        )
+        assert rel.TimeLag == 0.0
