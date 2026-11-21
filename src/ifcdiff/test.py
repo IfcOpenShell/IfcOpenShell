@@ -139,3 +139,27 @@ class TestIfcDiff:
         assert ifc_diff.added_elements == set()
         assert ifc_diff.deleted_elements == set()
         assert ifc_diff.change_register == {wall.GlobalId: {"geometry_changed": True}}
+
+    def test_added_geometry_to_existing_element(self):
+        ifc_file = setup_project()
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
+
+        new_file = ifc_file.from_string(ifc_file.to_string())
+        wall_new = new_file.by_id(wall.id())
+        context = ifcopenshell.util.representation.get_context(new_file, "Model", "Body", "MODEL_VIEW")
+        assert context
+        representation = ifcopenshell.api.geometry.add_slab_representation(new_file, context, depth=0.2)
+        ifcopenshell.api.geometry.assign_representation(new_file, wall_new, representation)
+
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["geometry"])
+        ifc_diff.diff()
+        assert ifc_diff.added_elements == set()
+        assert ifc_diff.deleted_elements == set()
+        assert ifc_diff.change_register == {wall.GlobalId: {"geometry_changed": True}}
+
+    def test_summarise_elements_without_geometry(self):
+        ifc_file = setup_project()
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall")
+
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, ifc_file)
+        assert ifc_diff.summarise_shapes(ifc_file, [wall]) == {}
