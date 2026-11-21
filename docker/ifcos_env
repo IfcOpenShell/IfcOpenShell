@@ -153,7 +153,7 @@ function build() {
     echo "☕ Execute the build, go make yourself a cuppa... I'll be a while"
     local BUILD_TARGET="$1"
     
-    docker exec -i -w "${WORKDIR}" -e PY_TGT="${PY_TGT}" -e BUILD_TARGET="${BUILD_TARGET}" "${NAMEPREFIX}-${UNIQUE_ID}" bash -c '
+    docker exec -i -w "${WORKDIR}" -e PY_TGT="${PY_TGT}" -e BUILD_TARGET="${BUILD_TARGET}" ${IFCOS_NUM_BUILD_PROCS:+-e IFCOS_NUM_BUILD_PROCS="${IFCOS_NUM_BUILD_PROCS}"} "${NAMEPREFIX}-${UNIQUE_ID}" bash -c '
         set -o pipefail
         CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release uv run ./nix/build-all.py -v ${PY_TGT:+-$PY_TGT} --diskcleanup ${BUILD_TARGET} 2>&1 | tee build.log
     '
