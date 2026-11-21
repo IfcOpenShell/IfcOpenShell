@@ -12,7 +12,7 @@ from collections import defaultdict
 from datetime import timedelta
 from typing import Any
 
-from .common import Activity, Calendar, ScheduleIfcGenerator, WBSEntry
+from .common import Activity, Calendar, ScheduleIfcGenerator, WBSEntry, validate_input_path
 from .wpattern import AstaCalendarWorkPattern
 
 list_of_tables = [
@@ -57,6 +57,7 @@ class PP2Ifc:
         return r
 
     def execute(self) -> None:
+        validate_input_path(self.pp, "Powerproject .pp file")
         self.con = sqlite3.connect(self.pp)
         self.cur = self.con.cursor()
         self.parse_pp()

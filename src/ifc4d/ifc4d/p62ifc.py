@@ -19,7 +19,7 @@
 import datetime
 import xml.etree.ElementTree as ET
 
-from .common import ScheduleIfcGenerator
+from .common import ScheduleIfcGenerator, validate_input_path
 
 # P6 declares its user-defined fields once at the root and then references them
 # by ObjectId from each activity, so the declaration is the only place the type
@@ -84,6 +84,7 @@ class P62Ifc:
     def execute(self):
         import time
 
+        validate_input_path(self.xml, "P6 .xml file")
         start = time.time()
         print("Started")
         self.parse_xml()

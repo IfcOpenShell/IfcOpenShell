@@ -24,6 +24,8 @@ import ifcopenshell
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
 
+from .common import validate_output_path
+
 
 class Ifc2P6:
     def __init__(self):
@@ -44,6 +46,7 @@ class Ifc2P6:
         self.holiday_finish_date = None
 
     def execute(self):
+        validate_output_path(self.xml, "P6 .xml file")
         self.root = ET.Element("APIBusinessObjects")
         self.root.attrib["xmlns"] = "http://xmlns.oracle.com/Primavera/P6Professional/V18.8/API/BusinessObjects"
         self.root.attrib["xmlns:xsi"] = "http://www.w3.org/2001/XMLSchema-instance"
