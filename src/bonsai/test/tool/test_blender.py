@@ -81,6 +81,20 @@ class TestViewportDecoratorDrawBatch(NewFile):
         decorator.shader.uniform_float.assert_not_called()
 
 
+class TestIsolateObjects(NewFile):
+    def test_keep_objects_with_disabled_selection_visible(self):
+        objs = [bpy.data.objects.new(name, bpy.data.meshes.new(name)) for name in ("Locked", "Free", "Other")]
+        for obj in objs:
+            bpy.context.scene.collection.objects.link(obj)
+        locked, free, other = objs
+        locked.hide_select = True
+        subject.isolate_objects([locked, free])
+        assert not locked.hide_get()
+        assert not free.hide_get()
+        assert other.hide_get()
+        assert locked.hide_select
+
+
 class TestCopyNodeGraph(NewFile):
     def test_run(self):
         material_to = bpy.data.materials.new("material_to")
