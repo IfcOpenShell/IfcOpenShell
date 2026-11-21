@@ -469,7 +469,7 @@ class DocProperties(PropertyGroup):
         drawing_id = self.active_drawing_id
         if drawing_id == 0:
             return None
-        return tool.Ifc.get().by_id(drawing_id)
+        return tool.Ifc.get_entity_by_id(drawing_id)
 
     def get_active_target_view(self) -> Union[str, None]:
         active_drawing = self.get_active_drawing()
