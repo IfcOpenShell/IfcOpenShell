@@ -1816,7 +1816,10 @@ class Geometry(bonsai.core.tool.Geometry):
                 meshes_to_objects[obj.data] = obj
 
         for obj in meshes_to_objects.values():
-            cls._reload_representation(obj)
+            # A type object with its own mesh still points at the representation that was
+            # just replaced. It's refreshed by the reload of any occurrence, so don't fail on it.
+            if cls.get_active_representation(obj):
+                cls._reload_representation(obj)
 
     @classmethod
     def _reload_representation(cls, obj: bpy.types.Object) -> None:
