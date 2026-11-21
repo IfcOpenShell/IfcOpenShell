@@ -1963,9 +1963,34 @@ class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
         sheet_item = tool.Drawing.get_active_sheet_item()
         assert sheet_item
         sheet = tool.Ifc.get().by_id(sheet_item.ifc_definition_id)
+        restore_moved_files(self)
+        if warnings := tool.Drawing.validate_sheet_files(sheet):
+            self.report({"ERROR"}, " ".join(w.message for w in warnings))
+            return {"CANCELLED"}
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.update_sheet_drawing_sizes(sheet)
         core.open_layout(tool.Drawing, sheet=sheet)
+
+
+def restore_moved_files(operator: bpy.types.Operator) -> None:
+    """Make the sheets on disk agree with the model that is open, and say so.
+
+    Renaming a sheet or a drawing moves its files immediately, and adding or
+    removing one writes the layout immediately, but the model only keeps any of
+    it on save. So reopening a model that was not saved leaves files under names
+    it does not know and layouts placing more or less than it says. Every sheet
+    is checked, whichever one this operator is about: the open model names them
+    all. See `tool.Drawing.restore_all_moved_files`.
+    """
+    if changes := tool.Drawing.restore_all_moved_files():
+        # Deliberately not "files were renamed": the same pass also puts groups
+        # back and takes them out, and a message about renaming sent people
+        # looking for a rename that had not happened.
+        operator.report(
+            {"WARNING"},
+            "The sheets on disk did not match this model and were brought into line with it - "
+            f"{'; '.join(changes)}. Make the change again, and save, to keep it.",
+        )
 
 
 class SelectAllSheets(bpy.types.Operator):
@@ -2034,6 +2059,7 @@ class OpenSheet(bpy.types.Operator):
         sheets_not_found: list[str] = []
         warnings: list[tool.Drawing.SheetWarningType] = []
 
+        restore_moved_files(self)
         for sheet in sheets:
             if not sheet.is_a("IfcDocumentInformation"):
                 continue
@@ -2215,6 +2241,7 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
 
         warnings: list[tool.Drawing.SheetWarningType] = []
         n_sheets_created = 0
+        restore_moved_files(self)
         for sheet in sheets:
             warnings.extend(sheet_warnings := tool.Drawing.validate_sheet_files(sheet))
             if sheet_warnings:
