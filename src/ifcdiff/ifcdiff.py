@@ -215,9 +215,9 @@ class IfcDiff:
             if geometry.verts:
                 shapes[element.GlobalId] = {
                     "total_verts": len(geometry.verts),
-                    "sum_verts": sum(geometry.verts),
-                    "min_vert": min(geometry.verts),
-                    "max_vert": max(geometry.verts),
+                    "sum_verts": [sum(geometry.verts[axis::3]) for axis in range(3)],
+                    "min_vert": [min(geometry.verts[axis::3]) for axis in range(3)],
+                    "max_vert": [max(geometry.verts[axis::3]) for axis in range(3)],
                     "matrix": tuple(shape.transformation.matrix),
                     "openings": sorted(
                         [o.RelatedOpeningElement.GlobalId for o in getattr(element, "HasOpenings", []) or []]

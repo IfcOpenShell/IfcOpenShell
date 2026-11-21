@@ -99,6 +99,22 @@ class TestIfcDiff:
         assert ifc_diff.deleted_elements == set()
         assert ifc_diff.change_register == {wall.GlobalId: {"attributes_changed": True}}
 
+    def test_swapped_profile_axes_are_caught_as_changed_geometry(self):
+        ifc_file = setup_project()
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
+        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        assert context
+        representation = ifcopenshell.api.geometry.add_slab_representation(ifc_file, context, depth=0.2)
+        ifcopenshell.api.geometry.assign_representation(ifc_file, wall, representation)
+        ifc_file.by_type("IfcCartesianPointList2D")[0].CoordList = ((0, 0), (1, 0), (1, 2), (0, 2), (0, 0))
+
+        new_file = ifc_file.from_string(ifc_file.to_string())
+        new_file.by_type("IfcCartesianPointList2D")[0].CoordList = ((0, 0), (2, 0), (2, 1), (0, 1), (0, 0))
+
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["geometry"])
+        ifc_diff.diff()
+        assert ifc_diff.change_register == {wall.GlobalId: {"geometry_changed": True}}
+
     def test_property_diff_exports_to_json(self):
         # Regression test for #8905: comparing "property" relationships makes
         # DeepDiff report a dictionary_item_added as a SetOrdered, which
