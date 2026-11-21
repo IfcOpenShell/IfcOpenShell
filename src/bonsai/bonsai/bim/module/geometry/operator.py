@@ -2464,7 +2464,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
 
-    def _invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
+    def _prepare(self, context: bpy.types.Context) -> Union[None, set[str]]:
         if not tool.Ifc.get():
             return tool.Blender.toggle_edit_mode(context)
 
@@ -2527,7 +2527,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                     bpy.ops.bim.edit_arbitrary_profile()
                 else:
                     bpy.ops.bim.edit_extrusion_profile()
-                return self.execute(context)
+                return None
             elif element.is_a("IfcGridAxis"):
                 if not tool.Geometry.is_geometric_data(obj.data):
                     self.is_valid = False
@@ -2539,9 +2539,17 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 else:
                     tool.Ifc.finish_edit(obj)
 
+        return None
+
+    def _invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
+        if (res := self._prepare(context)) is not None:
+            return res
         return self.execute(context)
 
     def _execute(self, context):
+        if not hasattr(self, "edited_objs"):
+            if (res := self._prepare(context)) is not None:
+                return res
         if not context.active_object:
             return {"FINISHED"}
         for obj in self.edited_objs:
