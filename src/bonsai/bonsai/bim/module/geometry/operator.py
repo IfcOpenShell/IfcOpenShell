@@ -2658,7 +2658,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             tool.Geometry.import_item_attributes(obj)
         elif tool.Geometry.is_curvelike_item(item):
             ProfileDecorator.uninstall()
-            new = tool.Model.export_curves(obj)
+            preserve_z = tool.Model.should_preserve_curve_z(item, tool.Ifc.get_entity(rep_obj))
+            new = tool.Model.export_curves(obj, preserve_z=preserve_z, original=item)
 
             if not new:
 
@@ -2861,7 +2862,8 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
 
                 ProfileDecorator.uninstall()
 
-                new = tool.Model.export_curves(obj)
+                preserve_z = tool.Model.should_preserve_curve_z(item, tool.Ifc.get_entity(rep_obj))
+                new = tool.Model.export_curves(obj, preserve_z=preserve_z, original=item)
 
                 if not new:
 
