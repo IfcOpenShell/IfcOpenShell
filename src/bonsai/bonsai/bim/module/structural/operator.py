@@ -23,15 +23,23 @@ from typing import TYPE_CHECKING, Literal, Union
 
 import bpy
 import ifcopenshell.api.attribute
+import ifcopenshell.api.geometry
 import ifcopenshell.api.group
 import ifcopenshell.api.structural
+import ifcopenshell.util.representation
+import ifcopenshell.util.shape_builder
+import ifcopenshell.util.structural
 import ifcopenshell.util.unit
+import numpy as np
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from mathutils import Matrix, Vector
 
 import bonsai.bim.helper
+import bonsai.core.geometry
+import bonsai.core.root
 import bonsai.core.structural as core
 import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.structural.data import (
     LoadGroupDecorationData,
     StructuralAnalysisModelsData,
@@ -295,6 +303,139 @@ class DisableEditingStructuralBoundaryCondition(bpy.types.Operator):
         assert obj
         props = tool.Structural.get_object_structural_props(obj)
         props.active_boundary_condition = 0
+        return {"FINISHED"}
+
+
+class GenerateStructuralModel(bpy.types.Operator):
+    bl_idname = "bim.generate_structural_model"
+    bl_label = "Generate from Selected"
+    bl_description = (
+        "Generate structural members from selected beams and columns.\n\n"
+        "A member shares the building element's material profile set when it has a single profile, "
+        "so editing that profile or material also edits the building element"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        file = tool.Ifc.get()
+        if not file:
+            self.report({"WARNING"}, "No IFC project is loaded")
+            return {"CANCELLED"}
+        if file.schema == "IFC2X3":
+            self.report({"WARNING"}, "Structural model generation is not supported for IFC2X3")
+            return {"CANCELLED"}
+        if not tool.Structural.get_current_structural_analysis_model():
+            self.report({"WARNING"}, "Select a current structural analysis model first")
+            return {"CANCELLED"}
+
+        # Each source is (element, centroid axis, profile direction, section).
+        self._sources = []
+        self._skipped = []
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not (element.is_a("IfcBeam") or element.is_a("IfcColumn")):
+                continue
+            data = tool.Structural.get_physical_member_data(obj)
+            section = tool.Structural.get_physical_section(element)
+            if (
+                not data
+                or not section
+                or ifcopenshell.util.structural.get_structural_members(element)
+                or tool.Structural.get_member_orientation(data[1], data[0][1] - data[0][0]) is None
+            ):
+                self._skipped.append(obj.name)
+                continue
+            self._sources.append((element, *data, section))
+        if not self._sources:
+            self._report_skipped()
+            self.report({"WARNING"}, "No eligible profile beams or columns selected")
+            return {"CANCELLED"}
+        return IfcStore.execute_ifc_operator(self, context)
+
+    def _report_skipped(self):
+        if self._skipped:
+            self.report({"WARNING"}, f"Skipped {len(self._skipped)} objects: {', '.join(self._skipped)}")
+
+    def _execute(self, context):
+        file = tool.Ifc.get()
+        model = tool.Structural.get_current_structural_analysis_model()
+        tolerance = tool.Structural.get_structural_props().generation_merge_tolerance
+        tool.Structural.ensure_representation_contexts()
+        representation_context = ifcopenshell.util.representation.get_context(file, "Model", "Reference", "GRAPH_VIEW")
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(file)
+        scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+        free_ends = []
+
+        def create_item(ifc_class, name, start, end=None):
+            mesh = bpy.data.meshes.new(name)
+            obj = bpy.data.objects.new(name, mesh)
+            element = bonsai.core.root.assign_class(
+                tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class=ifc_class, should_add_representation=False
+            )
+            obj.location = start
+            points = [(0.0, 0.0, 0.0)]
+            if end is None:
+                item = builder.vertex()
+            else:
+                local_end = np.asarray(end) - np.asarray(start)
+                points.append(tuple(local_end))
+                item = builder.edge(end=local_end / scale)
+            mesh.from_pydata(points, [(0, 1)] if end is not None else [], [])
+            representation = builder.get_representation(representation_context, [item])
+            ifcopenshell.api.geometry.assign_representation(file, product=element, representation=representation)
+            tool.Geometry.link(representation, mesh)
+            context.view_layer.update()
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            ifcopenshell.api.structural.assign_structural_analysis_model(
+                file, products=[element], structural_analysis_model=model
+            )
+            return element
+
+        def create_node(position):
+            return create_item("IfcStructuralPointConnection", "Structural Point", position)
+
+        connections = [
+            (np.asarray(tool.Ifc.get_object(item).location), item)
+            for rel in model.IsGroupedBy or ()
+            for item in rel.RelatedObjects
+            if item.is_a("IfcStructuralPointConnection") and tool.Ifc.get_object(item)
+        ]
+
+        created = 0
+        for source, axis, profile_direction, section in self._sources:
+            start, end = axis
+            start_match = tool.Structural.find_nearby_connection(start, connections, tolerance)
+            end_match = tool.Structural.find_nearby_connection(end, connections, tolerance)
+            actual_start = next((position for position, item in connections if item == start_match), start)
+            actual_end = next((position for position, item in connections if item == end_match), end)
+            axis_direction = tool.Structural.get_member_orientation(profile_direction, actual_end - actual_start)
+            if axis_direction is None:
+                self._skipped.append(tool.Ifc.get_object(source).name)
+                continue
+            node_items = []
+            for position, match in ((actual_start, start_match), (actual_end, end_match)):
+                if match is None:
+                    match = create_node(position)
+                    connections.append((position, match))
+                else:
+                    free_ends.append(tool.Ifc.get_object(source).name)
+                node_items.append(match)
+            member = create_item(
+                "IfcStructuralCurveMember", source.Name or "Structural Member", actual_start, actual_end
+            )
+            ifcopenshell.api.structural.edit_structural_item_axis(file, structural_item=member, axis=axis_direction)
+            ifcopenshell.api.structural.assign_product(file, relating_product=member, related_object=source)
+            tool.Structural.assign_member_section(member, source, section)
+            for connection in node_items:
+                ifcopenshell.api.structural.add_structural_member_connection(
+                    file, relating_structural_member=member, related_structural_connection=connection
+                )
+            created += 1
+
+        self._report_skipped()
+        if free_ends:
+            self.report({"INFO"}, f"{len(set(free_ends))} members have free ends (not connected to other members)")
+        self.report({"INFO"}, f"Generated {created} structural members")
         return {"FINISHED"}
 
 

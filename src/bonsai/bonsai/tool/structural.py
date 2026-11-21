@@ -26,10 +26,14 @@ from typing import TYPE_CHECKING, Any, Union
 import bpy
 import ifcopenshell
 import ifcopenshell.api.context
+import ifcopenshell.api.material
 import ifcopenshell.api.structural
 import ifcopenshell.util.attribute
+import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.structural
+import ifcopenshell.util.unit
 import numpy as np
 
 import bonsai.bim.helper
@@ -48,6 +52,97 @@ if TYPE_CHECKING:
 
 
 class Structural(bonsai.core.tool.Structural):
+    @classmethod
+    def find_nearby_connection(cls, point, connections, tolerance):
+        # Merge exact coincidences (1e-6 m tolerance) regardless of user setting
+        min_tolerance = max(tolerance, 1e-6)
+        nearby = (
+            (np.linalg.norm(np.asarray(point) - np.asarray(position)), connection)
+            for position, connection in connections
+        )
+        return min(
+            (item for item in nearby if item[0] <= min_tolerance), default=(None, None), key=lambda item: item[0]
+        )[1]
+
+    @classmethod
+    def get_physical_section(
+        cls, source: ifcopenshell.entity_instance
+    ) -> tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance] | None:
+        representation = ifcopenshell.util.representation.get_representation(source, "Model", "Body", "MODEL_VIEW")
+        if (
+            not representation
+            or len(representation.Items) != 1
+            or not representation.Items[0].is_a("IfcExtrudedAreaSolid")
+        ):
+            return None
+        profile = representation.Items[0].SweptArea
+        material_set = ifcopenshell.util.element.get_material(source, should_skip_usage=True)
+        if material_set and material_set.is_a("IfcMaterial"):
+            return profile, material_set
+        if material_set and material_set.is_a("IfcMaterialProfileSet"):
+            profiles = material_set.MaterialProfiles or ()
+            if len(profiles) == 1 and profiles[0].Profile == profile and profiles[0].Material:
+                return profile, profiles[0].Material
+        return None
+
+    @classmethod
+    def assign_member_section(
+        cls,
+        member: ifcopenshell.entity_instance,
+        source: ifcopenshell.entity_instance,
+        section: tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance],
+    ) -> None:
+        file = tool.Ifc.get()
+        profile, material = section
+        material_set = ifcopenshell.util.element.get_material(source, should_skip_usage=True)
+        if not material_set.is_a("IfcMaterialProfileSet"):
+            material_set = ifcopenshell.api.material.add_material_set(file, set_type="IfcMaterialProfileSet")
+            ifcopenshell.api.material.add_profile(file, profile_set=material_set, material=material, profile=profile)
+        ifcopenshell.api.material.assign_material(file, products=[member], material=material_set)
+
+    @classmethod
+    def get_physical_member_data(cls, obj):
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcBeam") and not element.is_a("IfcColumn"):
+            return None
+        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if (
+            not representation
+            or len(representation.Items) != 1
+            or not representation.Items[0].is_a("IfcExtrudedAreaSolid")
+        ):
+            return None
+        extrusion = representation.Items[0]
+        direction = np.array(extrusion.ExtrudedDirection.DirectionRatios, dtype=float)
+        direction /= np.linalg.norm(direction)
+        scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        placement = ifcopenshell.util.placement.get_placement(extrusion.Position, should_return_si=True)
+        matrix = np.asarray(obj.matrix_world) @ placement
+        start = matrix[:3, 3]
+        end = start + matrix[:3, :3] @ direction * extrusion.Depth * scale
+        if np.linalg.norm(end - start) < 1e-9:
+            return None
+        profile = extrusion.SweptArea
+        profile_placement = (
+            ifcopenshell.util.placement.get_placement(profile.Position)
+            if profile.is_a("IfcParameterizedProfileDef") and profile.Position
+            else np.eye(4)
+        )
+        # Structural local X follows the extrusion; local Z follows the profile's Y axis.
+        return (start, end), (matrix @ profile_placement)[:3, 1]
+
+    @classmethod
+    def get_member_orientation(cls, profile_direction, member_direction):
+        direction_length = np.linalg.norm(member_direction)
+        if direction_length < 1e-9:
+            return None
+        direction = member_direction / direction_length
+        orientation = profile_direction - np.dot(profile_direction, direction) * direction
+        length = np.linalg.norm(orientation)
+        if length < 1e-9:
+            return None
+        return orientation / length
+
     @classmethod
     def get_structural_props(cls) -> BIMStructuralProperties:
         return bpy.context.scene.BIMStructuralProperties
