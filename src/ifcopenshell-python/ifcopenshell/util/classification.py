@@ -64,15 +64,19 @@ def get_classification(reference: ifcopenshell.entity_instance) -> ifcopenshell.
     :param reference: An IfcClassificationReference
     :return: IfcClassification
     """
-    if reference.is_a("IfcClassification"):
-        return reference
-    return get_classification(reference.ReferencedSource) if reference.ReferencedSource is not None else None
+    visited = set()
+    while reference is not None and reference not in visited:
+        if reference.is_a("IfcClassification"):
+            return reference
+        visited.add(reference)
+        reference = reference.ReferencedSource
+    return None
 
 
 def get_inherited_references(reference: Optional[ifcopenshell.entity_instance]) -> list[ifcopenshell.entity_instance]:
     results = []
     while True:
-        if not reference or reference.is_a("IfcClassification"):
+        if not reference or reference.is_a("IfcClassification") or reference in results:
             break
         results.append(reference)
         reference = reference.ReferencedSource

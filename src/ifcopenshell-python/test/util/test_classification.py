@@ -16,9 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import threading
+
 import ifcopenshell.api.classification
 import ifcopenshell.api.root
 import ifcopenshell.api.type
+
 import ifcopenshell.util.classification as subject
 import test.bootstrap
 
@@ -125,6 +128,12 @@ class TestGetClassification(test.bootstrap.IFC4):
         reference2 = self.file.createIfcClassificationReference(ReferencedSource=reference1)
         assert subject.get_classification(reference2) == classification
 
+    def test_get_classification_of_cyclic_references(self):
+        reference1 = self.file.createIfcClassificationReference()
+        reference2 = self.file.createIfcClassificationReference(ReferencedSource=reference1)
+        reference1.ReferencedSource = reference2
+        assert subject.get_classification(reference1) is None
+
 
 class TestGetInheritedReferences(test.bootstrap.IFC4):
     def test_single_reference(self):
@@ -137,3 +146,14 @@ class TestGetInheritedReferences(test.bootstrap.IFC4):
         reference1 = self.file.createIfcClassificationReference(ReferencedSource=classification)
         reference2 = self.file.createIfcClassificationReference(ReferencedSource=reference1)
         assert subject.get_inherited_references(reference2) == [reference2, reference1]
+
+    def test_cyclic_references(self):
+        reference1 = self.file.createIfcClassificationReference()
+        reference2 = self.file.createIfcClassificationReference(ReferencedSource=reference1)
+        reference1.ReferencedSource = reference2
+        results = []
+        thread = threading.Thread(target=lambda: results.append(subject.get_inherited_references(reference2)))
+        thread.daemon = True
+        thread.start()
+        thread.join(timeout=5)
+        assert results == [[reference2, reference1]]
