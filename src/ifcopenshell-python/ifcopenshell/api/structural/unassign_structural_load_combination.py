@@ -31,7 +31,8 @@ def unassign_structural_load_combination(
 
     If the load case isn't in the combination, nothing will happen.
 
-    :param load_case: The IfcStructuralLoadCase to remove from the combination.
+    :param load_case: The load case to remove from the combination: an
+        IfcStructuralLoadCase, or an IfcStructuralLoadGroup of type LOAD_CASE.
     :param load_combination: The IfcStructuralLoadGroup of type
         LOAD_COMBINATION.
     :return: None

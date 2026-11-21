@@ -485,7 +485,7 @@ class StructuralLoadCombinationsData:
         results = []
         for combination in get_load_combinations():
             load_cases = [
-                o for rel in combination.IsGroupedBy for o in rel.RelatedObjects if o.is_a("IfcStructuralLoadCase")
+                o for rel in combination.IsGroupedBy for o in rel.RelatedObjects if tool.Structural.is_load_case(o)
             ]
             results.append(
                 {
