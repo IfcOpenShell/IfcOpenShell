@@ -704,6 +704,7 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
                         "pset": ifc_filter.pset,
                         "comparison": ifc_filter.comparison,
                         "filter_mode": ifc_filter.filter_mode,
+                        "enabled": ifc_filter.enabled,
                     }
                     group_data.append(filter_data)
                 filter_structure.append(group_data)
@@ -882,6 +883,7 @@ class SaveSearch(Operator, tool.Ifc.Operator):
                         "pset": ifc_filter.pset,
                         "comparison": ifc_filter.comparison,
                         "filter_mode": ifc_filter.filter_mode,
+                        "enabled": ifc_filter.enabled,
                     }
                     group_data.append(filter_data)
                 filter_structure.append(group_data)
