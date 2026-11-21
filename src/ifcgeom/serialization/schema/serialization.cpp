@@ -6,6 +6,7 @@
 #include <Geom_Plane.hxx>
 #include <Geom_BSplineSurface.hxx>
 #include <Geom_CylindricalSurface.hxx>
+#include <Geom_ElementarySurface.hxx>
 
 #include <BRepTools_WireExplorer.hxx>
 
@@ -603,7 +604,13 @@ int convert_to_ifc(ifcopenshell::file& f, const TopoDS_Face& fa, IfcSchema::IfcF
 		auto adv = f.create<IfcSchema::IfcAdvancedFace>();
 		adv.setBounds(bounds);
 		adv.setFaceSurface(surface);
-        adv.setSameSense(fa.Orientation() == TopAbs_FORWARD);
+		// An indirect gp_Ax3 loses its handedness in the Ax2 conversion, flipping the surface normal.
+		bool same_sense = fa.Orientation() == TopAbs_FORWARD;
+		opencascade::handle<Geom_ElementarySurface> elem = opencascade::handle<Geom_ElementarySurface>::DownCast(surf);
+		if (!elem.IsNull() && !elem->Position().Direct()) {
+			same_sense = !same_sense;
+		}
+		adv.setSameSense(same_sense);
         face = adv;
 		return 1;
 #else
