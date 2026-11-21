@@ -71,6 +71,7 @@ classes = (
     operator.RemoveRepresentationItemFromShapeAspect,
     operator.SelectConnection,
     operator.SelectRepresentationItem,
+    operator.SelectSimilarPlacementValue,
     operator.SwitchRepresentation,
     operator.UnassignRepresentationItemLayer,
     operator.UnassignRepresentationItemStyle,
