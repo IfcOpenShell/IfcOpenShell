@@ -72,12 +72,13 @@ class PsetTemplate(bonsai.core.tool.PsetTemplate):
                 if prop.Name in added_prop_names:
                     continue
                 added_prop_names.add(prop.Name)
+                nominal_value = getattr(prop, "NominalValue", None)
                 ifcopenshell.api.pset_template.add_prop_template(
                     template_file,
                     pset_template,
                     name=prop.Name,
-                    description=prop.Description,
-                    primary_measure_type=prop.NominalValue.is_a(),
+                    description=getattr(prop, "Description", getattr(prop, "Specification", None)),
+                    primary_measure_type=nominal_value.is_a() if nominal_value is not None else None,
                 )
         return pset_template
 
