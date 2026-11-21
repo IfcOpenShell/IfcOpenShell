@@ -514,6 +514,9 @@ class IfcImporter:
         self, axes: list[ifcopenshell.entity_instance], grid_obj: bpy.types.Object, grid_placement: MatrixType
     ) -> None:
         for axis in axes:
+            # A single IfcGridAxis can be shared by multiple IfcGrids.
+            if tool.Ifc.get_object(axis):
+                continue
             shape = tool.Loader.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(tool.Loader.get_name(axis), mesh)
