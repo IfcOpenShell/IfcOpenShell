@@ -27,7 +27,15 @@ PRODUCTIVITY_PSET_DATA = Union[dict[str, Any], None]
 RESOURCES_TO_QUANTITIES: dict[str, tuple[str, ...]] = {
     "IfcCrewResource": ("IfcQuantityTime",),
     "IfcLaborResource": ("IfcQuantityTime",),
-    "IfcSubContractResource": ("IfcQuantityTime",),
+    # Subcontracts are commonly let per unit of work, so physical quantities are also allowed
+    "IfcSubContractResource": (
+        "IfcQuantityTime",
+        "IfcQuantityLength",
+        "IfcQuantityArea",
+        "IfcQuantityVolume",
+        "IfcQuantityWeight",
+        "IfcQuantityCount",
+    ),
     "IfcConstructionEquipmentResource": ("IfcQuantityTime",),
     "IfcConstructionMaterialResource": (
         "IfcQuantityVolume",
