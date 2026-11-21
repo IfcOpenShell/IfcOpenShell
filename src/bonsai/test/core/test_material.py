@@ -84,6 +84,20 @@ class TestRemoveMaterial:
         subject.remove_material(ifc, material, material="material")
 
 
+class TestMergeMaterials:
+    def test_merging_materials(self, ifc, material):
+        ifc.run("material.merge_materials", materials=["source1", "source2"], merge_into="target").should_be_called()
+        material.is_editing_materials().should_be_called().will_return(False)
+        subject.merge_materials(ifc, material, materials=["source1", "source2"], merge_into="target")
+
+    def test_merging_materials_and_reloading_imported_materials(self, ifc, material):
+        ifc.run("material.merge_materials", materials=["source1", "source2"], merge_into="target").should_be_called()
+        material.is_editing_materials().should_be_called().will_return(True)
+        material.get_active_material_type().should_be_called().will_return("material_type")
+        material.import_material_definitions("material_type").should_be_called()
+        subject.merge_materials(ifc, material, materials=["source1", "source2"], merge_into="target")
+
+
 class TestRemoveMaterialSet:
     def test_run(self, ifc, material):
         ifc.run("material.remove_material_set", material="material").should_be_called()
