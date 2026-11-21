@@ -628,6 +628,33 @@ Scenario: Refresh linked aggregate
     Then the object "IfcWall/Wall_01" exists
     And the object "IfcWall/Wall_01" dimensions are "3.1,0.1,3"
 
+Scenario: Duplicate linked aggregate - a nested aggregate stays inside its parent
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    # Tab in, so the parts group into a sub-assembly instead of collecting the aggregate.
+    And the object "IfcElementAssembly/Assembly" is selected
+    And I press "bim.override_mode_set_edit"
+    And the object "IfcWall/Wall_01" is selected
+    And additionally the object "IfcWall/Wall_02" is selected
+    When I press "bim.add_aggregate(aggregate_name='Nested')"
+    Then the object "IfcElementAssembly/Nested" is aggregated by object "IfcElementAssembly/Assembly"
+    When the object "IfcWall/Wall_01" is selected
+    And I duplicate linked aggregate the selected objects
+    # msgbus updates don't happen in background mode, so obj is not renamed to "IfcElementAssembly/Nested_01"
+    Then the object "Nested_01" exists
+    And the object "Nested_01" is aggregated by object "IfcElementAssembly/Assembly"
+
+Scenario: Refresh linked aggregate - an instance with no container
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    # Uncontain the assembly in IFC only. bim.remove_container would also move it to the hidden Unsorted collection.
+    And I evaluate expression "import ifcopenshell.api.spatial; ifcopenshell.api.spatial.unassign_container({ifc}, products=[{ifc}.by_type('IfcElementAssembly')[0]])"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    Then the object "IfcWall/Wall_01.001" exists
+    When the object "IfcWall/Wall_01" is selected
+    And I refresh linked aggregate the selected object
+    Then the object "IfcWall/Wall_01" exists
+    And the object "IfcWall/Wall_01.001" exists
+
 Scenario: Refresh linked aggregate - after deleting an object
     Given I load the IFC test file "/test/files/linked-aggregates.ifc"
     And the object "IfcWall/Wall_01" is selected
