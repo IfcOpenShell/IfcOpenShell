@@ -83,6 +83,11 @@ These tools are positioned between the Transform and Annotate sections of the st
 
    .. container:: card
 
+      :doc:`roof`
+         Generate a hip and gable roof over a footprint you draw.
+
+   .. container:: card
+
       :doc:`door`
          Insert and customize door elements in your walls.
 
@@ -90,6 +95,16 @@ These tools are positioned between the Transform and Annotate sections of the st
 
       :doc:`window`
          Add and adjust window elements in your walls.
+
+   .. container:: card
+
+      :doc:`stair`
+         Add and adjust parametric stair flights.
+
+   .. container:: card
+
+      :doc:`railing`
+         Add balustrades and wall-mounted handrails along a path.
 
    .. container:: card
 
@@ -153,8 +168,11 @@ Always ensure you're working within the correct IFC context when using these too
    explore
    wall
    slab
+   roof
    door
    window
+   stair
+   railing
    column
    beam
    duct
