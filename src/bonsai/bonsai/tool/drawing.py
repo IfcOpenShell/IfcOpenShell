@@ -1783,11 +1783,10 @@ class Drawing(bonsai.core.tool.Drawing):
         elif len(existing_verts) != 2:
             new_points = points
         else:
-            existing_verts = sorted(existing_verts, key=lambda v: v.x)
-            xmin, xmax = [v.x for v in existing_verts]
+            first, second = existing_verts
             y = points[0].y
-            if not tool.Cad.is_x(y, existing_verts[0].y) or not tool.Cad.is_x(y, existing_verts[1].y):
-                new_points = (Vector((xmax, y, 0.0)), Vector((xmin, y, 0.0)))
+            if not tool.Cad.is_x(y, first.y) or not tool.Cad.is_x(y, second.y):
+                new_points = (Vector((first.x, y, 0.0)), Vector((second.x, y, 0.0)))
 
         if new_points:
             if representation := ifcopenshell.util.representation.get_representation(annotation, context):
