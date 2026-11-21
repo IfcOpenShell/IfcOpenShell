@@ -567,6 +567,7 @@ class BIM_PT_structural_load_cases(Panel):
             "bim.show_structural_load_case", text="", icon=get_load_case_eye(load_case["id"]), emboss=False
         )
         op.load_case = load_case["id"]
+        row.operator("bim.duplicate_structural_load_case", text="", icon="DUPLICATE").load_case = load_case["id"]
 
         if self.props.active_load_case_id and self.props.active_load_case_id == load_case["id"]:
             row.operator("bim.edit_structural_load_case", text="", icon="CHECKMARK")
