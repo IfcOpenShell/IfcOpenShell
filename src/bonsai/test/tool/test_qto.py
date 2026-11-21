@@ -22,6 +22,7 @@ import ifcopenshell.api.context
 import ifcopenshell.api.cost
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import ifcopenshell.api.type
 import ifcopenshell.api.unit
 
 import bonsai.bim.import_ifc as import_ifc
@@ -235,6 +236,18 @@ class TestGetBaseQto(test.bim.bootstrap.NewFile):
         tool.Ifc.link(wall, wall_obj)
         product = tool.Ifc.get_entity(wall_obj)
         assert not subject.get_base_qto(product) == True
+
+    def test_ifc2x3_typed_product(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
+        wall_type = ifc.createIfcWallType()
+        wall = ifc.createIfcWall()
+        wall_obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        tool.Ifc.link(wall, wall_obj)
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[wall], relating_type=wall_type)
+        product = tool.Ifc.get_entity(wall_obj)
+        pset_qto = ifcopenshell.api.pset.add_qto(ifc, product=wall, name="Qto_WallBaseQuantities")
+        assert subject.get_base_qto(product).id() == pset_qto.get_info()["id"]
 
 
 class TestGetRelatedCostItemQuantities(test.bim.bootstrap.NewFile):
