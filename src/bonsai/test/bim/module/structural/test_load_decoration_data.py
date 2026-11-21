@@ -51,3 +51,42 @@ class TestLinearLoadsForMemberWithoutMesh(NewFile):
         tool.Ifc.link(member, bpy.data.objects.new("Member", bpy.data.meshes.new("Member")))
         info.get_linear_loads()
         assert info.info == []
+
+
+class TestTemperatureLoads(NewFile):
+    def test_curve_member_temperature_load(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        member = ifc.createIfcStructuralCurveMember(
+            GlobalId=ifcopenshell.guid.new(), PredefinedType="RIGID_JOINED_MEMBER"
+        )
+        load = ifc.createIfcStructuralLoadTemperature(DeltaTConstant=25.0, DeltaTY=-5.0, DeltaTZ=0.0)
+        action = ifc.createIfcStructuralLinearAction(
+            GlobalId=ifcopenshell.guid.new(), AppliedLoad=load, PredefinedType="CONST"
+        )
+        mesh = bpy.data.meshes.new("Member")
+        mesh.from_pydata([(0.0, 0.0, 0.0), (4.0, 0.0, 0.0)], [(0, 1)], [])
+        obj = bpy.data.objects.new("Member", mesh)
+        tool.Ifc.link(member, obj)
+
+        info = ShaderInfo()
+        info.temperature_unit = "K"
+        info.curve_members = {"1": {"member": member, "activities": [(action, 1.0)]}}
+        info.get_temperature_loads()
+
+        assert len(info.info) == 1
+        assert len(info.text_info) == 1
+        assert "ΔT=+25.00 K" in info.text_info[0]["text"]
+        assert "ΔTy=-5.00 K" in info.text_info[0]["text"]
+
+    def test_member_without_mesh_skips_cleanly(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        member = ifcopenshell.create_entity("IfcStructuralCurveMember", GlobalId=ifcopenshell.guid.new())
+        load = ifc.createIfcStructuralLoadTemperature(DeltaTConstant=10.0)
+        action = ifc.createIfcStructuralLinearAction(GlobalId=ifcopenshell.guid.new(), AppliedLoad=load)
+        info = ShaderInfo()
+        info.curve_members = {"1": {"member": member, "activities": [(action, 1.0)]}}
+        info.get_temperature_loads()
+        assert info.info == []
+        assert info.text_info == []
