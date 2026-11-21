@@ -351,9 +351,13 @@ class StartIfcTesterWebapp(bpy.types.Operator):
             env["BONSAI_LIB_PATH"] = str(bonsai_lib_path)
             env["BONSAI_VERSION"] = tool.Blender.get_bonsai_version()
 
-            # Start the Flask server as subprocess
+            # Start the Flask server as subprocess, capturing its output to diagnose startup failures.
             webapp_process = subprocess.Popen(
-                [sys.executable, webapp_serve_path, "--host", "127.0.0.1", "--port", str(webapp_port)], env=env
+                [sys.executable, webapp_serve_path, "--host", "127.0.0.1", "--port", str(webapp_port)],
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
             )
 
             # Update properties
@@ -361,14 +365,62 @@ class StartIfcTesterWebapp(bpy.types.Operator):
             props.websocket_server_port = websocket_port
             props.webapp_is_running = True
 
-            # Wait a moment for servers to start, then open browser
-            def delayed_open_browser():
-                import time
+            # Open the browser only once the webapp is listening.
+            def wait_for_webapp_and_open_browser():
+                global webapp_process, websocket_server_thread, websocket_app
+                process = webapp_process
+                deadline = time.monotonic() + 10.0
+                connected = False
 
-                time.sleep(1.5)
-                webbrowser.open(f"http://127.0.0.1:{webapp_port}?bonsai_server={websocket_port}")
+                while time.monotonic() < deadline:
+                    if process.poll() is not None:
+                        # Process exited before it ever started listening.
+                        break
+                    try:
+                        with socket.create_connection(("127.0.0.1", webapp_port), timeout=0.25):
+                            connected = True
+                            break
+                    except OSError:
+                        pass
+                    time.sleep(0.25)
 
-            browser_thread = threading.Thread(target=delayed_open_browser, daemon=True)
+                if connected:
+                    webbrowser.open(f"http://127.0.0.1:{webapp_port}?bonsai_server={websocket_port}")
+                    try:
+                        for line in process.stdout:
+                            print(line, end="")
+                    except (ValueError, OSError):
+                        pass
+                    return
+
+                # Runs after execute() returned, so report to the console instead.
+                exit_code = process.poll()
+                if exit_code is not None:
+                    try:
+                        output, _ = process.communicate(timeout=2)
+                    except Exception:
+                        output = ""
+                    print(
+                        f"IfcTester webapp process exited with code {exit_code}. Output: {output}\n"
+                        "Ensure ifctester is up to date and Flask is available; check firewall/antivirus "
+                        "if the port is blocked."
+                    )
+                else:
+                    print(
+                        f"IfcTester webapp did not start listening on port {webapp_port} within 10s.\n"
+                        "Ensure ifctester is up to date and Flask is available; check firewall/antivirus "
+                        "if the port is blocked."
+                    )
+
+                if process.stdout:
+                    process.stdout.close()
+                if webapp_process is process:
+                    if websocket_app:
+                        websocket_app.stop_server()
+                    webapp_process = websocket_server_thread = websocket_app = None
+                    props.webapp_is_running = False
+
+            browser_thread = threading.Thread(target=wait_for_webapp_and_open_browser, daemon=True)
             browser_thread.start()
 
             self.report(
@@ -380,6 +432,8 @@ class StartIfcTesterWebapp(bpy.types.Operator):
             # Clean up on error
             if webapp_process:
                 webapp_process.terminate()
+                if webapp_process.stdout:
+                    webapp_process.stdout.close()
                 webapp_process = None
             if websocket_server_thread and websocket_app:
                 # The websocket server will be cleaned up when the thread ends
@@ -420,9 +474,12 @@ class StopIfcTesterWebapp(bpy.types.Operator):
                 webapp_process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 webapp_process.kill()
+                webapp_process.wait(timeout=5)
             except Exception as e:
                 errors.append(f"Error stopping webapp server: {str(e)}")
             finally:
+                if webapp_process.stdout:
+                    webapp_process.stdout.close()
                 webapp_process = None
 
         # Stop websocket server
