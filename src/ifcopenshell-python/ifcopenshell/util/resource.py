@@ -21,6 +21,7 @@ from typing import Any, Union
 import ifcopenshell.util.cost
 import ifcopenshell.util.date
 import ifcopenshell.util.element
+import ifcopenshell.util.sequence
 
 PRODUCTIVITY_PSET_DATA = Union[dict[str, Any], None]
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcConstructionResource.htm#Table-7.3.3.7.1.3.H
@@ -169,3 +170,26 @@ def get_parent_cost(resource: ifcopenshell.entity_instance) -> Union[tuple[Union
     else:
         cost = get_cost(nests[0].RelatingObject)
         return cost
+
+
+def get_calendar(resource: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    """Get the IfcWorkCalendar that applies to a resource, if any.
+
+    A resource may have a calendar assigned to it directly. If not, the
+    calendar is inherited from its parent (nested) resource, or from a task
+    the resource is assigned to do work on.
+
+    :param resource: The IfcConstructionResource to inspect.
+    :return: The applicable IfcWorkCalendar, or None if none is assigned.
+    """
+    calendar = ifcopenshell.util.sequence.get_calendar(resource)
+    if calendar:
+        return calendar
+    if resource.Nests:
+        calendar = get_calendar(resource.Nests[0].RelatingObject)
+        if calendar:
+            return calendar
+    task = get_task_assignments(resource)
+    if task:
+        return ifcopenshell.util.sequence.derive_calendar(task)
+    return None
