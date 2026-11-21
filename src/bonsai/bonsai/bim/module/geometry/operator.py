@@ -2542,6 +2542,9 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context):
+        # Executed without invoke, so run invoke to collect the edited objects.
+        if not hasattr(self, "edited_objs"):
+            return self._invoke(context, None)
         if not context.active_object:
             return {"FINISHED"}
         for obj in self.edited_objs:
