@@ -39,7 +39,7 @@ def edit_organisation(
         organisation = ifcopenshell.api.owner.add_organisation(model,
             identification="AWB", name="Architects With Ballpens")
         ifcopenshell.api.owner.edit_organisation(model, organisation=organisation,
-            attributes={"name": "Architects Without Ballpens"})
+            attributes={"Name": "Architects Without Ballpens"})
     """
     for name, value in attributes.items():
         setattr(organisation, name, value)

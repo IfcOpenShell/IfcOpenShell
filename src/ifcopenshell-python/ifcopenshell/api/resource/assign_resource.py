@@ -62,6 +62,8 @@ def assign_resource(
             ifc_class="IfcBuildingElementProxy", predefined_type="CRANE")
 
         # Let's place our crane at some X, Y coordinates.
+        import numpy
+
         matrix = numpy.eye(4)
         matrix[0][3], matrix[1][3] = 3.0, 4.0
         ifcopenshell.api.geometry.edit_object_placement(model, product=crane, matrix=matrix)

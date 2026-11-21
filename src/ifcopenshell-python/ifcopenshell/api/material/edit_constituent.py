@@ -60,7 +60,7 @@ def edit_constituent(
             constituent=framing, attributes={"Name": "Framing"}, material=aluminium2)
 
         ifcopenshell.api.material.edit_constituent(model,
-            constituent=constituent, attributes={"Name": "Glazing"})
+            constituent=glazing, attributes={"Name": "Glazing"})
     """
     for name, value in (attributes or {}).items():
         setattr(constituent, name, value)

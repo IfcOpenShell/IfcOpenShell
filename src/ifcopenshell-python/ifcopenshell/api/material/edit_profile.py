@@ -56,11 +56,11 @@ def edit_profile(
 
         # Create some I-shaped profiles. Notice how we name our profiles based
         # on standardised steel profile names.
-        hea100 = file.create_entity(
+        hea100 = model.create_entity(
             "IfcIShapeProfileDef", ProfileName="HEA100", ProfileType="AREA",
             OverallWidth=100, OverallDepth=96, WebThickness=5, FlangeThickness=8, FilletRadius=12,
         )
-        hea200 = file.create_entity(
+        hea200 = model.create_entity(
             "IfcIShapeProfileDef", ProfileName="HEA200", ProfileType="AREA",
             OverallWidth=200, OverallDepth=190, WebThickness=6.5, FlangeThickness=10, FilletRadius=18,
         )

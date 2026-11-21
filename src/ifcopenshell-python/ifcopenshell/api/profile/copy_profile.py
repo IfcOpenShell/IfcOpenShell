@@ -33,7 +33,7 @@ def copy_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instance)
 
     .. code:: python
 
-        profile = ifcopenshell.api.profile.add_profile(model, ifc_class="IfcRectangleProfileDef")
+        profile = ifcopenshell.api.profile.add_parameterized_profile(model, ifc_class="IfcRectangleProfileDef")
 
         # Let's duplicate the rectangle profile
         profile_copy = ifcopenshell.api.profile.copy_profile(model, profile=profile)
