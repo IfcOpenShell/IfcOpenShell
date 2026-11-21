@@ -280,7 +280,7 @@ bool ifcopenshell::geom::open_cascade_kernel::unify_shapes(const std::vector<ifc
 }
 
 bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revolve::ptr r, std::vector<ifcopenshell::geom::conversion_result>& results) {
-
+	return handle_occt_exception([&]() -> bool {
 
 	gp_Ax1 ax(
 		convert_xyz<gp_Pnt>(*r->axis_origin),
@@ -305,6 +305,8 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 		r->surface_style
 	));
 	return true;
+
+	});
 }
 
 // IfcSchema::IfcRelVoidsElement::list::ptr ifcopenshell::geom::Kernel::find_openings(IfcSchema::IfcProduct* product) {
