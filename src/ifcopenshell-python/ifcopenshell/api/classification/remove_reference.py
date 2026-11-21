@@ -44,7 +44,8 @@ def remove_reference(
 
     .. code:: python
 
-        wall_type = model.by_type("IfcWallType")[0]
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        wall_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWallType")
         classification = ifcopenshell.api.classification.add_classification(
             model, classification="MyCustomClassification")
         reference = ifcopenshell.api.classification.add_reference(model,

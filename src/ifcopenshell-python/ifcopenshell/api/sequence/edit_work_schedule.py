@@ -41,7 +41,7 @@ def edit_work_schedule(
         work_plan = ifcopenshell.api.sequence.add_work_plan(model, name="Construction")
 
         # Let's imagine this is one of our schedules in our work plan.
-        schedule = ifcopenshell.api.sequence.add_work_schedule(model,
+        work_schedule = ifcopenshell.api.sequence.add_work_schedule(model,
             name="Construction Schedule A", work_plan=work_plan)
 
         # Let's give it a description

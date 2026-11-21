@@ -31,8 +31,15 @@ def edit_survey_point(annotation: entity_instance, x: float, y: float, z: float 
 
     .. code:: python
 
-        annotation = ifcopenshell.api.cogo.add_survey_point(file,file.createIfcCartesianPoint(4000.0,3500.0)))
-        ifcopenshell.api.cogo.edit_surve_point(annotation,3500.0,2000.0)
+        model = ifcopenshell.file(schema="IFC4X3")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        model_context = ifcopenshell.api.context.add_context(model, context_type="Model")
+        ifcopenshell.api.context.add_context(model, context_type="Model",
+            context_identifier="Annotation", target_view="MODEL_VIEW", parent=model_context)
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcSite")
+        point = model.createIfcCartesianPoint((4000.0, 3500.0))
+        annotation = ifcopenshell.api.cogo.add_survey_point(model, survey_point=point)
+        ifcopenshell.api.cogo.edit_survey_point(annotation, x=3500.0, y=2000.0)
     """
     if annotation.Representation.Representations[0].Items[0].Dim == 2:
         annotation.Representation.Representations[0].Items[0].Coordinates = (x, y)

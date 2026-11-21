@@ -102,9 +102,14 @@ def assign_cost_item_quantity(
         # and of course it has also the gross volume stored in the
         # Qto_WallBaseQuantities.GrossVolume. So we can add an IfcQuantity that stores the
         # reinforcement volume calculated with reinfocement volume ratio * gross volume.
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(model, product=wall, name="Pset_ConcreteElementGeneral")
+        ifcopenshell.api.pset.edit_pset(model, pset=pset, properties={"ReinforcementVolumeRatio": 0.02})
+        wall_qto = ifcopenshell.api.pset.add_qto(model, product=wall, name="Qto_WallBaseQuantities")
+        ifcopenshell.api.pset.edit_qto(model, qto=wall_qto, properties={"NetVolume": 10.0})
         ifcopenshell.api.cost.assign_cost_item_quantity(model,
             cost_item=item, products=[wall],
-            formula="Pset_ConcreteElementGeneral.ReinforcementVolumeRatio * NetVolume"
+            formula="Pset_ConcreteElementGeneral.ReinforcementVolumeRatio * NetVolume",
             ifc_class="IfcQuantityVolume")
 
     """

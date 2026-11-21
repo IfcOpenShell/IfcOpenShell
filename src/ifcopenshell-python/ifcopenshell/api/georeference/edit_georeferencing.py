@@ -57,6 +57,10 @@ def edit_georeferencing(
 
     .. code:: python
 
+        from math import cos, radians, sin
+
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(model, context_type="Model")
         ifcopenshell.api.georeference.add_georeferencing(model)
         # This is the simplest scenario, a defined CRS (GDA2020 / MGA Zone
         # 56, typically used in Sydney, Australia) but with no local
