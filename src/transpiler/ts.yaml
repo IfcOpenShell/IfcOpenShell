@@ -1,0 +1,2553 @@
+# This file was generated with the assistance of an AI coding tool.
+# SPDX-License-Identifier: LGPL-3.0-or-later
+unsupported: |
+  {% if kind == "class" %}export class {{ name }} {
+    [key: string]: any;
+    constructor(..._args: any[]) {
+      throw new Error({{ ("Unsupported Python in " ~ name ~ ": " ~ reason) | literal }});
+    }
+  }{% else %}export function {{ name | camel }}(..._args: any[]): any {
+    throw new Error({{ ("Unsupported Python in " ~ name ~ ": " ~ reason) | literal }});
+  }{% endif %}
+header: |-
+  // This file was generated with the assistance of an AI coding tool.
+  // SPDX-License-Identifier: LGPL-3.0-or-later
+  // Transpiled from ifcopenshell/{{ this_module | replace(".", "/") }}.py by src/transpiler; see that file for copyright.
+
+  import * as ifcopenshell from "{{ "../" * (this_module.split(".") | length) }}index.js";{% if this_module in overridable %}
+
+  /** Replace these functions as Python code assigns to ifcopenshell.{{ this_module }}. */
+  export const overrides: { [name: string]: ((...args: any[]) => any) | undefined } = {};{% endif %}
+# Generated modules live in src/python/{util,api} of the ifcopenshell package, next to the runtime
+# (src/python/_*.ts): util.x is util/x.ts, api.p.u is api/p/u.ts and api.p is api/p/index.ts.
+import: |-
+  {% set there = target.split(".") %}{% set path = there[1] ~ ".js" if there[1].startswith("_") else there | join("/") ~ ".js" if there[0] == "util" or there | length > 2 else there | join("/") ~ "/index.js" %}import * as {{ alias }} from "{{ "../" * (this_module.split(".") | length - 1) }}{{ path }}";
+# Classes of ifcopenshell_wrapper, as exported by ifcopenshell.wrapper.
+wrapper_classes:
+  attribute: IfcOpenshellAttribute
+  inverse_attribute: IfcOpenshellInverseAttribute
+  declaration: IfcOpenshellDeclaration
+  entity: IfcOpenshellEntity
+  type_declaration: IfcOpenshellTypeDeclaration
+  select_type: IfcOpenshellSelectType
+  enumeration_type: IfcOpenshellEnumeration
+  parameter_type: IfcOpenshellParameterType
+  named_type: IfcOpenshellNamedType
+  simple_type: IfcOpenshellSimpleType
+  aggregation_type: IfcOpenshellAggregationType
+  schema_definition: IfcOpenshellSchema
+# Python builtins used as values (not called), e.g. as conversion functions in a dict.
+builtin_values:
+  list: 'Array.from'
+  tuple: 'Array.from'
+  str: String
+  float: Number
+  int: '((v: any) => Math.trunc(Number(v)))'
+  bool: Boolean
+  bytes: '((v: any) => v)'
+  dict: '((v: any = {}) => ({ ...v }))'
+  set: '((v: any = []) => new Set(v))'
+math_functions:
+  sqrt: Math.sqrt
+  sin: Math.sin
+  cos: Math.cos
+  tan: Math.tan
+  asin: Math.asin
+  acos: Math.acos
+  atan: Math.atan
+  atan2: Math.atan2
+  floor: Math.floor
+  ceil: Math.ceil
+  fabs: Math.abs
+  hypot: Math.hypot
+  log: Math.log
+  log10: Math.log10
+  exp: Math.exp
+  isnan: Number.isNaN
+  isinf: '((v: number) => Math.abs(v) === Infinity)'
+  radians: '((v: number) => v * Math.PI / 180)'
+  degrees: '((v: number) => v * 180 / Math.PI)'
+  copysign: '((a: number, b: number) => Math.sign(b) * Math.abs(a))'
+  pow: Math.pow
+  trunc: Math.trunc
+  isclose: '((a: number, b: number, o: { relTol?: number; absTol?: number } = {}) => Math.abs(a - b) <= Math.max((o.relTol ?? 1e-9) * Math.max(Math.abs(a), Math.abs(b)), o.absTol ?? 0))'
+math_constants:
+  pi: Math.PI
+  e: Math.E
+  inf: Infinity
+  nan: NaN
+  tau: (2 * Math.PI)
+names:
+  pi: Math.PI
+  self: this
+methods:
+  upper: toUpperCase
+  lower: toLowerCase
+  append: push
+  is_a: isA
+  by_type: byType
+  by_id: byId
+  by_guid: byGuid
+  replace: replaceAll
+  startswith: startsWith
+  endswith: endsWith
+  strip: trim
+  lstrip: trimStart
+  rstrip: trimEnd
+  get_info: getInfo
+  _is_referenced_only_in: isReferencedOnlyIn
+  _ids_referenced_only_within: idsReferencedOnlyWithin
+  _is: isA
+  get_inverse: getInverse
+  get_total_inverses: getTotalInverses
+  add: add
+  union: union
+  intersection: intersection
+  difference: difference
+  issubset: isSubsetOf
+  issuperset: isSupersetOf
+  id: id
+  index: indexOf
+  count: count
+  discard: delete
+  to_string: toString
+calls:
+  abs: Math.abs
+  str: String
+  tuple: Array.from<any>
+  list: Array.from<any>
+# Modules whose functions Python users replace at runtime; each gets an `overrides` object.
+overridable: [api.owner.settings]
+# JS reserved words that are valid Python names get a trailing underscore.
+reserved: [new, class, function, var, default, delete, this, switch, case, const, let, enum, export, import, typeof, void, with, package, interface, private, protected, public, static, arguments, eval, instanceof, do, catch, extends, super, debugger, implements]
+# Python modules with a hand-written counterpart in src/ts/ifcopenshell-js/src/python: `import x as y` and
+# `from x import z` refer to `alias.member` of that module, with camelCase members.
+# math has no module; its names map through math_functions and math_constants.
+runtime_modules:
+  math: {module: null}
+  datetime: {module: util._datetime, alias: datetime}
+  isodate: {module: util._isodate, alias: isodate}
+  dateutil: {module: util._dateutil, alias: dateutil}
+  numpy: {module: util._numpy, alias: np}
+  os: {module: util._os, alias: os}
+  re: {module: util._py, alias: py, prefix: re, plain_import: false}
+  itertools: {module: util._itertools, alias: itertools}
+# Runtime modules whose objects overload Python operators; in modules importing them,
+# operators and subscripts on values of unknown type dispatch at runtime.
+overloading_modules: [datetime, isodate, dateutil, numpy]
+# Kind of values returned by runtime module functions; see `inference`.
+runtime_kinds:
+  numpy: ndarray
+  datetime: pyobject
+  isodate: pyobject
+  dateutil: pyobject
+# numpy functions that return Python scalars or booleans rather than arrays.
+numpy_scalars: [norm, dot, allclose, isclose, any, all, sum, min, max, mean, argmax, argmin, sign, abs, round, isnan, isinf, cos, sin, arctan, arcsin, arccos, radians, degrees, float64, float32, int64, int32]
+# Python arithmetic operators and their runtime functions for overloaded operands.
+dunder_operators:
+  Add: add
+  Sub: sub
+  Mult: mul
+  Div: truediv
+  FloorDiv: floordiv
+  Mod: mod
+  Pow: pow
+  MatMult: matmul
+# Imported modules that rules translate (others are dropped and their users stubbed).
+supported_modules: [math, json, time, functools, typing, collections, namedtuple, defaultdict, re, pathlib, assert_never, typing_extensions, dataclasses, dataclass, field]
+# Modules imported only for annotations.
+type_only_modules: [typing, typing_extensions, collections.abc, __future__, collections, functools]
+# Functions that introspect Python itself; generate.py runs them for each argument and
+# the generated function looks the result up. Arguments must be strings.
+precomputed:
+  util.type.get_correct_type_assigned_rules: [IFC2X3, IFC4, IFC4X3, IFC4X3_ADD2]
+precomputed_function: |
+  const {{ name | camel }}Data: Record<string, any> = {{ data | literal }};
+
+  /** Precomputed from Python by src/transpiler/generate.py for {{ data.keys() | join(", ") }}. */
+  export function {{ name | camel }}({{ parameter }}: string): any {
+    if (!({{ parameter }} in {{ name | camel }}Data)) throw new Error(`{{ name }}: no precomputed result for ${ {{- parameter -}} }`);
+    return structuredClone({{ name | camel }}Data[{{ parameter }}]);
+  }
+# Decorators with no behaviour a caller can observe, other than caching.
+ignored_decorators: [functools.cache, functools.lru_cache, cache, lru_cache, staticmethod]
+# Python methods whose JS name or semantics differ; calls to them need an explicit rule.
+python_methods: [pop, insert, sort, reverse, format, title, setdefault, values, items, keys, get, find, rfind, partition, zfill, center, ljust, rjust, isdigit, isalpha, isnumeric, swapcase, casefold, splitlines, encode, decode, clear, union, intersection, difference, issubset, issuperset, popitem, fromkeys, append, extend, copy, update, split, join, strip, lstrip, rstrip, upper, lower, replace, startswith, endswith, count, index, remove, add, discard]
+operators:
+  Add: +
+  Sub: '-'
+  Mult: '*'
+  Div: /
+  Pow: '**'
+  Mod: '%'
+  BitOr: '|'
+  BitAnd: '&'
+  FloorDiv: '/'
+types:
+  - input: null
+    output: any
+  - input:
+      node: Subscript
+      value: $array
+    when: array | source in ["npt.NDArray", "NDArray"]
+    output: '{{ "util._numpy" | use("np") }}.NDArray'
+  - input: $value
+    when: value | source in ["npt.NDArray", "NDArray", "np.ndarray", "numpy.ndarray"]
+    output: '{{ "util._numpy" | use("np") }}.NDArray'
+  - input: $value
+    when: value | source in ["npt.ArrayLike", "npt.DTypeLike"] or (value | source).startswith("ifcopenshell.geom.") or (value | source).startswith("ifcopenshell.ifcopenshell_wrapper.")
+    output: any
+  - input: $value
+    when: value.__class__.__name__ == "Attribute" and value | is_class
+    output: '{{ value | emit }}'
+  - input: $value
+    when: value | alias_value is not none and value.__class__.__name__ == "Attribute"
+    output: '{{ value | alias_value | type }}'
+  - input: $value
+    when: value | runtime_path is not none and (value | runtime_path).module == "numpy"
+    output: '{% set name = (value | runtime_path).parts[-1] %}{{ ("util._numpy" | use("np")) ~ ".NDArray" if name in ["ndarray", "NDArray", "array"] else "boolean" if name == "bool_" else "number" }}'
+  - input: $value
+    when: value | runtime_path is not none and (value | runtime_path).module in runtime_kinds
+    output: '{% set path = value | runtime_path %}{{ runtime_modules[path.module].module | use(runtime_modules[path.module].alias) }}{% for part in path.parts %}.{{ part }}{% endfor %}'
+  - input:
+      node: Attribute
+      value:
+        node: Name
+        id: ifcopenshell
+      attr: file
+    output: ifcopenshell.File
+  - input:
+      node: Attribute
+      value:
+        node: Name
+        id: ifcopenshell
+      attr: entity_instance
+    output: ifcopenshell.EntityInstance
+  - input:
+      node: Name
+      id: $name
+    when: name not in module_globals and name not in classes and (node | is_class or node | alias_value is not none)
+    output: '{% if node | is_class %}{{ node | emit }}{% else %}{{ node | alias_value | type }}{% endif %}'
+  - input:
+      node: Name
+      id: $name
+    # Names this module does not declare (TYPE_CHECKING imports such as mathutils.Vector, bare generics) are any.
+    output: '{{ {"str": "string", "float": "number", "int": "number", "bool": "boolean", "Any": "any", "object": "any", "bytes": "Uint8Array", "entity_instance": "ifcopenshell.EntityInstance", "list": "any[]", "set": "Set<any>"}.get(name, name if name in module_globals or name in classes or name in typed_dicts else "any") }}'
+  - input:
+      node: Constant
+      value: null
+    output: 'null'
+  - input:
+      node: Constant
+      value: $name
+    output: '{{ name }}'
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: Optional
+      slice: $element
+    output: '{{ element | type }} | null'
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: $kind
+      slice:
+        node: Tuple
+        elts: $elements
+    when: kind in ['Union', 'Literal', 'tuple', 'dict']
+    output: '{% if kind == "dict" %}{% if elements[0].id is defined and elements[0].id == "str" %}{ [key: string]: {{ elements[1] | type }} }{% elif elements[0] | emit("annotation_kinds") == "string" %}Partial<Record<{{ elements[0] | type }}, {{ elements[1] | type }}>>{% else %}Map<{{ elements[0] | type }}, {{ elements[1] | type }}>{% endif %}{% elif kind == "tuple" %}{% if elements[-1].value is defined and elements[-1].value.__class__.__name__ == "ellipsis" %}Array<{{ elements[0] | type }}>{% else %}[{{ elements | map("type") | join(", ") }}]{% endif %}{% else %}{% for element in elements %}{{ element | emit if kind == "Literal" else element | type }}{% if not loop.last %} | {% endif %}{% endfor %}{% endif %}'
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: Literal
+      slice:
+        node: Constant
+        value: $value
+    output: '{{ value | literal }}'
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: $kind
+      slice: $element
+    when: kind in ['set', 'Iterable', 'Sequence']
+    output: '{{ "Set" if kind == "set" else "Iterable" if kind == "Iterable" else "Array" }}<{{ element | type }}>'
+  - input:
+      node: BinOp
+      op:
+        node: BitOr
+      left: $left
+      right: $right
+    output: '{{ left | type }} | {{ right | type }}'
+  - input:
+      node: Attribute
+      value:
+        node: Name
+        id: $module
+      attr: $name
+    when: module in ['entity_instance'] or name == 'entity_instance'
+    output: ifcopenshell.EntityInstance
+  - input:
+      node: Attribute
+    when: '"ifcopenshell_wrapper" in node | source or (node.value.id is defined and node.value.id | module_alias == "ifcopenshell_wrapper")'
+    output: any
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: frozenset
+      slice: $element
+    output: ReadonlySet<{{ element | type }}>
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: $kind
+      slice: $element
+    when: kind in ['NotRequired', 'Required', 'ReadOnly']
+    output: '{{ element | type }}'
+  - input:
+      node: Name
+      id: entity_instance
+    output: ifcopenshell.EntityInstance
+  - input:
+      node: Attribute
+    when: node | resolve is not none
+    output: any
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: list
+      slice: $element
+    output: Array<{{ element | type }}>
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: $kind
+    when: kind in ['Any', 'Iterator', 'Generator', 'Callable']
+    output: any
+rules:
+  - input: $value
+    context: condition
+    when: value | kind == "array"
+    output: '({{ value | emit }}?.length ?? 0) > 0'
+  - input: $value
+    context: condition
+    when: value | kind == "dict"
+    output: Object.keys({{ value | emit }} ?? {}).length > 0
+  - input:
+      node: BoolOp
+      op: $op
+      values: $values
+    context: condition
+    output: ({% for value in values %}{{ value | condition }}{% if not loop.last %} {{ "||" if op.__class__.__name__ == "Or" else "&&" }} {% endif %}{% endfor %})
+  - input: $value
+    context: condition
+    when: value.__class__.__name__ in ["Compare", "UnaryOp", "Constant"] or value | kind in ["boolean", "number", "string", "entity", "file", "set-nonempty"]
+    output: '{{ value | emit }}'
+  - input: $value
+    context: condition
+    when: value | kind in ["set", "map"]
+    output: '({{ value | emit }}?.size ?? 0) > 0'
+  - input: $value
+    context: condition
+    output: '{{ "util._py" | use("py") }}.truthy({{ value | emit }})'
+  - input: $value
+    context: iterable
+    when: value | kind == "dict"
+    output: Object.keys({{ value | emit }})
+  - input: $value
+    context: iterable
+    when: value | kind == "map"
+    output: '[...{{ value | emit }}.keys()]'
+  - input: $value
+    context: iterable
+    output: '{{ value | emit }}'
+  - input:
+      node: ImportFrom
+      module: __future__
+    output: ''
+  - input:
+      node: ImportFrom
+      module: $module
+    when: module in ['__future__', 'typing', 'collections', 'collections.abc', 'math', 'fractions', 'functools', 'typing_extensions', 'time']
+    output: ''
+  - input:
+      node: Import
+      names: $imports
+    when: imports | map(attribute="name") | reject("in", ["functools", "typing", "time"]) | list | length == 0
+    output: ''
+  - input:
+      node: Import
+      names:
+        - node: alias
+          name: ifcopenshell
+          asname: null
+    output: ''
+  - input:
+      node: Import
+      names: $imports
+    when: imports | map(attribute="name") | select("startswith", "ifcopenshell.") | list | length == imports | length
+    output: ''
+  - input:
+      node: ImportFrom
+      module: $module
+      level: 0
+    when: module == "ifcopenshell" or module.startswith("ifcopenshell.")
+    output: ''
+  - input:
+      node: Import
+    when: node.names | map(attribute="name") | select("startswith", "ifcopenshell") | list | length == 0
+    output: ''
+  - input:
+      node: ImportFrom
+      level: 0
+    when: not node.module.startswith("ifcopenshell")
+    output: ''
+  - input:
+      node: AnnAssign
+      target: $name
+      annotation:
+        node: Name
+        id: TypeAlias
+      value: $type
+    output: export type {{ name | emit }} = {{ type | type }};
+  # Methods only entity declarations have; entity.declaration may also be a type declaration (IfcLabel values).
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Attribute
+          value: $value
+          attr: declaration
+        attr: $method
+      args: $args
+      keywords: []
+    when: method in ["all_attributes", "all_inverse_attributes", "attribute_count", "attribute_index", "attribute_by_index", "derived", "is_abstract", "supertype", "subtypes"]
+    output: '{{ value | emit }}.declaration().asEntity().{{ method | camel }}({{ args | map("emit") | join(", ") }})'
+  # Runtime modules (see runtime_modules): calls pass keyword arguments as a trailing options object.
+  - input:
+      node: Call
+      func: $callee
+      args: $args
+      keywords: $keywords
+    when: callee | runtime_path is not none
+    output: '{{ callee | emit }}({{ args | map("emit") | join(", ") }}{% if keywords %}{% if args %}, {% endif %}{ {% for keyword in keywords %}{% if keyword.arg is none %}...{{ keyword.value | emit }}{% else %}{{ keyword.arg | camel }}: {{ keyword.value | emit }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} }{% endif %})'
+  - input: $value
+    when: value.__class__.__name__ in ["Name", "Attribute"] and value | runtime_path is not none
+    output: '{% set path = value | runtime_path %}{% if path.module == "math" %}{{ math_functions[path.parts[0]] if path.parts[0] in math_functions else math_constants[path.parts[0]] }}{% else %}{% set spec = runtime_modules[path.module] %}{{ spec.module | use(spec.alias) }}{% if spec.prefix is defined %}.{{ spec.prefix }}{% endif %}{% for part in path.parts %}.{{ part | camel }}{% endfor %}{% endif %}'
+  # Methods of runtime objects (arrays, dates) keep their Python meaning, in camelCase.
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: $method
+      args: $args
+      keywords: $keywords
+    when: value | kind in ["ndarray", "pyobject"] and not method.startswith("__")
+    output: '{{ value | emit }}.{{ method | camel }}({{ args | map("emit") | join(", ") }}{% if keywords %}{% if args %}, {% endif %}{ {% for keyword in keywords %}{% if keyword.arg is none %}...{{ keyword.value | emit }}{% else %}{{ keyword.arg | camel }}: {{ keyword.value | emit }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} }{% endif %})'
+  # Subscripts of arrays, and of values of unknown type where operators are overloaded: Python
+  # indexing (negative indices, slices, tuples of indices) through the runtime.
+  - input:
+      node: Assign
+      targets:
+        - node: Subscript
+          value: $container
+          slice: $index
+      value: $value
+    when: container | kind == "ndarray" or overloading and container | kind == "unknown" and not (index.__class__.__name__ == "Constant" and index.value is string) or index.__class__.__name__ == "Tuple" and container | kind not in ["dict", "map"]
+    output: '{% set py = "util._py" | use("py") %}{% macro key(i) %}{% if i.__class__.__name__ == "Slice" %}{{ py }}.slice({{ i.lower | emit if i.lower is not none else "null" }}, {{ i.upper | emit if i.upper is not none else "null" }}, {{ i.step | emit if i.step is not none else "null" }}){% elif i.__class__.__name__ == "Tuple" %}[{% for e in i.elts %}{{ key(e) }}{% if not loop.last %}, {% endif %}{% endfor %}]{% elif i.__class__.__name__ == "List" %}new {{ py }}.IndexList({{ i | emit }}){% else %}{{ i | emit }}{% endif %}{% endmacro %}{{ py }}.setitem({{ container | emit }}, {{ key(index) }}, {{ value | emit }});'
+  - input:
+      node: AugAssign
+      target:
+        node: Subscript
+        value: $container
+        slice: $index
+      op: $op
+      value: $value
+    when: op.__class__.__name__ in dunder_operators and (container | kind == "ndarray" or overloading and container | kind == "unknown" and not (index.__class__.__name__ == "Constant" and index.value is string))
+    output: '{% set py = "util._py" | use("py") %}{% macro key(i) %}{% if i.__class__.__name__ == "Slice" %}{{ py }}.slice({{ i.lower | emit if i.lower is not none else "null" }}, {{ i.upper | emit if i.upper is not none else "null" }}, {{ i.step | emit if i.step is not none else "null" }}){% elif i.__class__.__name__ == "Tuple" %}[{% for e in i.elts %}{{ key(e) }}{% if not loop.last %}, {% endif %}{% endfor %}]{% elif i.__class__.__name__ == "List" %}new {{ py }}.IndexList({{ i | emit }}){% else %}{{ i | emit }}{% endif %}{% endmacro %}{{ py }}.setitem({{ container | emit }}, {{ key(index) }}, {{ py }}.i{{ dunder_operators[op.__class__.__name__] }}({{ py }}.getitem({{ container | emit }}, {{ key(index) }}), {{ value | emit }}));'
+  - input:
+      node: AugAssign
+      target: $target
+      op: $op
+      value: $value
+    when: op.__class__.__name__ in dunder_operators and (target | kind in ["ndarray", "pyobject"] or value | kind in ["ndarray", "pyobject"] or op.__class__.__name__ == "MatMult" or overloading and target | kind in ["unknown", "number"] and value | kind not in ["string", "array"] and not (target | kind == "number" and value | kind == "number"))
+    output: '{{ target | emit }} = {{ "util._py" | use("py") }}.i{{ dunder_operators[op.__class__.__name__] }}({{ target | emit }}, {{ value | emit }});'
+  - input:
+      node: Assign
+      targets:
+        - $name
+      value:
+        node: Subscript
+        value:
+          node: Name
+          id: $kind
+        slice: $slice
+    when: kind in ['Literal', 'Union']
+    output: export type {{ name | emit }} = {% if kind == "Literal" %}{{ slice.elts | map("emit") | join(" | ") }}{% else %}{{ slice.elts | map("type") | join(" | ") }}{% endif %};
+  - input:
+      node: FunctionDef
+    when: node.decorator_list | map("source") | select("in", ["overload", "typing.overload"]) | list
+    output: ''
+  - input:
+      node: FunctionDef
+      name: $name
+      args: $arguments
+      body: $body
+      returns: $returns
+    when: (arguments.vararg is none or not arguments.defaults and not arguments.kwonlyargs) and arguments.kwarg is none and not arguments.posonlyargs and node.decorator_list | map("source") | reject("in", ignored_decorators) | list | length == 0
+    output: |
+      {% set required = arguments.args[:arguments.args | length - arguments.defaults | length] %}{% set optional = arguments.args[required | length:] %}{% set keyword_only = arguments.kwonlyargs %}{% if top_level %}export {% endif %}function {{ name | camel if top_level else name }}({% for arg in required %}{{ arg | emit }}{% if not loop.last or optional or keyword_only or arguments.vararg %}, {% endif %}{% endfor %}{% if arguments.vararg %}...{{ arguments.vararg.arg | ident }}: any[]{% endif %}{% if optional or keyword_only %}options: { {% for arg in optional + keyword_only %}{{ arg.arg | camel }}?: {{ arg | emit("parameter_types") }}; {% endfor %}} = {}{% endif %}): {{ 'any[]' if node | is_generator else 'void' if returns is not none and returns.value is defined and returns.value is none else 'any' if not top_level and returns is not none and returns | emit("annotation_kinds") == "unknown" else returns | type }} {
+      {% if optional or keyword_only %}  let { {% for arg in optional %}{{ arg.arg | camel }}: {{ arg.arg | ident }} = {{ arguments.defaults[loop.index0] | emit }}, {% endfor %}{% for arg in keyword_only %}{{ arg.arg | camel }}: {{ arg.arg | ident }}{% if arguments.kw_defaults[loop.index0] is not none %} = {{ arguments.kw_defaults[loop.index0] | emit }}{% endif %}, {% endfor %}} = options;
+      {% endif %}{% if top_level and this_module in overridable %}  if (overrides.{{ name | camel }} && overrides.{{ name | camel }} !== {{ name | camel }}) return overrides.{{ name | camel }}({{ (required | map(attribute="arg") | list + (["options"] if optional or keyword_only else [])) | join(", ") }});
+      {% endif %}{% if locals %}  let {{ locals | map("ident") | join(': any, ') }}: any;
+      {% endif %}{% if generator %}  const yielded: any[] = [];
+      {% endif %}{{ body | emit | indent(2, true) }}
+      {% if generator %}  return yielded;
+      {% elif name != "__init__" and body[-1].__class__.__name__ not in ["Return", "Raise"] and (returns is none or not (returns.value is defined and returns.value is none)) %}  return null;
+      {% endif %}}
+  - input:
+      node: arg
+      arg: $name
+    output: '{{ name | ident }}: {{ node | emit("parameter_types") }}'
+  - input:
+      node: Expr
+      value:
+        node: Constant
+        value: $text
+    when: text is string
+    output: ''
+  - input:
+      node: Expr
+      value: $value
+    output: '{{ value | emit }};'
+  - input:
+      node: Return
+      value: null
+    when: generator
+    output: return yielded;
+  - input:
+      node: Expr
+      value:
+        node: Constant
+    when: node.value.value.__class__.__name__ == "ellipsis"
+    output: ''
+  - input:
+      node: Assert
+      test: $test
+      msg: $message
+    output: 'if (!({{ test | condition }})) throw new Error({{ "\"AssertionError\"" if message is none else message | emit if message | kind == "string" or message.__class__.__name__ == "JoinedStr" else "String(" ~ (message | emit) ~ ")" }});'
+  - input:
+      node: Return
+      value: $value
+    output: return {{ value | emit if value is not none else "null" }}{% if return_annotation is not none and return_annotation.id is defined and return_annotation.id in aliases and (value.value is not defined or value.value not in aliases[return_annotation.id]) %} as {{ return_annotation | type }}{% elif return_annotation is not none and return_annotation.id is defined and return_annotation.id == "DimensionalExponents" and value.__class__.__name__ == "Call" and value.func.id is defined and value.func.id == "tuple" %} as DimensionalExponents{% endif %};
+  - input:
+      node: Assign
+      targets:
+        - node: Subscript
+          value: $container
+          slice: $key
+      value: $value
+    when: container | kind == "map"
+    output: '{{ container | emit }}.set({{ key | emit }}, {{ value | emit }});'
+  - input:
+      node: Assign
+      targets:
+        - $target
+      value: $empty
+    when: target | kind == "map" and (empty.__class__.__name__ == "Dict" and not empty.keys or empty.__class__.__name__ == "Call" and empty.func.id is defined and empty.func.id == "dict" and not empty.args)
+    output: '{% set declare = top_level and target.__class__.__name__ == "Name" %}{% if declare %}export const {% endif %}{{ target | emit }}{% if declare %}: any{% endif %} = new {{ "util._py" | use("py") }}.PyDict();'
+  - input:
+      node: Assign
+      targets:
+        - node: Name
+          id: $name
+      value: $value
+    when: top_level and "__file__" in value | code
+    # The module's directory as a file URL, which readResource and openPath accept on every platform.
+    output: 'export const {{ name | camel }}: string = new URL(".", import.meta.url).href;'
+  - input:
+      node: Assign
+      targets:
+        - node: Name
+          id: $name
+      value: $value
+    when: top_level and (value | is_type or value | alias_value is not none) and (value.value is not defined or value.value.id is not defined or value.value.id != "Literal")
+    output: 'export type {{ name }} = {{ value | type }};'
+  - input:
+      node: Assign
+      targets:
+        - node: Tuple
+          elts: $names
+      value: $value
+    when: top_level and names | rejectattr("__class__.__name__", "equalto", "Name") | list | length == 0
+    output: 'export const [{{ names | map(attribute="id") | join(", ") }}]: any[] = {{ value | emit }};'
+  - input:
+      node: Assign
+      targets:
+        - node: Name
+          id: $name
+      value:
+        node: Call
+        func:
+          node: Name
+          id: TypeVar
+    when: top_level
+    output: 'export type {{ name }} = any;'
+  - input:
+      node: Assign
+      targets:
+        - $target
+      value:
+        node: Call
+        func:
+          node: Name
+          id: namedtuple
+        args:
+          - node: Constant
+          - node: Constant
+            value: $fields
+        keywords: []
+    output: '{% if top_level %}export const {% endif %}{{ target | emit }} = (...values: any[]): any => Object.assign(values, { {% for field in fields.replace(",", " ").split() %}{{ field }}: values[{{ loop.index0 }}]{% if not loop.last %}, {% endif %}{% endfor %} });{% if top_level %} export type {{ target | emit }} = any;{% endif %}'
+  # Assigning to a function of an overridable module (get_user = my_get_user) sets its override.
+  - input:
+      node: Assign
+      targets:
+        - node: Name
+          id: $name
+      value: $value
+    when: this_module in overridable and name in functions
+    output: 'overrides.{{ name | camel }} = {{ value | emit }};'
+  - input:
+      node: Assign
+      targets:
+        - $target
+      value: $value
+    output: '{% set declare = top_level and target.__class__.__name__ == "Name" %}{% if declare %}export {{ "let" if target.id in reassigned else "const" }} {% endif %}{{ target | emit }}{% if declare %}: any{% endif %} = {{ value | emit }};'
+  - input:
+      node: AnnAssign
+      target: $target
+      annotation: $annotation
+      value:
+        node: Dict
+        keys: []
+    when: annotation | emit("annotation_kinds") == "map"
+    output: '{% if top_level %}export const {% endif %}{{ target | emit }}{% if top_level %}: any{% endif %} = new {{ "util._py" | use("py") }}.PyDict();'
+  - input:
+      node: AnnAssign
+      target: $target
+      annotation: $annotation
+      value: $value
+    output: '{% if value is not none %}{% if top_level %}export const {% endif %}{{ target | emit }}{% if top_level %}: {{ annotation | type }}{% endif %} = {{ value | emit }};{% endif %}'
+  - input:
+      node: NamedExpr
+      target: $target
+      value: $value
+    output: ({{ target | emit }} = {{ value | emit }})
+  - input:
+      node: Assign
+      targets: $targets
+      value: $value
+    when: targets | length > 1
+    output: '{% for target in targets %}{{ target | emit }} = {% endfor %}{{ value | emit }};'
+  - input:
+      node: AugAssign
+      target: $target
+      op: $op
+      value: $value
+    when: op.__class__.__name__ in ["BitOr", "BitAnd", "BitXor"] and (target | kind == "boolean" or value | kind == "boolean")
+    output: '{{ target | emit }} = Boolean(Number({{ target | emit }}) {{ {"BitOr": "|", "BitAnd": "&", "BitXor": "^"}[op.__class__.__name__] }} Number({{ value | emit }}));'
+  - input:
+      node: AugAssign
+      target: $target
+      op: $op
+      value: $value
+    when: op.__class__.__name__ in ["BitOr", "Sub", "BitAnd"] and (target | kind == "set" or value | kind == "set")
+    output: '{% if op.__class__.__name__ == "BitOr" %}Array.from<any>({{ value | iterable }}).forEach((v: any) => {{ target | emit }}.add(v));{% elif op.__class__.__name__ == "Sub" %}Array.from<any>({{ value | iterable }}).forEach((v: any) => {{ target | emit }}.delete(v));{% else %}((keep: Set<any>) => [...{{ target | emit }}].forEach((v: any) => keep.has(v) || {{ target | emit }}.delete(v)))(new Set({{ value | iterable }}));{% endif %}'
+  - input:
+      node: AugAssign
+      target: $target
+      op:
+        node: Add
+      value: $value
+    when: target | kind == "array" or value | kind == "array"
+    output: '{{ target | emit }}.push(...{{ value | iterable }});'
+  - input:
+      node: AugAssign
+      target: $target
+      op:
+        node: Add
+      value: $value
+    when: target | kind not in ["number", "string"] and value | kind not in ["number", "string"] and value.__class__.__name__ not in ["Constant", "JoinedStr"]
+    output: '{{ target | emit }} = {{ "util._py" | use("py") }}.iadd({{ target | emit }}, {{ value | emit }});'
+  - input:
+      node: AugAssign
+      target: $target
+      op: $op
+      value: $value
+    output: '{{ target | emit }} {{ op | emit }}= {{ value | emit }};'
+  - input:
+      node: ClassDef
+      name: $name
+      body: $body
+    when: node.bases | map("source") | select("in", ["NamedTuple", "typing.NamedTuple"]) | list
+    output: '{% set fields = body | selectattr("target", "defined") | map(attribute="target") | map(attribute="id") | list %}export const {{ name }} = (...values: any[]): any => Object.assign(values, { {% for field in fields %}{{ field }}: values[{{ loop.index0 }}]{% if not loop.last %}, {% endif %}{% endfor %} }); export type {{ name }} = any;'
+  - input:
+      node: ClassDef
+      name: $name
+      body: $body
+    when: node.bases | map("source") | select("in", ["TypedDict", "typing.TypedDict", "typing_extensions.TypedDict"]) | list
+    output: |-
+      {% set total = node.keywords | selectattr("arg", "equalto", "total") | map(attribute="value.value") | first %}export type {{ name }} = {
+      {% for item in body if item.__class__.__name__ == "AnnAssign" %}  {{ item.target.id }}{% if total is false or item.annotation.value is defined and item.annotation.value.id is defined and item.annotation.value.id == "NotRequired" %}?{% endif %}: {{ item.annotation | type }};
+      {% endfor %}};
+  - input:
+      node: ClassDef
+      name: $name
+      bases: []
+      body: $body
+    when: node.decorator_list | length == 1 and node.decorator_list | map("source") | select("in", ["dataclass", "dataclasses.dataclass"]) | list
+    output: |-
+      {% macro ptype(a) %}{{ "string" if a | emit("annotation_kinds") == "string" and a | source != "str" else a | type }}{% endmacro %}{% set fields = body | selectattr("__class__.__name__", "equalto", "AnnAssign") | list %}{% set required = fields | selectattr("value", "none") | list %}{% set optional = fields | rejectattr("value", "none") | list %}{% if top_level %}export {% endif %}class {{ name }} {
+        [key: string]: any;
+      {% for f in fields %}  {{ f.target.id }}: {{ ptype(f.annotation) }};
+      {% endfor %}
+        constructor({% for f in required %}{{ f.target.id | ident }}: {{ ptype(f.annotation) }}, {% endfor %}options: { {% for f in optional %}{{ f.target.id | camel }}?: {{ ptype(f.annotation) }}; {% endfor %}} = {}) {
+      {% for f in required %}    this.{{ f.target.id }} = {{ f.target.id | ident }};
+      {% endfor %}    const given: Record<string, any> = options;
+      {% for f in optional %}    this.{{ f.target.id }} = {% if f.target.id | camel != f.target.id %}{{ f.target.id | camel | literal }} in given ? given[{{ f.target.id | camel | literal }}] : {% endif %}{{ f.target.id | literal }} in given ? given[{{ f.target.id | literal }}] : {{ f.value | emit }};
+      {% endfor %}  }
+
+        /** Python `{{ name }}(**kwargs)`. */
+        static fromKwargs(kwargs: Record<string, any>): {{ name }} {
+          return new {{ name }}({% for f in required %}kwargs[{{ f.target.id | literal }}], {% endfor %}kwargs);
+        }
+      {% for item in body if item.__class__.__name__ != "AnnAssign" %}{{ item | emit_in("member") | indent(2, true) }}
+      {% endfor %}}
+  - input:
+      node: ClassDef
+      name: $name
+      bases: []
+      keywords: []
+      body: $body
+      decorator_list: []
+    output: |-
+      {% if top_level %}export {% endif %}class {{ name }} {
+        // Python instances accept new attributes at any time.
+        [key: string]: any;
+      {% for item in body %}{{ item | emit_in("member") | indent(2, true) }}
+      {% endfor %}}
+  - input:
+      node: AnnAssign
+      target:
+        node: Name
+        id: $name
+      annotation: $annotation
+      value: null
+    context: member
+    output: '{{ name }}!: {{ annotation | type }};'
+  - input:
+      node: AnnAssign
+      target:
+        node: Name
+        id: $name
+      annotation: $annotation
+      value: $value
+    context: member
+    output: '{{ name }}: {{ annotation | type }} = {{ value | emit }};'
+  - input:
+      node: Expr
+      value:
+        node: Constant
+        value: $text
+    context: member
+    when: text is string
+    output: ''
+  - input:
+      node: FunctionDef
+    context: member
+    when: node.decorator_list | map("source") | select("in", ["overload", "typing.overload"]) | list
+    output: ''
+  - input:
+      node: FunctionDef
+      name: $name
+      args: $arguments
+      body: $body
+      returns: $returns
+    context: member
+    when: (arguments.vararg is none or not arguments.defaults and not arguments.kwonlyargs) and arguments.kwarg is none and not arguments.posonlyargs and (arguments.args or "staticmethod" in node.decorator_list | map("source")) and node.decorator_list | map("source") | reject("in", ignored_decorators) | list | length == 0
+    output: |
+      {% set parameters = arguments.args if "staticmethod" in node.decorator_list | map("source") else arguments.args[1:] %}{% set required = parameters[:parameters | length - arguments.defaults | length] %}{% set optional = parameters[required | length:] %}{% set keyword_only = arguments.kwonlyargs %}{{ "static " if "staticmethod" in node.decorator_list | map("source") else "" }}{{ "constructor" if name == "__init__" else name | camel if not name.startswith("__") else name }}({% for arg in required %}{{ arg | emit }}{% if not loop.last or optional or keyword_only or arguments.vararg %}, {% endif %}{% endfor %}{% if arguments.vararg %}...{{ arguments.vararg.arg | ident }}: any[]{% endif %}{% if optional or keyword_only %}options: { {% for arg in optional + keyword_only %}{{ arg.arg | camel }}?: {{ arg | emit("parameter_types") }}; {% endfor %}} = {}{% endif %}){% if name != "__init__" %}: {{ 'any[]' if node | is_generator else 'void' if returns is not none and returns.value is defined and returns.value is none else returns | type }}{% endif %} {
+      {% if optional or keyword_only %}  let { {% for arg in optional %}{{ arg.arg | camel }}: {{ arg.arg | ident }} = {{ arguments.defaults[loop.index0] | emit }}, {% endfor %}{% for arg in keyword_only %}{{ arg.arg | camel }}: {{ arg.arg | ident }}{% if arguments.kw_defaults[loop.index0] is not none %} = {{ arguments.kw_defaults[loop.index0] | emit }}{% endif %}, {% endfor %}} = options;
+      {% endif %}{% if locals %}  let {{ locals | map("ident") | join(': any, ') }}: any;
+      {% endif %}{% if generator %}  const yielded: any[] = [];
+      {% endif %}{{ body | emit | indent(2, true) }}
+      {% if generator %}  return yielded;
+      {% elif name != "__init__" and body[-1].__class__.__name__ not in ["Return", "Raise"] and (returns is none or not (returns.value is defined and returns.value is none)) %}  return null;
+      {% endif %}}
+  - input:
+      node: Raise
+      exc: null
+    output: throw error;
+  - input:
+      node: Raise
+      exc:
+        node: Call
+        func:
+          node: Name
+          id: $kind
+        args: $args
+    output: 'throw new Error({{ args[0] | emit if args else (kind | literal) }});'
+  - input:
+      node: Raise
+      exc: $value
+    output: 'throw {{ value | emit }};'
+  - input:
+      node: Try
+      body: $body
+      handlers:
+        - node: ExceptHandler
+          type: $kind
+          name: $name
+          body: $handler
+      orelse: []
+      finalbody: $final
+    output: |-
+      try {
+      {{ body | emit | indent(2, true) }}
+      } catch ({{ name or "error" }}) {
+      {{ handler | emit | indent(2, true) }}
+      }{% if final %} finally {
+      {{ final | emit | indent(2, true) }}
+      }{% endif %}
+  - input:
+      node: Try
+      body: $body
+      handlers: []
+      orelse: []
+      finalbody: $final
+    output: |-
+      try {
+      {{ body | emit | indent(2, true) }}
+      } finally {
+      {{ final | emit | indent(2, true) }}
+      }
+  - input:
+      node: With
+      items:
+        - node: withitem
+          context_expr:
+            node: Call
+            func:
+              node: Name
+              id: open
+            args: $args
+          optional_vars:
+            node: Name
+            id: $name
+      body: $body
+    output: |-
+      {
+        const {{ name | ident }} = {{ "util._py" | use("py") }}.open({{ args | map("emit") | join(", ") }});
+      {{ body | emit | indent(2, true) }}
+      }
+  - input:
+      node: With
+      items:
+        - node: withitem
+          context_expr: $manager
+          optional_vars: $target
+      body: $body
+    when: not (manager.__class__.__name__ == "Call" and manager.func.id is defined and manager.func.id == "open")
+    output: |-
+      {
+        const manager: any = {{ manager | emit }};
+        {% if target is not none %}{{ target | emit }} = {% endif %}manager.__enter__();
+        try {
+      {{ body | emit | indent(4, true) }}
+        } finally {
+          manager.__exit__(null, null, null);
+        }
+      }
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Name
+          id: json
+        attr: load
+      args:
+        - $file
+      keywords: []
+    output: 'JSON.parse({% if file.__class__.__name__ == "Call" and file.func.id is defined and file.func.id == "open" %}{{ "util._py" | use("py") }}.open({{ file.args | map("emit") | join(", ") }}){% else %}{{ file | emit }}{% endif %}.read())'
+  - input:
+      node: Global
+    output: ''
+  - input:
+      node: Nonlocal
+    output: ''
+  - input:
+      node: Pass
+    output: ''
+  - input:
+      node: Break
+    output: 'break{% if break_label %} {{ break_label }}{% endif %};'
+  - input:
+      node: Delete
+      targets:
+        - node: Subscript
+          value: $container
+          slice: $key
+    when: container | kind == "map"
+    output: '{{ container | emit }}.delete({{ key | emit }});'
+  - input:
+      node: Delete
+      targets:
+        - node: Subscript
+          value: $container
+          slice: $key
+    output: 'delete {{ container | emit }}[{{ key | emit }}];'
+  - input:
+      node: If
+      test: $test
+      body: $body
+      orelse: $otherwise
+    output: |-
+      if ({{ test | condition }}) {
+      {{ body | emit | indent(2, true) }}
+      }{% if otherwise | length == 1 and otherwise[0].__class__.__name__ == "If" %} else {{ otherwise[0] | emit }}{% elif otherwise %} else {
+      {{ otherwise | emit | indent(2, true) }}
+      }{% endif %}
+  - input:
+      node: For
+      target: $target
+      iter:
+        node: Call
+        func:
+          node: Name
+          id: range
+        args:
+          - $stop
+        keywords: []
+      body: $body
+      orelse: []
+    output: |-
+      for ({{ target | emit }} = 0; {{ target | emit }} < {{ stop | emit }}; {{ target | emit }}++) {
+      {{ body | emit | indent(2, true) }}
+      }
+  - input:
+      node: For
+      target: $target
+      iter: $iterable
+      body: $body
+      orelse: []
+    output: |-
+      for ({{ target | emit }} of {{ iterable | iterable }}) {
+      {{ body | emit | indent(2, true) }}
+      }
+  - input:
+      node: For
+      target: $target
+      iter: $iterable
+      body: $body
+      orelse: $otherwise
+    output: |-
+      {{ label }}: {
+        for ({{ target | emit }} of {{ iterable | iterable }}) {
+      {{ body | emit | indent(4, true) }}
+        }
+      {{ otherwise | emit | indent(2, true) }}
+      }
+  - input:
+      node: While
+      test: $test
+      body: $body
+      orelse: []
+    output: |-
+      while ({{ test | condition }}) {
+      {{ body | emit | indent(2, true) }}
+      }
+  - input:
+      node: Continue
+    output: continue;
+  - input:
+      elt: $clause
+      generators: $generators
+    when: node.__class__.__name__ in ["ListComp", "GeneratorExp", "SetComp"] and generators | length > 1 and generators | selectattr("is_async") | list | length == 0
+    output: '{% set kind = node.__class__.__name__ %}{% macro chain(items) %}{% set g = items[0] %}Array.from<any>({{ g.iter | iterable }}){% for filter in g.ifs %}.filter(({{ g.target | emit }}: any) => {{ filter | condition }}){% endfor %}{% if items | length > 1 %}.flatMap(({{ g.target | emit }}: any) => {{ chain(items[1:]) }}){% else %}.map(({{ g.target | emit }}: any) => ({{ clause | emit }})){% endif %}{% endmacro %}{% if kind == "SetComp" %}new Set({{ chain(generators) }}){% else %}{{ chain(generators) }}{% endif %}'
+  - input:
+      node: ListComp
+      elt: $clause
+      generators:
+        - node: comprehension
+          target: $target
+          iter: $iterable
+          ifs: $filters
+          is_async: 0
+    output: '{% if iterable | kind == "array" %}{{ iterable | iterable }}{% else %}Array.from<any>({{ iterable | iterable }}){% endif %}{% for filter in filters %}.filter(({{ target | emit }}: any) => {{ filter | condition }}){% endfor %}{% if clause | emit != target | emit %}.map(({{ target | emit }}: any) => ({{ clause | emit }})){% endif %}'
+  - input:
+      node: GeneratorExp
+      elt: $clause
+      generators:
+        - node: comprehension
+          target: $target
+          iter: $iterable
+          ifs: $filters
+          is_async: 0
+    output: 'Array.from<any>({{ iterable | iterable }}){% for filter in filters %}.filter(({{ target | emit }}: any) => {{ filter | condition }}){% endfor %}{% if clause | emit != target | emit %}.map(({{ target | emit }}: any) => ({{ clause | emit }})){% endif %}'
+  - input:
+      node: DictComp
+      key: $key
+      value: $value
+      generators:
+        - node: comprehension
+          target: $target
+          iter: $iterable
+          ifs: $filters
+          is_async: 0
+    when: node | kind == "map"
+    output: 'new {{ "util._py" | use("py") }}.PyDict(Array.from<any>({{ iterable | iterable }}){% for filter in filters %}.filter(({{ target | emit }}: any) => {{ filter | condition }}){% endfor %}.map(({{ target | emit }}: any) => [{{ key | emit }}, {{ value | emit }}]))'
+  - input:
+      node: DictComp
+      key: $key
+      value: $value
+      generators:
+        - node: comprehension
+          target: $target
+          iter: $iterable
+          ifs: $filters
+          is_async: 0
+    output: 'Object.fromEntries(Array.from<any>({{ iterable | iterable }}){% for filter in filters %}.filter(({{ target | emit }}: any) => {{ filter | condition }}){% endfor %}.map(({{ target | emit }}: any) => [{{ key | emit }}, {{ value | emit }}]))'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: $name
+    when: name in classes and (node.func | signature is none or (node | bind(node.func | signature)).error is none)
+    output: '{% if node.func | signature is none %}new {{ name }}(){% else %}{% set b = node | bind(node.func | signature) %}new {{ name }}({{ b.positional | map("emit") | join(", ") }}{% if b.options %}{% if b.positional %}, {% endif %}{ {% for option in b.options %}{% if option[0] is none %}...{{ option[1] | emit }}{% else %}{{ option[0] | camel }}: {{ option[1] | emit }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} }{% endif %}){% endif %}'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $file
+        attr: create_entity
+      args: $args
+      keywords: $keywords
+    when: node.func | resolve is none
+    output: '{% set attributes = keywords | rejectattr("arg", "in", ["id", "type"]) | list %}{% set id = keywords | selectattr("arg", "equalto", "id") | list %}{% set type = args[0] if args else (keywords | selectattr("arg", "equalto", "type") | first).value %}{{ file | emit }}.create({{ type | emit }}{% if args | length > 1 %}, [{{ args[1:] | map("emit") | join(", ") }}]{% elif attributes %}, { {% for keyword in attributes %}{% if keyword.arg is none %}...{{ keyword.value | emit }}{% else %}{{ keyword.arg }}: {{ keyword.value | emit }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} }{% elif id %}, {}{% endif %}{% if id %}, {{ id[0].value | emit }}{% endif %})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $file
+        attr: $method
+      args: $args
+      keywords: $keywords
+    when: method.startswith("createIfc") and node.func | resolve is none
+    output: '{{ file | emit }}.create({{ method[6:] | literal }}{% if args %}, [{{ args | map("emit") | join(", ") }}]{% elif keywords %}, { {% for keyword in keywords %}{{ keyword.arg }}: {{ keyword.value | emit }}{% if not loop.last %}, {% endif %}{% endfor %} }{% endif %})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Attribute
+          value:
+            node: Name
+            id: ifcopenshell
+          attr: guid
+        attr: $name
+      args: $args
+      keywords: []
+    output: 'ifcopenshell.guid.{{ name }}({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Name
+          id: time
+        attr: time
+      args: []
+      keywords: []
+    output: (Date.now() / 1000)
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: setattr
+      args:
+        - $target
+        - $name
+        - $value
+      keywords: []
+    output: '({{ target | emit }}[{{ name | emit }}] = {{ value | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: sorted
+      args:
+        - $values
+      keywords: $keywords
+    output: '{{ "util._py" | use("py") }}.sorted({{ values | iterable }}{% if keywords %}, { {% for keyword in keywords %}{{ keyword.arg }}: {{ keyword.value | emit }}{% if not loop.last %}, {% endif %}{% endfor %} }{% endif %})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $values
+        attr: sort
+      args: []
+      keywords: $keywords
+    output: '{{ "util._py" | use("py") }}.sort({{ values | emit }}{% if keywords %}, { {% for keyword in keywords %}{{ keyword.arg }}: {{ keyword.value | emit }}{% if not loop.last %}, {% endif %}{% endfor %} }{% endif %})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: round
+      args: $args
+      keywords: []
+    output: '{{ "util._py" | use("py") }}.round({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: all
+      args:
+        - $values
+      keywords: []
+    output: 'Array.from<any>({{ values | iterable }}).every((v: any) => {{ "util._py" | use("py") }}.truthy(v))'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: object
+      args: []
+      keywords: []
+    output: '({})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Name
+          id: json
+        attr: $method
+      args:
+        - $value
+      keywords: []
+    when: method in ["dumps", "loads"]
+    output: 'JSON.{{ "stringify" if method == "dumps" else "parse" }}({{ value | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: $method
+      args:
+        - $separator
+      keywords: []
+    when: method in ["partition", "rpartition"]
+    output: '{{ "util._py" | use("py") }}.{{ method }}({{ value | emit }}, {{ separator | emit }})'
+  # by_type(cls, include_subtypes=...): the bindings have a separate method without subtypes.
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $file
+        attr: by_type
+      args: $args
+      keywords: $keywords
+    when: keywords | selectattr("arg", "equalto", "include_subtypes") | list or args | length > 1
+    output: '{% set given = keywords | selectattr("arg", "equalto", "include_subtypes") | map(attribute="value") | list or args[1:] %}{% set include = given[0] %}{% if include.__class__.__name__ == "Constant" %}{{ file | emit }}.{{ "byType" if include.value else "byTypeExclSubtypes" }}({{ args[0] | emit }}){% else %}({{ include | condition }} ? {{ file | emit }}.byType({{ args[0] | emit }}) : {{ file | emit }}.byTypeExclSubtypes({{ args[0] | emit }})){% endif %}'
+  - input:
+      node: Call
+      func:
+        node: Subscript
+        value:
+          node: Name
+          id: __builtins__
+        slice:
+          node: Constant
+          value: print
+    output: 'console.log({{ node.args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $file
+        attr: traverse
+      args: $args
+      keywords: $keywords
+    when: node.func | resolve is none
+    output: '{% set breadth = keywords | selectattr("arg", "equalto", "breadth_first") | list %}{% set levels = keywords | selectattr("arg", "equalto", "max_levels") | list %}{{ file | emit }}.{{ "traverseBreadthFirst" if breadth and breadth[0].value.value else "traverse" }}({{ args[0] | emit }}, {% set level = levels[0].value if levels else args[1] if args | length > 1 else none %}{% if level is none %}-1{% elif level.__class__.__name__ == "Constant" %}{{ level | emit if level.value is not none else "-1" }}{% else %}{{ level | emit }} ?? -1{% endif %})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        attr: schema_by_name
+      args: $args
+      keywords: []
+    when: '"ifcopenshell_wrapper" in node.func | source or (node.func.value.id is defined and node.func.value.id | module_alias == "ifcopenshell_wrapper")'
+    output: 'ifcopenshell.schemaByName({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: frozenset
+      args: $args
+      keywords: []
+    output: 'new Set{{ "<any>" if not args }}({{ args | map("iterable") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: print
+      args: $args
+      keywords: []
+    output: 'console.log({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: zip
+      args: $args
+    when: '"zip" not in shadowed and args | selectattr("__class__.__name__", "equalto", "Starred") | list | length == 0'
+    output: '{{ "util._py" | use("py") }}.zip({{ args | map("iterable") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: slice
+      args: $args
+      keywords: []
+    when: '"slice" not in shadowed'
+    output: '{{ "util._py" | use("py") }}.slice({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: range
+      args:
+        - $start
+        - $stop
+        - $step
+      keywords: []
+    when: '"range" not in shadowed'
+    output: '{{ "util._py" | use("py") }}.range({{ start | emit }}, {{ stop | emit }}, {{ step | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: $name
+      args: $args
+      keywords: $keywords
+    when: name in typed_dicts and not args
+    output: '({ {% for keyword in keywords %}{% if keyword.arg is none %}...{{ keyword.value | emit }}{% else %}{{ keyword.arg }}: {{ keyword.value | emit }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} })'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: $method
+      args: []
+      keywords: []
+    when: method in ["isdigit", "isalpha", "isalnum", "isspace", "isupper", "islower", "isnumeric", "isdecimal"]
+    output: '{{ "util._py" | use("py") }}.str.{{ method }}({{ value | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: reverse
+      args: []
+      keywords: []
+    when: value | kind in ["array", "unknown"]
+    output: '{{ value | emit }}.reverse()'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Constant
+          value: $text
+        attr: format
+      args: $args
+      keywords: $keywords
+    when: text is string and not (text.count("{}") == args | length and "{" not in text.replace("{}", "") and not keywords)
+    output: '{{ "util._py" | use("py") }}.format({{ text | literal }}{% for arg in args %}, {{ arg | emit }}{% endfor %}{% if keywords %}, { {% for keyword in keywords %}{{ keyword.arg | literal }}: {{ keyword.value | emit }}{% if not loop.last %}, {% endif %}{% endfor %} }{% endif %})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Attribute
+          value:
+            node: Name
+            id: ifcopenshell
+          attr: api
+        attr: run
+      args: $args
+      keywords: $keywords
+    when: args and args[0].value is defined and args[0].value is string and node | api_run is not none
+    output: '{{ node | api_run | emit }}'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: deque
+      args: $args
+      keywords: []
+    when: '"deque" not in shadowed'
+    output: '{% if args %}Array.from<any>({{ args[0] | iterable }}){% else %}[]{% endif %}'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: $method
+      args: $args
+      keywords: []
+    when: method in ["popleft", "appendleft"]
+    output: '{{ value | emit }}.{{ "shift" if method == "popleft" else "unshift" }}({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: field
+      args: []
+      keywords:
+        - node: keyword
+          arg: $kind
+          value: $value
+    when: kind in ["default", "default_factory"]
+    output: '{% if kind == "default" %}{{ value | emit }}{% elif value.id is defined and value.id in ["list", "dict", "set"] %}{{ {"list": "[]", "dict": "{}", "set": "new Set()"}[value.id] }}{% else %}{{ value | emit }}(){% endif %}'
+  - input:
+      node: Call
+      func: $callee
+      args: []
+      keywords: $keywords
+    when: (callee | is_class or callee.id is defined and callee.id in classes) and keywords | selectattr("arg", "none") | list
+    output: '{{ callee | emit }}.fromKwargs({ {% for keyword in keywords %}{% if keyword.arg is none %}...{{ keyword.value | emit }}{% else %}{{ keyword.arg }}: {{ keyword.value | emit }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} })'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Name
+          id: dataclasses
+        attr: asdict
+      args:
+        - $value
+      keywords: []
+    output: '{{ "util._py" | use("py") }}.asdict({{ value | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $cls
+        attr: $method
+      args: $args
+      keywords: $keywords
+    when: cls | is_class
+    output: '{{ cls | emit }}.{{ method | camel }}({{ args | map("emit") | join(", ") }}{% if keywords %}{% if args %}, {% endif %}{ {% for keyword in keywords %}{{ keyword.arg | camel }}: {{ keyword.value | emit }}{% if not loop.last %}, {% endif %}{% endfor %} }{% endif %})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: dict
+      args: []
+      keywords: $keywords
+    when: '"dict" not in shadowed and keywords'
+    output: '({ {% for keyword in keywords %}{% if keyword.arg is none %}...{{ keyword.value | emit }}{% else %}{{ keyword.arg | literal }}: {{ keyword.value | emit }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} })'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: __fixed_tuple__
+      args:
+        - $values
+        - node: Constant
+          value: $count
+    output: '({{ values | emit }} as [{% for _ in range(count) %}any{% if not loop.last %}, {% endif %}{% endfor %}])'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: __positional_options__
+      args:
+        - $names
+        - $values
+    output: '{{ "util._py" | use("py") }}.positionalOptions({{ names.elts | map(attribute="value") | map("camel") | list | literal }}, {{ values | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: dict
+      args:
+        - $values
+      keywords: []
+    when: '"dict" not in shadowed'
+    output: '{{ "util._py" | use("py") }}.dict({{ values | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: map
+      args:
+        - $function
+        - $values
+      keywords: []
+    when: '"map" not in shadowed'
+    output: 'Array.from<any>({{ values | iterable }}, (v: any) => ({{ function | emit }})(v))'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: reversed
+      args:
+        - $values
+      keywords: []
+    when: '"reversed" not in shadowed'
+    output: 'Array.from<any>({{ values | iterable }}).reverse()'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: divmod
+      args:
+        - $a
+        - $b
+      keywords: []
+    when: '"divmod" not in shadowed'
+    output: '[{{ "util._py" | use("py") }}.floordiv({{ a | emit }}, {{ b | emit }}), {{ "util._py" | use("py") }}.mod({{ a | emit }}, {{ b | emit }})]'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: pow
+      args:
+        - $base
+        - $exponent
+      keywords: []
+    when: '"pow" not in shadowed'
+    output: '({{ base | emit }} ** {{ exponent | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: iter
+      args:
+        - $values
+      keywords: []
+    when: '"iter" not in shadowed'
+    output: '{{ "util._py" | use("py") }}.iter({{ values | iterable }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: next
+      args:
+        - $values
+      keywords: []
+    when: '"next" not in shadowed'
+    output: '{{ "util._py" | use("py") }}.next({{ values | iterable }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: get_args
+      args:
+        - node: Name
+          id: $alias
+      keywords: []
+    when: alias in aliases
+    output: '{{ aliases[alias] | literal }}'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        attr: cache_clear
+      args: []
+      keywords: []
+    output: undefined
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Attribute
+          value:
+            node: Name
+            id: ifcopenshell
+          attr: file
+        attr: from_string
+      args:
+        - $text
+      keywords: []
+    output: 'ifcopenshell.File.fromString({{ text | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Name
+          id: ifcopenshell
+        attr: file
+      args: $args
+      keywords: $keywords
+    when: args | length + keywords | length <= 1 and keywords | rejectattr("arg", "equalto", "schema") | list | length == 0
+    output: 'new ifcopenshell.File({{ (args + keywords | map(attribute="value") | list) | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: defaultdict
+      args:
+        - $factory
+      keywords: []
+    output: 'new {{ "util._py" | use("py") }}.PyDict(null, () => {{ {"list": "[]", "dict": "({})", "set": "new Set()", "int": "0", "float": "0", "str": "\"\""}.get(factory.id, (factory | emit) ~ "()") if factory.id is defined else (factory | emit) ~ "()" }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Name
+          id: re
+        attr: $method
+      args: $args
+      keywords: $keywords
+    output: '{{ "util._py" | use("py") }}.re.{{ method }}({{ args | map("emit") | join(", ") }}{% for keyword in keywords %}, {{ keyword.value | emit }}{% endfor %})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Name
+          id: pathlib
+        attr: Path
+      args: $args
+      keywords: []
+    output: 'new {{ "util._py" | use("py") }}.Path({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Name
+          id: ifcopenshell
+        attr: open
+      args:
+        - $path
+      keywords: []
+    output: 'ifcopenshell.openPath(String({{ path | emit }}))'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $path
+        attr: joinpath
+      args: $parts
+      keywords: []
+    output: '{{ path | emit }}.joinpath({{ parts | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: assert_never
+      args:
+        - $value
+      keywords: []
+    output: '(() => { throw new Error(`Unexpected value: ${ {{- value | emit -}} }`); })()'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: hasattr
+      args:
+        - $value
+        - $name
+      keywords: []
+    output: '({{ name | emit }} in Object({{ value | emit }}))'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: getattr
+      args:
+        - $value
+        - $name
+      keywords: []
+    output: '{{ value | emit }}[{{ name | emit }}]'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: isinstance
+      args:
+        - $value
+        - $kinds
+      keywords: []
+    output: '({% for kind in (kinds.elts if kinds.elts is defined else [kinds]) %}{% set name = kind.attr if kind.attr is defined else kind.id %}{% if kind | runtime_path is not none %}Object({{ value | emit }}) instanceof {{ kind | emit }}{% elif name == "str" %}typeof {{ value | emit }} === "string"{% elif name == "int" %}(typeof {{ value | emit }} === "number" && Number.isInteger({{ value | emit }})){% elif name == "float" %}(typeof {{ value | emit }} === "number" && !Number.isInteger({{ value | emit }})){% elif name == "bool" %}typeof {{ value | emit }} === "boolean"{% elif name == "Iterable" %}({{ value | emit }} != null && typeof Object({{ value | emit }})[Symbol.iterator] === "function"){% elif name == "Sequence" %}(Array.isArray({{ value | emit }}) || typeof {{ value | emit }} === "string"){% elif name == "bytes" %}{{ value | emit }} instanceof Uint8Array{% elif name in ["list", "tuple"] %}Array.isArray({{ value | emit }}){% elif name == "set" %}{{ value | emit }} instanceof Set{% elif name == "dict" %}({{ value | emit }} !== null && Object.getPrototypeOf({{ value | emit }}) === Object.prototype){% elif name == "entity_instance" %}{{ value | emit }} instanceof ifcopenshell.EntityInstance{% elif name == "file" %}{{ value | emit }} instanceof ifcopenshell.File{% elif name in ["datetime", "date"] %}{{ value | emit }} instanceof Date{% elif kind.__class__.__name__ == "Name" and kind.id in classes or kind | is_class %}{{ value | emit }} instanceof {{ kind | emit }}{% elif name in wrapper_classes %}{{ value | emit }} instanceof ifcopenshell.wrapper.{{ wrapper_classes[name] }}{% else %}{{ undefined_isinstance_type }}{% endif %}{% if not loop.last %} || {% endif %}{% endfor %})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: len
+      args:
+        - $value
+      keywords: []
+    output: '{% set k = value | kind %}{% if k in ["array", "string"] %}{{ value | emit }}.length{% elif k in ["set", "map"] %}{{ value | emit }}.size{% elif k == "dict" %}Object.keys({{ value | emit }}).length{% else %}{{ "util._py" | use("py") }}.len({{ value | emit }}){% endif %}'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: set
+      args: $args
+      keywords: []
+    output: 'new Set({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: dict
+      args: []
+      keywords: []
+    output: '{}'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: enumerate
+      args:
+        - $values
+      keywords: []
+    output: 'Array.from<any>({{ values | iterable }}).entries()'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: enumerate
+      args:
+        - $values
+        - $start
+      keywords: []
+    output: 'Array.from<any>({{ values | iterable }}, (v: any, i: number) => [i + {{ start | emit }}, v])'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: $name
+      args:
+        - $values
+      keywords: $keywords
+    when: name in ["min", "max"] and name not in shadowed
+    output: '{{ "util._py" | use("py") }}.{{ name }}({{ values | iterable }}{% if keywords %}, { {% for keyword in keywords %}{{ keyword.arg }}: {{ keyword.value | emit }}{% if not loop.last %}, {% endif %}{% endfor %} }{% endif %})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: $name
+      args: $values
+      keywords: $keywords
+    when: name in ["min", "max"] and values | length > 1 and name not in shadowed
+    output: '{{ "util._py" | use("py") }}.{{ name }}([{{ values | map("emit") | join(", ") }}]{% if keywords %}, { {% for keyword in keywords %}{{ keyword.arg }}: {{ keyword.value | emit }}{% if not loop.last %}, {% endif %}{% endfor %} }{% endif %})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: sum
+      args:
+        - $values
+      keywords: []
+    output: 'Array.from<any>({{ values | iterable }}).reduce((a: any, b: any) => a + b, 0)'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: $name
+      args:
+        - $value
+      keywords: []
+    when: name in ["int", "float", "bool"]
+    output: '{{ "Math.trunc(Number(" ~ (value | emit) ~ "))" if name == "int" else ("Number(" ~ (value | emit) ~ ")") if name == "float" else (value | condition) if value | kind == "boolean" or value.__class__.__name__ in ["Compare", "BoolOp", "UnaryOp"] else "Boolean(" ~ (value | condition) ~ ")" }}'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: extend
+      args:
+        - $values
+      keywords: []
+    output: '{{ value | emit }}.push(...{{ values | iterable }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: $method
+      args: $args
+      keywords: []
+    when: value | kind == "map" and method in ["get", "setdefault", "pop", "items", "keys", "values", "update", "copy", "clear"]
+    output: '{% set py = "util._py" | use("py") %}{% macro default(arg) %}{% if arg.__class__.__name__ == "Dict" and not arg.keys and symbols.get((node | path) ~ "") == "map" %}new {{ py }}.PyDict(){% else %}{{ arg | emit }}{% endif %}{% endmacro %}{% if method == "get" %}{{ py }}.dictGet({{ value | emit }}{% for arg in args %}, {{ default(arg) }}{% endfor %}){% elif method == "setdefault" %}{{ py }}.dictSetdefault({{ value | emit }}, {{ args[0] | emit }}, {{ default(args[1]) }}){% elif method == "pop" %}{{ py }}.dictPop({{ value | emit }}, {{ args | map("emit") | join(", ") }}){% elif method == "items" %}[...{{ value | emit }}.entries()]{% elif method == "keys" %}[...{{ value | emit }}.keys()]{% elif method == "values" %}[...{{ value | emit }}.values()]{% elif method == "update" %}{% if args[0] | kind == "map" %}{{ args[0] | emit }}.forEach((v: any, k: any) => {{ value | emit }}.set(k, v)){% else %}{{ "Object.entries(" if args[0] | kind == "dict" else "Array.from<any>(" }}{{ args[0] | emit }}).forEach(([k, v]: any) => {{ value | emit }}.set(k, v)){% endif %}{% elif method == "copy" %}new {{ py }}.PyDict({{ value | emit }}){% else %}{{ value | emit }}.clear(){% endif %}'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: update
+      args:
+        - $values
+      keywords: []
+    output: '{% if value | kind == "set" %}{{ values | iterable }}.forEach((v: any) => {{ value | emit }}.add(v)){% else %}Object.assign({{ value | emit }}, {{ values | emit }}){% endif %}'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: copy
+      args: []
+      keywords: []
+    output: '{% set k = value | kind %}{% if k == "set" %}new Set({{ value | emit }}){% elif k == "dict" %}({ ...{{ value | emit }} }){% elif k == "array" %}[...{{ value | emit }}]{% else %}{{ "util._py" | use("py") }}.copy({{ value | emit }}){% endif %}'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: split
+      args: []
+      keywords: []
+    output: '{{ value | emit }}.trim().split(/\s+/)'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: split
+      args:
+        - $separator
+      keywords: []
+    output: '{{ value | emit }}.split({{ separator | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Constant
+          value: $text
+        attr: format
+      args: $args
+      keywords: []
+    when: text is string and text.count("{}") == args | length and "{" not in text.replace("{}", "")
+    output: '`{% for part in text.split("{}") %}{{ part | replace("\\", "\\\\") | replace("`", "\\`") | replace("${", "\\${") }}{% if not loop.last %}${ {{- args[loop.index0] | emit -}} }{% endif %}{% endfor %}`'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: values
+      args: []
+      keywords: []
+    output: Object.values<any>({{ value | emit }})
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value:
+          node: Name
+          id: ifcopenshell
+        attr: schema_by_name
+      args: $args
+      keywords: []
+    output: 'ifcopenshell.schemaByName({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: $method
+      args: $args
+      keywords: $keywords
+    when: method in methods and keywords and node.func | resolve is none
+    output: '{{ value | emit }}.{{ methods[method] }}({{ args | map("emit") | join(", ") }}{% if args %}, {% endif %}{ {% for keyword in keywords %}{% if keyword.arg is none %}...{{ keyword.value | emit }}{% else %}{{ keyword.arg | camel }}: {{ keyword.value | emit }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} })'
+  - input:
+      node: Lambda
+      args: $arguments
+      body: $body
+    output: '(({{ arguments.args | map(attribute="arg") | map("regex_replace_any") | join(", ") if false else arguments.args | map(attribute="arg") | map("ident") | join(": any, ") }}{{ ": any" if arguments.args else "" }}) => {{ body | emit }})'
+  - input:
+      node: JoinedStr
+      values: $values
+    output: '`{% for value in values %}{% if value.__class__.__name__ == "Constant" %}{{ value.value | replace("\\", "\\\\") | replace("`", "\\`") | replace("${", "\\${") }}{% else %}${ {{- value.value | emit -}} }{% endif %}{% endfor %}`'
+  - input:
+      node: Set
+      elts: $elements
+    output: 'new Set([{{ elements | map("emit") | join(", ") }}])'
+  - input:
+      node: SetComp
+      elt: $clause
+      generators:
+        - node: comprehension
+          target: $target
+          iter: $iterable
+          ifs: $filters
+          is_async: 0
+    output: 'new Set(Array.from<any>({{ iterable | iterable }}){% for filter in filters %}.filter(({{ target | emit }}: any) => {{ filter | condition }}){% endfor %}{% if clause | emit != target | emit %}.map(({{ target | emit }}: any) => ({{ clause | emit }})){% endif %})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: next
+      args:
+        - $values
+        - $default
+      keywords: []
+    when: values.__class__.__name__ != "Call" or values.func.id is not defined or values.func.id != "iter"
+    output: '({{ values | iterable }}[0] ?? {{ default | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: range
+      args:
+        - $start
+        - $stop
+      keywords: []
+    output: 'Array.from({length: {{ stop | emit }} - {{ start | emit }}}, (_, i) => {{ start | emit }} + i)'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: pop
+      args: $args
+      keywords: []
+    output: '{% if value | kind == "dict" %}((v: any) => (delete {{ value | emit }}[{{ args[0] | emit }}], v))({{ value | emit }}[{{ args[0] | emit }}]{% if args | length > 1 %} ?? {{ args[1] | emit }}{% endif %}){% elif not args and value | kind == "array" %}{{ value | emit }}.pop(){% elif not args %}{{ "util._py" | use("py") }}.pop({{ value | emit }}){% elif args[0].value is defined and args[0].value == 0 %}{{ value | emit }}.shift(){% else %}{{ value | emit }}.splice({{ args[0] | emit }}, 1)[0]{% endif %}'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: remove
+      args:
+        - $item
+      keywords: []
+    output: '{% set k = value | kind %}{% if k == "file" %}{{ value | emit }}.remove({{ item | emit }}){% elif k == "set" %}{{ value | emit }}.delete({{ item | emit }}){% else %}{{ "util._py" | use("py") }}.remove({{ value | emit }}, {{ item | emit }}){% endif %}'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: $method
+      args:
+        - $items
+      keywords: []
+    when: method in ["difference_update", "intersection_update"]
+    output: '{% if method == "difference_update" %}Array.from<any>({{ items | iterable }}).forEach((v: any) => {{ value | emit }}.delete(v)){% else %}((keep: Set<any>) => [...{{ value | emit }}].forEach((v: any) => keep.has(v) || {{ value | emit }}.delete(v)))(new Set({{ items | iterable }})){% endif %}'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: $method
+      args:
+        - $needle
+      keywords: []
+    when: method in ["find", "rfind"] and node.func | resolve is none
+    output: '{{ value | emit }}.{{ "indexOf" if method == "find" else "lastIndexOf" }}({{ needle | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: setdefault
+      args:
+        - $key
+        - $default
+      keywords: []
+    output: '({{ value | emit }}[{{ key | emit }}] ??= {{ default | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: insert
+      args:
+        - $index
+        - $item
+      keywords: []
+    output: '{{ value | emit }}.splice({{ index | emit }}, 0, {{ item | emit }})'
+  - input:
+      node: Call
+      func: $callee
+      args: $args
+      keywords: []
+    when: callee.__class__.__name__ == "Name" and callee.id in shadowed and (callee | signature is none or (node | bind(callee | signature)).error is not none)
+    output: '{{ callee | emit }}({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: next
+      args:
+        - node: Call
+          func:
+            node: Name
+            id: iter
+          args:
+            - $values
+          keywords: []
+        - $default
+      keywords: []
+    output: ({{ values | emit }}[0] ?? {{ default | emit }})
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: getattr
+      args:
+        - $value
+        - $key
+        - $default
+      keywords: []
+    output: '({{ key | emit }} in Object({{ value | emit }}) ? {{ value | emit }}[{{ key | emit }}] : {{ default | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: range
+      args:
+        - $stop
+      keywords: []
+    output: 'Array.from({length: {{ stop | emit }}}, (_, i) => i)'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: any
+      args:
+        - $values
+      keywords: []
+    output: '{{ values | emit }}.some(Boolean)'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: get
+      args: $args
+      keywords: []
+    output: '{% if args | length > 1 %}((d: any, k: any) => (k in Object(d) ? d[k] : {{ args[1] | emit }}))({{ value | emit }}, {{ args[0] | emit }}){% else %}({{ value | emit }}[{{ args[0] | emit }}] ?? null){% endif %}'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: $method
+      args: []
+      keywords: []
+    when: method in ['keys', 'items']
+    output: Object.{{ "keys" if method == "keys" else "entries" }}({{ value | emit }})
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $separator
+        attr: join
+      args:
+        - $values
+      keywords: []
+    output: '{{ values | emit }}.join({{ separator | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: capitalize
+      args: []
+      keywords: []
+    output: '((s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase())({{ value | emit }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: $method
+      args: $args
+      keywords: []
+    when: method in methods and node.func | resolve is none
+    output: '{{ value | emit }}.{{ methods[method] }}({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: $method
+      args: $args
+      keywords: $keywords
+    when: method not in python_methods and method not in methods and not method.startswith("_") and node.func | resolve is none and node.func | signature is none and value | resolve is none and (value.id is not defined or value.id not in ["ifcopenshell", "self"]) and (value.__class__.__name__ == "Call" or value | source | truncate(13, True, "", 0) != "ifcopenshell.")
+    output: '{{ value | emit }}.{{ method | camel }}({{ args | map("emit") | join(", ") }}{% if keywords %}{% if args %}, {% endif %}{ {% for keyword in keywords %}{% if keyword.arg is none %}...{{ keyword.value | emit }}{% else %}{{ keyword.arg | camel }}: {{ keyword.value | emit }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} }{% endif %})'
+  - input:
+      node: Call
+      func: $callee
+      args: $args
+      keywords: []
+    when: callee.__class__.__name__ == "Name" and callee | resolve is not none and callee | signature is none and callee.id not in classes
+    output: '{{ callee | emit }}({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: $name
+      args: $args
+      keywords: []
+    when: name in calls
+    # tuple(x) has the length of x, which TypeScript does not know, so it is not a fixed-length tuple type.
+    output: '{% if name == "tuple" %}({{ calls[name] }}({{ args | map("emit") | join(", ") }}) as any){% else %}{{ calls[name] }}({{ args | map("emit") | join(", ") }}){% endif %}'
+  - input:
+      node: Call
+      func: $callee
+      args: $args
+      keywords: []
+    when: callee | signature is not none and (node | bind(callee | signature)).error == "variadic call" and not (callee | signature).args.defaults and not (callee | signature).args.kwonlyargs and (callee | signature).args.vararg is none
+    output: '{% set q = callee | resolve %}{% if q is none and callee.id is not defined %}{{ callee.value | emit }}.{{ callee.attr | camel }}{% elif q is none or q.rsplit(".", 1)[0] == this_module %}{{ (q.rsplit(".", 1)[1] if q else callee.id) | camel }}{% elif q | defining_module == this_module %}{{ q.rsplit(".", 1)[1] | camel }}{% else %}{{ q | defining_module | use }}.{{ q.rsplit(".", 1)[1] | camel }}{% endif %}({{ args | map("emit") | join(", ") }})'
+  - input:
+      node: Call
+      func: $callee
+    when: callee | signature is not none and (node | bind(callee | signature)).error is none
+    output: '{% set q = callee | resolve %}{% set b = node | bind(callee | signature) %}{% if callee | is_class %}new {% endif %}{% if callee | is_static %}{{ current_class }}.{{ callee.attr | camel }}{% elif q is none and callee.id is defined and callee.id in shadowed %}{{ callee.id | ident }}{% elif q is none and callee.id is not defined %}{{ callee.value | emit }}.{{ callee.attr | camel }}{% elif q is none or q.rsplit(".", 1)[0] == this_module %}{{ (q.rsplit(".", 1)[1] if q else callee.id) | camel }}{% elif q | defining_module == this_module %}{{ q.rsplit(".", 1)[1] | camel }}{% else %}{{ q | defining_module | use }}.{{ q.rsplit(".", 1)[1] | camel }}{% endif %}({{ b.positional | map("emit") | join(", ") }}{% if b.options %}{% if b.positional %}, {% endif %}{ {% for option in b.options %}{% if option[0] is none %}...{{ option[1] | emit }}{% else %}{{ option[0] | camel }}: {{ option[1] | emit }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %} }{% endif %})'
+  - input:
+      node: Attribute
+    when: node | resolve is not none
+    output: '{% set q = node | resolve %}{{ q.rsplit(".", 1)[0] | use }}.{{ q.rsplit(".", 1)[1] | camel }}'
+  - input:
+      node: Attribute
+      value:
+        node: Name
+        id: self
+      attr: $attr
+    output: this.{{ attr }}
+  - input:
+      node: Attribute
+      value: $value
+      attr: $attr
+      ctx:
+        node: Load
+    when: attr in ["file", "schema", "schema_identifier", "wrappedValue", "declaration", "header"] and value | kind not in ["dict"]
+    output: '{{ value | emit }}.{{ {"file": "file()", "schema": "schema()", "schema_identifier": "schemaIdentifier()", "wrappedValue": "wrappedValue", "declaration": "declaration()", "header": "stepHeader"}[attr] }}'
+  - input:
+      node: Attribute
+      value: $value
+      attr: units
+      ctx:
+        node: Load
+    output: ({{ value | emit }}.units ?? {})
+  - input:
+      node: Attribute
+      value: $value
+      attr: $attr
+    output: '{{ value | emit }}.{{ attr }}'
+  - input:
+      node: Subscript
+      value: $value
+      slice: $index
+    when: value | kind == "ndarray" or overloading and value | kind == "unknown" and not (index.__class__.__name__ == "Constant" and index.value is string) or index.__class__.__name__ == "Tuple" and value | kind not in ["dict", "map"]
+    output: '{% set py = "util._py" | use("py") %}{% macro key(i) %}{% if i.__class__.__name__ == "Slice" %}{{ py }}.slice({{ i.lower | emit if i.lower is not none else "null" }}, {{ i.upper | emit if i.upper is not none else "null" }}, {{ i.step | emit if i.step is not none else "null" }}){% elif i.__class__.__name__ == "Tuple" %}[{% for e in i.elts %}{{ key(e) }}{% if not loop.last %}, {% endif %}{% endfor %}]{% elif i.__class__.__name__ == "List" %}new {{ py }}.IndexList({{ i | emit }}){% else %}{{ i | emit }}{% endif %}{% endmacro %}{{ py }}.getitem({{ value | emit }}, {{ key(index) }})'
+  - input:
+      node: Subscript
+      value: $value
+      slice:
+        node: Slice
+        lower: null
+        upper: null
+        step:
+          node: UnaryOp
+          op:
+            node: USub
+          operand:
+            node: Constant
+            value: 1
+    output: '[...{{ value | emit }}].reverse()'
+  - input:
+      node: Subscript
+      value: $value
+      slice:
+        node: Slice
+        lower: $lower
+        upper: $upper
+        step: null
+    output: '{{ value | emit }}.slice({{ lower | emit if lower is not none else "0" }}{% if upper is not none %}, {{ upper | emit }}{% endif %})'
+  - input:
+      node: Subscript
+      value: $value
+      slice: $index
+    when: value | kind == "map" and node.ctx.__class__.__name__ == "Load"
+    output: '{{ value | emit }}.get({{ index | emit }})'
+  - input:
+      node: Subscript
+      value: $value
+      slice: $index
+    output: '{{ value | emit }}[{{ index | emit }}]'
+  - input:
+      node: BoolOp
+      op:
+        node: Or
+      values:
+        - $value
+        - node: List
+          elts: []
+    output: ({{ value | emit }} ?? [])
+  - input:
+      node: BoolOp
+      op:
+        node: Or
+      values:
+        - $value
+        - node: Tuple
+          elts: []
+    output: ({{ value | emit }} ?? [])
+  - input:
+      node: BoolOp
+      op: $op
+      values: $values
+    when: values | map("kind") | reject("in", ["string", "number", "boolean", "entity", "file"]) | list | length == 0 or values[-1].__class__.__name__ == "Constant" and values[:-1] | map("kind") | reject("in", ["string", "number", "boolean", "entity", "file"]) | list | length == 0
+    output: ({% for value in values %}{{ value | emit }}{% if not loop.last %} {{ "||" if op.__class__.__name__ == "Or" else "&&" }} {% endif %}{% endfor %})
+  - input:
+      node: BoolOp
+      op: $op
+      values: $values
+    output: '{% set py = "util._py" | use("py") %}{% set negate = "!" if op.__class__.__name__ == "And" else "" %}{% macro chain(items) %}{% if items | length == 1 %}{{ items[0] | emit }}{% else %}((__t: any) => {{ negate }}{{ py }}.truthy(__t) ? __t : {{ chain(items[1:]) }})({{ items[0] | emit }}){% endif %}{% endmacro %}{{ chain(values) }}'
+  - input:
+      node: UnaryOp
+      op:
+        node: Not
+      operand: $value
+    output: '!({{ value | condition }})'
+  - input:
+      node: UnaryOp
+      op:
+        node: USub
+      operand: $value
+    when: value | kind in ["ndarray", "pyobject"] or overloading and value | kind == "unknown"
+    output: '{{ "util._py" | use("py") }}.neg({{ value | emit }})'
+  - input:
+      node: UnaryOp
+      op:
+        node: USub
+      operand: $value
+    output: (-{{ value | emit }})
+  # Arithmetic on arrays and dates: Python's operator protocol (__add__, __radd__, ...) at runtime.
+  - input:
+      node: BinOp
+      left: $left
+      op: $op
+      right: $right
+    when: op.__class__.__name__ in dunder_operators and (left | kind in ["ndarray", "pyobject"] or right | kind in ["ndarray", "pyobject"] or op.__class__.__name__ == "MatMult" or overloading and left | kind in ["unknown", "number"] and right | kind in ["unknown", "number"] and not (left | kind == "number" and right | kind == "number") or op.__class__.__name__ == "Mult" and (left.__class__.__name__ in ["List", "Tuple"] or right.__class__.__name__ in ["List", "Tuple"] or left | kind in ["string", "array"] or right | kind in ["string", "array"]))
+    output: '{{ "util._py" | use("py") }}.{{ dunder_operators[op.__class__.__name__] }}({{ left | emit }}, {{ right | emit }})'
+  - input:
+      node: BinOp
+      left: $left
+      op: $op
+      right: $right
+    when: op.__class__.__name__ in ["BitOr", "Sub", "BitAnd"] and (left | kind == "set" or right | kind == "set")
+    output: 'new Set({{ left | emit }}).{{ {"BitOr": "union", "Sub": "difference", "BitAnd": "intersection"}[op.__class__.__name__] }}(new Set({{ right | iterable }}))'
+  - input:
+      node: BinOp
+      left: $left
+      op:
+        node: Add
+      right: $right
+    when: left | kind == "array" or right | kind == "array"
+    output: '[...{{ left | emit }}, ...{{ right | emit }}]'
+  - input:
+      node: BinOp
+      left: $left
+      op:
+        node: Add
+      right: $right
+    when: left | kind not in ["number", "string"] and right | kind not in ["number", "string"] and left.__class__.__name__ != "Constant" and right.__class__.__name__ != "Constant" and left.__class__.__name__ not in ["JoinedStr", "BinOp"] and right.__class__.__name__ != "JoinedStr"
+    output: '{{ "util._py" | use("py") }}.add({{ left | emit }}, {{ right | emit }})'
+  - input:
+      node: BinOp
+      left: $left
+      op: $op
+      right: $right
+    output: ({{ left | emit }} {{ op | emit }} {{ right | emit }})
+  - input:
+      node: IfExp
+      test: $test
+      body: $body
+      orelse: $otherwise
+    output: '({{ test | condition }} ? {{ body | emit }} : {{ otherwise | emit }})'
+  - input: &id001
+      node: Compare
+      left: $left
+      ops:
+        - $op
+      comparators:
+        - $right
+    when: op.__class__.__name__ in ["In", "NotIn"] and right | kind in ["array", "string"]
+    output: '{{ "!" if op.__class__.__name__ == "NotIn" else "" }}{{ right | emit }}.includes({{ left | emit }})'
+  - input: *id001
+    when: op.__class__.__name__ in ["In", "NotIn"] and right | kind == "dict"
+    output: '{{ "!" if op.__class__.__name__ == "NotIn" else "" }}Object.hasOwn({{ right | emit }}, {{ left | emit }})'
+  - input: *id001
+    when: op.__class__.__name__ in ["In", "NotIn"] and right | kind == "set"
+    output: '{{ "!" if op.__class__.__name__ == "NotIn" else "" }}{{ right | emit }}.has({{ left | emit }})'
+  - input: *id001
+    when: op.__class__.__name__ in ["In", "NotIn"]
+    output: '{{ "!" if op.__class__.__name__ == "NotIn" else "" }}{{ "util._py" | use("py") }}.contains({{ right | emit }}, {{ left | emit }})'
+  - input: *id001
+    when: op.__class__.__name__ in ["Is", "Eq"] and left.__class__.__name__ == "Call" and left.func.id is defined and left.func.id == "type" and left.args | length == 1 and right | source in ["ifcopenshell.file", "ifcopenshell.entity_instance"]
+    output: '({{ left.args[0] | emit }} instanceof ifcopenshell.{{ "File" if right.attr == "file" else "EntityInstance" }})'
+  - input: *id001
+    when: op.__class__.__name__ in ["Is", "IsNot", "Eq", "NotEq"] and right.value is defined and right.value is none and right.__class__.__name__ == "Constant"
+    output: ({{ left | emit }} {{ "==" if op.__class__.__name__ in ["Is", "Eq"] else "!=" }} null)
+  - input: *id001
+    when: op.__class__.__name__ in ["Eq", "NotEq"] and left.__class__.__name__ != "Constant" and right.__class__.__name__ != "Constant" and (left | kind in ["ndarray", "pyobject"] or right | kind in ["ndarray", "pyobject"] or overloading and left | kind == "unknown" and right | kind == "unknown")
+    output: '{{ "!" if op.__class__.__name__ == "NotEq" else "" }}{{ "util._py" | use("py") }}.eq({{ left | emit }}, {{ right | emit }})'
+  - input: *id001
+    when: op.__class__.__name__ in ["Eq", "NotEq"] and (left | kind == "array" or right | kind == "array")
+    output: '{% if op.__class__.__name__ == "NotEq" %}!{% endif %}({{ left | emit }}.length === {{ right | emit }}.length && {{ left | emit }}.every((value: any, index: number) => value === {{ right | emit }}[index]))'
+  - input:
+      node: Compare
+      left: $left
+      ops:
+        - $op
+      comparators:
+        - $right
+    when: op.__class__.__name__ in ["Eq", "NotEq", "Is", "IsNot", "Gt", "Lt", "GtE", "LtE"]
+    output: ({{ left | emit }} {{ {"Eq":"===", "NotEq":"!==", "Is":"===", "IsNot":"!==", "Gt":">", "Lt":"<", "GtE":">=", "LtE":"<="}[op.__class__.__name__] }} {{ right | emit }})
+  - input:
+      node: Compare
+      left: $left
+      ops: $ops
+      comparators: $comparators
+    when: ops | length > 1 and ops | map(attribute="__class__.__name__") | reject("in", ["Gt", "Lt", "GtE", "LtE", "Eq", "NotEq"]) | list | length == 0
+    output: '({% for op in ops %}{{ (left if loop.first else comparators[loop.index0 - 1]) | emit }} {{ {"Eq":"===", "NotEq":"!==", "Gt":">", "Lt":"<", "GtE":">=", "LtE":"<="}[op.__class__.__name__] }} {{ comparators[loop.index0] | emit }}{% if not loop.last %} && {% endif %}{% endfor %})'
+  - input:
+      node: Dict
+      keys: $keys
+      values: $values
+    when: node | kind == "map"
+    output: 'new {{ "util._py" | use("py") }}.PyDict([{% for key in keys %}[{{ key | emit }}, {{ values[loop.index0] | emit }}]{% if not loop.last %}, {% endif %}{% endfor %}])'
+  - input:
+      node: Dict
+      keys: $keys
+      values: $values
+    output: '({ {% for key in keys %}{% if key.value is defined and key.value is string %}{{ key.value | literal }}{% else %}[{{ key | emit }}]{% endif %}: {{ values[loop.index0] | emit }}{% if not loop.last %}, {% endif %}{% endfor %} })'
+  - input:
+      node: Tuple
+      elts: $elements
+    output: '[{{ elements | map("emit") | join(", ") }}]'
+  - input:
+      node: List
+      elts: $elements
+    output: '[{{ elements | map("emit") | join(", ") }}]'
+  - input:
+      node: Starred
+      value: $value
+    output: '...{{ value | emit }}'
+  - input:
+      node: Yield
+      value: $value
+    output: yielded.push({{ value | emit }})
+  - input:
+      node: YieldFrom
+      value: $value
+    output: yielded.push(...{{ value | iterable }})
+  - input:
+      node: Constant
+    when: node.value.__class__.__name__ == "ellipsis"
+    output: undefined
+  - input:
+      node: Constant
+      value: $value
+    output: '{{ value | literal }}'
+  - input:
+      node: Name
+      id: $name
+      ctx:
+        node: Load
+    when: name in builtin_values and name not in shadowed and name not in module_globals
+    output: '{{ builtin_values[name] }}'
+  - input:
+      node: Name
+      id: __file__
+    output: import.meta.url
+  - input:
+      node: Attribute
+      value:
+        node: Name
+        id: re
+      attr: $flag
+    when: flag in ["I", "IGNORECASE", "M", "MULTILINE", "S", "DOTALL"]
+    output: '{{ "util._py" | use("py") }}.re.{{ flag }}'
+  # In overridable modules, a function read as a value is its override, if one is set.
+  - input:
+      node: Name
+      id: $name
+      ctx:
+        node: Load
+    when: this_module in overridable and name in functions and name not in shadowed
+    output: '(overrides.{{ name | camel }} ?? {{ name | camel }})'
+  - input:
+      node: Name
+      id: $name
+    when: node | resolve is not none
+    output: '{% set q = node | resolve %}{% if q.rsplit(".", 1)[0] == this_module %}{{ name | camel }}{% else %}{{ q.rsplit(".", 1)[0] | use }}.{{ q.rsplit(".", 1)[1] | camel }}{% endif %}'
+  - input:
+      node: Name
+      id: $name
+    output: '{{ names.get(name, name | ident) }}'
+  - input: $operator
+    when: operator.__class__.__name__ in operators
+    output: '{{ operators[operator.__class__.__name__] }}'
+parameter_types:
+  - input:
+      node: arg
+      annotation: $annotation
+    # String Literal parameters accept any string: callers pass str values (file.schema(), ...); set
+    # parameters accept any iterable, as callers pass lists.
+    output: '{{ "any" if node.widened is defined else "string" if annotation is not none and (annotation.id is defined and annotation.id in aliases or annotation | emit("annotation_kinds") == "string" and annotation | source != "str") else ("Iterable<" ~ (annotation.slice | type) ~ ">") if annotation.__class__.__name__ == "Subscript" and annotation.value | source == "set" else annotation | type }}'
+annotation_kinds:
+  - input: $value
+    when: value | alias_value is not none
+    output: '{{ value | alias_value | emit("annotation_kinds") }}'
+  - input: $value
+    when: value is not none and value | source in ["npt.NDArray", "NDArray", "np.ndarray", "numpy.ndarray"]
+    output: ndarray
+  - input:
+      node: Subscript
+      value: $array
+    when: array | source in ["npt.NDArray", "NDArray"]
+    output: ndarray
+  - input: $value
+    when: value | runtime_path is not none and (value | runtime_path).module in runtime_kinds
+    output: '{% set path = value | runtime_path %}{{ "ndarray" if path.module == "numpy" and path.parts[-1] in ["ndarray", "NDArray", "array"] else "number" if path.module == "numpy" else runtime_kinds[path.module] }}'
+  - input:
+      node: Name
+      id: $name
+    output: '{{ {"str":"string", "float":"number", "int":"number", "bool":"boolean", "DimensionalExponents":"array", "MEASURE_CLASS":"string", "QUANTITY_CLASS":"string"}.get(name, "unknown") }}'
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: Optional
+      slice: $element
+    output: '{{ element | emit("annotation_kinds") }}'
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: $name
+      slice:
+        node: Tuple
+        elts: $elements
+    when: name in ["dict", "defaultdict", "Mapping", "MutableMapping"]
+    output: '{{ "dict" if elements[0].id is defined and elements[0].id == "str" or elements[0].value is defined and elements[0].value is string or elements[0] | emit("annotation_kinds") == "string" else "map" }}'
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: Literal
+      slice: $values
+    when: (values.elts if values.elts is defined else [values]) | rejectattr("value", "string") | list | length == 0
+    output: string
+  - input:
+      node: Subscript
+      value:
+        node: Name
+        id: $name
+    output: '{{ {"list":"array", "tuple":"array", "dict":"dict", "set":"set", "Sequence":"array"}.get(name,"unknown") }}'
+  - input:
+      node: Attribute
+      attr: $name
+    output: '{{ {"entity_instance": "entity", "file": "file"}.get(name, "unknown") }}'
+  - input:
+      node: BinOp
+      left: $left
+      right:
+        node: Constant
+        value: null
+    output: '{{ left | emit("annotation_kinds") }}'
+  - input: $value
+    output: unknown
+inference:
+  - input:
+      node: Call
+      func: $callee
+    when: callee | runtime_path is not none
+    output: '{% set path = callee | runtime_path %}{% set name = path.parts[-1] if path.parts else "" %}{% if path.module == "math" %}number{% elif path.module == "numpy" %}{{ "boolean" if name in ["allclose", "array_equal"] else "unknown" if name in numpy_scalars else "ndarray" }}{% elif path.module == "itertools" %}array{% else %}{{ runtime_kinds.get(path.module, "unknown") }}{% endif %}'
+  - input: $value
+    when: value.__class__.__name__ in ["Name", "Attribute"] and value | runtime_path is not none
+    output: '{% set path = value | runtime_path %}{{ "number" if path.module == "math" or path.module == "numpy" and path.parts[-1] in ["pi", "e", "inf", "nan"] else "unknown" }}'
+  - input:
+      node: Name
+      id: $name
+    output: '{{ symbols.get(name, "unknown") }}'
+  - input:
+      node: Attribute
+      value:
+        node: Name
+        id: self
+      attr: $attr
+    when: ("self." ~ attr) in symbols
+    output: '{{ symbols["self." ~ attr] }}'
+  # Values of annotated dicts: d.get(k), d.setdefault(k, v), d[k], at any depth.
+  - input: $value
+    when: value.__class__.__name__ in ["Call", "Subscript"] and value | path in symbols
+    output: '{{ symbols[value | path] }}'
+  - input:
+      node: Constant
+      value: $value
+    output: '{{ "string" if value is string else "boolean" if value is boolean else "number" if value is number else "unknown" }}'
+  - input:
+      node: BinOp
+      left: $left
+      op: $op
+      right: $right
+    when: op.__class__.__name__ in dunder_operators and (left | kind in ["ndarray", "pyobject"] or right | kind in ["ndarray", "pyobject"])
+    output: '{{ "ndarray" if "ndarray" in [left | kind, right | kind] else "pyobject" }}'
+  - input:
+      node: UnaryOp
+      op:
+        node: USub
+      operand: $value
+    when: value | kind in ["ndarray", "pyobject", "number"]
+    output: '{{ value | kind }}'
+  - input:
+      node: Attribute
+      value: $value
+      attr: $attr
+    when: attr in ["T", "real", "imag"] and value | kind == "ndarray"
+    output: ndarray
+  - input:
+      node: Subscript
+      value: $value
+      slice: $index
+    when: value | kind == "ndarray" and (index.__class__.__name__ == "Slice" or index.__class__.__name__ == "Tuple" and index.elts | selectattr("__class__.__name__", "equalto", "Slice") | list)
+    output: ndarray
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        value: $value
+        attr: $method
+    when: value | kind in ["ndarray", "pyobject"]
+    output: '{% if value | kind == "ndarray" %}{{ "array" if method == "tolist" else "ndarray" if method in ["copy", "reshape", "flatten", "ravel", "transpose", "astype", "round", "cross", "clip"] else "unknown" }}{% else %}{{ "string" if method in ["isoformat", "strftime", "isoformat", "ctime"] else "number" if method in ["timestamp", "total_seconds", "weekday", "isoweekday", "toordinal"] else "pyobject" if method in ["date", "time", "replace", "combine", "astimezone", "now", "today"] else "unknown" }}{% endif %}'
+  - input: $value
+    when: value is not none and value.__class__.__name__ in ["List", "Tuple", "ListComp", "GeneratorExp"]
+    output: array
+  - input:
+      node: Dict
+      keys: $keys
+    when: keys and (keys | reject("none") | selectattr("__class__.__name__", "equalto", "Tuple") | list or keys | reject("none") | map("kind") | select("in", ["entity", "number"]) | list)
+    output: map
+  - input:
+      node: DictComp
+      key: $key
+    when: key.__class__.__name__ == "Tuple" or key | kind in ["entity", "number"]
+    output: map
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: defaultdict
+    output: map
+  - input: $value
+    when: value is not none and value.__class__.__name__ in ["Dict", "DictComp"]
+    output: dict
+  - input:
+      node: NamedExpr
+      value: $value
+    output: '{{ value | kind }}'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: $name
+    when: name in classes
+    output: class:{{ name }}
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: $name
+    when: name in ["hasattr", "isinstance", "bool", "len", "int", "float", "set", "sum", "sorted", "all", "any", "round", "frozenset"]
+    output: '{{ {"hasattr": "boolean", "isinstance": "boolean", "bool": "boolean", "len": "number", "int": "number", "float": "number", "set": "set", "sum": "number", "sorted": "array", "all": "boolean", "any": "boolean", "round": "number", "frozenset": "set"}[name] }}'
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        attr: $method
+      args: $args
+    when: method in ["is_a", "get_inverse", "startswith", "endswith", "id", "get_total_inverses", "create_entity", "get_info"] or method.startswith("createIfc")
+    output: '{{ "string" if method == "is_a" and not args else "boolean" if method in ["is_a", "startswith", "endswith"] else "set" if method == "get_inverse" else "number" if method in ["id", "get_total_inverses"] else "dict" if method == "get_info" else "entity" }}'
+  - input: $value
+    when: value.__class__.__name__ in ["Compare", "UnaryOp"] and (value.__class__.__name__ == "Compare" or value.op.__class__.__name__ == "Not")
+    output: boolean
+  - input: $value
+    when: value.__class__.__name__ in ["Set", "SetComp"]
+    output: set
+  - input:
+      node: BinOp
+      left: $left
+      op: $op
+      right: $right
+    when: op.__class__.__name__ in ["BitOr", "Sub", "BitAnd"] and (left | kind == "set" or right | kind == "set")
+    output: set
+  - input:
+      node: BinOp
+      left: $left
+      op:
+        node: Add
+      right: $right
+    when: left | kind == "array" or right | kind == "array"
+    output: array
+  - input: $value
+    when: value.__class__.__name__ == "JoinedStr"
+    output: string
+  - input:
+      node: BoolOp
+      values: $values
+    output: '{{ values[-1] | kind }}'
+  - input:
+      node: Attribute
+      attr: units
+    output: dict
+  - input:
+      node: Attribute
+      attr: $attr
+    when: attr in ["Units", "Elements", "DefiningValues", "DefinedValues"]
+    output: array
+  - input:
+      node: Call
+      func:
+        node: Attribute
+        attr: $method
+    when: method in ["by_type", "keys", "items", "upper", "lower", "replace", "capitalize", "join"]
+    output: '{{ "array" if method in ["by_type", "keys", "items"] else "string" }}'
+  - input:
+      node: Call
+      func: $callee
+    when: callee | signature is not none
+    output: '{{ (callee | signature).returns | emit("annotation_kinds") }}'
+  - input:
+      node: Call
+      func:
+        node: Name
+        id: $name
+    when: name in ["tuple", "list", "range", "str"]
+    output: '{{ "array" if name in ["tuple", "list", "range"] else "string" }}'
+  - input: $value
+    output: unknown

@@ -25,5 +25,7 @@
       "@ifcopenshell/wasm/api": ["../ifcopenshell-wasm/api.d.ts"]
     }
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  // Transpiled from ifcopenshell.util and ifcopenshell.api; built by tsconfig.python.json.
+  "exclude": ["src/python"]
 }

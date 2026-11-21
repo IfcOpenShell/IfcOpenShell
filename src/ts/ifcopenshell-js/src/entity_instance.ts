@@ -2,7 +2,8 @@
 
 import { IfcOpenshellInstance } from '@ifcopenshell/wasm/api';
 import type { AttributeValueType as NativeAttributeValueType } from '@ifcopenshell/wasm/api';
-import { IfcOpenShellError } from './init.js';
+import { IfcOpenShellError, downcasting, indexDeclarations } from './init.js';
+import { File } from './file.js';
 
 /** Values decoded by the native WASM attribute typemap. */
 export type AttributeValueType = NativeAttributeValueType<EntityInstance>;
@@ -67,6 +68,35 @@ export class EntityInstance extends IfcOpenshellInstance {
 
   attributes(): string[] {
     return this.getAttributeNames();
+  }
+
+  /** Whether this is an entity rather than an inline typed value such as IfcLabel, as Python `entity.is_entity()`. */
+  isEntity(): boolean {
+    return super.declaration().asEntity() !== null;
+  }
+
+  /** Schema declaration of this entity's class, downcast as Python `entity.declaration`. */
+  override declaration(): ReturnType<IfcOpenshellInstance['declaration']> {
+    const declaration = super.declaration();
+    indexDeclarations(declaration.schema());
+    return downcasting(declaration);
+  }
+
+  /** The file containing this entity, as Python `entity.file`; null for instances outside a file. */
+  override file(): File | null {
+    return File.fromPointer(this.filePointer());
+  }
+
+  /** Replace values matching `f` with `g(value)`, recursing into lists, as Python `entity.walk`. */
+  walk(f: (value: unknown) => boolean, g: (value: unknown) => unknown, value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(item => this.walk(f, g, item));
+    return f(value) ? g(value) : value;
+  }
+
+  /** Forward attribute values in schema order, as iterating a Python entity. */
+  *[Symbol.iterator](): IterableIterator<AttributeValueType> {
+    const count = this.attributes().length;
+    for (let index = 0; index < count; index++) yield this.getArgument(index) as AttributeValueType;
   }
 
   entries(): [string, AttributeValueType][] {
@@ -144,6 +174,23 @@ export class EntityInstance extends IfcOpenshellInstance {
   }
 
   /** Set an attribute by name or index. Prefer `entity.Name = value`. */
+  /**
+   * Write an attribute by index. Typed values such as IfcLabel('x') created in another file are
+   * recreated in this one, since they have no identity; Python accepts them the same way.
+   */
+  override setArgument(index: number, value: AttributeValueType): void {
+    super.setArgument(index, this.ownValue(value) as never);
+  }
+
+  private ownValue(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(item => this.ownValue(item));
+    if (value instanceof EntityInstance && value.id() === 0 && value.filePointer() !== this.filePointer()) {
+      const file = this.file();
+      if (file) return file.create(value.isA(), [this.ownValue(value.wrappedValue) as AttributeValueType]);
+    }
+    return value;
+  }
+
   set(nameOrIndex: string | number, value: AttributeValueType): void {
     if (typeof nameOrIndex === 'string' && this.inverseAttributes().includes(nameOrIndex)) {
       throw new IfcOpenShellError(`Cannot set inverse attribute ${nameOrIndex}`);
@@ -163,10 +210,16 @@ Object.setPrototypeOf(EntityInstance.prototype, new Proxy(IfcOpenshellInstance.p
     return target;
   },
   get(target, key, receiver) {
+    // entity[0] reads the first attribute, as Python entity indexing.
+    if (typeof key === 'string' && /^\d+$/.test(key)) return (receiver as EntityInstance).getArgument(Number(key));
     if (typeof key === 'string' && /^[A-Z]/.test(key) && !(key in target)) throw noAttribute(receiver, key);
     return Reflect.get(target, key, receiver);
   },
   set(target, key, value, receiver) {
+    if (typeof key === 'string' && /^\d+$/.test(key)) {
+      (receiver as EntityInstance).set(Number(key), value);
+      return true;
+    }
     if (typeof key === 'string' && !(key in target)) throw noAttribute(receiver, key);
     return Reflect.set(target, key, value, receiver);
   },
@@ -180,10 +233,34 @@ function noAttribute(entity: EntityInstance, name: string): IfcOpenShellError {
 const instanceClasses = new Map<string, typeof EntityInstance>();
 
 /**
+ * One wrapper per native instance and file, so that entities compare with `===` and work
+ * as `Set` members and `Map` keys, like Python entity equality and hashing.
+ */
+const canonical = new Map<number, Map<number, WeakRef<EntityInstance>>>();
+const collected = new FinalizationRegistry<[number, number]>(([file, identity]) => {
+  const wrappers = canonical.get(file);
+  if (wrappers && !wrappers.get(identity)?.deref()) wrappers.delete(identity);
+});
+
+/** @internal Drop the canonical wrapper of a removed instance. */
+export function forgetInstance(entity: IfcOpenshellInstance): void {
+  canonical.get(entity.filePointer())?.delete(entity.identity());
+}
+
+/** @internal Drop all canonical wrappers of a file that is being destroyed. */
+export function forgetFile(filePointer: number): void {
+  canonical.delete(filePointer);
+}
+
+/**
  * @internal Wrap a native instance, installing `entity.AttributeName` accessors for its class.
  * Registered as the WASM instance factory.
  */
 export function adoptInstance(handle: IfcOpenshellInstance): EntityInstance {
+  const file = handle.filePointer();
+  const identity = file ? handle.identity() : 0;
+  const cached = file ? canonical.get(file)?.get(identity)?.deref() : undefined;
+  if (cached) return cached;
   const key = handle.className(true);
   let InstanceClass = instanceClasses.get(key);
   if (!InstanceClass) {
@@ -194,7 +271,14 @@ export function adoptInstance(handle: IfcOpenshellInstance): EntityInstance {
     defineAttributeAccessors(InstanceClass.prototype, handle);
     instanceClasses.set(key, InstanceClass);
   }
-  return new InstanceClass(handle);
+  const entity = new InstanceClass(handle);
+  if (file) {
+    let wrappers = canonical.get(file);
+    if (!wrappers) canonical.set(file, wrappers = new Map());
+    wrappers.set(identity, new WeakRef(entity));
+    collected.register(entity, [file, identity]);
+  }
+  return entity;
 }
 
 /** Non-enumerable, so listing an entity does not read every attribute. */
