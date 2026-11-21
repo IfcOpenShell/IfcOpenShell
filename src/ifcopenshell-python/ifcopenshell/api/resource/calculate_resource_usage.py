@@ -36,7 +36,7 @@ def calculate_resource_usage(file: ifcopenshell.file, resource: ifcopenshell.ent
         return
 
     task = ifcopenshell.util.resource.get_task_assignments(resource)
-    if not task or not task.TaskTime:
+    if not task or not task.TaskTime or not task.TaskTime.ScheduleDuration:
         return
 
     if not task.TaskTime.DurationType or task.TaskTime.DurationType == "WORKTIME":
