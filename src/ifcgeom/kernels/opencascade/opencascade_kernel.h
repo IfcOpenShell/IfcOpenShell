@@ -130,6 +130,11 @@ public:
 	bool convert(const ifcopenshell::geom::taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf);
 	bool convert(const ifcopenshell::geom::taxonomy::sweep_along_curve::ptr, TopoDS_Shape&);
 
+	// A half-space solid, with its polygonal bound moved by bound_correction
+	TopoDS_Shape halfspace_solid(const ifcopenshell::geom::taxonomy::solid::ptr&, const gp_Trsf& bound_correction);
+	// Turn the polygonal bound of a half-space tool onto a face of the first operand it drifts from (#349)
+	void align_polygonal_halfspace(const TopoDS_Shape& first_operand, const ifcopenshell::geom::taxonomy::solid::ptr&, const gp_Trsf& placement, TopoDS_Shape& tool);
+
 	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::edge::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
 	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::loop::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
 	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::face::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
