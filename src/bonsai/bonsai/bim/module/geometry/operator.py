@@ -2472,6 +2472,21 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         self.is_valid = True
 
+        # IFC elements whose whole mesh was edited in plain Blender edit mode (e.g. via
+        # object.editmode_toggle) rather than through item mode. Until edit mode is left,
+        # obj.data still holds the pre-edit mesh, so checksum it now and compare after.
+        directly_edited_meshes = {}
+        if not tool.Geometry.get_geometry_props().representation_obj and not tool.Profile.is_editing_profile():
+            for obj in context.objects_in_mode:
+                if obj.type != "MESH" or not tool.Geometry.is_geometric_data(obj.data):
+                    continue
+                element = tool.Ifc.get_entity(obj)
+                if not element or element.is_a("IfcGridAxis") or element.is_a("IfcRelSpaceBoundary"):
+                    continue
+                if tool.Geometry.is_locked(element):
+                    continue
+                directly_edited_meshes[obj] = self.get_direct_edit_checksum(obj)
+
         tool.Blender.toggle_edit_mode(context)
 
         props = tool.Geometry.get_geometry_props()
@@ -2500,6 +2515,23 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
 
         self.edited_objs = []
         self.unchanged_objs_with_openings = []
+
+        for obj, checksum in directly_edited_meshes.items():
+            if checksum == self.get_direct_edit_checksum(obj):
+                continue
+            representation = tool.Geometry.get_active_representation(obj)
+            if representation and tool.Geometry.is_meshlike(representation):
+                self.edited_objs.append(obj)
+            else:
+                # Re-deriving a swept solid / parametric body from a freely edited mesh is
+                # unreliable, so discard the edit and restore the IFC geometry, which also
+                # shows the user that the change did not take.
+                tool.Geometry.reload_representation(obj)
+                self.report(
+                    {"WARNING"},
+                    f"'{obj.name}' has a parametric body, so mesh edits can't be saved and were reverted. "
+                    "Edit it through item mode, or convert it to a tessellation first.",
+                )
 
         for obj in objs:
             if not obj:
@@ -2544,6 +2576,10 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         if not context.active_object:
             return {"FINISHED"}
+        if not hasattr(self, "edited_objs"):
+            # Executed without invoke (from a script, or headless with no window): run
+            # the same mode switch and edit detection that invoke would have run.
+            return self._invoke(context, None)
         for obj in self.edited_objs:
             if self.should_save:
                 bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
@@ -2557,6 +2593,14 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             tool.Geometry.reload_representation(obj)
             tool.Ifc.finish_edit(obj)
         return {"FINISHED"}
+
+    def get_direct_edit_checksum(self, obj: bpy.types.Object) -> tuple[str, str, tuple[int, ...]]:
+        """Geometry, material slots and per-face material assignment of a mesh edited in plain
+        edit mode, so assigning materials to faces also counts as a change worth saving."""
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        material_indices = tuple(p.material_index for p in mesh.polygons)
+        return (tool.Geometry.get_mesh_checksum(mesh), tool.Geometry.get_material_checksum(obj), material_indices)
 
     def edit_representation_item(self, obj: bpy.types.Object) -> None:
         props = tool.Geometry.get_geometry_props()
