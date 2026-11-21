@@ -228,13 +228,14 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         self.depth_array = n / (f - (f - n) * depth_array) * (f - n)
 
         placed: list[tuple[float, float, float, float]] = []
+        font_size = 20.0 * tool.Structural.get_structural_props().label_size
         for info in self.text_info:
             if not self.is_visible(info):
                 continue
             text_position = self.location_3d_to_region_2d(info["position"], context)
             if text_position is not None:
                 font_id = 0
-                blf.size(font_id, 20.0)
+                blf.size(font_id, font_size)
                 x, y = text_position[0], text_position[1]
                 if (away := info.get("away")) is not None:
                     x, y = self.place_beside(info["position"], away, x, y, info["text"], context, placed)

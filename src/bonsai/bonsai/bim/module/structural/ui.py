@@ -803,6 +803,9 @@ class BIM_PT_show_structural_activities(Panel):
         row = self.layout.row(align=True)
         row.prop(self.props, "force_decimals")
         row.prop(self.props, "angle_decimals")
+        row = self.layout.row(align=True)
+        row.prop(self.props, "label_size")
+        row.prop(self.props, "arrow_thickness")
 
 
 class BIM_PT_structural_loads(Panel):
