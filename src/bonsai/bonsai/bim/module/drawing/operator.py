@@ -2923,6 +2923,19 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     has_errors_during_activation = False
     has_warnings_during_activation = False
 
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project loaded.")
+            return False
+        if not context.scene or not context.scene.camera:
+            cls.poll_message_set("No active scene camera.")
+            return False
+        if not tool.Drawing.get_document_props().get_active_drawing():
+            cls.poll_message_set("No active drawing.")
+            return False
+        return True
+
     def _execute(self, context):
         scene = context.scene
         assert scene and (camera := scene.camera)
@@ -2935,12 +2948,18 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
         self.drawing_style = drawing_style
 
+        props = tool.Drawing.get_document_props()
+        drawing = props.get_active_drawing()
+        if drawing is None:
+            self.report({"WARNING"}, "No active drawing found.")
+            return {"CANCELLED"}
+        pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
+        if pset is None:
+            self.report({"WARNING"}, "Active drawing has no EPset_Drawing.")
+            return {"CANCELLED"}
+
         self.set_raster_style(context)
 
-        props = tool.Drawing.get_document_props()
-        assert (drawing := props.get_active_drawing())
-        pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
-        assert pset
         ifcopenshell.api.pset.edit_pset(
             ifc_file, pset=pset, properties={"CurrentShadingStyle": self.drawing_style.name}
         )
