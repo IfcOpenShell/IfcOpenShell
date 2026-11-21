@@ -32,7 +32,7 @@ class SERIALIZERS_API wavefront_obj_serializer : public ifcopenshell::geom::writ
 private:
 	stream_or_filename obj_stream;
 	stream_or_filename mtl_stream;
-	size_t vcount_total, ncount_total;
+	size_t vcount_total, ncount_total, uvcount_total;
 	std::set<std::string> materials;
 public:
 	wavefront_obj_serializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger = nullptr);
