@@ -839,7 +839,13 @@ class Loader(bonsai.core.tool.Loader):
                 if result:
                     return result
             except:
-                pass
+                if geometry_library != "opencascade":
+                    try:
+                        result = ifcopenshell.geom.create_shape(settings, element, geometry_library="opencascade")
+                        if result:
+                            return result
+                    except:
+                        pass
 
     @classmethod
     def create_point_cloud_mesh(cls, representation: ifcopenshell.entity_instance) -> Union[bpy.types.Mesh, None]:
