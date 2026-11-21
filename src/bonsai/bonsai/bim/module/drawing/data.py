@@ -224,6 +224,8 @@ class DocumentsData:
 
 
 FONT_SIZES = {
+    "mini": 1.3,
+    "tiny": 1.5,
     "small": 1.8,
     "regular": 2.5,
     "large": 3.5,
