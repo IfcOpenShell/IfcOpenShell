@@ -63,6 +63,7 @@ classes = (
     operator.EditAssignedProduct,
     operator.EditElementFilter,
     operator.EditSheet,
+    operator.EditSheetItemPosition,
     operator.EditText,
     operator.EditTextPopup,
     operator.EnableAddAnnotationType,
