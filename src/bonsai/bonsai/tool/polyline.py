@@ -52,19 +52,20 @@ class Polyline(bonsai.core.tool.Polyline):
             return value
 
         def get_number_value(self, attribute_name):
-            value = getattr(self, f"_{attribute_name}")
-            if value:
+            value = getattr(self, f"_{attribute_name}", None)
+            if value is None or value == "":
+                return None
+            try:
                 return float(value)
-            else:
-                return value
+            except (ValueError, TypeError):
+                return None
 
         def get_formatted_value(self, attribute_name):
             value = self.get_number_value(attribute_name)
             context = bpy.context
             if value is None:
-                return None
+                return ""
             if attribute_name == "A":
-                value = float(self.get_text_value(attribute_name))
                 return f"{value:.2f}°"
             if attribute_name == "AREA":
                 return Polyline.format_input_ui_units(value, True)
@@ -132,14 +133,16 @@ class Polyline(bonsai.core.tool.Polyline):
             last_point = Vector((0, 0, 0))
 
         if tool_state.is_input_on:
+            x = input_ui.get_number_value("X")
+            y = input_ui.get_number_value("Y")
+            z = input_ui.get_number_value("Z")
+            x = mouse_point.x if x is None else x
+            y = mouse_point.y if y is None else y
+            z = mouse_point.z if z is None else z
             if tool_state.use_default_container:
-                mouse_vector = Vector(
-                    (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), default_container_elevation)
-                )
+                mouse_vector = Vector((x, y, default_container_elevation))
             else:
-                mouse_vector = Vector(
-                    (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), input_ui.get_number_value("Z"))
-                )
+                mouse_vector = Vector((x, y, z))
         else:
             if tool_state.use_default_container:
                 mouse_vector = Vector((mouse_point.x, mouse_point.y, default_container_elevation))
@@ -280,14 +283,16 @@ class Polyline(bonsai.core.tool.Polyline):
         snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
         if tool_state.is_input_on:
+            x = input_ui.get_number_value("X")
+            y = input_ui.get_number_value("Y")
+            z = input_ui.get_number_value("Z")
+            x = snap_prop.x if x is None else x
+            y = snap_prop.y if y is None else y
+            z = snap_prop.z if z is None else z
             if tool_state.use_default_container:
-                mouse_vector = Vector(
-                    (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), default_container_elevation)
-                )
+                mouse_vector = Vector((x, y, default_container_elevation))
             else:
-                mouse_vector = Vector(
-                    (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), input_ui.get_number_value("Z"))
-                )
+                mouse_vector = Vector((x, y, z))
         else:
             if tool_state.use_default_container:
                 snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
@@ -309,8 +314,9 @@ class Polyline(bonsai.core.tool.Polyline):
 
         distance = input_ui.get_number_value("D")
 
-        if distance < 0 or distance > 0:
-            angle = radians(input_ui.get_number_value("A"))
+        if distance and (distance < 0 or distance > 0):
+            angle_val = input_ui.get_number_value("A")
+            angle = radians(angle_val if angle_val is not None else 0.0)
 
             if round(abs(angle), 4) == round(math.pi, 4):
                 # 180 degrees is straight on: the continuation of the previous leg. Rotating by it
@@ -480,6 +486,12 @@ class Polyline(bonsai.core.tool.Polyline):
 
     @classmethod
     def format_input_ui_units(cls, value: float, is_area: bool = False) -> str:
+        if value is None or value == "":
+            return ""
+        try:
+            value = float(value)
+        except (ValueError, TypeError):
+            return ""
         if tool.Ifc.get():
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         else:
