@@ -15,6 +15,28 @@
 
 using Catch::Matchers::WithinAbs;
 
+struct ViewportCoreTestAccess {
+    static void addObjectAabb(ViewportCore& core, uint32_t object_id,
+                              const Eigen::Vector3f& mn,
+                              const Eigen::Vector3f& mx) {
+        InstanceInfo inst{};
+        inst.object_id = object_id;
+        for (int i = 0; i < 3; ++i) {
+            inst.world_aabb_min[i] = mn[i];
+            inst.world_aabb_max[i] = mx[i];
+        }
+        core.models_gpu_[1].instances.push_back(inst);
+    }
+
+    static Eigen::Vector3f orbitPivot(const ViewportCore& core) {
+        return core.orbit_pivot_;
+    }
+
+    static bool hasSelectionOrbitPivot(const ViewportCore& core) {
+        return core.orbit_selection_pivot_active_;
+    }
+};
+
 namespace {
 
 // Minimal host: the camera ops only ever call requestFrame().
@@ -34,6 +56,14 @@ Eigen::Vector3f eyeOf(const ViewportCore& c) {
     const float y = s.yaw * d2r, p = s.pitch * d2r;
     const float cp = std::cos(p), sp = std::sin(p), cy = std::cos(y), sy = std::sin(y);
     return s.target + s.distance * Eigen::Vector3f(cp * cy, cp * sy, sp);
+}
+
+Eigen::Vector3f ndcOf(const ViewportCore& core, const Eigen::Vector3f& point) {
+    Eigen::Matrix4f view, projection;
+    core.buildViewProj(view, projection);
+    const Eigen::Vector4f clip =
+        projection * view * Eigen::Vector4f(point.x(), point.y(), point.z(), 1.0f);
+    return clip.head<3>() / clip.w();
 }
 
 } // namespace
@@ -197,6 +227,69 @@ TEST_CASE("setNavPreset maps names to the shared button bindings", "[camera][nav
         core.setNavPreset("nonsense");
         const auto& b = core.navBindings();
         REQUIRE(b.orbit == B::Middle);  REQUIRE(b.select == B::Left);
+    }
+}
+
+TEST_CASE("Revit orbit uses the selected objects' combined AABB centre without recentering",
+          "[camera][nav]") {
+    MockHost host;
+    ViewportCore core(&host);
+    core.setCamera(3, 4, 5, 10, 20, 15);
+    const auto camera_before = core.cameraState();
+    const Eigen::Vector3f eye_before = eyeOf(core);
+
+    ViewportCoreTestAccess::addObjectAabb(
+        core, 7, Eigen::Vector3f(1, 2, 3), Eigen::Vector3f(5, 8, 11));
+    ViewportCoreTestAccess::addObjectAabb(
+        core, 8, Eigen::Vector3f(18, 20, 22), Eigen::Vector3f(22, 24, 28));
+    core.applyPickToSelection(7, /*add*/false, /*remove*/false);
+    core.applyPickToSelection(8, /*add*/true, /*remove*/false);
+    core.setNavPreset("revit");
+
+    REQUIRE(core.beginOrbit());
+
+    const Eigen::Vector3f expected_pivot(11.5f, 13.0f, 15.5f);
+    REQUIRE(ViewportCoreTestAccess::hasSelectionOrbitPivot(core));
+    REQUIRE_THAT(
+        (ViewportCoreTestAccess::orbitPivot(core) - expected_pivot).norm(),
+        WithinAbs(0.0f, 1e-5f));
+
+    // Starting the gesture must not change the current viewport.
+    const auto camera_after_begin = core.cameraState();
+    REQUIRE(camera_after_begin.target == camera_before.target);
+    REQUIRE(camera_after_begin.distance == camera_before.distance);
+    REQUIRE(camera_after_begin.yaw == camera_before.yaw);
+    REQUIRE(camera_after_begin.pitch == camera_before.pitch);
+    REQUIRE_THAT((eyeOf(core) - eye_before).norm(), WithinAbs(0.0f, 1e-6f));
+
+    // The off-axis pivot remains at the same screen position while orbiting.
+    const Eigen::Vector3f pivot_ndc_before = ndcOf(core, expected_pivot);
+    core.orbitBy(25.0f, -12.0f);
+    const Eigen::Vector3f pivot_ndc_after = ndcOf(core, expected_pivot);
+    REQUIRE_THAT(
+        (pivot_ndc_after.head<2>() - pivot_ndc_before.head<2>()).norm(),
+        WithinAbs(0.0f, 1e-4f));
+}
+
+TEST_CASE("Non-Revit presets keep orbit on the current camera target", "[camera][nav]") {
+    const char* presets[] = {"blender", "rhino", "web"};
+    for (const char* preset : presets) {
+        INFO("preset: " << preset);
+        MockHost host;
+        ViewportCore core(&host);
+        core.setCamera(4, 5, 6, 10, 0, 0);
+        ViewportCoreTestAccess::addObjectAabb(
+            core, 7, Eigen::Vector3f(10, 20, 30), Eigen::Vector3f(12, 22, 32));
+        core.applyPickToSelection(7, /*add*/false, /*remove*/false);
+        core.setNavPreset(preset);
+
+        REQUIRE_FALSE(core.beginOrbit());
+        const auto before = core.cameraState();
+        core.orbitBy(25.0f, -12.0f);
+        const auto after = core.cameraState();
+        REQUIRE(after.target == before.target);
+        REQUIRE(after.distance == before.distance);
+        REQUIRE(after.yaw != before.yaw);
     }
 }
 
