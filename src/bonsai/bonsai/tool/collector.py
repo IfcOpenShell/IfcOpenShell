@@ -80,6 +80,8 @@ class Collector(bonsai.core.tool.Collector):
             collection = cls._create_project_child_collection("IfcStructuralItem")
             cls.link_collection_object_safe(collection, obj)
         elif element.is_a("IfcRelSpaceBoundary"):
+            # Boundary geometry is only valid at the RelatingSpace origin; lock it in Object Mode (#2621).
+            tool.Geometry.lock_object(obj)
             collection = cls._create_project_child_collection("IfcRelSpaceBoundary")
             cls.link_collection_object_safe(collection, obj)
         elif element.is_a("IfcLinearPositioningElement"):
