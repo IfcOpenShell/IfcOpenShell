@@ -81,4 +81,4 @@ def edit_lag_time(file: ifcopenshell.file, lag_time: ifcopenshell.entity_instanc
                 value = file.createIfcDuration(ifcopenshell.util.date.datetime2ifc(value, "IfcDuration"))
         setattr(lag_time, name, value)
     for rel in [r for r in file.get_inverse(lag_time) if r.is_a("IfcRelSequence")]:
-        ifcopenshell.api.sequence.cascade_schedule(file, task=rel.RelatedProcess)
+        ifcopenshell.api.sequence.cascade_schedule(file, task=rel.RelatedProcess, recalculate_start_task=False)

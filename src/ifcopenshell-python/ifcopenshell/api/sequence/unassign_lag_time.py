@@ -59,4 +59,4 @@ def unassign_lag_time(file: ifcopenshell.file, rel_sequence: ifcopenshell.entity
         file.remove(current_lag_time)
     else:
         rel_sequence.TimeLag = None
-    ifcopenshell.api.sequence.cascade_schedule(file, task=rel_sequence.RelatedProcess)
+    ifcopenshell.api.sequence.cascade_schedule(file, task=rel_sequence.RelatedProcess, recalculate_start_task=False)
