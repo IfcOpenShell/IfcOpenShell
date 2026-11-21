@@ -217,6 +217,22 @@ class TestCreatePolyline(test.bootstrap.IFC4):
         assert segment.wrappedValue == (2, 3, 1)
 
 
+class TestCreateEllipseCurve(test.bootstrap.IFC4):
+    def test_equal_radii_create_a_circle(self):
+        curve = ShapeBuilder(self.file).create_ellipse_curve(1.0, 1.0)
+        assert curve.is_a("IfcCircle")
+        assert curve.Radius == 1.0
+
+    def test_trimmed_equal_radii_arc_is_based_on_a_circle(self):
+        curve = ShapeBuilder(self.file).create_ellipse_curve(1.0, 1.0, trim_points_mask=(0, 2))
+        assert curve.is_a("IfcTrimmedCurve")
+        assert curve.BasisCurve.is_a("IfcCircle")
+
+    def test_different_radii_create_an_ellipse(self):
+        curve = ShapeBuilder(self.file).create_ellipse_curve(1.0, 0.5)
+        assert curve.is_a("IfcEllipse")
+
+
 class TestMirror(test.bootstrap.IFC4):
     def test_mirror(self):
         builder = ShapeBuilder(self.file)
