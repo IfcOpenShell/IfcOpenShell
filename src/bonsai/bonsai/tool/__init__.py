@@ -20,6 +20,7 @@
 # ruff: file-ignore[unused-import]
 
 from bonsai.tool.aggregate import Aggregate
+from bonsai.tool.alignment import Alignment
 from bonsai.tool.array import Array
 from bonsai.tool.attribute import Attribute
 from bonsai.tool.bcf import Bcf
