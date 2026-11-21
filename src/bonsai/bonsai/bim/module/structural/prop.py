@@ -208,6 +208,14 @@ class BIMStructuralProperties(PropertyGroup):
     active_structural_analysis_model_id: IntProperty(name="Active Structural Analysis Model Id")
     current_structural_analysis_model_id: IntProperty(name="Current Structural Analysis Model Id")
     building: EnumProperty(items=get_buildings, name="Building")
+    generation_merge_tolerance: FloatProperty(
+        name="Merge Tolerance",
+        description="Merge generated points and ignore axis differences within this distance",
+        subtype="DISTANCE",
+        unit="LENGTH",
+        min=0.0,
+        default=0.01,
+    )
     load_case_attributes: CollectionProperty(name="Load Case Attributes", type=Attribute)
     load_case_has_self_weight: BoolProperty(name="Include Self-Weight", default=False)
     load_case_self_weight: FloatVectorProperty(
@@ -350,6 +358,7 @@ class BIMStructuralProperties(PropertyGroup):
         active_structural_analysis_model_id: int
         current_structural_analysis_model_id: int
         building: str
+        generation_merge_tolerance: float
         load_case_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         load_case_has_self_weight: bool
         load_case_self_weight: tuple[float, float, float]
