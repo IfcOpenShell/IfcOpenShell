@@ -153,7 +153,9 @@ class BIM_PT_spatial_decomposition(Panel):
 
             # The only operator that's enabled for IfcProject.
             col = row.column(align=True)
-            col.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
+            row_ = col.row(align=True)
+            row_.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
+            row_.operator("bim.select_similar_container", icon="RESTRICT_SELECT_OFF", text="").container = ifc_definition_id
 
             col = row.column(align=True)
             op = col.operator("bim.delete_container", icon="X", text="")

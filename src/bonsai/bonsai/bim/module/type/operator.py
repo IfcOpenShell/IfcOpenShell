@@ -283,10 +283,17 @@ class SelectType(bpy.types.Operator):
 
 
 class SelectSimilarType(bpy.types.Operator):
+    """Select Similar Type\nALT+Click to also unhide hidden objects (viewport and local hide)"""
+
     bl_idname = "bim.select_similar_type"
     bl_label = "Select Similar Type"
     bl_options = {"REGISTER", "UNDO"}
     related_object: bpy.props.StringProperty()
+    should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        self.should_unhide = event.alt
+        return self.execute(context)
 
     def execute(self, context):
         self.file = tool.Ifc.get()
@@ -308,7 +315,10 @@ class SelectSimilarType(bpy.types.Operator):
 
             for element in related_objects:
                 obj = tool.Ifc.get_object(element)
-                if obj and obj in context.visible_objects:
+                if obj and (self.should_unhide or obj in context.visible_objects):
+                    if self.should_unhide:
+                        obj.hide_viewport = False
+                        obj.hide_set(False)
                     obj.select_set(True)
 
             # copy selection query to clipboard
