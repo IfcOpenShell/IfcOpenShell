@@ -18,6 +18,39 @@ console.log(wall.id(), wall.Name);
 wall.Name = 'Updated';
 ```
 
+## Bundled apps with selected plugins
+
+Use `ifcopenshell/core` to include only the WASM plugins your app loads. This
+entry requires `wasmAssets`; `ifcopenshell` keeps zero-config initialization.
+Include any dependencies listed by the selected plugin entries in the manifest.
+
+```ts
+import { init } from 'ifcopenshell/core';
+import * as core from '@ifcopenshell/wasm/core';
+import ifc4 from '@ifcopenshell/wasm/plugins/schema/ifc4';
+import ifc4Mapping from '@ifcopenshell/wasm/plugins/mapping/ifc4';
+import manifold from '@ifcopenshell/wasm/plugins/kernel/manifold';
+
+const runtime = await init({
+  wasmAssets: {
+    ...core,
+    manifest: {
+      schema: { ifc4 },
+      mapping: { ifc4: ifc4Mapping },
+      kernel: { manifold },
+    },
+  },
+});
+await runtime.loadPlugin('schema', 'ifc4');
+await runtime.loadPlugin('mapping', 'ifc4');
+await runtime.loadPlugin('kernel', 'manifold');
+```
+
+For externally served assets, import `resolveUrls` from
+`@ifcopenshell/wasm/core` and pass `await resolveUrls(baseUrl)` as `wasmAssets`.
+Both initialization entries share the runtime used by classes, geometry and
+serializers.
+
 ## Geometry
 
 ```ts
