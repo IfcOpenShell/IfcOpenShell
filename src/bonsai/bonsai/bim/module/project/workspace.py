@@ -125,8 +125,9 @@ class ExploreHotkey(bpy.types.Operator):
             bpy.ops.bim.enable_culling("INVOKE_DEFAULT")
 
     def hotkey_S_M(self):
-        for obj in tool.Blender.get_selected_objects():
-            obj.select_set(False)
+        if bpy.context.mode == "OBJECT":
+            for obj in tool.Blender.get_selected_objects():
+                obj.select_set(False)
         measure_type = tool.Project.get_measure_tool_settings().measurement_type
         if measure_type == "FACE_AREA":
             bpy.ops.bim.measure_face_area_tool("INVOKE_DEFAULT")
@@ -158,3 +159,19 @@ class ExploreHotkey(bpy.types.Operator):
 
     def hotkey_A_H(self) -> None:
         bpy.ops.bim.hide_queried_linked_element(unhide_all=True)
+
+
+def draw_measure_tool_header(self, context: bpy.types.Context) -> None:
+    if context.mode != "EDIT_MESH":
+        return
+    prop = tool.Project.get_measure_tool_settings()
+    layout = self.layout
+    layout.separator()
+    row = layout.row(align=True)
+    row.label(text="", icon="EVENT_SHIFT")
+    row.label(text="", icon="EVENT_M")
+    op = row.operator("bim.explore_hotkey", text="Measure Tool", icon="CON_DISTLIMIT")
+    op.hotkey = "S_M"
+    row = layout.row(align=True)
+    row.prop(prop, "measurement_type", text="Measure Type", expand=True, icon_only=True, emboss=True)
+    row.operator("bim.clear_measurement", text="", icon="X")
