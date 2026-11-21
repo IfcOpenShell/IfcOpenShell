@@ -1,0 +1,807 @@
+{
+ "[\"get_class\", [\"https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007\"], {}]": {
+  "activationDateUtc": "2025-03-11T00:00:00Z",
+  "classProperties": [
+   {
+    "dataType": "Real",
+    "dimension": "1 0 -1 0 0 0 0",
+    "dimensionAmountOfSubstance": 0,
+    "dimensionElectricCurrent": 0,
+    "dimensionLength": 1,
+    "dimensionLuminousIntensity": 0,
+    "dimensionMass": 0,
+    "dimensionThermodynamicTemperature": 0,
+    "dimensionTime": -1,
+    "name": "Conveying speed",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-001",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-001",
+    "propertyValueKind": "Single",
+    "qudtCodes": [
+     "M-PER-SEC"
+    ],
+    "units": [
+     "m/s"
+    ],
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-001"
+   },
+   {
+    "dataType": "Integer",
+    "name": "Capacity",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-002",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-002",
+    "propertyValueKind": "Single",
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-002"
+   },
+   {
+    "dataType": "Real",
+    "name": "Opex",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-003",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-003",
+    "propertyValueKind": "Single",
+    "qudtCodes": [
+     "Euro"
+    ],
+    "units": [
+     "EUR"
+    ],
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-003"
+   },
+   {
+    "dataType": "Real",
+    "dimension": "-3 1 0 0 0 0 0",
+    "dimensionAmountOfSubstance": 0,
+    "dimensionElectricCurrent": 0,
+    "dimensionLength": -3,
+    "dimensionLuminousIntensity": 0,
+    "dimensionMass": 1,
+    "dimensionThermodynamicTemperature": 0,
+    "dimensionTime": 0,
+    "name": "Weight",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-004",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-004",
+    "propertyValueKind": "Single",
+    "qudtCodes": [
+     "KiloGM-PER-M3"
+    ],
+    "units": [
+     "kg/m\u00b3"
+    ],
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-004"
+   },
+   {
+    "dataType": "String",
+    "name": "Baggage handling zone",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-006",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-006",
+    "propertyValueKind": "Single",
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-006"
+   },
+   {
+    "dataType": "Real",
+    "dimension": "0 1 0 0 0 0 0",
+    "dimensionAmountOfSubstance": 0,
+    "dimensionElectricCurrent": 0,
+    "dimensionLength": 0,
+    "dimensionLuminousIntensity": 0,
+    "dimensionMass": 1,
+    "dimensionThermodynamicTemperature": 0,
+    "dimensionTime": 0,
+    "name": "Load capacity dynamic",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-009",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-009",
+    "propertyValueKind": "Single",
+    "qudtCodes": [
+     "KiloGM"
+    ],
+    "units": [
+     "kg"
+    ],
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-009"
+   },
+   {
+    "dataType": "Real",
+    "dimension": "-1 1 0 0 0 0 0",
+    "dimensionAmountOfSubstance": 0,
+    "dimensionElectricCurrent": 0,
+    "dimensionLength": -1,
+    "dimensionLuminousIntensity": 0,
+    "dimensionMass": 1,
+    "dimensionThermodynamicTemperature": 0,
+    "dimensionTime": 0,
+    "name": "Load capacity static",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-010",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-010",
+    "propertyValueKind": "Single",
+    "qudtCodes": [
+     "KiloGM-PER-M"
+    ],
+    "units": [
+     "kg/m"
+    ],
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-010"
+   },
+   {
+    "dataType": "String",
+    "name": "Power zone",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-011",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-011",
+    "propertyValueKind": "Single",
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-011"
+   },
+   {
+    "dataType": "Real",
+    "dimension": "1 0 0 0 0 0 0",
+    "dimensionAmountOfSubstance": 0,
+    "dimensionElectricCurrent": 0,
+    "dimensionLength": 1,
+    "dimensionLuminousIntensity": 0,
+    "dimensionMass": 0,
+    "dimensionThermodynamicTemperature": 0,
+    "dimensionTime": 0,
+    "name": "Track dimension height",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-012",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-012",
+    "propertyValueKind": "Single",
+    "qudtCodes": [
+     "MilliM"
+    ],
+    "units": [
+     "mm"
+    ],
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-012"
+   },
+   {
+    "dataType": "Real",
+    "dimension": "1 0 0 0 0 0 0",
+    "dimensionAmountOfSubstance": 0,
+    "dimensionElectricCurrent": 0,
+    "dimensionLength": 1,
+    "dimensionLuminousIntensity": 0,
+    "dimensionMass": 0,
+    "dimensionThermodynamicTemperature": 0,
+    "dimensionTime": 0,
+    "name": "Track dimension width",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-013",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-013",
+    "propertyValueKind": "Single",
+    "qudtCodes": [
+     "MilliM"
+    ],
+    "units": [
+     "mm"
+    ],
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-013"
+   },
+   {
+    "dataType": "String",
+    "name": "Track envelope material",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-014",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-014",
+    "propertyValueKind": "Single",
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-014"
+   },
+   {
+    "dataType": "Real",
+    "dimension": "1 0 0 0 0 0 0",
+    "dimensionAmountOfSubstance": 0,
+    "dimensionElectricCurrent": 0,
+    "dimensionLength": 1,
+    "dimensionLuminousIntensity": 0,
+    "dimensionMass": 0,
+    "dimensionThermodynamicTemperature": 0,
+    "dimensionTime": 0,
+    "name": "Baggage envelope height",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-015",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-015",
+    "propertyValueKind": "Single",
+    "qudtCodes": [
+     "MilliM"
+    ],
+    "units": [
+     "mm"
+    ],
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-015"
+   },
+   {
+    "dataType": "Real",
+    "dimension": "1 0 0 0 0 0 0",
+    "dimensionAmountOfSubstance": 0,
+    "dimensionElectricCurrent": 0,
+    "dimensionLength": 1,
+    "dimensionLuminousIntensity": 0,
+    "dimensionMass": 0,
+    "dimensionThermodynamicTemperature": 0,
+    "dimensionTime": 0,
+    "name": "Baggage envelope width",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-016",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-016",
+    "propertyValueKind": "Single",
+    "qudtCodes": [
+     "MilliM"
+    ],
+    "units": [
+     "mm"
+    ],
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-016"
+   },
+   {
+    "dataType": "String",
+    "name": "Baggage envelope material",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-017",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-017",
+    "propertyValueKind": "Single",
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-017"
+   },
+   {
+    "dataType": "Real",
+    "dimension": "1 0 0 0 0 0 0",
+    "dimensionAmountOfSubstance": 0,
+    "dimensionElectricCurrent": 0,
+    "dimensionLength": 1,
+    "dimensionLuminousIntensity": 0,
+    "dimensionMass": 0,
+    "dimensionThermodynamicTemperature": 0,
+    "dimensionTime": 0,
+    "name": "System envelope height",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-018",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-018",
+    "propertyValueKind": "Single",
+    "qudtCodes": [
+     "MilliM"
+    ],
+    "units": [
+     "mm"
+    ],
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-018"
+   },
+   {
+    "dataType": "Real",
+    "dimension": "1 0 0 0 0 0 0",
+    "dimensionAmountOfSubstance": 0,
+    "dimensionElectricCurrent": 0,
+    "dimensionLength": 1,
+    "dimensionLuminousIntensity": 0,
+    "dimensionMass": 0,
+    "dimensionThermodynamicTemperature": 0,
+    "dimensionTime": 0,
+    "name": "System envelope width",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-019",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-019",
+    "propertyValueKind": "Single",
+    "qudtCodes": [
+     "MilliM"
+    ],
+    "units": [
+     "mm"
+    ],
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-019"
+   },
+   {
+    "dataType": "String",
+    "name": "System envelope material",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-020",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-020",
+    "propertyValueKind": "Single",
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-020"
+   },
+   {
+    "dataType": "Real",
+    "name": "Belt incline",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-021",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-021",
+    "propertyValueKind": "Single",
+    "qudtCodes": [
+     "DEG"
+    ],
+    "units": [
+     "deg"
+    ],
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-021"
+   },
+   {
+    "dataType": "Real",
+    "dimension": "1 0 0 0 0 0 0",
+    "dimensionAmountOfSubstance": 0,
+    "dimensionElectricCurrent": 0,
+    "dimensionLength": 1,
+    "dimensionLuminousIntensity": 0,
+    "dimensionMass": 0,
+    "dimensionThermodynamicTemperature": 0,
+    "dimensionTime": 0,
+    "name": "Belt length",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-022",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-022",
+    "propertyValueKind": "Single",
+    "qudtCodes": [
+     "MilliM"
+    ],
+    "units": [
+     "mm"
+    ],
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-022"
+   },
+   {
+    "dataType": "Real",
+    "dimension": "1 0 0 0 0 0 0",
+    "dimensionAmountOfSubstance": 0,
+    "dimensionElectricCurrent": 0,
+    "dimensionLength": 1,
+    "dimensionLuminousIntensity": 0,
+    "dimensionMass": 0,
+    "dimensionThermodynamicTemperature": 0,
+    "dimensionTime": 0,
+    "name": "Belt radius",
+    "physicalQuantity": "without",
+    "propertyCode": "AD-Prop-023",
+    "propertyDictionaryName": "Airport Domain IFC extension module",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "propertySet": "ISet_AirportDomain",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/prop/AD-Prop-023",
+    "propertyValueKind": "Single",
+    "qudtCodes": [
+     "MilliM"
+    ],
+    "units": [
+     "mm"
+    ],
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/prop/ISet_AirportDomain/AD-Prop-023"
+   }
+  ],
+  "classRelations": [
+   {
+    "relatedClassName": "Belt Conveyor",
+    "relatedClassUri": "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/IfcConveyorSegmentBELTCONVEYOR",
+    "relationType": "HasReference",
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007/relclass/uri/buildingsmart/ifc/4.3/class/IfcConveyorSegmentBELTCONVEYOR"
+   }
+  ],
+  "classType": "Class",
+  "code": "AD-BHS-007",
+  "countriesOfUse": [],
+  "definition": "Represents the arrangment of conveyors, responsible for weighing, labelling and dispatching bags onto the collector belt. (IATA ADRM - 9th edition, chapter U section U2.11.6, page 597)",
+  "dictionaryUri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+  "hierarchy": [
+   {
+    "code": "AD-BHS-007",
+    "level": 1,
+    "name": "Check-in conveyor",
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007"
+   }
+  ],
+  "name": "Check-in conveyor",
+  "referenceCode": "AD-BHS-007",
+  "relatedIfcEntityNames": [
+   "IfcConveyorSegmentBELTCONVEYOR"
+  ],
+  "replacedObjectCodes": [],
+  "replacingObjectCodes": [],
+  "status": "Active",
+  "subdivisionsOfUse": [],
+  "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007",
+  "versionDateUtc": "2025-03-11T00:00:00Z"
+ },
+ "[\"get_class\", [\"https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-AAA\"], {}]": {
+  "activationDateUtc": "2020-01-01T00:00:00Z",
+  "classProperties": [
+   {
+    "dataType": "Boolean",
+    "definition": "Indication that this object is designed to be accessible by the handicapped. Set to (TRUE) if this object is rated as handicap accessible according to the local building codes, otherwise (FALSE). It is giving according to the requirements of the national building code.",
+    "description": "Technical note: in IFC this property takes 'IfcBoolean' as value. Such objects are not included in bSDD for simplicity reason. IFC also doesn't enforce particular units, but recommends using metric SI units (metre, kilogram, etc.). Read the IFC documentation for more information.",
+    "name": "Handicap Accessible",
+    "propertyCode": "HandicapAccessible",
+    "propertyDictionaryName": "IFC",
+    "propertyDictionaryUri": "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3",
+    "propertySet": "Pset_SpaceCommon",
+    "propertyStatus": "Active",
+    "propertyUri": "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/prop/HandicapAccessible",
+    "propertyValueKind": "Single",
+    "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-AAA/prop/Pset_SpaceCommon/uri/buildingsmart/ifc/4.3/prop/HandicapAccessible"
+   }
+  ],
+  "classRelations": [
+   {
+    "relatedClassName": "Space",
+    "relatedClassUri": "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/IfcSpace",
+    "relationType": "HasReference",
+    "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-AAA/relclass/uri/buildingsmart/ifc/4.3/class/IfcSpace"
+   }
+  ],
+  "classType": "Class",
+  "code": "A-AAA",
+  "countriesOfUse": [],
+  "countryOfOrigin": "DK",
+  "creatorLanguageCode": "da-DK",
+  "definition": "occupiable space for personal use",
+  "dictionaryUri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0",
+  "hierarchy": [
+   {
+    "code": "uocs",
+    "level": 1,
+    "name": "Use of Construction Spaces",
+    "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/uocs"
+   },
+   {
+    "code": "A-A__",
+    "level": 2,
+    "name": "Space for human dwelling",
+    "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-A__"
+   },
+   {
+    "code": "A-AA_",
+    "level": 3,
+    "name": "Occupiable space",
+    "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-AA_"
+   },
+   {
+    "code": "A-AAA",
+    "level": 4,
+    "name": "Room",
+    "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-AAA"
+   }
+  ],
+  "name": "Room",
+  "parentClassReference": {
+   "code": "A-AA_",
+   "name": "Occupiable space",
+   "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-AA_"
+  },
+  "referenceCode": "A-AAA",
+  "relatedIfcEntityNames": [
+   "IfcSpace"
+  ],
+  "replacedObjectCodes": [],
+  "replacingObjectCodes": [],
+  "revisionNumber": 1,
+  "status": "Active",
+  "subdivisionsOfUse": [],
+  "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-AAA",
+  "versionDateUtc": "2020-01-01T00:00:00Z"
+ },
+ "[\"get_classes\", [], {\"class_type\": \"GroupOfProperties\", \"dictionary_uri\": \"https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0\", \"related_ifc_entity\": null, \"use_nested_classes\": false}]": {
+  "classes": [],
+  "classesCount": 0,
+  "classesOffset": 0,
+  "classesTotalCount": 0,
+  "code": "airport",
+  "defaultLanguageCode": "EN",
+  "isLatestVersion": false,
+  "isPrivate": false,
+  "isVerified": true,
+  "lastUpdatedUtc": "2025-03-11T14:05:35Z",
+  "license": "CC BY-ND 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-nd/4.0/legalcode",
+  "name": "Airport Domain IFC extension module",
+  "organizationCodeOwner": "bs-airport",
+  "organizationNameOwner": "buildingSMART Airport Domain",
+  "qualityAssuranceProcedure": "buildingSMART Airport Domain",
+  "qualityAssuranceProcedureUrl": "https://www.buildingsmart.org/standards/domains/airport/",
+  "releaseDate": "2025-03-11T14:05:35Z",
+  "status": "Active",
+  "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+  "version": "1.0"
+ },
+ "[\"get_classes\", [], {\"class_type\": \"GroupOfProperties\", \"dictionary_uri\": \"https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0\", \"related_ifc_entity\": \"IfcSpace\", \"use_nested_classes\": false}]": {
+  "classes": [],
+  "classesCount": 0,
+  "classesOffset": 0,
+  "classesTotalCount": 0,
+  "code": "cciconstruction",
+  "defaultLanguageCode": "en-GB",
+  "isLatestVersion": true,
+  "isPrivate": false,
+  "isVerified": false,
+  "lastUpdatedUtc": "2023-01-23T11:07:33Z",
+  "license": "MIT license",
+  "licenseUrl": "https://ccs.molio.dk/Home/News/EndUserLicense?sc_lang=en-gb",
+  "moreInfoUrl": "https://anvisninger.molio.dk/Gratis-vaerktojer/CCI_Klassifikation",
+  "name": "CCI Construction",
+  "organizationCodeOwner": "molio",
+  "organizationNameOwner": "Molio",
+  "qualityAssuranceProcedure": "Private",
+  "releaseDate": "2023-01-01T00:00:00Z",
+  "status": "Active",
+  "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0",
+  "version": "1.0"
+ },
+ "[\"get_classes\", [], {\"class_type\": \"GroupOfProperties\", \"dictionary_uri\": \"https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0\", \"related_ifc_entity\": \"IfcSpaceSPACE\", \"use_nested_classes\": false}]": {
+  "classes": [],
+  "classesCount": 0,
+  "classesOffset": 0,
+  "classesTotalCount": 0,
+  "code": "cciconstruction",
+  "defaultLanguageCode": "en-GB",
+  "isLatestVersion": true,
+  "isPrivate": false,
+  "isVerified": false,
+  "lastUpdatedUtc": "2023-01-23T11:07:33Z",
+  "license": "MIT license",
+  "licenseUrl": "https://ccs.molio.dk/Home/News/EndUserLicense?sc_lang=en-gb",
+  "moreInfoUrl": "https://anvisninger.molio.dk/Gratis-vaerktojer/CCI_Klassifikation",
+  "name": "CCI Construction",
+  "organizationCodeOwner": "molio",
+  "organizationNameOwner": "Molio",
+  "qualityAssuranceProcedure": "Private",
+  "releaseDate": "2023-01-01T00:00:00Z",
+  "status": "Active",
+  "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0",
+  "version": "1.0"
+ },
+ "[\"get_classes\", [], {\"dictionary_uri\": \"https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0\", \"limit\": 100, \"offset\": 0, \"related_ifc_entity\": null, \"search_text\": \"check-in conveyor\", \"use_nested_classes\": false}]": {
+  "classes": [
+   {
+    "classType": "Class",
+    "code": "AD-BHS-007",
+    "descriptionPart": "Represents the arrangment of conveyors, responsible for weighing, labelling and dispatching bags onto",
+    "name": "Check-in conveyor",
+    "referenceCode": "AD-BHS-007",
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0/class/AD-BHS-007"
+   }
+  ],
+  "classesCount": 1,
+  "classesOffset": 0,
+  "classesTotalCount": 1,
+  "code": "airport",
+  "defaultLanguageCode": "EN",
+  "isLatestVersion": false,
+  "isPrivate": false,
+  "isVerified": true,
+  "lastUpdatedUtc": "2025-03-11T14:05:35Z",
+  "license": "CC BY-ND 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-nd/4.0/legalcode",
+  "name": "Airport Domain IFC extension module",
+  "organizationCodeOwner": "bs-airport",
+  "organizationNameOwner": "buildingSMART Airport Domain",
+  "qualityAssuranceProcedure": "buildingSMART Airport Domain",
+  "qualityAssuranceProcedureUrl": "https://www.buildingsmart.org/standards/domains/airport/",
+  "releaseDate": "2025-03-11T14:05:35Z",
+  "status": "Active",
+  "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+  "version": "1.0"
+ },
+ "[\"get_classes\", [], {\"dictionary_uri\": \"https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0\", \"limit\": 100, \"offset\": 0, \"related_ifc_entity\": \"IfcSpace\", \"search_text\": \"Room\", \"use_nested_classes\": false}]": {
+  "classes": [
+   {
+    "classType": "Class",
+    "code": "A-AAA",
+    "descriptionPart": "occupiable space for personal use",
+    "name": "Room",
+    "parentClassCode": "A-AA_",
+    "referenceCode": "A-AAA",
+    "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-AAA"
+   },
+   {
+    "classType": "Class",
+    "code": "A-ABC",
+    "descriptionPart": "personal hygiene space for young children",
+    "name": "Baby changing room",
+    "parentClassCode": "A-AB_",
+    "referenceCode": "A-ABC",
+    "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-ABC"
+   },
+   {
+    "classType": "Class",
+    "code": "A-ABD",
+    "descriptionPart": "personal hygiene space for changing clothes",
+    "name": "Changing room",
+    "parentClassCode": "A-AB_",
+    "referenceCode": "A-ABD",
+    "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-ABD"
+   },
+   {
+    "classType": "Class",
+    "code": "A-BDB",
+    "descriptionPart": "practice space for training strength, condition and balance",
+    "name": "Training room",
+    "parentClassCode": "A-BD_",
+    "referenceCode": "A-BDB",
+    "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-BDB"
+   },
+   {
+    "classType": "Class",
+    "code": "A-BDC",
+    "descriptionPart": "practice space for practicing artistic competencies",
+    "name": "Rehearsal room",
+    "parentClassCode": "A-BD_",
+    "referenceCode": "A-BDC",
+    "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-BDC"
+   }
+  ],
+  "classesCount": 5,
+  "classesOffset": 0,
+  "classesTotalCount": 5,
+  "code": "cciconstruction",
+  "defaultLanguageCode": "en-GB",
+  "isLatestVersion": true,
+  "isPrivate": false,
+  "isVerified": false,
+  "lastUpdatedUtc": "2023-01-23T11:07:33Z",
+  "license": "MIT license",
+  "licenseUrl": "https://ccs.molio.dk/Home/News/EndUserLicense?sc_lang=en-gb",
+  "moreInfoUrl": "https://anvisninger.molio.dk/Gratis-vaerktojer/CCI_Klassifikation",
+  "name": "CCI Construction",
+  "organizationCodeOwner": "molio",
+  "organizationNameOwner": "Molio",
+  "qualityAssuranceProcedure": "Private",
+  "releaseDate": "2023-01-01T00:00:00Z",
+  "status": "Active",
+  "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0",
+  "version": "1.0"
+ },
+ "[\"get_classes\", [], {\"dictionary_uri\": \"https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0\", \"limit\": 100, \"offset\": 0, \"related_ifc_entity\": \"IfcSpaceSPACE\", \"search_text\": \"Room\", \"use_nested_classes\": false}]": {
+  "classes": [],
+  "classesCount": 0,
+  "classesOffset": 0,
+  "classesTotalCount": 0,
+  "code": "cciconstruction",
+  "defaultLanguageCode": "en-GB",
+  "isLatestVersion": true,
+  "isPrivate": false,
+  "isVerified": false,
+  "lastUpdatedUtc": "2023-01-23T11:07:33Z",
+  "license": "MIT license",
+  "licenseUrl": "https://ccs.molio.dk/Home/News/EndUserLicense?sc_lang=en-gb",
+  "moreInfoUrl": "https://anvisninger.molio.dk/Gratis-vaerktojer/CCI_Klassifikation",
+  "name": "CCI Construction",
+  "organizationCodeOwner": "molio",
+  "organizationNameOwner": "Molio",
+  "qualityAssuranceProcedure": "Private",
+  "releaseDate": "2023-01-01T00:00:00Z",
+  "status": "Active",
+  "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0",
+  "version": "1.0"
+ },
+ "[\"get_dictionary\", [], {\"include_test_dictionaries\": false}]": {
+  "count": 2,
+  "dictionaries": [
+   {
+    "availableLanguages": [
+     {
+      "code": "en-GB",
+      "name": "English"
+     }
+    ],
+    "code": "cciconstruction",
+    "defaultLanguageCode": "en-GB",
+    "isLatestVersion": true,
+    "isPrivate": false,
+    "isVerified": false,
+    "lastUpdatedUtc": "2023-01-23T11:07:33Z",
+    "license": "MIT license",
+    "licenseUrl": "https://ccs.molio.dk/Home/News/EndUserLicense?sc_lang=en-gb",
+    "moreInfoUrl": "https://anvisninger.molio.dk/Gratis-vaerktojer/CCI_Klassifikation",
+    "name": "CCI Construction",
+    "organizationCodeOwner": "molio",
+    "organizationNameOwner": "Molio",
+    "qualityAssuranceProcedure": "Private",
+    "releaseDate": "2023-01-01T00:00:00Z",
+    "status": "Active",
+    "uri": "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0",
+    "version": "1.0"
+   },
+   {
+    "availableLanguages": [
+     {
+      "code": "EN",
+      "name": "English"
+     }
+    ],
+    "changeRequestEmail": "airport@buildingsmart.org",
+    "code": "airport",
+    "defaultLanguageCode": "EN",
+    "isLatestVersion": false,
+    "isPrivate": false,
+    "isVerified": true,
+    "lastUpdatedUtc": "2025-03-11T14:05:35Z",
+    "license": "CC BY-ND 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-nd/4.0/legalcode",
+    "name": "Airport Domain IFC extension module",
+    "organizationCodeOwner": "bs-airport",
+    "organizationNameOwner": "buildingSMART Airport Domain",
+    "qualityAssuranceProcedure": "buildingSMART Airport Domain",
+    "qualityAssuranceProcedureUrl": "https://www.buildingsmart.org/standards/domains/airport/",
+    "releaseDate": "2025-03-11T14:05:35Z",
+    "status": "Active",
+    "uri": "https://identifier.buildingsmart.org/uri/bs-airport/airport/1.0",
+    "version": "1.0"
+   }
+  ],
+  "offset": 0,
+  "totalCount": 2
+ }
+}
