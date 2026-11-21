@@ -242,7 +242,7 @@ class TestEntity:
         wall3 = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall", predefined_type="BAZFOO")
         run("Restrictions can be specified for the predefined type 3/3", facet=facet, inst=wall3, expected=False)
 
-    def test_ifc2x3_occurrence_type_mapping(self):
+    def test_ifc2x3_occurrence_type_mapping(self, monkeypatch):
         set_facet("entity")
 
         ifc = ifcopenshell.file(schema="IFC2X3")
@@ -254,8 +254,8 @@ class TestEntity:
             ifc, identification="AWB", name="Architects Without Ballpens"
         )
         user = ifcopenshell.api.owner.add_person_and_organisation(ifc, person=person, organisation=organisation)
-        ifcopenshell.api.owner.settings.get_user = lambda x: user
-        ifcopenshell.api.owner.settings.get_application = lambda x: application
+        monkeypatch.setattr(ifcopenshell.api.owner.settings, "get_user", lambda x: user)
+        monkeypatch.setattr(ifcopenshell.api.owner.settings, "get_application", lambda x: application)
 
         element = ifcopenshell.api.root.create_entity(ifc, "IfcFlowTerminal")
         element_type = ifcopenshell.api.root.create_entity(ifc, "IfcAirTerminalType")
