@@ -241,6 +241,98 @@ class Structural(bonsai.core.tool.Structural):
         return z / length, x / length
 
     @classmethod
+    def get_structural_item_predefined_types(cls, ifc_class: str) -> list[str]:
+        """The predefined types an item of this class can be added with, USERDEFINED left out."""
+        declaration = tool.Ifc.schema().declaration_by_name(ifc_class).as_entity()
+        assert declaration
+        for attribute in declaration.all_attributes():
+            if attribute.name() == "PredefinedType":
+                return [t for t in ifcopenshell.util.attribute.get_enum_items(attribute) if t != "USERDEFINED"]
+        return []
+
+    @classmethod
+    def get_structural_item_representation_template(cls, ifc_class: str) -> str:
+        """The Add Element representation template for the topology of a structural item."""
+        if ifc_class.startswith("IfcStructuralPoint"):
+            return "VERTEX"
+        elif ifc_class.startswith("IfcStructuralCurve"):
+            return "EDGE"
+        elif ifc_class.startswith("IfcStructuralSurface"):
+            return "FACE"
+        raise ValueError(f"{ifc_class} is not a point, curve or surface structural item")
+
+    @classmethod
+    def get_member_connections_to_add(
+        cls, elements: list[ifcopenshell.entity_instance]
+    ) -> list[tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]]:
+        """The (member, connection) pairs to connect among the elements, leaving out those already connected.
+
+        Either one member is connected to every connection, or one connection to every member: with
+        several of both it cannot be told which member meets which connection.
+
+        :raises ValueError: if the elements are not members and connections, one of them alone.
+        """
+        members = [e for e in elements if e.is_a("IfcStructuralMember")]
+        connections = [e for e in elements if e.is_a("IfcStructuralConnection")]
+        if not members or not connections:
+            raise ValueError("Select structural members and the connection that joins them.")
+        if len(members) > 1 and len(connections) > 1:
+            raise ValueError("Select one connection with its members, or one member with its connections.")
+        pairs = []
+        for member in members:
+            connected = ifcopenshell.util.structural.get_member_connections(member)
+            pairs.extend((member, c) for c in connections if c not in connected)
+        return pairs
+
+    @classmethod
+    def get_boundary_condition_class(cls, connection: ifcopenshell.entity_instance) -> str:
+        """The class of boundary condition a structural connection takes."""
+        if connection.is_a("IfcStructuralPointConnection"):
+            return "IfcBoundaryNodeCondition"
+        elif connection.is_a("IfcStructuralCurveConnection"):
+            return "IfcBoundaryEdgeCondition"
+        elif connection.is_a("IfcStructuralSurfaceConnection"):
+            return "IfcBoundaryFaceCondition"
+        raise ValueError(f"{connection} is not a point, curve or surface connection")
+
+    @classmethod
+    def get_support_attributes(cls, ifc_class: str, hold_rotations: bool) -> dict[str, AttributeDict]:
+        """The attributes of a boundary condition that holds every displacement, and every rotation or none.
+
+        :raises ValueError: if the schema has no boolean stiffness to say that a displacement is held.
+        """
+        declaration = tool.Ifc.schema().declaration_by_name(ifc_class).as_entity()
+        assert declaration
+        attributes: dict[str, AttributeDict] = {}
+        for attribute in declaration.all_attributes():
+            name = attribute.name()
+            # IFC2X3 calls the translational stiffnesses LinearStiffness.
+            if name.startswith(("Translational", "Linear")):
+                value = True
+            elif name.startswith("Rotational"):
+                value = hold_rotations
+            else:
+                continue
+            named_type = attribute.type_of_attribute().as_named_type()
+            select_type = named_type.declared_type().as_select_type() if named_type else None
+            if not select_type or "IfcBoolean" not in [s.name() for s in select_type.select_list()]:
+                raise ValueError(f"{ifc_class} cannot say that a displacement is held in {tool.Ifc.get().schema}.")
+            attributes[name] = {"value": value, "type": "IfcBoolean"}
+        return attributes
+
+    @classmethod
+    def get_structural_items(cls, elements: list[ifcopenshell.entity_instance]) -> list[ifcopenshell.entity_instance]:
+        """The structural items among the elements."""
+        return [e for e in elements if e.is_a("IfcStructuralItem")]
+
+    @classmethod
+    def is_in_structural_analysis_model(
+        cls, element: ifcopenshell.entity_instance, model: ifcopenshell.entity_instance
+    ) -> bool:
+        """Whether the element is assigned to the structural analysis model."""
+        return model in ifcopenshell.util.structural.get_analysis_models(element)
+
+    @classmethod
     def get_current_structural_analysis_model(cls) -> Union[ifcopenshell.entity_instance, None]:
         """Get the model that new structural items and load cases are assigned to.
 

@@ -25,7 +25,9 @@ import ifcopenshell
 import ifcopenshell.api.group
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
+import ifcopenshell.guid
 import numpy as np
+import pytest
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -80,6 +82,139 @@ class TestGetSimpleSlope(NewFile):
         rise, run = subject.get_simple_slope(3, 7.1)
         assert math.isclose(math.hypot(rise, run), 1)
         assert math.isclose(rise / run, 7.1 / 3)
+
+
+class TestGetStructuralItemPredefinedTypes(NewFile):
+    def test_a_curve_member_without_userdefined(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        types = subject.get_structural_item_predefined_types("IfcStructuralCurveMember")
+        assert "RIGID_JOINED_MEMBER" in types
+        assert "NOTDEFINED" in types
+        assert "USERDEFINED" not in types
+
+    def test_a_connection_has_none(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        assert subject.get_structural_item_predefined_types("IfcStructuralPointConnection") == []
+
+
+class TestGetStructuralItemRepresentationTemplate(NewFile):
+    def test_run(self):
+        assert subject.get_structural_item_representation_template("IfcStructuralPointConnection") == "VERTEX"
+        assert subject.get_structural_item_representation_template("IfcStructuralCurveMember") == "EDGE"
+        assert subject.get_structural_item_representation_template("IfcStructuralCurveConnection") == "EDGE"
+        assert subject.get_structural_item_representation_template("IfcStructuralSurfaceMember") == "FACE"
+        assert subject.get_structural_item_representation_template("IfcStructuralSurfaceConnection") == "FACE"
+
+    def test_an_item_of_no_dimension(self):
+        with pytest.raises(ValueError):
+            subject.get_structural_item_representation_template("IfcStructuralItem")
+
+
+class TestGetMemberConnectionsToAdd(NewFile):
+    def setup_ifc(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        return ifc
+
+    def test_one_connection_to_several_members(self):
+        ifc = self.setup_ifc()
+        m1 = ifc.createIfcStructuralCurveMember()
+        m2 = ifc.createIfcStructuralCurveMember()
+        c = ifc.createIfcStructuralPointConnection()
+        assert subject.get_member_connections_to_add([m1, c, m2]) == [(m1, c), (m2, c)]
+
+    def test_one_member_to_several_connections(self):
+        ifc = self.setup_ifc()
+        m = ifc.createIfcStructuralCurveMember()
+        c1 = ifc.createIfcStructuralPointConnection()
+        c2 = ifc.createIfcStructuralPointConnection()
+        assert subject.get_member_connections_to_add([c1, m, c2]) == [(m, c1), (m, c2)]
+
+    def test_leaving_out_those_already_connected(self):
+        ifc = self.setup_ifc()
+        m1 = ifc.createIfcStructuralCurveMember()
+        m2 = ifc.createIfcStructuralCurveMember()
+        c = ifc.createIfcStructuralPointConnection()
+        ifcopenshell.api.structural.add_structural_member_connection(
+            ifc, relating_structural_member=m1, related_structural_connection=c
+        )
+        assert subject.get_member_connections_to_add([m1, m2, c]) == [(m2, c)]
+
+    def test_several_of_both_is_refused(self):
+        ifc = self.setup_ifc()
+        items = [
+            ifc.createIfcStructuralCurveMember(),
+            ifc.createIfcStructuralCurveMember(),
+            ifc.createIfcStructuralPointConnection(),
+            ifc.createIfcStructuralPointConnection(),
+        ]
+        with pytest.raises(ValueError):
+            subject.get_member_connections_to_add(items)
+
+    def test_members_alone_are_refused(self):
+        ifc = self.setup_ifc()
+        with pytest.raises(ValueError):
+            subject.get_member_connections_to_add([ifc.createIfcStructuralCurveMember(), ifc.createIfcWall()])
+
+
+class TestGetBoundaryConditionClass(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        assert (
+            subject.get_boundary_condition_class(ifc.createIfcStructuralPointConnection()) == "IfcBoundaryNodeCondition"
+        )
+        assert (
+            subject.get_boundary_condition_class(ifc.createIfcStructuralCurveConnection()) == "IfcBoundaryEdgeCondition"
+        )
+        assert (
+            subject.get_boundary_condition_class(ifc.createIfcStructuralSurfaceConnection())
+            == "IfcBoundaryFaceCondition"
+        )
+
+
+class TestGetSupportAttributes(NewFile):
+    def test_a_fixed_node(self):
+        tool.Ifc.set(ifcopenshell.file())
+        attributes = subject.get_support_attributes("IfcBoundaryNodeCondition", hold_rotations=True)
+        assert set(attributes) == {f"{k}Stiffness{a}" for k in ("Translational", "Rotational") for a in ("X", "Y", "Z")}
+        assert all(a == {"value": True, "type": "IfcBoolean"} for a in attributes.values())
+
+    def test_a_pinned_edge(self):
+        tool.Ifc.set(ifcopenshell.file())
+        attributes = subject.get_support_attributes("IfcBoundaryEdgeCondition", hold_rotations=False)
+        assert attributes["TranslationalStiffnessByLengthX"]["value"] is True
+        assert attributes["RotationalStiffnessByLengthX"]["value"] is False
+        assert len(attributes) == 6
+
+    def test_a_face_has_displacements_only(self):
+        tool.Ifc.set(ifcopenshell.file())
+        attributes = subject.get_support_attributes("IfcBoundaryFaceCondition", hold_rotations=True)
+        assert set(attributes) == {f"TranslationalStiffnessByArea{a}" for a in ("X", "Y", "Z")}
+
+    def test_ifc2x3_has_no_boolean_stiffness(self):
+        tool.Ifc.set(ifcopenshell.file(schema="IFC2X3"))
+        with pytest.raises(ValueError):
+            subject.get_support_attributes("IfcBoundaryNodeCondition", hold_rotations=True)
+
+    def test_ifc2x3_cannot_hold_a_face(self):
+        # IFC2X3 calls the stiffnesses of a face LinearStiffnessByArea, and a face has no rotations.
+        tool.Ifc.set(ifcopenshell.file(schema="IFC2X3"))
+        with pytest.raises(ValueError):
+            subject.get_support_attributes("IfcBoundaryFaceCondition", hold_rotations=True)
+
+
+class TestIsInStructuralAnalysisModel(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        model = ifc.createIfcStructuralAnalysisModel(ifcopenshell.guid.new())
+        member = ifc.createIfcStructuralCurveMember(ifcopenshell.guid.new())
+        assert not subject.is_in_structural_analysis_model(member, model)
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc, products=[member], structural_analysis_model=model
+        )
+        assert subject.is_in_structural_analysis_model(member, model)
 
 
 class TestLoadCases(NewFile):

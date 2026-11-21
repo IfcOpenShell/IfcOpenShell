@@ -342,6 +342,143 @@ class SetCurrentStructuralAnalysisModel(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddStructuralItem(bpy.types.Operator):
+    bl_idname = "bim.add_structural_item"
+    bl_label = "Add Structural Item"
+    bl_description = (
+        "Add a structural item of the class chosen in the Structural Tool at the 3D cursor, "
+        "in the current structural analysis model"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project loaded.")
+            return False
+        return True
+
+    def execute(self, context):
+        props = tool.Structural.get_structural_props()
+        ifc_class = props.structural_item_class
+        rprops = tool.Root.get_root_props()
+        rprops.ifc_product = "IfcStructuralItem"
+        rprops.ifc_class = ifc_class
+        if tool.Structural.get_structural_item_predefined_types(ifc_class):
+            rprops.ifc_predefined_type = props.structural_item_predefined_type
+        rprops.representation_template = tool.Structural.get_structural_item_representation_template(ifc_class)
+        rprops.name = ""
+        rprops.description = ""
+        result = bpy.ops.bim.add_element(skip_dialog=True)
+        if "FINISHED" in result and (obj := context.active_object):
+            # Structural items are hidden by default: show the one just added, so it can be seen and selected.
+            for collection in obj.users_collection:
+                if layer_collection := tool.Blender.get_layer_collection(collection):
+                    layer_collection.hide_viewport = False
+        return result
+
+
+class ConnectStructuralItems(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.connect_structural_items"
+    bl_label = "Connect Structural Items"
+    bl_description = (
+        "Connect the selected structural members to the selected connection, "
+        "or the selected member to the selected connections"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        elements = [e for o in tool.Blender.get_selected_objects() if (e := tool.Ifc.get_entity(o))]
+        try:
+            pairs = tool.Structural.get_member_connections_to_add(elements)
+        except ValueError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
+        ifc_file = tool.Ifc.get()
+        for member, connection in pairs:
+            ifcopenshell.api.structural.add_structural_member_connection(
+                ifc_file, relating_structural_member=member, related_structural_connection=connection
+            )
+        self.report({"INFO"}, f"{len(pairs)} member connection(s) added")
+        return {"FINISHED"}
+
+
+class AddStructuralSupport(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_structural_support"
+    bl_label = "Add Structural Support"
+    bl_description = "Hold the selected structural connections, replacing any boundary condition they have"
+    bl_options = {"REGISTER", "UNDO"}
+    support: bpy.props.EnumProperty(
+        name="Support",
+        items=(
+            ("FIXED", "Fixed", "Hold every displacement and rotation"),
+            ("PINNED", "Pinned", "Hold every displacement, leave the rotations free"),
+        ),
+    )
+
+    if TYPE_CHECKING:
+        support: Literal["FIXED", "PINNED"]
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def _execute(self, context):
+        elements = [e for o in tool.Blender.get_selected_objects() if (e := tool.Ifc.get_entity(o))]
+        connections = [e for e in elements if e.is_a("IfcStructuralConnection")]
+        if not connections:
+            self.report({"ERROR"}, "Select structural connections.")
+            return {"CANCELLED"}
+        hold_rotations = self.support == "FIXED"
+        try:
+            # Every attribute set is worked out before anything is changed.
+            attributes = [
+                tool.Structural.get_support_attributes(tool.Structural.get_boundary_condition_class(c), hold_rotations)
+                for c in connections
+            ]
+        except ValueError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
+        ifc_file = tool.Ifc.get()
+        name = "Fixed" if hold_rotations else "Pinned"
+        for connection, condition_attributes in zip(connections, attributes):
+            ifcopenshell.api.structural.remove_structural_boundary_condition(ifc_file, connection=connection)
+            condition = ifcopenshell.api.structural.add_structural_boundary_condition(
+                ifc_file, name=name, connection=connection
+            )
+            ifcopenshell.api.structural.edit_structural_boundary_condition(
+                ifc_file, condition=condition, attributes=condition_attributes
+            )
+        self.report({"INFO"}, f"{len(connections)} connection(s) {name.lower()}")
+        return {"FINISHED"}
+
+
+class AssignStructuralItemsToCurrentModel(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_structural_items_to_current_model"
+    bl_label = "Assign Structural Items to Current Model"
+    bl_description = "Assign the selected structural items to the current structural analysis model, or unassign them"
+    bl_options = {"REGISTER", "UNDO"}
+    unassign: bpy.props.BoolProperty(name="Unassign", default=False)
+
+    if TYPE_CHECKING:
+        unassign: bool
+
+    def _execute(self, context):
+        if not (model := tool.Structural.get_current_structural_analysis_model()):
+            self.report({"ERROR"}, "Choose a current structural analysis model first.")
+            return {"CANCELLED"}
+        elements = [e for o in tool.Blender.get_selected_objects() if (e := tool.Ifc.get_entity(o))]
+        items = tool.Structural.get_structural_items(elements)
+        items = [i for i in items if tool.Structural.is_in_structural_analysis_model(i, model) == self.unassign]
+        if not items:
+            self.report({"INFO"}, "Nothing to change.")
+            return {"CANCELLED"}
+        if self.unassign:
+            core.unassign_structural_analysis_model(tool.Ifc, products=items, structural_analysis_model=model)
+        else:
+            core.assign_structural_analysis_model(tool.Ifc, products=items, structural_analysis_model=model)
+        return {"FINISHED"}
+
+
 class EditStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_structural_analysis_model"
     bl_label = "Edit Structural Analysis Model"
