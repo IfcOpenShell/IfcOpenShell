@@ -609,18 +609,22 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial& material) {
                 }
             }
         }
-        if (styles.size() == 1) {
-            IfcSchema::IfcStyledItem& styled_item = styles.front();
+        bool failed_on_purpose_failure = false;
+        for (auto& styled_item : styles) {
             auto mapped_item = map(styled_item);
             if (mapped_item) {
                 return mapped_item;
             }
             // Check if it's failed or just some unsupported case.
             if (failed_on_purpose_.find(styled_item) == failed_on_purpose_.end()) {
-                failed_on_purpose_.insert(material);
-                return nullptr;
+                failed_on_purpose_failure = true;
+            } else {
+                logger_.warning("UNS", 19, "Skipping unsupported material style for material: ", material);
             }
-            logger_.warning("UNS", 19, "Skipping unsupported material style for material: ", material);
+        }
+        if (failed_on_purpose_failure) {
+            failed_on_purpose_.insert(material);
+            return nullptr;
         }
     }
 
