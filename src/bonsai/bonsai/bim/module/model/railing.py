@@ -828,7 +828,7 @@ class GizmoRailingSchematic(bpy.types.GizmoGroup, gizmo.BaseSchematicGizmoGroup)
             self.terminal_gizmo.hide = True
             return
 
-        billboard_rot = self._frame_billboard_rot
+        billboard_rot = gizmo.strip_billboard_scale(self._frame_billboard_rot)
         view_rotation = self.schematic_view_rotation
         anchor = self._compute_schematic_anchor(props, mw, billboard_rot)
 
@@ -884,7 +884,7 @@ class GizmoRailingSchematic(bpy.types.GizmoGroup, gizmo.BaseSchematicGizmoGroup)
             self.pen_gizmo.hide = True
 
         if props.is_editing and not props.is_editing_path:
-            billboard_rot = self._frame_billboard_rot
+            billboard_rot = gizmo.strip_billboard_scale(self._frame_billboard_rot)
             view_rotation = self.schematic_view_rotation
             anchor = self._compute_schematic_anchor(props, mw, billboard_rot)
             # Comfortably above the mesh top edge so the icon doesn't crowd
