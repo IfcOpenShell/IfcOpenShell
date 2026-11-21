@@ -96,11 +96,24 @@ def typeof(inst):
     if not inst:
         return express_set([])
     schema_name = inst.is_a(True).split('.')[0].lower()
+    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name)
+    select_parents = getattr(typeof, '_select_parents', None)
+    if select_parents is None:
+        select_parents = typeof._select_parents = {}
+    schema_selects = select_parents.get(schema_name)
+    if schema_selects is None:
+        schema_selects = {}
+        for decl in schema.declarations():
+            if isinstance(decl, ifcopenshell.ifcopenshell_wrapper.select_type):
+                sel_name = decl.name().lower()
+                for member in decl.select_list():
+                    schema_selects.setdefault(member.name().lower(), []).append(sel_name)
+        select_parents[schema_name] = schema_selects
 
     def inner():
-        decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
+        decl = schema.declaration_by_name(inst.is_a())
         while decl:
-            yield '.'.join((schema_name, decl.name().lower()))
+            yield decl.name().lower()
             if isinstance(decl, ifcopenshell.ifcopenshell_wrapper.entity):
                 decl = decl.supertype()
             else:
@@ -109,7 +122,15 @@ def typeof(inst):
                     decl = decl.declared_type()
                 if not isinstance(decl, ifcopenshell.ifcopenshell_wrapper.type_declaration):
                     break
-    return express_set(inner())
+    names = set(inner())
+    queue = list(names)
+    while queue:
+        name = queue.pop()
+        for sel_name in schema_selects.get(name, ()):
+            if sel_name not in names:
+                names.add(sel_name)
+                queue.append(sel_name)
+    return express_set('.'.join((schema_name, name)) for name in names)
 
 class indeterminate_type:
 
