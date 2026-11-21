@@ -423,14 +423,16 @@ if (WITH_ROCKSDB)
     avoid_debug_imported_config_fallback(${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET})
     target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE ${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET})
 
-    if (WITH_ZSTD)
-        # @todo do we actually need the zstd include dir or rather just pass
-        # the libzstd.a along with the rocksdb library when needed and feature
-        # detect based on rocksdb API?
+    # IfcParse only asks RocksDB at runtime whether it supports zstd
+    # compression, so libzstd is needed here only to resolve a static
+    # RocksDB's symbols. A shared RocksDB links libzstd itself.
+    get_target_property(_rocksdb_type ${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET} TYPE)
+    if (WITH_ZSTD AND NOT _rocksdb_type STREQUAL "SHARED_LIBRARY")
         # Same exact-major-version caveat as RocksDB above.
         find_package(zstd CONFIG REQUIRED)
         message(STATUS "zstd: found at '${zstd_DIR}'.")
         check_min_version(zstd "${zstd_VERSION}" "${ZSTD_MIN_VERSION}")
+        set(IFCOPENSHELL_ROCKSDB_LINK_ZSTD ON)
     endif()
 
     install(TARGETS IFCOPENSHELL_RocksDB EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
