@@ -42,7 +42,10 @@ jobs:
               - 'src/ifccsv/**'
               - 'src/ifcdiff/**'
               - 'src/ifcfm/**'
+              - 'src/ifcedit/**'
+              - 'src/ifcmcp/**'
               - 'src/ifcpatch/**'
+              - 'src/ifcquery/**'
               - 'src/ifctester/**'
 
   test-bonsai:

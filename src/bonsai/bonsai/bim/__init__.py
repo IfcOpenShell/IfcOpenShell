@@ -89,6 +89,7 @@ modules = {
     "ifcgit": None,
     "covering": None,
     "web": None,
+    "mcp": None,
     "light": None,
     "alignment": None,
     "clip_box": None,
