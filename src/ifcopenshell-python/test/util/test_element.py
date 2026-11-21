@@ -1536,3 +1536,20 @@ class TestIterTopConnections(test.bootstrap.IFC4):
             RelatedConnectionType="ATPATH",
         )
         assert list(subject.iter_top_connections(wall)) == []
+
+
+class TestGetProperty(test.bootstrap.IFC4):
+    def test_returns_property_value_when_present(self):
+        prop = self.file.createIfcPropertySingleValue(
+            Name="FireRating",
+            NominalValue=self.file.createIfcLabel("REI 60"),
+        )
+        assert subject.get_property([prop], "FireRating") == "REI 60"
+
+    def test_returns_default_when_property_missing(self):
+        prop = self.file.createIfcPropertySingleValue(
+            Name="FireRating",
+            NominalValue=self.file.createIfcLabel("REI 60"),
+        )
+        assert subject.get_property([prop], "MissingProp") is None
+        assert subject.get_property([prop], "MissingProp", default="N/A") == "N/A"
