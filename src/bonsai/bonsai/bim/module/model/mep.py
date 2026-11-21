@@ -46,6 +46,7 @@ from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig, IconActionCon
 from bonsai.bim.module.model.profile import DumbProfileJoiner
 from bonsai.bim.parametric_lifecycle import ParametricEditMixinBase
 from bonsai.tool.cad import VTX_PRECISION
+from bonsai.tool.system import direction_from_port_pair
 
 V = lambda *x: Vector([float(i) for i in x])
 
@@ -1563,8 +1564,11 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         # We cannot use start_port_match because tool.System.get_ports is unordered
         if not np.allclose(start_co, port0_co):
             start_port, end_port = end_port, start_port
-        ifcopenshell.api.system.connect_port(ifc_file, port1=ports[0], port2=start_port, direction="NOTDEFINED")
-        ifcopenshell.api.system.connect_port(ifc_file, port1=ports[1], port2=end_port, direction="NOTDEFINED")
+        # Each new fitting port takes over the role the other segment played (#6278)
+        start_side_direction = direction_from_port_pair(end_port, start_port)
+        end_side_direction = direction_from_port_pair(start_port, end_port)
+        ifcopenshell.api.system.connect_port(ifc_file, port1=ports[0], port2=start_port, direction=start_side_direction)
+        ifcopenshell.api.system.connect_port(ifc_file, port1=ports[1], port2=end_port, direction=end_side_direction)
 
         # FIXME(#8106): IfcSweptDiskSolid representations from mep_bend_shape
         # are geometrically correct but fail to round-trip through the
