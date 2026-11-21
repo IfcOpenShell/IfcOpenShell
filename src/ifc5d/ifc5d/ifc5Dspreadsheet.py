@@ -468,6 +468,9 @@ class Ifc5Dwriter:
 
 
 class Ifc5DCsvWriter(Ifc5Dwriter):
+    # Locales that use a comma as the decimal separator conventionally use a semicolon here.
+    delimiter: str = ","
+
     def write(self) -> None:
         import csv
 
@@ -477,7 +480,7 @@ class Ifc5DCsvWriter(Ifc5Dwriter):
             with open(
                 os.path.join(self.output, "{}.csv".format(data["Name"])), "w", newline="", encoding="utf-8"
             ) as file:
-                writer = csv.writer(file)
+                writer = csv.writer(file, delimiter=self.delimiter)
                 writer.writerow(data["headers"])
                 row = []
                 for cost_item_data in data["cost_items"]:
