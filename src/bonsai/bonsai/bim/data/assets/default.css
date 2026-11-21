@@ -43,6 +43,8 @@ path.flush { stroke: blue; stroke-width: 0.1; stroke-opacity: 0.4; }
 */
 
 .surface {fill: white; stroke-width: 0.1;}
+/* Reference lines from an element's Axis representation (issue #6423). */
+.axis { fill: none; stroke: black; stroke-width: 0.13; stroke-dasharray: 12, 3, 3, 3; }
 .annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.3; }
 .IfcAnnotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.3; }
 /* .IfcGeographicElement { fill: none; stroke: rgb(150, 150, 150); stroke-linecap: 'round'; stroke-dasharray: 1, 2;} */
