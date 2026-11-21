@@ -57,7 +57,10 @@ class Patcher:
         self.only_xy = only_xy
 
     def patch(self) -> None:
-        project = self.file.by_type("IfcProject")[0]
+        projects = self.file.by_type("IfcProject")
+        if not projects:
+            raise ValueError("The file has no IfcProject, so there is nothing to process.")
+        project = projects[0]
         queue = [project]
         while queue:
             element = queue.pop()
