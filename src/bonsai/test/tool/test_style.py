@@ -511,3 +511,17 @@ class TestAssignStyleToRepresentationItem(NewFile):
         # unassigning styles
         subject.assign_style_to_representation_item(rectangle, None)
         assert subject.get_representation_item_style(rectangle) == None
+
+
+class TestEnableEditingSurfaceStyle(NewFile):
+    def test_pending_name_edit_is_saved_when_switching_sub_tab(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.primitive_cube_add()
+        material = bpy.data.materials.new("Original")
+        bpy.context.active_object.data.materials.append(material)
+        bpy.ops.bim.add_style()
+        style = tool.Ifc.get_entity(material)
+        bpy.ops.bim.enable_editing_style(style=style.id())
+        tool.Style.get_style_props().attributes["Name"].string_value = "Renamed"
+        bpy.ops.bim.enable_editing_surface_style(style=style.id(), ifc_class="IfcSurfaceStyleShading")
+        assert style.Name == "Renamed"
