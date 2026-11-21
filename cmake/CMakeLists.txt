@@ -428,9 +428,19 @@ if (WITH_ROCKSDB)
         # the libzstd.a along with the rocksdb library when needed and feature
         # detect based on rocksdb API?
         # Same exact-major-version caveat as RocksDB above.
-        find_package(zstd CONFIG REQUIRED)
-        message(STATUS "zstd: found at '${zstd_DIR}'.")
-        check_min_version(zstd "${zstd_VERSION}" "${ZSTD_MIN_VERSION}")
+        find_package(zstd CONFIG QUIET)
+        if(zstd_FOUND)
+            message(STATUS "zstd: found at '${zstd_DIR}'.")
+            check_min_version(zstd "${zstd_VERSION}" "${ZSTD_MIN_VERSION}")
+        else()
+            # No zstd CONFIG package on this system — fall back to pkg-config.
+            find_package(PkgConfig REQUIRED)
+            # GLOBAL, and aliased to the CONFIG package's target name, so
+            # IfcParse, IfcViewerCore and the .ifcview serializer link it as is.
+            pkg_check_modules(ZSTD REQUIRED IMPORTED_TARGET GLOBAL libzstd>=${ZSTD_MIN_VERSION})
+            add_library(zstd::libzstd_static ALIAS PkgConfig::ZSTD)
+            message(STATUS "zstd: found ${ZSTD_VERSION} via pkg-config.")
+        endif()
     endif()
 
     install(TARGETS IFCOPENSHELL_RocksDB EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
