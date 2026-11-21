@@ -81,7 +81,7 @@ jobs:
       - run: uv python install 3.13
       - name: Check SDK packaging helpers
         run: uv run --python 3.13 python -B -m unittest discover -s test/package -p test_cpp_sdk.py -v
-      - uses: hendrikmuhs/ccache-action@v1.2.24
+      - uses: hendrikmuhs/ccache-action@v1.2.25
         with:
           key: cpp-sdk-rockylinux9-${{ runner.arch }}
           install: ${{ matrix.arch == 'linuxarm64' && 'detect' || 'binary' }}

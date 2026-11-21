@@ -99,7 +99,7 @@ jobs:
             rattler-build
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.24
+        uses: hendrikmuhs/ccache-action@v1.2.25
         with:
           key: conda-${{ matrix.platform.pkg_dir }}
           # By default it's installed from apt on Linux, ubuntu-latest is 24.04 with ccache 4.9,
