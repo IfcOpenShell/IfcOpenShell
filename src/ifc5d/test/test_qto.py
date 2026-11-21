@@ -20,7 +20,10 @@
 
 import ifcopenshell
 import ifcopenshell.api.context
+import ifcopenshell.api.material
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import ifcopenshell.util.element
 import pytest
@@ -91,6 +94,71 @@ class TestOpeningQuantities:
         assert quantities["Depth"] == pytest.approx(0.3)
         assert quantities["Area"] == pytest.approx(0.5)
         assert quantities["Volume"] == pytest.approx(0.15)
+
+
+class TestCoveringQuantities:
+    LENGTH, HEIGHT, THICKNESS = 4.0, 0.32, 0.05
+
+    def setup_method(self):
+        self.file = ifcopenshell.file(schema="IFC4")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject", name="Test")
+        units = [
+            self.file.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE"),
+            self.file.createIfcSIUnit(None, "AREAUNIT", None, "SQUARE_METRE"),
+            self.file.createIfcSIUnit(None, "VOLUMEUNIT", None, "CUBIC_METRE"),
+        ]
+        ifcopenshell.api.unit.assign_unit(self.file, units=units)
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        self.body = ifcopenshell.api.context.add_context(
+            self.file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+
+    def create_covering(self, profile_y: float, depth: float, layer_set_direction=None, type_direction=None):
+        f = self.file
+        covering = ifcopenshell.api.root.create_entity(f, ifc_class="IfcCovering")
+        covering.ObjectPlacement = f.createIfcLocalPlacement(
+            None, f.createIfcAxis2Placement3D(f.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+        )
+        profile = f.createIfcRectangleProfileDef("AREA", None, None, self.LENGTH, profile_y)
+        position = f.createIfcAxis2Placement3D(f.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+        solid = f.createIfcExtrudedAreaSolid(profile, position, f.createIfcDirection((0.0, 0.0, 1.0)), depth)
+        rep = f.createIfcShapeRepresentation(self.body, "Body", "SweptSolid", [solid])
+        covering.Representation = f.createIfcProductDefinitionShape(None, None, [rep])
+        if layer_set_direction:
+            layer = f.createIfcMaterialLayer(f.createIfcMaterial("Test"), self.THICKNESS)
+            usage = f.createIfcMaterialLayerSetUsage(
+                f.createIfcMaterialLayerSet([layer]), layer_set_direction, "POSITIVE", 0.0
+            )
+            ifcopenshell.api.material.assign_material(f, products=[covering], material=usage)
+        if type_direction:
+            covering_type = ifcopenshell.api.root.create_entity(f, ifc_class="IfcCoveringType")
+            ifcopenshell.api.type.assign_type(f, related_objects=[covering], relating_type=covering_type)
+            pset = ifcopenshell.api.pset.add_pset(f, product=covering_type, name="EPset_Parametric")
+            ifcopenshell.api.pset.edit_pset(f, pset=pset, properties={"LayerSetDirection": type_direction})
+        return covering
+
+    def quantify(self, covering) -> dict[str, float]:
+        rules = ifc5d.qto.rules["IFC4QtoBaseQuantities"]
+        return ifc5d.qto.quantify(self.file, {covering}, rules)[covering]["Qto_CoveringBaseQuantities"]
+
+    def test_vertical_covering_uses_the_native_axis2_layer_set_direction(self):
+        covering = self.create_covering(self.THICKNESS, self.HEIGHT, layer_set_direction="AXIS2")
+        quantities = self.quantify(covering)
+        assert quantities["GrossArea"] == pytest.approx(self.LENGTH * self.HEIGHT)
+        assert quantities["NetArea"] == pytest.approx(self.LENGTH * self.HEIGHT)
+        assert quantities["Width"] == pytest.approx(self.THICKNESS)
+
+    def test_horizontal_covering_uses_the_native_axis3_layer_set_direction(self):
+        covering = self.create_covering(self.HEIGHT, self.THICKNESS, layer_set_direction="AXIS3")
+        quantities = self.quantify(covering)
+        assert quantities["GrossArea"] == pytest.approx(self.LENGTH * self.HEIGHT)
+        assert quantities["Width"] == pytest.approx(self.THICKNESS)
+
+    def test_type_layer_set_direction_applies_without_a_layer_set_usage(self):
+        covering = self.create_covering(self.THICKNESS, self.HEIGHT, type_direction="AXIS2")
+        quantities = self.quantify(covering)
+        assert quantities["GrossArea"] == pytest.approx(self.LENGTH * self.HEIGHT)
+        assert quantities["Width"] == pytest.approx(self.THICKNESS)
 
 
 class TestGetQuantityMeasures:
