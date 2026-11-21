@@ -40,6 +40,7 @@ from mathutils import Matrix
 import bonsai.bim.module.drawing.decoration as decoration
 import bonsai.core.drawing as core
 import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.drawing.data import (
     AnnotationData,
     DrawingsData,
@@ -187,7 +188,8 @@ def get_diagram_scales(self: "BIMCameraProperties", context: bpy.types.Context) 
 def update_drawing_name(self: "Drawing", context: bpy.types.Context) -> None:
     if self.ifc_definition_id:
         drawing = tool.Ifc.get().by_id(self.ifc_definition_id)
-        core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=drawing, name=self.name)
+        with IfcStore.track_transaction_outside_operator("Rename Drawing"):
+            core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=drawing, name=self.name)
 
 
 def get_drawing_style_name(self: "DrawingStyle"):
@@ -207,7 +209,8 @@ def set_drawing_style_name(self: "DrawingStyle", new_value: str) -> None:
 
 def update_document_name(self: "Document", context: bpy.types.Context) -> None:
     document = tool.Ifc.get().by_id(self.ifc_definition_id)
-    core.update_document_name(tool.Ifc, tool.Drawing, document=document, name=self.name)
+    with IfcStore.track_transaction_outside_operator("Rename Document"):
+        core.update_document_name(tool.Ifc, tool.Drawing, document=document, name=self.name)
 
 
 def update_has_underlay(self: "BIMCameraProperties", context: bpy.types.Context) -> None:

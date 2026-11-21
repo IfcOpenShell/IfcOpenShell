@@ -30,6 +30,7 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 
 import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.profile.data import ProfileData
 from bonsai.bim.prop import Attribute
 
@@ -46,7 +47,8 @@ def update_profile_name(self: "Profile", context: bpy.types.Context) -> None:
     profile = tool.Ifc.get_entity_by_id(self.ifc_definition_id)
     if not profile:
         return
-    profile.ProfileName = self.name
+    with IfcStore.track_transaction_outside_operator("Rename Profile"):
+        profile.ProfileName = self.name
     refresh_ui_data()
 
 
