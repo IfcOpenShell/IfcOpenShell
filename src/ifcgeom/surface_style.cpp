@@ -1,4 +1,5 @@
 #include "../ifcgeom/render_styles.h"
+#include "../ifcparse/schema.h"
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -112,12 +113,19 @@ void ifcopenshell::geom::set_default_style_file(const std::string& json_file) {
 	}
 }
 
-const ifcopenshell::geom::taxonomy::style::ptr& ifcopenshell::geom::get_default_style(const std::string& s) {
+const ifcopenshell::geom::taxonomy::style::ptr& ifcopenshell::geom::get_default_style(const std::string& s, const ifcopenshell::declaration* decl) {
 	static std::mutex m;
 	std::lock_guard<std::mutex> lk(m);
 
 	if (!default_materials_initialized) InitDefaultMaterials();
 	auto it = default_materials.find(s);
+	// #473 inherit the default style of the nearest supertype that has one
+	for (auto super = decl && decl->as_entity() ? decl->as_entity()->supertype() : nullptr; it == default_materials.end() && super; super = super->supertype()) {
+		auto jt = default_materials.find(super->name());
+		if (jt != default_materials.end()) {
+			it = default_materials.insert({ s, jt->second }).first;
+		}
+	}
 	if (it == default_materials.end()) {
 		default_materials.insert(std::make_pair(s, default_material));
 		it = default_materials.find(s);
