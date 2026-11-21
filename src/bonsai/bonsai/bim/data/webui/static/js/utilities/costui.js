@@ -615,6 +615,9 @@ export class CostUI {
       const table = document.getElementById("cost-items-" + id);
       tableWrapper = table.parentElement;
       table.remove();
+      document
+        .getElementById("cost-schedule-name-" + id)
+        .querySelector("span").textContent = costSchedule.Name;
     } else {
       const scheduleDiv = document.createElement("div");
       scheduleDiv.classList.add("schedule");
@@ -628,6 +631,7 @@ export class CostUI {
         "fa-solid fa-money-bill-wave",
         "x-large"
       );
+      scheduleName.id = "cost-schedule-name-" + id;
 
       tableWrapper = document.createElement("div");
       tableWrapper.classList.add("table-wrapper");

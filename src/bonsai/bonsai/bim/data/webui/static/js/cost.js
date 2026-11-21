@@ -377,6 +377,7 @@ function loadCostSchedule(costScheduleId, blenderId) {
     { type: "loadCostSchedule", costScheduleId: costScheduleId },
     blenderId
   );
+  getCostSchedules(blenderId);
 }
 
 function getCostSchedules(blenderId) {
