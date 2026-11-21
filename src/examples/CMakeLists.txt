@@ -93,6 +93,18 @@ if(SCHEMA_VERSIONS)
     if(WITH_OPENCASCADE)
         build_schema_example(IfcOpenHouse ${schema} geometry_serializer)
         build_schema_example(IfcAdvancedHouse ${schema} geometry_serializer)
+
+        # Transitive OCC include dirs are not reliable on every generator (#7822).
+        if(OCC_INCLUDE_DIR)
+            set(_occ_example_includes ${OCC_INCLUDE_DIR})
+        else()
+            set(_occ_example_includes ${OpenCASCADE_INCLUDE_DIR})
+        endif()
+        if(_occ_example_includes)
+            target_include_directories(IfcOpenHouse PRIVATE ${_occ_example_includes})
+            target_include_directories(IfcAdvancedHouse PRIVATE ${_occ_example_includes})
+        endif()
+        unset(_occ_example_includes)
     endif()
 endif()
 
