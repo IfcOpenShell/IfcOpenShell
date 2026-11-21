@@ -28,6 +28,18 @@
 #include <string>
 #include <iostream>
 
+// The key of a map keyed by a fixed character array: the string padded with
+// NUL characters. False for a longer string and for one that ends in a NUL.
+template <size_t N>
+inline bool to_padded_key(const std::string& text, std::array<char, N>& key) {
+    if (text.size() > N || (!text.empty() && text.back() == '\0')) {
+        return false;
+    }
+    key.fill('\0');
+    std::memcpy(key.data(), text.data(), text.size());
+    return true;
+}
+
 // variant_map: A map interface that delegates to one of several map types.
 // The underlying maps are referenced by pointers (not moved into the variant).
 // All map types must share the same key_type, mapped_type, and value_type.
@@ -42,7 +54,7 @@ public:
     // @todo these are not common types, but just the 1st
     // A map keyed by a fixed character array (the GlobalId index) is keyed
     // by std::string at this interface; the key is converted on the way in,
-    // and a string of the wrong length is simply never found.
+    // and a string to_padded_key() rejects is simply never found.
     template <typename K>
     struct public_key {
         using type = K;
@@ -64,11 +76,7 @@ public:
     template <typename MapT>
     static bool to_map_key(const key_type& key, typename MapT::key_type& out) {
         if constexpr (is_char_array<typename MapT::key_type>::value) {
-            if (key.size() != out.size()) {
-                return false;
-            }
-            std::memcpy(out.data(), key.data(), out.size());
-            return true;
+            return to_padded_key(key, out);
         } else {
             out = static_cast<typename MapT::key_type>(key);
             return true;
@@ -77,7 +85,11 @@ public:
     template <typename Pair>
     static value_type to_value(const Pair& pair) {
         if constexpr (is_char_array<std::decay_t<decltype(pair.first)>>::value) {
-            return value_type(std::string(pair.first.data(), pair.first.size()), pair.second);
+            size_t size = pair.first.size();
+            while (size != 0 && pair.first[size - 1] == '\0') {
+                --size;
+            }
+            return value_type(std::string(pair.first.data(), size), pair.second);
         } else {
             return value_type(pair.first, pair.second);
         }
