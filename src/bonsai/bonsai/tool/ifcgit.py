@@ -627,8 +627,11 @@ class IfcGit(bonsai.core.tool.IfcGit):
             return "error"
 
     @classmethod
-    def git_mergetool(cls, mergetool: str, path_ifc: str) -> Union[list, None]:
-        """Run ifcmerge tool. Returns None on success, list of conflict dicts on failure."""
+    def git_mergetool(cls, mergetool: str, path_ifc: str) -> tuple[Union[list, None], list]:
+        """Run ifcmerge tool. Returns (conflicts, resolutions) where conflicts is
+        None on success or a list of conflict dicts on failure, and resolutions is
+        a list of conflicts ifcmerge resolved automatically (such as an object
+        moved in both branches, where one placement is kept)."""
         repo = IfcGitRepo.repo
         report_path = path_ifc + ".ifcmerge"
         try:
@@ -637,13 +640,19 @@ class IfcGit(bonsai.core.tool.IfcGit):
             print(f"ifcgit: mergetool failed: {e}")
 
         conflicts = None
+        resolutions = []
         if os.path.exists(report_path):
             try:
                 with open(report_path) as f:
                     content = f.read().strip()
                 if content:
+                    # older ifcmerge writes plain "Success!" on success,
+                    # which is not JSON and means no report is available
                     data = json.loads(content)
-                    conflicts = data.get("conflicts", [])
+                    if isinstance(data, dict):
+                        resolutions = data.get("resolved", [])
+                        if data.get("status") != "success":
+                            conflicts = data.get("conflicts", [])
             except (json.JSONDecodeError, OSError):
                 pass
             try:
@@ -654,7 +663,7 @@ class IfcGit(bonsai.core.tool.IfcGit):
         if conflicts is None and repo.index.unmerged_blobs():
             conflicts = []
 
-        return conflicts
+        return conflicts, resolutions
 
     @classmethod
     def store_merge_conflicts(cls, conflicts: list) -> None:
@@ -668,6 +677,23 @@ class IfcGit(bonsai.core.tool.IfcGit):
     def get_merge_conflicts(cls) -> Union[list, None]:
         raw = cls.get_ifcgit_props().merge_conflicts
         if not raw:
+            return None
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+
+    @classmethod
+    def store_merge_resolutions(cls, resolutions: list) -> None:
+        cls.get_ifcgit_props().merge_resolutions = json.dumps(resolutions) if resolutions else ""
+
+    @classmethod
+    def clear_merge_resolutions(cls) -> None:
+        cls.get_ifcgit_props().merge_resolutions = ""
+
+    @classmethod
+    def get_merge_resolutions(cls) -> Union[list, None]:
+        if not (raw := cls.get_ifcgit_props().merge_resolutions):
             return None
         try:
             return json.loads(raw)
