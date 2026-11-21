@@ -1298,6 +1298,13 @@ class DumbWallGenerator:
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
         polyline_points = builder.get_polyline_coords(extrusion.SweptArea.OuterCurve)
         polyline_points = [[(v * self.unit_scale) for v in p] for p in polyline_points]
+        # The profile is defined in the extrusion's local coordinates, e.g. a slab converted from a mesh
+        # has its profile centred and rotated by the extrusion position.
+        if extrusion.Position:
+            position = Matrix(
+                ifcopenshell.util.placement.get_placement(extrusion.Position, should_return_si=True).tolist()
+            )
+            polyline_points = [(position @ Vector((p[0], p[1], 0.0))).to_2d() for p in polyline_points]
         polyline_points = [slab_obj.matrix_world @ Vector((p[0], p[1], elevation)) for p in polyline_points]
         if not tool.Cad.is_counter_clockwise_order(polyline_points[0], polyline_points[1], polyline_points[2]):
             polyline_points = polyline_points[::-1]
