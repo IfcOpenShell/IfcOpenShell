@@ -132,23 +132,30 @@ def align_walls(
     reference_obj = blender.get_active_object(is_selected=True)
     if not reference_obj or not (e := ifc.get_entity(reference_obj)) or not model.get_usage_type(e) == "LAYER2":
         reference_obj = None
-    objs = [
-        o
-        for o in blender.get_selected_objects()
-        if o != reference_obj and (e := ifc.get_entity(o)) and model.get_usage_type(e) == "LAYER2"
-    ]
-    if not reference_obj or not objs:
+    objs: list[bpy.types.Object] = []
+    # Fills (windows/doors) get moved like any other selected object, then their opening is resynced separately.
+    fills: list[bpy.types.Object] = []
+    for o in blender.get_selected_objects():
+        if o == reference_obj or not (e := ifc.get_entity(o)):
+            continue
+        if model.get_usage_type(e) == "LAYER2":
+            objs.append(o)
+        elif model.get_filling_host(e):
+            fills.append(o)
+    if not reference_obj or not (objs or fills):
         raise RequireAtLeastTwoLayeredElements(
             "At least two vertically layered elements must be selected to match alignments."
         )
     aligner.set_reference_wall(reference_obj)
-    for obj in objs:
+    for obj in objs + fills:
         if align_type == "CENTER":
             aligner.align_centerline(obj)
         elif align_type == "EXTERIOR":
             aligner.align_first_layer(obj)
         elif align_type == "INTERIOR":
             aligner.align_last_layer(obj)
+    if fills:
+        model.recalculate_fillings(fills)
 
 
 def align_objects(
