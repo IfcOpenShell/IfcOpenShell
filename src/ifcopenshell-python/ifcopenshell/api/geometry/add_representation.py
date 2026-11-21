@@ -1036,12 +1036,39 @@ class Usecase:
                 "Vertex",
                 [self.create_vertex_point(self.geometry.vertices[0].co)],
             )
+        if isinstance(self.geometry, bpy.types.Mesh) and len(self.geometry.polygons):
+            face = self.create_face_surface()
+            if face is None:
+                return None
+            return self.file.createIfcTopologyRepresentation(
+                self.context, self.context.ContextIdentifier, "Face", [face]
+            )
         return self.file.createIfcTopologyRepresentation(
             self.context,
             self.context.ContextIdentifier,
             "Edge",
             [self.create_edge()],
         )
+
+    def create_face_surface(self) -> ifcopenshell.entity_instance | None:
+        """The mesh as one IfcFaceSurface, keeping the local axes of the face it replaces
+
+        :return: IfcFaceSurface, or None if the mesh is not one planar face
+        """
+        assert isinstance(self.geometry, bpy.types.Mesh)
+        verts = tool.Blender.get_verts_coordinates(self.geometry.vertices).astype("d")
+        if self.coordinate_offset is not None:
+            verts += self.coordinate_offset
+        verts = self.convert_si_to_unit(verts)
+        faces = [p.vertices[:] for p in self.geometry.polygons]
+        normal, x_axis = tool.Geometry.get_face_surface_axes(tool.Ifc.get_entity(self.blender_object), self.context)
+        try:
+            outer, inners = ifcopenshell.util.shape_builder.ShapeBuilder.get_mesh_boundaries(verts, faces)
+            return ifcopenshell.util.shape_builder.ShapeBuilder(self.file).face_surface(
+                verts[outer], [verts[i] for i in inners], normal=normal, x_axis=x_axis
+            )
+        except ValueError:
+            return None
 
     def create_vertex_point(self, point: Vector) -> ifcopenshell.entity_instance:
         return self.file.createIfcVertexPoint(self.create_cartesian_point(point.x, point.y, point.z))
