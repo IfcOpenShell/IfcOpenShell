@@ -272,6 +272,17 @@ class TestConvert(test.bootstrap.IFC4):
         assert subject.convert(1, None, "SQUARE_METRE", "MILLI", "SQUARE_METRE") == 1000000
         assert subject.convert(1, None, "CUBIC_METRE", "MILLI", "CUBIC_METRE") == 1000000000
 
+    def test_conversion_based_units(self):
+        assert subject.convert(1, None, "foot", None, "METRE") == 0.3048
+        assert subject.convert(1, None, "METRE", None, "foot") == 1 / 0.3048
+        assert subject.convert(1, None, "FOOT", None, "inch") == pytest.approx(12)
+
+    def test_conversion_based_units_with_uppercase_names(self):
+        assert subject.convert(1, None, "gallon US", None, "CUBIC_METRE") == 0.003785
+        assert subject.convert(1, None, "CUBIC_METRE", None, "pint UK") == 1 / 0.000568
+        assert subject.convert(1, None, "ton UK", None, "ton US") == pytest.approx(1016.0469088 / 907.18474)
+        assert subject.convert(1, None, "GALLON US", None, "litre") == pytest.approx(3.785)
+
 
 class TestCalculateUnitScale(test.bootstrap.IFC4):
     def test_prefix_and_conversion_based_units_are_considered(self):
