@@ -167,19 +167,23 @@ class CreateProject(bpy.types.Operator):
         tool.Loader.set_unit_scale(ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get()))
 
     def create_objects_for_orphan_spatial_elements(self, context: bpy.types.Context) -> None:
-        # A project template may have merged its own spatial structure into the IFC file.
+        # A project template may have merged its own spatial structure and surface styles into the IFC file.
         ifc_file = tool.Ifc.get()
         spatial_class = "IfcSpatialStructureElement" if ifc_file.schema == "IFC2X3" else "IfcSpatialElement"
         orphans = {e for e in ifc_file.by_type(spatial_class) if tool.Ifc.get_object(e) is None}
-        if not orphans:
+        orphan_styles = [s for s in ifc_file.by_type("IfcSurfaceStyle") if tool.Ifc.get_object(s) is None]
+        if not orphans and not orphan_styles:
             return
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = ifc_file
-        ifc_importer.process_context_filter()
-        ifc_importer.create_generic_elements(orphans)
-        ifc_importer.place_objects_in_collections()
+        for style in orphan_styles:
+            ifc_importer.create_style(style)
+        if orphans:
+            ifc_importer.process_context_filter()
+            ifc_importer.create_generic_elements(orphans)
+            ifc_importer.place_objects_in_collections()
 
     def rollback(self, data):
         IfcStore.file = None
