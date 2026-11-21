@@ -35,10 +35,10 @@ def remove_context(file: ifcopenshell.file, context: ifcopenshell.entity_instanc
 
     .. code:: python
 
-        model = ifcopenshell.api.context.add_context(model, context_type="Model")
+        model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
         # Revit had a bug where they incorrectly called the body representation a "Facetation"
         body = ifcopenshell.api.context.add_context(model,
-            context_type="Model", context_identifier="Facetation", target_view="MODEL_VIEW", parent=model
+            context_type="Model", context_identifier="Facetation", target_view="MODEL_VIEW", parent=model3d
         )
 
         # Let's just get rid of it completely

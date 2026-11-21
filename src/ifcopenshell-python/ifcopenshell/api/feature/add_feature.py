@@ -64,6 +64,8 @@ def add_feature(
 
     .. code:: python
 
+        import numpy as np
+
         # A bit of preparation, let's create some geometric contexts since
         # we want to create some geometry for our wall and opening.
         model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
