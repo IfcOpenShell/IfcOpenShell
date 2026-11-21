@@ -325,25 +325,34 @@ class Helper:
         return {"outer_curve": outer_loop, "inner_curves": inner_loops}
 
     # An extrusion edge is an edge that shares a single vertex with a profile
-    # face and is not on the plane of the face.
+    # face and is not on the plane of the face. The one most aligned with the
+    # face normal is picked, as marginally off-plane boundary edges may also match.
     def detect_extrusion_edge(self, bm: bmesh.types.BMesh, profile_face: bmesh.types.BMFace) -> Union[list[int], None]:
         bm.edges.ensure_lookup_table()
         face_verts_set = set(profile_face.verts)
+        normal = profile_face.normal
+        best_edge = None
+        best_alignment = 0.0
         for edge in bm.edges:
             unshared_verts = set(edge.verts) - face_verts_set
             if len(unshared_verts) == 1:
                 unshared_vert = unshared_verts.pop()
                 if (
-                    abs(
-                        mathutils.geometry.distance_point_to_plane(
-                            unshared_vert.co, profile_face.verts[0].co, profile_face.normal
-                        )
-                    )
+                    abs(mathutils.geometry.distance_point_to_plane(unshared_vert.co, profile_face.verts[0].co, normal))
                     > 1e-6
                 ):
-                    if unshared_vert == edge.verts[1]:
-                        return [edge.verts[0].index, edge.verts[1].index]
-                    return [edge.verts[1].index, edge.verts[0].index]
+                    direction = edge.verts[1].co - edge.verts[0].co
+                    length = direction.length
+                    if length < 1e-9:
+                        continue
+                    alignment = abs(direction.dot(normal)) / length
+                    if alignment > best_alignment:
+                        best_alignment = alignment
+                        if unshared_vert == edge.verts[1]:
+                            best_edge = [edge.verts[0].index, edge.verts[1].index]
+                        else:
+                            best_edge = [edge.verts[1].index, edge.verts[0].index]
+        return best_edge
 
     def create_extruded_area_solid(
         self, mesh: bpy.types.Mesh, extrusion_indices: list[int], profile_def: dict[str, Any]
