@@ -271,14 +271,25 @@ class TopicHandler:
     def add_visinfo_handler(
         self, new_viewpoint: VisualizationInfoHandler, snapshot_filename: Optional[str] = None
     ) -> mdl.ViewPoint:
-        self.viewpoints[new_viewpoint.guid + ".bcfv"] = new_viewpoint
+        # BCF 2.1 tools expect the primary viewpoint/snapshot named viewpoint.bcfv/snapshot.png;
+        # additional viewpoints keep guid based names.
+        guid = new_viewpoint.guid
+        is_primary = "viewpoint.bcfv" not in self.viewpoints
+        viewpoint_filename = "viewpoint.bcfv" if is_primary else f"{guid}.bcfv"
+        if snapshot_filename is None and new_viewpoint.snapshot is not None:
+            snapshot_filename = "snapshot.png" if is_primary else f"{guid}.png"
+        self.viewpoints[viewpoint_filename] = new_viewpoint
         viewpoint = mdl.ViewPoint(
-            viewpoint=new_viewpoint.guid + ".bcfv",
+            viewpoint=viewpoint_filename,
             snapshot=snapshot_filename,
-            guid=new_viewpoint.guid,
+            guid=guid,
         )
         self.markup.viewpoints.append(viewpoint)
         return viewpoint
+
+    def get_viewpoint_filename(self, guid: str) -> Optional[str]:
+        """Return the viewpoint filename (key of `viewpoints`) for a viewpoint GUID."""
+        return next((filename for filename, vpt in self.viewpoints.items() if vpt.guid == guid), None)
 
     def __eq__(self, other: object) -> bool | NoReturn:
         return (
