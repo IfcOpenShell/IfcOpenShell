@@ -46,7 +46,6 @@ classes = (
     operator.DisableEditingHeader,
     operator.DisableEditingLink,
     operator.EditHeader,
-    operator.EditLink,
     operator.EditProjectLibrary,
     operator.EnableCulling,
     operator.EnableEditingHeader,
@@ -70,6 +69,7 @@ classes = (
     operator.QueryLinkedElement,
     operator.RefreshClippingPlanes,
     operator.RefreshLibrary,
+    operator.ReloadAllLinks,
     operator.ReloadLink,
     operator.RemoveProjectLibrary,
     operator.RevertProject,
@@ -77,6 +77,7 @@ classes = (
     operator.SaveLibraryFile,
     operator.SelectLibraryFile,
     operator.SelectLinkedModelElement,
+    operator.SelectLinkFilepath,
     operator.SelectLinkHandle,
     operator.ToggleFilterCategories,
     operator.ToggleLinkSelectability,
@@ -112,12 +113,45 @@ classes = (
 addon_keymaps = []
 
 
+@bpy.app.handlers.persistent
+def _autosave_link_transforms(scene, depsgraph):
+    """Persist link transformations whenever an editing link's handle is moved.
+
+    Deliberate exemption from the transaction rule in
+    docs/guides/development/undo_system.rst: a handler cannot run inside
+    execute_ifc_operator, so this IFC write is not undo-tracked. It stays
+    consistent anyway because undoing the move fires another depsgraph
+    update, which re-saves the reverted matrix.
+    """
+    import bonsai.tool as tool
+
+    props = tool.Project.get_project_props()
+    if not props.links:
+        return
+    handles = None
+    for update in depsgraph.updates:
+        if not update.is_updated_transform or not isinstance(update.id, bpy.types.Object):
+            continue
+        if handles is None:
+            # Built lazily so ticks without transform updates stay cheap.
+            handles = {}
+            for link in props.links:
+                if link.is_loaded and link.is_editing and (handle := tool.Project.get_link_empty_handle(link)):
+                    handles[handle] = link
+            if not handles:
+                return
+        if link := handles.get(update.id.original):
+            tool.Project.save_link_transformation(link)
+
+
 def register():
     if not bpy.app.background:
         bpy.utils.register_tool(workspace.ExploreTool, after={"builtin.transform"}, separator=True, group=False)
     bpy.types.Scene.BIMProjectProperties = bpy.props.PointerProperty(type=prop.BIMProjectProperties)
     bpy.types.Scene.MeasureToolSettings = bpy.props.PointerProperty(type=prop.MeasureToolSettings)
     bpy.app.handlers.load_post.append(decorator.toggle_decorations_on_load)
+    if _autosave_link_transforms not in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.append(_autosave_link_transforms)
     bpy.types.TOPBAR_MT_file_import.append(ui.file_import_menu)
     bpy.types.TOPBAR_MT_file.prepend(ui.file_menu)
     bpy.types.TOPBAR_MT_file_context_menu.prepend(ui.file_menu)
@@ -143,6 +177,8 @@ def unregister():
     del bpy.types.Scene.BIMProjectProperties
     del bpy.types.Scene.MeasureToolSettings
     bpy.app.handlers.load_post.remove(decorator.toggle_decorations_on_load)
+    if _autosave_link_transforms in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.remove(_autosave_link_transforms)
     bpy.types.TOPBAR_MT_file.remove(ui.file_menu)
     bpy.types.TOPBAR_MT_file_context_menu.remove(ui.file_menu)
 
