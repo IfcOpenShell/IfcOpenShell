@@ -103,6 +103,10 @@ export async function getApplicablePsets(schema: string, entity: string, predefi
     return await wasm.getApplicablePsets(schema, entity, predefinedType);
 }
 
+export async function testPattern(pattern: string, values: string[]) {
+    return await wasm.testPattern(pattern, values) as { error: string | null; results: boolean[] };
+}
+
 export function getEntityClasses() {
     return Autocompletions.entityClasses;
 }
