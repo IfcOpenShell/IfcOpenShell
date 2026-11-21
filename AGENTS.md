@@ -90,6 +90,15 @@ AI-generated, identify them.
 - **Cosmetic changes**: Do not reformat, rename, or reorganize code that is
   unrelated to your change.
 
+### Check Intent Before Changing Behaviour
+
+If a change reverses how something currently works, rather than fixing a
+crash or wrong output, first find out why it works that way. Check
+`git log -S` and `git blame` on the affected lines, read the commit
+messages, and look for tests that assert the current behaviour. If the
+behaviour was deliberate, open an issue to discuss it before submitting a
+pull request.
+
 ## Commit Messages
 
 - The **subject line** must be **50 characters or less**.
