@@ -742,8 +742,24 @@ class IfcImporter:
             if shape:
                 assert isinstance(shape, W.triangulation_element)
                 product = self.file.by_id(shape.id)
+                stale_obj = None
+                if product in results:
+                    # Representations sharing one context yield several shapes per product: keep the Body.
+                    rep_id = int(shape.geometry.id.split("-", 1)[0])
+                    rep = self.file.by_id(rep_id)
+                    if getattr(rep, "RepresentationIdentifier", None) != "Body":
+                        if not iterator.next():
+                            break
+                        continue
+                    # The Body supersedes a duplicate created earlier: remove the orphaned object.
+                    stale_obj = tool.Ifc.get_object(product)
                 self.create_product(product, shape)
                 results.add(product)
+                if stale_obj is not None and stale_obj != tool.Ifc.get_object(product):
+                    stale_mesh = stale_obj.data if isinstance(stale_obj.data, bpy.types.Mesh) else None
+                    bpy.data.objects.remove(stale_obj, do_unlink=True)
+                    if stale_mesh is not None and stale_mesh.users == 0:
+                        bpy.data.meshes.remove(stale_mesh)
             if not iterator.next():
                 break
         print("Done creating geometry")
