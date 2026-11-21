@@ -39,6 +39,7 @@ requirements:
     - nlohmann_json
     - gmp
     - zlib
+    - zstd
     # bug upstream: https://github.com/conda-forge/vtk-feedstock/issues/459
     - xorg-xorgproto
     # TODO: Drop once occt is bumped to vtk >=9.4.2.
