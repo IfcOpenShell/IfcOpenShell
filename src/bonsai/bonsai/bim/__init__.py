@@ -303,6 +303,15 @@ def register():
         kmi = km.keymap_items.new("bim.switch_tab", "TAB", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))
 
+        # Fixed popup keys stop the number-key assignment from flip-flopping (#4694).
+        km = wm.keyconfigs.addon.keymaps.new(name="Toolbar Popup", space_type="EMPTY", region_type="TEMPORARY")
+        kmi = km.keymap_items.new("wm.tool_set_by_id", "C", "PRESS")
+        kmi.properties.name = "bim.bim_tool"
+        addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new("wm.tool_set_by_id", "A", "PRESS")
+        kmi.properties.name = "bim.annotation_tool"
+        addon_keymaps.append((km, kmi))
+
     global icons
 
     icons_dir = os.path.join(cwd, "data", "icons")
