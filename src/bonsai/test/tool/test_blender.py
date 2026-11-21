@@ -18,6 +18,7 @@
 #
 # This file was modified with the assistance of an AI coding tool.
 
+import re
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -203,6 +204,7 @@ class TestGetDebugInfo(NewFile):
         "bonsai_commit_hash",
         "bonsai_commit_date",
         "bonsai_git_branch",
+        "dev_environment",
         "last_actions",
         "last_error",
     }
@@ -210,6 +212,13 @@ class TestGetDebugInfo(NewFile):
     def test_failed_to_load_returns_only_base_keys(self):
         info = bonsai.get_debug_info(bonsai_failed_to_load=True)
         assert set(info.keys()) == self.EXPECTED_KEYS
+
+
+class TestDevLinkedPackages:
+    def test_matches_dev_environment_script(self):
+        script = Path(__file__).parents[2] / "scripts" / "dev_environment.py"
+        linked = set(re.findall(r'PACKAGE_PATH / "([^"]+)",', script.read_text(encoding="utf-8")))
+        assert linked == {"bonsai", *bonsai.DEV_LINKED_PACKAGES}
 
 
 class TestNpFrombufferLegacy(NewFile):
