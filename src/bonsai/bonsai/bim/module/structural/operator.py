@@ -1279,6 +1279,14 @@ def is_load_combination(group: ifcopenshell.entity_instance) -> bool:
     return group.is_a("IfcStructuralLoadGroup") and group.PredefinedType == "LOAD_COMBINATION"
 
 
+def get_shown_apply_load_group(self, context: bpy.types.Context) -> Union[str, None]:
+    """The load case whose loads are shown, its eye open, as the one being worked on, if Apply Load offers it"""
+    props = tool.Structural.get_structural_props()
+    if props.show_loads and props.load_group_to_show in [item[0] for item in get_apply_load_groups(self, context)]:
+        return props.load_group_to_show
+    return None
+
+
 def get_apply_load_groups(self, context: bpy.types.Context) -> list[tuple[str, str, str]]:
     global apply_load_group_items
     model = tool.Structural.get_current_structural_analysis_model()
@@ -1325,6 +1333,8 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
             self.report({"ERROR"}, "Select point connections, curve members or surface members, but only one kind.")
             return {"CANCELLED"}
         self.load_category = category
+        if shown := get_shown_apply_load_group(self, context):
+            self.load_group = shown
         self.load_name = self.get_default_load_name(category)
         return context.window_manager.invoke_props_dialog(self, width=350)
 
