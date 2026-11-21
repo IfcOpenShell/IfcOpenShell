@@ -37,7 +37,7 @@ def unassign_group(
     .. code:: python
 
         group = ifcopenshell.api.group.add_group(model, name="Furniture")
-        furniture = model.by_type("IfcFurniture")
+        furniture = [ifcopenshell.api.root.create_entity(model, ifc_class="IfcFurniture") for _ in range(2)]
         ifcopenshell.api.group.assign_group(model, products=furniture, group=group)
 
         bad_furniture = furniture[0]

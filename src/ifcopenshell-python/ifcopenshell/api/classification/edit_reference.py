@@ -36,7 +36,12 @@ def edit_reference(
 
     .. code:: python
 
-        reference = model.by_type("IfcClassification")[0]
+        wall_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWallType")
+        classification = ifcopenshell.api.classification.add_classification(model,
+            classification="MyCustomClassification")
+        reference = ifcopenshell.api.classification.add_reference(model,
+            products=[wall_type], classification=classification,
+            identification="W_01", name="Interior Walls")
         # Change the name of the reference to "Foo"
         ifcopenshell.api.classification.edit_reference(model,
             reference=reference, attributes={"Name": "Foo"})

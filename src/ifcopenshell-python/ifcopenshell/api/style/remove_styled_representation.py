@@ -31,6 +31,16 @@ def remove_styled_representation(file: ifcopenshell.file, representation: ifcope
 
     .. code:: python
 
+        model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
+        body = ifcopenshell.api.context.add_context(model,
+            context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d)
+        concrete = ifcopenshell.api.material.add_material(model, name="CON01", category="concrete")
+        style = ifcopenshell.api.style.add_style(model)
+        ifcopenshell.api.style.add_surface_style(model, style=style, ifc_class="IfcSurfaceStyleShading",
+            attributes={"SurfaceColour": {"Name": None, "Red": 0.5, "Green": 0.5, "Blue": 0.5}})
+        ifcopenshell.api.style.assign_material_style(model, material=concrete, style=style, context=body)
+        representation = concrete.HasRepresentation[0].Representations[0]
+
         # Remove a styled representation
         ifcopenshell.api.style.remove_styled_representation(model, representation=representation)
     """

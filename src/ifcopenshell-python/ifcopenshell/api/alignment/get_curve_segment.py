@@ -30,7 +30,12 @@ def get_curve_segment(layout: entity_instance, segment: entity_instance) -> enti
 
     .. code:: python
 
-        horizontal = model.by_type("IfcAlignmentHorizontal")[0]
+        model = ifcopenshell.file(schema="IFC4X3")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        alignment = ifcopenshell.api.alignment.create_by_pi_method(model,
+            name="A1", hpoints=[(0.0, 0.0), (100.0, 0.0), (100.0, 100.0)], radii=[20.0])
+        horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        alignment_segment = ifcopenshell.api.alignment.get_layout_segments(horizontal)[0]
         curve_segment = ifcopenshell.api.alignment.get_curve_segment(horizontal, alignment_segment)
     """
     index = 0

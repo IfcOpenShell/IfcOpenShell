@@ -60,6 +60,7 @@ def add_structural_boundary_condition(
 
     .. code:: python
 
+        connection = ifcopenshell.api.root.create_entity(model, ifc_class="IfcStructuralPointConnection")
         ifcopenshell.api.structural.add_structural_boundary_condition(model, connection=connection)
     """
     if connection:
