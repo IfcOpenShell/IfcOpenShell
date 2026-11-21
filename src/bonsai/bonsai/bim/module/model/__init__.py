@@ -198,6 +198,7 @@ classes = (
     prop.BIMPipeSegmentProperties,
     prop.BIMDuctSegmentProperties,
     prop.BIMPolylineProperties,
+    prop.BIMPolylineSettings,
     prop.BIMExternalParametricGeometryProperties,
     prop.BIMBendPreviewProperties,
     prop.BIMWallFilletPreviewProperties,
@@ -353,6 +354,7 @@ def register():
 
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.Scene.BIMPolylineProperties = bpy.props.PointerProperty(type=prop.BIMPolylineProperties)
+    bpy.types.Scene.BIMPolylineSettings = bpy.props.PointerProperty(type=prop.BIMPolylineSettings)
     bpy.types.Object.BIMArrayProperties = bpy.props.PointerProperty(type=prop.BIMArrayProperties)
     bpy.types.Object.BIMSverchokProperties = bpy.props.PointerProperty(type=prop.BIMSverchokProperties)
     # Per-parametric-type ``BIM<Name>Properties`` PointerProperties — driven by
@@ -390,6 +392,7 @@ def unregister():
 
     del bpy.types.Scene.BIMModelProperties
     del bpy.types.Scene.BIMPolylineProperties
+    del bpy.types.Scene.BIMPolylineSettings
     del bpy.types.Object.BIMArrayProperties
     del bpy.types.Object.BIMSverchokProperties
     tool.Parametric.unregister_object_properties()

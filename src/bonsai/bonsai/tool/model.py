@@ -81,6 +81,7 @@ if TYPE_CHECKING:
         BIMModelProperties,
         BIMPipeSegmentProperties,
         BIMPolylineProperties,
+        BIMPolylineSettings,
         BIMRailingProperties,
         BIMRoofProperties,
         BIMSlabProperties,
@@ -148,6 +149,11 @@ class Model(bonsai.core.tool.Model):
     def get_polyline_props(cls) -> BIMPolylineProperties:
         assert (scene := bpy.context.scene)
         return scene.BIMPolylineProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_polyline_settings(cls) -> BIMPolylineSettings:
+        assert (scene := bpy.context.scene)
+        return scene.BIMPolylineSettings  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def resolve_active_props_for_edit(
