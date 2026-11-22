@@ -241,6 +241,62 @@ class Structural(bonsai.core.tool.Structural):
         return z / length, x / length
 
     @classmethod
+    def get_structural_item_predefined_types(cls, ifc_class: str) -> list[str]:
+        """The predefined types an item of this class can be added with, USERDEFINED left out."""
+        declaration = tool.Ifc.schema().declaration_by_name(ifc_class).as_entity()
+        assert declaration
+        for attribute in declaration.all_attributes():
+            if attribute.name() == "PredefinedType":
+                return [t for t in ifcopenshell.util.attribute.get_enum_items(attribute) if t != "USERDEFINED"]
+        return []
+
+    @classmethod
+    def get_structural_item_representation_template(cls, ifc_class: str) -> str:
+        """The Add Element representation template for the topology of a structural item."""
+        if ifc_class.startswith("IfcStructuralPoint"):
+            return "VERTEX"
+        elif ifc_class.startswith("IfcStructuralCurve"):
+            return "EDGE"
+        elif ifc_class.startswith("IfcStructuralSurface"):
+            return "FACE"
+        raise ValueError(f"{ifc_class} is not a point, curve or surface structural item")
+
+    @classmethod
+    def get_member_connections_to_add(
+        cls, elements: list[ifcopenshell.entity_instance]
+    ) -> list[tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]]:
+        """The (member, connection) pairs to connect among the elements, leaving out those already connected.
+
+        Either one member is connected to every connection, or one connection to every member: with
+        several of both it cannot be told which member meets which connection.
+
+        :raises ValueError: if the elements are not members and connections, one of them alone.
+        """
+        members = [e for e in elements if e.is_a("IfcStructuralMember")]
+        connections = [e for e in elements if e.is_a("IfcStructuralConnection")]
+        if not members or not connections:
+            raise ValueError("Select structural members and the connection that joins them.")
+        if len(members) > 1 and len(connections) > 1:
+            raise ValueError("Select one connection with its members, or one member with its connections.")
+        pairs = []
+        for member in members:
+            connected = ifcopenshell.util.structural.get_member_connections(member)
+            pairs.extend((member, c) for c in connections if c not in connected)
+        return pairs
+
+    @classmethod
+    def get_structural_items(cls, elements: list[ifcopenshell.entity_instance]) -> list[ifcopenshell.entity_instance]:
+        """The structural items among the elements."""
+        return [e for e in elements if e.is_a("IfcStructuralItem")]
+
+    @classmethod
+    def is_in_structural_analysis_model(
+        cls, element: ifcopenshell.entity_instance, model: ifcopenshell.entity_instance
+    ) -> bool:
+        """Whether the element is assigned to the structural analysis model."""
+        return model in ifcopenshell.util.structural.get_analysis_models(element)
+
+    @classmethod
     def get_current_structural_analysis_model(cls) -> Union[ifcopenshell.entity_instance, None]:
         """Get the model that new structural items and load cases are assigned to.
 
