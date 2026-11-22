@@ -20,6 +20,7 @@
 import pytest
 
 import ifcopenshell.api.structural
+import ifcopenshell.guid
 import test.bootstrap
 
 
@@ -119,6 +120,21 @@ class TestAssignStructuralLoadCombination(test.bootstrap.IFC4):
         assert uls_rel.Factor == 1.35
         assert sls_rel.Factor == 1.0
         assert set(self.dead.HasAssignments) == {uls_rel, sls_rel}
+
+    def test_a_load_group_of_type_load_case_is_a_load_case(self):
+        self.setup_cases()
+        wind = self.file.createIfcStructuralLoadGroup(
+            ifcopenshell.guid.new(),
+            Name="Wind",
+            PredefinedType="LOAD_CASE",
+            ActionType="VARIABLE_Q",
+            ActionSource="WIND_W",
+        )
+        rel = ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=wind, load_combination=self.uls, factor=1.5
+        )
+        assert rel.RelatedObjects == (wind,)
+        assert rel.Factor == 1.5
 
     def test_only_load_cases_can_be_combined(self):
         self.setup_cases()

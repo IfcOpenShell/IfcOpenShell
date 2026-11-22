@@ -18,6 +18,7 @@
 # This file was generated with the assistance of an AI coding tool.
 
 import numpy
+import pytest
 
 import ifcopenshell.api.group
 import ifcopenshell.api.root
@@ -149,6 +150,35 @@ class TestGetCombinationFactors(test.bootstrap.IFC4):
                 ifcopenshell.guid.new(), RelatedObjects=[dead], RelatingGroup=combination, Factor=factor
             )
         assert subject.get_combination_factors(combination) == {dead: 1.35}
+
+
+class TestGetCombinationFactorsIFC2X3(test.bootstrap.IFC2X3):
+    def add_group(self, predefined_type, coefficient=None):
+        return self.file.createIfcStructuralLoadGroup(
+            ifcopenshell.guid.new(),
+            PredefinedType=predefined_type,
+            ActionType="NOTDEFINED",
+            ActionSource="NOTDEFINED",
+            Coefficient=coefficient,
+        )
+
+    def test_a_load_combination_group_gives_its_cases_its_coefficient(self):
+        dead = self.add_group("LOAD_CASE")
+        live = self.add_group("LOAD_CASE")
+        combination = self.add_group("LOAD_COMBINATION")
+        for case, coefficient in ((dead, 1.35), (live, 1.5)):
+            group = self.add_group("LOAD_COMBINATION_GROUP", coefficient)
+            ifcopenshell.api.group.assign_group(self.file, products=[case], group=group)
+            ifcopenshell.api.group.assign_group(self.file, products=[group], group=combination)
+        assert subject.get_combination_factors(combination) == {dead: 1.35, live: 1.5}
+
+    def test_the_coefficient_of_the_combination_applies_too(self):
+        dead = self.add_group("LOAD_CASE")
+        combination = self.add_group("LOAD_COMBINATION", 2.0)
+        group = self.add_group("LOAD_COMBINATION_GROUP")
+        ifcopenshell.api.group.assign_group(self.file, products=[dead], group=group)
+        ifcopenshell.api.group.assign_group(self.file, products=[group, dead], group=combination)
+        assert subject.get_combination_factors(combination) == {dead: 4.0}
 
 
 class TestGetModelLoadGroupsAndCases(test.bootstrap.IFC4, StructuralModel):
@@ -293,3 +323,19 @@ class TestGetGlobalAxes(test.bootstrap.IFC4, StructuralModel):
         activity = self.add_action(self.knee)
         activity.ObjectPlacement = self.make_placement((0.0, 0.0, 1.0), (0.0, 1.0, 0.0))
         assert numpy.allclose(subject.get_global_axes(activity)[:, 0], [0, 1, 0])
+
+
+class TestGetBoundaryConditionClass(test.bootstrap.IFC4):
+    def test_each_connection_takes_its_own_class(self):
+        for connection_class, condition_class in (
+            ("IfcStructuralPointConnection", "IfcBoundaryNodeCondition"),
+            ("IfcStructuralCurveConnection", "IfcBoundaryEdgeCondition"),
+            ("IfcStructuralSurfaceConnection", "IfcBoundaryFaceCondition"),
+        ):
+            connection = ifcopenshell.api.root.create_entity(self.file, ifc_class=connection_class)
+            assert subject.get_boundary_condition_class(connection) == condition_class
+
+    def test_a_member_is_refused(self):
+        member = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralCurveMember")
+        with pytest.raises(ValueError):
+            subject.get_boundary_condition_class(member)

@@ -341,6 +341,137 @@ class SetCurrentStructuralAnalysisModel(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddStructuralItem(bpy.types.Operator):
+    bl_idname = "bim.add_structural_item"
+    bl_label = "Add Structural Item"
+    bl_description = (
+        "Add a structural item of the class chosen in the Structural Tool at the 3D cursor, "
+        "in the current structural analysis model"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project loaded.")
+            return False
+        return True
+
+    def execute(self, context):
+        props = tool.Structural.get_structural_props()
+        ifc_class = props.structural_item_class
+        rprops = tool.Root.get_root_props()
+        rprops.ifc_product = "IfcStructuralItem"
+        rprops.ifc_class = ifc_class
+        if tool.Structural.get_structural_item_predefined_types(ifc_class):
+            rprops.ifc_predefined_type = props.structural_item_predefined_type
+        rprops.representation_template = tool.Structural.get_structural_item_representation_template(ifc_class)
+        rprops.name = ""
+        rprops.description = ""
+        result = bpy.ops.bim.add_element(skip_dialog=True)
+        if "FINISHED" in result and (obj := context.active_object):
+            # Structural items are hidden by default: show the one just added, so it can be seen and selected.
+            for collection in obj.users_collection:
+                if layer_collection := tool.Blender.get_layer_collection(collection):
+                    layer_collection.hide_viewport = False
+        return result
+
+
+class ConnectStructuralItems(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.connect_structural_items"
+    bl_label = "Connect Structural Items"
+    bl_description = (
+        "Connect the selected structural members to the selected connection, "
+        "or the selected member to the selected connections"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        elements = [e for o in tool.Blender.get_selected_objects() if (e := tool.Ifc.get_entity(o))]
+        try:
+            pairs = tool.Structural.get_member_connections_to_add(elements)
+        except ValueError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
+        ifc_file = tool.Ifc.get()
+        for member, connection in pairs:
+            ifcopenshell.api.structural.add_structural_member_connection(
+                ifc_file, relating_structural_member=member, related_structural_connection=connection
+            )
+        self.report({"INFO"}, f"{len(pairs)} member connection(s) added")
+        return {"FINISHED"}
+
+
+class AddStructuralSupport(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_structural_support"
+    bl_label = "Add Structural Support"
+    bl_description = "Hold the selected structural connections, replacing any boundary condition they have"
+    bl_options = {"REGISTER", "UNDO"}
+    support: bpy.props.EnumProperty(
+        name="Support",
+        items=(
+            ("FIXED", "Fixed", "Hold every displacement and rotation"),
+            ("PINNED", "Pinned", "Hold every displacement, leave the rotations free"),
+        ),
+    )
+
+    if TYPE_CHECKING:
+        support: Literal["FIXED", "PINNED"]
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def _execute(self, context):
+        elements = [e for o in tool.Blender.get_selected_objects() if (e := tool.Ifc.get_entity(o))]
+        connections = [e for e in elements if e.is_a("IfcStructuralConnection")]
+        if not connections:
+            self.report({"ERROR"}, "Select structural connections.")
+            return {"CANCELLED"}
+        ifc_file = tool.Ifc.get()
+        name = self.support.capitalize()
+        for connection in connections:
+            previous = connection.AppliedCondition
+            try:
+                # A schema that cannot hold a support (IFC2X3) refuses the first one, before anything is changed.
+                ifcopenshell.api.structural.add_structural_boundary_condition(
+                    ifc_file, name=name, connection=connection, support=self.support
+                )
+            except ValueError as e:
+                self.report({"ERROR"}, str(e))
+                return {"CANCELLED"}
+            if previous and not ifc_file.get_total_inverses(previous):
+                ifcopenshell.api.structural.remove_structural_boundary_condition(ifc_file, boundary_condition=previous)
+        self.report({"INFO"}, f"{len(connections)} connection(s) {name.lower()}")
+        return {"FINISHED"}
+
+
+class AssignStructuralItemsToCurrentModel(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_structural_items_to_current_model"
+    bl_label = "Assign Structural Items to Current Model"
+    bl_description = "Assign the selected structural items to the current structural analysis model, or unassign them"
+    bl_options = {"REGISTER", "UNDO"}
+    unassign: bpy.props.BoolProperty(name="Unassign", default=False)
+
+    if TYPE_CHECKING:
+        unassign: bool
+
+    def _execute(self, context):
+        if not (model := tool.Structural.get_current_structural_analysis_model()):
+            self.report({"ERROR"}, "Choose a current structural analysis model first.")
+            return {"CANCELLED"}
+        elements = [e for o in tool.Blender.get_selected_objects() if (e := tool.Ifc.get_entity(o))]
+        items = tool.Structural.get_structural_items(elements)
+        items = [i for i in items if tool.Structural.is_in_structural_analysis_model(i, model) == self.unassign]
+        if not items:
+            self.report({"INFO"}, "Nothing to change.")
+            return {"CANCELLED"}
+        if self.unassign:
+            core.unassign_structural_analysis_model(tool.Ifc, products=items, structural_analysis_model=model)
+        else:
+            core.assign_structural_analysis_model(tool.Ifc, products=items, structural_analysis_model=model)
+        return {"FINISHED"}
+
+
 class EditStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_structural_analysis_model"
     bl_label = "Edit Structural Analysis Model"
@@ -464,28 +595,16 @@ class EnableEditingStructuralItemAxis(bpy.types.Operator):
 
         self.file = tool.Ifc.get()
         item = self.file.by_id(oprops.ifc_definition_id)
-        z_axis = Vector(item.Axis.DirectionRatios).normalized() @ obj.matrix_world if item.Axis else None
-        x_axis = (obj.data.vertices[1].co - obj.data.vertices[0].co).normalized()
-        location = obj.data.vertices[0].co
+        # Axis and the edge are both in the item's own coordinates. Without an Axis, or with one along the edge (as
+        # when a member is stood up), it starts from the default axes.
+        edge = obj.data.vertices[1].co - obj.data.vertices[0].co
+        roll = tool.Structural.get_item_axis_roll(edge, Vector(item.Axis.DirectionRatios)) if item.Axis else None
         empty = bpy.data.objects.new("Item Axis", None)
         empty.empty_display_type = "ARROWS"
-        if z_axis:
-            y_axis = (z_axis.cross(x_axis)).normalized()
-            empty.matrix_world = Matrix(
-                (
-                    (x_axis[0], y_axis[0], z_axis[0], location[0]),
-                    (x_axis[1], y_axis[1], z_axis[1], location[1]),
-                    (x_axis[2], y_axis[2], z_axis[2], location[2]),
-                    (0, 0, 0, 1),
-                )
-            )
-        else:
-            empty.location = location
-            empty.rotation_mode = "QUATERNION"
-            empty.rotation_quaternion = x_axis.to_track_quat("X", "Z")
+        empty.matrix_world = tool.Structural.get_item_axes(obj, roll or 0.0)
 
-        props.axis_angle = degrees(empty.rotation_euler[0])
         props.axis_empty = empty
+        props.axis_angle = roll or 0.0
         context.scene.collection.objects.link(empty)
 
         props.is_editing_axis = True
@@ -516,8 +635,9 @@ class EditStructuralItemAxis(bpy.types.Operator, tool.Ifc.Operator):
         assert obj
         oprops = tool.Blender.get_object_bim_props(obj)
         props = tool.Structural.get_object_structural_props(obj)
-        relative_matrix = props.axis_empty.matrix_world @ obj.matrix_world.inverted()
-        z_axis = relative_matrix.col[2][0:3]
+        # Back into the item's own coordinates, which Axis is in.
+        local = obj.matrix_world.inverted() @ props.axis_empty.matrix_world
+        z_axis = tuple(local.to_3x3().col[2].normalized())
         self.file = tool.Ifc.get()
         ifcopenshell.api.structural.edit_structural_item_axis(
             self.file,
@@ -944,40 +1064,21 @@ class AddStructuralActivity(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "No structural load of the chosen type to apply.")
             return {"CANCELLED"}
         self.file = tool.Ifc.get()
-        for obj in context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            applied_load_class = self.props.applicable_structural_load_types
-
-            allowed_load_classes = {
-                "IfcStructuralPointConnection": [
-                    "IfcStructuralLoadTemperature",
-                    "IfcStructuralLoadSingleForce",
-                    "IfcStructuralLoadSingleDisplacement",
-                ],
-                "IfcStructuralCurveMember": ["IfcStructuralLoadTemperature", "IfcStructuralLoadLinearForce"],
-                "IfcStructuralSurfaceMember": ["IfcStructuralLoadTemperature", "IfcStructuralLoadPlanarForce"],
-            }
-
-            applicable_activity_class = {
-                "IfcStructuralPointConnection": "IfcStructuralPointAction",
-                "IfcStructuralCurveMember": "IfcStructuralLinearAction",
-                "IfcStructuralSurfaceMember": "IfcStructuralPlanarAction",
-            }
-
-            if applied_load_class not in allowed_load_classes[element.is_a()]:
-                continue
-
-            ifc_class = applicable_activity_class[element.is_a()]
-
+        load = self.file.by_id(int(self.props.applicable_structural_loads))
+        group = self.file.by_id(self.load_group)
+        # The selected items that can take the load and don't have it here already, as the button says.
+        targets = tool.Structural.get_load_targets(context.selected_objects, load, group)
+        if not targets:
+            self.report({"WARNING"}, "No selected item can take this load, or they all have it here already.")
+            return {"CANCELLED"}
+        for element in targets:
             activity = ifcopenshell.api.structural.add_structural_activity(
                 self.file,
-                ifc_class=ifc_class,
-                applied_load=self.file.by_id(int(self.props.applicable_structural_loads)),
+                ifc_class=tool.Structural.APPLIED_LOADS[element.is_a()][0],
+                applied_load=load,
                 structural_member=element,
             )
-            ifcopenshell.api.group.assign_group(self.file, products=[activity], group=self.file.by_id(self.load_group))
+            ifcopenshell.api.group.assign_group(self.file, products=[activity], group=group)
         bpy.ops.bim.enable_editing_structural_load_group_activities(load_group=self.load_group)
         return {"FINISHED"}
 
