@@ -258,3 +258,73 @@ class TestGetLoadUnitSymbol(NewFile):
         assert get_load_unit_symbol("IfcStructuralPointConnection") == "kN"
         assert get_load_unit_symbol("IfcStructuralCurveMember") == "kN/m"
         assert get_load_unit_symbol("IfcStructuralSurfaceMember") == "kN/m2"
+
+
+class TestApplyingAChosenLoad(NewFile):
+    def setup_points(self):
+        """D carries a single force in a load case; B and C carry nothing; a curve member M can't take a single force."""
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        case = ifcopenshell.api.structural.add_structural_load_case(ifc, name="Case")
+        load = ifcopenshell.api.structural.add_structural_load(
+            ifc, name="1300 lbf", ifc_class="IfcStructuralLoadSingleForce"
+        )
+        objects = {}
+        for name, ifc_class in (
+            ("B", "IfcStructuralPointConnection"),
+            ("C", "IfcStructuralPointConnection"),
+            ("D", "IfcStructuralPointConnection"),
+            ("M", "IfcStructuralCurveMember"),
+        ):
+            element = ifcopenshell.api.root.create_entity(ifc, ifc_class=ifc_class, name=name)
+            obj = bpy.data.objects.new(name, None)
+            bpy.context.scene.collection.objects.link(obj)
+            tool.Ifc.link(element, obj)
+            objects[name] = obj
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            ifc,
+            applied_load=load,
+            structural_member=tool.Ifc.get_entity(objects["D"]),
+            ifc_class="IfcStructuralPointAction",
+        )
+        ifcopenshell.api.group.assign_group(ifc, products=[activity], group=case)
+        return ifc, case, load, objects
+
+    def select(self, objects, names, active):
+        for obj in bpy.context.scene.objects:
+            obj.select_set(obj.name in names)
+        bpy.context.view_layer.objects.active = objects[active]
+
+    def test_targets_are_items_that_can_take_the_load_and_lack_it(self):
+        ifc, case, load, objects = self.setup_points()
+        targets = tool.Structural.get_load_targets(list(objects.values()), load, case)
+        assert sorted(t.Name for t in targets) == ["B", "C"]  # Not D, which has it; not M, a curve member.
+
+    def test_applying_skips_an_item_that_has_the_load_already(self):
+        ifc, case, load, objects = self.setup_points()
+        props = tool.Structural.get_structural_props()
+        self.select(objects, {"B", "D"}, "D")
+        props.applicable_structural_load_types = "IfcStructuralLoadSingleForce"
+        props.applicable_structural_loads = str(load.id())
+        bpy.ops.bim.add_structural_activity(load_group=case.id())
+        users = [i for i in ifc.get_inverse(load) if i.is_a("IfcStructuralActivity")]
+        assert sorted(u.AssignedToStructuralItem[0].RelatingElement.Name for u in users) == ["B", "D"]
+
+    def test_the_picker_follows_the_active_items_load(self):
+        ifc, case, load, objects = self.setup_points()
+        other = ifcopenshell.api.structural.add_structural_load(
+            ifc, name="Other", ifc_class="IfcStructuralLoadSingleForce"
+        )
+        props = tool.Structural.get_structural_props()
+        props.active_load_case_id = case.id()
+        self.select(objects, {"D"}, "D")
+        props.applicable_structural_load_types = "IfcStructuralLoadSingleForce"
+        props.applicable_structural_loads = str(other.id())
+        tool.Structural.follow_active_item_load()
+        assert props.applicable_structural_loads == str(load.id())
+        # An item with no load here leaves the picker alone.
+        self.select(objects, {"B"}, "B")
+        props.applicable_structural_loads = str(other.id())
+        tool.Structural.follow_active_item_load()
+        assert props.applicable_structural_loads == str(other.id())
