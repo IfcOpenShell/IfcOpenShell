@@ -228,6 +228,24 @@ def get_connection_members(connection: ifcopenshell.entity_instance) -> list[ifc
     return [rel.RelatingStructuralMember for rel in connection.ConnectsStructuralMembers]
 
 
+def get_boundary_condition_class(connection: ifcopenshell.entity_instance) -> str:
+    """The class of boundary condition a structural connection takes
+
+    :param connection: An IfcStructuralConnection
+    :return: IfcBoundaryNodeCondition for a point connection,
+        IfcBoundaryEdgeCondition for a curve connection and
+        IfcBoundaryFaceCondition for a surface connection
+    :raises ValueError: if the connection is none of these
+    """
+    if connection.is_a("IfcStructuralPointConnection"):
+        return "IfcBoundaryNodeCondition"
+    elif connection.is_a("IfcStructuralCurveConnection"):
+        return "IfcBoundaryEdgeCondition"
+    elif connection.is_a("IfcStructuralSurfaceConnection"):
+        return "IfcBoundaryFaceCondition"
+    raise ValueError(f"{connection} is not a point, curve or surface connection")
+
+
 def get_structural_members(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """The structural members that stand for a building element
 

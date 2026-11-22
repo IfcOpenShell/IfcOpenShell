@@ -18,6 +18,7 @@
 # This file was generated with the assistance of an AI coding tool.
 
 import numpy
+import pytest
 
 import ifcopenshell.api.group
 import ifcopenshell.api.root
@@ -293,3 +294,19 @@ class TestGetGlobalAxes(test.bootstrap.IFC4, StructuralModel):
         activity = self.add_action(self.knee)
         activity.ObjectPlacement = self.make_placement((0.0, 0.0, 1.0), (0.0, 1.0, 0.0))
         assert numpy.allclose(subject.get_global_axes(activity)[:, 0], [0, 1, 0])
+
+
+class TestGetBoundaryConditionClass(test.bootstrap.IFC4):
+    def test_each_connection_takes_its_own_class(self):
+        for connection_class, condition_class in (
+            ("IfcStructuralPointConnection", "IfcBoundaryNodeCondition"),
+            ("IfcStructuralCurveConnection", "IfcBoundaryEdgeCondition"),
+            ("IfcStructuralSurfaceConnection", "IfcBoundaryFaceCondition"),
+        ):
+            connection = ifcopenshell.api.root.create_entity(self.file, ifc_class=connection_class)
+            assert subject.get_boundary_condition_class(connection) == condition_class
+
+    def test_a_member_is_refused(self):
+        member = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralCurveMember")
+        with pytest.raises(ValueError):
+            subject.get_boundary_condition_class(member)
