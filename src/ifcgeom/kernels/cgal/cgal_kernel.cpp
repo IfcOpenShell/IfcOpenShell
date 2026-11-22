@@ -38,6 +38,7 @@
 #include <CGAL/Polygon_vertical_decomposition_2.h>
 #include <CGAL/Polygon_triangulation_decomposition_2.h>
 #include <CGAL/Polygon_mesh_processing/locate.h>
+#include <CGAL/boost/graph/copy_face_graph.h>
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 #include <CGAL/Nef_nary_union_3.h>
@@ -758,20 +759,24 @@ bool cgal_kernel::convert_impl(const taxonomy::shell::ptr shell, std::vector<con
 }
 
 bool cgal_kernel::convert_impl(const taxonomy::solid::ptr solid, std::vector<conversion_result>& results) {
-	if (solid->children.size() > 1) {
-        logger().error("UNS", 5, "Multiple shells in solid not supported at the moment");
-		return false;
-	}
-	cgal_polyhedron shape;
 	if (solid->children.empty()) {
 		return false;
 	}
-	// @todo
-	if (!convert(solid->children[0], shape)) {
-		return false;
-	}
-	if (shape.size_of_facets() == 0) {
-		return false;
+	namespace PMP = CGAL::Polygon_mesh_processing;
+	cgal_polyhedron shape;
+	for (size_t i = 0; i < solid->children.size(); ++i) {
+		cgal_polyhedron shell;
+		if (!convert(solid->children[i], shell) || shell.size_of_facets() == 0 ||
+			!shell.is_valid() || !shell.is_closed() || !PMP::triangulate_faces(shell)) {
+			return false;
+		}
+		// The first shell is the exterior; subsequent shells bound cavities.
+		// Orient each shell independently before appending it to the solid.
+		PMP::orient_to_bound_a_volume(shell);
+		if (i > 0) {
+			PMP::reverse_face_orientations(shell);
+		}
+		CGAL::copy_face_graph(shell, shape);
 	}
 	results.emplace_back(conversion_result(
 		solid->instance.id(),
@@ -2217,6 +2222,10 @@ void polyhedron_builder::operator()(CGAL::Polyhedron_3<kernel_>::HalfedgeDS &hds
 		CGAL::Polygon_mesh_processing::orient_polygon_soup(unique_points_as_vector, facet_vertices);
 	}
 	CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh(unique_points_as_vector, facet_vertices, *from_soup);
+
+	if (CGAL::is_closed(*from_soup)) {
+		CGAL::Polygon_mesh_processing::orient_to_bound_a_volume(*from_soup);
+	}
 
 	return;
 	// }
