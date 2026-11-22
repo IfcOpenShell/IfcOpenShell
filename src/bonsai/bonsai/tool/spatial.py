@@ -1333,12 +1333,14 @@ class Spatial(bonsai.core.tool.Spatial):
         poly: Polygon,
         obj: bpy.types.Object,
         polygon_is_si: bool = True,
+        ring: Optional[shapely.LinearRing] = None,
     ) -> list[list[float]]:
         """Convert a world-space shapely polygon to 2D vertices in obj's local space, in IFC file units.
 
         :param poly: The polygon in world space.
         :param obj: The Blender object whose local space is used.
         :param polygon_is_si: True if polygon coords are in SI, False if in IFC file units.
+        :param ring: Ring of the polygon to convert, the exterior ring by default.
         :return: List of [x, y] coordinates (not closed).
         """
         ifc_file = tool.Ifc.get()
@@ -1346,7 +1348,9 @@ class Spatial(bonsai.core.tool.Spatial):
         bpy.context.view_layer.update()
         mat_inv = obj.matrix_world.inverted()
         coords_2d = []
-        for v in shapely.get_exterior_ring(poly).coords[:-1]:
+        if ring is None:
+            ring = shapely.get_exterior_ring(poly)
+        for v in ring.coords[:-1]:
             world_si = Vector((v[0], v[1], 0))
             if not polygon_is_si:
                 world_si = world_si * unit_scale
@@ -1377,7 +1381,13 @@ class Spatial(bonsai.core.tool.Spatial):
         coords_2d = cls.get_2d_vertices_from_polygon(poly, obj, polygon_is_si)
 
         curve = builder.polyline(coords_2d, closed=True)
-        item = builder.extrude(curve, magnitude=depth_ifc)
+        # Keep the holes, e.g. a room enclosed by a corridor must be cut out of the corridor's ceiling.
+        inner_curves = [
+            builder.polyline(cls.get_2d_vertices_from_polygon(poly, obj, polygon_is_si, ring=interior), closed=True)
+            for interior in poly.interiors
+        ]
+        profile_or_curve = builder.profile(curve, inner_curves=inner_curves) if inner_curves else curve
+        item = builder.extrude(profile_or_curve, magnitude=depth_ifc)
 
         context = cls._remove_existing_body_representations(element)
         if context is None:
