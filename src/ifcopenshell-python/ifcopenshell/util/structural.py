@@ -104,16 +104,33 @@ def get_combination_factors(
     one. A load case grouped into the combination twice has the sum of its
     factors.
 
+    IFC2X3 has no IfcRelAssignsToGroupByFactor: there a load case is given
+    its factor by a load group of type LOAD_COMBINATION_GROUP between it and
+    the combination, whose Coefficient is the factor. Such a group stands
+    for what it groups, its Coefficient multiplying their factors.
+
     :param combination: An IfcStructuralLoadGroup of type LOAD_COMBINATION
     :return: The factor of each load case in the combination
     """
-    coefficient = 1.0 if combination.Coefficient is None else combination.Coefficient
     factors = {}
-    for rel in combination.IsGroupedBy:
-        factor = rel.Factor if rel.is_a("IfcRelAssignsToGroupByFactor") else 1.0
-        for group in rel.RelatedObjects:
-            if group.is_a("IfcStructuralLoadGroup"):
-                factors[group] = factors.get(group, 0.0) + factor * coefficient
+    pending = [(combination, 1.0)]
+    seen = set()
+    while pending:
+        group, scale = pending.pop()
+        if group in seen:
+            continue
+        seen.add(group)
+        if group.Coefficient is not None:
+            scale *= group.Coefficient
+        for rel in group.IsGroupedBy:
+            factor = scale * (rel.Factor if rel.is_a("IfcRelAssignsToGroupByFactor") else 1.0)
+            for related in rel.RelatedObjects:
+                if not related.is_a("IfcStructuralLoadGroup"):
+                    continue
+                if related.PredefinedType == "LOAD_COMBINATION_GROUP":
+                    pending.append((related, factor))
+                else:
+                    factors[related] = factors.get(related, 0.0) + factor
     return factors
 
 
