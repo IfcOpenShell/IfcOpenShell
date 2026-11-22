@@ -77,11 +77,6 @@ class StructuralToolUI:
 
         if context.active_object and context.selected_objects:
             cls.draw_selected_object_interface(context)
-        cls.draw_default_interface()
-
-    @classmethod
-    def draw_default_interface(cls):
-        add_layout_hotkey(cls.layout, "Add", "S_A", "Add a structural item of the chosen class at the 3D cursor")
 
     @classmethod
     def draw_selected_object_interface(cls, context):
@@ -123,6 +118,8 @@ class StructuralToolUI:
         row.prop(cls.props, "structural_item_class", text="")
         if tool.Structural.get_structural_item_predefined_types(cls.props.structural_item_class):
             row.prop(cls.props, "structural_item_predefined_type", text="")
+        # Next to the class it adds, as the Add of the Wall and Slab tools follows their type
+        add_layout_hotkey(row, "Add", "S_A", "Add a structural item of the chosen class at the 3D cursor")
 
         row = cls.layout.row(align=True)
         if not StructuralAnalysisModelsData.data["models"]:
