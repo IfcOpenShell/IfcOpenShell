@@ -70,6 +70,7 @@ class TestTemperatureLoads(NewFile):
         tool.Ifc.link(member, obj)
 
         info = ShaderInfo()
+        info.shader.new = lambda pattern: None
         info.temperature_unit = "K"
         info.curve_members = {"1": {"member": member, "activities": [(action, 1.0)]}}
         info.get_temperature_loads()
