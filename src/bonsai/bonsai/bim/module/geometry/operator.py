@@ -2577,7 +2577,18 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             if tool.Geometry.is_geometric_data(obj.data) and (
                 item.is_a("IfcVertex") or item.is_a("IfcEdge") or obj.data.polygons
             ):
-                tool.Geometry.edit_meshlike_item(obj)
+                try:
+                    tool.Geometry.edit_meshlike_item(obj)
+                except ValueError as e:
+                    # A face that is no longer one planar face, for example
+                    error = str(e)
+
+                    def msg(self, context):
+                        self.layout.label(text=error)
+
+                    bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                    self.enable_edit_mode(bpy.context)
+                    return
             else:
                 tool.Geometry.import_item(obj)
         elif item.is_a("IfcSweptAreaSolid"):
