@@ -2539,6 +2539,8 @@ class Geometry(bonsai.core.tool.Geometry):
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
         cls.name_item_object(obj, new_item)
         tool.Ifc.link(new_item, obj.data)
+        if new_item.is_a("IfcEdge") and (element := tool.Ifc.get_entity(rep_obj)):
+            tool.Structural.turn_axis_off_edge(element, verts[0], verts[1])
         cls.reload_representation(rep_obj)
         return new_item
 

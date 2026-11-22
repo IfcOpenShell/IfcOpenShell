@@ -31,6 +31,7 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
 import ifcopenshell.util.structural
 import numpy as np
+from mathutils import Matrix, Vector
 
 import bonsai.bim.helper
 import bonsai.core.tool
@@ -55,6 +56,64 @@ class Structural(bonsai.core.tool.Structural):
     @classmethod
     def get_object_structural_props(cls, obj: bpy.types.Object) -> BIMObjectStructuralProperties:
         return obj.BIMStructuralProperties
+
+    @classmethod
+    def get_default_item_axes(cls, edge: Vector) -> Matrix:
+        """A curve item's local axes before any roll, as columns: x along its edge, z as near up as is square to it.
+
+        :param edge: The edge's direction, in the item's own coordinates.
+        """
+        return edge.normalized().to_track_quat("X", "Z").to_matrix()
+
+    @classmethod
+    def get_item_axis_roll(cls, edge: Vector, axis: Vector) -> Union[float, None]:
+        """The angle in degrees a curve item's local axes are rolled about its edge from their default, for its z
+        axis to be its Axis, or None if its Axis gives no z axis, being along the edge.
+
+        As IFC defines a curve item's local axes, z is Axis less its component along the edge, so an Axis a little
+        off square is projected rather than refused. Both are in the item's own coordinates.
+        """
+        x = edge.normalized()
+        z = axis.normalized()
+        z = z - z.dot(x) * x
+        if z.length < 1e-6:
+            return None
+        default = cls.get_default_item_axes(edge)
+        # Rolled by a about x, z becomes cos(a) z0 - sin(a) y0.
+        return math.degrees(math.atan2(-z.dot(default.col[1]), z.dot(default.col[2])))
+
+    @classmethod
+    def get_item_axes(cls, obj: bpy.types.Object, roll: float) -> Matrix:
+        """The world matrix of a curve item's local axes at its edge's start, rolled about the edge by degrees"""
+        start, end = obj.data.vertices[0].co, obj.data.vertices[1].co
+        axes = cls.get_default_item_axes(end - start) @ Matrix.Rotation(math.radians(roll), 3, "X")
+        return obj.matrix_world @ Matrix.Translation(start) @ axes.to_4x4()
+
+    @classmethod
+    def turn_axis_off_edge(
+        cls, item: ifcopenshell.entity_instance, start: tuple[float, ...], end: tuple[float, ...]
+    ) -> None:
+        """Give a curve item its default Axis when its edge has come to lie along its Axis.
+
+        An Axis along the edge gives no local z, as when the end of a new, horizontal edge is moved straight up to
+        make a column. It is then replaced by the default local z, as Edit Axis shows it at 0 degrees. An Axis that
+        gives a local z is kept, as is everything in IFC2X3, which has no Axis.
+
+        :param item: An IfcStructuralCurveMember or IfcStructuralCurveConnection; other items are left alone.
+        :param start: The edge's start, in the item's own coordinates.
+        :param end: The edge's end, in the item's own coordinates.
+        """
+        if not (item.is_a("IfcStructuralCurveMember") or item.is_a("IfcStructuralCurveConnection")):
+            return
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return
+        edge = Vector(end) - Vector(start)
+        if edge.length < 1e-9:
+            return
+        if item.Axis and cls.get_item_axis_roll(edge, Vector(item.Axis.DirectionRatios)) is not None:
+            return
+        axis = cls.get_default_item_axes(edge).col[2]
+        ifcopenshell.api.structural.edit_structural_item_axis(tool.Ifc.get(), structural_item=item, axis=tuple(axis))
 
     @classmethod
     def disable_editing_structural_analysis_model(cls) -> None:

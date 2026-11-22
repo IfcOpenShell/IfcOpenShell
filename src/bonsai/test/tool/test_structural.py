@@ -84,6 +84,41 @@ class TestGetSimpleSlope(NewFile):
         assert math.isclose(rise / run, 7.1 / 3)
 
 
+class TestTurnAxisOffEdge(NewFile):
+    def make_item(self, ifc_class="IfcStructuralCurveMember", axis=(0.0, 0.0, 1.0), schema="IFC4"):
+        ifc = ifcopenshell.file(schema=schema)
+        tool.Ifc.set(ifc)
+        item = ifcopenshell.api.root.create_entity(ifc, ifc_class=ifc_class)
+        if axis:
+            ifcopenshell.api.structural.edit_structural_item_axis(ifc, structural_item=item, axis=axis)
+        return item
+
+    def test_an_edge_moved_along_its_axis_gets_the_default_axis(self):
+        item = self.make_item()
+        subject.turn_axis_off_edge(item, (0, 0, 0), (0, 0, 3))
+        assert item.Axis.DirectionRatios == pytest.approx((-1.0, 0.0, 0.0), abs=1e-6)
+
+    def test_a_curve_connection_too(self):
+        item = self.make_item("IfcStructuralCurveConnection")
+        subject.turn_axis_off_edge(item, (0, 0, 0), (0, 0, 3))
+        assert item.Axis.DirectionRatios == pytest.approx((-1.0, 0.0, 0.0), abs=1e-6)
+
+    def test_an_axis_off_the_edge_is_kept(self):
+        item = self.make_item(axis=(0.0, 1.0, 0.0))
+        subject.turn_axis_off_edge(item, (0, 0, 0), (0, 0, 3))
+        assert item.Axis.DirectionRatios == (0.0, 1.0, 0.0)
+
+    def test_a_missing_axis_is_given_the_default(self):
+        item = self.make_item(axis=None)
+        subject.turn_axis_off_edge(item, (0, 0, 0), (3, 0, 4))
+        assert item.Axis.DirectionRatios == pytest.approx((-0.8, 0.0, 0.6), abs=1e-6)
+
+    def test_other_items_are_left_alone(self):
+        item = self.make_item("IfcStructuralPointConnection", axis=None)
+        subject.turn_axis_off_edge(item, (0, 0, 0), (0, 0, 3))
+        assert not tool.Ifc.get().by_type("IfcDirection")
+
+
 class TestGetStructuralItemPredefinedTypes(NewFile):
     def test_a_curve_member_without_userdefined(self):
         ifc = ifcopenshell.file()
