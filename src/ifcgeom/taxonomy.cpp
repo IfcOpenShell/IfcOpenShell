@@ -337,9 +337,13 @@ std::vector<point3> trimmed_curve::to_polygon(const ifcopenshell::geom::settings
         const Eigen::Vector3d a = std::get<point3::ptr>(start)->ccomponents();
         const Eigen::Vector3d b = std::get<point3::ptr>(end)->ccomponents();
         const int count = std::max(1, polygon_segments);
-        for (int i = 0; i <= count; ++i) {
+        // Preserve shared endpoints exactly; interpolation can round b to a
+        // different coordinate and disconnect adjacent polygonal faces.
+        points.emplace_back(a);
+        for (int i = 1; i < count; ++i) {
             points.emplace_back(a + (b - a) * i / count);
         }
+        points.emplace_back(b);
     } else {
         auto underlying = basis;
         while (auto nested = std::dynamic_pointer_cast<trimmed_curve>(underlying)) {
