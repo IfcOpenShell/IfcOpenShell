@@ -428,26 +428,20 @@ class AddStructuralSupport(bpy.types.Operator, tool.Ifc.Operator):
         if not connections:
             self.report({"ERROR"}, "Select structural connections.")
             return {"CANCELLED"}
-        hold_rotations = self.support == "FIXED"
-        try:
-            # Every attribute set is worked out before anything is changed.
-            attributes = [
-                tool.Structural.get_support_attributes(tool.Structural.get_boundary_condition_class(c), hold_rotations)
-                for c in connections
-            ]
-        except ValueError as e:
-            self.report({"ERROR"}, str(e))
-            return {"CANCELLED"}
         ifc_file = tool.Ifc.get()
-        name = "Fixed" if hold_rotations else "Pinned"
-        for connection, condition_attributes in zip(connections, attributes):
-            ifcopenshell.api.structural.remove_structural_boundary_condition(ifc_file, connection=connection)
-            condition = ifcopenshell.api.structural.add_structural_boundary_condition(
-                ifc_file, name=name, connection=connection
-            )
-            ifcopenshell.api.structural.edit_structural_boundary_condition(
-                ifc_file, condition=condition, attributes=condition_attributes
-            )
+        name = self.support.capitalize()
+        for connection in connections:
+            previous = connection.AppliedCondition
+            try:
+                # A schema that cannot hold a support (IFC2X3) refuses the first one, before anything is changed.
+                ifcopenshell.api.structural.add_structural_boundary_condition(
+                    ifc_file, name=name, connection=connection, support=self.support
+                )
+            except ValueError as e:
+                self.report({"ERROR"}, str(e))
+                return {"CANCELLED"}
+            if previous and not ifc_file.get_total_inverses(previous):
+                ifcopenshell.api.structural.remove_structural_boundary_condition(ifc_file, boundary_condition=previous)
         self.report({"INFO"}, f"{len(connections)} connection(s) {name.lower()}")
         return {"FINISHED"}
 

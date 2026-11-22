@@ -285,42 +285,6 @@ class Structural(bonsai.core.tool.Structural):
         return pairs
 
     @classmethod
-    def get_boundary_condition_class(cls, connection: ifcopenshell.entity_instance) -> str:
-        """The class of boundary condition a structural connection takes."""
-        if connection.is_a("IfcStructuralPointConnection"):
-            return "IfcBoundaryNodeCondition"
-        elif connection.is_a("IfcStructuralCurveConnection"):
-            return "IfcBoundaryEdgeCondition"
-        elif connection.is_a("IfcStructuralSurfaceConnection"):
-            return "IfcBoundaryFaceCondition"
-        raise ValueError(f"{connection} is not a point, curve or surface connection")
-
-    @classmethod
-    def get_support_attributes(cls, ifc_class: str, hold_rotations: bool) -> dict[str, AttributeDict]:
-        """The attributes of a boundary condition that holds every displacement, and every rotation or none.
-
-        :raises ValueError: if the schema has no boolean stiffness to say that a displacement is held.
-        """
-        declaration = tool.Ifc.schema().declaration_by_name(ifc_class).as_entity()
-        assert declaration
-        attributes: dict[str, AttributeDict] = {}
-        for attribute in declaration.all_attributes():
-            name = attribute.name()
-            # IFC2X3 calls the translational stiffnesses LinearStiffness.
-            if name.startswith(("Translational", "Linear")):
-                value = True
-            elif name.startswith("Rotational"):
-                value = hold_rotations
-            else:
-                continue
-            named_type = attribute.type_of_attribute().as_named_type()
-            select_type = named_type.declared_type().as_select_type() if named_type else None
-            if not select_type or "IfcBoolean" not in [s.name() for s in select_type.select_list()]:
-                raise ValueError(f"{ifc_class} cannot say that a displacement is held in {tool.Ifc.get().schema}.")
-            attributes[name] = {"value": value, "type": "IfcBoolean"}
-        return attributes
-
-    @classmethod
     def get_structural_items(cls, elements: list[ifcopenshell.entity_instance]) -> list[ifcopenshell.entity_instance]:
         """The structural items among the elements."""
         return [e for e in elements if e.is_a("IfcStructuralItem")]
