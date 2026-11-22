@@ -1272,7 +1272,24 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 				{
 					PERF("boolean operation: manifoldness check", settings.log());
 
-					success = !is_manifold(a) || is_manifold(r);
+					// Manifold operands must yield a closed result. A tool edge lying exactly on a
+					// face of the first operand leaves a solid that touches itself along that edge
+					// (#616, #619): OpenCASCADE reports one edge with more than two faces, closed
+					// but not manifold. For a cut such a result is accepted when volume was removed,
+					// which keeps out closed results that merely wrap the untouched operand in
+					// stray faces.
+					if (!is_manifold(a) || is_manifold(r)) {
+						success = true;
+					} else if (op == BOPAlgo_CUT && is_closed(r)) {
+						const double va = shape_volume(a);
+						const double vr = shape_volume(r);
+						success = vr > 0. && vr < va;
+						if (success) {
+							settings.log().warning("GEO", 415, "Boolean operation yields a pinched non-manifold result, accepting it");
+						}
+					} else {
+						success = false;
+					}
 				}
 
 				if (!success) {
