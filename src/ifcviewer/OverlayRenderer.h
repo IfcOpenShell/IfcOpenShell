@@ -185,7 +185,7 @@ private:
     LabelTexture* getOrCreateLabelTexture(const QString& cache_key,
                                           const QString& text,
                                           int font_pt,
-                                          int dpr);
+                                          float dpr);
     void releaseLabelTextures();
 
     WGPUInstance        instance_       = nullptr;

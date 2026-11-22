@@ -31,6 +31,7 @@
 #include <BRepAlgoAPI_Common.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepBndLib.hxx>
+#include <BRepClass3d_SolidClassifier.hxx>
 
 #include <vector>
 #include <thread>
@@ -1494,7 +1495,63 @@ TopoDS_Shape ifcopenshell::geom::util::ensure_fit_for_subtraction(const TopoDS_S
 		return shape;
 	}
 
-	TopoDS_Shape solid_or_compound_of_solids;
+    // An IFC advanced/faceted BRep with voids results into a compound of compounds, each representing a shell.
+    bool has_nested_compounds = true;
+    for (TopoDS_Iterator it(shape); it.More(); it.Next()) {
+        has_nested_compounds &= it.Value().ShapeType() == TopAbs_COMPOUND;
+    }
+    if (has_nested_compounds) {
+        std::vector<TopoDS_Shape> children;
+        for (TopoDS_Iterator it(shape); it.More(); it.Next()) {
+            if (!is_compound_of_faces(it.Value())) {
+                return shape;
+            }
+            auto child = ensure_fit_for_subtraction(it.Value(), tol);
+            if (!TopExp_Explorer(child, TopAbs_SHELL).More()) {
+                return shape;
+            }
+            children.push_back(child);
+        }
+        // The taxonomy maps the external shell first. Define this macro to infer it
+        // instead from the child whose bounding box extends furthest along +X.
+        std::size_t exterior = 0;
+#ifdef IFCOPENSHELL_BREP_VOID_EXTERIOR_BY_MAX_X
+        double maximum_x = -std::numeric_limits<double>::infinity();
+        for (std::size_t i = 0; i < children.size(); ++i) {
+            Bnd_Box box;
+            BRepBndLib::Add(children[i], box);
+            if (box.IsVoid() || box.IsOpenXmax()) {
+                return shape;
+            }
+            const double x = box.CornerMax().X();
+            if (x > maximum_x) {
+                maximum_x = x;
+                exterior = i;
+            }
+        }
+#endif
+        BRep_Builder builder;
+        TopoDS_Solid solid;
+        builder.MakeSolid(solid);
+        for (std::size_t i = 0; i < children.size(); ++i) {
+            auto& child = children[i];
+            BRepClass3d_SolidClassifier classifier(child);
+            classifier.PerformInfinitePoint(tol);
+            const auto expected = i == exterior ? TopAbs_OUT : TopAbs_IN;
+            if (classifier.State() != TopAbs_OUT && classifier.State() != TopAbs_IN) {
+                return shape;
+            }
+            if (classifier.State() != expected) {
+                child.Reverse();
+            }
+            for (TopExp_Explorer shells(child, TopAbs_SHELL); shells.More(); shells.Next()) {
+                builder.Add(solid, shells.Current());
+            }
+        }
+        return BRepCheck_Analyzer(solid).IsValid() ? solid : shape;
+    }
+
+    TopoDS_Shape solid_or_compound_of_solids;
 	if (!create_solid_from_compound(shape, solid_or_compound_of_solids, tol)) {
 		return shape;
 	}
