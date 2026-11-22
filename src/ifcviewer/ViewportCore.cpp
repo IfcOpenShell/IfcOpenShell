@@ -1082,6 +1082,7 @@ fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
     let draw_idx = find_draw(vid);
     return pullVertex(visible_draws[draw_idx], vid - prefix_sums[draw_idx]);
 }
+)" R"(
 
 // Whether a draw's instance can have a section cap, and which way its faces
 // wind. 0 when its bounding box crosses no section plane: nothing is cut, and
