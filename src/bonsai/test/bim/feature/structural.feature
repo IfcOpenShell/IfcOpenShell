@@ -43,6 +43,42 @@ Scenario: Add element - a structural surface member
     And I toggle edit mode
     Then the object "Item/IfcFaceSurface/134" exists
 
+Scenario: Update representation - a structural surface member stays a face with its local axes
+    Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Name" property to "Foo"
+    And I set the "Definition" property to "IfcStructuralItem"
+    And I set the "Class" property to "IfcStructuralSurfaceMember"
+    And I set the "Representation" property to "Face"
+    And I click "OK"
+    And the variable "plane" is "tool.Ifc.get_entity(bpy.data.objects['IfcStructuralSurfaceMember/Foo']).Representation.Representations[0].Items[0].FaceSurface.id()"
+    And I evaluate expression "tool.Ifc.get().by_id({plane}).Position.RefDirection = tool.Ifc.get().createIfcDirection((0., 1., 0.))"
+    And I evaluate expression "[v for v in bpy.data.objects['IfcStructuralSurfaceMember/Foo'].data.vertices if (v.co - Vector((1, 1, 0))).length < 1e-6][0].co = (2, 1, 0)"
+    When I press "bim.update_representation(obj='IfcStructuralSurfaceMember/Foo')"
+    Then the object "IfcStructuralSurfaceMember/Foo" data is a "Face" representation of "Model/Reference/GRAPH_VIEW"
+    And the variable "face" is "tool.Ifc.get_entity(bpy.data.objects['IfcStructuralSurfaceMember/Foo']).Representation.Representations[0].Items[0].id()"
+    And I evaluate expression "assert tool.Ifc.get().by_id({face}).is_a('IfcFaceSurface')"
+    And I evaluate expression "assert sorted(tuple(round(c, 3) for c in e.EdgeElement.EdgeStart.VertexGeometry.Coordinates) for e in tool.Ifc.get().by_id({face}).Bounds[0].Bound.EdgeList) == [(0, 0, 0), (0, 1000, 0), (1000, 0, 0), (2000, 1000, 0)]"
+    And I evaluate expression "assert np.allclose(tool.Ifc.get().by_id({face}).FaceSurface.Position.Axis.DirectionRatios, (0, 0, 1))"
+    And I evaluate expression "assert np.allclose(tool.Ifc.get().by_id({face}).FaceSurface.Position.RefDirection.DirectionRatios, (0, 1, 0))"
+
+Scenario: Edit item - a structural surface member's face is the whole of its mesh
+    Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Name" property to "Foo"
+    And I set the "Definition" property to "IfcStructuralItem"
+    And I set the "Class" property to "IfcStructuralSurfaceMember"
+    And I set the "Representation" property to "Face"
+    And I click "OK"
+    And I make the collection "IfcStructuralItem" visible
+    And I select the object "IfcStructuralSurfaceMember/Foo"
+    And I toggle edit mode
+    And I evaluate expression "[v for v in bpy.data.objects['Item/IfcFaceSurface/134'].data.vertices if (v.co - Vector((1, 1, 0))).length < 1e-6][0].co = (2, 1, 0)"
+    When I evaluate expression "tool.Geometry.edit_meshlike_item(bpy.data.objects['Item/IfcFaceSurface/134'])"
+    Then the variable "face" is "tool.Ifc.get_entity(bpy.data.objects['IfcStructuralSurfaceMember/Foo']).Representation.Representations[0].Items[0].id()"
+    And I evaluate expression "assert tool.Ifc.get().by_id({face}).is_a('IfcFaceSurface')"
+    And I evaluate expression "assert sorted(tuple(round(c, 3) for c in e.EdgeElement.EdgeStart.VertexGeometry.Coordinates) for e in tool.Ifc.get().by_id({face}).Bounds[0].Bound.EdgeList) == [(0, 0, 0), (0, 1000, 0), (1000, 0, 0), (2000, 1000, 0)]"
+
 Scenario: Load structural analysis models
     Given an empty IFC project
     When I press "bim.load_structural_analysis_models"
