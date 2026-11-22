@@ -104,16 +104,33 @@ def get_combination_factors(
     one. A load case grouped into the combination twice has the sum of its
     factors.
 
+    IFC2X3 has no IfcRelAssignsToGroupByFactor: there a load case is given
+    its factor by a load group of type LOAD_COMBINATION_GROUP between it and
+    the combination, whose Coefficient is the factor. Such a group stands
+    for what it groups, its Coefficient multiplying their factors.
+
     :param combination: An IfcStructuralLoadGroup of type LOAD_COMBINATION
     :return: The factor of each load case in the combination
     """
-    coefficient = 1.0 if combination.Coefficient is None else combination.Coefficient
     factors = {}
-    for rel in combination.IsGroupedBy:
-        factor = rel.Factor if rel.is_a("IfcRelAssignsToGroupByFactor") else 1.0
-        for group in rel.RelatedObjects:
-            if group.is_a("IfcStructuralLoadGroup"):
-                factors[group] = factors.get(group, 0.0) + factor * coefficient
+    pending = [(combination, 1.0)]
+    seen = set()
+    while pending:
+        group, scale = pending.pop()
+        if group in seen:
+            continue
+        seen.add(group)
+        if group.Coefficient is not None:
+            scale *= group.Coefficient
+        for rel in group.IsGroupedBy:
+            factor = scale * (rel.Factor if rel.is_a("IfcRelAssignsToGroupByFactor") else 1.0)
+            for related in rel.RelatedObjects:
+                if not related.is_a("IfcStructuralLoadGroup"):
+                    continue
+                if related.PredefinedType == "LOAD_COMBINATION_GROUP":
+                    pending.append((related, factor))
+                else:
+                    factors[related] = factors.get(related, 0.0) + factor
     return factors
 
 
@@ -226,6 +243,24 @@ def get_connection_members(connection: ifcopenshell.entity_instance) -> list[ifc
     :return: Its IfcStructuralMembers
     """
     return [rel.RelatingStructuralMember for rel in connection.ConnectsStructuralMembers]
+
+
+def get_boundary_condition_class(connection: ifcopenshell.entity_instance) -> str:
+    """The class of boundary condition a structural connection takes
+
+    :param connection: An IfcStructuralConnection
+    :return: IfcBoundaryNodeCondition for a point connection,
+        IfcBoundaryEdgeCondition for a curve connection and
+        IfcBoundaryFaceCondition for a surface connection
+    :raises ValueError: if the connection is none of these
+    """
+    if connection.is_a("IfcStructuralPointConnection"):
+        return "IfcBoundaryNodeCondition"
+    elif connection.is_a("IfcStructuralCurveConnection"):
+        return "IfcBoundaryEdgeCondition"
+    elif connection.is_a("IfcStructuralSurfaceConnection"):
+        return "IfcBoundaryFaceCondition"
+    raise ValueError(f"{connection} is not a point, curve or surface connection")
 
 
 def get_structural_members(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:

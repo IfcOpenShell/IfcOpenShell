@@ -15,6 +15,9 @@ jobs:
             runner: ubuntu-22.04
             container:
               image: rockylinux:9
+              # See the PATH note on the linuxarm64 container below.
+              env:
+                PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
             ccache_key_suffix: rockylinux9
           - arch_suffix: linuxarm64
             runner: ubuntu-22.04-arm

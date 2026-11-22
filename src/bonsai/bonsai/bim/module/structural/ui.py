@@ -22,7 +22,7 @@ import itertools
 from typing import TYPE_CHECKING, Any, Union
 
 import bpy
-from bpy.types import Panel, UIList
+from bpy.types import Menu, Panel, UIList
 
 import bonsai.bim.helper
 import bonsai.tool as tool
@@ -424,6 +424,26 @@ class BIM_PT_structural_connection(Panel):
         else:
             row = self.layout.row()
             row.label(text=StructuralConnectionData.data["active_object_class"] or "Structural Connection")
+
+
+class BIM_MT_structural_analysis_models(Menu):
+    bl_idname = "BIM_MT_structural_analysis_models"
+    bl_label = "Current Structural Analysis Model"
+
+    def draw(self, context):
+        if not StructuralAnalysisModelsData.is_loaded:
+            StructuralAnalysisModelsData.load()
+        current = StructuralAnalysisModelsData.data["current_model"]
+        for model in StructuralAnalysisModelsData.data["models"]:
+            is_current = bool(current) and current["id"] == model["id"]
+            op = self.layout.operator(
+                "bim.set_current_structural_analysis_model",
+                text=model["name"],
+                icon="RADIOBUT_ON" if is_current else "RADIOBUT_OFF",
+            )
+            op.structural_analysis_model = model["id"]
+        self.layout.separator()
+        self.layout.operator("bim.add_structural_analysis_model", text="Add Structural Analysis Model", icon="ADD")
 
 
 class BIM_PT_structural_analysis_models(Panel):
