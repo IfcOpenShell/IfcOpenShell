@@ -25,6 +25,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.structural
 import ifcopenshell.util.unit
 import ifcopenshell.util.unit as ifcunit
 import numpy as np
@@ -447,7 +448,10 @@ class ShaderInfo:
     def get_activity_transform_matrix(
         self, activity: ifcopenshell.entity_instance, element_rotation_matrix: np.ndarray
     ) -> np.ndarray:
-        "provides the transformation matrix to convert between reference frames"
+        """The matrix turning an activity's load values into the reference frame shown, in Blender's axes.
+
+        Global values are given in the axes of the activity's analysis model, which need not be the project's: RFEM
+        points Z down. They are turned into the project's axes first, for point, line and area loads alike."""
         global_or_local = activity.GlobalOrLocal
         props = tool.Structural.get_structural_props()
         reference_frame = props.reference_frame
@@ -456,6 +460,8 @@ class ShaderInfo:
             transform_matrix = np.linalg.inv(element_rotation_matrix)
         elif reference_frame == "GLOBAL_COORDS" and global_or_local != reference_frame:
             transform_matrix = element_rotation_matrix
+        if global_or_local != "LOCAL_COORDS":
+            transform_matrix = transform_matrix @ ifcopenshell.util.structural.get_global_axes(activity)
         return transform_matrix
 
     def get_point_loads(self) -> None:
@@ -801,8 +807,6 @@ class ShaderInfo:
             load = activity.AppliedLoad
             preview = self.preview.get(load.id()) if load else None
             values = {attr: preview.get(attr) if preview is not None else getattr(load, attr, 0) for attr in attr_list}
-            if load and activity.GlobalOrLocal != "LOCAL_COORDS":
-                values = tool.Structural.to_blender_axes(load, values)  # Given in its model's axes.
             temp = np.zeros(6)
             for i, attr in enumerate(attr_list):
                 temp[i] += (values[attr] or 0) * factor
@@ -1233,6 +1237,7 @@ class ShaderInfo:
                     for j, attr in enumerate(attr_list):
                         value = 0 if getattr(val, attr, 0) is None else getattr(val, attr, 0)
                         result_list[j] += value * factor
+                    result_list = (transform_6by6 @ np.array(result_list)).tolist()
                     config_list.append({"pos": locations[i][0] * unit_scale, "values": result_list})
                 point_load_configurations.append(config_list)
 
