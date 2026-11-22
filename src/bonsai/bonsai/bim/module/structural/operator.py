@@ -645,6 +645,9 @@ class EditStructuralItemAxis(bpy.types.Operator, tool.Ifc.Operator):
             axis=z_axis,
         )
         bpy.ops.bim.disable_editing_structural_item_axis()
+        if LoadsDecorator.is_installed:
+            LoadsDecorator.update()  # Loads in the item's local axes turn with its Axis.
+            tool.Blender.update_all_viewports(context)
         return {"FINISHED"}
 
 

@@ -18,12 +18,16 @@
 #
 # This file was generated with the assistance of an AI coding tool.
 
+import math
+
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
 import ifcopenshell.guid
 import numpy as np
+from mathutils import Matrix
 
 import bonsai.tool as tool
 from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
@@ -123,3 +127,68 @@ class TestLoadsInATurnedModel(NewFile):
         )
         tool.Structural.get_structural_props().reference_frame = "LOCAL_COORDS"
         assert np.allclose(ShaderInfo().get_planar_loads_values([(activity, 1.0)], np.eye(3)), (0.0, 0.0, 5.0))
+
+
+class TestLocalAxesTurnWithTheItem(NewFile):
+    """An item's topology, Axis and face plane are in its own coordinates: its local axes turn with its object"""
+
+    def make_item(self, ifc_class, item=None, rotation=None):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        context = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class=ifc_class)
+        if item:
+            element.Representation = ifc.createIfcProductDefinitionShape(
+                Representations=[ifc.createIfcTopologyRepresentation(context, "Reference", "Edge", [item(ifc)])]
+            )
+        obj = bpy.data.objects.new("Item", None)
+        bpy.context.scene.collection.objects.link(obj)
+        if rotation:
+            obj.matrix_world = Matrix.Rotation(math.radians(rotation[0]), 4, rotation[1])
+        tool.Ifc.link(element, obj)
+        return ifc, element
+
+    def edge(self, ifc):
+        start, end = (
+            ifc.createIfcVertexPoint(ifc.createIfcCartesianPoint(p)) for p in ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0))
+        )
+        return ifc.createIfcEdge(start, end)
+
+    def face(self, ifc):
+        plane = ifc.createIfcPlane(ifc.createIfcAxis2Placement3D(ifc.createIfcCartesianPoint((0.0, 0.0, 0.0))))
+        return ifc.createIfcFaceSurface(Bounds=[], FaceSurface=plane, SameSense=True)
+
+    def test_a_curve_member(self):
+        ifc, member = self.make_item("IfcStructuralCurveMember", self.edge, (90, "Z"))
+        member.Axis = ifc.createIfcDirection((0.0, 0.0, 1.0))
+        rotation = ShaderInfo().get_curve_member_rotation(member)
+        assert np.allclose(rotation, ((0, -1, 0), (1, 0, 0), (0, 0, 1)), atol=1e-5)
+
+    def test_a_surface_member(self):
+        ifc, surface = self.make_item("IfcStructuralSurfaceMember", self.face, (90, "X"))
+        rotation = ShaderInfo().get_surface_member_rotation(surface)
+        assert np.allclose(rotation[:, 2], (0, -1, 0), atol=1e-5)
+
+    def test_a_point_connection(self):
+        ifc, point = self.make_item("IfcStructuralPointConnection", rotation=(90, "Z"))
+        rotation = ShaderInfo().get_point_connection_rotation(point)
+        assert np.allclose(rotation[:, 0], (0, 1, 0), atol=1e-5)
+
+    def test_a_local_line_load_is_drawn_in_the_turned_axes(self):
+        ifc, member = self.make_item("IfcStructuralCurveMember", self.edge, (90, "Z"))
+        member.Axis = ifc.createIfcDirection((0.0, 0.0, 1.0))
+        load = ifcopenshell.api.structural.add_structural_load(ifc, ifc_class="IfcStructuralLoadLinearForce")
+        ifcopenshell.api.structural.edit_structural_load(ifc, structural_load=load, attributes={"LinearForceX": 5.0})
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            ifc,
+            ifc_class="IfcStructuralLinearAction",
+            applied_load=load,
+            structural_member=member,
+            global_or_local="LOCAL_COORDS",
+        )
+        tool.Structural.get_structural_props().reference_frame = "GLOBAL_COORDS"
+        info = ShaderInfo()
+        rotation = info.get_curve_member_rotation(member)
+        values = info.parse_linear_loads_to_dict([(activity, 1.0)], rotation)["constant force"]
+        assert np.allclose(values[:3], (0.0, 5.0, 0.0), atol=1e-5)

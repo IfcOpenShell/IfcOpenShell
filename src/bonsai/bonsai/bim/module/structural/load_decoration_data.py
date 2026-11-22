@@ -375,13 +375,22 @@ class ShaderInfo:
             values += transform @ temp
         return values
 
+    def get_object_rotation(self, element: ifcopenshell.entity_instance) -> np.ndarray:
+        """The rotation of a structural item's object in Blender's axes.
+
+        An item's topology, Axis, face plane and ConditionCoordinateSystem are in its own coordinates, which its
+        placement turns: its local axes turn with it."""
+        obj = tool.Ifc.get_object(element)
+        if not isinstance(obj, bpy.types.Object):
+            return np.eye(3)
+        return np.array(obj.matrix_world.to_quaternion().to_matrix())
+
     def get_surface_member_rotation(self, surface_member: ifcopenshell.entity_instance) -> np.ndarray:
         """returns the rotation matrix of a structural surface member"""
         representation = ifcopenshell.util.representation.get_representation(surface_member, "Model")
         repr_item = representation.Items[0]
         placement = ifcopenshell.util.placement.get_placement(repr_item.FaceSurface.Position)
-        rotation = placement[0:3, 0:3]
-        return rotation
+        return self.get_object_rotation(surface_member) @ placement[0:3, 0:3]
 
     def get_point_connection_rotation(self, point_connection: ifcopenshell.entity_instance) -> np.ndarray:
         """returns the rotation matrix of a structural point connection"""
@@ -389,8 +398,7 @@ class ShaderInfo:
             placement = ifcopenshell.util.placement.get_placement(point_connection.ConditionCoordinateSystem)
         else:
             placement = np.eye(4)
-        rotation = placement[0:3, 0:3]
-        return rotation
+        return self.get_object_rotation(point_connection) @ placement[0:3, 0:3]
 
     def get_curve_member_rotation(self, curve_member: ifcopenshell.entity_instance) -> np.ndarray | None:
         """returns the rotation matrix of a structural curve member"""
@@ -435,7 +443,7 @@ class ShaderInfo:
                 y_unit = np.cross(np.asarray(z, dtype=float), x_unit)
                 y_unit /= np.linalg.norm(y_unit)
                 z_unit = np.cross(x_unit, y_unit)
-                return np.column_stack((x_unit, y_unit, z_unit))
+                return self.get_object_rotation(curve_member) @ np.column_stack((x_unit, y_unit, z_unit))
         member_name = (
             getattr(curve_member, "Name", None) or getattr(curve_member, "GlobalId", None) or f"#{curve_member.id()}"
         )
