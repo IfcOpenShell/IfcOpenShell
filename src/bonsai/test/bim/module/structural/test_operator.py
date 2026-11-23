@@ -10,6 +10,7 @@ import ifcopenshell.api.group
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
 import ifcopenshell.api.unit
+import ifcopenshell.util.structural
 import pytest
 from mathutils import Vector
 
@@ -258,6 +259,79 @@ class TestGetLoadUnitSymbol(NewFile):
         assert get_load_unit_symbol("IfcStructuralPointConnection") == "kN"
         assert get_load_unit_symbol("IfcStructuralCurveMember") == "kN/m"
         assert get_load_unit_symbol("IfcStructuralSurfaceMember") == "kN/m2"
+
+
+class TestApplyStructuralLoadAxes(NewFile):
+    def make_item(self, ifc_class, z_down=False):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        if z_down:
+            # As RFEM places its models: Z down.
+            model.SharedPlacement = ifc.createIfcLocalPlacement(
+                None,
+                ifc.createIfcAxis2Placement3D(
+                    ifc.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+                    ifc.createIfcDirection((0.0, 0.0, -1.0)),
+                    ifc.createIfcDirection((1.0, 0.0, 0.0)),
+                ),
+            )
+        item = ifcopenshell.api.root.create_entity(ifc, ifc_class=ifc_class)
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc, products=[item], structural_analysis_model=model
+        )
+        obj = bpy.data.objects.new("Item", None)
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(item, obj)
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        return ifc, item
+
+    def get_activity(self, item):
+        return ifcopenshell.util.structural.get_item_activities(item)[0]
+
+    def test_a_force_normal_to_a_surface(self):
+        ifc, surface = self.make_item("IfcStructuralSurfaceMember")
+        bpy.ops.bim.apply_structural_load(load_group="0", axes="LOCAL_COORDS", z=-2.0)
+        activity = self.get_activity(surface)
+        assert activity.GlobalOrLocal == "LOCAL_COORDS"
+        assert activity.AppliedLoad.PlanarForceZ == -2.0
+        assert activity.AppliedLoad.Name.endswith(" local")
+
+    def test_global_by_default(self):
+        ifc, surface = self.make_item("IfcStructuralSurfaceMember")
+        bpy.ops.bim.apply_structural_load(load_group="0", z=-2.0)
+        assert self.get_activity(surface).GlobalOrLocal == "GLOBAL_COORDS"
+
+    def test_local_values_are_not_turned_into_the_model_axes(self):
+        ifc, surface = self.make_item("IfcStructuralSurfaceMember", z_down=True)
+        bpy.ops.bim.apply_structural_load(load_group="0", axes="LOCAL_COORDS", z=-2.0)
+        assert self.get_activity(surface).AppliedLoad.PlanarForceZ == -2.0
+
+    def test_global_values_are_turned_into_the_model_axes(self):
+        ifc, surface = self.make_item("IfcStructuralSurfaceMember", z_down=True)
+        bpy.ops.bim.apply_structural_load(load_group="0", axes="GLOBAL_COORDS", z=-2.0)
+        assert self.get_activity(surface).AppliedLoad.PlanarForceZ == 2.0
+
+    def test_a_point_connection_takes_global_axes(self):
+        ifc, point = self.make_item("IfcStructuralPointConnection")
+        bpy.ops.bim.apply_structural_load(load_group="0", axes="LOCAL_COORDS", z=-2.0)
+        activity = self.get_activity(point)
+        assert activity.GlobalOrLocal == "GLOBAL_COORDS"
+        assert not activity.AppliedLoad.Name.endswith(" local")
+
+    def test_editing_a_load_changes_its_axes(self):
+        ifc, surface = self.make_item("IfcStructuralSurfaceMember")
+        bpy.ops.bim.apply_structural_load(load_group="0", axes="LOCAL_COORDS", z=-2.0)
+        activity = self.get_activity(surface)
+        case = str(ifcopenshell.util.structural.get_activity_load_cases(activity)[0].id())
+        bpy.ops.bim.edit_structural_load_values(
+            activity=activity.id(), load_group=case, initial_load_group=case, axes="GLOBAL_COORDS", z=-3.0
+        )
+        assert activity.GlobalOrLocal == "GLOBAL_COORDS"
+        assert activity.AppliedLoad.PlanarForceZ == -3.0
+        assert not activity.AppliedLoad.Name.endswith(" local")
 
 
 class TestApplyingAChosenLoad(NewFile):

@@ -25,6 +25,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.structural
 import ifcopenshell.util.unit
 import ifcopenshell.util.unit as ifcunit
 import numpy as np
@@ -374,13 +375,22 @@ class ShaderInfo:
             values += transform @ temp
         return values
 
+    def get_object_rotation(self, element: ifcopenshell.entity_instance) -> np.ndarray:
+        """The rotation of a structural item's object in Blender's axes.
+
+        An item's topology, Axis, face plane and ConditionCoordinateSystem are in its own coordinates, which its
+        placement turns: its local axes turn with it."""
+        obj = tool.Ifc.get_object(element)
+        if not isinstance(obj, bpy.types.Object):
+            return np.eye(3)
+        return np.array(obj.matrix_world.to_quaternion().to_matrix())
+
     def get_surface_member_rotation(self, surface_member: ifcopenshell.entity_instance) -> np.ndarray:
         """returns the rotation matrix of a structural surface member"""
         representation = ifcopenshell.util.representation.get_representation(surface_member, "Model")
         repr_item = representation.Items[0]
         placement = ifcopenshell.util.placement.get_placement(repr_item.FaceSurface.Position)
-        rotation = placement[0:3, 0:3]
-        return rotation
+        return self.get_object_rotation(surface_member) @ placement[0:3, 0:3]
 
     def get_point_connection_rotation(self, point_connection: ifcopenshell.entity_instance) -> np.ndarray:
         """returns the rotation matrix of a structural point connection"""
@@ -388,8 +398,7 @@ class ShaderInfo:
             placement = ifcopenshell.util.placement.get_placement(point_connection.ConditionCoordinateSystem)
         else:
             placement = np.eye(4)
-        rotation = placement[0:3, 0:3]
-        return rotation
+        return self.get_object_rotation(point_connection) @ placement[0:3, 0:3]
 
     def get_curve_member_rotation(self, curve_member: ifcopenshell.entity_instance) -> np.ndarray | None:
         """returns the rotation matrix of a structural curve member"""
@@ -434,7 +443,7 @@ class ShaderInfo:
                 y_unit = np.cross(np.asarray(z, dtype=float), x_unit)
                 y_unit /= np.linalg.norm(y_unit)
                 z_unit = np.cross(x_unit, y_unit)
-                return np.column_stack((x_unit, y_unit, z_unit))
+                return self.get_object_rotation(curve_member) @ np.column_stack((x_unit, y_unit, z_unit))
         member_name = (
             getattr(curve_member, "Name", None) or getattr(curve_member, "GlobalId", None) or f"#{curve_member.id()}"
         )
@@ -447,7 +456,10 @@ class ShaderInfo:
     def get_activity_transform_matrix(
         self, activity: ifcopenshell.entity_instance, element_rotation_matrix: np.ndarray
     ) -> np.ndarray:
-        "provides the transformation matrix to convert between reference frames"
+        """The matrix turning an activity's load values into the reference frame shown, in Blender's axes.
+
+        Global values are given in the axes of the activity's analysis model, which need not be the project's: RFEM
+        points Z down. They are turned into the project's axes first, for point, line and area loads alike."""
         global_or_local = activity.GlobalOrLocal
         props = tool.Structural.get_structural_props()
         reference_frame = props.reference_frame
@@ -456,6 +468,8 @@ class ShaderInfo:
             transform_matrix = np.linalg.inv(element_rotation_matrix)
         elif reference_frame == "GLOBAL_COORDS" and global_or_local != reference_frame:
             transform_matrix = element_rotation_matrix
+        if global_or_local != "LOCAL_COORDS":
+            transform_matrix = transform_matrix @ ifcopenshell.util.structural.get_global_axes(activity)
         return transform_matrix
 
     def get_point_loads(self) -> None:
@@ -801,8 +815,6 @@ class ShaderInfo:
             load = activity.AppliedLoad
             preview = self.preview.get(load.id()) if load else None
             values = {attr: preview.get(attr) if preview is not None else getattr(load, attr, 0) for attr in attr_list}
-            if load and activity.GlobalOrLocal != "LOCAL_COORDS":
-                values = tool.Structural.to_blender_axes(load, values)  # Given in its model's axes.
             temp = np.zeros(6)
             for i, attr in enumerate(attr_list):
                 temp[i] += (values[attr] or 0) * factor
@@ -874,7 +886,40 @@ class ShaderInfo:
             member_length = Vector(end_co - start_co).length
             processed_loads = self.process_total_linear_loads(activity_list, rotation, member_length)
             linear_loads = processed_loads["linear loads"]
-            maxforce = max(maxforce, processed_loads["max linear load"])
+            keys = ["fx", "fy", "fz", "mx", "my", "mz"]
+            if linear_loads is None or props.force_display == "COMPONENTS":
+                maxforce = max(maxforce, processed_loads["max linear load"])
+            else:
+                # Each applied load is drawn on its own, along its resultant, as are point forces. Their sum, by
+                # components, is shown on request only: components overlap along a member. The scale is of what
+                # is drawn, not of that sum, so that a load keeps its length as others on the member turn.
+                keys = keys[3:]
+                maxforce = max([maxforce] + [self.get_largest_load(linear_loads[key]) for key in keys])
+                for i, item in enumerate(activity_list):
+                    own = self.process_total_linear_loads([item], rotation, member_length)
+                    if (own_loads := own["linear loads"]) is None:
+                        continue
+                    if not (resolved := self.resolve_linear_forces(own_loads)):
+                        # Its direction changes along the member: by components.
+                        for base in ("fx", "fy", "fz"):
+                            key = f"{base}:{i}"
+                            linear_loads[key] = own_loads[base]
+                            maxforce = max(maxforce, self.get_largest_load(own_loads[base]))
+                            direction_dict[key], match_dict[key] = direction_dict[base], match_dict[base]
+                            keys.append(key)
+                        continue
+                    direction, resultant, largest = resolved
+                    # The direction is in the reference frame shown: in Blender's axes, the member's own if local.
+                    direction = Vector(rotation @ direction if is_local else direction).normalized()
+                    if direction.dot(x_axis) < 0 and abs(direction.dot(x_axis)) > 0.99:
+                        direction, resultant = -direction, self.negate_load(resultant)
+                    axial = abs(direction.dot(x_axis)) > 0.99
+                    key = f"f:{i}"
+                    linear_loads[key] = resultant
+                    direction_dict[key] = y_axis + z_axis if axial else direction
+                    match_dict[key] = axial
+                    maxforce = max(maxforce, largest)
+                    keys.append(key)
             point_loads = processed_loads["discrete loads"]
 
             if len(point_loads) > 0:
@@ -887,7 +932,6 @@ class ShaderInfo:
                         self.get_point_moment_args(values[3:], pos_vector, rotation)
             if linear_loads is None:
                 continue
-            keys = ["fx", "fy", "fz", "mx", "my", "mz"]
 
             for key in keys:
                 polyline = linear_loads[key]["polyline"]
@@ -896,7 +940,9 @@ class ShaderInfo:
                 constant = linear_loads[key]["constant"]
                 direction = direction_dict[key]
                 color_axis = (0, 0, 1, 1)
-                if "x" in key:
+                if key.startswith("f:"):
+                    color_axis = (1, 1, 1, 1)  # As the resultant of point forces.
+                elif "x" in key:
                     color_axis = (1, 0, 0, 1)
                 if "y" in key:
                     color_axis = (0, 1, 0, 1)
@@ -990,6 +1036,53 @@ class ShaderInfo:
                         uniform[1] = maxforce
                         break
 
+    def resolve_linear_forces(
+        self, linear_loads: dict[str, LoadByDirection]
+    ) -> Union[tuple[np.ndarray, LoadByDirection, float], None]:
+        """The force components of a line load as one load along their resultant, if they keep one direction along
+        the member, as a uniform load always does.
+
+        :return: The resultant's unit direction in the reference frame of the components, the load along it, and its
+            largest magnitude; or None if there is no force or its direction varies along the member.
+        """
+        forces = [linear_loads[key] for key in ("fx", "fy", "fz")]
+        terms = {
+            term: np.array([force[term] for force in forces], dtype=float)
+            for term in ("constant", "quadratic", "sinus")
+        }
+        points = next((force["polyline"] for force in forces if force["polyline"]), [])
+        polylines = [force["polyline"] or [[pos, 0.0] for pos, _ in points] for force in forces]
+        if any(len(polyline) != len(points) for polyline in polylines):
+            return None
+        vectors = [np.array([polyline[i][1] for polyline in polylines]) for i in range(len(points))]
+        candidates = [v for v in list(terms.values()) + vectors if np.linalg.norm(v) > 1e-9]
+        if not candidates:
+            return None
+        direction = candidates[0] / np.linalg.norm(candidates[0])
+        if any(np.linalg.norm(np.cross(v, direction)) > 1e-6 * np.linalg.norm(v) for v in candidates):
+            return None
+        resultant: LoadByDirection = {
+            "constant": float(terms["constant"] @ direction),
+            "quadratic": float(terms["quadratic"] @ direction),
+            "sinus": float(terms["sinus"] @ direction),
+            "polyline": [[pos, float(v @ direction)] for (pos, _), v in zip(points, vectors)],
+        }
+        return direction, resultant, self.get_largest_load(resultant)
+
+    def get_largest_load(self, load: LoadByDirection) -> float:
+        """The largest magnitude of a line load along one direction, as the drawing's scale takes it"""
+        total = load["constant"] + load["quadratic"] + load["sinus"]
+        return max([abs(total + value) for _, value in load["polyline"]] or [abs(total)])
+
+    def negate_load(self, load: LoadByDirection) -> LoadByDirection:
+        """The same load in the opposite direction"""
+        return {
+            "constant": -load["constant"],
+            "quadratic": -load["quadratic"],
+            "sinus": -load["sinus"],
+            "polyline": [[pos, -value] for pos, value in load["polyline"]],
+        }
+
     def process_total_linear_loads(
         self,
         activity_list: list[tuple[ifcopenshell.entity_instance, float]],
@@ -1035,7 +1128,6 @@ class ShaderInfo:
         if len(final_list) > 0:
             array = np.array(final_list)  # 7xn -> ["pos","fx","fy","fz","mx","my","mz"]
             keys = ["fx", "fy", "fz", "mx", "my", "mz"]
-            polyline = []
             distributed_loads = {
                 "fx": {"constant": 0, "quadratic": 0, "sinus": 0, "polyline": []},
                 "fy": {"constant": 0, "quadratic": 0, "sinus": 0, "polyline": []},
@@ -1049,6 +1141,7 @@ class ShaderInfo:
                 if any([sinus[component], quad[component], const[component]]) or any(
                     item for item in array[:, component + 1]
                 ):
+                    polyline = []
                     for currentitem in final_list:
                         polyline.append([currentitem[0], currentitem[component + 1]])
                         max_load = max(
@@ -1233,6 +1326,7 @@ class ShaderInfo:
                     for j, attr in enumerate(attr_list):
                         value = 0 if getattr(val, attr, 0) is None else getattr(val, attr, 0)
                         result_list[j] += value * factor
+                    result_list = (transform_6by6 @ np.array(result_list)).tolist()
                     config_list.append({"pos": locations[i][0] * unit_scale, "values": result_list})
                 point_load_configurations.append(config_list)
 

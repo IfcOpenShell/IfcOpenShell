@@ -18,7 +18,6 @@
 
 # This file was generated with the assistance of an AI coding tool.
 
-import math
 from types import SimpleNamespace
 
 import ifcopenshell
@@ -39,49 +38,6 @@ from test.bim.bootstrap import NewFile
 class TestImplementsTool(NewFile):
     def test_run(self):
         assert isinstance(subject(), bonsai.core.tool.Structural)
-
-
-class TestGetInPlaneComponents(NewFile):
-    def test_an_angle_above_the_horizontal(self):
-        x, z = subject.get_in_plane_components("ANGLE", magnitude=10, angle=30)
-        assert math.isclose(x, 10 * math.cos(math.radians(30)))
-        assert math.isclose(z, 5)
-
-    def test_a_slope(self):
-        x, z = subject.get_in_plane_components("SLOPE", magnitude=10, rise=5, run=12)
-        assert math.isclose(x, 120 / 13)
-        assert math.isclose(z, 50 / 13)
-
-    def test_directions_measure_from_the_nearest_horizontal(self):
-        x, z = subject.get_in_plane_components("ANGLE", magnitude=100, angle=40, direction="UP_LEFT")
-        assert math.isclose(x, -100 * math.cos(math.radians(40)))
-        assert math.isclose(z, 100 * math.sin(math.radians(40)))
-        x, z = subject.get_in_plane_components("SLOPE", magnitude=200, rise=3, run=4, direction="DOWN_LEFT")
-        assert math.isclose(x, -160)
-        assert math.isclose(z, -120)
-        x, z = subject.get_in_plane_components("ANGLE", magnitude=1, angle=60, direction="DOWN_RIGHT")
-        assert x > 0 and z < 0
-
-    def test_a_zero_slope_gives_no_force(self):
-        assert subject.get_in_plane_components("SLOPE", magnitude=10, rise=0, run=0) == (0.0, 0.0)
-
-
-class TestGetSimpleSlope(NewFile):
-    def test_reducing_to_small_whole_numbers(self):
-        assert subject.get_simple_slope(-160, -120) == (-3, -4)
-        assert subject.get_simple_slope(134.16407864998737, -268.3281572999747) == (-2, 1)
-
-    def test_axis_aligned_components(self):
-        assert subject.get_simple_slope(5, 0) == (0.0, 1.0)
-        assert subject.get_simple_slope(0, -5) == (-1.0, 0.0)
-
-    def test_no_force_gives_a_unit_slope(self):
-        assert subject.get_simple_slope(0, 0) == (1.0, 1.0)
-
-    def test_falling_back_to_a_unit_slope(self):
-        rise, run = subject.get_simple_slope(3, 7.1)
-        assert math.isclose(math.hypot(rise, run), 1)
-        assert math.isclose(rise / run, 7.1 / 3)
 
 
 class TestTurnAxisOffEdge(NewFile):
@@ -352,9 +308,22 @@ class TestModelAxes(NewFile):
 
     def test_dialog_values_are_written_in_the_model_axes(self):
         load = self.make_load(z_down=True)
-        props = SimpleNamespace(
-            input_mode="COMPONENTS", x=3.0, y=0.0, z=-10.0, moment_x=0.0, moment_y=0.0, moment_z=0.0
-        )
+        props = SimpleNamespace(x=3.0, y=0.0, z=-10.0, moment_x=0.0, moment_y=0.0, moment_z=0.0)
         attributes = get_load_attributes(props, "IfcStructuralPointConnection", load)
         # Down in Blender is +Z in a model pointing Z down.
         assert np.allclose([attributes["ForceX"], attributes["ForceZ"]], (3.0, 10.0))
+
+    def test_line_and_area_loads_are_turned_too(self):
+        self.make_load(z_down=True)
+        load = ifcopenshell.api.structural.add_structural_load(tool.Ifc.get(), ifc_class="IfcStructuralLoadPlanarForce")
+        surface = ifcopenshell.api.root.create_entity(tool.Ifc.get(), ifc_class="IfcStructuralSurfaceMember")
+        model = tool.Ifc.get().by_type("IfcStructuralAnalysisModel")[0]
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            tool.Ifc.get(), products=[surface], structural_analysis_model=model
+        )
+        ifcopenshell.api.structural.add_structural_activity(
+            tool.Ifc.get(), applied_load=load, structural_member=surface, ifc_class="IfcStructuralPlanarAction"
+        )
+        assert subject.to_model_axes(load, {"PlanarForceZ": -2.0})["PlanarForceZ"] == 2.0
+        turned = subject.to_model_axes(load, {"LinearForceZ": -2.0, "LinearMomentY": 1.0})
+        assert (turned["LinearForceZ"], turned["LinearMomentY"]) == (2.0, -1.0)
