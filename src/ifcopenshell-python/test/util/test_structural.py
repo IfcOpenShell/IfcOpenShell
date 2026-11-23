@@ -18,6 +18,7 @@
 # This file was generated with the assistance of an AI coding tool.
 
 import numpy
+import pytest
 
 import ifcopenshell.api.group
 import ifcopenshell.api.root
@@ -149,6 +150,98 @@ class TestGetCombinationFactors(test.bootstrap.IFC4):
                 ifcopenshell.guid.new(), RelatedObjects=[dead], RelatingGroup=combination, Factor=factor
             )
         assert subject.get_combination_factors(combination) == {dead: 1.35}
+
+
+class TestGetCombinationFactorsIFC2X3(test.bootstrap.IFC2X3):
+    def add_group(self, predefined_type, coefficient=None):
+        return self.file.createIfcStructuralLoadGroup(
+            ifcopenshell.guid.new(),
+            PredefinedType=predefined_type,
+            ActionType="NOTDEFINED",
+            ActionSource="NOTDEFINED",
+            Coefficient=coefficient,
+        )
+
+    def test_a_load_combination_group_gives_its_cases_its_coefficient(self):
+        dead = self.add_group("LOAD_CASE")
+        live = self.add_group("LOAD_CASE")
+        combination = self.add_group("LOAD_COMBINATION")
+        for case, coefficient in ((dead, 1.35), (live, 1.5)):
+            group = self.add_group("LOAD_COMBINATION_GROUP", coefficient)
+            ifcopenshell.api.group.assign_group(self.file, products=[case], group=group)
+            ifcopenshell.api.group.assign_group(self.file, products=[group], group=combination)
+        assert subject.get_combination_factors(combination) == {dead: 1.35, live: 1.5}
+
+    def test_the_coefficient_of_the_combination_applies_too(self):
+        dead = self.add_group("LOAD_CASE")
+        combination = self.add_group("LOAD_COMBINATION", 2.0)
+        group = self.add_group("LOAD_COMBINATION_GROUP")
+        ifcopenshell.api.group.assign_group(self.file, products=[dead], group=group)
+        ifcopenshell.api.group.assign_group(self.file, products=[group, dead], group=combination)
+        assert subject.get_combination_factors(combination) == {dead: 4.0}
+
+
+class TestGetCombinationFactorsOfLoadGroups(test.bootstrap.IFC4):
+    """RFEM writes each factor of a combination as a load group of type LOAD_GROUP, its Coefficient the factor"""
+
+    def add_group(self, predefined_type, name=None, coefficient=None):
+        return self.file.createIfcStructuralLoadGroup(
+            ifcopenshell.guid.new(),
+            Name=name,
+            PredefinedType=predefined_type,
+            ActionType="NOTDEFINED",
+            ActionSource="NOTDEFINED",
+            Coefficient=coefficient,
+        )
+
+    def group(self, products, group):
+        self.file.createIfcRelAssignsToGroup(ifcopenshell.guid.new(), RelatedObjects=products, RelatingGroup=group)
+
+    def setup_rfem(self):
+        self.q = self.add_group("LOAD_CASE", "Q")
+        self.wx = self.add_group("LOAD_CASE", "Wx")
+        self.combination = self.add_group("LOAD_COMBINATION", "Load Combination 1")
+        self.groups = []
+        for case, coefficient in ((self.q, 1.5), (self.wx, 0.9)):
+            group = self.add_group("LOAD_GROUP", coefficient=coefficient)
+            self.group([case], group)
+            self.groups.append(group)
+        self.group(self.groups, self.combination)
+
+    def test_a_load_group_gives_its_cases_its_coefficient(self):
+        self.setup_rfem()
+        assert subject.get_combination_factors(self.combination) == {self.q: 1.5, self.wx: 0.9}
+
+    def test_the_factor_groups_of_a_combination(self):
+        self.setup_rfem()
+        assert set(subject.get_combination_factor_groups(self.combination)) == set(self.groups)
+        assert all(subject.is_factor_group(g) for g in self.groups)
+        assert not subject.is_factor_group(self.q)
+
+    def test_leaving_out_the_coefficient_of_the_combination(self):
+        self.setup_rfem()
+        self.combination.Coefficient = 2.0
+        assert subject.get_combination_factors(self.combination) == {self.q: 3.0, self.wx: 1.8}
+        assert subject.get_combination_factors(self.combination, include_coefficient=False) == {
+            self.q: 1.5,
+            self.wx: 0.9,
+        }
+
+    def test_groups_within_groups(self):
+        self.setup_rfem()
+        outer = self.add_group("LOAD_GROUP", coefficient=2.0)
+        self.group([self.groups[0]], outer)
+        self.group([outer], self.combination)
+        groups = subject.get_combination_factor_groups(self.combination)
+        # Q's group is in the combination, and in the outer group too: it comes after the outer group.
+        assert groups.index(outer) < groups.index(self.groups[0])
+        # Q is in the combination at 1.5, and again through the outer group at 2.0 x 1.5.
+        assert subject.get_combination_factors(self.combination) == {self.q: 4.5, self.wx: 0.9}
+
+    def test_a_group_that_groups_itself_is_counted_once(self):
+        self.setup_rfem()
+        self.group([self.groups[0]], self.groups[0])
+        assert subject.get_combination_factors(self.combination) == {self.q: 1.5, self.wx: 0.9}
 
 
 class TestGetModelLoadGroupsAndCases(test.bootstrap.IFC4, StructuralModel):
@@ -293,3 +386,19 @@ class TestGetGlobalAxes(test.bootstrap.IFC4, StructuralModel):
         activity = self.add_action(self.knee)
         activity.ObjectPlacement = self.make_placement((0.0, 0.0, 1.0), (0.0, 1.0, 0.0))
         assert numpy.allclose(subject.get_global_axes(activity)[:, 0], [0, 1, 0])
+
+
+class TestGetBoundaryConditionClass(test.bootstrap.IFC4):
+    def test_each_connection_takes_its_own_class(self):
+        for connection_class, condition_class in (
+            ("IfcStructuralPointConnection", "IfcBoundaryNodeCondition"),
+            ("IfcStructuralCurveConnection", "IfcBoundaryEdgeCondition"),
+            ("IfcStructuralSurfaceConnection", "IfcBoundaryFaceCondition"),
+        ):
+            connection = ifcopenshell.api.root.create_entity(self.file, ifc_class=connection_class)
+            assert subject.get_boundary_condition_class(connection) == condition_class
+
+    def test_a_member_is_refused(self):
+        member = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralCurveMember")
+        with pytest.raises(ValueError):
+            subject.get_boundary_condition_class(member)

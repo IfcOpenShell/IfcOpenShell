@@ -414,7 +414,8 @@ def install_opencollada(
     dependency_install_dir = install_dir / f"{DEPENDENCY_NAME}-{OPENCOLLADA_VERSION}"
 
     build_deps_cache.add_entry("OPENCOLLADA_INSTALL_DIR", str(dependency_install_dir))
-    build_deps_cache.add_entry("LIBXML2_LIBRARIES", str(dependency_install_dir / "lib" / "opencollada" / "xml.lib"))
+    LIBXML2_LIB = "xmld.lib" if debug_or_release(build_cfg) == "Debug" else "xml.lib"
+    build_deps_cache.add_entry("LIBXML2_LIBRARIES", str(dependency_install_dir / "lib" / "opencollada" / LIBXML2_LIB))
     build_deps_cache.add_entry("LIBXML2_INCLUDE_DIR", str(dependency_dir / "Externals" / "LibXML" / "include"))
 
     # TODO: we probably can install

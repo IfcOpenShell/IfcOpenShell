@@ -753,6 +753,10 @@ ifcopenshell::geom::taxonomy::direction3::ptr ifcopenshell::geom::iterator::remo
 		}
 		vec = Eigen::Vector3d(vs[0], vs[1], vs[2]);
 	} else {
+        if (tasks_.empty()) {
+            return nullptr;
+        }
+
 		// Collect all norms and vectors
 		std::vector<double> norms;
 		std::vector<Eigen::Vector3d> vectors;

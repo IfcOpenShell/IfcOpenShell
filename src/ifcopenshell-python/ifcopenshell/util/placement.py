@@ -143,6 +143,86 @@ def get_storey_elevation(storey: ifcopenshell.entity_instance) -> float:
     return getattr(storey, "Elevation", 0.0) or 0.0
 
 
+def get_grid_axis_coordinates(axis: ifcopenshell.entity_instance) -> npt.NDArray[np.float64]:
+    """Get the points a grid axis runs through, in world coordinates
+
+    A grid axis curve is defined in the object coordinate system of the IfcGrid
+    it belongs to. The points returned have that grid's placement applied, so
+    axes from different grids in the same file can be compared and intersected
+    directly. Coordinates are in project length units, and 2D points get a Z of
+    0.0 before the placement is applied.
+
+    The points are those of the polygon the geometry engine approximates the
+    curve with, in the order the curve walks them: a straight segment gives its
+    two ends, and an arc, circle or ellipse is subdivided following the default
+    geometry settings. Polylines, indexed poly curves, trimmed curves, composite
+    curves, circles, ellipses and the IFC4X3 alignment curves are read.
+
+    Example:
+
+    .. code:: python
+
+        axis = file.by_type("IfcGridAxis")[0]
+        points = ifcopenshell.util.placement.get_grid_axis_coordinates(axis)
+        start, end = points[0], points[-1]
+
+    :param axis: The IfcGridAxis entity
+    :raises ValueError: If the axis has no AxisCurve, belongs to no IfcGrid, or
+        its curve is unbounded or can not be interpreted.
+    :return: An (n, 3) numpy array of points
+    """
+    curve = axis.AxisCurve
+    if curve is None:
+        raise ValueError(f"IfcGridAxis #{axis.id()} {axis.AxisTag!r} has no AxisCurve")
+    grids = axis.PartOfU or axis.PartOfV or axis.PartOfW
+    if not grids:
+        raise ValueError(f"IfcGridAxis #{axis.id()} {axis.AxisTag!r} belongs to no IfcGrid")
+
+    W = ifcopenshell.ifcopenshell_wrapper
+    settings = ifcopenshell.geom.settings()
+
+    def sample(item):
+        if isinstance(item, W.loop):
+            points = []
+            tolerance = settings.get("precision")
+            for edge in item.children:
+                segment = sample(edge)
+                if points and np.linalg.norm(np.array(points[-1]) - segment[0]) < tolerance:
+                    segment = segment[1:]
+                points.extend(segment)
+            if item.closed and len(points) > 1 and np.linalg.norm(np.array(points[0]) - points[-1]) > tolerance:
+                points.append(points[0])
+            return points
+        if isinstance(item, W.trimmed_curve):
+            end = 1.0
+        elif isinstance(item, (W.circle, W.ellipse)):
+            end = 2 * np.pi
+        else:
+            raise ValueError(f"IfcGridAxis #{axis.id()} {axis.AxisTag!r} has an unbounded {curve.is_a()} as AxisCurve")
+        count = len(item.to_polygon(settings)) - 1
+        return [item.evaluate(0, end * i / count) for i in range(count + 1)]
+
+    try:
+        item = ifcopenshell.geom.map_shape(settings, curve)
+        if item is None:
+            raise ValueError(f"IfcGridAxis #{axis.id()} {axis.AxisTag!r} has an AxisCurve that can not be interpreted")
+        if isinstance(item, W.function_item):
+            evaluator = W.function_item_evaluator(settings, item)
+            points = [np.array(evaluator.evaluate(u))[:3, 3] for u in evaluator.evaluation_points()]
+        else:
+            points = sample(item)
+    except RuntimeError as error:
+        raise ValueError(
+            f"IfcGridAxis #{axis.id()} {axis.AxisTag!r} has an AxisCurve that can not be interpreted: {error}"
+        ) from error
+
+    local = np.ones((len(points), 4))
+    # map_shape does not respect the "convert-back-units" setting, so we need to apply the unit scale ourselves
+    local[:, :3] = np.array(points) / ifcopenshell.util.unit.calculate_unit_scale(axis.file)
+    matrix = get_placement(grids[0].ObjectPlacement)
+    return (matrix @ local.T).T[:, :3]
+
+
 def rotation(angle: float, axis: Literal["X", "Y", "Z"], is_degrees=True) -> MatrixType:
     """Create a 4x4 numpy matrix representing an euler rotation
 

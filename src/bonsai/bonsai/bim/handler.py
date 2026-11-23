@@ -124,6 +124,7 @@ def active_object_callback():
     refresh_ui_data()
     update_bim_tool_props()
     update_spatial_tool_props()
+    tool.Structural.follow_active_item_load()
     tool.Geometry.sync_item_positions()
 
 

@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 import bpy
@@ -85,7 +86,15 @@ class BIM_PT_units(Panel):
             op = row.operator("bim.add_conversion_based_unit", text="", icon="ADD")
             op.name = self.props.conversion_unit_types
         elif self.props.unit_classes == "IfcDerivedUnit":
-            pass  # TODO
+            prop_with_search(row, self.props, "derived_unit_types", text="")
+            op = row.operator("bim.add_derived_unit", text="", icon="ADD")
+            op.unit_type = self.props.derived_unit_types
+            choices = {}
+            for component_type in tool.Unit.get_derived_unit_component_types(self.props.derived_unit_types):
+                prop_name = f"derived_{component_type.lower()}"
+                prop_with_search(self.layout.row(align=True), self.props, prop_name)
+                choices[component_type] = tool.Blender.get_enum_safe(self.props, prop_name) or "0"
+            op.components = json.dumps(choices)
         elif self.props.unit_classes == "IfcSIUnit":
             prop_with_search(row, self.props, "named_unit_types", text="")
             op = row.operator("bim.add_si_unit", text="", icon="ADD")

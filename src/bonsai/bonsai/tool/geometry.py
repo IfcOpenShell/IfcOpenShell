@@ -2429,6 +2429,69 @@ class Geometry(bonsai.core.tool.Geometry):
         tool.Feature.get_boolean_props().is_editing = False
 
     @classmethod
+    def get_face_surface_axes(
+        cls, element: Union[ifcopenshell.entity_instance, None], context: ifcopenshell.entity_instance
+    ) -> tuple[Union[npt.NDArray[np.float64], None], Union[npt.NDArray[np.float64], None]]:
+        """The normal and local x of the face surface an element has in a context
+
+        A structural surface item's plane gives its local axes, which a new
+        face replacing it keeps.
+
+        :return: normal and local x, or None and None if it has no face surface
+        """
+        if element is None:
+            return None, None
+        representation = ifcopenshell.util.representation.get_representation(element, context)
+        if representation is None:
+            return None, None
+        for item in representation.Items:
+            if item.is_a("IfcFaceSurface") and item.FaceSurface.is_a("IfcPlane"):
+                matrix = ifcopenshell.util.placement.get_placement(item.FaceSurface.Position)
+                return matrix[:3, 2], matrix[:3, 0]
+        return None, None
+
+    @classmethod
+    def is_structural_face_mesh(cls, obj: bpy.types.Object, context: ifcopenshell.entity_instance) -> bool:
+        """Whether updating the object's representation in a context makes a structural face
+
+        A mesh with polygons in the Reference GRAPH_VIEW context is the face of
+        a structural surface member or connection.
+        """
+        return (
+            context.ContextIdentifier == "Reference"
+            and getattr(context, "TargetView", None) == "GRAPH_VIEW"
+            and isinstance(obj.data, bpy.types.Mesh)
+            and len(obj.data.polygons) > 0
+        )
+
+    @classmethod
+    def add_structural_face_representation(
+        cls, obj: bpy.types.Object, context: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """The object's mesh as a Face topology representation of one IfcFaceSurface
+
+        The face keeps the normal side and local x of the face it replaces,
+        as they are a structural surface item's local axes.
+
+        :return: IfcTopologyRepresentation, or None if the mesh is not one planar face
+        """
+        assert isinstance(obj.data, bpy.types.Mesh)
+        ifc_file = tool.Ifc.get()
+        verts = tool.Blender.get_verts_coordinates(obj.data.vertices).astype("d")
+        if (coordinate_offset := cls.get_cartesian_point_offset(obj)) is not None:
+            verts += coordinate_offset
+        verts /= ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        faces = [p.vertices[:] for p in obj.data.polygons]
+        normal, x_axis = cls.get_face_surface_axes(tool.Ifc.get_entity(obj), context)
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+        try:
+            outer, inners = builder.get_mesh_boundaries(verts, faces)
+            face = builder.face_surface(verts[outer], [verts[i] for i in inners], normal=normal, x_axis=x_axis)
+        except ValueError:
+            return None
+        return ifc_file.createIfcTopologyRepresentation(context, context.ContextIdentifier, "Face", [face])
+
+    @classmethod
     def edit_meshlike_item(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         """
         :return: New IfcRepresentationItem or ``None`` if mesh hasn't changed.
@@ -2460,9 +2523,15 @@ class Geometry(bonsai.core.tool.Geometry):
         elif item.is_a("IfcEdge"):
             new_item = builder.edge(start=verts[0], end=verts[1])
         elif item.is_a("IfcFaceSurface"):
-            new_item = builder.face_surface([verts[i] for i in faces[0]])
+            # The mesh of a face is triangulated: the face is the union of its polygons
+            outer, inners = builder.get_mesh_boundaries(verts, faces)
+            matrix = ifcopenshell.util.placement.get_placement(item.FaceSurface.Position)
+            new_item = builder.face_surface(
+                verts[outer], [verts[i] for i in inners], normal=matrix[:3, 2], x_axis=matrix[:3, 0]
+            )
         elif item.is_a("IfcFace"):
-            new_item = builder.face([verts[i] for i in faces[0]])
+            outer, inners = builder.get_mesh_boundaries(verts, faces)
+            new_item = builder.face(verts[outer], [verts[i] for i in inners])
         else:
             new_item = builder.mesh(verts, faces)
         for inverse in tool.Ifc.get().get_inverse(item):
@@ -2470,6 +2539,8 @@ class Geometry(bonsai.core.tool.Geometry):
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
         cls.name_item_object(obj, new_item)
         tool.Ifc.link(new_item, obj.data)
+        if new_item.is_a("IfcEdge") and (element := tool.Ifc.get_entity(rep_obj)):
+            tool.Structural.turn_axis_off_edge(element, verts[0], verts[1])
         cls.reload_representation(rep_obj)
         return new_item
 

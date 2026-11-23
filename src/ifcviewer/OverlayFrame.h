@@ -35,7 +35,7 @@ struct OverlayFrame {
     float      camera_fov_y_deg    = 45.0f;
     int        viewport_w_px       = 0;
     int        viewport_h_px       = 0;
-    int        device_pixel_ratio  = 1;
+    float      device_pixel_ratio  = 1.0f;
 };
 
 #endif  // IFCVIEWER_OVERLAYFRAME_H

@@ -147,6 +147,14 @@ jobs:
           poe actions-lock
         continue-on-error: true
 
+      - name: uv lock (Bonsai bundled wheels lockfile check)
+        id: uv-lock
+        run: |
+          poe uv-lock --check
+          # Ensure each package resolves to a single version across all supported platforms.
+          grep "^name =" src/bonsai/bundled-wheels/uv.lock | sort | uniq -d | (! grep .)
+        continue-on-error: true
+
       - name: Check VERSION
         id: check-version
         run: poe version
@@ -182,6 +190,10 @@ jobs:
           if [ "${{ steps.actions-lock.outcome }}" != "success" ]; then
             echo "::error::gh actions-lock (GitHub Actions lockfile check) failed, see 'gh actions-lock' step for the details.%0A" \
               "Run 'gh actions-lock' to update the lockfile." && ERROR=1
+          fi
+          if [ "${{ steps.uv-lock.outcome }}" != "success" ]; then
+            echo "::error::uv lock (Bonsai bundled wheels lockfile check) failed, see 'uv lock' step for the details.%0A" \
+              "Run 'poe uv-lock' to update the lockfile." && ERROR=1
           fi
           if [ "${{ steps.check-version.outcome }}" != "success" ]; then
             echo "::error::VERSION check failed, see 'Check VERSION' step for the details." && ERROR=1
