@@ -19,6 +19,7 @@
 
 import pytest
 
+import ifcopenshell.api.group
 import ifcopenshell.api.structural
 import ifcopenshell.guid
 import ifcopenshell.util.structural
@@ -220,3 +221,81 @@ class TestAssignStructuralLoadCombinationInFactorGroups(test.bootstrap.IFC4, Fac
         )
         assert ifcopenshell.util.structural.get_combination_factors(self.combination) == {self.q: 1.0, self.wx: 0.9}
         assert rel.RelatedObjects == (self.q,)
+
+
+class TestAssignStructuralLoadCombinationIFC2X3(test.bootstrap.IFC2X3, FactorGroups):
+    def setup_cases(self):
+        self.dead = self.add_group("LOAD_CASE", "Dead")
+        self.live = self.add_group("LOAD_CASE", "Live")
+        self.uls = self.add_group("LOAD_COMBINATION", "ULS")
+
+    def test_a_load_case_is_given_its_factor_by_a_load_combination_group(self):
+        self.setup_cases()
+        rel = ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=self.dead, load_combination=self.uls, factor=1.35
+        )
+        group = rel.RelatingGroup
+        assert rel.RelatedObjects == (self.dead,)
+        assert group.PredefinedType == "LOAD_COMBINATION_GROUP"
+        assert group.Coefficient == 1.35
+        assert self.uls.IsGroupedBy[0].RelatedObjects == (group,)
+        assert ifcopenshell.util.structural.get_combination_factors(self.uls) == {self.dead: 1.35}
+
+    def test_load_cases_with_the_same_factor_share_a_group(self):
+        self.setup_cases()
+        dead_rel = ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=self.dead, load_combination=self.uls, factor=1.5
+        )
+        live_rel = ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=self.live, load_combination=self.uls, factor=1.5
+        )
+        assert dead_rel == live_rel
+        assert set(dead_rel.RelatedObjects) == {self.dead, self.live}
+
+    def test_load_cases_with_different_factors_share_the_combinations_one_relationship(self):
+        self.setup_cases()
+        for case, factor in ((self.dead, 1.35), (self.live, 1.5)):
+            ifcopenshell.api.structural.assign_structural_load_combination(
+                self.file, load_case=case, load_combination=self.uls, factor=factor
+            )
+        # IFC2X3 allows a group one IfcRelAssignsToGroup.
+        assert len(self.uls.IsGroupedBy) == 1
+        assert len(self.uls.IsGroupedBy[0].RelatedObjects) == 2
+        assert ifcopenshell.util.structural.get_combination_factors(self.uls) == {self.dead: 1.35, self.live: 1.5}
+
+    def test_assigning_a_load_case_twice_does_nothing(self):
+        self.setup_cases()
+        rel = ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=self.dead, load_combination=self.uls, factor=1.35
+        )
+        again = ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=self.dead, load_combination=self.uls, factor=1.35
+        )
+        assert again == rel
+        assert len(self.file.by_type("IfcStructuralLoadGroup")) == 4
+
+    def test_changing_the_factor_of_a_load_case(self):
+        self.setup_cases()
+        old = ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=self.dead, load_combination=self.uls, factor=1.35
+        ).RelatingGroup.id()
+        rel = ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=self.dead, load_combination=self.uls, factor=1.0
+        )
+        assert rel.RelatingGroup.Coefficient == 1.0
+        assert old not in [g.id() for g in self.file.by_type("IfcStructuralLoadGroup")]
+        assert ifcopenshell.util.structural.get_combination_factors(self.uls) == {self.dead: 1.0}
+
+    def test_a_group_another_combination_shares_is_not_changed(self):
+        self.setup_cases()
+        sls = self.add_group("LOAD_COMBINATION", "SLS")
+        shared = self.add_group("LOAD_COMBINATION_GROUP", coefficient=1.5)
+        self.group([self.live], shared)
+        ifcopenshell.api.group.assign_group(self.file, products=[shared], group=self.uls)
+        ifcopenshell.api.group.assign_group(self.file, products=[shared], group=sls)
+        rel = ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=self.dead, load_combination=self.uls, factor=1.5
+        )
+        assert rel.RelatingGroup != shared
+        assert ifcopenshell.util.structural.get_combination_factors(sls) == {self.live: 1.5}
+        assert ifcopenshell.util.structural.get_combination_factors(self.uls) == {self.dead: 1.5, self.live: 1.5}
