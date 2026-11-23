@@ -17,10 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 # This file was generated with the assistance of an AI coding tool.
 
+from typing import Optional
+
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.api.structural
 import ifcopenshell.guid
+import ifcopenshell.util.structural
 
 
 def assign_structural_load_combination(
@@ -36,6 +39,11 @@ def assign_structural_load_combination(
     combination that has the same factor. A load case already in the
     combination has its factor changed. A load case may be in any number of
     combinations, with a factor in each.
+
+    A load case already in the combination through a load group that gives
+    it its factor, as RFEM writes them (see
+    :func:`ifcopenshell.util.structural.get_combination_factors`), is taken
+    out of that group and grouped into the combination by factor instead.
 
     A load case is an IfcStructuralLoadCase, or an IfcStructuralLoadGroup
     of type LOAD_CASE, as some programs, such as RFEM, write them.
@@ -54,9 +62,10 @@ def assign_structural_load_combination(
     if load_combination.PredefinedType != "LOAD_COMBINATION":
         raise ValueError(f"{load_combination} is not a load combination")
 
-    for rel in load_combination.IsGroupedBy:
-        if rel.is_a("IfcRelAssignsToGroupByFactor") and rel.Factor == factor and load_case in rel.RelatedObjects:
-            return rel
+    if (rel := _the_only_place(load_case, load_combination)) and (
+        rel.RelatingGroup == load_combination and rel.is_a("IfcRelAssignsToGroupByFactor") and rel.Factor == factor
+    ):
+        return rel
 
     ifcopenshell.api.structural.unassign_structural_load_combination(
         file, load_case=load_case, load_combination=load_combination
@@ -76,3 +85,12 @@ def assign_structural_load_combination(
         RelatingGroup=load_combination,
         Factor=factor,
     )
+
+
+def _the_only_place(
+    load_case: ifcopenshell.entity_instance, load_combination: ifcopenshell.entity_instance
+) -> Optional[ifcopenshell.entity_instance]:
+    """The relationship that groups a load case into a combination, if just one does"""
+    groups = [load_combination] + ifcopenshell.util.structural.get_combination_factor_groups(load_combination)
+    places = [rel for group in groups for rel in group.IsGroupedBy if load_case in rel.RelatedObjects]
+    return places[0] if len(places) == 1 else None

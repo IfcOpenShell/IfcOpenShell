@@ -21,7 +21,35 @@ import ifcopenshell.api.group
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
 import ifcopenshell.guid
+import ifcopenshell.util.structural
 import test.bootstrap
+
+
+class FactorGroups:
+    """RFEM's load combinations in IFC4: each factor a load group of type LOAD_GROUP, its Coefficient the factor"""
+
+    def add_group(self, predefined_type, name=None, coefficient=None):
+        return self.file.createIfcStructuralLoadGroup(
+            ifcopenshell.guid.new(),
+            Name=name,
+            PredefinedType=predefined_type,
+            ActionType="NOTDEFINED",
+            ActionSource="NOTDEFINED",
+            Coefficient=coefficient,
+        )
+
+    def group(self, products, group):
+        self.file.createIfcRelAssignsToGroup(ifcopenshell.guid.new(), RelatedObjects=products, RelatingGroup=group)
+
+    def setup_rfem(self):
+        self.q = self.add_group("LOAD_CASE", "Q")
+        self.wx = self.add_group("LOAD_CASE", "Wx")
+        self.combination = self.add_group("LOAD_COMBINATION", "Load Combination 1")
+        self.q_group = self.add_group("LOAD_GROUP", coefficient=1.5)
+        self.wx_group = self.add_group("LOAD_GROUP", coefficient=0.9)
+        self.group([self.q], self.q_group)
+        self.group([self.wx], self.wx_group)
+        self.group([self.q_group, self.wx_group], self.combination)
 
 
 class TestRemoveStructuralLoadGroup(test.bootstrap.IFC4):
@@ -132,3 +160,28 @@ class TestRemoveStructuralLoadGroupIFC2X3(test.bootstrap.IFC2X3, TestRemoveStruc
     # IFC2X3 has no IfcStructuralLoadCase, which these build on.
     test_removing_a_load_combination_of_several_load_cases = None
     test_removing_a_load_group_from_a_load_case_with_other_groups = None
+
+
+class TestRemoveStructuralLoadGroupFactorGroups(test.bootstrap.IFC4, FactorGroups):
+    def test_removing_a_load_combination_removes_its_factor_groups(self):
+        self.setup_rfem()
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=self.combination)
+        assert [g.Name for g in self.file.by_type("IfcStructuralLoadGroup")] == ["Q", "Wx"]
+        assert not self.file.by_type("IfcRelAssignsToGroup")
+
+    def test_a_factor_group_another_combination_shares_is_kept(self):
+        self.setup_rfem()
+        other = self.add_group("LOAD_COMBINATION", "Load Combination 2")
+        self.group([self.q_group], other)
+        wx_group = self.wx_group.id()
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=self.combination)
+        assert ifcopenshell.util.structural.get_combination_factors(other) == {self.q: 1.5}
+        assert wx_group not in [g.id() for g in self.file.by_type("IfcStructuralLoadGroup")]
+
+    def test_factor_groups_within_factor_groups_are_removed(self):
+        self.setup_rfem()
+        outer = self.add_group("LOAD_GROUP", coefficient=2.0)
+        self.group([self.q_group], outer)
+        self.group([outer], self.combination)
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=self.combination)
+        assert [g.Name for g in self.file.by_type("IfcStructuralLoadGroup")] == ["Q", "Wx"]

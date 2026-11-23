@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api.structural
 import ifcopenshell.util.element
+import ifcopenshell.util.structural
 
 
 def remove_structural_load_group(file: ifcopenshell.file, load_group: ifcopenshell.entity_instance) -> None:
@@ -28,9 +29,17 @@ def remove_structural_load_group(file: ifcopenshell.file, load_group: ifcopenshe
     those that another load group or load case also groups: they are only
     taken out of this one.
 
+    The load groups of a load combination that give its load cases their
+    factors, as IFC2X3's LOAD_COMBINATION_GROUP does (see
+    :func:`ifcopenshell.util.structural.get_combination_factors`), are
+    removed with it, unless something else groups them.
+
     :param load_group: The IfcStructuralLoadGroup to remove.
     :return: None
     """
+    factor_groups = []
+    if load_group.PredefinedType == "LOAD_COMBINATION":
+        factor_groups = ifcopenshell.util.structural.get_combination_factor_groups(load_group)
     activities = {o for rel in load_group.IsGroupedBy for o in rel.RelatedObjects if o.is_a("IfcStructuralActivity")}
     for activity in activities:
         if any(
@@ -52,3 +61,10 @@ def remove_structural_load_group(file: ifcopenshell.file, load_group: ifcopenshe
     file.remove(load_group)
     if history:
         ifcopenshell.util.element.remove_deep2(file, history)
+    # Nearest the combination first: removing one leaves those in it in nothing.
+    for group in factor_groups:
+        if any(rel.is_a("IfcRelAssignsToGroup") for rel in group.HasAssignments or ()):
+            continue
+        if any(i.is_a("IfcStructuralAnalysisModel") for i in file.get_inverse(group)):
+            continue
+        remove_structural_load_group(file, load_group=group)
