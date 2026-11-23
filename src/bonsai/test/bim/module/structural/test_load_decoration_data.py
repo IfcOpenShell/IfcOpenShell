@@ -254,6 +254,35 @@ class TestLineForcesAlongTheirResultant(NewIfc):
         props.force_display = "COMPONENTS"
         assert self.get_force_diagrams() == [(0, 1, 0, 1), (0, 0, 1, 1)]
 
+    def get_scale(self):
+        info = ShaderInfo()
+        info.shader = MagicMock()
+        info.get_structural_elements_and_activities()
+        info.get_linear_loads()
+        return {u[1] for i in info.info for u in i["uniforms"] if u[0] == "maxload"}
+
+    def test_a_load_keeps_its_length_as_another_turns(self):
+        member = self.make_member()
+        bpy.ops.bim.apply_structural_load(load_group="0", axes="LOCAL_COORDS", y=-5.0)
+        (case,) = tool.Ifc.get().by_type("IfcStructuralLoadCase")
+        bpy.ops.bim.apply_structural_load(load_group=str(case.id()), axes="GLOBAL_COORDS", z=-4.0)
+        tool.Structural.get_structural_props().reference_frame = "GLOBAL_COORDS"
+        assert self.get_scale() == {5.0}
+        # Local Y now points down, along the global load: their sum would be 9.
+        ifcopenshell.api.structural.edit_structural_item_axis(tool.Ifc.get(), structural_item=member, axis=(0, -1, 0))
+        assert self.get_scale() == {5.0}
+
+    def test_loads_on_different_members_share_a_scale(self):
+        self.make_member()
+        bpy.ops.bim.apply_structural_load(load_group="0", z=-4.0)
+        (case,) = tool.Ifc.get().by_type("IfcStructuralLoadCase")
+        bpy.context.scene.cursor.location = (0.0, 5.0, 0.0)
+        self.make_member()
+        bpy.ops.bim.apply_structural_load(load_group=str(case.id()), z=-10.0)
+        tool.Structural.get_structural_props().reference_frame = "GLOBAL_COORDS"
+        assert len(self.get_force_diagrams()) == 2
+        assert self.get_scale() == {10.0}
+
     def test_each_component_has_its_own_points(self):
         self.make_member()
         bpy.ops.bim.apply_structural_load(load_group="0", y=-3.0, z=-4.0)

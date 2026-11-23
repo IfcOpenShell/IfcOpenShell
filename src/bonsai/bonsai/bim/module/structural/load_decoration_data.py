@@ -886,22 +886,25 @@ class ShaderInfo:
             member_length = Vector(end_co - start_co).length
             processed_loads = self.process_total_linear_loads(activity_list, rotation, member_length)
             linear_loads = processed_loads["linear loads"]
-            maxforce = max(maxforce, processed_loads["max linear load"])
             keys = ["fx", "fy", "fz", "mx", "my", "mz"]
-            if linear_loads is not None and props.force_display != "COMPONENTS":
+            if linear_loads is None or props.force_display == "COMPONENTS":
+                maxforce = max(maxforce, processed_loads["max linear load"])
+            else:
                 # Each applied load is drawn on its own, along its resultant, as are point forces. Their sum, by
-                # components, is shown on request only: components overlap along a member.
+                # components, is shown on request only: components overlap along a member. The scale is of what
+                # is drawn, not of that sum, so that a load keeps its length as others on the member turn.
                 keys = keys[3:]
+                maxforce = max([maxforce] + [self.get_largest_load(linear_loads[key]) for key in keys])
                 for i, item in enumerate(activity_list):
                     own = self.process_total_linear_loads([item], rotation, member_length)
                     if (own_loads := own["linear loads"]) is None:
                         continue
-                    maxforce = max(maxforce, own["max linear load"])
                     if not (resolved := self.resolve_linear_forces(own_loads)):
                         # Its direction changes along the member: by components.
                         for base in ("fx", "fy", "fz"):
                             key = f"{base}:{i}"
                             linear_loads[key] = own_loads[base]
+                            maxforce = max(maxforce, self.get_largest_load(own_loads[base]))
                             direction_dict[key], match_dict[key] = direction_dict[base], match_dict[base]
                             keys.append(key)
                         continue
@@ -1064,9 +1067,12 @@ class ShaderInfo:
             "sinus": float(terms["sinus"] @ direction),
             "polyline": [[pos, float(v @ direction)] for (pos, _), v in zip(points, vectors)],
         }
-        total = resultant["constant"] + resultant["quadratic"] + resultant["sinus"]
-        largest = max([abs(total + value) for _, value in resultant["polyline"]] or [abs(total)])
-        return direction, resultant, largest
+        return direction, resultant, self.get_largest_load(resultant)
+
+    def get_largest_load(self, load: LoadByDirection) -> float:
+        """The largest magnitude of a line load along one direction, as the drawing's scale takes it"""
+        total = load["constant"] + load["quadratic"] + load["sinus"]
+        return max([abs(total + value) for _, value in load["polyline"]] or [abs(total)])
 
     def negate_load(self, load: LoadByDirection) -> LoadByDirection:
         """The same load in the opposite direction"""
