@@ -22,6 +22,7 @@ from typing import Union
 import bpy
 import ifcopenshell
 import ifcopenshell.util.doc
+import ifcopenshell.util.structural
 import ifcopenshell.util.unit
 
 import bonsai.tool as tool
@@ -485,7 +486,9 @@ class StructuralLoadCombinationsData:
         results = []
         for combination in get_load_combinations():
             load_cases = [
-                o for rel in combination.IsGroupedBy for o in rel.RelatedObjects if tool.Structural.is_load_case(o)
+                c
+                for c in ifcopenshell.util.structural.get_combination_factors(combination)
+                if tool.Structural.is_load_case(c)
             ]
             results.append(
                 {

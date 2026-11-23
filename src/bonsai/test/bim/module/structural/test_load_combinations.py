@@ -2,8 +2,10 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.group
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
+import ifcopenshell.guid
 import pytest
 
 import bonsai.tool as tool
@@ -214,3 +216,70 @@ class TestLoadGroupsTypedLoadCase(LoadCombinationFile):
         StructuralLoadCombinationsData.load()
         (data,) = StructuralLoadCombinationsData.data["load_combinations"]
         assert data["total_load_cases"] == 2
+
+
+class TestFactorGroups(LoadCombinationFile):
+    """RFEM writes a combination's factors in IFC4 as load groups typed LOAD_GROUP, their Coefficient the factor"""
+
+    def add_group(self, ifc, predefined_type, name=None, coefficient=None):
+        return ifc.createIfcStructuralLoadGroup(
+            GlobalId=ifcopenshell.guid.new(),
+            Name=name,
+            PredefinedType=predefined_type,
+            ActionType="NOTDEFINED",
+            ActionSource="NOTDEFINED",
+            Coefficient=coefficient,
+        )
+
+    def make_rfem(self):
+        ifc = self.make_file()
+        self.combination = self.add_group(ifc, "LOAD_COMBINATION", "Load Combination 1")
+        groups = []
+        for case, coefficient in ((self.dead, 1.5), (self.imposed, 0.9)):
+            group = self.add_group(ifc, "LOAD_GROUP", coefficient=coefficient)
+            ifc.createIfcRelAssignsToGroup(ifcopenshell.guid.new(), RelatedObjects=[case], RelatingGroup=group)
+            groups.append(group)
+        ifc.createIfcRelAssignsToGroup(ifcopenshell.guid.new(), RelatedObjects=groups, RelatingGroup=self.combination)
+        self.model.LoadedBy = [self.combination]
+        return ifc
+
+    def test_the_factors_are_shown(self):
+        self.make_rfem()
+        bpy.ops.bim.enable_editing_structural_load_combination(load_combination=self.combination.id())
+        assert self.factor_rows() == {"Dead": (True, 1.5), "Imposed": (True, 0.9)}
+
+    def test_the_load_cases_are_counted_in_the_list(self):
+        self.make_rfem()
+        StructuralLoadCombinationsData.load()
+        (data,) = StructuralLoadCombinationsData.data["load_combinations"]
+        assert data["total_load_cases"] == 2
+
+    def test_saving_gives_the_factors_as_ifc4_does(self):
+        ifc = self.make_rfem()
+        bpy.ops.bim.enable_editing_structural_load_combination(load_combination=self.combination.id())
+        self.set_row("Imposed", True, 1.05)
+        bpy.ops.bim.edit_structural_load_combination()
+        assert get_load_combination_factors(self.combination) == {self.dead: 1.5, self.imposed: 1.05}
+        # Every load case, changed or not, is grouped by factor, and the load groups are gone.
+        assert all(rel.is_a("IfcRelAssignsToGroupByFactor") for rel in self.combination.IsGroupedBy)
+        assert not [g for g in ifc.by_type("IfcStructuralLoadGroup") if g.PredefinedType == "LOAD_GROUP"]
+
+    def test_saving_in_ifc2x3_keeps_load_combination_groups(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
+        # IFC2X3 needs an owner, which Bonsai finds in the file.
+        ifc.createIfcPersonAndOrganization(ifc.createIfcPerson(), ifc.createIfcOrganization())
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        dead = self.add_group(ifc, "LOAD_CASE", "Dead")
+        combination = self.add_group(ifc, "LOAD_COMBINATION", "ULS")
+        group = self.add_group(ifc, "LOAD_COMBINATION_GROUP", coefficient=1.35)
+        ifcopenshell.api.group.assign_group(ifc, products=[dead], group=group)
+        ifcopenshell.api.group.assign_group(ifc, products=[group], group=combination)
+        bpy.ops.bim.enable_editing_structural_load_combination(load_combination=combination.id())
+        assert self.factor_rows() == {"Dead": (True, 1.35)}
+        self.set_row("Dead", True, 1.5)
+        bpy.ops.bim.edit_structural_load_combination()
+        assert get_load_combination_factors(combination) == {dead: 1.5}
+        (rel,) = dead.HasAssignments
+        assert rel.RelatingGroup.PredefinedType == "LOAD_COMBINATION_GROUP"
+        assert rel.RelatingGroup.Coefficient == 1.5

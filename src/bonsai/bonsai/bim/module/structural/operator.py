@@ -24,6 +24,7 @@ import bpy
 import ifcopenshell.api.attribute
 import ifcopenshell.api.group
 import ifcopenshell.api.structural
+import ifcopenshell.util.structural
 import ifcopenshell.util.unit
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from mathutils import Matrix, Vector
@@ -954,6 +955,13 @@ class EditStructuralLoadCombination(bpy.types.Operator, tool.Ifc.Operator):
         attributes = bonsai.bim.helper.export_attributes(props.load_combination_attributes)
         ifcopenshell.api.attribute.edit_attributes(ifc_file, product=combination, attributes=attributes)
         factors = get_load_combination_factors(combination)
+        if ifc_file.schema != "IFC2X3" and ifcopenshell.util.structural.get_combination_factor_groups(combination):
+            # Factors given by load groups, as RFEM writes them, are written again as IFC4 gives factors.
+            for load_case in factors:
+                ifcopenshell.api.structural.unassign_structural_load_combination(
+                    ifc_file, load_case=load_case, load_combination=combination
+                )
+            factors = {}
         for row in props.load_combination_factors:
             try:
                 load_case = ifc_file.by_id(row.ifc_definition_id)
@@ -995,15 +1003,11 @@ def get_load_combination_factors(
     """The factor of each load case in a combination, not counting its Coefficient
 
     A load case grouped without a factor counts once, and one grouped more than once
-    counts for the sum, as analysis programs add them up.
+    counts for the sum, as analysis programs add them up. One given its factor by a
+    load group between it and the combination, as RFEM and IFC2X3 do, has that factor.
     """
-    factors: dict[ifcopenshell.entity_instance, float] = {}
-    for rel in combination.IsGroupedBy:
-        factor = rel.Factor if rel.is_a("IfcRelAssignsToGroupByFactor") else 1.0
-        for load_case in rel.RelatedObjects:
-            if tool.Structural.is_load_case(load_case):
-                factors[load_case] = factors.get(load_case, 0.0) + factor
-    return factors
+    factors = ifcopenshell.util.structural.get_combination_factors(combination, include_coefficient=False)
+    return {c: f for c, f in factors.items() if tool.Structural.is_load_case(c)}
 
 
 class AddStructuralLoadGroup(bpy.types.Operator, tool.Ifc.Operator):
