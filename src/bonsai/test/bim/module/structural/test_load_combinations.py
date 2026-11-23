@@ -283,3 +283,50 @@ class TestFactorGroups(LoadCombinationFile):
         (rel,) = dead.HasAssignments
         assert rel.RelatingGroup.PredefinedType == "LOAD_COMBINATION_GROUP"
         assert rel.RelatingGroup.Coefficient == 1.5
+
+
+class TestShowingAFactorGroupCombination(TestFactorGroups):
+    """RFEM leaves LoadedBy empty: its combinations are inferred for the model, as its load cases are"""
+
+    def make_rfem(self):
+        ifc = super().make_rfem()
+        self.model.LoadedBy = None
+        point = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralPointConnection")
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc, products=[point], structural_analysis_model=self.model
+        )
+        for case in (self.dead, self.imposed):
+            load = ifcopenshell.api.structural.add_structural_load(ifc, ifc_class="IfcStructuralLoadSingleForce")
+            activity = ifcopenshell.api.structural.add_structural_activity(
+                ifc, applied_load=load, structural_member=point, ifc_class="IfcStructuralPointAction"
+            )
+            ifcopenshell.api.group.assign_group(ifc, products=[activity], group=case)
+        return ifc
+
+    def test_the_combination_is_one_of_the_models_load_groups(self):
+        self.make_rfem()
+        assert set(tool.Structural.get_load_cases(self.model)) == {self.dead, self.imposed, self.combination}
+
+    def test_its_loads_can_be_shown(self):
+        self.make_rfem()
+        LoadGroupDecorationData.load()
+        shown = [label for _, label, _ in LoadGroupDecorationData.data["load_groups_to_show"]]
+        # Under the combination, its load cases, not the unnamed groups that give their factors.
+        i = shown.index("Load Combination 1 (combination)")
+        assert sorted(shown[i + 1 : i + 3]) == ["    Dead", "    Imposed"]
+        assert bpy.ops.bim.show_structural_load_case(load_case=self.combination.id()) == {"FINISHED"}
+        assert tool.Structural.get_structural_props().load_group_to_show == str(self.combination.id())
+
+    def test_a_combination_with_a_case_of_another_model_is_left_out(self):
+        ifc = self.make_rfem()
+        other = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        point = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralPointConnection")
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            ifc, products=[point], structural_analysis_model=other
+        )
+        load = ifcopenshell.api.structural.add_structural_load(ifc, ifc_class="IfcStructuralLoadSingleForce")
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            ifc, applied_load=load, structural_member=point, ifc_class="IfcStructuralPointAction"
+        )
+        ifcopenshell.api.group.assign_group(ifc, products=[activity], group=self.imposed)
+        assert set(tool.Structural.get_load_cases(self.model)) == {self.dead}
