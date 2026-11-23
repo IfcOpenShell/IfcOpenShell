@@ -26,7 +26,9 @@
 __pycache__
 *.py.bak
 venv
-uv.lock
+# Those environments aren't locked, `uv.lock` is just a product of using uv for setting up dev envs.
+/uv.lock
+src/ifcopenshell-python/uv.lock
 
 # Visual Studio Code files
 .vscode

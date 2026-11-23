@@ -177,7 +177,7 @@ option(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OF
 option(WITH_PROJ "Enable output of Earth-Centered Earth-Fixed glTF output using the PROJ library" OFF)
 option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
 option(WITH_ROCKSDB "Support a RocksDB key-value store as a file backend in IfcOpenShell" OFF)
-option(WITH_ZSTD "Use Zstd compression in RocksDB writes" OFF)
+option(WITH_ZSTD "Use zstd (RocksDB compression, .ifcview serializer; required by Bonsai Viewer)" OFF)
 
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 option(USE_DEBUG_PYTHON "Use debug binaries when building Debug IfcPython on Windows." OFF)
@@ -243,8 +243,9 @@ if(USE_CCACHE)
             set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
             # Not needed for Ninja.
             if(CMAKE_GENERATOR MATCHES "Visual Studio")
+                resolve_scoop_shim(CCACHE_EXECUTABLE ${CCACHE_FOUND})
                 file(COPY_FILE
-                    ${CCACHE_FOUND} ${CMAKE_BINARY_DIR}/cl.exe
+                    ${CCACHE_EXECUTABLE} ${CMAKE_BINARY_DIR}/cl.exe
                     ONLY_IF_DIFFERENT)
                 set(CMAKE_VS_GLOBALS
                     "CLToolExe=cl.exe"
@@ -378,11 +379,16 @@ if(USD_SUPPORT)
     find_package(USD REQUIRED)
 endif(USD_SUPPORT)
 
-if (WITH_ROCKSDB)
-    # 1.5.5 is the version shipped with Ubuntu 24.04.
-    # Not referencing the zstd/RocksDB versions from 22.04 as they lack CMake configs.
-    set(ZSTD_MIN_VERSION 1.5.5)
+# 1.5.5 is the version shipped with Ubuntu 24.04.
+# Not referencing the zstd/RocksDB versions from 22.04 as they lack CMake configs.
+set(ZSTD_MIN_VERSION 1.5.5)
 
+if(BUILD_BONSAIVIEWER AND NOT WITH_ZSTD)
+    message(STATUS "BUILD_BONSAIVIEWER requires zstd, enabling WITH_ZSTD.")
+    set(WITH_ZSTD ON)
+endif()
+
+if (WITH_ROCKSDB)
     # 8.9.1 is the version shipped with Ubuntu 24.04.
     set(ROCKSDB_MIN_VERSION 8.9.1)
 

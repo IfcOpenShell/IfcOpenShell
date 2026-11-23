@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
+
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
 import test.bootstrap
@@ -77,3 +79,59 @@ class TestAddStructuralBoundaryConditionIFC2X3(test.bootstrap.IFC2X3):
         assert condition.RotationalStiffnessX == 0.0
         assert condition.RotationalStiffnessY == 0.0
         assert condition.RotationalStiffnessZ == 0.0
+
+
+class TestAddStructuralBoundaryConditionSupportIFC4(test.bootstrap.IFC4):
+    def stiffnesses(self, condition):
+        return {
+            name: value.wrappedValue
+            for name, value in condition.get_info().items()
+            if "Stiffness" in name and value is not None
+        }
+
+    def test_a_pinned_point_holds_displacements_only(self):
+        conn = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        condition = ifcopenshell.api.structural.add_structural_boundary_condition(
+            self.file, connection=conn, support="PINNED"
+        )
+        stiffnesses = self.stiffnesses(condition)
+        assert len(stiffnesses) == 6
+        assert all(v is True for k, v in stiffnesses.items() if k.startswith("Translational"))
+        assert all(v is False for k, v in stiffnesses.items() if k.startswith("Rotational"))
+
+    def test_a_fixed_edge_holds_rotations_as_well(self):
+        conn = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralCurveConnection")
+        condition = ifcopenshell.api.structural.add_structural_boundary_condition(
+            self.file, connection=conn, support="FIXED"
+        )
+        stiffnesses = self.stiffnesses(condition)
+        assert len(stiffnesses) == 6
+        assert all(stiffnesses.values())
+
+    def test_a_fixed_face_holds_its_displacements(self):
+        conn = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralSurfaceConnection")
+        condition = ifcopenshell.api.structural.add_structural_boundary_condition(
+            self.file, connection=conn, support="FIXED"
+        )
+        assert self.stiffnesses(condition) == {f"TranslationalStiffnessByArea{a}": True for a in "XYZ"}
+
+    def test_warping_is_left_free(self):
+        condition = ifcopenshell.api.structural.add_structural_boundary_condition(
+            self.file, ifc_class="IfcBoundaryNodeConditionWarping", support="FIXED"
+        )
+        assert condition.RotationalStiffnessZ.wrappedValue is True
+        assert condition.WarpingStiffness.wrappedValue is False
+
+    def test_an_unknown_support_is_refused(self):
+        with pytest.raises(ValueError):
+            ifcopenshell.api.structural.add_structural_boundary_condition(self.file, support="ROLLER")
+        assert not self.file.by_type("IfcBoundaryCondition")
+
+
+class TestAddStructuralBoundaryConditionSupportIFC2X3(test.bootstrap.IFC2X3):
+    def test_a_rigid_support_cannot_be_said(self):
+        conn = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralSurfaceConnection")
+        with pytest.raises(ValueError, match="IFC2X3"):
+            ifcopenshell.api.structural.add_structural_boundary_condition(self.file, connection=conn, support="PINNED")
+        assert not self.file.by_type("IfcBoundaryCondition")
+        assert conn.AppliedCondition is None

@@ -22,6 +22,7 @@ from typing import Union
 import bpy
 import ifcopenshell
 import ifcopenshell.util.doc
+import ifcopenshell.util.structural
 import ifcopenshell.util.unit
 
 import bonsai.tool as tool
@@ -79,11 +80,14 @@ class LoadGroupDecorationData:
             groups = tool.Structural.get_load_cases(m) if m else get_load_cases_and_combinations()
             for g in groups:
                 ret.append((str(g.id()), (g.Name or "Unnamed") + kinds.get(g.PredefinedType, ""), ""))
-                related_objects = [rel.RelatedObjects for rel in g.IsGroupedBy]
-                for item in related_objects:
-                    for subgoup in [sg for sg in item if sg.is_a("IfcStructuralLoadGroup")]:
-                        name = (subgoup.Name or "Unnamed") + kinds.get(subgoup.PredefinedType, "")
-                        ret.append((str(subgoup.id()), "    " + name, ""))
+                if g.PredefinedType == "LOAD_COMBINATION":
+                    # Its load cases, not the load groups some programs give their factors by.
+                    subgroups = list(ifcopenshell.util.structural.get_combination_factors(g))
+                else:
+                    subgroups = [o for rel in g.IsGroupedBy for o in rel.RelatedObjects]
+                for subgroup in [sg for sg in subgroups if sg.is_a("IfcStructuralLoadGroup")]:
+                    name = (subgroup.Name or "Unnamed") + kinds.get(subgroup.PredefinedType, "")
+                    ret.append((str(subgroup.id()), "    " + name, ""))
 
         elif props.activity_type == "External Reaction" and m:
             groups = m.HasResults or []
@@ -485,7 +489,9 @@ class StructuralLoadCombinationsData:
         results = []
         for combination in get_load_combinations():
             load_cases = [
-                o for rel in combination.IsGroupedBy for o in rel.RelatedObjects if o.is_a("IfcStructuralLoadCase")
+                c
+                for c in ifcopenshell.util.structural.get_combination_factors(combination)
+                if tool.Structural.is_load_case(c)
             ]
             results.append(
                 {

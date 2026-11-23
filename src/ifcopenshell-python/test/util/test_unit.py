@@ -403,6 +403,34 @@ class TestGetUnitSymbol(test.bootstrap.IFC4):
         )
         assert subject.get_unit_symbol(modulus) == "N/m2"
 
+    def test_psf_and_ksf_are_pressure_units(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        psf = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="psf")
+        ksf = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="ksf")
+        assert psf.UnitType == ksf.UnitType == "PRESSUREUNIT"
+        assert subject.get_unit_symbol(psf) == "psf"
+        assert subject.get_unit_symbol(ksf) == "ksf"
+        # 1 psf = 1 lbf / ft2
+        assert subject.get_unit_scale(psf) == pytest.approx(4.4482216153 / 0.3048**2)
+        assert subject.get_unit_scale(ksf) == pytest.approx(1000 * 4.4482216153 / 0.3048**2)
+
+    def test_every_si_unit_name_has_a_symbol(self):
+        for unit_type, name in subject.si_type_names.items():
+            unit = self.file.createIfcSIUnit(UnitType=unit_type, Name=name)
+            assert "?" not in subject.get_unit_symbol(unit), name
+        celsius = self.file.createIfcSIUnit(UnitType="THERMODYNAMICTEMPERATUREUNIT", Name="DEGREE_CELSIUS")
+        assert subject.get_unit_symbol(celsius) == "°C"
+
+    def test_thermal_transmittance_composes_a_symbol(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        watt = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="POWERUNIT")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        kelvin = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="THERMODYNAMICTEMPERATUREUNIT")
+        u_value = ifcopenshell.api.unit.add_derived_unit(
+            self.file, "THERMALTRANSMITTANCEUNIT", None, {watt: 1, area: -1, kelvin: -1}
+        )
+        assert subject.get_unit_symbol(u_value) == "W/m2.K"
+
     def test_rotational_stiffness_has_a_radian_symbol(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         force = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="FORCEUNIT", prefix="KILO")
