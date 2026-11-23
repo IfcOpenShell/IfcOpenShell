@@ -19,6 +19,7 @@
 # This file was generated with the assistance of an AI coding tool.
 
 import math
+from unittest.mock import MagicMock
 
 import bpy
 import ifcopenshell
@@ -31,7 +32,7 @@ from mathutils import Matrix
 
 import bonsai.tool as tool
 from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
-from test.bim.bootstrap import NewFile
+from test.bim.bootstrap import NewFile, NewIfc
 
 
 class TestLinearLoadsForMemberWithoutMesh(NewFile):
@@ -192,3 +193,63 @@ class TestLocalAxesTurnWithTheItem(NewFile):
         rotation = info.get_curve_member_rotation(member)
         values = info.parse_linear_loads_to_dict([(activity, 1.0)], rotation)["constant force"]
         assert np.allclose(values[:3], (0.0, 5.0, 0.0), atol=1e-5)
+
+
+class TestLineForcesAlongTheirResultant(NewIfc):
+    """A line load's force components are drawn as one load along their resultant, as an area load is"""
+
+    def load(self, constant=0.0, polyline=()):
+        return {"constant": constant, "quadratic": 0.0, "sinus": 0.0, "polyline": [list(p) for p in polyline]}
+
+    def test_a_uniform_load(self):
+        loads = {"fx": self.load(3.0), "fy": self.load(), "fz": self.load(4.0)}
+        direction, resultant, largest = ShaderInfo().resolve_linear_forces(loads)
+        assert np.allclose(direction, (0.6, 0.0, 0.8))
+        assert resultant["constant"] == 5.0 and largest == 5.0
+
+    def test_a_load_turning_along_the_member_stays_in_components(self):
+        loads = {
+            "fx": self.load(polyline=((0.0, 1.0), (1.0, 0.0))),
+            "fy": self.load(),
+            "fz": self.load(polyline=((0.0, 0.0), (1.0, 1.0))),
+        }
+        assert ShaderInfo().resolve_linear_forces(loads) is None
+
+    def make_member(self):
+        props = tool.Structural.get_structural_props()
+        props.structural_item_class = "IfcStructuralCurveMember"
+        bpy.ops.bim.add_structural_item()
+        obj = bpy.context.active_object
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        return tool.Ifc.get_entity(obj)
+
+    def get_force_diagrams(self):
+        info = ShaderInfo()
+        info.shader = MagicMock()
+        info.curve_members = {}
+        info.get_structural_elements_and_activities()
+        info.get_linear_loads()
+        patterns = [c.args[0] for c in info.shader.new.call_args_list]
+        diagrams = [i for i, p in zip(info.info, patterns) if p != "DISTRIBUTED MOMENT"]
+        return [i["uniforms"][0][1] for i in diagrams]
+
+    def test_a_local_load_on_a_tilted_member_is_drawn_once(self):
+        member = self.make_member()
+        bpy.ops.bim.apply_structural_load(load_group="0", axes="LOCAL_COORDS", y=-5.0)
+        ifcopenshell.api.structural.edit_structural_item_axis(tool.Ifc.get(), structural_item=member, axis=(0, -1, 1))
+        props = tool.Structural.get_structural_props()
+        props.reference_frame = "GLOBAL_COORDS"
+        assert self.get_force_diagrams() == [(1, 1, 1, 1)]
+        props.force_display = "COMPONENTS"
+        assert self.get_force_diagrams() == [(0, 1, 0, 1), (0, 0, 1, 1)]
+
+    def test_each_component_has_its_own_points(self):
+        self.make_member()
+        bpy.ops.bim.apply_structural_load(load_group="0", y=-3.0, z=-4.0)
+        member_length = 1.0
+        info = ShaderInfo()
+        info.get_structural_elements_and_activities()
+        (value,) = info.curve_members.values()
+        loads = info.process_total_linear_loads(value["activities"], np.eye(3), member_length)["linear loads"]
+        assert len(loads["fy"]["polyline"]) == len(loads["fz"]["polyline"]) == 2

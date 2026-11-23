@@ -887,6 +887,20 @@ class ShaderInfo:
             processed_loads = self.process_total_linear_loads(activity_list, rotation, member_length)
             linear_loads = processed_loads["linear loads"]
             maxforce = max(maxforce, processed_loads["max linear load"])
+            keys = ["fx", "fy", "fz", "mx", "my", "mz"]
+            if linear_loads is not None and props.force_display != "COMPONENTS":
+                if resolved := self.resolve_linear_forces(linear_loads):
+                    direction, resultant, largest = resolved
+                    # The direction is in the reference frame shown: in Blender's axes, the member's own if local.
+                    direction = Vector(rotation @ direction if is_local else direction).normalized()
+                    if direction.dot(x_axis) < 0 and abs(direction.dot(x_axis)) > 0.99:
+                        direction, resultant = -direction, self.negate_load(resultant)
+                    axial = abs(direction.dot(x_axis)) > 0.99
+                    linear_loads["f"] = resultant
+                    direction_dict["f"] = y_axis + z_axis if axial else direction
+                    match_dict["f"] = axial
+                    maxforce = max(maxforce, largest)
+                    keys = ["f"] + keys[3:]  # Components overlap along a member: they are shown on request only.
             point_loads = processed_loads["discrete loads"]
 
             if len(point_loads) > 0:
@@ -899,7 +913,6 @@ class ShaderInfo:
                         self.get_point_moment_args(values[3:], pos_vector, rotation)
             if linear_loads is None:
                 continue
-            keys = ["fx", "fy", "fz", "mx", "my", "mz"]
 
             for key in keys:
                 polyline = linear_loads[key]["polyline"]
@@ -908,7 +921,9 @@ class ShaderInfo:
                 constant = linear_loads[key]["constant"]
                 direction = direction_dict[key]
                 color_axis = (0, 0, 1, 1)
-                if "x" in key:
+                if key == "f":
+                    color_axis = (1, 1, 1, 1)  # As the resultant of point forces.
+                elif "x" in key:
                     color_axis = (1, 0, 0, 1)
                 if "y" in key:
                     color_axis = (0, 1, 0, 1)
@@ -1002,6 +1017,50 @@ class ShaderInfo:
                         uniform[1] = maxforce
                         break
 
+    def resolve_linear_forces(
+        self, linear_loads: dict[str, LoadByDirection]
+    ) -> Union[tuple[np.ndarray, LoadByDirection, float], None]:
+        """The force components of a line load as one load along their resultant, if they keep one direction along
+        the member, as a uniform load always does.
+
+        :return: The resultant's unit direction in the reference frame of the components, the load along it, and its
+            largest magnitude; or None if there is no force or its direction varies along the member.
+        """
+        forces = [linear_loads[key] for key in ("fx", "fy", "fz")]
+        terms = {
+            term: np.array([force[term] for force in forces], dtype=float)
+            for term in ("constant", "quadratic", "sinus")
+        }
+        points = next((force["polyline"] for force in forces if force["polyline"]), [])
+        polylines = [force["polyline"] or [[pos, 0.0] for pos, _ in points] for force in forces]
+        if any(len(polyline) != len(points) for polyline in polylines):
+            return None
+        vectors = [np.array([polyline[i][1] for polyline in polylines]) for i in range(len(points))]
+        candidates = [v for v in list(terms.values()) + vectors if np.linalg.norm(v) > 1e-9]
+        if not candidates:
+            return None
+        direction = candidates[0] / np.linalg.norm(candidates[0])
+        if any(np.linalg.norm(np.cross(v, direction)) > 1e-6 * np.linalg.norm(v) for v in candidates):
+            return None
+        resultant: LoadByDirection = {
+            "constant": float(terms["constant"] @ direction),
+            "quadratic": float(terms["quadratic"] @ direction),
+            "sinus": float(terms["sinus"] @ direction),
+            "polyline": [[pos, float(v @ direction)] for (pos, _), v in zip(points, vectors)],
+        }
+        total = resultant["constant"] + resultant["quadratic"] + resultant["sinus"]
+        largest = max([abs(total + value) for _, value in resultant["polyline"]] or [abs(total)])
+        return direction, resultant, largest
+
+    def negate_load(self, load: LoadByDirection) -> LoadByDirection:
+        """The same load in the opposite direction"""
+        return {
+            "constant": -load["constant"],
+            "quadratic": -load["quadratic"],
+            "sinus": -load["sinus"],
+            "polyline": [[pos, -value] for pos, value in load["polyline"]],
+        }
+
     def process_total_linear_loads(
         self,
         activity_list: list[tuple[ifcopenshell.entity_instance, float]],
@@ -1047,7 +1106,6 @@ class ShaderInfo:
         if len(final_list) > 0:
             array = np.array(final_list)  # 7xn -> ["pos","fx","fy","fz","mx","my","mz"]
             keys = ["fx", "fy", "fz", "mx", "my", "mz"]
-            polyline = []
             distributed_loads = {
                 "fx": {"constant": 0, "quadratic": 0, "sinus": 0, "polyline": []},
                 "fy": {"constant": 0, "quadratic": 0, "sinus": 0, "polyline": []},
@@ -1061,6 +1119,7 @@ class ShaderInfo:
                 if any([sinus[component], quad[component], const[component]]) or any(
                     item for item in array[:, component + 1]
                 ):
+                    polyline = []
                     for currentitem in final_list:
                         polyline.append([currentitem[0], currentitem[component + 1]])
                         max_load = max(
