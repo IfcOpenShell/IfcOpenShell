@@ -93,8 +93,59 @@ def get_model_load_cases(model: ifcopenshell.entity_instance) -> list[ifcopenshe
     return list(cases)
 
 
+#: Load group types that, inside a load combination, stand for the load
+#: cases they group, their Coefficient the factor: IFC2X3's
+#: LOAD_COMBINATION_GROUP, and LOAD_GROUP, which RFEM writes in IFC4 for
+#: the same thing.
+FACTOR_GROUP_TYPES = ("LOAD_COMBINATION_GROUP", "LOAD_GROUP")
+
+
+def is_factor_group(group: ifcopenshell.entity_instance) -> bool:
+    """Whether a load group in a load combination gives a factor to what it groups
+
+    :param group: An IfcStructuralLoadGroup grouped into a load combination
+    :return: True if it is a LOAD_COMBINATION_GROUP or a LOAD_GROUP
+    """
+    return (
+        group.is_a("IfcStructuralLoadGroup")
+        and not group.is_a("IfcStructuralLoadCase")
+        and group.PredefinedType in FACTOR_GROUP_TYPES
+    )
+
+
+def get_combination_factor_groups(combination: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+    """The factor groups between a load combination and its load cases
+
+    See :func:`get_combination_factors`.
+
+    :param combination: An IfcStructuralLoadGroup of type LOAD_COMBINATION
+    :return: Its LOAD_COMBINATION_GROUP and LOAD_GROUP load groups, each
+        after every one of them that groups it
+    """
+    within: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]] = {}
+    pending = [combination]
+    while pending:
+        group = pending.pop(0)
+        for rel in group.IsGroupedBy:
+            for related in rel.RelatedObjects:
+                if is_factor_group(related):
+                    if related not in within:
+                        within[related] = []
+                        pending.append(related)
+                    if group != combination:
+                        within[related].append(group)
+    groups = []
+    while within:
+        ready = [g for g, parents in within.items() if not any(p in within for p in parents)]
+        # Groups that group each other, in a faulty file, in any order.
+        for group in ready or list(within):
+            groups.append(group)
+            del within[group]
+    return groups
+
+
 def get_combination_factors(
-    combination: ifcopenshell.entity_instance,
+    combination: ifcopenshell.entity_instance, include_coefficient: bool = True
 ) -> dict[ifcopenshell.entity_instance, float]:
     """The load cases of a load combination with the factor of each
 
@@ -104,31 +155,34 @@ def get_combination_factors(
     one. A load case grouped into the combination twice has the sum of its
     factors.
 
-    IFC2X3 has no IfcRelAssignsToGroupByFactor: there a load case is given
-    its factor by a load group of type LOAD_COMBINATION_GROUP between it and
-    the combination, whose Coefficient is the factor. Such a group stands
-    for what it groups, its Coefficient multiplying their factors.
+    A load case may also be given its factor by a load group between it
+    and the combination, whose Coefficient is the factor: IFC2X3, which has
+    no IfcRelAssignsToGroupByFactor, has load groups of type
+    LOAD_COMBINATION_GROUP for this, and RFEM writes load groups of type
+    LOAD_GROUP for it in IFC4. Such a group stands for what it groups, its
+    Coefficient multiplying their factors.
 
     :param combination: An IfcStructuralLoadGroup of type LOAD_COMBINATION
+    :param include_coefficient: False to leave out the combination's own
+        Coefficient, as when it is shown apart from the factors. Those of
+        the groups in it still count.
     :return: The factor of each load case in the combination
     """
     factors = {}
-    pending = [(combination, 1.0)]
-    seen = set()
+    # A group reached by two ways counts for each, but one that groups itself, in a faulty file, only once.
+    pending = [(combination, 1.0, frozenset([combination]))]
     while pending:
-        group, scale = pending.pop()
-        if group in seen:
-            continue
-        seen.add(group)
-        if group.Coefficient is not None:
+        group, scale, path = pending.pop()
+        if group.Coefficient is not None and (include_coefficient or group != combination):
             scale *= group.Coefficient
         for rel in group.IsGroupedBy:
             factor = scale * (rel.Factor if rel.is_a("IfcRelAssignsToGroupByFactor") else 1.0)
             for related in rel.RelatedObjects:
                 if not related.is_a("IfcStructuralLoadGroup"):
                     continue
-                if related.PredefinedType == "LOAD_COMBINATION_GROUP":
-                    pending.append((related, factor))
+                if is_factor_group(related):
+                    if related not in path:
+                        pending.append((related, factor, path | {related}))
                 else:
                     factors[related] = factors.get(related, 0.0) + factor
     return factors
