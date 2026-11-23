@@ -139,6 +139,65 @@ class TestIsMeasurableSpecialType(NewFile):
         assert subject.is_measurable_special_type("PRESSURE") is True
 
 
+class TestGetProjectUnitForSpecialType(NewFile):
+    def test_returns_the_assigned_project_unit(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        length_mm = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[length_mm])
+        assert subject.get_project_unit_for_special_type("LENGTH", ifc) == length_mm
+
+    def test_returns_none_when_the_unit_exists_but_is_not_assigned(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.add_si_unit(ifc, unit_type="PRESSUREUNIT")
+        assert subject.get_project_unit_for_special_type("PRESSURE", ifc) is None
+
+    def test_returns_none_for_non_measurable_special_types(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        assert subject.get_project_unit_for_special_type("URI", ifc) is None
+
+
+class TestIsUnitUndefinedForProp(NewFile):
+    def setup_file(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        return ifc
+
+    def test_true_for_a_measure_without_own_unit_or_project_default(self):
+        ifc = self.setup_file()
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcPressureMeasure(5.0))
+        assert subject.is_unit_undefined_for_prop(prop, ifc) is True
+
+    def test_false_when_the_project_defines_a_default(self):
+        ifc = self.setup_file()
+        pascal = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="PRESSUREUNIT")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[pascal])
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcPressureMeasure(5.0))
+        assert subject.is_unit_undefined_for_prop(prop, ifc) is False
+
+    def test_false_when_the_property_carries_its_own_unit(self):
+        ifc = self.setup_file()
+        pascal = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="PRESSUREUNIT")
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcPressureMeasure(5.0), Unit=pascal)
+        assert subject.is_unit_undefined_for_prop(prop, ifc) is False
+
+    def test_false_for_a_non_measure_property(self):
+        ifc = self.setup_file()
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcText("Bar"))
+        assert subject.is_unit_undefined_for_prop(prop, ifc) is False
+
+    def test_true_for_a_quantity_without_a_project_default(self):
+        ifc = self.setup_file()
+        qty = ifc.createIfcQuantityArea(Name="NetArea", AreaValue=5.0)
+        assert subject.is_unit_undefined_for_prop(qty, ifc) is True
+
+
 class TestGetCandidateUnitsForSpecialType(NewFile):
     def test_returns_candidates_matching_the_special_type(self):
         ifc = ifcopenshell.file()

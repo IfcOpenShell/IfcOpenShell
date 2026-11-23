@@ -54,6 +54,7 @@
 #include "ModelLookup.h"
 #include "InstancedGeometry.h"
 #include "ModelGpuData.h"
+#include "SectionCapRenderer.h"
 #include "SectionGizmoRenderer.h"
 #include "SectionPlane.h"
 #include "SelectionState.h"
@@ -821,10 +822,37 @@ public:
     // `dpr` scales the ring widths so they hold their apparent size on a
     // HiDPI canvas. No-op when nothing is selected.
     void encodeSelectionOutlinePass(WGPUCommandEncoder enc,
-                                    WGPUTextureView surface_view, int dpr);
+                                    WGPUTextureView surface_view, float dpr);
 
     void setSelectionOutlineEnabled(bool on) { selection_outline_enabled_ = on; }
     bool selectionOutlineEnabled() const     { return selection_outline_enabled_; }
+
+    // ---- Section caps ------------------------------------------------------
+    //
+    // Fill the cross-section where a section plane cuts through a solid (see
+    // SectionCapRenderer). On by default; never drawn in x-ray, where the
+    // point is to see through.
+    void setSectionCapsEnabled(bool enabled);
+    bool sectionCapsEnabled() const { return section_caps_enabled_; }
+    void setSectionCapStyle(const SectionCapStyle& style);
+    const SectionCapStyle& sectionCapStyle() const { return section_cap_style_; }
+
+    // Build the accumulation pipeline; buildPipelines() calls it.
+    bool buildSectionCapPipeline();
+
+    // Accumulate the cap parity for this frame. Must be encoded before the
+    // main pass, which composites the result. Returns false when there is
+    // nothing to cap.
+    bool encodeSectionCapAccumPass(WGPUCommandEncoder enc);
+
+    // Whether caps are being drawn at all this frame.
+    bool sectionCapsActive() const;
+
+    // Whether the pixel can show a cap: caps are active and its view ray
+    // enters the kept region through a section plane. Fills the point on that
+    // plane and the plane's normal.
+    bool sectionCapRayEntry(int x_pixels, int y_pixels,
+                            Eigen::Vector3f& point_out, Eigen::Vector3f& normal_out) const;
 
     // ---- Pick + raycast (#84-t) -------------------------------------------
     //
@@ -862,20 +890,35 @@ public:
                                                        int w, int h,
                                                        std::uint64_t needed_bytes);
 
-    // Build the x-ray box-pick pipeline: vs_pick + fs_boxpick, depth compare
-    // Always with no depth write and no colour targets, so nothing culls a
-    // fragment behind another and the pass's only output is the hit bitmask.
-    bool buildBoxPickPipeline();
+    // Build the two hit-bitmask pipelines: vs_pick with depth compare Always,
+    // no depth write and no colour targets, so nothing culls a fragment behind
+    // another and the pass's only output is a bit per object.
+    //   box_pick_pipeline_  fs_boxpick sets the bit: the x-ray marquee.
+    //   cap_pick_pipeline_  fs_cappick flips it: the section cap pick, which
+    //                       wants the objects with an odd number of faces
+    //                       along the ray (see SectionCapRenderer).
+    bool buildHitFlagsPipelines();
 
-    // Encode the depth-less box-pick pass scissored to (x,y,w,h): zero the hit
-    // bits, draw every visible chunk, copy the bitmask into
-    // hit_flags_staging_buffer_ and submit. Clamps the rect in place and reports
-    // the byte count to map. False if nothing is pickable or the rect is empty.
-    bool encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
-                                    std::uint64_t& needed_bytes_out);
+    // Encode a hit-bitmask pass scissored to (x,y,w,h): zero the bits, draw
+    // every visible chunk with `pipeline`, copy the bitmask into
+    // hit_flags_staging_buffer_ and submit. Clamps the rect in place and
+    // reports the byte count to map. False if nothing is pickable or the rect
+    // is empty.
+    bool encodeHitFlagsPassToStaging(WGPURenderPipeline pipeline,
+                                     int& x, int& y, int& w, int& h,
+                                     std::uint64_t& needed_bytes_out);
     // Read the (already-mapped) hit bitmask → the object ids whose bit is set.
     // Unmaps before returning.
-    std::vector<std::uint32_t> collectMappedXrayHitIds(std::uint64_t needed_bytes);
+    std::vector<std::uint32_t> collectMappedHitIds(std::uint64_t needed_bytes);
+
+    // encodeHitFlagsPassToStaging + a blocking map → the ids. Desktop.
+    std::vector<std::uint32_t> hitFlagsPick(WGPURenderPipeline pipeline,
+                                            int x, int y, int w, int h);
+
+    // The object whose section cap is drawn at the pixel, or 0. Where solids
+    // overlap, any one of them. `normal_out` gets the cut plane's normal.
+    std::uint32_t pickSectionCapAt(int x_pixels, int y_pixels,
+                                   Eigen::Vector3f* normal_out = nullptr);
 
     // CPU half of pickSurfaceAt: cast the pixel's world ray against every
     // instance carrying `object_id`, returning the closest hit's world pos,
@@ -965,6 +1008,15 @@ public:
     // time (a pick issued while another is mapping is dropped → cb(0)).
     void pickObjectAtAsync(int x_pixels, int y_pixels,
                            std::function<void(std::uint32_t)> cb);
+    // The depth-tested half of pickObjectAtAsync: what is visible at the
+    // pixel, section caps aside.
+    void pickVisibleObjectAtAsync(int x_pixels, int y_pixels,
+                                  std::function<void(std::uint32_t)> cb);
+    // Async sibling of hitFlagsPick. Shares the marquee's in-flight state, so
+    // one issued while a box pick is mapping is dropped → cb({}).
+    void hitFlagsPickAsync(WGPURenderPipeline pipeline,
+                           int x, int y, int w, int h,
+                           std::function<void(std::vector<std::uint32_t>)> cb);
 #endif
 
     // Marquee box select: encode the pick pass, copy the (x, y, w, h)
@@ -972,7 +1024,7 @@ public:
     // non-zero ids. Synchronous (rare interaction) — desktop only path.
     //
     // In x-ray this instead runs the depth-less box-pick pass (see
-    // encodeXrayBoxPickToStaging), so the marquee selects THROUGH occluders —
+    // encodeHitFlagsPassToStaging), so the marquee selects THROUGH occluders —
     // matching what x-ray already lets you see. Outside x-ray the depth-tested
     // MRT read stands, so a marquee still takes only what is actually visible.
     std::vector<std::uint32_t> picksInRect(int x, int y, int w, int h);
@@ -1228,6 +1280,10 @@ private:
     // Lifted out of the Qt-coupled OverlayRenderer so one identical gizmo draws
     // everywhere; the desktop's OverlayRenderer no longer draws it.
     SectionGizmoRenderer section_gizmo_;
+    SectionCapRenderer   section_caps_;
+    WGPURenderPipeline   section_cap_accum_pipeline_ = nullptr;
+    bool                 section_caps_enabled_       = true;
+    SectionCapStyle      section_cap_style_;
     // Corner axis gizmo + orbit pivot indicator, likewise shared by desktop +
     // web. Same lift out of the Qt-coupled OverlayRenderer.
     AxisIndicatorRenderer axis_indicator_;
@@ -1374,6 +1430,7 @@ private:
     WGPUBuffer         hit_flags_staging_buffer_   = nullptr;
     std::uint64_t      hit_flags_staging_capacity_ = 0;
     WGPURenderPipeline box_pick_pipeline_          = nullptr;
+    WGPURenderPipeline cap_pick_pipeline_          = nullptr;
 #if defined(__EMSCRIPTEN__)
     // Async object-pick state (web). Held while the staging map is in flight;
     // pick_async_cb_ fires with object_id when the spontaneous map resolves.

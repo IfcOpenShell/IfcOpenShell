@@ -283,9 +283,23 @@ typedef item const* ptr;
 
 			struct IFC_GEOM_API matrix4 : public item, public eigen_base<Eigen::Matrix4d> {
 			private:
+				static Eigen::Vector3d stable_normalized(const Eigen::Vector3d& v) {
+					// Preserve the original computation when numerically safe.
+					const double squared_norm = v.squaredNorm();
+					if (std::isnormal(squared_norm)) {
+						return v / std::sqrt(squared_norm);
+					}
+
+					const double scale = v.cwiseAbs().maxCoeff();
+					if (scale == 0.0) {
+						return v;
+					}
+					return (v / scale).normalized();
+				}
+
 				void init(const Eigen::Vector3d& o, const Eigen::Vector3d& z, const Eigen::Vector3d& x) {
-					auto Z = z.normalized();
-					auto Y = Z.cross(x).normalized();
+					auto Z = stable_normalized(z);
+					auto Y = stable_normalized(Z.cross(x));
 					auto X = Y.cross(Z);
 					components_ = new Eigen::Matrix4d;
 					(*components_) <<
@@ -736,6 +750,11 @@ typedef item const* ptr;
 			struct IFC_GEOM_API curve : public geom_item {
 				// Unbounded conics default to a full turn; lines require a finite range.
 				std::vector<point3> to_polygon(const settings&, double start = -std::numeric_limits<double>::infinity(), double end = std::numeric_limits<double>::infinity(), int segments = 0) const;
+				// The point (derivative 0) or the derivative of that order with respect to u.
+				// u is the distance along a line, the angle in radians on a circle or
+				// ellipse, and a knot value on a B-spline. An offset curve takes the u
+				// of its basis and has no derivative beyond the first.
+				Eigen::Vector3d evaluate(int derivative, double u) const;
 				void print_impl(std::ostream& o, const std::string& classname, int indent = 0) const {
 					o << std::string(indent, ' ') << classname << std::endl;
 					this->matrix->print(o, indent + 4);
@@ -869,6 +888,8 @@ typedef item const* ptr;
 			struct IFC_GEOM_API trimmed_curve : public geom_item {
 				DECLARE_PTR(trimmed_curve)
 				std::vector<point3> to_polygon(const settings&) const;
+				// u runs from 0 at the first point to_polygon() yields to 1 at the last.
+				Eigen::Vector3d evaluate(int derivative, double u) const;
 
 				// @todo The copy constructor of point3 within the variant fails on the avx instruction
 				// on the default gcc in Ubuntu 18.04 and a recent AMD Ryzen. Probably due to allignment.
@@ -994,6 +1015,9 @@ typedef item const* ptr;
 			struct IFC_GEOM_API loop : public collection_base<edge> {
 				DECLARE_PTR(loop)
 				std::vector<point3> to_polygon(const settings&) const;
+				// Edge i spans u from i to i + 1. The segment to_polygon() adds to close
+				// an open loop is not part of the range.
+				Eigen::Vector3d evaluate(int derivative, double u) const;
 
 				std::optional<bool> external, closed;
 				std::optional<taxonomy::function_item::ptr> fi;

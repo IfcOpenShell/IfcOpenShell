@@ -105,6 +105,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="${IFCOPENSHELL_PREFIX}" \
             -DMINIMAL_BUILD=ON \
             -DBUILD_IFCPYTHON=OFF \
+            -DWITH_ZSTD=ON \
             -DUSE_CCACHE=ON \
             "-DSCHEMA_VERSIONS=4x3_add2"
 

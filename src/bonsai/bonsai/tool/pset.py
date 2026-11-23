@@ -241,6 +241,25 @@ class Pset(bonsai.core.tool.Pset):
         return ""
 
     @classmethod
+    def get_project_unit_for_special_type(
+        cls, special_type: str, ifc_file: ifcopenshell.file
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """The project default unit (from IfcUnitAssignment) for a `special_type`, or None if
+        the project defines none -- i.e. values of this type without their own `Unit` override
+        have an undefined unit."""
+        if not cls.is_measurable_special_type(special_type):
+            return None
+        return ifcopenshell.util.unit.get_project_unit(ifc_file, f"{special_type}UNIT")
+
+    @classmethod
+    def is_unit_undefined_for_prop(cls, prop: ifcopenshell.entity_instance, ifc_file: ifcopenshell.file) -> bool:
+        """True if an existing property/quantity is measurable but has no unit at all: neither
+        its own `Unit` override nor a project default for its measure type."""
+        if not cls.is_measurable_special_type(cls.get_special_type_for_prop(prop)):
+            return False
+        return ifcopenshell.util.unit.get_property_unit(prop, ifc_file) is None
+
+    @classmethod
     def get_unit_symbol_for_special_type(cls, special_type: str, ifc_file: ifcopenshell.file) -> str:
         """Get the project's default unit symbol for a `special_type` (see `get_special_type_for_prop`).
 
@@ -266,6 +285,14 @@ class Pset(bonsai.core.tool.Pset):
             return ""
         unit = ifcopenshell.util.unit.get_property_unit(prop, ifc_file)
         return ifcopenshell.util.unit.get_unit_symbol(unit) if unit else ""
+
+    # Label shown wherever a measurable value has no unit at all (no own Unit override and no
+    # project default in IfcUnitAssignment), as opposed to "Default", which implies one exists.
+    UNDEFINED_UNIT_LABEL = "Undefined"
+    UNDEFINED_UNIT_DESCRIPTION = (
+        "The project's unit assignment defines no unit for this measure, so values without their own "
+        "unit have no defined unit. Pick a unit override, or add a project unit for this measure"
+    )
 
     # special_type values that don't denote a real unit-bearing measure (see get_special_type_for_prop).
     NON_MEASURABLE_SPECIAL_TYPES = frozenset({"", "DATE", "DATETIME", "LOGICAL", "URI", "DURATION"})

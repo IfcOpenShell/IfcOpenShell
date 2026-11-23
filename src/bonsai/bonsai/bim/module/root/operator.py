@@ -26,6 +26,7 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import ifcopenshell.api.structural
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.schema
@@ -303,15 +304,8 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 # Apply geometry.
                 if obj.modifiers:
                     ensure_single_user_mesh(obj.data)
-                    # In older Blender versions 'object.convert'
-                    # still requires object to be both selected and active.
-                    is_old_blender = bpy.app.version < (4, 4, 0)
                     with context.temp_override(selected_editable_objects=[obj]):
-                        if is_old_blender:
-                            tool.Blender.set_active_object(obj)
                         bpy.ops.object.convert(target="MESH")
-                        if is_old_blender:
-                            tool.Blender.clear_objects_selection()
 
                 # Apply scale.
                 if obj.scale != (1, 1, 1):
@@ -817,6 +811,13 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             end = Vector((1, 0, 0)) / unit_scale
             representation = builder.get_representation(ifc_context, [builder.edge(end=end)])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+            is_curve_item = element.is_a("IfcStructuralCurveMember") or element.is_a("IfcStructuralCurveConnection")
+            if is_curve_item and tool.Ifc.get_schema() != "IFC2X3":
+                # Its Axis is mandatory since IFC4 (IFC2X3 has none): the default local z, square to the edge.
+                axis = tool.Structural.get_default_item_axes(end).col[2]
+                ifcopenshell.api.structural.edit_structural_item_axis(
+                    tool.Ifc.get(), structural_item=element, axis=tuple(axis)
+                )
             bonsai.core.geometry.switch_representation(
                 tool.Ifc,
                 tool.Geometry,
