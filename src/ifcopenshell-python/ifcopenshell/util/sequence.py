@@ -957,13 +957,12 @@ def is_work_time_applicable_to_day(work_time: ifcopenshell.entity_instance, day)
 
 def get_task_work_schedule(task: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
     parent_task = get_parent_task(task)
-    if parent_task:
-        return get_task_work_schedule(parent_task) or get_task_work_schedule(task)
-    else:
-        for rel in task.HasAssignments:
-            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule"):
-                return rel.RelatingControl
-        return None
+    if parent_task and (work_schedule := get_task_work_schedule(parent_task)):
+        return work_schedule
+    for rel in task.HasAssignments:
+        if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule"):
+            return rel.RelatingControl
+    return None
 
 
 def get_nested_tasks(task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
