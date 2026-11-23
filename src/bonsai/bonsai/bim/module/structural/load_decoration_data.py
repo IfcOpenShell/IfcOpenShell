@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
 from collections.abc import Iterable
 from math import sin
 from typing import Literal, TypedDict, Union
@@ -78,6 +79,76 @@ ProcessedLoad = TypedDict(
         "discrete loads": list[list[DiscreteConfigItem]],
     },
 )
+
+
+def box_crosses_segments(
+    left: float, low: float, width: float, height: float, segments: Iterable[tuple[Iterable, Iterable]]
+) -> bool:
+    """Whether a label's box, from (left, low) and of a width and height in 2D, touches any of the lines given as
+    pairs of end points, so that labels can keep off arrows and arcs as well as each other"""
+    right, high = left + width, low + height
+    for (x1, y1), (x2, y2) in segments:
+        if max(x1, x2) < left or min(x1, x2) > right or max(y1, y2) < low or min(y1, y2) > high:
+            continue  # Nowhere near, which most lines are; quick to rule out, as this runs on every redraw.
+        # Clip the line to the box (Liang-Barsky): any part left means it crosses the box.
+        t0, t1 = 0.0, 1.0
+        dx, dy = x2 - x1, y2 - y1
+        for p, q in ((-dx, x1 - left), (dx, right - x1), (-dy, y1 - low), (dy, high - y1)):
+            if p == 0:
+                if q < 0:
+                    break  # Parallel to this edge and outside it.
+                continue
+            t = q / p
+            if p < 0:
+                t0 = max(t0, t)
+            else:
+                t1 = min(t1, t)
+            if t0 > t1:
+                break
+        else:
+            return True
+    return False
+
+
+class ScreenGrid:
+    """Label boxes and lines on screen, kept by the cells of a grid they touch, so that a label being placed is
+    tested only against those near it, as this runs on every redraw with as many labels as loads shown"""
+
+    def __init__(self, cell: float = 64.0) -> None:
+        self.cell = cell
+        self.boxes: dict[tuple[int, int], list[tuple[float, float, float, float]]] = {}
+        self.segments: dict[tuple[int, int], list[tuple[Iterable, Iterable]]] = {}
+
+    def get_cells(self, left: float, low: float, right: float, high: float) -> Iterable[tuple[int, int]]:
+        c = self.cell
+        for i in range(math.floor(left / c), math.floor(right / c) + 1):
+            for j in range(math.floor(low / c), math.floor(high / c) + 1):
+                yield i, j
+
+    def add_box(self, left: float, low: float, width: float, height: float) -> None:
+        for cell in self.get_cells(left, low, left + width, low + height):
+            self.boxes.setdefault(cell, []).append((left, low, width, height))
+
+    def add_segment(self, start: Iterable, end: Iterable) -> None:
+        (x1, y1), (x2, y2) = start, end
+        for cell in self.get_cells(min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)):
+            self.segments.setdefault(cell, []).append((start, end))
+
+    def overlaps_box(self, left: float, low: float, width: float, height: float, margin: float = 0.0) -> bool:
+        """Whether a box comes within margin of a box added"""
+        for cell in self.get_cells(left - margin, low - margin, left + width + margin, low + height + margin):
+            for bl, bb, bw, bh in self.boxes.get(cell, ()):
+                if left < bl + bw + margin and bl < left + width + margin and low < bb + bh + margin:
+                    if bb < low + height + margin:
+                        return True
+        return False
+
+    def crosses_segment(self, left: float, low: float, width: float, height: float) -> bool:
+        """Whether a box touches any line added"""
+        return any(
+            box_crosses_segments(left, low, width, height, self.segments.get(cell, ()))
+            for cell in self.get_cells(left, low, left + width, low + height)
+        )
 
 
 class ShaderInfo:
@@ -744,6 +815,8 @@ class ShaderInfo:
                 },
                 "indices": [(0, 1, 2), (0, 3, 4)],
                 "uniforms": [["color", color], ["spacing", spacing]],
+                # On screen, labels keep off it.
+                "segment": (tail, tip),
             }
         )
         if activity:
@@ -774,6 +847,8 @@ class ShaderInfo:
                 "indices": indices,
                 # A spacing far longer than the line draws it solid.
                 "uniforms": [["color", color], ["spacing", size * 0.03 if dashed else size * 1000]],
+                # On screen, labels keep off a solid line, as an angle's arc; dashed guides they may cross.
+                "segment": None if dashed else (start, end),
             }
         )
 
