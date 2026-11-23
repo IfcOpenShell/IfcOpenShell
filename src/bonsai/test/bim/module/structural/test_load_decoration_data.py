@@ -227,12 +227,11 @@ class TestLineForcesAlongTheirResultant(NewIfc):
     def get_force_diagrams(self):
         info = ShaderInfo()
         info.shader = MagicMock()
+        info.shader.new.side_effect = lambda pattern: pattern
         info.curve_members = {}
         info.get_structural_elements_and_activities()
         info.get_linear_loads()
-        patterns = [c.args[0] for c in info.shader.new.call_args_list]
-        diagrams = [i for i, p in zip(info.info, patterns) if p != "DISTRIBUTED MOMENT"]
-        return [i["uniforms"][0][1] for i in diagrams]
+        return [i["uniforms"][0][1] for i in info.info if i["shader"] != "DISTRIBUTED MOMENT"]
 
     def test_a_local_load_on_a_tilted_member_is_drawn_once(self):
         member = self.make_member()
@@ -241,6 +240,17 @@ class TestLineForcesAlongTheirResultant(NewIfc):
         props = tool.Structural.get_structural_props()
         props.reference_frame = "GLOBAL_COORDS"
         assert self.get_force_diagrams() == [(1, 1, 1, 1)]
+        props.force_display = "COMPONENTS"
+        assert self.get_force_diagrams() == [(0, 1, 0, 1), (0, 0, 1, 1)]
+
+    def test_each_applied_load_is_drawn_on_its_own(self):
+        self.make_member()
+        bpy.ops.bim.apply_structural_load(load_group="0", axes="LOCAL_COORDS", y=-5.0)
+        (case,) = tool.Ifc.get().by_type("IfcStructuralLoadCase")
+        bpy.ops.bim.apply_structural_load(load_group=str(case.id()), axes="GLOBAL_COORDS", y=-3.0, z=-4.0)
+        props = tool.Structural.get_structural_props()
+        props.reference_frame = "GLOBAL_COORDS"
+        assert self.get_force_diagrams() == [(1, 1, 1, 1), (1, 1, 1, 1)]
         props.force_display = "COMPONENTS"
         assert self.get_force_diagrams() == [(0, 1, 0, 1), (0, 0, 1, 1)]
 

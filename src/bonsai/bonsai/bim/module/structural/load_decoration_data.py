@@ -889,18 +889,34 @@ class ShaderInfo:
             maxforce = max(maxforce, processed_loads["max linear load"])
             keys = ["fx", "fy", "fz", "mx", "my", "mz"]
             if linear_loads is not None and props.force_display != "COMPONENTS":
-                if resolved := self.resolve_linear_forces(linear_loads):
+                # Each applied load is drawn on its own, along its resultant, as are point forces. Their sum, by
+                # components, is shown on request only: components overlap along a member.
+                keys = keys[3:]
+                for i, item in enumerate(activity_list):
+                    own = self.process_total_linear_loads([item], rotation, member_length)
+                    if (own_loads := own["linear loads"]) is None:
+                        continue
+                    maxforce = max(maxforce, own["max linear load"])
+                    if not (resolved := self.resolve_linear_forces(own_loads)):
+                        # Its direction changes along the member: by components.
+                        for base in ("fx", "fy", "fz"):
+                            key = f"{base}:{i}"
+                            linear_loads[key] = own_loads[base]
+                            direction_dict[key], match_dict[key] = direction_dict[base], match_dict[base]
+                            keys.append(key)
+                        continue
                     direction, resultant, largest = resolved
                     # The direction is in the reference frame shown: in Blender's axes, the member's own if local.
                     direction = Vector(rotation @ direction if is_local else direction).normalized()
                     if direction.dot(x_axis) < 0 and abs(direction.dot(x_axis)) > 0.99:
                         direction, resultant = -direction, self.negate_load(resultant)
                     axial = abs(direction.dot(x_axis)) > 0.99
-                    linear_loads["f"] = resultant
-                    direction_dict["f"] = y_axis + z_axis if axial else direction
-                    match_dict["f"] = axial
+                    key = f"f:{i}"
+                    linear_loads[key] = resultant
+                    direction_dict[key] = y_axis + z_axis if axial else direction
+                    match_dict[key] = axial
                     maxforce = max(maxforce, largest)
-                    keys = ["f"] + keys[3:]  # Components overlap along a member: they are shown on request only.
+                    keys.append(key)
             point_loads = processed_loads["discrete loads"]
 
             if len(point_loads) > 0:
@@ -921,7 +937,7 @@ class ShaderInfo:
                 constant = linear_loads[key]["constant"]
                 direction = direction_dict[key]
                 color_axis = (0, 0, 1, 1)
-                if key == "f":
+                if key.startswith("f:"):
                     color_axis = (1, 1, 1, 1)  # As the resultant of point forces.
                 elif "x" in key:
                     color_axis = (1, 0, 0, 1)
