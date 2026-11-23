@@ -28,7 +28,9 @@ import ifcopenshell.api.context
 import ifcopenshell.api.structural
 import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.structural
+import ifcopenshell.util.unit
 import numpy as np
 from mathutils import Matrix, Vector
 
@@ -356,6 +358,81 @@ class Structural(bonsai.core.tool.Structural):
         elif ifc_class.startswith("IfcStructuralSurface"):
             return "FACE"
         raise ValueError(f"{ifc_class} is not a point, curve or surface structural item")
+
+    @classmethod
+    def add_mesh_topology_representation(cls, obj: bpy.types.Object, ifc_class: str) -> ifcopenshell.entity_instance:
+        """The mesh of an object as the topology of a structural item of a class, in Model/Reference/GRAPH_VIEW
+
+        A point item takes a mesh of one vertex, a curve item one of a single edge, and a surface item one of planar
+        polygons or of a closed loop of edges. Nothing is added to the file when the mesh does not fit the class.
+
+        :param obj: An object whose mesh has its modifiers and scale applied, in its own coordinates.
+        :param ifc_class: The structural item's class.
+        :return: IfcTopologyRepresentation
+        :raises ValueError: Saying why the mesh is not the topology of the class.
+        """
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        template = cls.get_structural_item_representation_template(ifc_class)
+        ifc_file = tool.Ifc.get()
+        verts = tool.Blender.get_verts_coordinates(mesh.vertices).astype("d")
+        if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(obj)) is not None:
+            verts += coordinate_offset
+        verts /= ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        edges = [e.vertices[:] for e in mesh.edges]
+        faces = [p.vertices[:] for p in mesh.polygons]
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+
+        if template == "VERTEX":
+            if len(verts) != 1:
+                raise ValueError(f"needs a mesh of one vertex to be an {ifc_class}, not {len(verts)}")
+            item = builder.vertex(verts[0])
+        elif template == "EDGE":
+            if len(edges) != 1 or len(verts) != 2:
+                raise ValueError(f"needs a mesh of one edge to be an {ifc_class}")
+            start, end = edges[0]
+            item = builder.edge(start=verts[start], end=verts[end])
+        else:
+            if not faces:
+                loop = cls.get_edge_loop(len(verts), edges)
+                if loop is None:
+                    raise ValueError(f"needs a mesh of faces or of one closed loop of edges to be an {ifc_class}")
+                faces = [loop]
+            elif tool.Geometry.mesh_has_loose_geometry(mesh):
+                raise ValueError(f"has loose vertices or edges, which an {ifc_class} cannot have")
+            try:
+                outer, inners = builder.get_mesh_boundaries(verts, faces)
+                item = builder.face_surface(verts[outer], [verts[i] for i in inners])
+            except ValueError as e:
+                raise ValueError(f"cannot be an {ifc_class}: {e}") from e
+
+        cls.ensure_representation_contexts()
+        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Reference", "GRAPH_VIEW")
+        return builder.get_representation(context, [item])
+
+    @classmethod
+    def get_edge_loop(cls, total_verts: int, edges: list[tuple[int, int]]) -> Union[list[int], None]:
+        """The vertices of edges in order round the one closed loop they make, or None if they make no single loop
+
+        :param total_verts: How many vertices there are; every one of them must be on the loop.
+        :param edges: Pairs of vertex indices.
+        """
+        if total_verts < 3 or len(edges) != total_verts:
+            return None
+        neighbours: dict[int, list[int]] = {}
+        for a, b in edges:
+            neighbours.setdefault(a, []).append(b)
+            neighbours.setdefault(b, []).append(a)
+        if len(neighbours) != total_verts or any(len(n) != 2 for n in neighbours.values()):
+            return None
+        loop = [edges[0][0], edges[0][1]]
+        while len(loop) < total_verts:
+            a, b = neighbours[loop[-1]]
+            following = b if a == loop[-2] else a
+            if following == loop[0]:
+                return None  # A smaller loop: the edges make more than one.
+            loop.append(following)
+        return loop
 
     @classmethod
     def get_member_connections_to_add(
