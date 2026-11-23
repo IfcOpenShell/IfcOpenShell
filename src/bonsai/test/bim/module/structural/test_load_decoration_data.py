@@ -66,6 +66,20 @@ class TestLinearLoadsForMemberWithoutMesh(NewFile):
         assert info.info == []
 
 
+class TestArrowThickness(NewFile):
+    def get_spacing(self) -> float:
+        info = ShaderInfo()
+        info.shader = SimpleNamespace(new=lambda name: None)  # Headless, there is no GPU to make shaders with.
+        info.add_force_arrow(np.zeros(3), np.array((0.0, 0.0, 1.0)), (1, 0, 0, 1), "1 kN", 1.0)
+        return dict(info.info[-1]["uniforms"])["spacing"]
+
+    def test_scaling_the_shaft_and_head_together(self):
+        tool.Ifc.set(ifcopenshell.file())
+        default = self.get_spacing()
+        tool.Structural.get_structural_props().arrow_thickness = 2.0
+        assert math.isclose(self.get_spacing(), 2 * default)
+
+
 class TestBoxCrossesSegments:
     # A label's box from (0, 0), 10 wide and 5 high.
     def test_lines_crossing_or_inside(self):
