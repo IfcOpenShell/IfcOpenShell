@@ -111,7 +111,19 @@ class Usecase:
 
     def execute(self, task: ifcopenshell.entity_instance):
         self.calendar_cache = {}
+        self.project_start = self.get_project_start(task)
         self.cascade_task(task, is_first_task=True)
+
+    def get_project_start(self, task: ifcopenshell.entity_instance) -> Union[datetime.datetime, None]:
+        # The earliest start of the tasks without predecessors, as in recalculate_schedule.
+        if not (work_schedule := ifcopenshell.util.sequence.get_task_work_schedule(task)):
+            return None
+        starts = [
+            self.get_task_time_attribute(t, "ScheduleStart")
+            for t in ifcopenshell.util.sequence.get_work_schedule_tasks(work_schedule)
+            if not t.IsNestedBy and not ifcopenshell.util.sequence.get_sequence_assignment(t, "predecessor")
+        ]
+        return min((start for start in starts if start), default=None)
 
     def cascade_task(
         self,
@@ -165,6 +177,10 @@ class Usecase:
                 is_strict = rel.SequenceType == "FINISH_FINISH" or bool(is_elapsed)
                 is_strict = is_strict or self.get_time(task) != self.get_time(predecessor)
                 finishes.append(self.snap(task, date, "FINISH", is_strict))
+
+        if (starts or finishes) and self.project_start:
+            # A task with predecessors also starts after the start of the project.
+            starts.append(self.snap(task, self.project_start, "START"))
 
         # A task of work days starts at the start of a working day and finishes at the end of a working day.
         calendar, work_day, duration_type = self.get_calendar(task), self.get_work_day(task), task.TaskTime.DurationType

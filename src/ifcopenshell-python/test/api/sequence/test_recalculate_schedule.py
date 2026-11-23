@@ -239,17 +239,18 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task.TaskTime.EarlyStart == "2000-01-01T09:00:00"
         assert task.TaskTime.EarlyFinish == "2000-01-01T17:00:00"
-        assert task.TaskTime.LateStart == "2000-01-01T09:00:00"
-        assert task.TaskTime.LateFinish == "2000-01-01T17:00:00"
-        assert task.TaskTime.TotalFloat == "P0D"
-        assert task.TaskTime.FreeFloat == "P0D"
-        assert task.TaskTime.IsCritical is True
-        assert task2.TaskTime.ScheduleStart == "1999-12-31T09:00:00"
-        assert task2.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
-        assert task2.TaskTime.EarlyStart == "1999-12-31T09:00:00"
-        assert task2.TaskTime.EarlyFinish == "2000-01-01T17:00:00"
-        assert task2.TaskTime.LateStart == "1999-12-31T09:00:00"
-        assert task2.TaskTime.LateFinish == "2000-01-01T17:00:00"
+        assert task.TaskTime.LateStart == "2000-01-02T09:00:00"
+        assert task.TaskTime.LateFinish == "2000-01-02T17:00:00"
+        assert task.TaskTime.TotalFloat == "P1D"
+        assert task.TaskTime.FreeFloat == "P1D"
+        assert task.TaskTime.IsCritical is False
+        # The link gives a start before the start of the project. The task starts at the start of the project.
+        assert task2.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
+        assert task2.TaskTime.ScheduleFinish == "2000-01-02T17:00:00"
+        assert task2.TaskTime.EarlyStart == "2000-01-01T09:00:00"
+        assert task2.TaskTime.EarlyFinish == "2000-01-02T17:00:00"
+        assert task2.TaskTime.LateStart == "2000-01-01T09:00:00"
+        assert task2.TaskTime.LateFinish == "2000-01-02T17:00:00"
         assert task2.TaskTime.TotalFloat == "P0D"
         assert task2.TaskTime.FreeFloat == "P0D"
         assert task2.TaskTime.IsCritical is True
@@ -289,20 +290,21 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task.TaskTime.EarlyStart == "2000-01-01T09:00:00"
         assert task.TaskTime.EarlyFinish == "2000-01-01T17:00:00"
-        assert task.TaskTime.LateStart == "2000-01-01T09:00:00"
-        assert task.TaskTime.LateFinish == "2000-01-01T17:00:00"
-        assert task.TaskTime.TotalFloat == "P0D"
-        assert task.TaskTime.FreeFloat == "P0D"
-        assert task.TaskTime.IsCritical is True
-        assert task2.TaskTime.ScheduleStart == "1999-12-30T09:00:00"
-        assert task2.TaskTime.ScheduleFinish == "1999-12-31T17:00:00"
-        assert task2.TaskTime.EarlyStart == "1999-12-30T09:00:00"
-        assert task2.TaskTime.EarlyFinish == "1999-12-31T17:00:00"
-        assert task2.TaskTime.LateStart == "1999-12-31T09:00:00"
-        assert task2.TaskTime.LateFinish == "2000-01-01T17:00:00"
-        assert task2.TaskTime.TotalFloat == "P1D"
-        assert task2.TaskTime.FreeFloat == "P1D"
-        assert task2.TaskTime.IsCritical is False
+        assert task.TaskTime.LateStart == "2000-01-02T09:00:00"
+        assert task.TaskTime.LateFinish == "2000-01-02T17:00:00"
+        assert task.TaskTime.TotalFloat == "P1D"
+        assert task.TaskTime.FreeFloat == "P1D"
+        assert task.TaskTime.IsCritical is False
+        # The link gives a start before the start of the project. The task starts at the start of the project.
+        assert task2.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
+        assert task2.TaskTime.ScheduleFinish == "2000-01-02T17:00:00"
+        assert task2.TaskTime.EarlyStart == "2000-01-01T09:00:00"
+        assert task2.TaskTime.EarlyFinish == "2000-01-02T17:00:00"
+        assert task2.TaskTime.LateStart == "2000-01-01T09:00:00"
+        assert task2.TaskTime.LateFinish == "2000-01-02T17:00:00"
+        assert task2.TaskTime.TotalFloat == "P0D"
+        assert task2.TaskTime.FreeFloat == "P0D"
+        assert task2.TaskTime.IsCritical is True
 
     def test_recalculating_finish_to_start_for_sub_day_durations(self):
         self._add_work_schedule()
@@ -437,13 +439,25 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
 
     def test_recalculating_a_negative_lag_before_a_task_in_elapsed_time(self):
         self._add_work_schedule()
-        task = self._create_task("PT4H")
+        task = self._create_task("PT12H")
         task2 = self._create_task("PT16H", "ELAPSEDTIME")
         self._create_sequence(task, task2, "FINISH_START", lag="-PT4H")
         ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         # 13:00 - 4 work hours is 09:00, the same work instant as 17:00 on the day before. The earliest applies.
-        assert task2.TaskTime.EarlyStart == "1999-12-31T17:00:00"
-        assert task2.TaskTime.EarlyFinish == "2000-01-01T09:00:00"
+        assert task.TaskTime.EarlyFinish == "2000-01-02T13:00:00"
+        assert task2.TaskTime.EarlyStart == "2000-01-01T17:00:00"
+        assert task2.TaskTime.EarlyFinish == "2000-01-02T09:00:00"
+
+    def test_recalculating_a_start_before_the_start_of_the_project(self):
+        self._add_work_schedule()
+        task = self._create_task("P1D")
+        task2 = self._create_task("P1D")
+        self._create_sequence(task, task2, "START_START", lag="-P2D")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        # The link gives a start 2 days before the start of the project. The task starts at the start of the project.
+        assert task2.TaskTime.EarlyStart == "2000-01-01T09:00:00"
+        assert task2.TaskTime.EarlyFinish == "2000-01-01T17:00:00"
+        assert task2.TaskTime.IsCritical is True
 
     def test_recalculating_a_finish_after_a_lag_in_elapsed_time(self):
         self._add_work_schedule()
@@ -574,11 +588,11 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
     def test_recalculating_start_to_finish_with_a_sub_day_lag(self):
         self._add_work_schedule()
         task = self._create_task("P1D")
-        task2 = self._create_task("PT4H")
+        task2 = self._create_task("PT2H")
         self._create_sequence(task, task2, "START_FINISH", lag="PT2H")
         ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task2.TaskTime.EarlyFinish == "2000-01-01T11:00:00"
-        assert task2.TaskTime.EarlyStart == "1999-12-31T15:00:00"
+        assert task2.TaskTime.EarlyStart == "2000-01-01T09:00:00"
         assert task2.TaskTime.LateFinish == "2000-01-01T17:00:00"
         assert task2.TaskTime.TotalFloat == "PT6H"
 

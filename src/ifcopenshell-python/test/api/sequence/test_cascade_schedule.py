@@ -311,8 +311,19 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         assert task.TaskTime.ScheduleFinish == "2000-01-03T09:00:00"
         assert task2.TaskTime.ScheduleStart == "2000-01-06T09:00:00"  # After 3 work days of 8 hours
 
-    def _create_task(self, duration, duration_type="WORKTIME"):
-        task = ifcopenshell.api.sequence.add_task(self.file)
+    def test_cascading_a_start_before_the_start_of_the_project(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        work_schedule = ifcopenshell.api.sequence.add_work_schedule(self.file)
+        task = self._create_task("P1D", work_schedule=work_schedule)
+        task2 = self._create_task("P1D", work_schedule=work_schedule)
+        self._create_sequence(task, task2, "START_START", lag="-P2D")
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        # The link gives a start 2 days before the start of the project. The task starts at the start of the project.
+        assert task2.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
+        assert task2.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
+
+    def _create_task(self, duration, duration_type="WORKTIME", work_schedule=None):
+        task = ifcopenshell.api.sequence.add_task(self.file, work_schedule=work_schedule)
         if duration == "P0D":
             task.IsMilestone = True
         task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
