@@ -163,6 +163,12 @@ namespace {
 						E = BRepBuilderAPI_MakeEdge(curve).Edge();
 					} else {
 						E = BRepBuilderAPI_MakeEdge(curve, p1, p2).Edge();
+						// On an open curve BRepBuilderAPI_MakeEdge orders the vertices by
+						// parameter without reversing the edge, so a segment whose first trim
+						// lies beyond the second along the basis curve would run from p2 to p1.
+						if (BRep_Tool::Pnt(TopExp::FirstVertex(E, true)).Distance(p1) > BRep_Tool::Pnt(TopExp::LastVertex(E, true)).Distance(p1)) {
+							E.Reverse();
+						}
 					}
 				} else if (e_start.index() == 2) {
 					auto v1 = std::get<double>(e_start);
