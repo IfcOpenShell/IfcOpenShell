@@ -141,6 +141,7 @@ public:
 	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::solid::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
 	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::shell::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
 	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::extrusion::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::collection::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
 	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::revolve::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
 	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::boolean_result::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
 	virtual bool convert_impl(const ifcopenshell::geom::taxonomy::loft::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
