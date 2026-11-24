@@ -169,5 +169,23 @@ def test_rocks_storage_ids_and_type_lookups():
         gc.collect()
 
 
+@pytest.mark.parametrize("value", [True, False, "UNKNOWN"])
+def test_rocks_logical_roundtrip(value):
+    with tempfile.TemporaryDirectory() as d:
+        ifc_fn = os.path.join(d, "logical.ifc")
+        rfn = os.path.join(d, "logical.rdb")
+
+        m = ifcopenshell.file(schema="IFC4")
+        layer = m.createIfcMaterialLayer(LayerThickness=0.1, IsVentilated=value)
+        m.write(ifc_fn)
+        ifcopenshell.convert_path_to_rocksdb(ifc_fn, rfn)
+
+        f = ifcopenshell.open(rfn)
+        assert f.by_id(layer.id()).IsVentilated == value
+
+        del f
+        gc.collect()
+
+
 if __name__ == "__main__":
     pytest.main(["-sx", __file__])
