@@ -138,6 +138,11 @@ class RepresentationsData:
                 "ContextType": representation.ContextOfItems.ContextType or "",
                 "ContextIdentifier": "",
                 "TargetView": "",
+                # The representation's own identifier (e.g. 'Body', 'Reference'), which is
+                # distinct from the subcontext's ContextIdentifier above. Two reps can share
+                # one context (e.g. a Body body and a Reference opening template), so showing
+                # this lets them be told apart in the panel.
+                "RepresentationIdentifier": representation.RepresentationIdentifier or "",
                 "RepresentationType": representation_type or "",
                 "is_active": is_active,
             }
