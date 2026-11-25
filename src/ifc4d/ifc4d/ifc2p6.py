@@ -24,6 +24,8 @@ import ifcopenshell
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
 
+from .common import get_lag_work_hours, get_task_work_hours
+
 
 class Ifc2P6:
     def __init__(self):
@@ -218,9 +220,9 @@ class Ifc2P6:
         if parent:
             ET.SubElement(activity, "WBSObjectId").text = self.id_map[parent]
         if task.TaskTime.ScheduleDuration:
-            duration = ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleDuration)
-            ET.SubElement(activity, "PlannedDuration").text = str(duration.days * self.hours_per_day)
-            ET.SubElement(activity, "RemainingDuration").text = str(duration.days * self.hours_per_day)
+            hours = f"{get_task_work_hours(task):g}"
+            ET.SubElement(activity, "PlannedDuration").text = hours
+            ET.SubElement(activity, "RemainingDuration").text = hours
         if task.TaskTime.ScheduleStart:
             ET.SubElement(activity, "PlannedStartDate").text = task.TaskTime.ScheduleStart
             ET.SubElement(activity, "StartDate").text = task.TaskTime.ScheduleStart
@@ -257,8 +259,7 @@ class Ifc2P6:
                 relationship = ET.SubElement(self.element_map[work_schedule], "Relationship")
                 self.link_element(rel, relationship)
                 if rel.TimeLag and rel.TimeLag.LagValue:
-                    duration = ifcopenshell.util.date.ifc2datetime(rel.TimeLag.LagValue.wrappedValue)
-                    ET.SubElement(relationship, "Lag").text = str(duration.days * self.hours_per_day)
+                    ET.SubElement(relationship, "Lag").text = f"{get_lag_work_hours(rel):g}"
                 else:
                     ET.SubElement(relationship, "Lag").text = "0"
                 ET.SubElement(relationship, "PredecessorProjectObjectId").text = self.id_map[work_schedule]

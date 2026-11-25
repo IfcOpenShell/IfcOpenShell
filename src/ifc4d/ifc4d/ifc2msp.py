@@ -24,6 +24,8 @@ import ifcopenshell
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
 
+from .common import get_lag_work_hours, get_task_work_hours
+
 
 class Ifc2Msp:
     def __init__(self):
@@ -204,8 +206,10 @@ class Ifc2Msp:
         ET.SubElement(el, "DurationFormat").text = "53"
         if task.TaskTime:
             if task.TaskTime.ScheduleDuration:
-                duration = ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleDuration)
-                ET.SubElement(el, "Duration").text = f"PT{duration.days * 8}H0M0S"
+                # MS Project writes a duration in hours, minutes and seconds, without days.
+                minutes, seconds = divmod(round(get_task_work_hours(task) * 3600), 60)
+                hours, minutes = divmod(minutes, 60)
+                ET.SubElement(el, "Duration").text = f"PT{hours}H{minutes}M{seconds}S"
             if task.TaskTime.ScheduleStart:
                 ET.SubElement(el, "Start").text = task.TaskTime.ScheduleStart
                 self.start_dates.append(task.TaskTime.ScheduleStart)
@@ -235,9 +239,8 @@ class Ifc2Msp:
             predecessor_link = ET.SubElement(el, "PredecessorLink")
             self.link_element(rel, predecessor_link)
             if rel.TimeLag and rel.TimeLag.LagValue:
-                duration = ifcopenshell.util.date.ifc2datetime(rel.TimeLag.LagValue.wrappedValue)
                 # Lag time is expressed in tenths of a minute. Seriously, Microsoft?
-                ET.SubElement(predecessor_link, "LinkLag").text = str(duration.days * self.hours_per_day * 60 * 10)
+                ET.SubElement(predecessor_link, "LinkLag").text = str(round(get_lag_work_hours(rel) * 60 * 10))
             else:
                 ET.SubElement(predecessor_link, "LinkLag").text = "0"
             ET.SubElement(predecessor_link, "PredecessorUID").text = str(predecessor.id())
