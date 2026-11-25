@@ -54,6 +54,12 @@ class TestGetWorkPeriods(test.bootstrap.IFC4):
         assert subject.get_work_periods(MONDAY, calendar) == [(9 * H, 17 * H)]
         assert subject.get_work_periods(MONDAY, None, 10 * H) == [(9 * H, 19 * H)]
 
+    def test_reading_an_end_time_of_24_00_as_the_end_of_the_day(self):
+        calendar = add_calendar(self.file, [("16:00:00", "24:00:00")])
+        assert self.file.by_type("IfcTimePeriod")[0].EndTime == "24:00:00"
+        assert subject.get_work_periods(MONDAY, calendar) == [(16 * H, 24 * H)]
+        assert subject.get_work_day_duration(None, calendar) == 8 * H
+
     def test_returning_no_period_on_a_day_without_work(self):
         calendar = add_calendar(self.file, [("07:00:00", "12:00:00")])
         assert subject.get_work_periods(SATURDAY, calendar) == []

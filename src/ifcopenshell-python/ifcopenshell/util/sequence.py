@@ -314,14 +314,16 @@ def get_time_periods(work_time: ifcopenshell.entity_instance) -> list[tuple[date
     """
     periods = []
     for period in work_time.RecurrencePattern.TimePeriods or [] if work_time.RecurrencePattern else []:
-        times = [ifcopenshell.util.date.ifc2datetime(t) for t in (period.StartTime, period.EndTime)]
-        periods.append(
-            tuple(
-                datetime.timedelta(hours=t.hour, minutes=t.minute, seconds=t.second, microseconds=t.microsecond)
-                for t in times
-            )
-        )
+        periods.append(tuple(get_time_of_day(t) for t in (period.StartTime, period.EndTime)))
     return sorted(periods)
+
+
+def get_time_of_day(time: str) -> datetime.timedelta:
+    # An IfcTime as a duration from midnight. ISO 8601 24:00:00 is the end of the day.
+    if time.startswith("24:00"):
+        return datetime.timedelta(days=1)
+    t = ifcopenshell.util.date.ifc2datetime(time)
+    return datetime.timedelta(hours=t.hour, minutes=t.minute, seconds=t.second, microseconds=t.microsecond)
 
 
 def get_work_periods(
