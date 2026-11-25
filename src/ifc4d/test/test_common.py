@@ -148,3 +148,17 @@ class TestFloats:
         generate([task])
         assert task["ifc"].TaskTime.TotalFloat == "-P1D"
         assert task["ifc"].TaskTime.IsCritical is True
+
+
+class TestCalendars:
+    def test_reading_a_work_period_that_ends_at_midnight(self):
+        task = activity(1, 1, 8, at(0, 8), at(0, 17))
+        generator = generate([task])
+        calendar = generator.calendars[1]
+        calendar["StandardWorkWeek"] = [
+            {"DayOfWeek": d, "WorkTimes": [{"Start": datetime.time(0), "Finish": datetime.time(0)}], "ifc": None}
+            for d in DAYS
+        ]
+        generator.create_calendars()
+        periods = ifcopenshell.util.sequence.get_work_periods(MONDAY, calendar["ifc"])
+        assert periods == [(datetime.timedelta(), datetime.timedelta(days=1))]

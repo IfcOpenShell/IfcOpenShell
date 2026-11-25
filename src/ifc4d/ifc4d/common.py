@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Any, NotRequired, TypedDict, Union
 
 import ifcopenshell
@@ -72,6 +72,17 @@ class WBSEntry(TypedDict):
     ifc: Union[ifcopenshell.entity_instance, None]
     rel: Union[ifcopenshell.entity_instance, None]
     activities: list[int]
+
+
+def get_end_time(end: Union[time, str]) -> Union[time, str]:
+    """The end of a work period. An end at 00:00 is the end of the day (24:00)
+
+    MS Project and P6 write a period to midnight, or a day of 24 hours, with
+    an end at 00:00. An IfcTimePeriod ends at 24:00:00 for this.
+    """
+    if str(end).startswith("00:00"):
+        return "24:00:00"
+    return end
 
 
 def is_uniform_calendar(calendar: Calendar) -> bool:
@@ -213,7 +224,7 @@ class ScheduleIfcGenerator:
                     self.file,
                     recurrence_pattern=recurrence,
                     start_time=work_time["Start"],
-                    end_time=work_time["Finish"],
+                    end_time=get_end_time(work_time["Finish"]),
                 )
 
     def process_exceptions(
@@ -297,7 +308,7 @@ class ScheduleIfcGenerator:
                     self.file,
                     recurrence_pattern=recurrence,
                     start_time=work_time["Start"],
-                    end_time=work_time["Finish"],
+                    end_time=get_end_time(work_time["Finish"]),
                 )
 
     def create_tasks(self, work_schedule: ifcopenshell.entity_instance) -> None:
