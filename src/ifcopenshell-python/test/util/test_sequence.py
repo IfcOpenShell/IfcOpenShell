@@ -181,14 +181,13 @@ class TestOffsetDate(test.bootstrap.IFC4):
     def test_offsetting_by_whole_days_as_before(self):
         assert self.offset(at(MONDAY, 9), datetime.timedelta(days=2)) == at(MONDAY + datetime.timedelta(days=2), 9)
 
-    def test_keeping_the_side_of_a_break_when_offsetting_by_work_days(self):
+    def test_offsetting_by_a_work_day_from_a_day_with_less_work_hours(self):
         calendar = add_calendar(self.file, [("08:00:00", "12:00:00"), ("13:00:00", "17:00:00")])
-        tuesday = MONDAY + datetime.timedelta(days=1)
-        # 12:00 and 13:00 are the same work instant, but not for a task in other work periods.
-        assert subject.offset_work_days(at(MONDAY, 13), 1, calendar) == at(tuesday, 13)
-        assert subject.offset_work_days(at(MONDAY, 12), 1, calendar) == at(tuesday, 12)
-        assert subject.offset_work_days(at(tuesday, 13), -1, calendar) == at(MONDAY, 13)
-        assert subject.offset_work_days(at(tuesday, 12), -1, calendar) == at(MONDAY, 12)
+        friday = MONDAY + datetime.timedelta(days=4)
+        add_exception(self.file, calendar, friday, [("13:00:00", "17:00:00")])
+        assert self.offset(at(friday, 12), datetime.timedelta(days=1), calendar) == at(
+            MONDAY + datetime.timedelta(days=7), 17
+        )
 
     def test_offsetting_by_calendar_months_and_years(self):
         month, year = (ifcopenshell.util.date.parse_duration(d) for d in ("P1M", "P1Y"))

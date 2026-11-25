@@ -510,6 +510,38 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         assert task.TaskTime.EarlyStart == "2000-01-02T09:00:00"
         assert task.TaskTime.EarlyFinish == "2000-01-02T17:00:00"
 
+    def test_recalculating_with_the_work_periods_of_a_calendar(self):
+        self._add_work_schedule()
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
+        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar)
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(self.file, parent=work_time)
+        ifcopenshell.api.sequence.edit_recurrence_pattern(
+            self.file, recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]}
+        )
+        for start, end in (("08:00:00", "12:00:00"), ("13:00:00", "17:00:00")):
+            ifcopenshell.api.sequence.add_time_period(
+                self.file, recurrence_pattern=pattern, start_time=start, end_time=end
+            )
+        exception = ifcopenshell.api.sequence.add_work_time(
+            self.file, work_calendar=calendar, time_type="ExceptionTimes"
+        )
+        ifcopenshell.api.sequence.edit_work_time(
+            self.file, work_time=exception, attributes={"Start": "2026-01-09", "Finish": "2026-01-09"}
+        )
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(
+            self.file, parent=exception, recurrence_type="DAILY"
+        )
+        ifcopenshell.api.sequence.add_time_period(
+            self.file, recurrence_pattern=pattern, start_time="13:00:00", end_time="17:00:00"
+        )
+        task = self._create_task("P1D", start=datetime.datetime(2026, 1, 9, 12), calendar=calendar)  # Friday
+        task2 = self._create_task("PT2H", calendar=calendar)
+        self._create_sequence(task, task2, "FINISH_START")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        assert task.TaskTime.EarlyFinish == "2026-01-12T17:00:00"  # No work on Friday afternoon
+        assert task2.TaskTime.EarlyStart == "2026-01-13T08:00:00"
+        assert task2.TaskTime.EarlyFinish == "2026-01-13T10:00:00"
+
     def _add_work_schedule(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         self.work_schedule = ifcopenshell.api.sequence.add_work_schedule(self.file)
