@@ -3,6 +3,7 @@
 import math
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 import ifcopenshell
@@ -16,10 +17,45 @@ import ifcopenshell.guid
 import ifcopenshell.util.shape
 
 
+@pytest.mark.parametrize("hollow", [False, True], ids=["solid", "hollow"])
+@pytest.mark.parametrize("path", ["circle", "polyline"])
+def test_closed_swept_disk_has_no_seam_caps(path, hollow):
+    model = ifcopenshell.file(schema="IFC4")
+    if path == "circle":
+        placement = model.createIfcAxis2Placement3D(model.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+        directrix = model.createIfcCircle(placement, 4.0)
+        length = 8.0 * math.pi
+    else:
+        points = [(0.0, 0.0, 0.0), (4.0, 0.0, 0.0), (4.0, 3.0, 0.0), (0.0, 3.0, 0.0), (0.0, 0.0, 0.0)]
+        directrix = model.createIfcPolyline([model.createIfcCartesianPoint(p) for p in points])
+        length = 14.0
+    solid = model.createIfcSweptDiskSolid(directrix, 0.4, 0.2 if hollow else None, None, None)
+    settings = ifcopenshell.geom.settings()
+    settings.set("mesher-linear-deflection", 0.001)
+    settings.set("mesher-angular-deflection", 0.05)
+    geometry = ifcopenshell.geom.create_shape(settings, solid, geometry_library="opencascade")
+    assert ifcopenshell.util.shape.get_area(geometry) == pytest.approx(
+        2.0 * math.pi * (0.6 if hollow else 0.4) * length, rel=0.002
+    )
+    assert ifcopenshell.util.shape.get_volume(geometry) == pytest.approx(
+        math.pi * (0.12 if hollow else 0.16) * length, rel=0.002
+    )
+    # Coincident seam caps would give their boundary edges more than two incident faces.
+    vertices = np.round(ifcopenshell.util.shape.get_vertices(geometry), 8)
+    _, indices = np.unique(vertices, axis=0, return_inverse=True)
+    faces = indices[ifcopenshell.util.shape.get_faces(geometry)]
+    edges = np.concatenate([faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]])
+    _, counts = np.unique(np.sort(edges, axis=1), axis=0, return_counts=True)
+    assert np.all(counts == 2)
+
+
 @pytest.mark.parametrize("axis", [0, 2], ids=["x", "z"])
 @pytest.mark.parametrize("reverse", [False, True], ids=["forward", "reverse"])
 @pytest.mark.parametrize("offset", [0.0, 10.0], ids=["origin", "translated"])
-def test_swept_disk_volume_9571(axis, reverse, offset):
+@pytest.mark.parametrize("kernel", ["opencascade", "cgal", "cgal-simple", "manifold"])
+def test_swept_disk_volume_9571(axis, reverse, offset, kernel):
+    if not ifcopenshell.geom.has_geometry_library(kernel):
+        pytest.skip(f"{kernel} geometry kernel is unavailable")
     # https://github.com/IfcOpenShell/IfcOpenShell/issues/9571
     model = ifcopenshell.file(schema="IFC4")
     placement = model.createIfcAxis2Placement3D(model.createIfcCartesianPoint((0.0, 0.0, 0.0)))
@@ -45,7 +81,9 @@ def test_swept_disk_volume_9571(axis, reverse, offset):
     )
     settings = ifcopenshell.geom.settings()
     settings.set("use-world-coords", True)
-    shape = ifcopenshell.geom.create_shape(settings, product, geometry_library="opencascade")
+    if kernel != "opencascade":
+        settings.set("circle-segments", 64)
+    shape = ifcopenshell.geom.create_shape(settings, product, geometry_library=kernel)
     # Default tessellation underestimates this small circular section by about 1%.
     assert ifcopenshell.util.shape.get_volume(shape.geometry) == pytest.approx(math.pi * radius**2, rel=0.02)
 

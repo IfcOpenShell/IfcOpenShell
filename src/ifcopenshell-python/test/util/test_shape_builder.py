@@ -250,6 +250,143 @@ class TestFace(test.bootstrap.IFC4):
         assert np.allclose(face.Bounds[0].Bound.Polygon[2], (1, 1, 0))
         assert np.allclose(face.Bounds[0].Bound.Polygon[3], (0, 1, 0))
 
+    def test_a_face_with_a_hole(self):
+        builder = ShapeBuilder(self.file)
+        hole = ((0.2, 0.2, 0), (0.2, 0.4, 0), (0.4, 0.4, 0))
+        face = builder.face(((0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)), [hole])
+        assert face.Bounds[0].is_a("IfcFaceOuterBound")
+        assert face.Bounds[1].is_a() == "IfcFaceBound"
+        assert np.allclose([p.Coordinates for p in face.Bounds[1].Bound.Polygon], hole)
+
+
+class TestFaceSurface(test.bootstrap.IFC4):
+    # IfcStructuralItem, Topology Representation: surface members and connections shall be an
+    # IfcFaceSurface whose surface is the reference surface, its bounds edges as for curve items
+    def test_run(self):
+        builder = ShapeBuilder(self.file)
+        points = ((0, 0, 0), (2, 0, 0), (2, 1, 0), (0, 1, 0))
+        face = builder.face_surface(points)
+        assert face.is_a("IfcFaceSurface")
+        assert face.FaceSurface.is_a("IfcPlane")
+        assert np.allclose(face.FaceSurface.Position.Location.Coordinates, (0, 0, 0))
+        assert np.allclose(face.FaceSurface.Position.Axis.DirectionRatios, (0, 0, 1))
+        loop = face.Bounds[0].Bound
+        assert loop.is_a("IfcEdgeLoop")
+        # EdgeStart and EdgeEnd of an IfcOrientedEdge are derived from its EdgeElement
+        ends_of = lambda e: (
+            (e.EdgeElement.EdgeStart, e.EdgeElement.EdgeEnd)[:: 1 if e.Orientation else -1]
+            if e.is_a("IfcOrientedEdge")
+            else (e.EdgeStart, e.EdgeEnd)
+        )
+        starts = [ends_of(e)[0] for e in loop.EdgeList]
+        ends = [ends_of(e)[1] for e in loop.EdgeList]
+        assert all(v.is_a("IfcVertexPoint") for v in starts)
+        assert np.allclose([v.VertexGeometry.Coordinates for v in starts], points)
+        # Neighbouring edges share their vertices
+        assert ends == starts[1:] + starts[:1]
+
+    def test_normal_follows_the_winding(self):
+        builder = ShapeBuilder(self.file)
+        face = builder.face_surface(((0, 0, 0), (0, 1, 0), (2, 1, 0), (2, 0, 0)))
+        assert np.allclose(face.FaceSurface.Position.Axis.DirectionRatios, (0, 0, -1))
+
+    def test_a_face_away_from_the_origin_and_out_of_the_horizontal(self):
+        builder = ShapeBuilder(self.file)
+        face = builder.face_surface(((1, 2, 3), (4, 2, 3), (4, 2, 5), (1, 2, 5)))
+        position = face.FaceSurface.Position
+        assert np.allclose(position.Location.Coordinates, (1, 2, 3))
+        assert np.allclose(position.Axis.DirectionRatios, (0, -1, 0))
+        assert np.allclose(position.RefDirection.DirectionRatios, (1, 0, 0))
+
+    def test_points_in_a_line_are_refused(self):
+        builder = ShapeBuilder(self.file)
+        with pytest.raises(ValueError):
+            builder.face_surface(((0, 0, 0), (1, 0, 0), (2, 0, 0)))
+
+    def test_points_out_of_one_plane_are_refused(self):
+        builder = ShapeBuilder(self.file)
+        with pytest.raises(ValueError):
+            builder.face_surface(((0, 0, 0), (1, 0, 0), (1, 1, 0.01), (0, 1, 0)))
+
+    def test_a_face_with_a_hole(self):
+        builder = ShapeBuilder(self.file)
+        hole = ((1, 0.2, 0), (0.5, 0.2, 0), (0.5, 0.8, 0), (1, 0.8, 0))
+        face = builder.face_surface(((0, 0, 0), (2, 0, 0), (2, 1, 0), (0, 1, 0)), [hole])
+        assert face.Bounds[0].is_a("IfcFaceOuterBound")
+        assert face.Bounds[1].is_a() == "IfcFaceBound"
+        loop = face.Bounds[1].Bound
+        assert loop.is_a("IfcEdgeLoop")
+        starts = [e.EdgeElement.EdgeStart.VertexGeometry.Coordinates for e in loop.EdgeList]
+        assert np.allclose(starts, hole)
+
+    def test_a_hole_out_of_the_plane_is_refused(self):
+        builder = ShapeBuilder(self.file)
+        hole = ((1, 0.2, 0.1), (0.5, 0.2, 0.1), (0.5, 0.8, 0.1))
+        with pytest.raises(ValueError):
+            builder.face_surface(((0, 0, 0), (2, 0, 0), (2, 1, 0), (0, 1, 0)), [hole])
+
+    def test_the_local_axes_of_a_face_being_replaced_are_kept(self):
+        # A structural surface member's plane gives its local axes: editing its outline must not turn them
+        builder = ShapeBuilder(self.file)
+        face = builder.face_surface(((0, 0, 0), (0, 1, 0), (3, 1, 0), (3, 0, 0)), normal=(0, 0, 1), x_axis=(0, 1, 0))
+        position = face.FaceSurface.Position
+        assert np.allclose(position.Axis.DirectionRatios, (0, 0, 1))
+        assert np.allclose(position.RefDirection.DirectionRatios, (0, 1, 0))
+        # Reversed to wind round the normal, so the face still follows its plane
+        starts = [e.EdgeElement.EdgeStart.VertexGeometry.Coordinates for e in face.Bounds[0].Bound.EdgeList]
+        assert np.allclose(starts, ((3, 0, 0), (3, 1, 0), (0, 1, 0), (0, 0, 0)))
+
+    def test_an_x_axis_off_the_plane_is_projected_into_it(self):
+        builder = ShapeBuilder(self.file)
+        face = builder.face_surface(((0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)), x_axis=(1, 1, 5))
+        assert np.allclose(face.FaceSurface.Position.RefDirection.DirectionRatios, np.array((1, 1, 0)) / np.sqrt(2))
+
+    def test_an_x_axis_along_the_normal_is_ignored(self):
+        builder = ShapeBuilder(self.file)
+        face = builder.face_surface(((0, 0, 0), (0, 1, 0), (0, 1, 1), (0, 0, 1)), x_axis=(1, 0, 0))
+        assert np.allclose(face.FaceSurface.Position.RefDirection.DirectionRatios, (0, 1, 0))
+
+
+class TestGetMeshBoundaries:
+    # A square of 3 x 3 vertices, numbered row by row, in eight triangles winding anticlockwise seen from +Z
+    VERTICES = [(x, y, 0) for y in range(3) for x in range(3)]
+    TRIANGLES = [
+        (0, 1, 4), (0, 4, 3), (1, 2, 5), (1, 5, 4), (3, 4, 7), (3, 7, 6), (4, 5, 8), (4, 8, 7)
+    ]  # fmt: skip
+
+    def test_a_single_polygon_is_its_own_boundary(self):
+        outer, inners = ShapeBuilder.get_mesh_boundaries(self.VERTICES, [(0, 2, 8, 6)])
+        assert outer == [0, 2, 8, 6]
+        assert inners == []
+
+    def test_triangles_make_one_boundary(self):
+        outer, inners = ShapeBuilder.get_mesh_boundaries(self.VERTICES, self.TRIANGLES)
+        assert outer == [0, 1, 2, 5, 8, 7, 6, 3]
+        assert inners == []
+
+    def test_a_hole(self):
+        # A 4 x 4 square of vertices with the middle square left out
+        vertices = [(x, y, 0) for y in range(4) for x in range(4)]
+        quads = [(x + 4 * y, x + 1 + 4 * y, x + 5 + 4 * y, x + 4 + 4 * y) for y in range(3) for x in range(3)]
+        quads.remove((5, 6, 10, 9))
+        outer, inners = ShapeBuilder.get_mesh_boundaries(vertices, quads)
+        assert outer == [0, 1, 2, 3, 7, 11, 15, 14, 13, 12, 8, 4]
+        assert len(inners) == 1
+        # The hole winds the other way
+        assert inners[0][inners[0].index(5) :] + inners[0][: inners[0].index(5)] == [5, 9, 10, 6]
+
+    def test_two_separate_faces_are_refused(self):
+        with pytest.raises(ValueError):
+            ShapeBuilder.get_mesh_boundaries(self.VERTICES, [(0, 1, 3), (5, 8, 7)])
+
+    def test_faces_touching_at_a_corner_are_refused(self):
+        with pytest.raises(ValueError):
+            ShapeBuilder.get_mesh_boundaries(self.VERTICES, [(0, 1, 4, 3), (4, 5, 8, 7)])
+
+    def test_no_polygons_are_refused(self):
+        with pytest.raises(ValueError):
+            ShapeBuilder.get_mesh_boundaries(self.VERTICES, [])
+
 
 class TestCalculateTransitions(test.bootstrap.IFC4):
     def calculate_and_test(self, params: dict[str, Any], length: Union[float, None]):

@@ -1,8 +1,5 @@
-from pathlib import Path
-
 import ifcopenshell
 
-ifcopenshell.set_plugin_search_paths([str(Path(ifcopenshell.__file__).parent)])
 model = ifcopenshell.file()
 
 import ifcopenshell.api
@@ -15,6 +12,7 @@ import ifcopenshell.api.spatial
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import ifcopenshell.geom
+import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import numpy as np
@@ -31,7 +29,8 @@ class Context:
     body = None
     storey = None
 
-    def __init__(self):
+    def __init__(self, geometry_library="opencascade"):
+        self.geometry_library = geometry_library
         self._create_empty_model()
 
     def clear(self):
@@ -56,7 +55,7 @@ class Context:
         axis = [
             ctx for ctx in self.model.by_type("IfcGeometricRepresentationContext") if ctx.ContextIdentifier == "Axis"
         ]
-        if body:
+        if axis:
             self.axis = axis[0]
         else:
             context = ifcopenshell.api.context.add_context(self.model, context_type="Model")
@@ -67,7 +66,7 @@ class Context:
                 target_view="GRAPH_VIEW",
                 parent=context,
             )
-        self.storey = self.model.by_type("IfcBuildingStorey")[0]
+        self.storey = next(iter(self.model.by_type("IfcBuildingStorey")), None)
 
     def _create_empty_model(self):
         # Create a blank model
@@ -206,28 +205,17 @@ class Context:
             product=door,
             representation=door_representation,
         )
-        ifcopenshell.api.spatial.assign_container(
-            self.model,
-            relating_structure=self.storey,
-            products=[door],
-        )
+        container = ifcopenshell.util.element.get_container(wall) or self.storey
+        if container is not None:
+            ifcopenshell.api.spatial.assign_container(
+                self.model,
+                relating_structure=container,
+                products=[door],
+            )
 
-        r = [r for r in wall.Representation.Representations if r.RepresentationIdentifier == "Axis"]
-        if not r:
-            raise ValueError("Axis representation is needed")
-        r = r[0]
-        axis_geometry = ifcopenshell.geom.create_shape(
-            ifcopenshell.geom.settings(
-                DIMENSIONALITY=ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS,
-                USE_WORLD_COORDS=True,
-            ),
-            wall,
-            r,
-        )
-        vs = np.array(axis_geometry.geometry.verts).reshape((-1, 3))
-        es = np.array(axis_geometry.geometry.edges).reshape((-1, 2))
-        A, B = vs[es[0]]
-        v = B - A
+        m4 = np.array(ifcopenshell.geom.map_shape(ifcopenshell.geom.settings(), wall.ObjectPlacement).components)
+        v = m4.T[0][:3]
+        A = m4.T[3][:3]
         P = np.zeros(3)
         P[0 : len(pt)] = pt
         AP = P - A
@@ -244,7 +232,7 @@ class Context:
 
         position_3d = None
         if self.model.schema == "IFC2X3":
-            position_3d = self.model.createIfcAxis2Placement2D(self.model.createIfcCartesianPoint([0.0, 0.0, 0.0]))
+            position_3d = self.model.createIfcAxis2Placement3D(self.model.createIfcCartesianPoint([0.0, 0.0, 0.0]))
         position_2d = self.model.createIfcAxis2Placement2D(
             self.model.createIfcCartesianPoint([door.OverallWidth / 2.0, 0.0])
         )

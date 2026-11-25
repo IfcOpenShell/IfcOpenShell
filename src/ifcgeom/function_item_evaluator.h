@@ -19,6 +19,29 @@ inline taxonomy::function_item::ptr convert_loop_to_function_item(taxonomy::loop
     return ifcopenshell::geom::taxonomy::dcast<taxonomy::function_item>(loop);
 }
 
+#ifndef SWIG
+/// @brief A cross section placed at some distance along a function, in world coordinates
+struct sampled_section {
+    /// where the function is
+    Eigen::Vector3d origin;
+    /// points of the section to keep within the deflection tolerances, as loops of consecutive
+    /// points joined by faces between sections; a closed loop repeats its first point at the end
+    std::vector<std::vector<Eigen::Vector3d>> loops;
+};
+
+using section_function = std::function<sampled_section(double)>;
+
+/// @brief Distances along at which to place sections, refined until they follow the function
+/// within the given deflections.
+///
+/// Every boundary is a sample. Each interval between samples is bisected until, at a quarter,
+/// half and three quarters of it, every section point is within linear_deflection of the straight
+/// line between its positions at the interval's ends, every face between two consecutive points of
+/// a loop is within linear_deflection of flat, and the function turns by at most angular_deflection.
+/// A straight with an unchanging section therefore needs only its ends.
+IFC_GEOM_API std::vector<double> deflection_samples(std::vector<double> boundaries, const section_function& section_at, double linear_deflection, double angular_deflection, double tolerance);
+#endif
+
 /// @brief Abstract class for evaluating a function_item. This class is specialized for each of the function_item types.
 struct IFC_GEOM_API fn_evaluator {
     fn_evaluator(const ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root()) : settings_(settings), logger_(logger) {
@@ -32,6 +55,11 @@ struct IFC_GEOM_API fn_evaluator {
     virtual double start() const = 0;
     virtual double end() const = 0;
     double length() const { return end() - start(); }
+#ifndef SWIG
+    /// @brief start(), end(), and every span boundary between them of every function this one is
+    /// made of, in increasing order
+    virtual std::vector<double> boundaries() const = 0;
+#endif
 
     ifcopenshell::geom::settings settings_;
 
@@ -47,7 +75,15 @@ class IFC_GEOM_API function_item_evaluator {
     ~function_item_evaluator();
 
     /// @brief returns a vector of "distance along" points where the evaluate function computes loop points
+    /// Every span boundary is included, and the points between them are spaced so the polyline
+    /// through them stays within mesher-linear-deflection of the curve and turns by at most
+    /// mesher-angular-deflection between points. Straights need only their ends.
     std::vector<double> evaluation_points() const;
+
+#ifndef SWIG
+    /// @brief see fn_evaluator::boundaries()
+    std::vector<double> boundaries() const;
+#endif
 
     /// @brief returns a vector of "distance along" points between ustart and uend
     /// @param ustart starting location

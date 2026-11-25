@@ -47,7 +47,7 @@ endif()
 
 # macOS install-time rpath — same as BonsaiViewer.app: dyld looks in
 # IfcViewerMinimal.app/Contents/Frameworks for @rpath/* link deps
-# (libwgpu_native.dylib, libIfcParse.dylib, libifcopenshell.geometry.dylib,
+# (libwgpu_native.dylib, libIfcParse.dylib, libifcopenshell_geometry.dylib,
 # …). The actual files get staged below via install(CODE).
 if(APPLE)
     set_target_properties(IfcViewerMinimal PROPERTIES

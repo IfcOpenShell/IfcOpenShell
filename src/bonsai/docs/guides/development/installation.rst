@@ -277,6 +277,22 @@ Each release includes a full report listing which PRs were merged successfully,
 which were skipped (e.g. drafts), and which failed due to conflicts with other
 PRs.
 
+Release Variants: ``[asc]``, ``[desc]`` and ``[upd]``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each run can publish up to three releases, marked by a suffix in the release
+name. They differ only in the **order** in which the PRs are merged:
+
+- ``[asc]`` — ascending: lowest PR number merged first.
+- ``[desc]`` — descending: highest PR number merged first.
+- ``[upd]`` — by last update: most recently updated PR merged first.
+
+Order matters when two PRs conflict with each other but not with the base
+branch. Whichever is merged first gets in, and the other is skipped. If a PR you
+want is listed under *Skipped – Conflict with other PRs* in one release's
+report, check the other two releases from the same run; it may be included in
+one of them.
+
 Installing BonsaiPR with Automated Updates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

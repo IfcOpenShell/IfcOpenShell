@@ -115,7 +115,8 @@ extensions = [
     "sphinx_copybutton",
     "myst_parser",
 ]
-skip_python_api = os.environ.get("SKIP_PYTHON_API") == "1"
+cpp_only = os.environ.get("CPP_ONLY") == "1"
+skip_python_api = cpp_only or os.environ.get("SKIP_PYTHON_API") == "1"
 if skip_python_api:
     extensions.remove("autoapi.extension")
 
@@ -243,6 +244,21 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", ".venv", "output/doxygen
 if skip_python_api:
     exclude_patterns.append("autoapi")
 
+if cpp_only:
+    root_doc = "cpp-sdk"
+    # Sphinx reads all source files, including those outside the toctree.
+    # Exclude other languages and guides from both the output and search index.
+    exclude_patterns.extend(
+        path.name
+        for path in docs_directory.iterdir()
+        if path.name not in {"cpp-sdk.rst", "output", "_static", "_templates"}
+    )
+    exclude_patterns.extend(
+        f"output/{path.name}" for path in (docs_directory / "output").iterdir() if path.name != "api"
+    )
+else:
+    exclude_patterns.append("cpp-sdk.rst")
+
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -318,3 +334,8 @@ html_theme_options = {
         },
     ],
 }
+
+if cpp_only:
+    html_logo = None
+    html_favicon = None
+    html_theme_options["footer_icons"] = []

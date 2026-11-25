@@ -121,6 +121,7 @@ END-ISO-10303-21;`));
     expect(wall).toBeInstanceOf(IfcOpenshellInstance);
     expect(wall).toBeInstanceOf(ifcopenshell.EntityInstance);
     expect(wall.get('Name')).toBe('Wall');
+    expect(wall.Name).toBe('Wall');
     expect(wall.getArgumentByName('Name')).toBe('Wall');
     const header = file.header()!;
     const schema = header.fileSchema();
@@ -130,6 +131,57 @@ END-ISO-10303-21;`));
     expect(file.toString()).toContain('IFCWALL');
     file.dispose();
     expect(() => file.schema()).toThrow('disposed');
+  });
+
+  it('reads and writes attributes and inverses as properties', () => {
+    using file = new ifcopenshell.File('IFC4');
+    const building = file.create('IfcBuilding', { Name: 'Building' });
+    const wall = file.create('IfcWall', { Name: 'Wall' });
+    const other = file.create('IfcWall', { Name: 'Other' });
+    const point = file.create('IfcCartesianPoint', { Coordinates: [1, 2, 3] });
+    expect(wall.constructor.name).toBe('IfcWall');
+    expect(point.constructor.name).toBe('IfcCartesianPoint');
+    expect('Name' in wall).toBe(true);
+    expect('Coordinates' in wall).toBe(false);
+    expect('Name' in point).toBe(false);
+    wall.Name = 'Renamed';
+    wall.PredefinedType = 'STANDARD';
+    expect(wall.Name).toBe('Renamed');
+    expect(other.Name).toBe('Other');
+    expect(wall.get('Name')).toBe('Renamed');
+    expect(wall.PredefinedType).toBe('STANDARD');
+    expect(() => { wall.Name = 123; }).toThrow();
+    point.Coordinates = [4, 5, 6];
+    expect(point.Coordinates).toEqual([4, 5, 6]);
+    const relation = file.create('IfcRelAggregates', { RelatingObject: building, RelatedObjects: [wall] });
+    expect(relation.RelatingObject.id()).toBe(building.id());
+    expect(relation.RelatedObjects.map((item: ifcopenshell.EntityInstance) => item.Name)).toEqual(['Renamed']);
+    expect(wall.Decomposes.map((item: ifcopenshell.EntityInstance) => item.id())).toEqual([relation.id()]);
+    expect(wall.IsDecomposedBy).toEqual([]);
+    expect(() => { wall.Decomposes = []; }).toThrow('Cannot set inverse attribute Decomposes');
+  });
+
+  it('labels entities by IFC class', () => {
+    using file = new ifcopenshell.File('IFC4');
+    const wall = file.create('IfcWall');
+    expect(Object.prototype.toString.call(wall)).toBe('[object IfcWall]');
+  });
+
+  it('rejects unknown attributes like Python AttributeError', async () => {
+    using file = new ifcopenshell.File('IFC4');
+    const wall = file.create('IfcWall', { Name: 'Wall' });
+    const point = file.create('IfcCartesianPoint', { Coordinates: [1, 2, 3] });
+    expect(() => wall.Nmae).toThrow("entity instance of type 'IFC4.IfcWall' has no attribute 'Nmae'");
+    expect(() => point.Name).toThrow("has no attribute 'Name'");
+    expect(() => { wall.Nmae = 'x'; }).toThrow("has no attribute 'Nmae'");
+    expect(() => { (wall as unknown as Record<string, unknown>).name = 'x'; }).toThrow("has no attribute 'name'");
+    expect(Object.keys(wall)).toEqual([]);
+    expect('Nmae' in wall).toBe(false);
+    expect((wall as unknown as Record<string, unknown>).then).toBeUndefined();
+    expect((await Promise.resolve(wall)).Name).toBe('Wall');
+    const tag = Symbol('tag');
+    (wall as unknown as Record<symbol, unknown>)[tag] = 1;
+    expect((wall as unknown as Record<symbol, unknown>)[tag]).toBe(1);
   });
 
   it('returns ordinary arrays and reserves Disposable for model owners', () => {
@@ -245,6 +297,7 @@ END-ISO-10303-21;`;
     using file = ifcopenshell.open(new TextEncoder().encode(text));
     const property = file.byId(1)!;
     const logical = property.get('NominalValue') as ifcopenshell.EntityInstance;
+    expect(logical.wrappedValue).toBe('UNKNOWN');
     expect(logical.get(0)).toBe('UNKNOWN');
     logical.set(0, false);
     expect(logical.get(0)).toBe(false);
@@ -252,6 +305,7 @@ END-ISO-10303-21;`;
     expect(logical.get(0)).toBe('UNKNOWN');
     const integerProperty = file.byId(2)!;
     const integer = integerProperty.get('NominalValue') as ifcopenshell.EntityInstance;
+    expect(integer.wrappedValue).toBe(9007199254740993n);
     expect(integer.get(0)).toBe(9007199254740993n);
     integer.set(0, -9007199254740993n);
     expect(integer.get(0)).toBe(-9007199254740993n);

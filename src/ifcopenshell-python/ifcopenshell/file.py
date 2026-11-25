@@ -85,16 +85,14 @@ class UndoSystemError(Exception):
 
 class Transaction:
     operations: list[TransactionOperation]
-    batch_inverses: list[ElementInverses]
-    batch_delete_ids: set[int]
+    batch_inverses: ElementInverses
 
     def __init__(self, ifc_file: ifcopenshell.file):
         self.file: ifcopenshell.file = ifc_file
         self.operations = []
         self.is_batched = False
         self.batch_delete_index = 0
-        self.batch_delete_ids = set()
-        self.batch_inverses = []
+        self.batch_inverses = {}
 
     def serialise_entity_instance(self, element: ifcopenshell.entity_instance) -> dict[str, Any]:
         info = element.get_info()
@@ -119,17 +117,14 @@ class Transaction:
     def batch(self) -> None:
         self.is_batched = True
         self.batch_delete_index = len(self.operations)
-        self.batch_delete_ids = set()
-        self.batch_inverses = []
+        self.batch_inverses = {}
 
     def unbatch(self) -> None:
-        for inverses in self.batch_inverses:
-            if inverses:
-                self.operations.insert(self.batch_delete_index, {"action": "batch_delete", "inverses": inverses})
+        if self.batch_inverses:
+            self.operations.insert(self.batch_delete_index, {"action": "batch_delete", "inverses": self.batch_inverses})
         self.is_batched = False
         self.batch_delete_index = 0
-        self.batch_delete_ids = set()
-        self.batch_inverses = []
+        self.batch_inverses = {}
 
     def store_create(self, element: ifcopenshell.entity_instance) -> None:
         if element.id():
@@ -148,34 +143,31 @@ class Transaction:
             )
 
     def store_delete(self, element: ifcopenshell.entity_instance) -> None:
-        inverses = {}
-        if self.is_batched:
-            if element.id() not in self.batch_delete_ids:
-                self.batch_inverses.append(self.get_element_inverses(element))
-            self.batch_delete_ids.add(element.id())
-        else:
-            inverses = self.get_element_inverses(element)
+        inverses: ElementInverses = {}
+        for inverse in self.file.get_inverse(element):
+            if self.is_batched:
+                # Record an inverse once per batch, when the first instance it
+                # references is deleted. Recording it again for every member of
+                # a large aggregate is quadratic in the aggregate's length.
+                if inverse.id() not in self.batch_inverses:
+                    self.batch_inverses[inverse.id()] = self.get_entity_references(inverse)
+            else:
+                inverses[inverse.id()] = self.get_entity_references(inverse)
         self.operations.append(
             {"action": "delete", "inverses": inverses, "value": self.serialise_entity_instance(element)}
         )
 
-    def get_element_inverses(self, element: ifcopenshell.entity_instance) -> ElementInverses:
-        inverses: ElementInverses = {}
-        for inverse in self.file.get_inverse(element):
-            inverse_references: list[InverseReference] = []
-            for i, attribute in enumerate(inverse):
-                if self.has_element_reference(attribute, element):
-                    inverse_references.append((i, self.serialise_value(inverse, attribute)))
-            inverses[inverse.id()] = inverse_references
-        return inverses
+    def get_entity_references(self, inverse: ifcopenshell.entity_instance) -> list[InverseReference]:
+        return [
+            (i, self.serialise_value(inverse, attribute))
+            for i, attribute in enumerate(inverse)
+            if self.has_entity_reference(attribute)
+        ]
 
-    def has_element_reference(self, value: Any, element: ifcopenshell.entity_instance) -> bool:
+    def has_entity_reference(self, value: Any) -> bool:
         if isinstance(value, (tuple, list)):
-            for v in value:
-                if self.has_element_reference(v, element):
-                    return True
-            return False
-        return value == element
+            return any(self.has_entity_reference(v) for v in value)
+        return isinstance(value, ifcopenshell.entity_instance)
 
     def rollback(self) -> None:
         for operation in self.operations[::-1]:
@@ -915,9 +907,6 @@ class file_mixin:
                 )
                 unzipped_path.unlink()
         return
-
-    def to_string(self) -> str:
-        return self.to_string()
 
     @staticmethod
     def _determine_schema_identifier(

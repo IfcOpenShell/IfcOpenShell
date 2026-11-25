@@ -45,6 +45,7 @@ from ifcquery import (
 from ifcquery import (
     render as render_mod,
 )
+from ifcquery import structural as structural_mod
 from ifcquery import validate as validate_mod
 
 
@@ -121,7 +122,10 @@ def main():
 
     subparsers.add_parser("summary", help="Model overview: schema, element counts, project info")
 
-    subparsers.add_parser("tree", help="Spatial hierarchy tree")
+    tree_parser = subparsers.add_parser("tree", help="Spatial hierarchy tree")
+    tree_parser.add_argument(
+        "--depth", type=int, default=None, metavar="N", help="Limit expansion to N levels (default: unlimited)"
+    )
 
     info_parser = subparsers.add_parser("info", help="Deep inspection of a specific element")
     info_parser.add_argument("element_id", help="Element step ID (e.g. 123 or #123)")
@@ -158,6 +162,17 @@ def main():
         default=None,
         metavar="N",
         help="Limit cost item expansion to N levels (default: unlimited)",
+    )
+
+    structural_parser = subparsers.add_parser(
+        "structural", help="List structural analysis models with their members, connections and loads"
+    )
+    structural_parser.add_argument(
+        "--depth",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Limit expansion to N levels, the analysis models being level 1 (default: unlimited)",
     )
 
     subparsers.add_parser("contexts", help="List geometric representation contexts and subcontexts")
@@ -262,7 +277,7 @@ def main():
     if args.command == "summary":
         result = summary.summary(model)
     elif args.command == "tree":
-        result = tree.tree(model)
+        result = tree.tree(model, max_depth=args.depth)
     elif args.command == "info":
         try:
             element_id = parse_element_id(args.element_id)
@@ -313,6 +328,8 @@ def main():
         result = schedule.schedule(model, max_depth=args.depth)
     elif args.command == "cost":
         result = cost_mod.cost(model, max_depth=args.depth)
+    elif args.command == "structural":
+        result = structural_mod.structural(model, max_depth=args.depth)
     elif args.command == "contexts":
         result = contexts_mod.contexts(model)
     elif args.command == "materials":

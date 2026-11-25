@@ -18,12 +18,13 @@
  ********************************************************************************/
 
 #include "opencascade_kernel.h"
+#include "boolean_utils.h"
 
 #include <BRepPrimAPI_MakeHalfSpace.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepAlgoAPI_Common.hxx>
-#include <ShapeFix_Solid.hxx>
+#include <BRepClass3d_SolidClassifier.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
 
 using namespace ifcopenshell::geom;
@@ -31,8 +32,6 @@ using namespace ifcopenshell::geom::kernels;
 using namespace ifcopenshell::geom::util;
 
 bool open_cascade_kernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& result) {
-	TopoDS_Shape S;
-
 	if (solid->instance.declaration().is("IfcHalfSpaceSolid")) {
 		// halfspace
 		if (solid->children.size() != 1) {
@@ -79,25 +78,73 @@ bool open_cascade_kernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape
 		return true;
 	}
 
-	for (auto& s : solid->children) {
-		TopoDS_Shape shl;
-		if (convert(s, shl)) {
-			if (shl.ShapeType() == TopAbs_SHELL) {
-				ShapeFix_Solid solid;
-				S = solid.SolidFromShell(TopoDS::Shell(shl));
-			} else if (solid->children.size() == 1) {
-				S = shl;
-			} else {
-				throw std::runtime_error("Unexpected configuration of subshapes");
-			}
-		} else {
-			logger_.warning("GEO", 201, "Ignored shell", s->instance);
-		}
-	}
-	if (!S.IsNull()) {
-		result = S;
-	}
-	return !result.IsNull();
+    BRep_Builder builder;
+    std::vector<TopoDS_Shape> boundaries;
+    bool all_solids = true;
+    for (auto& shell : solid->children) {
+        TopoDS_Shape boundary;
+        if (!convert(shell, boundary) || boundary.IsNull()) {
+            logger_.warning("GEO", 201, "Failed to convert shell", shell->instance);
+            return false;
+        }
+        if (boundary.ShapeType() == TopAbs_SHELL) {
+            TopoDS_Solid shell_solid;
+            builder.MakeSolid(shell_solid);
+            builder.Add(shell_solid, boundary);
+            boundary = shell_solid;
+        }
+        if (boundary.ShapeType() == TopAbs_SOLID) {
+            // IFC identifies the external shell explicitly; all following shells are voids.
+            BRepClass3d_SolidClassifier classifier(boundary);
+            classifier.PerformInfinitePoint(settings_.get<settings::Precision>().get());
+            const auto expected = boundaries.empty() ? TopAbs_OUT : TopAbs_IN;
+            if (classifier.State() != TopAbs_OUT && classifier.State() != TopAbs_IN) {
+                throw std::runtime_error("Unable to determine shell orientation");
+            }
+            if (classifier.State() != expected) {
+                boundary.Reverse();
+            }
+        } else {
+            all_solids = false;
+            if (solid->children.size() > 1 && boundary.ShapeType() != TopAbs_COMPOUND) {
+                throw std::runtime_error("Unexpected configuration of subshapes");
+            }
+        }
+        boundaries.push_back(boundary);
+    }
+    if (boundaries.empty()) {
+        return false;
+    }
+    if (boundaries.size() == 1) {
+        result = boundaries.front();
+    } else if (all_solids) {
+        TopoDS_Solid assembled;
+        builder.MakeSolid(assembled);
+        for (const auto& boundary : boundaries) {
+            for (TopoDS_Iterator shells(boundary); shells.More(); shells.Next()) {
+                builder.Add(assembled, shells.Value());
+            }
+        }
+        result = assembled;
+    } else {
+        TopoDS_Compound compound;
+        builder.MakeCompound(compound);
+        for (const auto& boundary : boundaries) {
+            if (boundary.ShapeType() == TopAbs_COMPOUND) {
+                builder.Add(compound, boundary);
+            } else {
+                // Keep one face compound per boundary when some shells remain unsewn.
+                TopoDS_Compound faces;
+                builder.MakeCompound(faces);
+                for (TopExp_Explorer it(boundary, TopAbs_FACE); it.More(); it.Next()) {
+                    builder.Add(faces, it.Current());
+                }
+                builder.Add(compound, faces);
+            }
+        }
+        result = util::ensure_fit_for_subtraction(compound, settings_.get<settings::Precision>().get());
+    }
+    return true;
 }
 
 bool open_cascade_kernel::convert_impl(const taxonomy::solid::ptr solid, std::vector<ifcopenshell::geom::conversion_result>& results) {

@@ -30,6 +30,7 @@ def add_structural_analysis_model(
     ifc: type[tool.Ifc], structural: type[tool.Structural]
 ) -> ifcopenshell.entity_instance:
     result = ifc.run("structural.add_structural_analysis_model")
+    structural.set_current_structural_analysis_model(result)
     structural.load_structural_analysis_models()
     structural.ensure_representation_contexts()
     return result
@@ -45,6 +46,22 @@ def assign_structural_analysis_model(
         products=products,
         structural_analysis_model=structural_analysis_model,
     )
+
+
+def assign_to_building(
+    ifc: type[tool.Ifc],
+    structural_analysis_model: ifcopenshell.entity_instance,
+    building: ifcopenshell.entity_instance,
+) -> None:
+    ifc.run("structural.assign_to_building", structural_analysis_model=structural_analysis_model, building=building)
+
+
+def unassign_from_building(
+    ifc: type[tool.Ifc],
+    structural_analysis_model: ifcopenshell.entity_instance,
+    building: ifcopenshell.entity_instance,
+) -> None:
+    ifc.run("structural.unassign_from_building", structural_analysis_model=structural_analysis_model, building=building)
 
 
 def disable_editing_structural_analysis_model(structural: type[tool.Structural]) -> None:

@@ -656,8 +656,11 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
             representation_data["profile_set_usage"] = tool.Geometry.get_profile_set_usage(product)
             representation_data["text_literal"] = tool.Geometry.get_text_literal(old_representation)
 
-        # TODO: replace with core.add_representation?
-        new_representation = ifcopenshell.api.geometry.add_representation(self.file, **representation_data)
+        if tool.Geometry.is_structural_face_mesh(obj, context_of_items):
+            new_representation = tool.Geometry.add_structural_face_representation(obj, context_of_items)
+        else:
+            # TODO: replace with core.add_representation?
+            new_representation = ifcopenshell.api.geometry.add_representation(self.file, **representation_data)
         if new_representation is None:
             self.report({"ERROR"}, "Error creating representation for Blender object.")
             return {"CANCELLED"}
@@ -2574,7 +2577,18 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             if tool.Geometry.is_geometric_data(obj.data) and (
                 item.is_a("IfcVertex") or item.is_a("IfcEdge") or obj.data.polygons
             ):
-                tool.Geometry.edit_meshlike_item(obj)
+                try:
+                    tool.Geometry.edit_meshlike_item(obj)
+                except ValueError as e:
+                    # A face that is no longer one planar face, for example
+                    error = str(e)
+
+                    def msg(self, context):
+                        self.layout.label(text=error)
+
+                    bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                    self.enable_edit_mode(bpy.context)
+                    return
             else:
                 tool.Geometry.import_item(obj)
         elif item.is_a("IfcSweptAreaSolid"):
@@ -3761,7 +3775,8 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
 
         matrix = props.representation_obj.matrix_world.copy()
         matrix.translation = context.scene.cursor.location
-        local_matrix = props.representation_obj.matrix_world.inverted() @ matrix
+        rep_matrix = tool.Geometry.get_true_matrix_world(props.representation_obj)
+        local_matrix = np.linalg.inv(rep_matrix) @ np.array(matrix)
 
         obj.show_in_front = True
         obj.matrix_world = matrix
@@ -3778,9 +3793,9 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         item = builder.extrude(
             curve,
             magnitude=0.5 / unit_scale,
-            position=local_matrix.translation,
-            position_x_axis=local_matrix.col[0].to_3d(),
-            position_z_axis=local_matrix.col[2].to_3d(),
+            position=local_matrix[:3, 3],
+            position_x_axis=local_matrix[:3, 0],
+            position_z_axis=local_matrix[:3, 2],
         )
 
         representation = tool.Geometry.get_active_representation(props.representation_obj)
@@ -3826,7 +3841,8 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
 
         matrix = props.representation_obj.matrix_world.copy()
         matrix.translation = context.scene.cursor.location
-        local_matrix = props.representation_obj.matrix_world.inverted() @ matrix
+        rep_matrix = tool.Geometry.get_true_matrix_world(props.representation_obj)
+        local_matrix = np.linalg.inv(rep_matrix) @ np.array(matrix)
 
         obj.show_in_front = True
         obj.matrix_world = matrix
@@ -3836,9 +3852,9 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
 
-        offset = local_matrix.translation.to_2d() / unit_scale
+        offset = local_matrix[:2, 3] / unit_scale
         if not is_2d:
-            offset = offset.to_3d()
+            offset = np.append(offset, 0.0)
 
         if self.shape == "LINE":
             if is_2d:
@@ -3894,7 +3910,8 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
 
         matrix = props.representation_obj.matrix_world.copy()
         matrix.translation = context.scene.cursor.location
-        local_matrix = props.representation_obj.matrix_world.inverted() @ matrix
+        rep_matrix = tool.Geometry.get_true_matrix_world(props.representation_obj)
+        local_matrix = np.linalg.inv(rep_matrix) @ np.array(matrix)
 
         obj.show_in_front = True
         obj.matrix_world = matrix
@@ -3902,7 +3919,7 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-        location = np.array(local_matrix.translation) / unit_scale
+        location = local_matrix[:3, 3] / unit_scale
         item = builder.half_space_solid(builder.plane(location=location))
         props.add_item_object(obj, item)
 

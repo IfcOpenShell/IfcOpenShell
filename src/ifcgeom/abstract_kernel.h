@@ -121,8 +121,8 @@ namespace ifcopenshell {
 		virtual bool convert_impl(const taxonomy::sphere::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
 		virtual bool convert_impl(const taxonomy::torus::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
 		virtual bool convert_impl(const taxonomy::solid::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::sweep_along_curve::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
-		virtual bool convert_impl(const taxonomy::loft::ptr, std::vector<ifcopenshell::geom::conversion_result>&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::sweep_along_curve::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+		virtual bool convert_impl(const taxonomy::loft::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
 		virtual bool convert_impl(const taxonomy::collection::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
 		virtual bool convert_impl(const taxonomy::function_item::ptr item, std::vector<ifcopenshell::geom::conversion_result>& cs);
       virtual bool convert_impl(const taxonomy::functor_item::ptr item, std::vector<ifcopenshell::geom::conversion_result>& cs);

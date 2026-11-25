@@ -53,7 +53,6 @@ namespace ifcopenshell {
 					auto ops = mapping_->find_openings(item->instance);
 					bool has_openings = ops.size();
 					for (auto& k : kernels_) {
-#ifdef IFOPSH_WITH_CGAL
 						if (has_openings && !k->supports_boolean_operations()) {
 							// @todo this would fail later on in the find_openings() call, because we have a
 							// SimpleCgalShape which cannot be used on a kernel that supports booleans.
@@ -63,15 +62,16 @@ namespace ifcopenshell {
 							//         to instance wouldn't matter as much.
 							continue;
 						}
-#endif
 						if (has_openings && k->geometry_library() == "passthrough") {
 							continue;
 						}
+						std::vector<ifcopenshell::geom::conversion_result> results;
 						bool success = false;
 						try {
-							success = k->convert(item, rs);
+							success = k->convert(item, results);
 						} catch (...) {}
 						if (success) {
+							rs = std::move(results);
 							return true;
 						}
 					}
@@ -132,6 +132,8 @@ namespace ifcopenshell {
 					std::vector<std::unique_ptr<abstract_kernel>> ks;
 					for (auto& k : kernels_) {
 						ks.emplace_back(k->clone(logger));
+						ks.back()->partial_success_is_success = k->partial_success_is_success;
+						ks.back()->propagate_exceptions = k->propagate_exceptions;
 					}
 					// @todo ugly
 					return new hybrid_kernel(geometry_library(), file_, const_cast<ifcopenshell::geom::settings&>(settings()), std::move(ks), logger);

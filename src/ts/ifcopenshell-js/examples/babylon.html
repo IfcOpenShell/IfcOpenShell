@@ -1,0 +1,236 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>IfcOpenShell Native WASM Babylon.js demo</title>
+
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+  }
+
+  aside {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 10px;
+    font: 14px sans-serif;
+  }
+
+  aside div {
+    padding: 5vh 10vh;
+    border-radius: 1vh;
+    background: #fff;
+    border: solid 1px #e0e0e0;
+    text-align: center;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
+</style>
+
+<aside>
+  <div>
+    IfcOpenShell Native WASM Babylon.js demo<br><br><br>
+    <form>
+      <input id="upload" type="file" accept=".ifc">
+      <label>
+        <input id="opencascade" type="checkbox" onchange="ensureChecked(this)">
+        OpenCASCADE
+      </label>
+      <label>
+        <input id="manifold" type="checkbox" checked onchange="ensureChecked(this)">
+        Manifold
+      </label>
+
+      <script>
+        function ensureChecked(changed) {
+          if (!document.querySelector('#opencascade').checked &&
+              !document.querySelector('#manifold').checked) {
+            changed.checked = true;
+          }
+        }
+      </script>
+    </form>
+  </div>
+</aside>
+<script type="importmap">
+{
+  "imports": {
+    "ifcopenshell": "https://cdn.jsdelivr.net/npm/ifcopenshell@latest/dist/index.js",
+    "ifcopenshell/geom": "https://cdn.jsdelivr.net/npm/ifcopenshell@latest/dist/geom/index.js",
+    "@babylonjs/core": "https://cdn.jsdelivr.net/npm/@babylonjs/core@7.49.0/+esm",
+    "@ifcopenshell/wasm": "https://cdn.jsdelivr.net/npm/@ifcopenshell/wasm@latest/browser.js",
+    "@ifcopenshell/wasm/api": "https://cdn.jsdelivr.net/npm/@ifcopenshell/wasm@latest/wasm/ifcopenshell_api.mjs"
+  }
+}
+</script>
+<script type="module">
+import {
+  ArcRotateCamera,
+  Color3,
+  Color4,
+  Engine,
+  HemisphericLight,
+  Matrix,
+  Mesh,
+  MultiMaterial,
+  Scene,
+  StandardMaterial,
+  SubMesh,
+  Vector3,
+  VertexData,
+} from '@babylonjs/core';
+import * as ifcopenshell from 'ifcopenshell';
+import * as ifcopenshell_geom from 'ifcopenshell/geom';
+
+const canvas = document.createElement('canvas');
+document.body.append(canvas);
+const engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+const scene = new Scene(engine);
+scene.clearColor = new Color4(0.933, 0.933, 0.933, 1);
+const model = new Mesh('model', scene);
+new HemisphericLight('hemi', new Vector3(0.2, 0.3, 1), scene);
+const camera = new ArcRotateCamera('camera', -Math.PI / 4, Math.PI / 3, 10, Vector3.Zero(), scene);
+camera.upVector = new Vector3(0, 0, 1);
+camera.attachControl(canvas, true);
+camera.wheelPrecision = 20;
+addEventListener('resize', () => engine.resize());
+engine.resize();
+engine.runRenderLoop(() => scene.render());
+
+function materialFor(rgb, alpha) {
+  const material = new StandardMaterial(`mat-${model.getChildMeshes().length}-${rgb.join(',')}-${alpha}`, scene);
+  material.diffuseColor = new Color3(rgb[0], rgb[1], rgb[2]);
+  material.alpha = alpha;
+  material.backFaceCulling = false;
+  if (alpha < 1) material.transparencyMode = StandardMaterial.MATERIAL_ALPHABLEND;
+  return material;
+}
+
+let runtime;
+document.querySelector('#upload').onchange = async () => {
+  document.querySelector('aside').style.display = 'none';
+  const selected = document.querySelector('#upload').files[0];
+  if (!selected) return;
+  for (const child of model.getChildMeshes()) child.dispose();
+  const kernels = ['manifold', 'opencascade'].filter(
+    (kernel) => document.querySelector(`#${kernel}`).checked,
+  );
+  const geometryLibrary = kernels.length === 2 ? 'hybrid-manifold-opencascade' : kernels[0];
+  let file, iterator, settings;
+  try {
+    runtime ??= await ifcopenshell.init();
+    const bytes = await selected.arrayBuffer();
+    const stream = runtime.raw.parse.streamFromString(new TextDecoder().decode(bytes.slice(0, 4096)));
+    let header, declaration, schema;
+    try {
+      header = stream.header();
+      declaration = header.fileSchema();
+      schema = declaration.schemaIdentifiers()[0].toLowerCase();
+    } finally {
+      declaration?.destroy(); header?.destroy(); stream.destroy();
+    }
+
+    await runtime.loadPlugin('schema', schema);
+    await runtime.loadPlugin('mapping', schema);
+    for (const kernel of kernels) {
+      await runtime.loadPlugin('kernel', kernel);
+    }
+
+    file = ifcopenshell.open(bytes, selected.name);
+
+    settings = new ifcopenshell_geom.Settings();
+    settings.set('weld-vertices', false);
+
+    iterator = new ifcopenshell_geom.Iterator(settings, file, { geometryLibrary });
+    let nextYield = performance.now() + 30;
+    if (iterator.initialize()) do {
+      if (performance.now() >= nextYield) {
+        await new Promise(requestAnimationFrame);
+        nextYield = performance.now() + 30;
+      }
+      const shape = iterator.get();
+      const tri = shape.asTriangulationElement();
+      const nativeGeometry = tri.geometry();
+      let data;
+      try {
+        data = {
+          vertices: nativeGeometry.vertsBuffer(Float32Array),
+          faces: nativeGeometry.facesBuffer(Uint32Array),
+          normals: nativeGeometry.normalsBuffer(Float32Array),
+          colors: nativeGeometry.colorsBuffer(Float32Array),
+          materialIds: nativeGeometry.materialIdsBuffer(Int32Array),
+          transform: shape.transformationBuffer(Float64Array),
+        };
+      } finally {
+        nativeGeometry.destroy(); tri.destroy(); shape.destroy();
+      }
+
+      if (!data.faces.length) continue;
+
+      const mesh = new Mesh(`ifc-${model.getChildMeshes().length}`, scene);
+      const vertexData = new VertexData();
+      vertexData.positions = data.vertices;
+      vertexData.indices = data.faces;
+      vertexData.normals = data.normals;
+      vertexData.applyToMesh(mesh);
+
+      const materials = [materialFor([0.8, 0.8, 0.8], 1)];
+      for (let i = 0; i < data.colors.length; i += 4) {
+        const [r, g, b, a] = data.colors.subarray(i, i + 4);
+        materials.push(materialFor([r, g, b], a));
+      }
+      const multi = new MultiMaterial(`${mesh.name}-materials`, scene);
+      multi.subMaterials = materials;
+      mesh.material = multi;
+      mesh.subMeshes = [];
+      for (let start = 0, end; start < data.faces.length / 3; start = end) {
+        const material = data.materialIds[start] ?? -1;
+        for (end = start + 1; end < data.faces.length / 3 && (data.materialIds[end] ?? -1) === material; end++);
+        new SubMesh(material + 1, 0, data.vertices.length / 3, start * 3, (end - start) * 3, mesh);
+      }
+
+      mesh.setPreTransformMatrix(Matrix.FromArray(data.transform));
+      mesh.parent = model;
+    } while (iterator.next());
+
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (const mesh of model.getChildMeshes()) {
+      mesh.computeWorldMatrix(true);
+      const bounds = mesh.getBoundingInfo().boundingBox;
+      minX = Math.min(minX, bounds.minimumWorld.x);
+      minY = Math.min(minY, bounds.minimumWorld.y);
+      minZ = Math.min(minZ, bounds.minimumWorld.z);
+      maxX = Math.max(maxX, bounds.maximumWorld.x);
+      maxY = Math.max(maxY, bounds.maximumWorld.y);
+      maxZ = Math.max(maxZ, bounds.maximumWorld.z);
+    }
+    if (minX !== Infinity) {
+      const center = new Vector3((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2);
+      const radius = Math.max(Vector3.Distance(center, new Vector3(maxX, maxY, maxZ)), 0.01);
+      camera.setTarget(center);
+      camera.alpha = -Math.PI / 4;
+      camera.beta = Math.PI / 3;
+      camera.radius = radius / Math.sin(camera.fov / 2) * 1.2;
+      camera.lowerRadiusLimit = radius * 0.05;
+      camera.upperRadiusLimit = radius * 100;
+      camera.minZ = radius / 1000;
+      camera.maxZ = radius * 100;
+    }
+  } catch (error) {
+    console.error(error);
+  } finally {
+    iterator?.dispose();
+    file?.dispose();
+  }
+};
+</script>

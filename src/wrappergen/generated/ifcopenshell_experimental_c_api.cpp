@@ -133,7 +133,7 @@ struct ifcopenshell_file_open_status_t {
 };
 
 struct ifcopenshell_spf_header_t {
-    ifcopenshell::spf_header value;
+    ifcopenshell::spf_header* value;
 };
 
 struct ifcopenshell_file_t {
@@ -1718,8 +1718,8 @@ ifcopenshell_spf_header_t* ifcopenshell_file_header(ifcopenshell_file_t* handle)
         if (handle == nullptr) {
             throw std::runtime_error("Null handle received");
         }
-        auto result = handle->value->header();
-        return new ifcopenshell_spf_header_t{ std::move(result) };
+        auto& result = handle->value->header();
+        return new ifcopenshell_spf_header_t{ &result };
     } catch (const std::exception& exception) {
         set_last_error(exception);
         return nullptr;

@@ -1,0 +1,187 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2026 Bruno Postle <bruno@postle.net>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+# This file was generated with the assistance of an AI coding tool.
+
+import ifcopenshell.api.group
+import ifcopenshell.api.root
+import ifcopenshell.api.structural
+import ifcopenshell.guid
+import ifcopenshell.util.structural
+import test.bootstrap
+
+
+class FactorGroups:
+    """RFEM's load combinations in IFC4: each factor a load group of type LOAD_GROUP, its Coefficient the factor"""
+
+    def add_group(self, predefined_type, name=None, coefficient=None):
+        return self.file.createIfcStructuralLoadGroup(
+            ifcopenshell.guid.new(),
+            Name=name,
+            PredefinedType=predefined_type,
+            ActionType="NOTDEFINED",
+            ActionSource="NOTDEFINED",
+            Coefficient=coefficient,
+        )
+
+    def group(self, products, group):
+        self.file.createIfcRelAssignsToGroup(ifcopenshell.guid.new(), RelatedObjects=products, RelatingGroup=group)
+
+    def setup_rfem(self):
+        self.q = self.add_group("LOAD_CASE", "Q")
+        self.wx = self.add_group("LOAD_CASE", "Wx")
+        self.combination = self.add_group("LOAD_COMBINATION", "Load Combination 1")
+        self.q_group = self.add_group("LOAD_GROUP", coefficient=1.5)
+        self.wx_group = self.add_group("LOAD_GROUP", coefficient=0.9)
+        self.group([self.q], self.q_group)
+        self.group([self.wx], self.wx_group)
+        self.group([self.q_group, self.wx_group], self.combination)
+
+
+class TestRemoveStructuralLoadGroup(test.bootstrap.IFC4):
+    def test_removing_a_load_combination_of_several_load_cases(self):
+        dead = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Dead")
+        live = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Live")
+        uls = ifcopenshell.api.structural.add_structural_load_combination(self.file, name="ULS")
+        ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=dead, load_combination=uls, factor=1.5
+        )
+        ifcopenshell.api.structural.assign_structural_load_combination(
+            self.file, load_case=live, load_combination=uls, factor=1.5
+        )
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=uls)
+        assert not self.file.by_type("IfcStructuralLoadGroup", include_subtypes=False)
+        assert not self.file.by_type("IfcRelAssignsToGroup")
+        assert set(self.file.by_type("IfcStructuralLoadCase")) == {dead, live}
+
+    def test_removing_a_load_group_from_a_load_case_with_other_groups(self):
+        dead = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Dead")
+        slab = ifcopenshell.api.structural.add_structural_load_group(self.file, name="Slab")
+        wall = ifcopenshell.api.structural.add_structural_load_group(self.file, name="Wall")
+        rel = self.file.createIfcRelAssignsToGroup(
+            ifcopenshell.guid.new(), RelatedObjects=[slab, wall], RelatingGroup=dead
+        )
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=slab)
+        assert rel.RelatedObjects == (wall,)
+        assert rel.RelatingGroup == dead
+
+    def test_removing_a_load_group(self):
+        group = ifcopenshell.api.structural.add_structural_load_group(self.file)
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=group)
+        assert not self.file.by_type("IfcStructuralLoadGroup")
+
+    def test_removing_the_last_load_group_of_a_model_unsets_loaded_by(self):
+        model = ifcopenshell.api.structural.add_structural_analysis_model(self.file)
+        group = ifcopenshell.api.structural.add_structural_load_group(self.file)
+        ifcopenshell.api.structural.assign_structural_load_group(
+            self.file, load_groups=[group], structural_analysis_model=model
+        )
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=group)
+        assert model.LoadedBy is None
+
+    def test_removing_a_load_group_removes_its_activities(self):
+        point = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        load = ifcopenshell.api.structural.add_structural_load(self.file, ifc_class="IfcStructuralLoadSingleForce")
+        group = ifcopenshell.api.structural.add_structural_load_group(self.file)
+        activities = [
+            ifcopenshell.api.structural.add_structural_activity(
+                self.file, ifc_class="IfcStructuralPointAction", applied_load=load, structural_member=point
+            )
+            for _ in range(2)
+        ]
+        ifcopenshell.api.group.assign_group(self.file, products=activities, group=group)
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=group)
+        assert not self.file.by_type("IfcStructuralActivity")
+        assert not self.file.by_type("IfcRelConnectsStructuralActivity")
+        assert not self.file.by_type("IfcRelAssignsToGroup")
+        assert self.file.by_type("IfcStructuralLoad") == (load,)
+
+    def test_removing_a_load_group_keeps_activities_another_group_uses(self):
+        point = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        load = ifcopenshell.api.structural.add_structural_load(self.file, ifc_class="IfcStructuralLoadSingleForce")
+        group = ifcopenshell.api.structural.add_structural_load_group(self.file)
+        other = ifcopenshell.api.structural.add_structural_load_group(self.file)
+        shared, own = [
+            ifcopenshell.api.structural.add_structural_activity(
+                self.file, ifc_class="IfcStructuralPointAction", applied_load=load, structural_member=point
+            )
+            for _ in range(2)
+        ]
+        ifcopenshell.api.group.assign_group(self.file, products=[shared, own], group=group)
+        ifcopenshell.api.group.assign_group(self.file, products=[shared], group=other)
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=group)
+        assert self.file.by_type("IfcStructuralActivity") == (shared,)
+        assert [rel.RelatingGroup for rel in shared.HasAssignments] == [other]
+        assert shared.AssignedToStructuralItem[0].RelatingElement == point
+
+    def test_removing_a_load_group_that_groups_an_activity_twice(self):
+        point = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        load = ifcopenshell.api.structural.add_structural_load(self.file, ifc_class="IfcStructuralLoadSingleForce")
+        group = ifcopenshell.api.structural.add_structural_load_group(self.file)
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            self.file, ifc_class="IfcStructuralPointAction", applied_load=load, structural_member=point
+        )
+        for _ in range(2):
+            self.file.createIfcRelAssignsToGroup(
+                ifcopenshell.guid.new(), RelatedObjects=[activity], RelatingGroup=group
+            )
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=group)
+        assert not self.file.by_type("IfcStructuralActivity")
+        assert not self.file.by_type("IfcRelAssignsToGroup")
+
+    def test_removing_a_load_group_ungroups_its_other_members(self):
+        group = ifcopenshell.api.structural.add_structural_load_group(self.file)
+        subgroups = [ifcopenshell.api.structural.add_structural_load_group(self.file) for _ in range(2)]
+        ifcopenshell.api.group.assign_group(self.file, products=subgroups, group=group)
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=group)
+        assert set(self.file.by_type("IfcStructuralLoadGroup")) == set(subgroups)
+        assert not self.file.by_type("IfcRelAssignsToGroup")
+
+
+class TestRemoveStructuralLoadGroupIFC4X3(test.bootstrap.IFC4X3, TestRemoveStructuralLoadGroup):
+    pass
+
+
+class TestRemoveStructuralLoadGroupIFC2X3(test.bootstrap.IFC2X3, TestRemoveStructuralLoadGroup):
+    # IFC2X3 has no IfcStructuralLoadCase, which these build on.
+    test_removing_a_load_combination_of_several_load_cases = None
+    test_removing_a_load_group_from_a_load_case_with_other_groups = None
+
+
+class TestRemoveStructuralLoadGroupFactorGroups(test.bootstrap.IFC4, FactorGroups):
+    def test_removing_a_load_combination_removes_its_factor_groups(self):
+        self.setup_rfem()
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=self.combination)
+        assert [g.Name for g in self.file.by_type("IfcStructuralLoadGroup")] == ["Q", "Wx"]
+        assert not self.file.by_type("IfcRelAssignsToGroup")
+
+    def test_a_factor_group_another_combination_shares_is_kept(self):
+        self.setup_rfem()
+        other = self.add_group("LOAD_COMBINATION", "Load Combination 2")
+        self.group([self.q_group], other)
+        wx_group = self.wx_group.id()
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=self.combination)
+        assert ifcopenshell.util.structural.get_combination_factors(other) == {self.q: 1.5}
+        assert wx_group not in [g.id() for g in self.file.by_type("IfcStructuralLoadGroup")]
+
+    def test_factor_groups_within_factor_groups_are_removed(self):
+        self.setup_rfem()
+        outer = self.add_group("LOAD_GROUP", coefficient=2.0)
+        self.group([self.q_group], outer)
+        self.group([outer], self.combination)
+        ifcopenshell.api.structural.remove_structural_load_group(self.file, load_group=self.combination)
+        assert [g.Name for g in self.file.by_type("IfcStructuralLoadGroup")] == ["Q", "Wx"]

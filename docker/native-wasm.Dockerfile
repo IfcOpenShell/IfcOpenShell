@@ -86,7 +86,7 @@ RUN --mount=type=cache,target=/__w/ifcopenshell_build,sharing=locked \
 
 # "Verify artifacts" step.
 RUN cd /__w/IfcOpenShell \
-    && python3 .github/scripts/verify-wasm-artifacts.py \
+    && uv run .github/scripts/verify-wasm-artifacts.py \
         /opt/ifcopenshell-wasm
 
 # "Run the basic I/O tests" step. `tests/io.test.ts` is the port of

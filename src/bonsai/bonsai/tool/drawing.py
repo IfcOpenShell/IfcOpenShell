@@ -1588,6 +1588,11 @@ class Drawing(bonsai.core.tool.Drawing):
         return prefs.doc.shadingstyle_default
 
     @classmethod
+    def get_default_metadata(cls) -> Union[str, None]:
+        prefs = tool.Blender.get_addon_preferences()
+        return prefs.doc.metadata_default.strip() or None
+
+    @classmethod
     def setup_shading_styles_path(cls, resource_path: str) -> None:
         resource_path = tool.Ifc.resolve_uri(resource_path)
         os.makedirs(os.path.dirname(resource_path), exist_ok=True)

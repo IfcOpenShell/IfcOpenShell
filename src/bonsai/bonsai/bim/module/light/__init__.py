@@ -17,11 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import importlib.util
+import os
 import stat
 from pathlib import Path
 
 import bpy
-import pyradiance
 
 from . import list, operator, prop, ui
 
@@ -58,13 +58,15 @@ def register():
     bpy.types.Scene.BIMRadianceExporeterProperies = bpy.props.PointerProperty(type=prop.RadianceExporterProperties)
     bpy.types.Scene.BIMSolarProperties = bpy.props.PointerProperty(type=prop.BIMSolarProperties)
 
-    if pyradiance:
-        pyradiance_path = Path(get_pyradiance_path())
-        bin_path = pyradiance_path / "bin"
-        if bin_path.exists():
-            for file in bin_path.iterdir():
-                if file.is_file():
-                    file.chmod(file.stat().st_mode | stat.S_IEXEC)
+    if os.name != "nt":
+        # Permissions are lost due to a bug in Blender when installing the wheels.
+        # See https://projects.blender.org/blender/blender/issues/166849
+        bin_path = Path(get_pyradiance_path()) / "bin"
+        for file in bin_path.iterdir():
+            # Skip already executable files (e.g. root-owned system installs, see #7156).
+            if os.access(file, os.X_OK):
+                continue
+            file.chmod(file.stat().st_mode | stat.S_IEXEC)
 
 
 def unregister():

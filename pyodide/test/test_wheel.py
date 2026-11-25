@@ -27,7 +27,7 @@ def test_ifcopenshell_import(selenium, request):
             await micropip.install(f"./{{wheel_filename}}")
         import ifcopenshell
         from pathlib import Path
-        ifcopenshell.set_plugin_search_paths([str(Path(ifcopenshell.__file__).parent)])
+        assert str(Path(ifcopenshell.__file__).parent) in ifcopenshell.get_plugin_search_paths()
         ifc_file = ifcopenshell.file()
         wall = ifc_file.create_entity("IfcWall")
         wall1 = ifc_file.by_type("IfcWall")[0]

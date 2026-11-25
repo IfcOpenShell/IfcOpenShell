@@ -1,28 +1,4 @@
-SHELL := sh
-IS_STABLE:=FALSE
-PYTHON:=python3
-PIP:=pip3
-VERSION:=$(shell cat ../../VERSION)
-VERSION_BASE:=$(shell sed -E 's/[[:alpha:]]+[0-9]+$$//' ../../VERSION)
-VERSION_PYTHON:=$(shell sed 's/alpha/a/' ../../VERSION)
-VERSION_DATE:=$(shell date '+%y%m%d')
-VERSION_DAILY:=$(VERSION_BASE)a$(VERSION_DATE)
-SED:=sed -i
-VENV_BIN:=bin
-
-ifeq ($(OS),Windows_NT)
-PYTHON:=python
-PIP:=pip
-VENV_BIN:=Scripts
-else
-UNAME_S:=$(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-SED:=sed -i '' -e
-PYTHON:=python3
-endif
-endif
-
-VENV_ACTIVATE:=$(VENV_BIN)/activate
+include ../vars.mk
 
 .PHONY: dist
 dist:
@@ -48,10 +24,13 @@ else
 endif
 endif
 	# Prefer uv when available - it's faster, as it skips creating a venv and installing build.
+	# Older pip trusts the compromised TLS certificates.
 	cd build && if command -v uv >/dev/null 2>&1; then \
 		uv build --wheel; \
 	else \
-		$(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build && \
+		$(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && \
+		$(PYTHON) -m pip install --upgrade pip && \
+		$(PIP) install build && \
 		$(PYTHON) -m build --wheel; \
 	fi
 	cp build/dist/*.whl dist/

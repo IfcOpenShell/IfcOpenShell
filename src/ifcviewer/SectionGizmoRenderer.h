@@ -54,7 +54,7 @@ public:
     // `selected_index` (or -1) is drawn with a highlight tint to show selection.
     void encode(WGPURenderPassEncoder pass, const Eigen::Matrix4f& view_proj,
                 const std::vector<SectionPlane>& planes,
-                int viewport_w_px, int viewport_h_px, int device_pixel_ratio,
+                int viewport_w_px, int viewport_h_px, float device_pixel_ratio,
                 int selected_index = -1);
 
     // Screen-space hit test: index of the plane whose gizmo (arrow segment,

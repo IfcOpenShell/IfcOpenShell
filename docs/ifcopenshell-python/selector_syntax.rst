@@ -434,6 +434,8 @@ nest formulas, for example ``concat(title("foo"), lower("Bar"))`` will produce
     "``lower({{value}})``", "``lower(""Foo"")``", "``foo``", "Lowercases a string."
     "``title({{value}})``", "``title(""foo"")``", "``Foo``", "Titlecases a string."
     "``concat({{value}}[, {{value2}}]*)``", "``concat(""foo"", ""bar"")``", "``foobar``", "Concatenates two or more strings."
+    "``substr({{value}}, {{start}}[, {{end}}])``", "``substr(""foobar"", 1, -1)``", "``ooba``", "Returns the part of a string from ``{{start}}`` up to, but not including, ``{{end}}``. Indices start at 0, and negative indices count from the end."
+    "``replace({{value}}, {{old}}, {{new}})``", "``replace(""EXISTING"", ""EXISTING"", ""EX"")``", "``EX``", "Replaces every occurrence of ``{{old}}`` with ``{{new}}``. Nest it to replace several values, and use an empty string to remove one. For example ``concat({{type.Name}}, replace(replace(replace(substr({{EPset_Status.Status}}, 2, -2), ""EXISTING"", "" (EX)""), ""DEMOLISH"", "" (DEMO)""), ""NEW"", """"))`` shows ``Name (EX)`` for existing elements, ``Name (DEMO)`` for demolished ones, and just ``Name`` for new ones."
     "``round({{value}}, {{precision}})``", "``round(3.123, 0.1)``", "``3.1``", "Rounds ``{{value}}`` to the nearest ``{{precision}}``."
     "``int({{value}})``", "``int(3.123)``", "``3``", "Truncates the decimal part of the ``{{value}}``."
     "``number({{value}}[, {{decimal_separator}}[, {{thousands_separator}}]])``", "``number(1234.56, "","", ""."")``", "``1.234,56``", "Formats {{value}} with an optional custom {{decimal_separator}} and {{thousands_separator}}. The default separators are ``.`` and ``,``."
