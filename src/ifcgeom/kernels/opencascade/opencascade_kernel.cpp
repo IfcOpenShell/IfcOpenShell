@@ -279,6 +279,23 @@ bool ifcopenshell::geom::open_cascade_kernel::unify_shapes(const std::vector<ifc
 	return true;
 }
 
+bool ifcopenshell::geom::open_cascade_kernel::convert_sweep_basis(const taxonomy::item::ptr basis, TopoDS_Shape& shape) {
+	// An open profile, such as an IfcArbitraryOpenProfileDef, is swept as a
+	// wire into a shell instead of being closed into a face first.
+	if (basis->kind() == taxonomy::LOOP) {
+		auto loop = taxonomy::cast<taxonomy::loop>(basis);
+		if (loop->closed && !*loop->closed) {
+			TopoDS_Wire wire;
+			if (!convert(loop, wire, false)) {
+				return false;
+			}
+			shape = wire;
+			return true;
+		}
+	}
+	return convert(taxonomy::cast<taxonomy::face>(basis), shape);
+}
+
 bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revolve::ptr r, std::vector<ifcopenshell::geom::conversion_result>& results) {
 
 
@@ -287,7 +304,7 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 		convert_xyz<gp_Dir>(*r->direction));
 
 	TopoDS_Shape face;
-	if (!convert(taxonomy::cast<taxonomy::face>(r->basis), face)) {
+	if (!convert_sweep_basis(r->basis, face)) {
 		return false;
 	}
 

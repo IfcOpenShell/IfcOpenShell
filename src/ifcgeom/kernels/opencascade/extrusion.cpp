@@ -2,6 +2,8 @@
 
 #include <BRepPrimAPI_MakePrism.hxx>
 
+#include <cmath>
+
 using namespace ifcopenshell::geom;
 using namespace ifcopenshell::geom::kernels;
 
@@ -14,7 +16,13 @@ bool open_cascade_kernel::convert(const taxonomy::extrusion::ptr extrusion, Topo
 	}
 
 	TopoDS_Shape face;
-	if (!convert(taxonomy::cast<taxonomy::face>(extrusion->basis), face)) {
+	if (!convert_sweep_basis(extrusion->basis, face)) {
+		return false;
+	}
+
+	if (face.ShapeType() == TopAbs_WIRE && !std::isfinite(height)) {
+		// A prism of infinite height from a wire cannot be triangulated.
+		ifcopenshell::logger::root().error("GEO", 416, "Infinite extrusion height for open profile encountered for:", extrusion->instance);
 		return false;
 	}
 

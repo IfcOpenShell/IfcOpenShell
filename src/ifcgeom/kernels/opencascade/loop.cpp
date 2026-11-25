@@ -236,7 +236,7 @@ open_cascade_kernel::curve_creation_visitor_result_type open_cascade_kernel::con
 
 #include "../../../ifcparse/file.h"
 
-bool open_cascade_kernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wire) {
+bool open_cascade_kernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wire, bool close_profile_curves) {
     NCollection_List<TopoDS_Shape> converted_segments;
 
 	/*
@@ -297,7 +297,7 @@ bool open_cascade_kernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& w
 	NCollection_List<TopoDS_Shape>::Iterator it(converted_segments);
 
 	bool force_close = false;
-	if (loop->instance && loop->instance.as<express::entity>()) {
+	if (close_profile_curves && loop->instance && loop->instance.as<express::entity>()) {
 		auto inst = loop->instance.as<express::entity>();
 		auto file = loop->instance.as<express::entity>().file();
 		auto profile = file->get_inverse(inst.id(), file->schema()->declaration_by_name("IfcProfileDef"), -1);

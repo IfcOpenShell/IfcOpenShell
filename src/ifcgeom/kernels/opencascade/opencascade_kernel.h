@@ -122,7 +122,8 @@ public:
 
 	bool convert(const ifcopenshell::geom::taxonomy::extrusion::ptr, TopoDS_Shape&);
 	bool convert(const ifcopenshell::geom::taxonomy::face::ptr, TopoDS_Shape&, bool reversed_surface = false);
-	bool convert(const ifcopenshell::geom::taxonomy::loop::ptr, TopoDS_Wire&);
+	bool convert(const ifcopenshell::geom::taxonomy::loop::ptr, TopoDS_Wire&, bool close_profile_curves = true);
+	bool convert_sweep_basis(const ifcopenshell::geom::taxonomy::item::ptr, TopoDS_Shape&);
 	bool convert(const ifcopenshell::geom::taxonomy::matrix4::ptr, gp_GTrsf&);
 	bool convert(const ifcopenshell::geom::taxonomy::shell::ptr, TopoDS_Shape&);
 	bool convert(const ifcopenshell::geom::taxonomy::solid::ptr, TopoDS_Shape&);

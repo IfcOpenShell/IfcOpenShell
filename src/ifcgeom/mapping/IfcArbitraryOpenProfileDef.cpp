@@ -30,5 +30,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcArbitraryOpenProfileDef& ins
         r->closed = false;
         return r;
     }
+    if (mapped->kind() == taxonomy::EDGE) {
+        // A single trimmed curve, such as an arc, is an open loop of one edge.
+        auto r = taxonomy::make<taxonomy::loop>();
+        r->children.push_back(taxonomy::cast<taxonomy::edge>(mapped));
+        r->closed = false;
+        return r;
+    }
     return mapped;
 }
