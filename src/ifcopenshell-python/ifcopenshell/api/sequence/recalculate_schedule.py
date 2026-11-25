@@ -188,9 +188,15 @@ class Usecase:
             self.edges.append(("start", task.id(), {"lag_time": None, "lag_type": "WORKTIME", "type": "FS"}))
             if task.TaskTime and task.TaskTime.ScheduleStart:
                 self.start_dates.append(ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleStart))
-                self.g.nodes[task.id()]["early_start"] = ifcopenshell.util.date.ifc2datetime(
-                    task.TaskTime.ScheduleStart
-                )  # we assume this task is constrained to start on this date
+                # we assume this task is constrained to start on this date
+                self.g.nodes[task.id()]["early_start"] = ifcopenshell.util.sequence.snap_task_date(
+                    ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleStart),
+                    "START",
+                    duration,
+                    duration_type,
+                    calendar,
+                    work_day,
+                )
         if not successor_types:
             self.edges.append((task.id(), "finish", {"lag_time": None, "lag_type": "WORKTIME", "type": "FF"}))
 
@@ -231,6 +237,18 @@ class Usecase:
             date, node["duration"], node["duration_type"], node["calendar"], date_type, node["work_day"]
         )
 
+    def get_late_finish(self, node: dict, date_type: str, date: datetime.datetime) -> datetime.datetime:
+        # The latest finish of the node from a limit of its start or finish. A task of work days uses whole days.
+        if date_type == "FINISH":
+            return self.get_dates_from_finish(node, date, False)[1]
+        return self.get_date(node, date, "FINISH")
+
+    def get_dates_from_finish(self, node: dict, finish: datetime.datetime, is_forward: bool) -> tuple:
+        # The start and the finish from a limit of the finish. A task of work days starts at a day start.
+        return ifcopenshell.util.sequence.get_task_dates_from_finish(
+            finish, node["duration"], node["duration_type"], node["calendar"], node["work_day"], is_forward
+        )
+
     def offset_link(self, date, edge: dict, nodes: tuple, date_type: str, is_forward: bool):
         # The lag is offset in the time of each task. The latest result applies (the earliest, back).
         results = []
@@ -242,7 +260,12 @@ class Usecase:
                     date, lag, node["duration_type"], node["calendar"], node["work_day"]
                 )
             results.append(self.snap(node, result, date_type))
-        return max(results) if is_forward else min(results)
+        date = max(results) if is_forward else min(results)
+        # A task of work days starts at the start of a working day and finishes at the end of a working day.
+        node = nodes[0]
+        return ifcopenshell.util.sequence.snap_task_date(
+            date, date_type, node["duration"], node["duration_type"], node["calendar"], node["work_day"], is_forward
+        )
 
     def forward_pass(self, node) -> bool:
         data = self.g.nodes[node]
@@ -261,7 +284,7 @@ class Usecase:
                 dates.append(self.offset_link(date, edge, (data, predecessor_data), date_type, True))
             start, finish = max(starts, default=None), max(finishes, default=None)
             if finish and (start is None or self.get_date(data, start, "FINISH") <= finish):
-                data["early_start"], data["early_finish"] = self.get_date(data, finish, "START"), finish
+                data["early_start"], data["early_finish"] = self.get_dates_from_finish(data, finish, True)
                 return True
             data["early_start"] = start
         data["early_finish"] = self.get_date(data, data["early_start"], "FINISH")
@@ -291,16 +314,12 @@ class Usecase:
         if start and (finish is None or self.get_date(data, start, "FINISH") < finish):
             data["late_start"], data["late_finish"] = start, self.get_date(data, start, "FINISH")
         else:
-            data["late_start"], data["late_finish"] = self.get_date(data, finish, "START"), finish
+            data["late_start"], data["late_finish"] = self.get_dates_from_finish(data, finish, False)
 
         data["total_float"] = self.get_float(data, data["late_finish"])
         early_limits = [self.get_successor_limits(node, successor, True) for successor in self.g.successors(node)]
         data["free_float"] = self.get_float(
-            data,
-            min(
-                date if date_type == "FINISH" else self.get_date(data, date, "FINISH")
-                for date_type, date in early_limits
-            ),
+            data, min(self.get_late_finish(data, date_type, date) for date_type, date in early_limits)
         )
         return True
 

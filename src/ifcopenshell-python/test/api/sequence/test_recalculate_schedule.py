@@ -385,6 +385,61 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         assert task2.TaskTime.EarlyStart == "2000-01-02T09:00:00"
         assert task2.TaskTime.EarlyFinish == "2000-01-02T19:00:00"
 
+    def test_recalculating_a_task_of_work_days_from_the_next_working_day(self):
+        self._add_work_schedule()
+        task = self._create_task("P1D")
+        task2 = self._create_task("P1D")
+        self._create_sequence(task, task2, "FINISH_START", lag="PT2H")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        # 17:00 + 2 work hours is 11:00. A part of a day counts as a full day: the task takes all of the next day.
+        assert task2.TaskTime.EarlyStart == "2000-01-03T09:00:00"
+        assert task2.TaskTime.EarlyFinish == "2000-01-03T17:00:00"
+        assert task.TaskTime.LateFinish == "2000-01-01T17:00:00"
+        assert task.TaskTime.IsCritical is True
+
+    def test_recalculating_a_finish_of_work_days_at_the_end_of_a_working_day(self):
+        self._add_work_schedule()
+        task = self._create_task("P1D")
+        task2 = self._create_task("P1D")
+        self._create_sequence(task, task2, "FINISH_FINISH", lag="PT2H")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        # 17:00 + 2 work hours is 11:00 on the next day. The task finishes at the end of that day.
+        assert task2.TaskTime.EarlyStart == "2000-01-02T09:00:00"
+        assert task2.TaskTime.EarlyFinish == "2000-01-02T17:00:00"
+
+    def test_recalculating_a_task_of_work_days_and_work_hours(self):
+        self._add_work_schedule()
+        task = self._create_task("P1D")
+        task2 = self._create_task("P1DT4H")
+        self._create_sequence(task, task2, "FINISH_FINISH", lag="PT6H")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        # The finish is at or after 15:00 on the next day. The task starts at the start of a day, thus it takes all
+        # of that day and 4 work hours of the day after.
+        assert task2.TaskTime.EarlyStart == "2000-01-02T09:00:00"
+        assert task2.TaskTime.EarlyFinish == "2000-01-03T13:00:00"
+        assert task2.TaskTime.LateStart == "2000-01-02T09:00:00"
+        assert task2.TaskTime.LateFinish == "2000-01-03T13:00:00"
+
+    def test_recalculating_the_free_float_of_a_task_of_work_days(self):
+        self._add_work_schedule()
+        task = self._create_task("P1DT4H")
+        task2 = self._create_task("P1D")
+        self._create_sequence(task, task2, "FINISH_START", lag="-P1D")
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        # The second task can start at 13:00 on the first day, thus at the start of the next day. The first task
+        # cannot finish 4 hours later: it would start in a day, thus one day later.
+        assert task2.TaskTime.EarlyStart == "2000-01-02T09:00:00"
+        assert task.TaskTime.TotalFloat == "P0D"
+        assert task.TaskTime.FreeFloat == "P0D"
+
+    def test_recalculating_a_given_start_of_work_days_from_the_next_working_day(self):
+        self._add_work_schedule()
+        task = self._create_task("P1D")
+        task.TaskTime.ScheduleStart = "2000-01-01T13:00:00"  # As another tool can write it
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
+        assert task.TaskTime.EarlyStart == "2000-01-02T09:00:00"
+        assert task.TaskTime.EarlyFinish == "2000-01-02T17:00:00"
+
     def _add_work_schedule(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         self.work_schedule = ifcopenshell.api.sequence.add_work_schedule(self.file)
