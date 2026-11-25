@@ -1,7 +1,12 @@
 #include "opencascade_kernel.h"
 
+#include "boolean_utils.h"
+
 #include <BRepAlgoAPI_Fuse.hxx>
+#include <BRepCheck_Analyzer.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
+#include <BRep_Tool.hxx>
+#include <Geom_Plane.hxx>
 #include <ShapeUpgrade_UnifySameDomain.hxx>
 #include <TopTools_ListOfShape.hxx>
 
@@ -126,6 +131,7 @@ bool open_cascade_kernel::convert_impl(const taxonomy::collection::ptr collectio
 	return handle_occt_exception([&]() -> bool {
 
 	TopTools_ListOfShape arguments, tools;
+	double min_edge_length = std::numeric_limits<double>::infinity();
 	for (auto& e : extrusions) {
 		TopoDS_Shape face;
 		if (!convert(taxonomy::cast<taxonomy::face>(e->basis), face)) {
@@ -134,16 +140,19 @@ bool open_cascade_kernel::convert_impl(const taxonomy::collection::ptr collectio
 		for (TopExp_Explorer exp(face, TopAbs_FACE); exp.More(); exp.Next()) {
 			(arguments.IsEmpty() ? arguments : tools).Append(exp.Current());
 		}
+		min_edge_length = (std::min)(min_edge_length, util::min_edge_length(face));
 	}
 
 	// Profiles are authored to touch, but their seams can be off by more than
 	// the model precision. The same bound the wire builder uses for closing
 	// gaps between segments is applied, so that a seam does not leave behind
-	// a sliver face that later limits the fuzziness of boolean operations.
+	// a sliver face that later limits the fuzziness of boolean operations. As
+	// for the boolean operations, the value stays below a third of the
+	// shortest edge so that small features of a profile are not merged away.
 	BRepAlgoAPI_Fuse fuse;
 	fuse.SetArguments(arguments);
 	fuse.SetTools(tools);
-	fuse.SetFuzzyValue(settings_.get<settings::Precision>().get() * 1000.);
+	fuse.SetFuzzyValue((std::min)(settings_.get<settings::Precision>().get() * 1000., min_edge_length / 3.));
 	fuse.SetRunParallel(false);
 	fuse.Build();
 	if (!fuse.IsDone() || fuse.HasErrors()) {
@@ -152,6 +161,20 @@ bool open_cascade_kernel::convert_impl(const taxonomy::collection::ptr collectio
 
 	ShapeUpgrade_UnifySameDomain unify(fuse.Shape(), true, true, false);
 	unify.Build();
+
+	// A derived profile with a scale is converted onto a B-spline surface. The
+	// fuse connects such a face to the planar profiles it touches, but it is
+	// not always unified with them, which would leave two solids sharing a
+	// face. When that happens, or when the unified face is invalid, the
+	// profiles are extruded one by one as before.
+	for (TopExp_Explorer exp(unify.Shape(), TopAbs_FACE); exp.More(); exp.Next()) {
+		if (!BRep_Tool::Surface(TopoDS::Face(exp.Current()))->IsKind(STANDARD_TYPE(Geom_Plane))) {
+			return abstract_kernel::convert_impl(collection, results);
+		}
+	}
+	if (!BRepCheck_Analyzer(unify.Shape()).IsValid()) {
+		return abstract_kernel::convert_impl(collection, results);
+	}
 
 	const auto& first = extrusions.front();
 	const auto& fs = first->direction->ccomponents();
