@@ -142,11 +142,6 @@ def updateTaskTimeDateTime(self: "Task", context: bpy.types.Context, startfinish
     if not props.is_task_update_enabled:
         return
 
-    def canonicalise_time(time):
-        if not time:
-            return "-"
-        return time.strftime("%d/%m/%y")
-
     startfinish_value = getattr(self, startfinish)
 
     if startfinish_value == "-":
@@ -170,7 +165,7 @@ def updateTaskTimeDateTime(self: "Task", context: bpy.types.Context, startfinish
 
     startfinish_key = "Schedule" + startfinish.capitalize()
     if SequenceData.data["task_times"][task_time.id()][startfinish_key] == startfinish_datetime:
-        canonical_startfinish_value = canonicalise_time(startfinish_datetime)
+        canonical_startfinish_value = helper.canonicalise_datetime(startfinish_datetime)
         if startfinish_value != canonical_startfinish_value:
             setattr(self, startfinish, canonical_startfinish_value)
         return

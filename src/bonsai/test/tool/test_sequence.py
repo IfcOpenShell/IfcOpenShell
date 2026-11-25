@@ -106,3 +106,38 @@ class TestParseDatetime:
 
         assert helper.parse_datetime("2026-01-19T13:00:00") == datetime.datetime(2026, 1, 19, 13)
         assert helper.parse_datetime("19/01/26 13:30") == datetime.datetime(2026, 1, 19, 13, 30)
+
+
+class TestCanonicaliseDatetime:
+    def test_showing_the_time_of_a_task_date(self):
+        import datetime
+
+        import bonsai.bim.module.sequence.helper as helper
+
+        assert helper.canonicalise_datetime(datetime.datetime(2026, 1, 19, 13, 30)) == "19/01/26 13:30"
+        assert helper.canonicalise_datetime(None) == "-"
+        assert helper.parse_datetime(helper.canonicalise_datetime(datetime.datetime(2026, 1, 19, 13))) == (
+            datetime.datetime(2026, 1, 19, 13)
+        )
+
+
+class TestLoadTaskProperties(NewFile):
+    def test_showing_the_times_and_work_hours_of_tasks(self):
+        import ifcopenshell.api.sequence
+        import ifcopenshell.util.date
+
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        work_schedule = ifcopenshell.api.sequence.add_work_schedule(ifc)
+        summary = ifcopenshell.api.sequence.add_task(ifc, work_schedule=work_schedule, identification="1")
+        for identification, start in (("1.1", "2026-01-19T09:00:00"), ("1.2", "2026-01-20T13:00:00")):
+            task = ifcopenshell.api.sequence.add_task(ifc, parent_task=summary, identification=identification)
+            task_time = ifcopenshell.api.sequence.add_task_time(ifc, task=task)
+            attributes = {"ScheduleStart": start, "ScheduleDuration": "PT2H", "DurationType": "WORKTIME"}
+            ifcopenshell.api.sequence.edit_task_time(ifc, task_time=task_time, attributes=attributes)
+        subject.load_task_tree(work_schedule)
+        subject.load_task_properties()
+        items = {item.identification: item for item in subject.get_task_tree_props().tasks}
+        assert items["1"].derived_start == "19/01/26 09:00"
+        assert items["1"].derived_finish == "20/01/26 15:00"
+        assert items["1"].derived_duration == str(ifcopenshell.util.date.readable_ifc_duration("P1DT6H"))

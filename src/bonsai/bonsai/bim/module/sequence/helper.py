@@ -57,6 +57,13 @@ def canonicalise_time(time: Union[datetime, None]) -> str:
     return time.strftime("%d/%m/%y")
 
 
+def canonicalise_datetime(time: Union[datetime, None]) -> str:
+    """A task date with its time of day, which a task can have since sub-day durations."""
+    if not time:
+        return "-"
+    return time.strftime("%d/%m/%y %H:%M")
+
+
 def parse_duration_as_blender_props(dt: Union[Any, str]) -> dict[str, int]:
     if True:
         if isinstance(dt, str):
