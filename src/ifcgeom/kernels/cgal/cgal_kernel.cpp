@@ -1095,6 +1095,11 @@ bool cgal_kernel::convert(const taxonomy::extrusion::ptr extrusion, cgal_polyhed
 		return false;
 	}
 
+	if (extrusion->basis->kind() == taxonomy::LOOP) {
+		logger().message(ifcopenshell::logger::LOG_ERROR, "UNS", 22, "CGAL Kernel: Swept surfaces not supported at the moment", extrusion->instance);
+		return false;
+	}
+
 	std::list<cgal_face> bottom_face;
 	if (!convert(taxonomy::cast<taxonomy::face>(taxonomy::cast<taxonomy::face>(extrusion->basis)), bottom_face) || bottom_face.size() != 1) {
 		return false;

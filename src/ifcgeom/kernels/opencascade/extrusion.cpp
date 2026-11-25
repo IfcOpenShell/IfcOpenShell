@@ -13,6 +13,21 @@ bool open_cascade_kernel::convert(const taxonomy::extrusion::ptr extrusion, Topo
 		return false;
 	}
 
+	const auto& fs = extrusion->direction->ccomponents();
+	gp_Dir dir(fs(0), fs(1), fs(2));
+
+	// The swept surface mappings keep their swept curve as a loop, whereas the
+	// swept area solid mappings cast their profile to a face. A loop is swept
+	// into a shell, which is also what an open profile requires.
+	if (extrusion->basis->kind() == taxonomy::LOOP) {
+		TopoDS_Wire wire;
+		if (!convert(taxonomy::cast<taxonomy::loop>(extrusion->basis), wire)) {
+			return false;
+		}
+		shape = BRepPrimAPI_MakePrism(wire, height*dir);
+		return !shape.IsNull();
+	}
+
 	TopoDS_Shape face;
 	if (!convert(taxonomy::cast<taxonomy::face>(extrusion->basis), face)) {
 		return false;
@@ -27,9 +42,6 @@ bool open_cascade_kernel::convert(const taxonomy::extrusion::ptr extrusion, Topo
 	}
 	auto trsf = gtrsf.Trsf();
 	*/
-
-	const auto& fs = extrusion->direction->ccomponents();
-	gp_Dir dir(fs(0), fs(1), fs(2));
 
 	shape.Nullify();
 
