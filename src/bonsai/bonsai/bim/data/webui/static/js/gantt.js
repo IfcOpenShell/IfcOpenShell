@@ -237,7 +237,7 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
     g.setOptions({
       vCaptionType: "Caption", // Set to Show Caption : None,Caption,Resource,Duration,Complete,
       vQuarterColWidth: 36,
-      vDateTaskDisplayFormat: "day dd month yyyy", // Shown in tool tip box
+      vDateTaskDisplayFormat: "day dd month yyyy HH:MI", // Shown in tool tip box. Tasks can be shorter than a day.
       vDayMajorDateDisplayFormat: "mon yyyy - Week ww", // Set format to dates in the "Major" header of the "Day" view
       vWeekMinorDateDisplayFormat: "dd mon", // Set format to display dates in the "Minor" header of the "Week" view
       vLang: "en",
