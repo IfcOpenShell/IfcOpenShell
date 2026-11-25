@@ -1,0 +1,10 @@
+rules:
+  # svenstaro/upload-release-action: used to simplify release publishing.
+  # dtolnay/rust-toolchain: also simplifies rust tool chain installation process,
+  # also is able to install rustup inside containers (e.g. Rocky).
+  superfluous-actions:
+    disable: true
+  # TODO: needs additional changes on PyPI (trusted publisher per project),
+  # but then allows dropping `PYPI_API_TOKEN`.
+  use-trusted-publishing:
+    disable: true

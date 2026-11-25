@@ -41,14 +41,14 @@ class TestResetSpatialElementLocations(test.bootstrap.IFC4):
         ifcpatch.execute(
             {"file": self.file, "recipe": "ResetSpatialElementLocations", "arguments": ["IfcBuilding", False]}
         )
-        m2 = ifcopenshell.util.placement.get_local_placement(site.ObjectPlacement)
+        m2 = ifcopenshell.util.placement.get_placement(site.ObjectPlacement)
         assert np.allclose(m, m2)
         ifcpatch.execute({"file": self.file, "recipe": "ResetSpatialElementLocations", "arguments": ["IfcSite", False]})
-        m2 = ifcopenshell.util.placement.get_local_placement(site.ObjectPlacement)
+        m2 = ifcopenshell.util.placement.get_placement(site.ObjectPlacement)
         assert np.allclose(m2, np.eye(4))
         ifcopenshell.api.geometry.edit_object_placement(self.file, product=site, matrix=m)
         ifcpatch.execute({"file": self.file, "recipe": "ResetSpatialElementLocations", "arguments": ["", False]})
-        m2 = ifcopenshell.util.placement.get_local_placement(site.ObjectPlacement)
+        m2 = ifcopenshell.util.placement.get_placement(site.ObjectPlacement)
         assert np.allclose(m2, np.eye(4))
 
         m = np.eye(4)
@@ -58,7 +58,7 @@ class TestResetSpatialElementLocations(test.bootstrap.IFC4):
         m[2][3] = m2[2][3] = 42.0
         ifcopenshell.api.geometry.edit_object_placement(self.file, product=site, matrix=m)
         ifcpatch.execute({"file": self.file, "recipe": "ResetSpatialElementLocations", "arguments": ["", True]})
-        m = ifcopenshell.util.placement.get_local_placement(site.ObjectPlacement)
+        m = ifcopenshell.util.placement.get_placement(site.ObjectPlacement)
         assert np.allclose(m, m2)
 
 

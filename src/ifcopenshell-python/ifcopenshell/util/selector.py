@@ -144,7 +144,7 @@ format_grammar = lark.Lark("""start: expression
         | mul_div "*" function  -> multiply
         | mul_div "/" function  -> divide
     
-    function: round | number | int | format_length | lower | upper | title | concat | substr | sort | reverse | join | variable | ESCAPED_STRING | SIGNED_NUMBER | "(" expression ")"
+    function: round | number | int | format_length | lower | upper | title | concat | substr | replace | sort | reverse | join | variable | ESCAPED_STRING | SIGNED_NUMBER | "(" expression ")"
 
     variable: "{{" query_path "}}"
     query_path: /[^}]+/
@@ -160,6 +160,7 @@ format_grammar = lark.Lark("""start: expression
     title: "title(" expression ")"
     concat: "concat(" expression ("," expression)* ")"
     substr: "substr(" expression "," SIGNED_INT ["," SIGNED_INT] ")"
+    replace: "replace(" expression "," expression "," expression ")"
     sort: "sort(" expression ")"
     reverse: "reverse(" expression ")"
     join: "join(" ESCAPED_STRING "," expression ")"
@@ -297,6 +298,9 @@ class FormatTransformer(lark.Transformer):
             return str(args[0])[int(args[1]) : int(args[2])]
         elif len(args) == 2:
             return str(args[0])[int(args[1]) :]
+
+    def replace(self, args):
+        return str(args[0]).replace(str(args[1]), str(args[2]))
 
     def sort(self, args):
         return sorted(args[0])
@@ -485,7 +489,7 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
             value = ifcopenshell.util.system.get_element_zones(value)
         elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(value, "ObjectPlacement"):
             if getattr(value, "ObjectPlacement", None):
-                matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)
+                matrix = ifcopenshell.util.placement.get_placement(value.ObjectPlacement)
                 xyz = matrix[:, 3][:3]
                 if key in ("x", "y", "z"):
                     value = xyz["xyz".index(key)]
@@ -496,7 +500,7 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
                 value = None
         elif key in ("rotation_x", "rotation_y", "rotation_z") and hasattr(value, "ObjectPlacement"):
             if getattr(value, "ObjectPlacement", None):
-                matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)
+                matrix = ifcopenshell.util.placement.get_placement(value.ObjectPlacement)
                 euler = ifcopenshell.util.shape_builder.np_matrix_to_euler(matrix)
                 value = float(np.degrees(euler[("rotation_x", "rotation_y", "rotation_z").index(key)]))
             else:
@@ -735,7 +739,7 @@ def set_element_value(
             if placement is None:
                 matrix = np.eye(4)
             else:
-                matrix = ifcopenshell.util.placement.get_local_placement(placement)
+                matrix = ifcopenshell.util.placement.get_placement(placement)
 
             # check if value is within tolerance to avoid api calls
             coord_i = "xyz".index(key)

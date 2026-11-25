@@ -16,12 +16,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
+import ifcopenshell.api.root
 
 
 def remove_structural_load(file: ifcopenshell.file, structural_load: ifcopenshell.entity_instance) -> None:
     """Removes a structural load
 
+    The structural activities (actions and reactions) that apply the load are
+    removed with it, as their AppliedLoad is mandatory.
+
     :param structural_load: The IfcStructuralLoad to remove.
     :return: None
     """
+    for inverse in file.get_inverse(structural_load):
+        if inverse.is_a("IfcStructuralActivity") and inverse.AppliedLoad == structural_load:
+            ifcopenshell.api.root.remove_product(file, product=inverse)
     file.remove(structural_load)

@@ -21,15 +21,10 @@ import pytest
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.cogo
 import ifcopenshell.api.context
-
-try:
-    ifcopenshell.file(schema="IFC4X3")
-    IFC4X3_AVAILABLE = True
-except RuntimeError:
-    IFC4X3_AVAILABLE = False
+import test.bootstrap
 
 
-@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
+@test.bootstrap.requires_ifc4x3
 def test_add_survey_point():
     file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(Name="Test")

@@ -26,12 +26,12 @@ import warnings
 from collections.abc import Iterable
 from typing import NamedTuple, Union, assert_never
 
-import OCC  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+import OCC  # pyright: ignore[reportMissingImports]  # ty:ignore[import-not-found]
 
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 
 try:
-    from OCC.Core import (  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+    from OCC.Core import (  # pyright: ignore[reportMissingImports]  # ty:ignore[import-not-found]
         AIS,
         BRepTools,
         Graphic3d,
@@ -43,7 +43,7 @@ try:
 
     USE_OCCT_HANDLE = False
 except ImportError:
-    from OCC import (  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+    from OCC import (  # pyright: ignore[reportMissingImports]  # ty:ignore[import-not-found]
         AIS,
         BRepTools,
         Graphic3d,
@@ -83,7 +83,7 @@ DEFAULT_STYLES = {
 
 
 def initialize_display():
-    import OCC.Display.SimpleGui  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+    import OCC.Display.SimpleGui  # pyright: ignore[reportMissingImports]  # ty:ignore[import-not-found]
 
     global handle, main_loop, add_menu, add_function_to_menu
     handle, main_loop, add_menu, add_function_to_menu = OCC.Display.SimpleGui.init_display()

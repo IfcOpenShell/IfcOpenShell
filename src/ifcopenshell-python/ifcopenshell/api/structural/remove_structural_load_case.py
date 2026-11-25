@@ -32,6 +32,13 @@ def remove_structural_load_case(file: ifcopenshell.file, load_case: ifcopenshell
         file.remove(rel)
         if history:
             ifcopenshell.util.element.remove_deep2(file, history)
+    for rel in load_case.HasAssignments:
+        if rel.is_a("IfcRelAssignsToGroup") and len(rel.RelatedObjects) == 1:
+            history = rel.OwnerHistory
+            file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
     history = load_case.OwnerHistory
     file.remove(load_case)
-    ifcopenshell.util.element.remove_deep2(file, history)
+    if history:
+        ifcopenshell.util.element.remove_deep2(file, history)

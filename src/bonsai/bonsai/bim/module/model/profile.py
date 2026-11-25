@@ -112,9 +112,9 @@ class DumbProfileGenerator:
         return self.create_profile()
 
     def create_profile(self) -> bpy.types.Object:
-        ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
-        # Standard cases are deprecated, so let's cull them
-        ifc_class = next(c for c in ifc_classes if "StandardCase" not in c)
+        ifc_class = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)[
+            0
+        ].ifc_class
 
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
@@ -263,7 +263,7 @@ class DumbProfileRegenerator:
                 else:
                     for rel in inverse.AssociatedTo:
                         results.extend(rel.RelatedObjects)
-        return results
+        return [e for e in results if not e.is_a("IfcStructuralItem")]
 
     def get_element_types_using_profile(
         self, profile: ifcopenshell.entity_instance
@@ -456,6 +456,8 @@ class DumbProfileJoiner:
         self.recreate_profile(element2, profile2, axis2, axis2)
 
     def recreate_profile(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, axis=None, body=None):
+        if not element or element.is_a("IfcStructuralItem"):
+            return
         _body_rep = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         _mapped = bool(_body_rep and any(i.is_a("IfcMappedItem") for i in (_body_rep.Items or [])))
         # A mapped/shared body means this occurrence is typed-length (its geometry is driven by the
@@ -1104,6 +1106,8 @@ class DumbProfileRecalculator:
         # also recalculate all connected elements
         for profile in profiles:
             element = tool.Ifc.get_entity(profile)
+            if not element or element.is_a("IfcStructuralItem"):
+                continue
             queue.add((element, profile))
             connected_elements = []
 
@@ -1113,7 +1117,8 @@ class DumbProfileRecalculator:
                 connected_elements.append(rel.RelatingElement)
 
             for element in connected_elements:
-                queue.add((element, tool.Ifc.get_object(element)))
+                if element and not element.is_a("IfcStructuralItem"):
+                    queue.add((element, tool.Ifc.get_object(element)))
 
         joiner = DumbProfileJoiner()
         for element, profile in queue:
@@ -1246,8 +1251,9 @@ class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
             extrusion = tool.Model.get_extrusion(body)
 
             if extrusion.Position:
-                position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-                position.translation *= self.unit_scale
+                position = Matrix(
+                    ifcopenshell.util.placement.get_placement(extrusion.Position, should_return_si=True).tolist()
+                )
             else:
                 position = Matrix()
 

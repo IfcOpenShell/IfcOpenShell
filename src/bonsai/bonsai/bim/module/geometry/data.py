@@ -399,7 +399,7 @@ class DerivedCoordinatesData:
             return
         element = tool.Ifc.get_entity(bpy.context.active_object)
         storeys = [
-            (s, ifcopenshell.util.placement.get_local_placement(s.ObjectPlacement)[2][3])
+            (s, ifcopenshell.util.placement.get_placement(s.ObjectPlacement)[2][3])
             for s in tool.Ifc.get().by_type("IfcBuildingStorey")
         ]
         storeys = sorted(storeys, key=lambda s: s[1])

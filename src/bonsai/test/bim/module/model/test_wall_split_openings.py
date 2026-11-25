@@ -92,7 +92,7 @@ def test_opening_axis_extent_uses_geometry_kernel_vertices():
         patch("ifcopenshell.util.shape.get_vertices", return_value=fake_shape._verts),
         patch("ifcopenshell.util.shape.get_shape_matrix", return_value=fake_shape._matrix),
     ):
-        min_t, max_t = _opening_axis_extent(opening, axis_reference, unit_scale=1.0)
+        min_t, max_t = _opening_axis_extent(opening, axis_reference)
 
     # Cube spans world X ∈ [4.5, 5.5] → t ∈ [0.45, 0.55].
     assert min_t == pytest.approx(0.45)
@@ -121,10 +121,10 @@ def test_opening_axis_extent_falls_back_to_placement_when_geometry_kernel_fails(
 
     with (
         patch("ifcopenshell.geom.create_shape", side_effect=RuntimeError("kernel failure")),
-        patch("ifcopenshell.util.placement.get_local_placement") as mock_get_placement,
+        patch("ifcopenshell.util.placement.get_placement") as mock_get_placement,
     ):
         mock_get_placement.return_value = type("FakeArr", (), {"tolist": lambda self: placement_matrix})()
-        min_t, max_t = _opening_axis_extent(opening, axis_reference, unit_scale=1.0)
+        min_t, max_t = _opening_axis_extent(opening, axis_reference)
 
     assert min_t == max_t == pytest.approx(0.5)
 
@@ -162,7 +162,7 @@ def test_opening_axis_extent_offset_cursor_inside_extent_returns_straddling_rang
         patch("ifcopenshell.util.shape.get_vertices", return_value=fake_shape._verts),
         patch("ifcopenshell.util.shape.get_shape_matrix", return_value=fake_shape._matrix),
     ):
-        min_t, max_t = _opening_axis_extent(opening, axis_reference, unit_scale=1.0)
+        min_t, max_t = _opening_axis_extent(opening, axis_reference)
 
     # Cursor at world X=4.7 → t=0.47 (inside the opening, not centred on it).
     cut_percentage = 0.47

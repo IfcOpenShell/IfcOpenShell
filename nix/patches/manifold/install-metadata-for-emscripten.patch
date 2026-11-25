@@ -1,4 +1,3 @@
-# This file was generated with the assistance of an AI coding tool.
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 42e403b..764562f 100644
 --- a/CMakeLists.txt

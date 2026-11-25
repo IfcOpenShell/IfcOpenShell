@@ -286,9 +286,9 @@ class COMMIT_UL_List(bpy.types.UIList):
         row.prop(self, "use_filter_invert", text="", icon="ARROW_LEFTRIGHT")
         row.prop(self, "use_filter_sort_reverse", text="", icon="SORT_DESC")
 
-    def filter_items(self, context, data, propname):
+    def filter_items(self, context, data, property):
 
-        commits = getattr(data, propname)
+        commits = getattr(data, property)
         helper_funcs = bpy.types.UI_UL_list
 
         # Default return values.

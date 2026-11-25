@@ -41,6 +41,12 @@ class TestCLI:
         data = json.loads(stdout)
         assert data["type"] == "IfcProject"
 
+    def test_tree_depth(self, ifc_path):
+        rc, stdout, stderr = run_ifcquery(ifc_path, "tree", "--depth", "1")
+        assert rc == 0
+        data = json.loads(stdout)
+        assert data["children"] == {"truncated": True, "count": 1}
+
     def test_info_json(self, ifc_path, model):
         wall = model.by_type("IfcWall")[0]
         rc, stdout, stderr = run_ifcquery(ifc_path, "info", str(wall.id()))
@@ -117,3 +123,8 @@ class TestCLI:
         rc, stdout, stderr = run_ifcquery(ifc_path, "--format", "ids", "info", str(wall.id()))
         assert rc == 0
         assert stdout.strip() == str(wall.id())
+
+    def test_structural_json(self, ifc_path):
+        rc, stdout, _ = run_ifcquery(ifc_path, "structural", "--depth", "1")
+        assert rc == 0
+        assert json.loads(stdout) == []

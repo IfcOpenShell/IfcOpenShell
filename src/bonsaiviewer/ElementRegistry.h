@@ -57,7 +57,7 @@ public:
     std::optional<express::base> findEntity(uint32_t object_id) const;
 
 private:
-    void onSidecarElementsReady(uint32_t session_model_id,
+    void onIfcViewElementsReady(uint32_t session_model_id,
                                 std::vector<ElementTableRecord> elements,
                                 std::string string_table);
     void onStreamedElementsReady(uint32_t session_model_id, std::vector<ElementInfo> elements);

@@ -60,6 +60,9 @@ public:
     bool backfaceCulling() const;
     void setBackfaceCulling(bool value);
 
+    bool sectionCaps() const;
+    void setSectionCaps(bool value);
+
     // Skip elements with more than this many voids (HasOpenings inverse).
     // Boolean subtraction of many openings is the dominant cost in some
     // pathological exports; dropping those elements keeps load times sane.
@@ -117,6 +120,7 @@ signals:
     void geometryLibraryChanged(const QString& value);
     void showStatsChanged(bool value);
     void backfaceCullingChanged(bool value);
+    void sectionCapsChanged(bool value);
     void voidLimitChanged(int value);
     void deflectionToleranceChanged(double value);
     void angularToleranceChanged(double value);
@@ -135,9 +139,10 @@ private:
     QString geometry_library_;
     bool show_stats_ = false;
     bool backface_culling_ = true;
+    bool section_caps_ = true;
     int void_limit_ = 30;
-    double deflection_tolerance_ = 0.001;
-    double angular_tolerance_ = 0.5;
+    double deflection_tolerance_ = 0.002;
+    double angular_tolerance_ = 1.0;
     double min_pixel_radius_ = 2.0;
     double motion_min_pixel_radius_ = 10.0;
     double lod1_pixel_threshold_ = 30.0;

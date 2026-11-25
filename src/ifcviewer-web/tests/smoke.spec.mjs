@@ -140,7 +140,7 @@ test('background renders in sRGB, not crushed-dark (surface sRGB view)', async (
   expect(b).toBeGreaterThan(20);
 });
 
-test('loads a user-picked sidecar through the Blob.slice byte-range path', async ({ page }) => {
+test('loads a user-picked .ifcview through the Blob.slice byte-range path', async ({ page }) => {
   // Exercises #88: the picked File is read via Blob.slice (metadata head/tail
   // + per-chunk byte ranges) WITHOUT copying the whole file into the wasm
   // heap. Distinct code path from the embedded MEMFS sample above, so it
@@ -161,13 +161,13 @@ test('loads a user-picked sidecar through the Blob.slice byte-range path', async
     { timeout: 30_000 },
   );
 
-  // Pick the sample sidecar through the hidden file input. setInputFiles
+  // Pick the sample .ifcview through the hidden file input. setInputFiles
   // hands the page a real File, so the browser's Blob.slice reads it exactly
-  // as it would a user's 200-500 MB sidecar — just smaller. Wait for the C
+  // as it would a user's 200-500 MB .ifcview — just smaller. Wait for the C
   // side to confirm the blob load landed (logged to stderr → console).
   const samplePath = resolve(__dirname, '..', 'sample.ifcview');
   const loaded = page.waitForEvent('console', {
-    predicate: (m) => /loaded sidecar \(source/.test(m.text()),
+    predicate: (m) => /loaded .ifcview \(source/.test(m.text()),
     timeout: 15_000,
   });
   await page.locator('#file-input').setInputFiles(samplePath);
@@ -194,7 +194,7 @@ test('loads a user-picked sidecar through the Blob.slice byte-range path', async
   expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
 });
 
-test('streams a remote sidecar over HTTP Range (?model= URL backend)', async ({ page }) => {
+test('streams a remote .ifcview over HTTP Range (?model= URL backend)', async ({ page }) => {
   // The remote backend: ?model=URL resolves total size (HEAD), then reads the
   // metadata + per-chunk byte ranges via HTTP Range (206) — same async-chunk
   // path as the local Blob load, different byte source. serve.mjs answers
@@ -208,7 +208,7 @@ test('streams a remote sidecar over HTTP Range (?model= URL backend)', async ({ 
 
   // Wait for the C side to confirm the URL-sourced load landed.
   const loaded = page.waitForEvent('console', {
-    predicate: (m) => /loaded sidecar \(source/.test(m.text()),
+    predicate: (m) => /loaded .ifcview \(source/.test(m.text()),
     timeout: 20_000,
   });
   await page.goto('/IfcViewerWeb.html?model=/sample.ifcview');

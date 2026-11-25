@@ -186,8 +186,7 @@ def generate_space(
     """
     :return: None if successful, error message string if not.
     """
-    if not root.get_default_container():
-        raise SpaceGenerationError("Please set a default container to create the space in.")
+    import ifcopenshell.util.element
 
     active_obj = spatial.get_active_obj()
     selected_objects = spatial.get_selected_objects()
@@ -201,12 +200,28 @@ def generate_space(
             relating_type = None
 
     if selected_objects and active_obj:
-        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_obj(active_obj)
         element = ifc.get_entity(active_obj)
+        if element is not None and element.is_a("IfcSpace"):
+            # A bounding box centre can fall outside a concave footprint, so use
+            # a point from the space's existing geometry instead.
+            x, y = spatial.get_space_reference_point(active_obj)
+            z = active_obj.location.z
+            h = active_obj.dimensions.z
+            mat = active_obj.matrix_world
+        else:
+            x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_obj(active_obj)
     else:
         x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()
 
-    space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
+    if element and element.is_a("IfcSpace"):
+        z = active_obj.location.z
+        container = ifcopenshell.util.element.get_parent(element) or root.get_default_container()
+    else:
+        container = root.get_default_container()
+        if not container:
+            raise SpaceGenerationError("Please set a default container to create the space in.")
+
+    space_polygon, bounding_walls = spatial.get_space_polygon_from_context_visible_objects(x, y, container=container)
 
     if isinstance(space_polygon, str):
         if space_polygon == "NO POLYGONS FOUND":
@@ -220,8 +235,25 @@ def generate_space(
         else:
             assert space_polygon
 
+    props = spatial.get_spatial_props()
+    if props.force_space_height:
+        h = props.space_height
+    else:
+        auto_h = spatial.get_auto_space_height(space_polygon, z, bounding_walls)
+        if auto_h is not None and auto_h > 0:
+            h = auto_h
+
     if element and element.is_a("IfcSpace"):
-        spatial.set_space_representation_from_polygon(active_obj, element, space_polygon, h, polygon_is_si=True)
+        assert active_obj
+        spatial.set_space_representation_from_polygon(
+            active_obj,
+            element,
+            space_polygon,
+            h,
+            polygon_is_si=True,
+            bounding_walls=bounding_walls,
+            container=container,
+        )
     else:
         if relating_type:
             name = model.generate_occurrence_name(relating_type, "IfcSpace")
@@ -234,7 +266,9 @@ def generate_space(
         spatial.assign_ifcspace_class_to_obj(obj)
 
         element = ifc.get_entity(obj)
-        spatial.set_space_representation_from_polygon(obj, element, space_polygon, h, polygon_is_si=True)
+        spatial.set_space_representation_from_polygon(
+            obj, element, space_polygon, h, polygon_is_si=True, bounding_walls=bounding_walls, container=container
+        )
 
         if relating_type:
             spatial.assign_relating_type_to_element(ifc, type, element, relating_type)
@@ -248,10 +282,24 @@ def generate_spaces_from_walls(
     z = spatial.get_active_obj_z()
     h = spatial.get_active_obj_height()
 
+    bounding_walls = [
+        element
+        for obj in spatial.get_selected_objects()
+        if (element := ifc.get_entity(obj)) and element.is_a("IfcWall")
+    ]
+
     union = spatial.get_union_shape_from_selected_objects()
 
+    props = spatial.get_spatial_props()
     for i, linear_ring in enumerate(union.interiors):
         poly = spatial.get_buffered_poly_from_linear_ring(linear_ring)
+
+        if props.force_space_height:
+            h = props.space_height
+        else:
+            auto_h = spatial.get_auto_space_height(poly, z, bounding_walls)
+            if auto_h is not None and auto_h > 0:
+                h = auto_h
 
         name = "Space" + str(i)
 

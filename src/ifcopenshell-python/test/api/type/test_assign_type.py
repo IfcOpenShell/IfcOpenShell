@@ -216,9 +216,34 @@ class TestAssignType(test.bootstrap.IFC4):
         with pytest.raises(TypeError):
             ifcopenshell.api.type.assign_type(self.file, related_objects=[opening], relating_type=any_type)
 
+    def test_generic_type_product_types_an_annotation(self):
+        annotation = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcAnnotation")
+        annotation_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct")
+        annotation_type.ApplicableOccurrence = "IfcAnnotation/TEXT"
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[annotation], relating_type=annotation_type)
+        assert ifcopenshell.util.element.get_type(annotation) == annotation_type
+
+
+class TestAssignTypeSchemaRules(test.bootstrap.IFC4):
+    def test_generic_type_product_cannot_type_an_occurrence_with_its_own_type_class(self):
+        stair = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStair")
+        generic_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct")
+        with pytest.raises(TypeError, match=r"IfcTypeProduct cannot type IfcStair"):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[stair], relating_type=generic_type)
+
+    def test_assigning_a_process_type(self):
+        task = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
+        task_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTaskType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[task], relating_type=task_type)
+        assert ifcopenshell.util.element.get_type(task) == task_type
+
 
 class TestAssignTypeIFC2X3(test.bootstrap.IFC2X3, TestAssignType):
-    pass
+    def test_generic_type_product_types_an_occurrence_without_its_own_type_class(self):
+        stair = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStair")
+        generic_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[stair], relating_type=generic_type)
+        assert ifcopenshell.util.element.get_type(stair) == generic_type
 
 
 class TestAssignTypeIFC4X3(test.bootstrap.IFC4X3, TestAssignType):

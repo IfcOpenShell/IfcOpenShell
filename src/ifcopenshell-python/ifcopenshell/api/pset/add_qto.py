@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any
-
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.guid
@@ -56,6 +54,7 @@ def add_qto(file: ifcopenshell.file, product: ifcopenshell.entity_instance, name
         like "Qto_WallBaseQuantities". If you create your own, you must not
         use that prefix. It is recommended to use your own prefix tailored
         to your project, company, or local government requirement.
+    :raises ValueError: If `product` class doesn't support adding a qto.
     :return: The newly created IfcElementQuantity
 
     Example:
@@ -77,33 +76,25 @@ def add_qto(file: ifcopenshell.file, product: ifcopenshell.entity_instance, name
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"product": product, "name": name}
-    return usecase.execute()
+    return usecase.execute(product, name)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
-        product: ifcopenshell.entity_instance = self.settings["product"]
-        name: str = self.settings["name"]
-
+    def execute(self, product: ifcopenshell.entity_instance, name: str) -> ifcopenshell.entity_instance:
         if product.is_a("IfcObject") or product.is_a("IfcContext"):
             for rel in product.IsDefinedBy or []:
-                if (
-                    rel.is_a("IfcRelDefinesByProperties")
-                    and rel.RelatingPropertyDefinition.Name == self.settings["name"]
-                ):
+                if rel.is_a("IfcRelDefinesByProperties") and rel.RelatingPropertyDefinition.Name == name:
                     return rel.RelatingPropertyDefinition
 
-            qto = self.create_qto()
+            qto = self.create_qto(name)
             self.file.create_entity(
                 "IfcRelDefinesByProperties",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
                     "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
-                    "RelatedObjects": [self.settings["product"]],
+                    "RelatedObjects": [product],
                     "RelatingPropertyDefinition": qto,
                 },
             )
@@ -112,17 +103,18 @@ class Usecase:
             for definition in product.HasPropertySets or []:
                 if definition.Name == name:
                     return definition
-            qto = self.create_qto()
+            qto = self.create_qto(name)
             has_property_sets = list(product.HasPropertySets or [])
             has_property_sets.append(qto)
             product.HasPropertySets = has_property_sets
             return qto
+        raise ValueError(f"Class '{product.is_a(True)}' doesn't support adding a quantity set.")
 
-    def create_qto(self):
+    def create_qto(self, name: str) -> ifcopenshell.entity_instance:
         return self.file.create_entity(
             "IfcElementQuantity",
             GlobalId=ifcopenshell.guid.new(),
             OwnerHistory=ifcopenshell.api.owner.create_owner_history(self.file),
-            Name=self.settings["name"],
-            MethodOfMeasurement="BaseQuantities" if self.settings["name"].endswith("BaseQuantities") else None,
+            Name=name,
+            MethodOfMeasurement="BaseQuantities" if name.endswith("BaseQuantities") else None,
         )

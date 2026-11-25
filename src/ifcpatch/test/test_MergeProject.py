@@ -68,8 +68,8 @@ class TestMergeProjects(test.bootstrap.IFC4):
         wall1, wall2 = output.by_type("IfcWall")
 
         # test that units are converted
-        placement1 = ifcopenshell.util.placement.get_local_placement(wall1.ObjectPlacement)
-        placement2 = ifcopenshell.util.placement.get_local_placement(wall2.ObjectPlacement)
+        placement1 = ifcopenshell.util.placement.get_placement(wall1.ObjectPlacement)
+        placement2 = ifcopenshell.util.placement.get_placement(wall2.ObjectPlacement)
         to_tuple = lambda arr: tuple(map(tuple, arr))
         matrix = np.eye(4)
         matrix[:, 3] = (1, 2, 3, 1)
@@ -119,7 +119,7 @@ class TestMergeProjects(test.bootstrap.IFC4):
 
         # Original file is in meters
         wall1 = self.file.by_type("IfcWall")[0]
-        m1 = ifcopenshell.util.placement.get_local_placement(wall1.ObjectPlacement)
+        m1 = ifcopenshell.util.placement.get_placement(wall1.ObjectPlacement)
         assert np.allclose(m1[:, 3], (1, 2, 3, 1))
         global_m1 = ifcopenshell.util.geolocation.auto_local2global(self.file, m1, should_return_in_map_units=False)
         assert np.allclose(global_m1[:, 3], (11.332, 21.796, 3, 1))
@@ -134,7 +134,7 @@ class TestMergeProjects(test.bootstrap.IFC4):
 
         # Second file is in millimeters with a different false origin
         wall1 = second_file.by_type("IfcWall")[0]
-        m1 = ifcopenshell.util.placement.get_local_placement(wall1.ObjectPlacement)
+        m1 = ifcopenshell.util.placement.get_placement(wall1.ObjectPlacement)
         assert np.allclose(m1[:, 3], (1000, 2000, 3000, 1))
         global_m1 = ifcopenshell.util.geolocation.auto_local2global(second_file, m1, should_return_in_map_units=False)
         assert np.allclose(global_m1[:, 3], (31866, 41232, 3000, 1))
@@ -161,8 +161,8 @@ class TestMergeProjects(test.bootstrap.IFC4):
         assert params.xao == xao1
 
         wall1, wall2 = output.by_type("IfcWall")
-        m1 = ifcopenshell.util.placement.get_local_placement(wall1.ObjectPlacement)
-        m2 = ifcopenshell.util.placement.get_local_placement(wall2.ObjectPlacement)
+        m1 = ifcopenshell.util.placement.get_placement(wall1.ObjectPlacement)
+        m2 = ifcopenshell.util.placement.get_placement(wall2.ObjectPlacement)
         assert np.allclose(m1[:, 3], (1, 2, 3, 1))
         # assert np.allclose(m2[:, 3], (8.321, 29.321, 3, 1), atol=1e-3)
         assert np.allclose(m2[:, 3], (17.847, 24.707, 3.0, 1.0), atol=1e-3)

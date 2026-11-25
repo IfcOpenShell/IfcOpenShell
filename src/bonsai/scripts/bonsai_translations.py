@@ -274,10 +274,10 @@ if BPY_IS_LOADED:
                     f"Couldn't find locale path in the source directory, creating dummy directory: {source_locale_path}.",
                 )
 
-            from ui_translate.settings import (  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+            from ui_translate.settings import (  # pyright: ignore[reportMissingImports]  # ty:ignore[import-not-found]
                 settings as ui_translate_settings,
             )
-            from ui_translate.update_ui import (  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+            from ui_translate.update_ui import (  # pyright: ignore[reportMissingImports]  # ty:ignore[import-not-found]
                 UI_OT_i18n_updatetranslation_init_settings,
             )
 

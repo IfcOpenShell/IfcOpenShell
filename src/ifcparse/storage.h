@@ -557,7 +557,9 @@ namespace ifcopenshell {
 
             std::vector<shared_pointer_type> read_simple_type_instances;
             std::vector<shared_pointer_type> steal_instances() {
-                return std::move(read_simple_type_instances);
+                std::vector<shared_pointer_type> instances;
+                instances.swap(read_simple_type_instances);
+                return instances;
             }
 
             std::reference_wrapper<ifcopenshell::logger> logger_;
@@ -628,7 +630,7 @@ namespace ifcopenshell {
             in_memory_file_storage(ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root()) : logger_(logger), file(owner_file), schema(nullptr), byid_read_(&byid_, [this](const shared_pointer_type& data) { return express::base(data); }) {};
             in_memory_file_storage(const in_memory_file_storage& other) = delete;
             in_memory_file_storage(const in_memory_file_storage&& other) = delete;
-
+            ~in_memory_file_storage();
 
             class type_iterator : public entities_by_type::const_iterator {
             public:

@@ -40,7 +40,7 @@
 (function (global) {
   'use strict';
 
-  // Resolve a remote sidecar's total size so the loader can bound its ranged
+  // Resolve a remote .ifcview's total size so the loader can bound its ranged
   // reads: HEAD Content-Length, falling back to a 0-0 Range's Content-Range.
   async function sizeUrl(url) {
     const head = await fetch(url, { method: 'HEAD' });
@@ -53,7 +53,7 @@
 
   // ---- OPFS model cache ------------------------------------------------------
   //
-  // addUrl(url, {cache: true}) keeps a local copy of the sidecar in the
+  // addUrl(url, {cache: true}) keeps a local copy of the .ifcview in the
   // Origin Private File System, filled FROM THE VIEWER'S OWN RANGED READS —
   // no second download, and only the bytes the camera actually needed.
   // (Browsers do not populate their HTTP cache from ranged fetches: measured
@@ -422,6 +422,9 @@
     return ((clamp(a) << 24) | (clamp(b) << 16) | (clamp(g) << 8) | clamp(r)) >>> 0;
   }
 
+  // Section cap hatch patterns, in the order the wasm numbers them.
+  const SECTION_CAP_HATCHES = ['none', 'diagonal', 'cross'];
+
   // Boot a viewer bound to `opts.canvas`. Resolves to the API object once the
   // wasm runtime is initialised; `api.ready` resolves once the GPU app is live.
   async function create(opts) {
@@ -444,6 +447,9 @@
     // objectsById puts the IFC identity back onto a selection read.
     let objectIndex = null;
     let objectsById = null;
+    // Mirrors SectionCapStyle's defaults in the wasm; setSectionCapStyle merges into it.
+    const sectionCapStyle = { hatch: 'diagonal', spacing: 8, lineWidth: 1, color: '#0000008c', fill: null,
+                              outlineWidth: 2, outlineColor: '#000000' };
 
     // The per-frame loop: poll for the app pointer (published once the GPU
     // device is ready), then drive the C tick. It is registered from
@@ -545,7 +551,7 @@
     }
 
     // Byte-source registry the wasm reads lazily: a picked File (Blob.slice) or
-    // a remote URL (HTTP Range). load_sidecar_from_source_c(sid) streams one.
+    // a remote URL (HTTP Range). load_ifcview_from_source_c(sid) streams one.
     Module.__ifcvSources = Module.__ifcvSources || [];
 
     // The wasm calls this on every single-object pick; (0, '', -1, -1) means the
@@ -866,6 +872,67 @@
       toggleXray:   function () { Module._toggle_xray_c(); },
       xrayActive:   function () { return Module._xray_is_active_c() !== 0; },
 
+      // Backface culling of opaque geometry (on by default). Turn it off to
+      // draw back faces too, for models whose faces are single-sided or wound
+      // the wrong way round and would otherwise show holes.
+      setBackfaceCulling: function (on) {
+        Module._ifcv_set_backface_culling_c(on ? 1 : 0);
+      },
+      backfaceCullingEnabled: function () {
+        return Module._ifcv_backface_culling_is_on_c() !== 0;
+      },
+
+      // ---- Section caps ----------------------------------------------------
+
+      // Fill the cross-section where a section plane cuts through a solid, so
+      // a cut wall or slab reads as solid instead of hollow (on by default).
+      // Caps are never drawn in x-ray. Only closed meshes cap correctly. A
+      // transparent object's cap is filled at the object's own opacity, so
+      // you see through it; the hatch and outline keep theirs.
+      setSectionCaps: function (on) {
+        Module._ifcv_set_section_caps_c(on ? 1 : 0);
+      },
+      sectionCapsEnabled: function () {
+        return Module._ifcv_section_caps_is_on_c() !== 0;
+      },
+
+      // How the caps are drawn. Any subset of:
+      //   hatch      'diagonal' (default), 'cross' or 'none'
+      //   spacing    CSS pixels between hatch lines (default 8); fixed on
+      //              screen, so it does not change as you zoom
+      //   lineWidth  CSS pixels (default 1)
+      //   color      hatch line colour, as setColor takes it; its alpha is
+      //              the line opacity (default '#0000008c')
+      //   fill       cap colour, or null (default) for the cut object's own
+      //              colour; an alpha below 255 blends the two
+      //   outlineWidth  CSS pixels of the bold line along the cut edge
+      //                 (default 2, at most 6 device pixels); 0 for none
+      //   outlineColor  its colour (default '#000000')
+      // The outline separates touching cut objects by colour and opacity
+      // alone, so neighbours that share both get no line between them.
+      // Omitted fields keep their current value.
+      setSectionCapStyle: function (style) {
+        style = style || {};
+        if (style.hatch !== undefined && SECTION_CAP_HATCHES.indexOf(style.hatch) < 0) {
+          throw new Error('setSectionCapStyle: hatch must be one of ' +
+                          SECTION_CAP_HATCHES.join(', ') + ', got ' + style.hatch);
+        }
+        Object.keys(sectionCapStyle).forEach(function (k) {
+          if (style[k] !== undefined) sectionCapStyle[k] = style[k];
+        });
+        const c = packColor(sectionCapStyle.color);
+        const f = packColor(sectionCapStyle.fill);
+        const o = packColor(sectionCapStyle.outlineColor);
+        const ch = function (rgba, shift) { return ((rgba >>> shift) & 0xFF) / 255; };
+        Module._ifcv_set_section_cap_style_c(
+          SECTION_CAP_HATCHES.indexOf(sectionCapStyle.hatch),
+          sectionCapStyle.spacing, sectionCapStyle.lineWidth,
+          ch(c, 0), ch(c, 8), ch(c, 16), ch(c, 24),
+          ch(f, 0), ch(f, 8), ch(f, 16), ch(f, 24),
+          sectionCapStyle.outlineWidth,
+          ch(o, 0), ch(o, 8), ch(o, 16), ch(o, 24));
+      },
+
       // Model bookkeeping (ordered by load). Progress is per-model chunk counts.
       modelCount: function () { return Module._ifcv_model_count_c ? Module._ifcv_model_count_c() : 0; },
       modelProgress: function (i) {
@@ -933,7 +1000,7 @@
         if (o && o.replace) this.clearScene();
         const sid = registerFile(file);
         if (o && o.name) this.setModelName(sid, o.name);
-        Module._load_sidecar_from_source_c(sid);
+        Module._load_ifcview_from_source_c(sid);
         return sid;
       },
       // `cache: true` keeps a local OPFS copy filled from the viewer's own
@@ -955,7 +1022,7 @@
         }
         if (sid === null) sid = await registerUrl(url);
         if (o && o.name) this.setModelName(sid, o.name);
-        Module._load_sidecar_from_source_c(sid);
+        Module._load_ifcview_from_source_c(sid);
         return sid;
       },
 
@@ -1016,7 +1083,7 @@
       // .ifcfed (or any manifest) in your own code and drive these.
       //
       // Models resolve to global coordinates by default: each one's
-      // IfcCoordinateOperation is baked into its sidecar and applied on load,
+      // IfcCoordinateOperation is baked into its .ifcview and applied on load,
       // so models with different map conversions line up. The first model also
       // sets a false origin automatically, which keeps the scene near the
       // origin — necessary because per-instance transforms are float32 and
@@ -1093,7 +1160,7 @@
       },
 
       // The georeferencing a model actually carries, read back from its
-      // sidecar: {hasCoordinateOperation, matrix (16, column-major, metres),
+      // .ifcview: {hasCoordinateOperation, matrix (16, column-major, metres),
       // projectLengthToMeters, mapUnitToMeters}. Null until the model has
       // finished loading.
       getModelGeoref: function (sourceId) {

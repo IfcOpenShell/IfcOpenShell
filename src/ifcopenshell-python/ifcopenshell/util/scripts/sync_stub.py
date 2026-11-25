@@ -74,6 +74,7 @@ Usage:
   python sync_stub.py --write    # applies the safe add/remove edits in place
 """
 
+import argparse
 import ast
 import sys
 from dataclasses import dataclass, field
@@ -344,7 +345,11 @@ def splice_body(
 
 
 def main() -> None:
-    write = "--write" in sys.argv
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(
+        "--write", action="store_true", help="apply the safe add/remove edits in place instead of a dry run"
+    )
+    write = parser.parse_args().write
 
     package = Path(__file__).parent.parent.parent
     stub_path = package / "ifcopenshell_wrapper.pyi"

@@ -204,7 +204,7 @@ class Duplicate(bonsai.core.tool.Duplicate):
                     tool.Ifc.run(
                         "geometry.edit_object_placement",
                         product=opening,
-                        matrix=ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement),
+                        matrix=ifcopenshell.util.placement.get_placement(opening.ObjectPlacement),
                         is_si=False,
                     )
 

@@ -74,6 +74,8 @@ namespace ifcopenshell {
 			class IFC_GEOMLIBRARY_API cgal_kernel : public abstract_kernel {
 			private:
 #ifndef IFOPSH_SIMPLE_KERNEL
+				bool boolean_operation(const std::list<std::pair<express::base, std::list<cgal_polyhedron>>>& operands, taxonomy::boolean_result::operation_type operation, cgal_polyhedron& result);
+
 				enum boolean_operand_preprocess {
 					PP_MINKOWSKY_DILATE,
 					PP_SNAP_POINTS_TO_FIRST_OPERAND,

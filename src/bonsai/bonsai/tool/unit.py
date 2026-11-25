@@ -20,10 +20,13 @@ from __future__ import annotations
 
 import json
 import math
+from functools import cache
 from typing import TYPE_CHECKING, Any, Literal, Union
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.unit
+import ifcopenshell.util.attribute
 import ifcopenshell.util.unit
 from lark import Lark, Transformer
 
@@ -33,6 +36,12 @@ import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bonsai.bim.module.unit.prop import BIMUnitProperties
+
+
+@cache
+def _get_distance_parser(grammar: str) -> Lark:
+    """Return a cached Lark parser for ``grammar``, compiling it on first use."""
+    return Lark(grammar)
 
 
 class Unit(bonsai.core.tool.Unit):
@@ -271,11 +280,11 @@ class Unit(bonsai.core.tool.Unit):
 
             # Try to parse with the project's default grammar first
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
-                primary_parser = Lark(grammar_imperial)
-                fallback_parser = Lark(grammar_metric)
+                primary_parser = _get_distance_parser(grammar_imperial)
+                fallback_parser = _get_distance_parser(grammar_metric)
             else:
-                primary_parser = Lark(grammar_metric)
-                fallback_parser = Lark(grammar_imperial)
+                primary_parser = _get_distance_parser(grammar_metric)
+                fallback_parser = _get_distance_parser(grammar_imperial)
 
             # Try parsing with primary grammar
             parse_tree = None
@@ -352,6 +361,303 @@ class Unit(bonsai.core.tool.Unit):
         if (name := getattr(bim_props, f"{unit_type[:-4].lower()}_unit")) != "NONE":
             return name
 
+    # How each IfcDerivedUnitEnum type is composed from named unit types, for building it out
+    # of the project's own units (see add_derived_unit). Pairs rather than a dict because some
+    # repeat a unit type (kN.m/m), mirroring add_structural_units. Section properties are
+    # composed from length alone so they follow the project length unit (mm4, not m4).
+    # Dimensionless/logarithmic types (pH, sound levels, compound plane angle) are omitted.
+    DERIVED_UNIT_COMPOSITIONS: dict[str, tuple[tuple[str, int], ...]] = {
+        "ACCELERATIONUNIT": (("LENGTHUNIT", 1), ("TIMEUNIT", -2)),
+        "ANGULARVELOCITYUNIT": (("PLANEANGLEUNIT", 1), ("TIMEUNIT", -1)),
+        "AREADENSITYUNIT": (("MASSUNIT", 1), ("AREAUNIT", -1)),
+        "CURVATUREUNIT": (("PLANEANGLEUNIT", 1), ("LENGTHUNIT", -1)),
+        "DYNAMICVISCOSITYUNIT": (("PRESSUREUNIT", 1), ("TIMEUNIT", 1)),
+        "HEATFLUXDENSITYUNIT": (("POWERUNIT", 1), ("AREAUNIT", -1)),
+        "HEATINGVALUEUNIT": (("ENERGYUNIT", 1), ("MASSUNIT", -1)),
+        "INTEGERCOUNTRATEUNIT": (("TIMEUNIT", -1),),
+        "IONCONCENTRATIONUNIT": (("MASSUNIT", 1), ("VOLUMEUNIT", -1)),
+        "ISOTHERMALMOISTURECAPACITYUNIT": (("VOLUMEUNIT", 1), ("MASSUNIT", -1)),
+        "KINEMATICVISCOSITYUNIT": (("AREAUNIT", 1), ("TIMEUNIT", -1)),
+        "LINEARFORCEUNIT": (("FORCEUNIT", 1), ("LENGTHUNIT", -1)),
+        "LINEARMOMENTUNIT": (("FORCEUNIT", 1), ("LENGTHUNIT", 1), ("LENGTHUNIT", -1)),
+        "LINEARSTIFFNESSUNIT": (("FORCEUNIT", 1), ("LENGTHUNIT", -1)),
+        "LINEARVELOCITYUNIT": (("LENGTHUNIT", 1), ("TIMEUNIT", -1)),
+        "LUMINOUSINTENSITYDISTRIBUTIONUNIT": (("LUMINOUSINTENSITYUNIT", 1), ("LUMINOUSFLUXUNIT", -1)),
+        "MASSDENSITYUNIT": (("MASSUNIT", 1), ("VOLUMEUNIT", -1)),
+        "MASSFLOWRATEUNIT": (("MASSUNIT", 1), ("TIMEUNIT", -1)),
+        "MASSPERLENGTHUNIT": (("MASSUNIT", 1), ("LENGTHUNIT", -1)),
+        "MODULUSOFELASTICITYUNIT": (("FORCEUNIT", 1), ("LENGTHUNIT", -2)),
+        "MODULUSOFLINEARSUBGRADEREACTIONUNIT": (("FORCEUNIT", 1), ("LENGTHUNIT", -2)),
+        "MODULUSOFROTATIONALSUBGRADEREACTIONUNIT": (
+            ("FORCEUNIT", 1),
+            ("LENGTHUNIT", 1),
+            ("LENGTHUNIT", -1),
+            ("PLANEANGLEUNIT", -1),
+        ),
+        "MODULUSOFSUBGRADEREACTIONUNIT": (("FORCEUNIT", 1), ("LENGTHUNIT", -3)),
+        "MOISTUREDIFFUSIVITYUNIT": (("VOLUMEUNIT", 1), ("TIMEUNIT", -1)),
+        "MOLECULARWEIGHTUNIT": (("MASSUNIT", 1), ("AMOUNTOFSUBSTANCEUNIT", -1)),
+        "MOMENTOFINERTIAUNIT": (("LENGTHUNIT", 4),),
+        "PLANARFORCEUNIT": (("FORCEUNIT", 1), ("LENGTHUNIT", -2)),
+        "ROTATIONALFREQUENCYUNIT": (("TIMEUNIT", -1),),
+        "ROTATIONALMASSUNIT": (("MASSUNIT", 1), ("LENGTHUNIT", 2)),
+        "ROTATIONALSTIFFNESSUNIT": (("FORCEUNIT", 1), ("LENGTHUNIT", 1), ("PLANEANGLEUNIT", -1)),
+        "SECTIONAREAINTEGRALUNIT": (("LENGTHUNIT", 5),),
+        "SECTIONMODULUSUNIT": (("LENGTHUNIT", 3),),
+        "SHEARMODULUSUNIT": (("FORCEUNIT", 1), ("LENGTHUNIT", -2)),
+        # IfcDerivedUnit WR1 forbids a lone element with exponent 1, so W and Pa are spelled out.
+        "SOUNDPOWERUNIT": (("ENERGYUNIT", 1), ("TIMEUNIT", -1)),
+        "SOUNDPRESSUREUNIT": (("FORCEUNIT", 1), ("LENGTHUNIT", -2)),
+        "SPECIFICHEATCAPACITYUNIT": (("ENERGYUNIT", 1), ("MASSUNIT", -1), ("THERMODYNAMICTEMPERATUREUNIT", -1)),
+        "TEMPERATUREGRADIENTUNIT": (("THERMODYNAMICTEMPERATUREUNIT", 1), ("LENGTHUNIT", -1)),
+        "TEMPERATURERATEOFCHANGEUNIT": (("THERMODYNAMICTEMPERATUREUNIT", 1), ("TIMEUNIT", -1)),
+        "THERMALADMITTANCEUNIT": (("POWERUNIT", 1), ("AREAUNIT", -1), ("THERMODYNAMICTEMPERATUREUNIT", -1)),
+        "THERMALCONDUCTANCEUNIT": (("POWERUNIT", 1), ("LENGTHUNIT", -1), ("THERMODYNAMICTEMPERATUREUNIT", -1)),
+        "THERMALEXPANSIONCOEFFICIENTUNIT": (("THERMODYNAMICTEMPERATUREUNIT", -1),),
+        "THERMALRESISTANCEUNIT": (("AREAUNIT", 1), ("THERMODYNAMICTEMPERATUREUNIT", 1), ("POWERUNIT", -1)),
+        "THERMALTRANSMITTANCEUNIT": (("POWERUNIT", 1), ("AREAUNIT", -1), ("THERMODYNAMICTEMPERATUREUNIT", -1)),
+        "TORQUEUNIT": (("FORCEUNIT", 1), ("LENGTHUNIT", 1)),
+        "VAPORPERMEABILITYUNIT": (
+            ("MASSUNIT", 1),
+            ("TIMEUNIT", -1),
+            ("LENGTHUNIT", -1),
+            ("PRESSUREUNIT", -1),
+        ),
+        "VOLUMETRICFLOWRATEUNIT": (("VOLUMEUNIT", 1), ("TIMEUNIT", -1)),
+        "WARPINGCONSTANTUNIT": (("LENGTHUNIT", 6),),
+        "WARPINGMOMENTUNIT": (("FORCEUNIT", 1), ("LENGTHUNIT", 2)),
+    }
+
+    @classmethod
+    def get_derived_unit_types(cls) -> list[str]:
+        """IfcDerivedUnitEnum values in the current schema that `add_derived_unit` can build."""
+        entity = tool.Ifc.schema().declaration_by_name("IfcDerivedUnit").as_entity()
+        assert entity
+        values = ifcopenshell.util.attribute.get_enum_items(entity.attribute_by_index(1))
+        return sorted(v for v in values if v in cls.DERIVED_UNIT_COMPOSITIONS)
+
+    # SI prefixes offered, beyond units already in the file, when picking a derived unit's
+    # components (see get_component_unit_choices). Types not listed offer the bare SI unit.
+    COMPONENT_SI_PREFIXES: dict[str, tuple[Union[str, None], ...]] = {
+        "LENGTHUNIT": (None, "MILLI", "CENTI", "KILO"),
+        "AREAUNIT": (None, "MILLI", "CENTI"),
+        "VOLUMEUNIT": (None, "MILLI", "CENTI"),
+        "MASSUNIT": ("KILO", "MEGA"),
+        "FORCEUNIT": (None, "KILO", "MEGA"),
+        "PRESSUREUNIT": (None, "KILO", "MEGA", "GIGA"),
+        "ENERGYUNIT": (None, "KILO", "MEGA"),
+        "POWERUNIT": (None, "KILO", "MEGA"),
+    }
+
+    @classmethod
+    def get_unit_label(cls, unit: ifcopenshell.entity_instance) -> str:
+        """Picker label for a unit, e.g. "inch (in)" or "MILLIMETRE (mm)"."""
+        name = getattr(unit, "Name", None) or unit.is_a()
+        if unit.is_a("IfcSIUnit") and unit.Prefix:
+            name = f"{unit.Prefix}{name}"
+        symbol = ifcopenshell.util.unit.get_unit_symbol(unit)
+        return f"{name} ({symbol})" if symbol else name
+
+    @classmethod
+    def get_distinct_units(
+        cls, units: list[ifcopenshell.entity_instance], preferred_id: int = 0
+    ) -> list[ifcopenshell.entity_instance]:
+        """Collapse units a user can't tell apart -- same class, type, label and scale -- to one.
+
+        Files routinely hold such copies: every conversion-based unit (foot, inch, ...) carries
+        its own METRE as its conversion factor's unit. The lowest STEP id represents each group,
+        so the choice is stable across redraws, unless `preferred_id` (e.g. a property's current
+        Unit) is in the group, in which case it is kept so that selection stays representable.
+        The caller's order is preserved.
+        """
+        groups: dict[tuple, ifcopenshell.entity_instance] = {}
+        for unit in sorted(units, key=lambda u: u.id()):
+            try:
+                scale = f"{ifcopenshell.util.unit.get_unit_scale(unit):.12g}"
+            except Exception:
+                scale = str(unit.id())  # Unscalable: never merge it with anything.
+            key = (unit.is_a(), getattr(unit, "UnitType", None), cls.get_unit_label(unit), scale)
+            if key not in groups or unit.id() == preferred_id:
+                groups[key] = unit
+        kept = set(groups.values())
+        return [u for u in units if u in kept]
+
+    @classmethod
+    def get_derived_unit_component_types(cls, unit_type: str) -> list[str]:
+        """The distinct named unit types a derived `unit_type` is built from, in order, e.g.
+        ["FORCEUNIT", "LENGTHUNIT"] for MODULUSOFELASTICITYUNIT."""
+        return list(dict.fromkeys(t for t, _ in cls.DERIVED_UNIT_COMPOSITIONS.get(unit_type, ())))
+
+    @classmethod
+    def get_component_unit_choices(cls, unit_type: str) -> list[tuple[str, str, str]]:
+        """Choices for one component (a named `unit_type`, e.g. "FORCEUNIT") of a derived unit.
+
+        Identifiers: "0" for the project's unit (or a new SI unit if it has none), a STEP id for
+        a unit already in the file, "+SI:<prefix>" or "+CONV:<name>" for a unit not in the file
+        yet, created on demand by `resolve_unit_choice` -- so e.g. kip/in2 needs no setup.
+        """
+        ifc_file = tool.Ifc.get()
+        si_name = ifcopenshell.util.unit.si_type_names[unit_type]
+
+        def si_symbol(prefix: Union[str, None]) -> str:
+            return ifcopenshell.util.unit.prefix_symbols.get(prefix, "") + ifcopenshell.util.unit.unit_symbols.get(
+                si_name, "?"
+            )
+
+        project_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, unit_type)
+        if project_unit and project_unit.is_a("IfcNamedUnit"):
+            symbol = ifcopenshell.util.unit.get_unit_symbol(project_unit)
+            choices = [("0", f"Default ({symbol})", "The project's unit")]
+        else:
+            fallback = "KILO" if unit_type == "MASSUNIT" else None
+            choices = [
+                ("0", f"SI ({si_symbol(fallback)})", "The project has no unit of this type, so an SI unit is used")
+            ]
+
+        existing = [
+            u for u in ifcopenshell.util.unit.get_candidate_units(ifc_file, unit_type) if u.is_a("IfcNamedUnit")
+        ]
+        for unit in cls.get_distinct_units(existing):
+            choices.append((str(unit.id()), cls.get_unit_label(unit), ""))
+        choices.extend(cls.get_new_unit_choices(unit_type, "created when the derived unit is added"))
+        return choices
+
+    @classmethod
+    def get_new_unit_choices(cls, unit_type: str, when: str) -> list[tuple[str, str, str]]:
+        """Choices for catalog units of a named `unit_type` that aren't in the file yet: SI with
+        common prefixes and the conversion-based (imperial/US) units, e.g. "+ psf (psf)".
+        Identifiers are "+SI:<prefix>" / "+CONV:<name>"; see `resolve_unit_choice`.
+
+        :param when: Completes the description "Not in the file yet: ...".
+        """
+        if unit_type not in ifcopenshell.util.unit.si_type_names or unit_type == "USERDEFINED":
+            return []  # Not a named unit type (e.g. a derived one): there is no catalog.
+        ifc_file = tool.Ifc.get()
+        si_name = ifcopenshell.util.unit.si_type_names[unit_type]
+
+        def si_symbol(prefix: Union[str, None]) -> str:
+            return ifcopenshell.util.unit.prefix_symbols.get(prefix, "") + ifcopenshell.util.unit.unit_symbols.get(
+                si_name, "?"
+            )
+
+        existing = [u for u in ifc_file.by_type("IfcNamedUnit") if getattr(u, "UnitType", None) == unit_type]
+        choices: list[tuple[str, str, str]] = []
+        new = f"Not in the file yet: {when}"
+        present_si = {(u.Prefix, u.Name) for u in existing if u.is_a("IfcSIUnit")}
+        for prefix in cls.COMPONENT_SI_PREFIXES.get(unit_type, (None,)):
+            if (prefix, si_name) not in present_si:
+                choices.append((f"+SI:{prefix or ''}", f"+ {prefix or ''}{si_name} ({si_symbol(prefix)})", new))
+        present_names = {u.Name for u in existing if u.is_a("IfcConversionBasedUnit")}
+        for name, conversion_type in ifcopenshell.util.unit.imperial_types.items():
+            if (
+                conversion_type == unit_type
+                and name not in present_names
+                and name in ifcopenshell.util.unit.si_conversions
+                and name not in ifcopenshell.util.unit.si_offsets  # e.g. fahrenheit: no use in a ratio.
+            ):
+                symbol = ifcopenshell.util.unit.unit_symbols.get(name, name)
+                choices.append((f"+CONV:{name}", f"+ {name} ({symbol})", new))
+        return choices
+
+    @classmethod
+    def resolve_unit_choice(cls, unit_type: str, choice: str) -> Union[ifcopenshell.entity_instance, None]:
+        """The unit a `get_component_unit_choices` / `get_new_unit_choices` identifier names,
+        creating it if it's new. None for "0" (or empty): use the project's unit."""
+        ifc_file = tool.Ifc.get()
+        if choice.startswith("+SI:"):
+            prefix = choice.removeprefix("+SI:") or None
+            return ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type=unit_type, prefix=prefix)
+        if choice.startswith("+CONV:"):
+            return ifcopenshell.api.unit.add_conversion_based_unit(ifc_file, name=choice.removeprefix("+CONV:"))
+        if choice and choice != "0":
+            return ifc_file.by_id(int(choice))
+        return None
+
+    @classmethod
+    def add_derived_unit(
+        cls, unit_type: str, component_units: Union[dict[str, ifcopenshell.entity_instance], None] = None
+    ) -> ifcopenshell.entity_instance:
+        """Create an IfcDerivedUnit of `unit_type` composed from the project's assigned units,
+        e.g. MOMENTOFINERTIAUNIT becomes mm4 in a millimetre project and LINEARFORCEUNIT kN/m
+        with kN and m assigned. A component type the project has no unit for falls back to a
+        new, unassigned SI unit (kilogram for mass) so the result is always well defined.
+
+        :param component_units: Units to use instead of the project's, by named unit type,
+            e.g. {"FORCEUNIT": kip, "LENGTHUNIT": inch} for a kip/in2 modulus in a foot project.
+        """
+        ifc_file = tool.Ifc.get()
+        components: dict[str, ifcopenshell.entity_instance] = dict(component_units or {})
+        elements: list[ifcopenshell.entity_instance] = []
+        for named_type, exponent in cls.DERIVED_UNIT_COMPOSITIONS[unit_type]:
+            if named_type not in components:
+                component = ifcopenshell.util.unit.get_project_unit(ifc_file, named_type)
+                if component is None or not component.is_a("IfcNamedUnit"):
+                    prefix = "KILO" if named_type == "MASSUNIT" else None
+                    component = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type=named_type, prefix=prefix)
+                components[named_type] = component
+            elements.append(
+                ifc_file.create_entity("IfcDerivedUnitElement", Unit=components[named_type], Exponent=exponent)
+            )
+        return ifc_file.create_entity("IfcDerivedUnit", Elements=elements, UnitType=unit_type)
+
+    @classmethod
+    def add_structural_units(cls) -> list[ifcopenshell.entity_instance]:
+        """Units for the forces, stiffnesses and material values of structural analysis.
+
+        Without them a millimetre project reads a load of 5 meant as kN/m2 as 5 N/mm2.
+        These are the units engineers write, whatever the length unit: kN, kN/m, kN/m2,
+        kN.m, N/mm2 and kg/m3 in a metric scene; kip, kip/ft, psf, kip.ft, ksi and pcf
+        in an imperial one. Pressure is left alone, as building services use it too.
+        """
+        ifc_file = tool.Ifc.get()
+
+        def derived(
+            unit_type: str, *elements: tuple[ifcopenshell.entity_instance, int]
+        ) -> ifcopenshell.entity_instance:
+            # Built element by element: kN.m/m repeats the metre, which a dict cannot hold.
+            return ifc_file.create_entity(
+                "IfcDerivedUnit",
+                Elements=[ifc_file.create_entity("IfcDerivedUnitElement", Unit=u, Exponent=e) for u, e in elements],
+                UnitType=unit_type,
+            )
+
+        radian = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="PLANEANGLEUNIT")
+        if bpy.context.scene.unit_settings.system == "IMPERIAL":
+            force = ifcopenshell.api.unit.add_conversion_based_unit(ifc_file, name="kip")
+            lbf = ifcopenshell.api.unit.add_conversion_based_unit(ifc_file, name="lbf")
+            length = ifcopenshell.api.unit.add_conversion_based_unit(ifc_file, name="foot")
+            inch = ifcopenshell.api.unit.add_conversion_based_unit(ifc_file, name="inch")
+            pound = ifcopenshell.api.unit.add_conversion_based_unit(ifc_file, name="pound")
+            area_force = (lbf, 1), (length, -2)  # psf
+            stiffness = (force, 1), (inch, -1)
+            modulus = (force, 1), (inch, -2)  # ksi
+            density = (pound, 1), (length, -3)  # pcf
+        else:
+            force = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="FORCEUNIT", prefix="KILO")
+            length = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="LENGTHUNIT")
+            newton = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="FORCEUNIT")
+            millimetre = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="LENGTHUNIT", prefix="MILLI")
+            kilogram = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="MASSUNIT", prefix="KILO")
+            area_force = (force, 1), (length, -2)
+            stiffness = (force, 1), (length, -1)
+            modulus = (newton, 1), (millimetre, -2)
+            density = (kilogram, 1), (length, -3)
+        return [
+            force,
+            derived("TORQUEUNIT", (force, 1), (length, 1)),
+            derived("LINEARFORCEUNIT", (force, 1), (length, -1)),
+            derived("LINEARMOMENTUNIT", (force, 1), (length, 1), (length, -1)),
+            derived("PLANARFORCEUNIT", *area_force),
+            derived("LINEARSTIFFNESSUNIT", *stiffness),
+            derived("ROTATIONALSTIFFNESSUNIT", (force, 1), (length, 1), (radian, -1)),
+            derived("MODULUSOFLINEARSUBGRADEREACTIONUNIT", (force, 1), (length, -2)),
+            derived("MODULUSOFROTATIONALSUBGRADEREACTIONUNIT", (force, 1), (length, 1), (length, -1), (radian, -1)),
+            derived("MODULUSOFSUBGRADEREACTIONUNIT", (force, 1), (length, -3)),
+            derived("MODULUSOFELASTICITYUNIT", *modulus),
+            derived("SHEARMODULUSUNIT", *modulus),
+            derived("MASSDENSITYUNIT", *density),
+        ]
+
     @classmethod
     def is_si_unit(cls, name: str) -> bool:
         return name[0].isupper()
@@ -394,7 +700,10 @@ class Unit(bonsai.core.tool.Unit):
             name = ""
             if unit.is_a("IfcMonetaryUnit"):
                 name = unit.Currency
-            elif not unit.is_a("IfcDerivedUnit"):
+            elif unit.is_a("IfcDerivedUnit"):
+                # Derived units have no Name; their symbol (e.g. "kN/m") identifies them.
+                name = ifcopenshell.util.unit.get_unit_symbol(unit) if unit.Elements else ""
+            else:
                 name = unit.Name or ""
 
             if unit.is_a("IfcSIUnit") and unit.Prefix:
@@ -426,6 +735,11 @@ class Unit(bonsai.core.tool.Unit):
     def set_active_unit(cls, unit: ifcopenshell.entity_instance) -> None:
         props = cls.get_unit_props()
         props.active_unit_id = unit.id()
+
+    @classmethod
+    def get_assigned_unit_of_type(cls, unit: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        """Get the project's assigned unit of the same unit type as the given unit, if any."""
+        return ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), unit.UnitType)
 
     @classmethod
     def get_project_currency_unit(cls) -> Union[ifcopenshell.entity_instance, None]:

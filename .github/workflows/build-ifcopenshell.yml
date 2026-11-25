@@ -1,21 +1,27 @@
 name: Build IfcOpenShell
 
+permissions: {}
+
 on:
   workflow_dispatch:
 
 jobs:
   dispatch:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        workflow:
-          - 'Build IfcOpenShell Linux'
-          - 'Build IfcOpenShell Linux ARM'
-          - 'Build IfcOpenShell macOS'
-          - 'Build IfcOpenShell WASM'
-          - 'Build IfcOpenShell Windows'
+    permissions:
+      # Needed for dispatching workflows by `gh workflow run`.
+      actions: write
     steps:
       - name: Trigger binary build workflows
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: ${{ matrix.workflow }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          workflows=(
+            build-ifcopenshell-linux.yml
+            build-ifcopenshell-macos.yml
+            build-ifcopenshell-wasm.yml
+            build-ifcopenshell-windows.yml
+          )
+          for workflow in "${workflows[@]}"; do
+            gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME"
+          done

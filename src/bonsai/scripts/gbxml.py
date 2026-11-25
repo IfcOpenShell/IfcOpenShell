@@ -23,7 +23,7 @@ import bpy
 
 # sys.path.append('C:\Program Files\Python37\Lib\site-packages')
 import lxml.etree
-from bspy import (  # ty: ignore[unresolved-import]
+from bspy import (  # ty: ignore[import-not-found]
     Gbxml,  # pyright: ignore[reportMissingImports]
 )
 

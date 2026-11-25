@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "../function_item_evaluator.h"
+#include "../infra_sweep_helper.h"
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geom;
@@ -36,28 +37,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
     // @todo currently only the case is handled where directrix returns a piecewise_function
     if (auto fn = std::dynamic_pointer_cast<taxonomy::function_item>(dir)) {
         function_item_evaluator evaluator(settings_, fn);
-        auto evaluation_points = evaluator.evaluation_points();
-        for (const auto& dist_along : evaluation_points) {
-            auto m4 = evaluator.evaluate(dist_along);
 
-            /*
-            std::stringstream ss;
-            ss << m4;
-            auto s = ss.str();
-            std::wcout << s.c_str() << std::endl;
-            std::wcout << "determinant: " << m4.determinant() << std::endl;
-            */
-
-            Eigen::Matrix4d m4b = Eigen::Matrix4d::Identity();
-            bool is_directrix_derived = false;
-
+        bool is_directrix_derived = false;
 #ifdef SCHEMA_HAS_IfcDirectrixDerivedReferenceSweptAreaSolid
-            if (inst.as<IfcSchema::IfcDirectrixDerivedReferenceSweptAreaSolid>()) {
-                is_directrix_derived = true;
-            }
+        if (inst.as<IfcSchema::IfcDirectrixDerivedReferenceSweptAreaSolid>()) {
+            is_directrix_derived = true;
+        }
 #endif
-            auto pos = m4.col(3).head<3>();
 
+        // the profile placed at dist_along
+        const auto place = [&](double dist_along) -> taxonomy::face::ptr {
+            auto m4 = evaluator.evaluate(dist_along);
+            Eigen::Matrix4d m4b = Eigen::Matrix4d::Identity();
+            auto pos = m4.col(3).head<3>();
             if (is_directrix_derived) {
                 m4b.col(0).head<3>() = m4.col(1).head<3>();
                 m4b.col(1).head<3>() = m4.col(0).head<3>().cross(m4.col(1).head<3>());
@@ -68,32 +60,34 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
                 Eigen::Vector3d proj = (ref->components() - tangent * tangent.dot(ref->components()));
                 proj.normalize();
                 auto binormal = proj.cross(tangent);
-
                 m4b.col(0).head<3>() = proj;
                 m4b.col(1).head<3>() = binormal;
                 m4b.col(2).head<3>() = tangent;
                 m4b.col(3).head<3>() = pos;
-
-                /*
-                Eigen::JacobiSVD<decltype(m4b)> svd(m4b);
-                auto condition_number = svd.singularValues()(0)
-                    / svd.singularValues()(svd.singularValues().size() - 1);
-                if (condition_number > 1.e10) {
-                    ifcopenshell::logger::root().error("Non-invertible matrix at " + std::to_string(distalong) + " conversion will likely fail.");
-                }
-                */
             }
-
             // @todo taxonomy::clone() does not actually clone. That's really confusing.
-            // loft->children.push_back(taxonomy::clone(profile));
-            loft->children.push_back(taxonomy::face::ptr(profile->clone_()));
-            loft->children.back()->matrix = taxonomy::make<taxonomy::matrix4>();
-
+            auto section = taxonomy::face::ptr(profile->clone_());
+            section->matrix = taxonomy::make<taxonomy::matrix4>();
             if (profile->matrix) {
-                loft->children.back()->matrix->components() = (m4b * profile->matrix->ccomponents()).eval();
+                section->matrix->components() = (m4b * profile->matrix->ccomponents()).eval();
             } else {
-                loft->children.back()->matrix->components() = m4b;
+                section->matrix->components() = m4b;
             }
+            return section;
+        };
+
+        // sections at every span boundary of the directrix, and between them as needed for the
+        // profile to follow it within the deflection settings (see deflection_samples)
+        const auto samples = deflection_samples(
+            evaluator.boundaries(),
+            [&](double u) {
+                return sampled_section{evaluator.evaluate(u).col(3).head<3>(), section_points(place(u))};
+            },
+            settings_.get<ifcopenshell::geom::settings::MesherLinearDeflection>().get(),
+            settings_.get<ifcopenshell::geom::settings::MesherAngularDeflection>().get(),
+            settings_.get<ifcopenshell::geom::settings::Precision>().get());
+        for (double dist_along : samples) {
+            loft->children.push_back(place(dist_along));
         }
     } else {
         taxonomy::matrix4::ptr matrix;

@@ -16,19 +16,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Optional
-
 import ifcopenshell
 import ifcopenshell.util.representation
 
 
 def add_context(
     file: ifcopenshell.file,
-    context_type: Optional[ifcopenshell.util.representation.CONTEXT_TYPE] = None,
-    context_identifier: Optional[ifcopenshell.util.representation.REPRESENTATION_IDENTIFIER] = None,
-    target_view: Optional[ifcopenshell.util.representation.TARGET_VIEW] = None,
-    target_scale: Optional[float] = None,
-    parent: Optional[ifcopenshell.entity_instance] = None,
+    context_type: ifcopenshell.util.representation.CONTEXT_TYPE | None = None,
+    context_identifier: ifcopenshell.util.representation.REPRESENTATION_IDENTIFIER | None = None,
+    target_view: ifcopenshell.util.representation.TARGET_VIEW | None = None,
+    target_scale: float | None = None,
+    parent: ifcopenshell.entity_instance | None = None,
 ) -> ifcopenshell.entity_instance:
     """Adds a new geometric representation context
 
@@ -181,30 +179,27 @@ def add_context(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "context_type": context_type,
-        "parent": parent,
-        "context_identifier": context_identifier,
-        "target_view": target_view,
-        "target_scale": target_scale,
-    }
-    return usecase.execute()
+    return usecase.execute(context_type, context_identifier, target_view, target_scale, parent)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
-        if not self.settings["parent"]:
-            if self.settings["context_type"] == "Plan":
-                self.create_2d_origin()
-                context = self.file.createIfcGeometricRepresentationContext(None, "Plan", 2, 1.0e-05, self.origin)
+    def execute(
+        self,
+        context_type: ifcopenshell.util.representation.CONTEXT_TYPE | None,
+        context_identifier: ifcopenshell.util.representation.REPRESENTATION_IDENTIFIER | None,
+        target_view: ifcopenshell.util.representation.TARGET_VIEW | None,
+        target_scale: float | None,
+        parent: ifcopenshell.entity_instance | None,
+    ) -> ifcopenshell.entity_instance:
+        if not parent:
+            if context_type == "Plan":
+                origin = self.create_2d_origin()
+                context = self.file.createIfcGeometricRepresentationContext(None, context_type, 2, 1.0e-05, origin)
             else:
-                self.create_3d_origin()
-                context = self.file.createIfcGeometricRepresentationContext(
-                    None, self.settings["context_type"], 3, 1.0e-05, self.origin
-                )
+                origin = self.create_3d_origin()
+                context = self.file.createIfcGeometricRepresentationContext(None, context_type, 3, 1.0e-05, origin)
 
             project = self.file.by_type("IfcProject")[0]
 
@@ -217,24 +212,22 @@ class Usecase:
             return context
         return self.file.create_entity(
             "IfcGeometricRepresentationSubContext",
-            **{
-                "ContextIdentifier": self.settings["context_identifier"],
-                "ContextType": self.settings["context_type"],
-                "ParentContext": self.settings["parent"],
-                "TargetView": self.settings["target_view"],
-                "TargetScale": self.settings["target_scale"],
-            },
+            ContextIdentifier=context_identifier,
+            ContextType=context_type,
+            ParentContext=parent,
+            TargetView=target_view,
+            TargetScale=target_scale,
         )
 
-    def create_3d_origin(self):
-        self.origin = self.file.createIfcAxis2Placement3D(
+    def create_3d_origin(self) -> ifcopenshell.entity_instance:
+        return self.file.createIfcAxis2Placement3D(
             self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
             self.file.createIfcDirection((0.0, 0.0, 1.0)),
             self.file.createIfcDirection((1.0, 0.0, 0.0)),
         )
 
-    def create_2d_origin(self):
-        self.origin = self.file.createIfcAxis2Placement2D(
+    def create_2d_origin(self) -> ifcopenshell.entity_instance:
+        return self.file.createIfcAxis2Placement2D(
             self.file.createIfcCartesianPoint((0.0, 0.0)),
             self.file.createIfcDirection((1.0, 0.0)),
         )

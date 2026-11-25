@@ -26,12 +26,13 @@ constexpr const char* kGeometryLibraryKey = "geometry/library";
 constexpr const char* kGeometryLibraryDefault = "hybrid-cgal-simple-opencascade";
 constexpr const char* kShowStatsKey = "viewport/show_stats";
 constexpr const char* kBackfaceCullingKey = "viewport/backface_culling";
+constexpr const char* kSectionCapsKey = "viewport/section_caps";
 constexpr const char* kVoidLimitKey = "loading/void_limit";
 constexpr int kVoidLimitDefault = 30;
 constexpr const char* kDeflectionToleranceKey = "loading/deflection_tolerance";
-constexpr double kDeflectionToleranceDefault = 0.001;
+constexpr double kDeflectionToleranceDefault = 0.002;
 constexpr const char* kAngularToleranceKey = "loading/angular_tolerance";
-constexpr double kAngularToleranceDefault = 0.5;
+constexpr double kAngularToleranceDefault = 1.0;
 constexpr const char* kMinPixelRadiusKey = "viewport/min_pixel_radius";
 constexpr double kMinPixelRadiusDefault = 2.0;
 constexpr const char* kMotionMinPixelRadiusKey = "viewport/motion_min_pixel_radius";
@@ -85,6 +86,17 @@ void AppSettings::setBackfaceCulling(bool value) {
     backface_culling_ = value;
     persist();
     emit backfaceCullingChanged(value);
+}
+
+bool AppSettings::sectionCaps() const {
+    return section_caps_;
+}
+
+void AppSettings::setSectionCaps(bool value) {
+    if (section_caps_ == value) return;
+    section_caps_ = value;
+    persist();
+    emit sectionCapsChanged(value);
 }
 
 int AppSettings::voidLimit() const {
@@ -208,6 +220,7 @@ void AppSettings::load() {
     geometry_library_ = settings.value(kGeometryLibraryKey, kGeometryLibraryDefault).toString();
     show_stats_ = settings.value(kShowStatsKey, false).toBool();
     backface_culling_ = settings.value(kBackfaceCullingKey, true).toBool();
+    section_caps_ = settings.value(kSectionCapsKey, true).toBool();
     void_limit_ = settings.value(kVoidLimitKey, kVoidLimitDefault).toInt();
     if (void_limit_ < 0) void_limit_ = 0;
     deflection_tolerance_ = settings.value(kDeflectionToleranceKey, kDeflectionToleranceDefault).toDouble();
@@ -243,6 +256,7 @@ void AppSettings::persist() {
     settings.setValue(kGeometryLibraryKey, geometry_library_);
     settings.setValue(kShowStatsKey, show_stats_);
     settings.setValue(kBackfaceCullingKey, backface_culling_);
+    settings.setValue(kSectionCapsKey, section_caps_);
     settings.setValue(kVoidLimitKey, void_limit_);
     settings.setValue(kDeflectionToleranceKey, deflection_tolerance_);
     settings.setValue(kAngularToleranceKey, angular_tolerance_);

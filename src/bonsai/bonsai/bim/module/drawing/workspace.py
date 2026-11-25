@@ -281,8 +281,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         return tool.Ifc.get()
 
     @classmethod
-    def description(cls, context, operator):
-        return operator.description or ""
+    def description(cls, context, properties):
+        return properties.description or ""
 
     def _execute(self, context):
         if not (camera := context.scene.camera) or not tool.Ifc.get_entity(camera):
@@ -311,7 +311,24 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         related_objects = bpy.context.selected_objects
         created_objects = []
 
+        drawing = tool.Ifc.get_entity(bpy.context.scene.camera)
+        group = tool.Drawing.get_drawing_group(drawing)
+        drawing_annotations = set(tool.Drawing.get_group_elements(group) or []) if group else set()
+        skipped = 0
+
         for related_object in related_objects:
+            related_entity = tool.Ifc.get_entity(related_object)
+            if related_entity and related_entity.is_a("IfcAnnotation"):
+                continue
+            if related_entity and any(
+                annotation in drawing_annotations and annotation.ObjectType == object_type
+                for rel in getattr(related_entity, "ReferencedBy", []) or []
+                if rel.is_a("IfcRelAssignsToProduct")
+                for annotation in rel.RelatedObjects
+            ):
+                skipped += 1
+                continue
+
             obj = core.add_annotation(
                 tool.Ifc,
                 tool.Collector,
@@ -325,6 +342,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             )
             tool.Drawing.setup_annotation_object(obj, object_type, related_object, props.tag_rotation_mode)
             created_objects.append(obj)
+
+        if skipped:
+            self.report({"INFO"}, f"Skipped {skipped} object(s) already tagged with {object_type} in this drawing.")
 
         # Select the created annotation objects
         bpy.ops.object.select_all(action="DESELECT")

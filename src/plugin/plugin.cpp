@@ -130,8 +130,46 @@ namespace {
 		return boost::algorithm::istarts_with(basename, "ifcopenshell_") ? basename : "ifcopenshell_" + basename;
 	}
 
+#ifndef PLUGIN_MODULE_POSTFIX
+#define PLUGIN_MODULE_POSTFIX ""
+#endif
+#ifndef PLUGIN_DEBUG_MODULE_POSTFIX
+#define PLUGIN_DEBUG_MODULE_POSTFIX ""
+#endif
+
+	// On Windows, CMake gives Debug plug-ins a postfix (CMAKE_DEBUG_POSTFIX "_d") so that
+	// Debug and Release builds can be installed side by side. Their plug-ins aren't
+	// interchangeable, so only consider modules built in the same configuration as this host:
+	// a Debug host requires the postfix and a Release host skips modules that have it.
+	bool matches_build_configuration(const std::string& basename) {
+		const std::string postfix = PLUGIN_MODULE_POSTFIX;
+		const std::string debug_postfix = PLUGIN_DEBUG_MODULE_POSTFIX;
+		if (!postfix.empty()) {
+			return boost::algorithm::iends_with(basename, postfix);
+		}
+		return debug_postfix.empty() || !boost::algorithm::iends_with(basename, debug_postfix);
+	}
+
 	std::vector<std::string> platform_basenames(const std::string& basename) {
-		return {decorated_basename(basename)};
+		return {decorated_basename(basename) + PLUGIN_MODULE_POSTFIX};
+	}
+
+	std::vector<std::string> platform_basename_prefixes(const std::string& basename_prefix) {
+		return {decorated_basename(basename_prefix)};
+	}
+
+	// The core shared libraries share the ifcopenshell_ prefix with the plugins and are
+	// installed next to them, but they are linked rather than loaded by name and export no
+	// plugin entry points. Where libraries have no platform prefix (Windows) a prefix scan
+	// such as "geometry_" would otherwise match ifcopenshell_geometry_writer and try to
+	// load it as a plugin. Keep in sync with the OUTPUT_NAME of the core library targets.
+	bool is_core_library(const std::string& basename) {
+		for (const char* name : {"ifcopenshell_parse", "ifcopenshell_geometry", "ifcopenshell_geometry_writer", "ifcopenshell_plugin"}) {
+			if (boost::algorithm::iequals(basename, name)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 #ifdef _WIN32
@@ -157,7 +195,6 @@ namespace plugin {
 PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, std::filesystem::path (*default_search_path)());
 }
 }
-
 struct ifcopenshell::plugin::module::data {
 	metadata metadata_;
 	std::filesystem::path path_;
@@ -219,7 +256,7 @@ const std::vector<std::filesystem::path>& ifcopenshell::plugin::manager::search_
 std::vector<std::filesystem::path> ifcopenshell::plugin::manager::discover(const std::string& basename_prefix) const {
 	std::vector<std::filesystem::path> result;
 	const auto suffix = boost::dll::shared_library::suffix().string();
-	const auto basename_prefixes = platform_basenames(basename_prefix);
+	const auto basename_prefixes = platform_basename_prefixes(basename_prefix);
 
 	plugin_debug("discover prefix='" + basename_prefix + "' suffix='" + suffix + "' search_paths=" + std::to_string(search_paths_.size()));
 	for (const auto& search_path : search_paths_) {
@@ -240,9 +277,17 @@ std::vector<std::filesystem::path> ifcopenshell::plugin::manager::discover(const
 			}
 
 			const auto basename = filename.substr(0, filename.size() - suffix.size());
+			if (is_core_library(basename)) {
+				continue;
+			}
 			if (!std::any_of(basename_prefixes.begin(), basename_prefixes.end(), [&basename](const std::string& prefix) {
 				return boost::algorithm::istarts_with(basename, prefix);
 			})) {
+				continue;
+			}
+
+			if (!matches_build_configuration(basename)) {
+				plugin_debug("discover skip other build configuration " + path_string(entry.path()));
 				continue;
 			}
 
@@ -297,8 +342,11 @@ ifcopenshell::plugin::module ifcopenshell::plugin::manager::load(const std::file
 	const auto load_mode = boost::dll::load_mode::default_mode;
 #endif
 	auto library = std::make_shared<boost::dll::shared_library>(path, load_mode);
-	auto abi = library->get_alias<plugin_abi_fn>("ifcopenshell_plugin_abi_v1")();
-	validate_abi(abi);
+    if (!library->has("ifcopenshell_plugin_abi_v2")) {
+        throw std::runtime_error("Incompatible plugin ABI: expected ifcopenshell_plugin_abi_v2 in " + path_string(path));
+    }
+    auto abi = library->get_alias<plugin_abi_fn>("ifcopenshell_plugin_abi_v2")();
+    validate_abi(abi);
 	auto metadata = library->get_alias<plugin_metadata_fn>("ifcopenshell_plugin_metadata_v1")();
 	plugin_debug(std::string("load metadata kind=") + plugin_kind_name(metadata.kind_) +
 		" id='" + metadata.id + "' schema='" + metadata.schema + "' format='" + metadata.format + "'");
@@ -342,6 +390,15 @@ PLUGIN_API std::filesystem::path ifcopenshell::plugin::add_search_paths_or_defau
 		}
 		return {};
 	}
+
+#ifdef __EMSCRIPTEN__
+	// In WASM, manifest-driven loading uses the JS host to load side modules
+	// first, then native code resolves registration via dlsym(). Avoid eager
+	// dladdr()-based module path resolution unless the caller configured an
+	// explicit search path.
+	plugin_debug("no configured plugin search paths; skipping default module directory resolution in WASM");
+	return {};
+#endif
 
 	plugin_debug("using default plugin search path from module directory");
 	const auto path = default_search_path();
@@ -393,10 +450,11 @@ PLUGIN_API std::filesystem::path ifcopenshell::plugin::add_search_paths_or_defau
 	return path;
 }
 
-ifcopenshell::plugin::abi_info ifcopenshell::plugin::host_abi() {
-	abi_info abi;
+ifcopenshell::plugin::abi_info ifcopenshell::plugin::host_abi(bool safe_instance) {
+    abi_info abi;
 	abi.debug_build = is_debug_build();
-	abi.compiler_id = compiler_id();
+    abi.safe_instance = safe_instance;
+    abi.compiler_id = compiler_id();
 	abi.compiler_version = compiler_version();
 	abi.ifcopenshell_version = PLUGIN_IFCOPENSHELL_VERSION;
 	return abi;
@@ -412,23 +470,25 @@ void ifcopenshell::plugin::validate_abi(const abi_info& abi) {
 		" host_pointer_size=" + std::to_string(host.pointer_size) +
 		" plugin_debug=" + std::to_string(abi.debug_build) +
 		" host_debug=" + std::to_string(host.debug_build));
-	if (abi.plugin_api_version == host.plugin_api_version &&
-		abi.pointer_size == host.pointer_size &&
-		abi.debug_build == host.debug_build &&
-		abi.compiler_id == host.compiler_id &&
-		abi.compiler_version == host.compiler_version) {
-		plugin_debug("validate_abi compatible");
+    if (abi.plugin_api_version == host.plugin_api_version &&
+        abi.pointer_size == host.pointer_size &&
+        abi.debug_build == host.debug_build &&
+        abi.safe_instance == host.safe_instance &&
+        abi.compiler_id == host.compiler_id &&
+        abi.compiler_version == host.compiler_version) {
+        plugin_debug("validate_abi compatible");
 		return;
-	}
+    }
 
-	std::ostringstream stream;
+    std::ostringstream stream;
 	stream << "Incompatible plugin ABI";
 	stream << " (plugin api " << abi.plugin_api_version << ", host api " << host.plugin_api_version << ")";
 	stream << " (plugin compiler " << abi.compiler_id << " " << abi.compiler_version;
 	stream << ", host compiler " << host.compiler_id << " " << host.compiler_version << ")";
 	stream << " (plugin pointer size " << abi.pointer_size << ", host pointer size " << host.pointer_size << ")";
 	stream << " (plugin debug " << abi.debug_build << ", host debug " << host.debug_build << ")";
-	plugin_debug(stream.str());
+    stream << " (plugin safe instance " << abi.safe_instance << ", host safe instance " << host.safe_instance << ")";
+    plugin_debug(stream.str());
 	throw std::runtime_error(stream.str());
 }
 

@@ -112,7 +112,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal& in
 #endif
    }
 
-	return make_loft(settings_, inst, fn, cross_sections);
+	return make_loft(settings_, inst, fn, cross_sections, logger_);
 }
 
 #endif

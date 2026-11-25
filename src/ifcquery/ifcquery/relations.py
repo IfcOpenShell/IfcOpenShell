@@ -23,6 +23,7 @@ from typing import Any
 
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.structural
 import ifcopenshell.util.system
 
 
@@ -53,6 +54,42 @@ def _traverse_up(element: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
         chain.append(_ref(parent))
         current = parent
     return chain
+
+
+def _structural_relations(element: ifcopenshell.entity_instance) -> dict[str, Any]:
+    """Collect the structural analysis relationships of an element."""
+    util = ifcopenshell.util.structural
+    structural: dict[str, Any] = {}
+    if element.is_a("IfcStructuralItem") or element.is_a("IfcStructuralLoadGroup"):
+        structural["analysis_models"] = _ref_list(util.get_analysis_models(element))
+    if element.is_a("IfcStructuralMember"):
+        structural["connections"] = _ref_list(util.get_member_connections(element))
+        structural["building_elements"] = _ref_list(util.get_building_elements(element))
+    elif element.is_a("IfcStructuralConnection"):
+        structural["members"] = _ref_list(util.get_connection_members(element))
+    elif element.is_a("IfcElement"):
+        structural["structural_members"] = _ref_list(util.get_structural_members(element))
+    if element.is_a("IfcStructuralItem"):
+        structural["activities"] = _ref_list(util.get_item_activities(element))
+    elif element.is_a("IfcStructuralActivity"):
+        structural["item"] = _ref_or_none(next((r.RelatingElement for r in element.AssignedToStructuralItem), None))
+        structural["load_groups"] = _ref_list(
+            g for g in ifcopenshell.util.element.get_groups(element) if g.is_a("IfcStructuralLoadGroup")
+        )
+    elif element.is_a("IfcStructuralLoadGroup"):
+        if element.PredefinedType == "LOAD_COMBINATION":
+            factors = util.get_combination_factors(element)
+            structural["load_cases"] = [{**_ref(c), "factor": f} for c, f in factors.items()]
+        else:
+            combinations = [
+                g
+                for g in ifcopenshell.util.element.get_groups(element)
+                if g.is_a("IfcStructuralLoadGroup") and g.PredefinedType == "LOAD_COMBINATION"
+            ]
+            structural["load_combinations"] = [
+                {**_ref(c), "factor": util.get_combination_factors(c)[element]} for c in combinations
+            ]
+    return {k: v for k, v in structural.items() if v}
 
 
 def _all_relations(model: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
@@ -157,6 +194,11 @@ def _all_relations(model: ifcopenshell.file, element: ifcopenshell.entity_instan
     if connections:
         result["connections"] = connections
 
+    # Structural analysis
+    structural = _structural_relations(element)
+    if structural:
+        result["structural"] = structural
+
     return result
 
 
@@ -188,9 +230,14 @@ def relations(
     container, aggregate, nest, filled void, voided element), ``children``
     (contained, parts, components, openings), ``type_relationship``,
     ``groups``, ``systems``, ``zones``, ``material``, ``referenced_structures``
-    and ``connections`` (connected to/from, ports), plus a de-duplicated flat
-    ``elements`` list of everything referenced. Blocks with nothing to report
-    are omitted.
+    ``connections`` (connected to/from, ports) and ``structural`` (the
+    analysis models of a structural item or load group; the connections and
+    building elements of a structural member, the members of a connection,
+    the structural members of a building element; the activities on an item,
+    the item and load groups of an activity; the load cases of a load
+    combination or the combinations of a load case, each with its factor),
+    plus a de-duplicated flat ``elements`` list of everything referenced.
+    Blocks with nothing to report are omitted.
 
     :param model: The IFC model.
     :param element: The element to examine.

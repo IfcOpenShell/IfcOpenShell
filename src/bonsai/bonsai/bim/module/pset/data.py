@@ -84,12 +84,19 @@ class Data:
         # attribute values even in verbose mode, since they're typed IFC
         # attributes rather than IfcProperty entities with their own id/Unit.
         if not isinstance(verbose_value, dict):
-            return {"Name": name, "NominalValue": verbose_value, "UnitSymbol": ""}
+            return {"Name": name, "NominalValue": verbose_value, "UnitSymbol": "", "UnitUndefined": False}
 
         unit_symbol = ""
+        unit_undefined = False
         if (prop_id := verbose_value.get("id")) and (prop_entity := ifc_file.by_id(prop_id)):
             unit_symbol = tool.Pset.get_unit_symbol_for_prop(prop_entity, ifc_file)
-        return {"Name": name, "NominalValue": verbose_value["value"], "UnitSymbol": unit_symbol}
+            unit_undefined = tool.Pset.is_unit_undefined_for_prop(prop_entity, ifc_file)
+        return {
+            "Name": name,
+            "NominalValue": verbose_value["value"],
+            "UnitSymbol": unit_symbol,
+            "UnitUndefined": unit_undefined,
+        }
 
     @classmethod
     def format_pset_enum(cls, psets):

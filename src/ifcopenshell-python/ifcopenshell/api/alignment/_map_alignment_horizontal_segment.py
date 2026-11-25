@@ -25,6 +25,9 @@ import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment._get_cant_segment import _get_cant_segment
 
+# Spirals whose curvature changes only between their start and end radius
+SPIRALS = ("CLOTHOID", "CUBIC", "HELMERTCURVE", "BLOSSCURVE", "COSINECURVE", "SINECURVE")
+
 
 def _get_curve_factor(design_parameters: entity_instance) -> float:
     start_radius = design_parameters.StartRadiusOfCurvature
@@ -33,6 +36,17 @@ def _get_curve_factor(design_parameters: entity_instance) -> float:
 
     f = (0.0 if end_radius == 0.0 else length / end_radius) - (0.0 if start_radius == 0.0 else length / start_radius)
     return f
+
+
+def _map_constant_curvature(file: ifcopenshell.file, design_parameters: entity_instance) -> Sequence[entity_instance]:
+    """
+    Maps a spiral whose start and end radius are equal. Its curvature doesn't change, so it is a circular arc,
+    or a line if the radius is 0 (infinite), and its spiral parent curve can't be written because the spiral's
+    terms divide by the change in curvature.
+    """
+    if design_parameters.StartRadiusOfCurvature == 0.0:
+        return _map_line(file, design_parameters)
+    return _map_circular_arc(file, design_parameters)
 
 
 def _map_line(file: ifcopenshell.file, design_parameters: entity_instance) -> Sequence[entity_instance]:
@@ -470,6 +484,8 @@ def _map_viennese_bend(file: ifcopenshell.file, segment: entity_instance) -> Seq
     cant_factor = -420.0 * (gravity_centerline_height / length) * (cant_angle_end - cant_angle_start)
 
     f = _get_curve_factor(design_parameters)
+    if f == 0.0 and cant_factor == 0.0:
+        return _map_constant_curvature(file, design_parameters)
 
     a0 = length / start_radius if start_radius != 0.0 else 0.0  # constant term
     a1 = 0.0  # linear term
@@ -530,7 +546,10 @@ def _map_alignment_horizontal_segment(file: ifcopenshell.file, segment: entity_i
         raise TypeError(f"Expected to see type '{expected_type}', instead received '{segment.is_a()}'.")
 
     predefined_type = segment.DesignParameters.PredefinedType
-    if predefined_type == "LINE":
+    if predefined_type in SPIRALS and _get_curve_factor(segment.DesignParameters) == 0.0:
+        # a viennese bend's curvature can also change with the cant, so it checks for itself
+        result = _map_constant_curvature(file, segment.DesignParameters)
+    elif predefined_type == "LINE":
         result = _map_line(file, segment.DesignParameters)
     elif predefined_type == "CIRCULARARC":
         result = _map_circular_arc(file, segment.DesignParameters)
