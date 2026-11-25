@@ -2445,13 +2445,15 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"INFO"}, f"Editing {item.is_a()} geometry is not supported")
             return None
         tool.Ifc.link(item, obj.data)
-        # So leaving edit mode can tell an untouched profile from an edited one
         assert isinstance(mesh := obj.data, bpy.types.Mesh)
-        tool.Geometry.get_mesh_props(mesh).mesh_checksum = tool.Geometry.get_mesh_checksum(mesh)
         if item.is_a("IfcSweptAreaSolid"):
             # So leaving edit mode can tell a moved profile from a reshaped one
             mesh["bbim_profile_co"] = [c for v in mesh.vertices for c in v.co]
+            if item.is_a("IfcExtrudedAreaSolid"):
+                tool.Model.add_extrusion_handle(obj, item)
             mesh["bbim_profile_topology"] = tool.Model.get_profile_topology(obj)
+        # So leaving edit mode can tell an untouched profile from an edited one
+        tool.Geometry.get_mesh_props(mesh).mesh_checksum = tool.Geometry.get_mesh_checksum(mesh)
         return "PROFILE"
 
     def enable_edit_mode(self, context: bpy.types.Context) -> Union[None, set[str]]:
@@ -2618,27 +2620,27 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 changed_objs.append(obj)
 
-        if error := self.validate_profile_edits(changed_objs):
+        plans = {obj: plan for obj in changed_objs if (plan := self.plan_profile_edit(obj))}
+        if error := self.validate_profile_edits(changed_objs, plans):
             self.show_error(context, error)
             self.reenter_edit_mode(context, objs)
             return False
 
         ProfileDecorator.uninstall()
 
-        # A profile moved as a whole moves its item, as the export only keeps the profile's 2D shape
+        # Moving a profile moves its item and its handle sets its depth, as the export only keeps the 2D shape
         is_moved = False
-        for obj in changed_objs.copy():
-            if move := self.move_item_with_profile(obj):
-                is_moved = True
-                if move == "WHOLE":
-                    changed_objs.remove(obj)
-                    unchanged_objs.append(obj)
+        is_extruded = False
+        for obj, (offset, state, extrusion) in plans.items():
+            is_moved |= self.move_item_with_profile(obj, offset)
+            is_extruded |= self.edit_extrusion(obj, extrusion)
+            if state != "RESHAPED":
+                changed_objs.remove(obj)
+                unchanged_objs.append(obj)
         if is_moved:
             tool.Geometry.sync_item_positions()
 
         for obj in unchanged_objs:
-            obj.data.pop("bbim_profile_co", None)
-            obj.data.pop("bbim_profile_topology", None)
             item = tool.Geometry.get_active_representation(obj)
             assert item
             if not tool.Geometry.is_meshlike_item(item):
@@ -2652,8 +2654,12 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 failed_objs.append(obj)
                 errors.append(error if len(objs) == 1 else f"{obj.name}: {error}")
 
-        if changed_objs:
+        if changed_objs or is_extruded:
             tool.Geometry.reload_representation(tool.Geometry.get_geometry_props().representation_obj)
+
+        for obj in objs:
+            if obj not in failed_objs:
+                self.clear_profile_edit(obj)
 
         if failed_objs:
             self.show_error(context, "\n".join(errors))
@@ -2661,46 +2667,66 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             return False
         return True
 
-    def move_item_with_profile(self, obj: bpy.types.Object) -> Union[Literal["WHOLE", "OFFSET"], None]:
-        """Move an extrusion's item when its profile was moved, instead of baking the move into the profile.
-
-        If every vertex moved by the same amount, the whole move goes to the item, and the profile's shape is
-        unchanged. Otherwise, only the profile's average offset out of its plane goes to the item.
-        Moves ``obj`` and its mesh; call ``tool.Geometry.sync_item_positions`` afterwards.
-
-        :return: "WHOLE" if the profile only moved, "OFFSET" if it was also reshaped, or ``None`` if the item
-            doesn't move.
-        """
-        assert isinstance(mesh := obj.data, bpy.types.Mesh)
-        original = mesh.get("bbim_profile_co")
-        if original is not None:
-            del mesh["bbim_profile_co"]
-        # Edges or arc and circle markers can change without any vertex moving
-        topology = mesh.pop("bbim_profile_topology", None)
+    def plan_profile_edit(self, obj: bpy.types.Object) -> Union[tuple, None]:
+        """See ``tool.Model.plan_profile_edit``. ``None`` if ``obj`` isn't a swept solid's profile."""
         item = tool.Geometry.get_active_representation(obj)
+        assert isinstance(mesh := obj.data, bpy.types.Mesh)
         if not (item and item.is_a("IfcSweptAreaSolid")) or not mesh.vertices:
             return None
         co = np.empty(len(mesh.vertices) * 3)
         mesh.vertices.foreach_get("co", co)
         co = co.reshape(-1, 3)
+        handles = sorted(tool.Model.get_extrusion_handle_indices(obj))
+        is_profile = np.ones(len(co), dtype=bool)
+        is_profile[handles] = False
+        handle_co = co[handles[0]] if handles else None
+        is_locked = tool.Geometry.get_geometry_props().is_extrusion_direction_locked
+        is_topology_changed = mesh.get("bbim_profile_topology") != tool.Model.get_profile_topology(obj)
+        return tool.Model.plan_profile_edit(mesh, co[is_profile], handle_co, is_locked, is_topology_changed)
 
-        is_whole = False
-        if (
-            original is not None
-            and len(original) == co.size
-            and topology == tool.Model.get_profile_topology(obj)
-        ):
-            deltas = co - np.array(original).reshape(-1, 3)
-            offset = deltas.mean(axis=0)
-            is_whole = np.allclose(deltas, offset, atol=1e-5)
-        if not is_whole:
-            offset = np.array([0.0, 0.0, co[:, 2].mean()])
-        if np.allclose(offset, 0.0, atol=1e-7):
-            return None
+    def move_item_with_profile(self, obj: bpy.types.Object, offset: npt.NDArray[np.float64]) -> bool:
+        """Move ``obj`` by ``offset`` in its own frame, keeping its mesh in place.
 
+        Call ``tool.Geometry.sync_item_positions`` afterwards to write the item's Position.
+
+        :return: ``True`` if it moved.
+        """
+        if not offset.any():
+            return False
+        assert isinstance(mesh := obj.data, bpy.types.Mesh)
         mesh.transform(Matrix.Translation(-Vector(offset)))
         obj.matrix_world = obj.matrix_world @ Matrix.Translation(Vector(offset))
-        return "WHOLE" if is_whole else "OFFSET"
+        return True
+
+    def edit_extrusion(self, obj: bpy.types.Object, extrusion: Union[npt.NDArray[np.float64], None]) -> bool:
+        """Set an extrusion's depth and direction from its new extrusion vector, in metres in the item's frame.
+
+        :return: ``True`` if the IFC changed.
+        """
+        if extrusion is None:
+            return False
+        ifc_file = tool.Ifc.get()
+        item = tool.Geometry.get_active_representation(obj)
+        assert item
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        length = float(np.linalg.norm(extrusion))
+        item.Depth = length / unit_scale
+        direction = extrusion / length
+        old_direction = np.array(item.ExtrudedDirection.DirectionRatios, dtype=float)
+        if not np.allclose(direction, old_direction / np.linalg.norm(old_direction), atol=1e-9):
+            old_entity = item.ExtrudedDirection
+            item.ExtrudedDirection = ifc_file.createIfcDirection(direction.tolist())
+            ifcopenshell.util.element.remove_deep2(ifc_file, old_entity)
+        return True
+
+    def clear_profile_edit(self, obj: bpy.types.Object) -> None:
+        """Remove what Tab in stored on a profile to compare against."""
+        if isinstance(mesh := obj.data, bpy.types.Mesh):
+            for key in ("bbim_profile_co", "bbim_profile_topology", "bbim_extrusion_vector", "bbim_extrusion_handle"):
+                mesh.pop(key, None)
+        for group in list(obj.vertex_groups):
+            if tool.Model.EXTRUSION_HANDLE_GROUP in group.name:
+                obj.vertex_groups.remove(group)
 
     def is_unchanged_item_edit(self, obj: bpy.types.Object) -> bool:
         """Compare against the checksum taken when the item entered edit mode."""
@@ -2708,17 +2734,26 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         checksum = tool.Geometry.get_mesh_props(mesh).mesh_checksum
         return bool(checksum) and checksum == tool.Geometry.get_mesh_checksum(mesh)
 
-    def validate_profile_edits(self, objs: list[bpy.types.Object]) -> Union[str, None]:
+    def validate_profile_edits(
+        self, objs: list[bpy.types.Object], plans: dict[bpy.types.Object, tuple]
+    ) -> Union[str, None]:
         """Check the edited profiles and curves without writing anything to the IFC.
 
+        :param plans: ``plan_profile_edit`` of each swept solid's profile.
         :return: An error message, or ``None`` if every edit can be saved.
         """
         invalid: list[str] = []
         swept_areas: dict[int, str] = {}
         shared: list[str] = []
+        flat: list[str] = []
         for obj in objs:
             item = tool.Geometry.get_active_representation(obj)
             assert item
+            plan = plans.get(obj)
+            if plan and plan[2] is not None and not tool.Model.is_valid_extrusion(obj.data, plan[2]):
+                flat.append(obj.name)
+            if plan and plan[1] != "RESHAPED":
+                continue  # The profile itself isn't rewritten
             if item.is_a("IfcSweptAreaSolid"):
                 result = tool.Model.auto_detect_profiles(obj, obj.data, Matrix())
                 is_valid = isinstance(result, dict) and result["profile_def"]
@@ -2738,13 +2773,15 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             if not is_valid:
                 invalid.append(obj.name)
 
-        if invalid and len(objs) == 1:
+        if invalid and not flat and len(objs) == 1:
             return "INVALID PROFILE"
         messages = []
         if invalid:
             messages.append(f"INVALID PROFILE: {', '.join(invalid)}")
         if shared:
             messages.append(f"These items share a profile, so edit them one at a time: {'; '.join(shared)}")
+        if flat:
+            messages.append(f"The extrusion handle can't reach or cross the profile: {', '.join(flat)}")
         return "\n".join(messages) or None
 
     def show_error(self, context: bpy.types.Context, error: str) -> None:

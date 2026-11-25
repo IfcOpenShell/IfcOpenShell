@@ -295,6 +295,15 @@ class BIMGeometryProperties(PropertyGroup):
         update=update_representation_obj,
     )
     item_objs: CollectionProperty(name="Item Objects", type=RepresentationItemObject)
+    is_extrusion_direction_locked: BoolProperty(
+        name="Lock Extrusion Direction",
+        description=(
+            "When editing an extruded item, moving its handle only changes the extrusion's depth. "
+            "Unlock to also tilt the extrusion direction.\n\nHotkey: Shift U, with the CAD tool"
+        ),
+        default=True,
+        update=lambda self, context: tool.Blender.update_all_viewports(context),
+    )
 
     def add_item_object(
         self, obj: bpy.types.Object, item: ifcopenshell.entity_instance, name: Optional[str] = None
@@ -331,4 +340,5 @@ class BIMGeometryProperties(PropertyGroup):
         mode: GeometryMode
         representation_obj: Union[bpy.types.Object, None]
         item_objs: bpy.types.bpy_prop_collection_idprop[RepresentationItemObject]
+        is_extrusion_direction_locked: bool
         representation_from_object: Union[bpy.types.Object, None]

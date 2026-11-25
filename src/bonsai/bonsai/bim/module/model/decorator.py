@@ -35,6 +35,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import mathutils
+import numpy as np
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
 from bpy_extras.view3d_utils import location_3d_to_region_2d
@@ -220,11 +221,15 @@ class ProfileDecorator:
 
         arc_groups = []
         circle_groups = []
+        handle_groups = set()
         for i, group in enumerate(obj.vertex_groups):
             if "IFCARCINDEX" in group.name:
                 arc_groups.append(i)
             elif "IFCCIRCLE" in group.name:
                 circle_groups.append(i)
+            elif tool.Model.EXTRUSION_HANDLE_GROUP in group.name:
+                handle_groups.add(i)
+        handles: list[bmesh.types.BMVert] = []
 
         arcs = {}
         circles = {}
@@ -240,6 +245,12 @@ class ProfileDecorator:
             all_vertices.append(co)
             if vertex.hide:
                 continue
+
+            if handle_groups and deform_layer:
+                if handle_groups.intersection(tool.Blender.bmesh_get_vertex_groups(vertex, deform_layer)):
+                    handles.append(vertex)
+                    (selected_vertices if vertex.select else special_vertices).append(co)
+                    continue
 
             is_arc, is_circle = False, False
             # deform_layer is None if there are no verts assigned to vertex groups
@@ -295,6 +306,9 @@ class ProfileDecorator:
         self.draw_batch("LINES", all_vertices, unselected_elements_color, unselected_edges)
         self.draw_batch("LINES", all_vertices, selected_elements_color, selected_edges)
 
+        if handles:
+            self.draw_extrusion(obj, bm, set(handles), special_elements_color, background_elements_color)
+
         self.draw_batch("POINTS", unselected_vertices, tool.Blender.transparent_color(unselected_elements_color, 0.5))
         self.draw_batch("POINTS", error_vertices, error_elements_color)
         self.draw_batch("POINTS", special_vertices, special_elements_color)
@@ -347,6 +361,36 @@ class ProfileDecorator:
         self.draw_batch("POINTS", circle_centroids, background_elements_color)
         for verts, edges in circle_segments:
             self.draw_batch("LINES", verts, special_elements_color, edges)
+
+    def draw_extrusion(
+        self,
+        obj: bpy.types.Object,
+        bm: bmesh.types.BMesh,
+        handles: set[bmesh.types.BMVert],
+        line_color,
+        ghost_color,
+    ) -> None:
+        """Draw a line from the profile's centre to its extrusion handle, and the extrusion's far end as it will
+        be saved."""
+        mesh = obj.data
+        if "bbim_extrusion_vector" not in mesh:
+            return
+        handle = next(iter(handles))
+        all_co = np.array([v.co for v in bm.verts], dtype=float)
+        is_profile = np.array([v not in handles for v in bm.verts])
+        profile_co = all_co[is_profile]
+        if not len(profile_co):
+            return
+        is_locked = tool.Geometry.get_geometry_props().is_extrusion_direction_locked
+        _, _, extrusion = tool.Model.plan_profile_edit(mesh, profile_co, handle.co, is_locked)
+        end = extrusion if extrusion is not None else np.array(mesh["bbim_extrusion_vector"], dtype=float)
+
+        matrix = obj.matrix_world
+        centre = profile_co.mean(axis=0)
+        self.draw_batch("LINES", [tuple(matrix @ Vector(centre)), tuple(matrix @ handle.co)], line_color, [(0, 1)])
+        ghost = [tuple(matrix @ Vector(co + end)) for co in all_co]
+        edges = [(e.verts[0].index, e.verts[1].index) for e in bm.edges if not e.hide]
+        self.draw_batch("LINES", ghost, ghost_color, edges)
 
     def create_matrix(self, p, x, y, z):
         return Matrix([x, y, z, p]).to_4x4().transposed()

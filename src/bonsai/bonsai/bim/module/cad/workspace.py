@@ -65,6 +65,7 @@ class CadTool(WorkSpaceTool):
         ("bim.cad_hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
         ("bim.cad_hotkey", {"type": "R", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_R")]}),
         ("bim.cad_hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
+        ("bim.cad_hotkey", {"type": "U", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_U")]}),
         ("bim.cad_hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
         ("bim.cad_hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
     )
@@ -137,6 +138,22 @@ class CadTool(WorkSpaceTool):
             add_layout_hotkey_operator(
                 row, "Reset Vertex", "S_X", bpy.ops.bim.reset_vertex.__doc__.split("\n", 1)[1].strip(), ui_context
             )
+
+            item = tool.Geometry.get_representation_item(obj)
+            if item and item.is_a("IfcExtrudedAreaSolid"):
+                gprops = tool.Geometry.get_geometry_props()
+                is_locked = gprops.is_extrusion_direction_locked
+                row = layout.row(align=True)
+                row.prop(
+                    gprops,
+                    "is_extrusion_direction_locked",
+                    text="Direction",
+                    icon="LOCKED" if is_locked else "UNLOCKED",
+                )
+                if ui_context != "TOOL_HEADER":
+                    row.label(text="", icon="EVENT_SHIFT")
+                    row.separator(factor=1)
+                    row.label(text="", icon="EVENT_U")
 
         elif (
             isinstance(data, tool.Geometry.TYPES_WITH_MESH_PROPERTIES)
@@ -335,6 +352,13 @@ class CadHotkey(bpy.types.Operator):
 
     def hotkey_S_T(self):
         bpy.ops.bim.cad_mitre()
+
+    def hotkey_S_U(self):
+        obj = bpy.context.active_object
+        item = tool.Geometry.get_representation_item(obj) if obj else None
+        if item and item.is_a("IfcExtrudedAreaSolid"):
+            gprops = tool.Geometry.get_geometry_props()
+            gprops.is_extrusion_direction_locked = not gprops.is_extrusion_direction_locked
 
     def hotkey_S_V(self):
         if tool.Geometry.is_profile_object_active():
