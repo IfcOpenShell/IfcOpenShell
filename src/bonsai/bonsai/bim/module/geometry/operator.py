@@ -2594,14 +2594,6 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc.finish_edit(obj)
         return {"FINISHED"}
 
-    def get_direct_edit_checksum(self, obj: bpy.types.Object) -> tuple[str, str, tuple[int, ...]]:
-        """Geometry, material slots and per-face material assignment of a mesh edited in plain
-        edit mode, so assigning materials to faces also counts as a change worth saving."""
-        mesh = obj.data
-        assert isinstance(mesh, bpy.types.Mesh)
-        material_indices = tuple(p.material_index for p in mesh.polygons)
-        return (tool.Geometry.get_mesh_checksum(mesh), tool.Geometry.get_material_checksum(obj), material_indices)
-
     def edit_representation_item(self, obj: bpy.types.Object) -> None:
         props = tool.Geometry.get_geometry_props()
         item = tool.Geometry.get_active_representation(obj)
@@ -2777,6 +2769,14 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         }
 
         return element.ObjectType in annotation_types_with_order
+
+    def get_direct_edit_checksum(self, obj: bpy.types.Object) -> tuple[str, str, tuple[int, ...]]:
+        """Geometry, material slots and per-face material assignment of a mesh edited in plain
+        edit mode, so assigning materials to faces also counts as a change worth saving."""
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        material_indices = tuple(p.material_index for p in mesh.polygons)
+        return (tool.Geometry.get_mesh_checksum(mesh), tool.Geometry.get_material_checksum(obj), material_indices)
 
 
 class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
