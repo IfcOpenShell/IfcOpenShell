@@ -259,10 +259,10 @@ class SetGroupVisibility(bpy.types.Operator):
     mode: bpy.props.StringProperty(name="Mode")
 
     @classmethod
-    def description(cls, context, operator):
-        if operator.mode == "HIDE":
+    def description(cls, context, properties):
+        if properties.mode == "HIDE":
             return "Hides the selected group and all children.\n" + "ALT+CLICK to ignore children"
-        elif operator.mode == "SHOW":
+        elif properties.mode == "SHOW":
             return "Shows the selected group and all children.\n" + "ALT+CLICK to ignore children"
         return "Isolate the selected group and all children.\n" + "ALT+CLICK to ignore children"
 

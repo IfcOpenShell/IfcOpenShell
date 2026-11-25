@@ -1,0 +1,118 @@
+# Third-party wheels bundled with the Bonsai extension.
+# Lives separately from Bonsai's `pyproject.toml`, so `[tool.uv]` settings below only apply to the bundled wheels.
+
+[project]
+name = "bonsai-bundled-wheels"
+version = "0.0.0"
+# Check only versions needed for Blender.
+# Blender < 5.1 - 3.11.
+# Blender >= 5.1 - 3.13
+requires-python = ">=3.11,!=3.12.*,<3.14"
+dependencies = [
+    "gitpython>=3.2.1",
+    # IfcOpenShell dependency - support for new typing features
+    "typing-extensions>=4.16.0",
+    # Required by IfcCSV
+    "pandas>=3.1.1",
+    "openpyxl>=3.1.5",
+    # Required by IFCCityJSON
+    "cjio>=0.8,<0.10",
+    # Required in general for sorting all sorts of stuff in a nice way
+    "natsort>=8.4.0",
+    # Provides express rule validation for ifcopenshell.validate
+    # Blender's extension wheels take precedence over its Python site-packages.
+    # Keep this cap in sync with pyproject.toml and scripts/setup_pytest.py for pytest-bdd.
+    "pytest<9.2",
+    # Provides Brickschema functionality
+    # Is not platform specific but has platform specific dependencies.
+    # The SQLAlchemy store must be 0.7.1 or later (SQLAlchemy 2.1, rdflib 7, and the
+    # store.transaction() that brickschema 0.8 runs its persistent graph through).
+    "brickschema>=0.8.0",
+    "brickschema-rdflib-sqlalchemy>=0.7.1",
+    "alembic>=1.20.1",
+    # Required for SVG to DXF conversion
+    "ezdxf>=1.4.5",
+    # Required by bcf
+    "xsdata>=26.10",
+    "xmlschema>=4.3.2",
+    "elementpath>=5.1.4",
+    "six>=1.17.0",
+    # Required by drawing module
+    "lxml>=6.1.3",
+    # Required by drawing module for markdown hyperlinks in annotations
+    "markdown-it-py>=4.2.0",
+    "mdurl>=0.1.2",
+    # Required by qto and drawing module
+    "shapely>=2.2.0",
+    # Required by the BIM type manager thumbnail generator
+    "pillow>=13.0.0",
+    # Provides mustache templating in construction docs and web UI data
+    "pystache>=0.6.8",
+    # Provides SVG export in construction documentation
+    "svgwrite>=1.4.3",
+    # Provides fuzzy date parsing for construction sequencing
+    "python-dateutil>=4.0.0",
+    # Provides duration parsing for construction sequencing
+    "isodate>=0.7.2",
+    # Provides networkx graph analysis for project dependency calculations
+    "networkx>=3.6",
+    # Required by IFCDiff
+    "deepdiff>=9.0.0",
+    # Required by IFCCSV and ifcopenshell.util.selector
+    "lark>=1.3.1",
+    # Required by IFC4D
+    "pyp6xer>=2.0",
+    # Required by web module
+    # Is not platform specific but has platform specific dependencies.
+    "python-socketio[asyncio-client]>=5.18.1",
+    "aiohttp>=3.14.5",
+    # Required to access platform specific paths
+    "platformdirs>=4.14.5",
+    # Required by light module
+    "pytz>=2026.6",
+    "tzfpy>=2.1.2",
+    "pyradiance>=1.1.5",
+    # Required by ifctester web ui.
+    "flask>=3.1.3",
+]
+
+[tool.uv]
+# Only a list of dependencies, there's no package to build.
+package = false
+
+preview-features = [
+    "minimum-libc-version",
+    # Disable warning on running experimental `uv audit`.
+    "audit-command",
+]
+
+# Ensure each dependecny has a wheel, no building from source.
+no-build = true
+
+# Keep in sync with `cooldown` in `.github/dependabot.yml`.
+exclude-newer = "P7D"
+
+# See Blender glibc requirements in https://www.blender.org/download/requirements/
+minimum-libc-version = { glibc = "2.28" }
+
+# `implementation_name == 'cpython'` filter is currently useless, due to a bug in uv.
+# see https://github.com/astral-sh/uv/issues/23270.
+# Require that the package is available on the following platforms:
+environments = [
+    # `platform_release` is Darwin version.
+    # Also comes from Blender requirements - it requires Mac 11+ -> Darwin 20+.
+    # Got to specify both boundaries for `platform_release`, otherwise wheels that do not support Darwin 20 might slip in.
+    # In the future can be replaced with `minimum-macos-version` setting, see https://github.com/astral-sh/uv/pull/23230.
+    #
+    # macOS on Apple Silicon (ARM)
+    "implementation_name == 'cpython' and sys_platform == 'darwin' and platform_machine == 'arm64' and platform_release >= '20' and platform_release < '21'",
+    # Linux on x86_64 (Intel/AMD)
+    "implementation_name == 'cpython' and sys_platform == 'linux' and platform_machine == 'x86_64'",
+    # Windows on x86_64 (Intel/AMD)
+    "implementation_name == 'cpython' and sys_platform == 'win32' and platform_machine == 'AMD64'",
+]
+
+# Ask uv to use as less different package versions across different Python versions as possible,
+# for reproducibility.
+# Currently it's not possible to ask it to always resolve to a single one.
+fork-strategy = "fewest"

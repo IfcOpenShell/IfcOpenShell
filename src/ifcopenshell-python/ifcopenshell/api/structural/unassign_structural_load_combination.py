@@ -19,7 +19,9 @@
 
 import ifcopenshell
 import ifcopenshell.api.owner
+import ifcopenshell.api.structural
 import ifcopenshell.util.element
+import ifcopenshell.util.structural
 
 
 def unassign_structural_load_combination(
@@ -29,21 +31,53 @@ def unassign_structural_load_combination(
 ) -> None:
     """Removes a load case from a load combination
 
+    The load case is taken out wherever it is in the combination: grouped
+    into it directly, or through a load group that gives it its factor, as
+    IFC2X3's LOAD_COMBINATION_GROUP does (see
+    :func:`ifcopenshell.util.structural.get_combination_factors`). Such a
+    group left grouping nothing is taken out of the combination too, and is
+    removed if nothing else groups it.
+
     If the load case isn't in the combination, nothing will happen.
 
-    :param load_case: The IfcStructuralLoadCase to remove from the combination.
+    :param load_case: The load case to remove from the combination: an
+        IfcStructuralLoadCase, or an IfcStructuralLoadGroup of type LOAD_CASE.
     :param load_combination: The IfcStructuralLoadGroup of type
         LOAD_COMBINATION.
     :return: None
     """
-    for rel in load_combination.IsGroupedBy:
-        if load_case not in rel.RelatedObjects:
+    factor_groups = ifcopenshell.util.structural.get_combination_factor_groups(load_combination)
+    for group in [load_combination] + factor_groups:
+        for rel in list(group.IsGroupedBy):
+            if load_case in rel.RelatedObjects:
+                _remove_from_group(file, rel, load_case)
+    within = {g.id() for g in [load_combination] + factor_groups}
+    # Those furthest from the combination first, so that a group emptied by removing one in it goes too.
+    for group in reversed(factor_groups):
+        if any(rel.RelatedObjects for rel in group.IsGroupedBy):
             continue
-        if len(rel.RelatedObjects) == 1:
-            history = rel.OwnerHistory
-            file.remove(rel)
-            if history:
-                ifcopenshell.util.element.remove_deep2(file, history)
-        else:
-            rel.RelatedObjects = [o for o in rel.RelatedObjects if o != load_case]
-            ifcopenshell.api.owner.update_owner_history(file, element=rel)
+        for rel in list(group.HasAssignments or ()):
+            if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.id() in within:
+                _remove_from_group(file, rel, group)
+        if not _is_used(file, group):
+            ifcopenshell.api.structural.remove_structural_load_group(file, load_group=group)
+
+
+def _remove_from_group(
+    file: ifcopenshell.file, rel: ifcopenshell.entity_instance, related: ifcopenshell.entity_instance
+) -> None:
+    if len(rel.RelatedObjects) == 1:
+        history = rel.OwnerHistory
+        file.remove(rel)
+        if history:
+            ifcopenshell.util.element.remove_deep2(file, history)
+    else:
+        rel.RelatedObjects = [o for o in rel.RelatedObjects if o != related]
+        ifcopenshell.api.owner.update_owner_history(file, element=rel)
+
+
+def _is_used(file: ifcopenshell.file, group: ifcopenshell.entity_instance) -> bool:
+    """Whether a load group is in another group, or loads an analysis model"""
+    return any(rel.is_a("IfcRelAssignsToGroup") for rel in group.HasAssignments or ()) or any(
+        i.is_a("IfcStructuralAnalysisModel") for i in file.get_inverse(group)
+    )

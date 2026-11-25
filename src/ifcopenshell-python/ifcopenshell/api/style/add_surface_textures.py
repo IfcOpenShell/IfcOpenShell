@@ -24,7 +24,7 @@ from typing_extensions import TypedDict
 import ifcopenshell
 
 if TYPE_CHECKING:
-    import bpy  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+    import bpy  # pyright: ignore[reportMissingImports]  # ty:ignore[import-not-found]
 
 
 class TextureDict(TypedDict, extra_items=Any):

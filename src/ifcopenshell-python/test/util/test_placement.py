@@ -19,8 +19,10 @@
 import numpy as np
 import pytest
 
+import ifcopenshell
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+import ifcopenshell.guid
 import ifcopenshell.util.placement as subject
 import test.bootstrap
 
@@ -155,3 +157,247 @@ class TestGetStoreyElevationIFC4(test.bootstrap.IFC4):
         assert subject.get_storey_elevation(storey) == 0.0
         building = self.file.createIfcBuilding()
         assert subject.get_storey_elevation(building) == 0.0
+
+
+def create_placement(file, location, x_axis=None, relative_to=None):
+    return file.createIfcLocalPlacement(
+        relative_to,
+        file.createIfcAxis2Placement3D(
+            file.createIfcCartesianPoint(location),
+            None,
+            file.createIfcDirection(x_axis) if x_axis else None,
+        ),
+    )
+
+
+def create_polyline(file, points):
+    return file.createIfcPolyline([file.createIfcCartesianPoint(p) for p in points])
+
+
+def create_grid_axis(file, axes="UAxes", curve=None, object_placement=None):
+    axis = file.createIfcGridAxis("A", curve, True)
+    grid = file.createIfcGrid(ifcopenshell.guid.new(), ObjectPlacement=object_placement)
+    setattr(grid, axes, [axis])
+    return axis
+
+
+class TestGetGridAxisCoordinatesIFC4(test.bootstrap.IFC4):
+    def test_getting_the_points_of_a_polyline_axis(self):
+        axis = create_grid_axis(self.file, curve=create_polyline(self.file, ((0.0, 0.0), (10.0, 0.0))))
+        assert np.allclose(subject.get_grid_axis_coordinates(axis), [[0.0, 0.0, 0.0], [10.0, 0.0, 0.0]])
+
+    def test_applying_the_grid_placement(self):
+        axis = create_grid_axis(
+            self.file,
+            curve=create_polyline(self.file, ((0.0, 0.0), (10.0, 0.0))),
+            object_placement=create_placement(self.file, (5.0, 5.0, 1.0), x_axis=(0.0, 1.0, 0.0)),
+        )
+        assert np.allclose(subject.get_grid_axis_coordinates(axis), [[5.0, 5.0, 1.0], [5.0, 15.0, 1.0]])
+
+    def test_applying_a_placement_relative_to_another(self):
+        site = create_placement(self.file, (100.0, 0.0, 0.0))
+        axis = create_grid_axis(
+            self.file,
+            curve=create_polyline(self.file, ((0.0, 0.0), (0.0, 10.0))),
+            object_placement=create_placement(self.file, (0.0, 50.0, 0.0), relative_to=site),
+        )
+        assert np.allclose(subject.get_grid_axis_coordinates(axis), [[100.0, 50.0, 0.0], [100.0, 60.0, 0.0]])
+
+    def test_keeping_the_z_of_3d_points(self):
+        axis = create_grid_axis(self.file, curve=create_polyline(self.file, ((0.0, 0.0, 2.0), (10.0, 0.0, 2.0))))
+        assert np.allclose(subject.get_grid_axis_coordinates(axis), [[0.0, 0.0, 2.0], [10.0, 0.0, 2.0]])
+
+    @pytest.mark.parametrize("axes", ("UAxes", "VAxes", "WAxes"))
+    def test_finding_the_grid_from_any_axis_list(self, axes):
+        axis = create_grid_axis(
+            self.file,
+            axes=axes,
+            curve=create_polyline(self.file, ((0.0, 0.0), (1.0, 0.0))),
+            object_placement=create_placement(self.file, (0.0, 0.0, 3.0)),
+        )
+        assert np.allclose(subject.get_grid_axis_coordinates(axis), [[0.0, 0.0, 3.0], [1.0, 0.0, 3.0]])
+
+    def test_getting_the_points_of_an_indexed_poly_curve_without_segments(self):
+        points = self.file.createIfcCartesianPointList2D(((0.0, 0.0), (5.0, 0.0), (10.0, 0.0)))
+        axis = create_grid_axis(self.file, curve=self.file.createIfcIndexedPolyCurve(points))
+        assert np.allclose(
+            subject.get_grid_axis_coordinates(axis), [[0.0, 0.0, 0.0], [5.0, 0.0, 0.0], [10.0, 0.0, 0.0]]
+        )
+
+    def test_walking_the_line_segments_of_an_indexed_poly_curve(self):
+        points = self.file.createIfcCartesianPointList2D(((0.0, 0.0), (5.0, 0.0), (10.0, 0.0)))
+        segments = [self.file.createIfcLineIndex((3, 2)), self.file.createIfcLineIndex((2, 1))]
+        axis = create_grid_axis(self.file, curve=self.file.createIfcIndexedPolyCurve(points, segments))
+        assert np.allclose(
+            subject.get_grid_axis_coordinates(axis), [[10.0, 0.0, 0.0], [5.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+        )
+
+    def test_subdividing_the_arc_of_an_indexed_poly_curve(self):
+        points = self.file.createIfcCartesianPointList2D(((0.0, 0.0), (4.0, 0.0), (5.0, 1.0), (4.0, 2.0)))
+        segments = [self.file.createIfcLineIndex((1, 2)), self.file.createIfcArcIndex((2, 3, 4))]
+        axis = create_grid_axis(
+            self.file,
+            curve=self.file.createIfcIndexedPolyCurve(points, segments),
+            object_placement=create_placement(self.file, (10.0, 0.0, 0.0)),
+        )
+        coordinates = subject.get_grid_axis_coordinates(axis)
+        assert len(coordinates) > 3
+        assert np.allclose(coordinates[:2], [[10.0, 0.0, 0.0], [14.0, 0.0, 0.0]])
+        assert np.allclose(coordinates[-1], [14.0, 2.0, 0.0])
+        assert np.allclose(np.linalg.norm(coordinates[1:] - (14.0, 1.0, 0.0), axis=1), 1.0)
+        assert np.all(coordinates[1:, 0] >= 14.0 - 1e-9)
+
+    def test_walking_a_circle_axis(self):
+        circle = self.file.createIfcCircle(
+            self.file.createIfcAxis2Placement2D(self.file.createIfcCartesianPoint((1.0, 2.0))), 5.0
+        )
+        axis = create_grid_axis(self.file, curve=circle)
+        coordinates = subject.get_grid_axis_coordinates(axis)
+        assert len(coordinates) > 4
+        assert np.allclose(coordinates[0], [6.0, 2.0, 0.0])
+        assert np.allclose(coordinates[-1], coordinates[0])
+        assert np.allclose(np.linalg.norm(coordinates - (1.0, 2.0, 0.0), axis=1), 5.0)
+
+    def test_walking_a_trimmed_circle_axis(self):
+        circle = self.file.createIfcCircle(
+            self.file.createIfcAxis2Placement2D(self.file.createIfcCartesianPoint((0.0, 0.0))), 5.0
+        )
+        curve = self.file.createIfcTrimmedCurve(
+            circle,
+            [self.file.createIfcCartesianPoint((5.0, 0.0))],
+            [self.file.createIfcCartesianPoint((0.0, 5.0))],
+            True,
+            "CARTESIAN",
+        )
+        coordinates = subject.get_grid_axis_coordinates(create_grid_axis(self.file, curve=curve))
+        assert len(coordinates) > 2
+        assert np.allclose(coordinates[0], [5.0, 0.0, 0.0])
+        assert np.allclose(coordinates[-1], [0.0, 5.0, 0.0])
+        assert np.allclose(np.linalg.norm(coordinates, axis=1), 5.0)
+        assert np.all(coordinates[:, :2] >= -1e-9)
+
+    def test_walking_a_composite_curve_axis(self):
+        segments = [
+            self.file.createIfcCompositeCurveSegment(
+                "CONTINUOUS", True, create_polyline(self.file, ((0.0, 0.0), (4.0, 0.0)))
+            ),
+            self.file.createIfcCompositeCurveSegment(
+                "CONTINUOUS", False, create_polyline(self.file, ((4.0, 3.0), (4.0, 0.0)))
+            ),
+        ]
+        axis = create_grid_axis(self.file, curve=self.file.createIfcCompositeCurve(segments, False))
+        assert np.allclose(subject.get_grid_axis_coordinates(axis), [[0.0, 0.0, 0.0], [4.0, 0.0, 0.0], [4.0, 3.0, 0.0]])
+
+    def test_keeping_discontinuous_composite_vertices(self):
+        segments = [
+            self.file.createIfcCompositeCurveSegment(
+                "DISCONTINUOUS", True, create_polyline(self.file, ((0.0, 0.0), (4.0, 0.0)))
+            ),
+            self.file.createIfcCompositeCurveSegment(
+                "DISCONTINUOUS", False, create_polyline(self.file, ((8.0, 3.0), (6.0, 1.0)))
+            ),
+        ]
+        curve = self.file.createIfcCompositeCurve(segments, False)
+        axis = create_grid_axis(self.file, curve=curve, object_placement=create_placement(self.file, (10.0, 20.0, 2.0)))
+        expected = np.array(((0.0, 0.0, 0.0), (4.0, 0.0, 0.0), (6.0, 1.0, 0.0), (8.0, 3.0, 0.0)))
+        coordinates = subject.get_grid_axis_coordinates(axis)
+        assert coordinates.shape == (4, 3)
+        assert np.allclose(coordinates, expected + (10.0, 20.0, 2.0))
+
+    def test_chaining_geometry_failures_as_axis_value_errors(self):
+        spline = self.file.createIfcBSplineCurveWithKnots(
+            2,
+            [self.file.createIfcCartesianPoint(p) for p in ((0.0, 0.0), (1.0, 2.0), (3.0, 0.0))],
+            "UNSPECIFIED",
+            False,
+            False,
+            (3, 3),
+            (0.0, 1.0),
+            "UNSPECIFIED",
+        )
+        curve = self.file.createIfcTrimmedCurve(
+            spline,
+            [self.file.createIfcParameterValue(0.0)],
+            [self.file.createIfcParameterValue(1.0)],
+            True,
+            "PARAMETER",
+        )
+        axis = create_grid_axis(self.file, curve=curve)
+        with pytest.raises(ValueError, match=rf"IfcGridAxis #{axis.id()} 'A'.*can not be interpreted") as error:
+            subject.get_grid_axis_coordinates(axis)
+        assert isinstance(error.value.__cause__, RuntimeError)
+        assert str(error.value.__cause__) in str(error.value)
+
+    def test_returning_project_length_units(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(self.file)
+        axis = create_grid_axis(
+            self.file,
+            curve=create_polyline(self.file, ((0.0, 0.0), (10000.0, 0.0))),
+            object_placement=create_placement(self.file, (5000.0, 0.0, 0.0)),
+        )
+        assert np.allclose(subject.get_grid_axis_coordinates(axis), [[5000.0, 0.0, 0.0], [15000.0, 0.0, 0.0]])
+
+    def test_raising_for_an_unbounded_axis(self):
+        line = self.file.createIfcLine(
+            self.file.createIfcCartesianPoint((0.0, 0.0)),
+            self.file.createIfcVector(self.file.createIfcDirection((1.0, 0.0)), 1.0),
+        )
+        axis = create_grid_axis(self.file, curve=line)
+        with pytest.raises(ValueError, match=rf"#{axis.id()} 'A' has an unbounded IfcLine as AxisCurve"):
+            subject.get_grid_axis_coordinates(axis)
+
+    def test_raising_for_an_axis_without_a_curve(self):
+        file = ifcopenshell.file.from_string(
+            "ISO-10303-21;HEADER;FILE_DESCRIPTION((''),'2;1');"
+            "FILE_NAME('','',(''),(''),'','','');FILE_SCHEMA(('IFC4'));ENDSEC;DATA;"
+            "#1=IFCGRIDAXIS('A',$,.T.);"
+            "#2=IFCGRID('0YvctVUKr0kugbFTf53O9L',$,$,$,$,$,$,(#1),(),$,$);"
+            "ENDSEC;END-ISO-10303-21;"
+        )
+        with pytest.raises(ValueError, match="#1 'A' has no AxisCurve"):
+            subject.get_grid_axis_coordinates(file.by_id(1))
+
+    def test_raising_for_an_axis_outside_a_grid(self):
+        axis = self.file.createIfcGridAxis("B", create_polyline(self.file, ((0.0, 0.0), (1.0, 0.0))), True)
+        with pytest.raises(ValueError, match=rf"#{axis.id()} 'B' belongs to no IfcGrid"):
+            subject.get_grid_axis_coordinates(axis)
+
+
+class TestGetGridAxisCoordinatesIFC4X3(test.bootstrap.IFC4X3):
+    def test_sampling_an_alignment_curve_axis(self):
+        segment = self.file.createIfcCurveSegment(
+            Transition="CONTINUOUS",
+            Placement=self.file.createIfcAxis2Placement2D(self.file.createIfcCartesianPoint((1.0, 2.0))),
+            SegmentStart=self.file.createIfcLengthMeasure(0.0),
+            SegmentLength=self.file.createIfcLengthMeasure(10.0),
+            ParentCurve=self.file.createIfcLine(
+                self.file.createIfcCartesianPoint((0.0, 0.0)),
+                self.file.createIfcVector(self.file.createIfcDirection((1.0, 0.0)), 1.0),
+            ),
+        )
+        axis = create_grid_axis(
+            self.file,
+            curve=self.file.createIfcCompositeCurve([segment], False),
+            object_placement=create_placement(self.file, (0.0, 0.0, 4.0)),
+        )
+        assert np.allclose(subject.get_grid_axis_coordinates(axis), [[1.0, 2.0, 4.0], [11.0, 2.0, 4.0]])
+
+    def test_applying_the_grid_placement(self):
+        axis = create_grid_axis(
+            self.file,
+            curve=create_polyline(self.file, ((0.0, 0.0), (10.0, 0.0))),
+            object_placement=create_placement(self.file, (2.0, 3.0, 4.0), x_axis=(0.0, 1.0, 0.0)),
+        )
+        assert np.allclose(subject.get_grid_axis_coordinates(axis), [[2.0, 3.0, 4.0], [2.0, 13.0, 4.0]])
+
+
+class TestGetGridAxisCoordinatesIFC2X3(test.bootstrap.IFC2X3):
+    def test_applying_the_grid_placement(self):
+        axis = create_grid_axis(
+            self.file,
+            axes="VAxes",
+            curve=create_polyline(self.file, ((0.0, 0.0), (10.0, 0.0))),
+            object_placement=create_placement(self.file, (1.0, 2.0, 0.0)),
+        )
+        assert np.allclose(subject.get_grid_axis_coordinates(axis), [[1.0, 2.0, 0.0], [11.0, 2.0, 0.0]])

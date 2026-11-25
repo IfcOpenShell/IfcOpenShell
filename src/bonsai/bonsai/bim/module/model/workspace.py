@@ -1109,8 +1109,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         return tool.Ifc.get()
 
     @classmethod
-    def description(cls, context, operator):
-        return operator.description or ""
+    def description(cls, context, properties):
+        return properties.description or ""
 
     def _execute(self, context):
         self.props = tool.Model.get_model_props()

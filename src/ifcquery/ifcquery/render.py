@@ -25,7 +25,9 @@ import tempfile
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.guid
+import ifcopenshell.util.placement
 import ifcopenshell.util.selector
+import ifcopenshell.util.unit
 
 try:
     import numpy as np
@@ -36,6 +38,12 @@ except ImportError:
     _HAS_PYVISTA = False
 
 VIEWS = ("iso", "top", "south", "north", "east", "west")
+
+# Structural analysis items are drawn as what they are: lines for curve members and connections,
+# points for point connections.
+STRUCTURAL_MEMBER_COLOUR = (40, 70, 160)
+STRUCTURAL_CONNECTION_COLOUR = (220, 110, 20)
+DIMMED_COLOUR = (180, 180, 180)
 
 
 def _apply_view(plotter: pv.Plotter, view: str) -> None:
@@ -70,6 +78,9 @@ def _add_shape(
         return
 
     raw_faces = np.array(geom.faces, dtype=int)
+    if raw_faces.size == 0 and shape.product.is_a("IfcStructuralItem"):
+        _add_structural_edges(shape.product, verts, np.array(geom.edges, dtype=int), plotter, highlight_ids)
+        return
     if raw_faces.size == 0 or raw_faces.size % 3 != 0:
         return  # degenerate geometry from kernel — skip silently
     faces = raw_faces.reshape(-1, 3)
@@ -98,22 +109,113 @@ def _add_shape(
         plotter.add_mesh(mesh, color=color, opacity=opacity, show_edges=False)
 
 
+def _structural_colour(
+    product: ifcopenshell.entity_instance, highlight_ids: frozenset[int] | None
+) -> tuple[tuple[int, int, int], float]:
+    """Colour and opacity of a structural item drawn as lines or points."""
+    if highlight_ids is not None and product.id() not in highlight_ids:
+        return DIMMED_COLOUR, 0.3
+    if product.is_a("IfcStructuralConnection"):
+        return STRUCTURAL_CONNECTION_COLOUR, 1.0
+    return STRUCTURAL_MEMBER_COLOUR, 1.0
+
+
+def _add_structural_edges(
+    product: ifcopenshell.entity_instance,
+    verts: np.ndarray,
+    edges: np.ndarray,
+    plotter: pv.Plotter,
+    highlight_ids: frozenset[int] | None,
+) -> None:
+    """Add the edges of a structural curve member or curve connection as lines."""
+    if edges.size == 0 or edges.size % 2 != 0:
+        return
+    pairs = edges.reshape(-1, 2)
+    lines = np.hstack([np.full((pairs.shape[0], 1), 2, dtype=int), pairs]).ravel()
+    color, opacity = _structural_colour(product, highlight_ids)
+    plotter.add_mesh(pv.PolyData(verts, lines=lines), color=color, opacity=opacity, line_width=4)
+
+
+def _point_connection_positions(
+    model: ifcopenshell.file, connections: list[ifcopenshell.entity_instance]
+) -> list[tuple[ifcopenshell.entity_instance, np.ndarray]]:
+    """World positions in metres of point connections represented by an IfcVertexPoint.
+
+    The geometry kernel gives no shape for a vertex, so its point is placed by hand.
+    """
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(model)
+    positions = []
+    for connection in connections:
+        if not connection.Representation:
+            continue
+        matrix = ifcopenshell.util.placement.get_placement(connection.ObjectPlacement, should_return_si=True)
+        for representation in connection.Representation.Representations:
+            for item in representation.Items:
+                if item.is_a("IfcVertexPoint") and item.VertexGeometry.is_a("IfcCartesianPoint"):
+                    local = np.array((list(item.VertexGeometry.Coordinates) + [0.0, 0.0])[:3]) * unit_scale
+                    positions.append((connection, (matrix @ np.append(local, 1.0))[:3]))
+    return positions
+
+
+def _add_structural_points(
+    positions: list[tuple[ifcopenshell.entity_instance, np.ndarray]],
+    plotter: pv.Plotter,
+    highlight_ids: frozenset[int] | None,
+) -> None:
+    """Add point connections as points, one mesh per colour."""
+    groups: dict[tuple[tuple[int, int, int], float], list[np.ndarray]] = {}
+    for connection, position in positions:
+        groups.setdefault(_structural_colour(connection, highlight_ids), []).append(position)
+    for (color, opacity), points in groups.items():
+        plotter.add_mesh(
+            pv.PolyData(np.array(points)),
+            color=color,
+            opacity=opacity,
+            point_size=12,
+            render_points_as_spheres=True,
+        )
+
+
+def _structural_iterator(
+    model: ifcopenshell.file, items: list[ifcopenshell.entity_instance]
+) -> ifcopenshell.geom.iterator | None:
+    """An iterator over structural items, with curves, which the kernel leaves out by default.
+
+    Turning curves on for the whole model would also give the Axis curves of walls and
+    beams as shapes of their own, so they are turned on for the structural items only.
+    """
+    if not items:
+        return None
+    settings = _build_geom_settings(model)
+    settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+    iterator = ifcopenshell.geom.iterator(settings, model, multiprocessing.cpu_count(), include=items)
+    return iterator if iterator.initialize() else None
+
+
 def _render_iterator(
     iterator: object,
     highlight_ids: list[int] | None,
     view: str,
+    structural_iterator: object | None = None,
+    structural_points: list[tuple[ifcopenshell.entity_instance, np.ndarray]] | None = None,
 ) -> bytes:
-    """Drive a geometry iterator into a pyvista plotter and return PNG bytes."""
+    """Drive geometry iterators into a pyvista plotter and return PNG bytes."""
     plotter = pv.Plotter(off_screen=True, window_size=(1280, 960))
     plotter.background_color = "white"
+    highlight = frozenset(highlight_ids) if highlight_ids else None
 
-    while True:
-        try:
-            _add_shape(iterator.get(), plotter, highlight_ids=frozenset(highlight_ids) if highlight_ids else None)
-        except Exception:
-            pass  # skip broken shapes, keep rendering the rest
-        if not iterator.next():
-            break
+    for it in (iterator, structural_iterator):
+        if it is None:
+            continue
+        while True:
+            try:
+                _add_shape(it.get(), plotter, highlight_ids=highlight)
+            except Exception:
+                pass  # skip broken shapes, keep rendering the rest
+            if not it.next():
+                break
+    if structural_points:
+        _add_structural_points(structural_points, plotter, highlight)
 
     plotter.reset_camera()
     _apply_view(plotter, view)
@@ -389,6 +491,10 @@ def render(
     """Render IFC model geometry to a PNG image.
 
     Supports both element instances and element types (e.g. ``IfcWallType``).
+    Structural analysis items are drawn from their topology, which the
+    geometry kernel leaves out by default: curve members and curve
+    connections as lines, point connections as points, surface members as
+    faces.
     When type entities are targeted — via *selector* or *element_ids* — a
     temporary copy of the model is used to create proxy occurrences that
     reference the type's RepresentationMaps; the original model is not
@@ -439,19 +545,20 @@ def render(
         return _render_with_types(model, types, selector_elements, element_ids, type_highlight_ids, view)
 
     # --- Regular element rendering ---
+    # Structural items are drawn in a pass of their own, with curves and points.
     settings = _build_geom_settings(model)
 
     if selector_elements is not None:
         if not selector_elements:
             raise ValueError(f"Selector {selector!r} matched only type entities (use a type selector or IfcElement)")
-        iterator = ifcopenshell.geom.iterator(
-            settings,
-            model,
-            multiprocessing.cpu_count(),
-            include=selector_elements,
+        structural_items = [e for e in selector_elements if e.is_a("IfcStructuralItem")]
+        others = [e for e in selector_elements if not e.is_a("IfcStructuralItem")]
+        iterator = (
+            ifcopenshell.geom.iterator(settings, model, multiprocessing.cpu_count(), include=others) if others else None
         )
     else:
-        exclude = list(model.by_type("IfcOpeningElement"))
+        structural_items = list(model.by_type("IfcStructuralItem"))
+        exclude = list(model.by_type("IfcOpeningElement")) + structural_items
         iterator = ifcopenshell.geom.iterator(
             settings,
             model,
@@ -459,7 +566,13 @@ def render(
             exclude=exclude if exclude else None,
         )
 
-    if not iterator.initialize():
+    if iterator is not None and not iterator.initialize():
+        iterator = None
+    structural_iterator = _structural_iterator(model, structural_items)
+    structural_points = _point_connection_positions(
+        model, [e for e in structural_items if e.is_a("IfcStructuralPointConnection")]
+    )
+    if iterator is None and structural_iterator is None and not structural_points:
         raise ValueError("No renderable geometry found in model (or selector matched nothing)")
 
-    return _render_iterator(iterator, element_ids, view)
+    return _render_iterator(iterator, element_ids, view, structural_iterator, structural_points)

@@ -37,6 +37,9 @@ from ifcquery import (
 from ifcquery import (
     render as render_mod,
 )
+from ifcquery import (
+    structural as structural_mod,
+)
 from ifcquery import validate as validate_mod
 
 
@@ -540,6 +543,10 @@ class IfcSession:
     def ifc_cost(self, max_depth: int | None = None) -> list[dict[str, Any]]:
         return cost_mod.cost(self._require_model(), max_depth=max_depth)
 
+    @_use_doc(structural_mod.structural)
+    def ifc_structural(self, max_depth: int | None = None) -> list[dict[str, Any]]:
+        return structural_mod.structural(self._require_model(), max_depth=max_depth)
+
     @_use_doc(schema.schema)
     def ifc_schema(self, entity_type: str) -> dict[str, Any]:
         return schema.schema(self._require_model(), entity_type)
@@ -942,6 +949,22 @@ class IfcSession:
                         "max_depth": {
                             "type": "integer",
                             "description": "Max levels of cost item expansion (omit for unlimited)",
+                        }
+                    },
+                    "required": [],
+                    "additionalProperties": False,
+                },
+            },
+            {
+                "type": "function",
+                "name": "ifc_structural",
+                "description": "List structural analysis models with their members, connections, load cases and load combinations. Use max_depth=2 on large models: each member, connection, case and combination without its own lists.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "max_depth": {
+                            "type": "integer",
+                            "description": "Levels to expand, the analysis models being level 1 (omit for unlimited)",
                         }
                     },
                     "required": [],

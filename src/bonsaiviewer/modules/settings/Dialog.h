@@ -66,6 +66,7 @@ private:
     QLineEdit* geometry_library_edit_ = nullptr;
     QCheckBox* show_stats_check_ = nullptr;
     QCheckBox* backface_culling_check_ = nullptr;
+    QCheckBox* section_caps_check_ = nullptr;
     QSpinBox* void_limit_spin_ = nullptr;
     QDoubleSpinBox* deflection_tolerance_spin_ = nullptr;
     QDoubleSpinBox* angular_tolerance_spin_ = nullptr;

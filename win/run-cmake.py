@@ -350,6 +350,16 @@ def main() -> None:
     cmake_args.extend(f"-D{var}={value}" for var, value in extra_vars.items())
     if Deps.values()["manifold"]:
         cmake_args.append("-DWITH_MANIFOLD=ON")
+
+    # Boost cmake configs require static libs on Windows,
+    # if there are multiple variants provided (e.g. Debug and Release),
+    # so setting `Boost_USE_STATIC_LIBS` explicitly is required.
+    # See https://github.com/boostorg/boost_install/issues/66
+    boost_install_dir = Deps.values()["boost"]
+    assert boost_install_dir is not None
+    boost_shared = boost_install_dir.name.startswith("boost-shared-")
+    cmake_args.append(f"-DBoost_USE_STATIC_LIBS={OFF_ON[not boost_shared]}")
+
     cmake_args += Deps.cmake_args()
     cmake_args += ARGS.extra_args
 

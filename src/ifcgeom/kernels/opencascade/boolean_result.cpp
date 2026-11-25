@@ -56,10 +56,14 @@ bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, s
 
 	for (auto& c : br->children) {
 		std::vector<ifcopenshell::geom::conversion_result> cr;
-		abstract_kernel::convert(c, cr);
+		if (!abstract_kernel::convert(c, cr) || cr.empty()) {
+			return false;
+		}
 		if (first && br->operation == taxonomy::boolean_result::SUBTRACTION) {
 			// @todo A will be null on union/intersection, intended?
-			ifcopenshell::geom::util::flatten_shape_list(cr, a, false, true, settings_.get<settings::Precision>().get());
+			if (!ifcopenshell::geom::util::flatten_shape_list(cr, a, false, true, tol) || a.IsNull()) {
+				return false;
+			}
 			first_item_style = c->surface_style;
 			if (!first_item_style && c->kind() == taxonomy::COLLECTION) {
 				// @todo recursively right?

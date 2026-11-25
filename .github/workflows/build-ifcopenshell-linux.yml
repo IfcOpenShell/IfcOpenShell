@@ -15,6 +15,9 @@ jobs:
             runner: ubuntu-22.04
             container:
               image: rockylinux:9
+              # See the PATH note on the linuxarm64 container below.
+              env:
+                PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
             ccache_key_suffix: rockylinux9
           - arch_suffix: linuxarm64
             runner: ubuntu-22.04-arm
@@ -38,7 +41,7 @@ jobs:
 
     steps:
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@v10.3.3
 
       - name: Install Python
         # Installs latest Python version so it's preferred by uv over Rocky's system Python.
