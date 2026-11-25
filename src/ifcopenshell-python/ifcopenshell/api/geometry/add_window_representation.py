@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import dataclasses
 from itertools import chain
-from typing import Any, Literal, Optional, Union, overload
+from typing import Any, Literal, overload
 
 import numpy as np
 
@@ -61,7 +61,7 @@ DEFAULT_PANEL_SCHEMAS = {
 
 
 def create_ifc_window_frame_simple(
-    builder: ShapeBuilder, size: np.ndarray, thickness: Union[list[float], float], position: Optional[np.ndarray] = None
+    builder: ShapeBuilder, size: np.ndarray, thickness: list[float] | float, position: np.ndarray | None = None
 ) -> list[ifcopenshell.entity_instance]:
     """`thickness` of the profile is defined as list in the following order:
     `(LEFT, TOP, RIGHT, BOTTOM)`
@@ -77,7 +77,7 @@ def create_ifc_window_frame_simple(
     np_XZ = [0, 2]
     th_left, th_up, th_right, th_bottom = thickness
 
-    def get_extruded_profile(profile: ifcopenshell.entity_instance):
+    def get_extruded_profile(profile: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         return builder.extrude(profile, size[np_Y], position=position, **builder.extrude_kwargs("Y"))
 
     # if all lining sides are present then we can just use two rectangles
@@ -179,7 +179,7 @@ def create_ifc_window(
     frame_thickness: float,
     glass_thickness: float,
     position: np.ndarray,
-    x_offsets: Optional[list[float]] = None,
+    x_offsets: list[float] | None = None,
 ) -> dict[str, list[ifcopenshell.entity_instance]]:
     """`lining_thickness` and `x_offsets` are expected to be defined as a list,
     similarly to `create_ifc_window_frame_simple` `thickness` argument"""
@@ -238,26 +238,26 @@ def create_ifc_window(
 # it's okay to use slots since we don't need dynamic attributes
 @dataclasses.dataclass(slots=True)
 class WindowLiningProperties:
-    LiningDepth: Optional[float] = None
+    LiningDepth: float | None = None
     """Optional, defaults to 50mm."""
 
-    LiningThickness: Optional[float] = None
+    LiningThickness: float | None = None
     """Optional, defaults to 50mm."""
 
-    LiningOffset: Optional[float] = None
+    LiningOffset: float | None = None
     """Offset to the wall. Optional, defaults to 50mm."""
 
-    LiningToPanelOffsetX: Optional[float] = None
+    LiningToPanelOffsetX: float | None = None
     """Offset from the wall. Optional, defaults to 25mm."""
 
     # that way it allows you to define overall_depth constant between all panels
     # and still have panels with different size:
     # overall_depth = lining_depth + offset_y
     # full offset from X axis = overall_depth - frame_depth.
-    LiningToPanelOffsetY: Optional[float] = None
+    LiningToPanelOffsetY: float | None = None
     """Offset from the lining. Optional, defaults to 25mm."""
 
-    MullionThickness: Optional[float] = None
+    MullionThickness: float | None = None
     """Mullion thickness (horizontal distance between panels).
 
     Applies to windows of types: DoublePanelVertical, TriplePanelBottom, TriplePanelTop,
@@ -265,17 +265,17 @@ class WindowLiningProperties:
 
     Optional, defaults to 50mm."""
 
-    FirstMullionOffset: Optional[float] = None
+    FirstMullionOffset: float | None = None
     """Distance from the first lining to the mullion center. Optional, defaults to 300mm."""
 
-    SecondMullionOffset: Optional[float] = None
+    SecondMullionOffset: float | None = None
     """Distance from the first lining to the second mullion center. 
 
     Applies to windows of type: TriplePanelVertical.
 
     Optional, defaults to 450mm."""
 
-    TransomThickness: Optional[float] = None
+    TransomThickness: float | None = None
     """Transom thickness (vertical distance between panels), works similar way to mullions.
 
     Applies to windows of types:DoublePanelHorizontal, TriplePanelBottom, TriplePanelTop,
@@ -283,10 +283,10 @@ class WindowLiningProperties:
 
     Optional, defaults to 50mm."""
 
-    FirstTransomOffset: Optional[float] = None
+    FirstTransomOffset: float | None = None
     """Optional, defaults to 300mm."""
 
-    SecondTransomOffset: Optional[float] = None
+    SecondTransomOffset: float | None = None
     """
     Applies to windows of type: TriplePanelHorizontal.
     Optional, defaults to 600mm."""
@@ -321,10 +321,10 @@ class WindowLiningProperties:
 
 @dataclasses.dataclass(slots=True)
 class WindowPanelProperties:
-    FrameDepth: Optional[float] = None
+    FrameDepth: float | None = None
     """Frame thickness by Y axis. Optional, defaults to 35 mm."""
 
-    FrameThickness: Optional[float] = None
+    FrameThickness: float | None = None
     """Frame thickness by X axis. Optional, defaults to 35 mm."""
 
     PanelPosition: None = None
@@ -357,13 +357,13 @@ def add_window_representation(
     file: ifcopenshell.file,
     *,  # keywords only as this API implementation is probably not final
     context: ifcopenshell.entity_instance,
-    overall_height: Optional[float] = None,
-    overall_width: Optional[float] = None,
+    overall_height: float | None = None,
+    overall_width: float | None = None,
     partition_type: WINDOW_TYPE = "SINGLE_PANEL",
-    lining_properties: Optional[Union[WindowLiningProperties, dict[str, Any]]] = None,
-    panel_properties: Optional[list[Union[WindowPanelProperties, dict[str, Any]]]] = None,
-    part_of_product: Optional[ifcopenshell.entity_instance] = None,
-    unit_scale: Optional[float] = None,
+    lining_properties: WindowLiningProperties | dict[str, Any] | None = None,
+    panel_properties: list[WindowPanelProperties | dict[str, Any]] | None = None,
+    part_of_product: ifcopenshell.entity_instance | None = None,
+    unit_scale: float | None = None,
 ) -> ifcopenshell.entity_instance:
     """units in usecase_settings expected to be in ifc project units
 
@@ -388,7 +388,6 @@ def add_window_representation(
     # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowPanelProperties.htm
     # define unit_scale first as it's going to be used setting default arguments
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file) if unit_scale is None else unit_scale
-    settings: dict[str, Any] = {"unit_scale": unit_scale}
 
     if lining_properties is None:
         lining_properties = WindowLiningProperties()
@@ -407,40 +406,46 @@ def add_window_representation(
         properties.initialize_properties(unit_scale)
         panel_properties[i] = dataclasses.asdict(properties)
 
-    settings.update(
-        {
-            "context": context,
-            "overall_height": overall_height if overall_height is not None else usecase.convert_si_to_unit(0.9),
-            "overall_width": overall_width if overall_width is not None else usecase.convert_si_to_unit(0.6),
-            "partition_type": partition_type,
-            "lining_properties": lining_properties,
-            "panel_properties": panel_properties,
-            "part_of_product": part_of_product,
-        }
+    return usecase.execute(
+        context,
+        unit_scale,
+        overall_height,
+        overall_width,
+        DEFAULT_PANEL_SCHEMAS[partition_type],
+        lining_properties,
+        panel_properties,
+        part_of_product,
     )
-
-    usecase.settings = settings
-    usecase.settings["panel_schema"] = DEFAULT_PANEL_SCHEMAS[usecase.settings["partition_type"]]
-    return usecase.execute()
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
+    def execute(
+        self,
+        context: ifcopenshell.entity_instance,
+        unit_scale: float,
+        overall_height: float | None,
+        overall_width: float | None,
+        panel_schema: list[list[int]],
+        lining_properties: dict[str, Any],
+        panel_properties: list[dict[str, Any]],
+        part_of_product: ifcopenshell.entity_instance | None,
+    ) -> ifcopenshell.entity_instance:
+        self.unit_scale = unit_scale
+        if overall_height is None:
+            overall_height = self.convert_si_to_unit(0.9)
+        if overall_width is None:
+            overall_width = self.convert_si_to_unit(0.6)
+
         builder = ShapeBuilder(self.file)
         np_X, np_Y, np_Z = 0, 1, 2
-        overall_height: float = self.settings["overall_height"]
-        overall_width: float = self.settings["overall_width"]
 
-        if self.settings["context"].TargetView == "ELEVATION_VIEW":
+        if context.TargetView == "ELEVATION_VIEW":
             rect = builder.rectangle(V(overall_width, 0, overall_height))
-            representation_evelevation = builder.get_representation(self.settings["context"], rect)
+            representation_evelevation = builder.get_representation(context, rect)
             return representation_evelevation
 
-        panel_schema: list[list[int]] = self.settings["panel_schema"]
-        panels: list[dict[str, Any]] = self.settings["panel_properties"]
         accumulated_height: list[float] = [0] * len(panel_schema[0])
         built_panels: list[int] = []
         window_items: list[ifcopenshell.entity_instance] = []
@@ -448,20 +453,18 @@ class Usecase:
         framing_items: list[ifcopenshell.entity_instance] = []
         glazing_items: list[ifcopenshell.entity_instance] = []
 
-        lining_props: dict[str, Any] = self.settings["lining_properties"]
-        lining_thickness: float = lining_props["LiningThickness"]
-        lining_depth: float = lining_props["LiningDepth"]
-        lining_offset: float = lining_props["LiningOffset"]
-        lining_to_panel_offset_x: float = lining_props["LiningToPanelOffsetX"]
-        lining_to_panel_offset_y: float = lining_props["LiningToPanelOffsetY"]
-        overall_depth: float = lining_depth + lining_to_panel_offset_y
+        lining_thickness: float = lining_properties["LiningThickness"]
+        lining_depth: float = lining_properties["LiningDepth"]
+        lining_offset: float = lining_properties["LiningOffset"]
+        lining_to_panel_offset_x: float = lining_properties["LiningToPanelOffsetX"]
+        lining_to_panel_offset_y: float = lining_properties["LiningToPanelOffsetY"]
 
-        mullion_thickness: float = lining_props["MullionThickness"] / 2
-        first_mullion_offset: float = lining_props["FirstMullionOffset"]
-        second_mullion_offset: float = lining_props["SecondMullionOffset"]
-        transom_thickness: float = lining_props["TransomThickness"] / 2
-        first_transom_offset: float = lining_props["FirstTransomOffset"]
-        second_transom_offset: float = lining_props["SecondTransomOffset"]
+        mullion_thickness: float = lining_properties["MullionThickness"] / 2
+        first_mullion_offset: float = lining_properties["FirstMullionOffset"]
+        second_mullion_offset: float = lining_properties["SecondMullionOffset"]
+        transom_thickness: float = lining_properties["TransomThickness"] / 2
+        first_transom_offset: float = lining_properties["FirstTransomOffset"]
+        second_transom_offset: float = lining_properties["SecondTransomOffset"]
         glass_thickness: float = self.convert_si_to_unit(0.01)
 
         panel_schema = list(reversed(panel_schema))
@@ -510,8 +513,8 @@ class Usecase:
                 else:
                     panel_width = overall_width
 
-                frame_depth: float = panels[panel_i]["FrameDepth"]
-                frame_thickness: float = panels[panel_i]["FrameThickness"]
+                frame_depth: float = panel_properties[panel_i]["FrameDepth"]
+                frame_thickness: float = panel_properties[panel_i]["FrameThickness"]
                 lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
                 base_frame_clear = lining_to_panel_offset_x + frame_thickness - lining_thickness
                 current_offset_x = base_frame_clear - frame_thickness + mullion_thickness
@@ -527,7 +530,7 @@ class Usecase:
                 )
 
                 def get_lining_shape(
-                    lining_thickness: float, closed: bool = True, mirror: bool = False, x_offset: Optional[float] = None
+                    lining_thickness: float, closed: bool = True, mirror: bool = False, x_offset: float | None = None
                 ) -> ifcopenshell.entity_instance:
                     if x_offset is None:
                         x_offset = lining_to_panel_offset_x
@@ -630,10 +633,10 @@ class Usecase:
                 items_2d.extend(cur_panel_items)
 
             builder.translate(items_2d, (0, lining_offset))
-            representation_2d = builder.get_representation(self.settings["context"], items_2d)
+            representation_2d = builder.get_representation(context, items_2d)
             return representation_2d
 
-        if self.settings["context"].TargetView == "PLAN_VIEW":
+        if context.TargetView == "PLAN_VIEW":
             return create_ifc_window_2d_representation()
 
         # TODO: need more readable way to define panel width and height
@@ -687,7 +690,7 @@ class Usecase:
                     accumulated_width += panel_width
                     continue
 
-                cur_panel = panels[panel_i]
+                cur_panel = panel_properties[panel_i]
                 frame_depth = cur_panel["FrameDepth"]
                 frame_thickness = cur_panel["FrameThickness"]
                 lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
@@ -744,28 +747,28 @@ class Usecase:
                 accumulated_width += panel_width
 
         builder.translate(window_items, (0, lining_offset, 0))  # wall offset
-        representation = builder.get_representation(self.settings["context"], window_items)
-        if self.settings["part_of_product"]:
+        representation = builder.get_representation(context, window_items)
+        if part_of_product:
             ifcopenshell.api.geometry.add_shape_aspect(
                 self.file,
                 "Lining",
                 items=lining_items,
                 representation=representation,
-                part_of_product=self.settings["part_of_product"],
+                part_of_product=part_of_product,
             )
             ifcopenshell.api.geometry.add_shape_aspect(
                 self.file,
                 "Framing",
                 items=framing_items,
                 representation=representation,
-                part_of_product=self.settings["part_of_product"],
+                part_of_product=part_of_product,
             )
             ifcopenshell.api.geometry.add_shape_aspect(
                 self.file,
                 "Glazing",
                 items=glazing_items,
                 representation=representation,
-                part_of_product=self.settings["part_of_product"],
+                part_of_product=part_of_product,
             )
 
         return representation
@@ -774,6 +777,6 @@ class Usecase:
     def convert_si_to_unit(self, value: float) -> float: ...
     @overload
     def convert_si_to_unit(self, value: np.ndarray) -> np.ndarray: ...
-    def convert_si_to_unit(self, value: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-        si_conversion = 1 / self.settings["unit_scale"]
+    def convert_si_to_unit(self, value: float | np.ndarray) -> float | np.ndarray:
+        si_conversion = 1 / self.unit_scale
         return value * si_conversion

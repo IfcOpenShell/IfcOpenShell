@@ -70,7 +70,7 @@ class Patcher:
         if not getattr(element, "ObjectPlacement", None) or getattr(element, "Representation", None):
             return
         if self.only_xy:
-            m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            m = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
             m[0][3] = 0.0
             m[1][3] = 0.0
             ifcopenshell.api.geometry.edit_object_placement(self.file, product=element, matrix=m, is_si=False)

@@ -21,20 +21,16 @@ from typing import Optional
 
 import ifcopenshell
 
+# As the WHERE rule of IfcTopologyRepresentation (IfcTopologyRepresentationTypes) has them. Subtypes match too, so
+# IfcEdge includes IfcOrientedEdge and IfcEdgeCurve, IfcFace includes IfcFaceSurface and IfcAdvancedFace. Any other
+# item, such as an IfcEdgeLoop or an IfcConnectedFaceSet that is not a shell, is only allowed as "Undefined".
 _ITEM_TYPE_TO_REP_TYPE = {
     "IfcVertex": "Vertex",
-    "IfcVertexPoint": "Vertex",
     "IfcEdge": "Edge",
-    "IfcOrientedEdge": "Edge",
-    "IfcEdgeCurve": "Edge",
-    "IfcEdgeLoop": "Edge",
-    "IfcPath": "Edge",
+    "IfcPath": "Path",
     "IfcFace": "Face",
-    "IfcFaceSurface": "Face",
-    "IfcAdvancedFace": "Face",
-    "IfcClosedShell": "Face",
-    "IfcOpenShell": "Face",
-    "IfcConnectedFaceSet": "Face",
+    "IfcClosedShell": "Shell",
+    "IfcOpenShell": "Shell",
 }
 
 
@@ -53,8 +49,9 @@ def add_topology_representation(
     :func:`add_profile_representation` but produces an
     IfcTopologyRepresentation instead of an IfcShapeRepresentation.
 
-    The representation type ("Face", "Edge", "Vertex") is inferred from the
-    item's IFC class if not provided explicitly.
+    The representation type ("Vertex", "Edge", "Path", "Face", "Shell", or
+    "Undefined" for any other item) is inferred from the item's IFC class if
+    not provided explicitly.
 
     :param context: The IfcGeometricRepresentationContext for the
         representation, typically a Reference context.
@@ -62,8 +59,9 @@ def add_topology_representation(
         IfcEdge) to include in the representation.
     :param representation_identifier: The RepresentationIdentifier string.
         Defaults to the context's ContextIdentifier.
-    :param representation_type: The RepresentationType string ("Face",
-        "Edge", "Vertex"). Inferred from item class if not given.
+    :param representation_type: The RepresentationType string ("Vertex",
+        "Edge", "Path", "Face", "Shell" or "Undefined"). Inferred from item
+        class if not given.
     :return: The newly created IfcTopologyRepresentation entity.
 
     Example:

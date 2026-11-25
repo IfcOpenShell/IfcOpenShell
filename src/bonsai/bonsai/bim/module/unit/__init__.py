@@ -23,10 +23,13 @@ from . import operator, prop, ui
 classes = (
     operator.AddContextDependentUnit,
     operator.AddConversionBasedUnit,
+    operator.AddDerivedUnit,
     operator.AddMonetaryUnit,
     operator.AddSIUnit,
+    operator.AddUnitFromChoice,
     operator.AssignSceneUnits,
     operator.AssignUnit,
+    operator.ConvertUnits,
     operator.DisableEditingUnit,
     operator.DisableUnitEditingUI,
     operator.EditUnit,

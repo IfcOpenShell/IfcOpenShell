@@ -29,7 +29,7 @@ System requirements
 - A C++17 compiler, CMake 3.21 or newer, and Ninja.
 - Qt6 with OpenGL 4.5 support (``BUILD_BONSAIVIEWER`` requires it).
 - The IfcOpenShell geometry dependencies (Boost, OpenCASCADE, Eigen, CGAL,
-  GMP/MPFR) and the viewer's sidecar/kernel dependencies (RocksDB, zstd,
+  GMP/MPFR) and the viewer's .ifcview/kernel dependencies (RocksDB, zstd,
   Manifold).
 
 The viewer is built on the IfcViewer library. If you want to build your own

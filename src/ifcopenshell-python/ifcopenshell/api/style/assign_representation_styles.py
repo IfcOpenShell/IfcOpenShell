@@ -15,8 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
-from typing import Any
-
 import ifcopenshell
 
 
@@ -104,30 +102,30 @@ def assign_representation_styles(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "shape_representation": shape_representation,
-        "styles": styles or [],
-        "replace_previous_same_type_style": replace_previous_same_type_style,
-        "should_use_presentation_style_assignment": should_use_presentation_style_assignment,
-    }
-    return usecase.execute()
+    return usecase.execute(
+        shape_representation, styles, replace_previous_same_type_style, should_use_presentation_style_assignment
+    )
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
     results: list[ifcopenshell.entity_instance]
 
-    def execute(self):
-        if not self.settings["styles"]:
+    def execute(
+        self,
+        shape_representation: ifcopenshell.entity_instance,
+        styles: list[ifcopenshell.entity_instance],
+        replace_previous_same_type_style: bool,
+        should_use_presentation_style_assignment: bool,
+    ) -> list[ifcopenshell.entity_instance]:
+        if not styles:
             return []
-        self.settings["styles"] = self.settings["styles"].copy()
+        styles = styles.copy()
         self.results = []
-        use_style_assignment = self.file.schema == "IFC2X3" or self.settings["should_use_presentation_style_assignment"]
-        replace_previous_same_type_style = self.settings["replace_previous_same_type_style"]
+        use_style_assignment = self.file.schema == "IFC2X3" or should_use_presentation_style_assignment
 
         style: ifcopenshell.entity_instance | None = None
-        for element in self.file.traverse(self.settings["shape_representation"]):
+        for element in self.file.traverse(shape_representation):
             if not element.is_a("IfcShapeModel"):
                 continue
             for item in element.Items:
@@ -135,9 +133,9 @@ class Usecase:
                     "IfcTopologicalRepresentationItem"
                 ):
                     continue
-                if self.settings["styles"]:
+                if styles:
                     # If there are more items than styles, fallback to using the last style
-                    style = self.settings["styles"].pop(0)
+                    style = styles.pop(0)
                 assert style is not None
                 name = style.Name
                 current_style_type = style.is_a()
@@ -202,7 +200,9 @@ class Usecase:
 
         return self.results
 
-    def remove_same_type_styles(self, style_item, current_style_type: str, remove_item: bool) -> None:
+    def remove_same_type_styles(
+        self, style_item: ifcopenshell.entity_instance, current_style_type: str, remove_item: bool
+    ) -> None:
         styles = [s for s in style_item.Styles if s.is_a() != current_style_type]
         if remove_item and not styles:
             self.file.remove(style_item)

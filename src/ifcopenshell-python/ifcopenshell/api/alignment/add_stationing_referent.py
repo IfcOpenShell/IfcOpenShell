@@ -79,7 +79,14 @@ def add_stationing_referent(
 
     object_placement = None
     representation = None
-    if curve and curve.is_a("IfcCompositeCurve") and 0 < len(curve.Segments):
+    # A polyline alignment's IfcPolyline/IfcIndexedPolyCurve (an alignment with no layouts) is as
+    # valid a basis curve for linear placement as a layout-based alignment's composite curve.
+    on_curve = curve is not None and (
+        (curve.is_a("IfcCompositeCurve") and 0 < len(curve.Segments))
+        or curve.is_a("IfcPolyline")
+        or curve.is_a("IfcIndexedPolyCurve")
+    )
+    if on_curve:
         object_placement = file.createIfcLinearPlacement(
             RelativePlacement=file.createIfcAxis2PlacementLinear(
                 Location=file.createIfcPointByDistanceExpression(

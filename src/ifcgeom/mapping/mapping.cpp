@@ -174,7 +174,8 @@ std::vector<express::base> mapping::find_openings(const express::base& inst) {
         // @todo this is essentially only for hybrid kernel trying to guess
         // when not to use a simple kernel.
         IfcSchema::IfcRepresentationMap rmap;
-        auto prods = products_represented_by(rep, rmap, true);
+        // Last attribute false means not only direct, so we also check for openings of products represented by mapped items.
+        auto prods = products_represented_by(rep, rmap, false);
         for (auto& p : prods) {
             auto ops = find_openings(p);
             openings.insert(openings.end(), ops.begin(), ops.end());
@@ -547,7 +548,7 @@ namespace {
             rgb[1] = colour.Green();
             rgb[2] = colour.Blue();
         }
-        return colour;
+        return static_cast<bool>(colour);
     }
 
     bool process_colour(const IfcSchema::IfcNormalisedRatioMeasure& factor, std::array<double, 3>& rgb) {
@@ -874,6 +875,13 @@ void mapping::initialize_units_() {
 
 #ifdef SCHEMA_HAS_IfcContext
     auto projects = file_->instances_by_type<IfcSchema::IfcContext>();
+    // Bug #9926: More of a work-around, but we filter out IfcProjectLibrary
+    // instances that have no units defined before the size check, as they
+    // cannot conflict with project-wide unit setup.
+    auto has_no_units = [](IfcSchema::IfcContext& p) {
+        return p.as<IfcSchema::IfcProjectLibrary>() && (!p.UnitsInContext() || p.UnitsInContext().Units().empty());
+    };
+    projects.erase(std::remove_if(projects.begin(), projects.end(), has_no_units), projects.end());
 #else
     auto projects = file_->instances_by_type<IfcSchema::IfcProject>();
 #endif

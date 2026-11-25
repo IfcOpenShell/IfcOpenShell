@@ -20,10 +20,16 @@ from typing import Union
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.api.geometry
+import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.type
+import ifcopenshell.api.unit
+import ifcopenshell.guid
 import numpy as np
+from ifcopenshell.util.shape_builder import ShapeBuilder
+from mathutils import Matrix
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -228,6 +234,24 @@ class TestGetCartesianPointCoordinateOffset(NewFile):
         assert subject.get_cartesian_point_offset(obj) is None
 
 
+class TestGetTrueMatrixWorld(NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", None)
+        obj.matrix_world = Matrix.Rotation(np.pi / 2, 4, "Z") @ Matrix.Translation((1.0, 2.0, 3.0))
+        assert np.allclose(subject.get_true_matrix_world(obj), np.array(obj.matrix_world))
+
+    def test_undoing_a_cartesian_point_offset_along_the_objects_axes(self):
+        # A mesh stored relative to (1000, 2000, 30) sits at the placement translated by that
+        # offset along the object's own axes, here rotated 90 degrees about Z.
+        obj = bpy.data.objects.new("Object", None)
+        obj.matrix_world = Matrix.Rotation(np.pi / 2, 4, "Z") @ Matrix.Translation((1000.0, 2000.0, 30.0))
+        oprops = tool.Blender.get_object_bim_props(obj)
+        oprops.blender_offset_type = "CARTESIAN_POINT"
+        oprops.cartesian_point_offset = "1000,2000,30"
+        # Blender holds the matrix in float32, so the fold is only precise to that.
+        assert np.allclose(subject.get_true_matrix_world(obj), np.array(Matrix.Rotation(np.pi / 2, 4, "Z")), atol=1e-3)
+
+
 class TestGetElementType(NewFile):
     def test_run(self):
         bpy.ops.bim.create_project()
@@ -283,6 +307,141 @@ class TestImportRepresentationParameters(NewFile):
         assert mprops.ifc_parameters[1].name == "IfcCircleProfileDef/Radius"
         assert mprops.ifc_parameters[1].step_id == swept_area.id()
         assert mprops.ifc_parameters[1].index == 3
+
+
+class TestImportItem(NewFile):
+    FAR = np.array([1000.0, 2000.0, 30.0])
+    CUBE = np.array([[x, y, z] for z in (0.0, 1.0) for y in (0.0, 1.0) for x in (0.0, 1.0)])
+    CUBE_FACES = [[0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1], [2, 3, 7, 6], [0, 2, 6, 4], [1, 5, 7, 3]]
+
+    def create_file(self):
+        ifc = ifcopenshell.api.project.create_file(version="IFC4")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc, length={"is_metric": True, "raw": "METERS"})
+        model = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        tool.Ifc.set(ifc)
+        tool.Loader.load_settings()
+        return ifc
+
+    def import_item(self, item, element_matrix, element_offset=None):
+        element_obj = bpy.data.objects.new("Element", bpy.data.meshes.new("Element"))
+        element_obj.matrix_world = Matrix(element_matrix.tolist())
+        if element_offset is not None:
+            oprops = tool.Blender.get_object_bim_props(element_obj)
+            oprops.blender_offset_type = "CARTESIAN_POINT"
+            oprops.cartesian_point_offset = ",".join(map(str, element_offset))
+        subject.get_geometry_props().representation_obj = element_obj
+        obj = bpy.data.objects.new("Item", bpy.data.meshes.new("Item"))
+        tool.Ifc.link(item, obj.data)
+        obj.matrix_world = element_obj.matrix_world
+        subject.import_item(obj)
+        return obj
+
+    def world_vertices(self, obj):
+        return sorted(np.round([obj.matrix_world @ v.co for v in obj.data.vertices], 3).tolist())
+
+    def test_items_land_where_the_element_is(self):
+        builder = ShapeBuilder(self.create_file())
+        rotation = np.array(Matrix.Rotation(np.pi / 2, 4, "Z"))
+        # The element's mesh is stored relative to FAR, so its object sits at the placement
+        # translated by FAR along its own axes.
+        element_matrix = rotation @ np.array(Matrix.Translation(self.FAR))
+
+        solid = builder.extrude(builder.rectangle(size=(1.0, 1.0)), magnitude=1.0, position=self.FAR)
+        obj = self.import_item(solid, element_matrix, self.FAR)
+        expected = (self.CUBE + self.FAR) @ rotation[:3, :3].T
+        assert self.world_vertices(obj) == sorted(np.round(expected, 3).tolist())
+
+        plane = builder.plane(location=self.FAR + (0.5, 0.0, 0.0), normal=(1.0, 0.0, 0.0))
+        obj = self.import_item(builder.half_space_solid(plane), element_matrix, self.FAR)
+        expected = rotation[:3, :3] @ (self.FAR + (0.5, 0.0, 0.0))
+        assert np.allclose(obj.matrix_world.translation, expected, atol=1e-3)
+
+    def test_a_far_item_gets_its_own_offset(self):
+        builder = ShapeBuilder(self.create_file())
+        obj = self.import_item(builder.mesh(self.CUBE + self.FAR, self.CUBE_FACES), np.eye(4))
+        assert subject.get_cartesian_point_offset(obj) is not None
+        assert np.abs([v.co[:] for v in obj.data.vertices]).max() < tool.Loader.settings.distance_limit
+        assert self.world_vertices(obj) == sorted(np.round(self.CUBE + self.FAR, 3).tolist())
+
+
+class StructuralFaceFile(NewFile):
+    def create_file(self):
+        ifc = ifcopenshell.api.project.create_file(version="IFC4")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc)  # millimetres
+        model = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        graph = ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Reference", target_view="GRAPH_VIEW", parent=model
+        )
+        body = ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        tool.Ifc.set(ifc)
+        return ifc, graph, body
+
+    def create_object(self, vertices, faces):
+        mesh = bpy.data.meshes.new("Face")
+        mesh.from_pydata(vertices, [], faces)
+        return bpy.data.objects.new("Face", mesh)
+
+
+class TestIsStructuralFaceMesh(StructuralFaceFile):
+    def test_a_mesh_with_polygons_in_the_graph_view(self):
+        ifc, graph, body = self.create_file()
+        obj = self.create_object([(0, 0, 0), (1, 0, 0), (1, 1, 0)], [(0, 1, 2)])
+        assert subject.is_structural_face_mesh(obj, graph)
+        assert not subject.is_structural_face_mesh(obj, body)
+
+    def test_a_mesh_without_polygons(self):
+        ifc, graph, body = self.create_file()
+        obj = self.create_object([(0, 0, 0), (1, 0, 0)], [])
+        assert not subject.is_structural_face_mesh(obj, graph)
+
+
+class TestAddStructuralFaceRepresentation(StructuralFaceFile):
+    SQUARE = [(0, 0, 0), (2, 0, 0), (2, 2, 0), (0, 2, 0)]
+    HOLE = [(0.5, 0.5, 0), (1.5, 0.5, 0), (1.5, 1.5, 0), (0.5, 1.5, 0)]
+    # A square with a square hole, as four quads around the hole
+    FACES = [(0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+
+    def test_a_face_with_a_hole_in_project_units(self):
+        ifc, graph, body = self.create_file()
+        obj = self.create_object(self.SQUARE + self.HOLE, self.FACES)
+        representation = subject.add_structural_face_representation(obj, graph)
+        assert representation.is_a("IfcTopologyRepresentation")
+        assert representation.RepresentationType == "Face"
+        face = representation.Items[0]
+        assert face.is_a("IfcFaceSurface")
+        assert len(face.Bounds) == 2
+        points = sorted(
+            tuple(e.EdgeElement.EdgeStart.VertexGeometry.Coordinates) for e in face.Bounds[0].Bound.EdgeList
+        )
+        assert points == [(0.0, 0.0, 0.0), (0.0, 2000.0, 0.0), (2000.0, 0.0, 0.0), (2000.0, 2000.0, 0.0)]
+
+    def test_the_axes_of_the_face_it_replaces_are_kept(self):
+        ifc, graph, body = self.create_file()
+        element = ifc.createIfcStructuralSurfaceMember(GlobalId=ifcopenshell.guid.new())
+        builder = ShapeBuilder(ifc)
+        old = builder.face_surface(
+            [(0, 0, 0), (1000, 0, 0), (1000, 1000, 0), (0, 1000, 0)], normal=(0, 0, -1), x_axis=(0, 1, 0)
+        )
+        ifcopenshell.api.geometry.assign_representation(
+            ifc, product=element, representation=builder.get_representation(graph, [old])
+        )
+        obj = self.create_object(self.SQUARE, [(0, 1, 2, 3)])
+        tool.Ifc.link(element, obj)
+        face = subject.add_structural_face_representation(obj, graph).Items[0]
+        assert np.allclose(face.FaceSurface.Position.Axis.DirectionRatios, (0, 0, -1))
+        assert np.allclose(face.FaceSurface.Position.RefDirection.DirectionRatios, (0, 1, 0))
+
+    def test_a_mesh_out_of_one_plane_is_refused(self):
+        ifc, graph, body = self.create_file()
+        obj = self.create_object([(0, 0, 0), (2, 0, 0), (2, 2, 1), (0, 2, 0)], [(0, 1, 2), (0, 2, 3)])
+        assert subject.add_structural_face_representation(obj, graph) is None
 
 
 class TestIsBodyRepresentation(NewFile):

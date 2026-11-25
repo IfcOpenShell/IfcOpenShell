@@ -31,7 +31,6 @@ from typing import Literal, NotRequired, Optional, TypedDict, Union
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import ifcopenshell.util.unit
 
 from .facet import Facet, FacetFailure
 from .ids import Ids, Specification
@@ -850,7 +849,6 @@ class Bcf(Json):
         import numpy as np
         from bcf.v2.bcfxml import BcfXml
 
-        unit_scale = None
         bcfxml = BcfXml.create_new(self.results["title"])
         for specification in self.results["specifications"]:
             if specification["status"]:
@@ -874,10 +872,10 @@ class Bcf(Json):
                     description = f"{specification['name']} - {requirement['description']}"
                     topic = bcfxml.add_topic(title, description, "IfcTester")
                     if getattr(element, "ObjectPlacement", None):
-                        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-                        if unit_scale is None:
-                            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(element.file)
-                        location = [(o * unit_scale) + 5.0 for o in placement[:, 3][:3]]
+                        placement = ifcopenshell.util.placement.get_placement(
+                            element.ObjectPlacement, should_return_si=True
+                        )
+                        location = [o + 5.0 for o in placement[:, 3][:3]]
                         viewpoint = topic.add_viewpoint_from_point_and_guids(np.array(location), element.GlobalId)
                     if element.is_a("IfcElement"):
                         topic.add_viewpoint(element)

@@ -21,7 +21,7 @@
 from math import pi
 from pathlib import Path
 
-import boltspy as bolts  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+import boltspy as bolts  # pyright: ignore[reportMissingImports]  # ty:ignore[import-not-found]
 import ifcopenshell.api
 import ifcopenshell.api.material
 import ifcopenshell.api.project

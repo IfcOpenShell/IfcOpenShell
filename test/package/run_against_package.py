@@ -10,7 +10,7 @@ wrapper and plug-ins, not a source build. pytest is run through uv with the Pyth
 version matching the zip.
 
 Unless `--skip-bonsaiviewer` is passed, the BonsaiViewer zip is extracted as well: its path is passed
-to the tests in `IFCOPENSHELL_PACKAGE_TESTS_BONSAIVIEWER` and `BonsaiViewer --version` is run.
+to the tests in `--bonsaiviewer` and `BonsaiViewer --version` is run.
 """
 
 import argparse
@@ -53,12 +53,18 @@ def extract_preserving_symlinks(zip_path: Path, dest: Path) -> None:
                     target.chmod(permissions)
 
 
+def is_win_arm64() -> bool:
+    return sys.platform == "win32" and platform.machine() == "ARM64"
+
+
 def find_oldest_zip(output_dir: Path) -> tuple[Path, str]:
     """Return the zip with the lowest Python version and that version (e.g. "3.13")."""
+    # uv has no Windows ARM64 Python downloads before 3.11.
+    min_version = (3, 11) if is_win_arm64() else (0, 0)
     zips: defaultdict[tuple[int, int], list[Path]] = defaultdict(list)
     for path in output_dir.iterdir():
-        if match := ZIP_PATTERN.fullmatch(path.name):
-            zips[(int(match[1]), int(match[2]))].append(path)
+        if (match := ZIP_PATTERN.fullmatch(path.name)) and (version := (int(match[1]), int(match[2]))) >= min_version:
+            zips[version].append(path)
     if not zips:
         sys.exit(f"No ifcopenshell-python zips found in {str(output_dir)!r}")
     version = min(zips)
@@ -70,7 +76,10 @@ def find_oldest_zip(output_dir: Path) -> tuple[Path, str]:
 def run_python_tests(output_dir: Path, pytest_args: list[str], bonsaiviewer: Path | None) -> int:
     zip_path, python_version = find_oldest_zip(output_dir)
     python_request = python_version
-    if sys.platform == "win32" and platform.machine() == "ARM64":
+    if sys.platform == "darwin" and platform.machine() == "arm64" and zip_path.stem.endswith("-macos64"):
+        # x64 package cross-compiled on Apple Silicon, run it under Rosetta.
+        python_request = f"cpython-{python_version}-macos-x86_64"
+    elif is_win_arm64():
         # On Windows ARM64 uv defaults to x86_64 Python, which can't load an ARM64 .pyd.
         # See https://github.com/astral-sh/uv/issues/12906
         python_request = f"{python_version}-aarch64"
@@ -78,9 +87,9 @@ def run_python_tests(output_dir: Path, pytest_args: list[str], bonsaiviewer: Pat
         print(f"Extracting {zip_path} into {tmp}")
         extract_preserving_symlinks(zip_path, Path(tmp))
         env = dict(os.environ, PYTHONPATH=tmp, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1")
-        if bonsaiviewer:
-            env["IFCOPENSHELL_PACKAGE_TESTS_BONSAIVIEWER"] = str(bonsaiviewer)
         with_args = [arg for dep in TEST_DEPENDENCIES for arg in ("--with", dep)]
+        if bonsaiviewer:
+            pytest_args = ["--bonsaiviewer", str(bonsaiviewer), *pytest_args]
         # Run from the temp dir so a checked-out `src/ifcopenshell-python` can never shadow the package.
         cmd = [
             *("uv", "run", "--python", python_request, *with_args),

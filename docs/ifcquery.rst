@@ -59,6 +59,7 @@ Usage
 
     $ ifcquery model.ifc summary
     $ ifcquery model.ifc tree
+    $ ifcquery model.ifc tree --depth 4
     $ ifcquery model.ifc info 42
     $ ifcquery model.ifc select 'IfcWall'
     $ ifcquery model.ifc relations 42

@@ -65,6 +65,189 @@ function(ifcopenshell_plugin_target TARGET)
     endif()
 endfunction()
 
+function(ifcopenshell_native_plugin_target TARGET MODULE_TARGET)
+    if(WASM_BUILD)
+        return()
+    endif()
+    set_target_properties(${TARGET} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "$<TARGET_FILE_DIR:${MODULE_TARGET}>"
+        LIBRARY_OUTPUT_DIRECTORY "$<TARGET_FILE_DIR:${MODULE_TARGET}>"
+    )
+endfunction()
+
+function(ifcopenshell_wasm_plugin_dependency OUT_VAR)
+    if(WASM_BUILD)
+        # wasm-ld fails when the static `plugin` archive is linked into both the
+        # main module and SIDE_MODULE plugins. The main module owns `plugin`.
+        set(${OUT_VAR} "" PARENT_SCOPE)
+    else()
+        set(${OUT_VAR} plugin PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(ifcopenshell_wasm_plugin_import_from_main TARGET)
+    if(NOT WASM_BUILD)
+        return()
+    endif()
+
+    cmake_parse_arguments(IMPORT "" "" "DEPENDS" ${ARGN})
+    foreach(dep IN LISTS IMPORT_DEPENDS)
+        if(NOT TARGET ${dep})
+            continue()
+        endif()
+        add_dependencies(${TARGET} ${dep})
+        foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+            get_target_property(values ${dep} ${prop})
+            if(values)
+                target_include_directories(${TARGET} PRIVATE ${values})
+            endif()
+        endforeach()
+        foreach(prop INTERFACE_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
+            target_compile_definitions(${TARGET} PRIVATE "$<TARGET_PROPERTY:${dep},${prop}>")
+        endforeach()
+    endforeach()
+endfunction()
+
+function(ifcopenshell_wasm_define_main_import_target SOURCE_TARGET)
+    if(NOT WASM_BUILD)
+        return()
+    endif()
+    if(NOT TARGET ${SOURCE_TARGET})
+        message(FATAL_ERROR "Unknown source target '${SOURCE_TARGET}'")
+    endif()
+
+    cmake_parse_arguments(IMPORT "" "NAME" "INTERFACE_LINK_LIBRARIES" ${ARGN})
+    if(NOT IMPORT_NAME)
+        set(IMPORT_NAME "${SOURCE_TARGET}__wasm_main_import")
+    endif()
+    if(TARGET ${IMPORT_NAME})
+        set_property(TARGET ${SOURCE_TARGET} PROPERTY IFCOPENSHELL_WASM_MAIN_IMPORT_TARGET "${IMPORT_NAME}")
+        return()
+    endif()
+
+    add_library(${IMPORT_NAME} INTERFACE)
+    foreach(prop IN ITEMS INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+        get_target_property(values ${SOURCE_TARGET} ${prop})
+        if(values)
+            target_include_directories(${IMPORT_NAME} INTERFACE ${values})
+        endif()
+    endforeach()
+    foreach(prop IN ITEMS INTERFACE_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
+        # Generator expressions include definitions inherited from linked targets.
+        target_compile_definitions(${IMPORT_NAME} INTERFACE "$<TARGET_PROPERTY:${SOURCE_TARGET},${prop}>")
+    endforeach()
+    if(IMPORT_INTERFACE_LINK_LIBRARIES)
+        target_link_libraries(${IMPORT_NAME} INTERFACE ${IMPORT_INTERFACE_LINK_LIBRARIES})
+    endif()
+    set_property(TARGET ${SOURCE_TARGET} PROPERTY IFCOPENSHELL_WASM_MAIN_IMPORT_TARGET "${IMPORT_NAME}")
+endfunction()
+
+function(ifcopenshell_wasm_plugin_target_link TARGET)
+    cmake_parse_arguments(PLUGIN "" "" "MAIN_TARGETS;PRIVATE" ${ARGN})
+    # The standalone WASM runtime owns globally visible core symbols. The
+    # Pyodide wrapper is itself a locally loaded side module, so its plugins
+    # must link the core archives rather than import symbols from that wrapper.
+    if(WASM_BUILD AND NOT BUILD_IFCPYTHON)
+        if(PLUGIN_PRIVATE)
+            target_link_libraries(${TARGET} PRIVATE ${PLUGIN_PRIVATE})
+        endif()
+        if(PLUGIN_MAIN_TARGETS)
+            set(import_targets)
+            foreach(main_target IN LISTS PLUGIN_MAIN_TARGETS)
+                if(NOT TARGET ${main_target})
+                    continue()
+                endif()
+                add_dependencies(${TARGET} ${main_target})
+                get_target_property(import_target ${main_target} IFCOPENSHELL_WASM_MAIN_IMPORT_TARGET)
+                if(import_target AND TARGET ${import_target})
+                    list(APPEND import_targets ${import_target})
+                else()
+                    ifcopenshell_wasm_plugin_import_from_main(${TARGET} DEPENDS ${main_target})
+                endif()
+            endforeach()
+            if(import_targets)
+                target_link_libraries(${TARGET} PRIVATE ${import_targets})
+            endif()
+        endif()
+    else()
+        target_link_libraries(${TARGET} PRIVATE ${PLUGIN_MAIN_TARGETS} ${PLUGIN_PRIVATE})
+    endif()
+endfunction()
+
+function(ifcopenshell_wasm_main_module_link TARGET)
+    if(NOT WASM_BUILD)
+        return()
+    endif()
+
+    set(wrapper "${CMAKE_SOURCE_DIR}/cmake/emscripten-main-module-link.sh")
+    if(EXISTS "${wrapper}")
+        set_property(TARGET ${TARGET} PROPERTY RULE_LAUNCH_LINK "${wrapper}")
+    endif()
+endfunction()
+
+function(ifcopenshell_wasm_plugins_dir OUT_VAR)
+    set(${OUT_VAR} "${CMAKE_BINARY_DIR}/ifcwrap/wasm/plugins" PARENT_SCOPE)
+endfunction()
+
+function(ifcopenshell_wasm_set_plugin_info TARGET KIND ID)
+    if(NOT WASM_BUILD)
+        return()
+    endif()
+    set_target_properties(${TARGET} PROPERTIES
+        IFCOPENSHELL_PLUGIN_KIND "${KIND}"
+        IFCOPENSHELL_PLUGIN_ID "${ID}"
+    )
+endfunction()
+
+function(ifcopenshell_wasm_configure_plugin_target TARGET)
+    if(NOT WASM_BUILD)
+        return()
+    endif()
+
+    cmake_parse_arguments(PLUGIN "" "KIND;ID;SYMBOL_ID;EXPORT_SYMBOL" "DEPENDS" ${ARGN})
+    foreach(required IN ITEMS KIND ID SYMBOL_ID EXPORT_SYMBOL)
+        if(NOT PLUGIN_${required})
+            message(FATAL_ERROR "ifcopenshell_wasm_configure_plugin_target(${TARGET}) requires ${required}")
+        endif()
+    endforeach()
+
+    ifcopenshell_wasm_plugins_dir(plugin_runtime_dir)
+    set_target_properties(${TARGET} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${plugin_runtime_dir}"
+        LIBRARY_OUTPUT_DIRECTORY "${plugin_runtime_dir}"
+        IFCOPENSHELL_PLUGIN_DEPENDS "${PLUGIN_DEPENDS}"
+    )
+    target_compile_definitions(${TARGET} PRIVATE IFCOPENSHELL_WASM_PLUGIN_ID=${PLUGIN_SYMBOL_ID})
+    target_link_options(${TARGET} PRIVATE "LINKER:--export=${PLUGIN_EXPORT_SYMBOL}")
+    ifcopenshell_wasm_set_plugin_info(${TARGET} "${PLUGIN_KIND}" "${PLUGIN_ID}")
+endfunction()
+
+function(ifcopenshell_wasm_plugin_manifest_entry TARGET OUT_ENTRY)
+    if(NOT TARGET ${TARGET})
+        set(${OUT_ENTRY} "" PARENT_SCOPE)
+        return()
+    endif()
+
+    get_target_property(kind ${TARGET} IFCOPENSHELL_PLUGIN_KIND)
+    get_target_property(plugin_id ${TARGET} IFCOPENSHELL_PLUGIN_ID)
+    if(NOT kind OR NOT plugin_id)
+        set(${OUT_ENTRY} "" PARENT_SCOPE)
+        return()
+    endif()
+
+    get_target_property(output_name ${TARGET} OUTPUT_NAME)
+    if(NOT output_name)
+        set(output_name ${TARGET})
+    endif()
+
+    get_target_property(depends ${TARGET} IFCOPENSHELL_PLUGIN_DEPENDS)
+    if(NOT depends OR depends STREQUAL "depends-NOTFOUND")
+        set(depends "")
+    endif()
+    string(REPLACE ";" "," depends_csv "${depends}")
+    set(${OUT_ENTRY} "${kind}|${plugin_id}|${output_name}|${depends_csv}" PARENT_SCOPE)
+endfunction()
+
 function(ifcopenshell_wasm_plugin_link_options TARGET REGISTRATION_SYMBOL)
     ifcopenshell_plugin_target(${TARGET})
 
@@ -72,18 +255,30 @@ function(ifcopenshell_wasm_plugin_link_options TARGET REGISTRATION_SYMBOL)
         return()
     endif()
 
-    cmake_parse_arguments(PLUGIN "" "OPTIMIZATION" "" ${ARGN})
+    cmake_parse_arguments(PLUGIN "EXPORT_DYNAMIC" "OPTIMIZATION;SIDE_MODULE" "" ${ARGN})
     if(NOT PLUGIN_OPTIMIZATION)
-        set(PLUGIN_OPTIMIZATION -O1)
+        # WASM plugins optimize for size by default (side modules download on demand).
+        set(PLUGIN_OPTIMIZATION "${IFCOPENSHELL_WASM_LINK_OPTIMIZATION}")
+    endif()
+    if(NOT PLUGIN_SIDE_MODULE)
+        set(PLUGIN_SIDE_MODULE 2)
     endif()
 
     set(plugin_symbols
-        ifcopenshell_plugin_abi_v1
+        ifcopenshell_plugin_abi_v2
         ifcopenshell_plugin_metadata_v1
         ${REGISTRATION_SYMBOL}
     )
 
-    target_link_options(${TARGET} PRIVATE "SHELL:-s SIDE_MODULE=2" ${PLUGIN_OPTIMIZATION})
+    target_compile_options(${TARGET} PRIVATE -fwasm-exceptions)
+    target_link_options(${TARGET} PRIVATE "SHELL:-fwasm-exceptions" "SHELL:-s SIDE_MODULE=${PLUGIN_SIDE_MODULE}" "SHELL:-s ALLOW_TABLE_GROWTH=1" "SHELL:-s ERROR_ON_UNDEFINED_SYMBOLS=0" "SHELL:-sSUPPORT_LONGJMP=wasm" ${PLUGIN_OPTIMIZATION})
+    if(PLUGIN_EXPORT_DYNAMIC)
+        # Export provider APIs used only by other side modules (schema methods,
+        # OpenCascadeShape::shape(), etc.). Emscripten appends --no-export-dynamic
+        # for SIDE_MODULE=2, overriding --export-dynamic; --export-all keeps these
+        # definitions without forcing every linked archive member into the DSO.
+        target_link_options(${TARGET} PRIVATE "LINKER:--export-all")
+    endif()
     foreach(symbol IN LISTS plugin_symbols)
         target_link_options(${TARGET} PRIVATE "LINKER:--export=${symbol}")
     endforeach()
@@ -190,7 +385,7 @@ endfunction()
 # Two flavours sit alongside each other in <prefix>/lib/ after install:
 #
 #   1. Linked core libs (lib*.dylib) — IfcParse, IfcGeom (output-named
-#      libifcopenshell.geometry.dylib), IfcViewer, plug-in / mapping /
+#      libifcopenshell_geometry.dylib), IfcViewer, plug-in / mapping /
 #      kernel shared libs. With --shared these are runtime @rpath deps
 #      of the app executable. macdeployqt is *supposed* to follow them
 #      but in practice misses non-Qt @rpath deps when the source lib
@@ -207,7 +402,7 @@ endfunction()
 # inside the bundle), so plug-ins and core libs both find each other
 # on the first probe.
 #
-# The geometry-writer filter drops libifcopenshell.geometry.writer.dylib
+# The geometry-writer filter drops libifcopenshell_geometry_writer.dylib
 # and the per-schema ifcopenshell_geometry_writer_*.dylib plug-ins
 # (OCCT -> IFC serialization, unused by the apps), and all document
 # serializers except rdb (json/xml are only used by IfcConvert). Mirrors
@@ -241,7 +436,7 @@ function(ifcopenshell_stage_app_bundle_dylibs APP_NAME)
     install(CODE [[
         set(_fw "${CMAKE_INSTALL_PREFIX}/${_app}/Contents/Frameworks")
         file(GLOB _ifc_dylibs "${CMAKE_INSTALL_PREFIX}/lib/*.dylib")
-        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell[._]geometry[._]writer")
+        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell_geometry_writer")
         # Geometry serializers (obj, svg, glb, ...) and svgfill are only used by IfcConvert and Python.
         list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell_geometry_[A-Za-z]+\\.dylib$")
         # Geometry trees are only used by Python (`ifcopenshell.geom.tree`).
@@ -366,6 +561,28 @@ function(get_debug_variant NAME LIBRARY POSTFIX)
     set(${NAME} "${LIBRARY}" PARENT_SCOPE)
 endfunction()
 
+# Set NAME to the EXECUTABLE path resolved to the actual target, if it's a scoop shim,
+# otherwise set it to EXECUTABLE unchanged.
+#
+# Scoop exposes at PATH not actual executables, but shims.
+# E.g. `ccache.exe` is a shim that just runs actual executable from `ccache.shim`
+# next to it.
+# So copying shim itself breaks it, but we do need to copy `ccache.exe` as `cl.exe`
+# to support ccache on MSVC.
+#
+# Example:
+# - `resolve_scoop_shim(CCACHE "C:/scoop/shims/ccache.exe")`
+#   -> `CCACHE = "C:/scoop/apps/ccache/current/ccache.exe"`
+function(resolve_scoop_shim NAME EXECUTABLE)
+    cmake_path(REPLACE_EXTENSION EXECUTABLE ".shim" OUTPUT_VARIABLE SHIM_FILE)
+    if(EXISTS "${SHIM_FILE}")
+        file(STRINGS "${SHIM_FILE}" SHIM_PATH_LINE REGEX "^path *=")
+        string(REGEX REPLACE "^path *= *\"?([^\"]*)\"?$" "\\1" EXECUTABLE "${SHIM_PATH_LINE}")
+        file(TO_CMAKE_PATH "${EXECUTABLE}" EXECUTABLE)
+    endif()
+    set(${NAME} "${EXECUTABLE}" PARENT_SCOPE)
+endfunction()
+
 # When building specified config, cmake first tries to find target config by the exact match
 # (e.g. to find `-relwithdebinfo.cmake` dependency for RelWithDebInfo build),
 # but if it fails, it falls back to the first cmake config it can find, alphabetically.
@@ -392,6 +609,7 @@ function(avoid_debug_imported_config_fallback)
     foreach(_target ${ARGN})
         if(TARGET ${_target})
             set_target_properties(${_target} PROPERTIES
+                MAP_IMPORTED_CONFIG_RELEASE "RELEASE;RELWITHDEBINFO;MINSIZEREL"
                 MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RELWITHDEBINFO;RELEASE;MINSIZEREL"
                 MAP_IMPORTED_CONFIG_MINSIZEREL "MINSIZEREL;RELEASE;RELWITHDEBINFO"
             )

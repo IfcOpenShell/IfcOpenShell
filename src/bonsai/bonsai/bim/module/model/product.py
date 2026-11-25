@@ -339,7 +339,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
 
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
         ifc_class = relating_type.is_a()
-        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
+        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0].ifc_class
         material = ifcopenshell.util.element.get_material(relating_type)
 
         existing_context = None
@@ -495,10 +495,8 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Model.sync_object_ifc_position(obj)
 
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for port in ifcopenshell.util.system.get_ports(relating_type):
-            mat = Matrix(ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement))
-            mat.translation *= unit_scale
+            mat = Matrix(ifcopenshell.util.placement.get_placement(port.ObjectPlacement, should_return_si=True))
             mat = obj.matrix_world @ mat
             new_port = ifcopenshell.api.system.add_port(ifc_file, element=element)
             new_port.PredefinedType = port.PredefinedType

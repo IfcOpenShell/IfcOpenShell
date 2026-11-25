@@ -76,8 +76,8 @@
 %ignore ifcopenshell::spf_header::file_description;
 %ignore ifcopenshell::spf_header::file_name;
 %ignore ifcopenshell::spf_header::file_schema;
-// The setters take a raw shared_pointer_type (an internal instance_data*
-// storage handle), not a Python-facing type. SWIG would emit the alias
+// The setters take shared_pointer_type (an internal owning storage handle),
+// not a Python-facing type. SWIG would emit the alias
 // unqualified into the global-scope wrapper (C2065 on MSVC), and these
 // aren't a usable Python API anyway — ignore them like the getters above.
 %ignore ifcopenshell::spf_header::set_file_description;
@@ -1387,6 +1387,12 @@ from .entity_instance import entity_instance_mixin
 			Py_INCREF(Py_None);
 			return Py_None;
 		}
+#ifndef IFOPSH_SAFE_INSTANCE
+        // Header instances are borrowed; data instances are transferred by read_instance().
+        const auto* streamed_decl = std::get<1>(*inst);
+        std::unique_ptr<ifcopenshell::instance_data> owned_data(
+            streamed_decl->schema() == &Header_section_schema::get_schema() ? nullptr : std::get<2>(*inst));
+#endif
 		PyObject* d = PyDict_New();
 
 		{

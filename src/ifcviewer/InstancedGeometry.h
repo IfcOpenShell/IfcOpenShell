@@ -63,7 +63,7 @@ static_assert(sizeof(MeshGpu) == 32, "MeshGpu must be 32 bytes");
 // `ebo_byte_offset` / `index_count` describe it.
 //
 // LOD1 is an optional decimated copy of the same triangles referencing the
-// same vertex buffer.  Built at sidecar time via meshoptimizer for meshes
+// same vertex buffer.  Built at .ifcview time via meshoptimizer for meshes
 // whose triangle count crosses a threshold.  `lod1_index_count == 0`
 // means no LOD1 was built; the renderer must use LOD0 at every distance.
 struct MeshInfo {
@@ -109,6 +109,10 @@ static_assert(sizeof(InstanceGpu) == 80, "InstanceGpu must be 80 bytes");
 // uploaded to the SSBO, and used to compute world_aabb_*.  When ViewportWindow's
 // stage matrices are all identity (default), transform is the float rendering
 // copy of placement_transformation.
+//
+// Only mesh_id, object_id, placement_transformation (as a double translation
+// plus a float linear part) are stored in the .ifcview. The rest is session
+// specific and derived on read.
 struct InstanceInfo {
     uint32_t mesh_id                  = 0;  // index into meshes array
     uint32_t object_id                = 0;
@@ -123,11 +127,11 @@ struct InstanceInfo {
 // Transfer records emitted by the streamer to the viewport (main thread).
 
 // Emitted the first time a representation id is seen.  Carries the mesh
-// geometry in local coords.  `local_mesh_id` is the streamer-assigned id
-// within this model.
+// geometry in local coords.  `mesh_id` indexes the owning model's meshes
+// array; every mesh id is model-local and is never rebased.
 struct StreamedMesh {
-    uint32_t session_model_id      = 0;
-    uint32_t local_mesh_id = 0;
+    uint32_t session_model_id = 0;
+    uint32_t mesh_id          = 0;
     std::vector<float>    vertices;  // 7 floats * N_verts (pos3+norm3+color1_packed)
     std::vector<uint32_t> indices;
     float    local_aabb_min[3]{};
@@ -138,13 +142,28 @@ struct StreamedMesh {
 // iterator).  For the first instance of a mesh, the StreamedMesh is emitted
 // just before this.
 struct StreamedInstance {
-    uint32_t session_model_id             = 0;
-    uint32_t local_mesh_id        = 0;
+    uint32_t session_model_id     = 0;
+    uint32_t mesh_id              = 0;
+    // Model-local from the streamer (numbered from 1 per model); made
+    // session-unique by applyCachedModel, which adds the model's object
+    // id base at install time.
     uint32_t object_id            = 0;
     uint32_t color_override_rgba8 = 0;
     double   transform[16]{};
     float    world_aabb_min[3]{};
     float    world_aabb_max[3]{};
+};
+
+// Element metadata for the .ifcview's element table (UI + picking).  The
+// streamer discovers these as it iterates; IfcViewAssembler::finalize packs
+// them (strings into the string table) into the .ifcview element block.
+struct ElementInfo {
+    uint32_t object_id;
+    uint32_t session_model_id;
+    int ifc_id;
+    std::string guid;
+    std::string name;
+    std::string type;
 };
 
 #endif // INSTANCEDGEOMETRY_H

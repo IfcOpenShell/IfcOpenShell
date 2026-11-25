@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import json
+import multiprocessing
 from collections import defaultdict
 from collections.abc import Generator, Iterable
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
@@ -27,6 +28,7 @@ import bmesh
 import bpy
 import ifcopenshell
 import ifcopenshell.api.attribute
+import ifcopenshell.api.boundary
 import ifcopenshell.api.geometry
 import ifcopenshell.api.type
 import ifcopenshell.geom
@@ -34,11 +36,14 @@ import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
+import ifcopenshell.util.space
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import numpy as np
 import shapely
+import shapely.affinity
 import shapely.ops
 from mathutils import Matrix, Vector
 from natsort import natsorted
@@ -58,8 +63,52 @@ if TYPE_CHECKING:
         BIMSpatialDecompositionProperties,
     )
 
+_GEOM_CACHE_TOKEN = 0
+
+
+@bpy.app.handlers.persistent
+def _bump_geom_cache_token(*args) -> None:
+    global _GEOM_CACHE_TOKEN
+    if len(args) >= 2:
+        depsgraph = args[1]
+        if depsgraph is not None and hasattr(depsgraph, "updates"):
+            if not any(
+                (getattr(u, "is_updated_geometry", False) or getattr(u, "is_updated_transform", False))
+                and hasattr(u, "id")
+                and isinstance(u.id, bpy.types.Object)
+                for u in depsgraph.updates
+            ):
+                return
+    _GEOM_CACHE_TOKEN += 1
+
+
+def install_geom_cache_handlers() -> None:
+    for hook in (
+        bpy.app.handlers.depsgraph_update_post,
+        bpy.app.handlers.undo_post,
+        bpy.app.handlers.redo_post,
+        bpy.app.handlers.load_post,
+    ):
+        if _bump_geom_cache_token not in hook:
+            hook.append(_bump_geom_cache_token)
+
+
+def uninstall_geom_cache_handlers() -> None:
+    for hook in (
+        bpy.app.handlers.depsgraph_update_post,
+        bpy.app.handlers.undo_post,
+        bpy.app.handlers.redo_post,
+        bpy.app.handlers.load_post,
+    ):
+        try:
+            hook.remove(_bump_geom_cache_token)
+        except ValueError:
+            pass
+
 
 class Spatial(bonsai.core.tool.Spatial):
+    _geom_cache: dict = {}
+
     @classmethod
     def get_spatial_props(cls) -> BIMSpatialDecompositionProperties:
         return bpy.context.scene.BIMSpatialDecompositionProperties
@@ -524,8 +573,20 @@ class Spatial(bonsai.core.tool.Spatial):
         previous_container_index = props.active_container_index
         props.containers.clear()
         cls.contracted_containers = json.loads(props.contracted_containers)
+        cls.sync_moved_spatial_placements()
         cls.import_spatial_element(tool.Ifc.get().by_type("IfcProject")[0], 0)
         props.active_container_index = tool.Blender.get_valid_uilist_index(previous_container_index, props.containers)
+
+    @classmethod
+    def sync_moved_spatial_placements(cls) -> None:
+        """Commit the placement of moved spatial elements so the container manager shows current elevations."""
+        ifc_file = tool.Ifc.get()
+        for element in ifc_file.by_type(tool.Root.get_spatial_element_class()):
+            obj = tool.Ifc.get_object(element)
+            if isinstance(obj, bpy.types.Object) and tool.Ifc.is_moved(obj):
+                # Refresh paths are not tool.Ifc.Operator flows, so mark the committed change ourselves.
+                tool.Blender.get_bim_props().is_dirty = True
+                tool.Geometry.commit_placement_if_moved(obj)
 
     @classmethod
     def import_spatial_element(cls, element: ifcopenshell.entity_instance, level_index: int) -> None:
@@ -536,12 +597,13 @@ class Spatial(bonsai.core.tool.Spatial):
         new.ifc_class = element.is_a()
         new["name"] = element.Name or "Unnamed"
         new.description = element.Description or ""
-        new.long_name = element.LongName or ""
+        # Assign via subscript so the update callbacks, which write back to IFC, don't fire. See #8545.
+        new["long_name"] = element.LongName or ""
         if not element.is_a("IfcProject"):
             elevation = ifcopenshell.util.placement.get_storey_elevation(element)
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             elevation_in_meters = elevation * unit_scale
-            new.elevation = tool.Unit.format_distance(elevation_in_meters)
+            new["elevation"] = tool.Unit.format_distance(elevation_in_meters)
         new.is_expanded = element.id() not in cls.contracted_containers
         new.level_index = level_index
         children = ifcopenshell.util.element.get_parts(element)
@@ -560,7 +622,7 @@ class Spatial(bonsai.core.tool.Spatial):
     def create_orientation_slot(cls, container: ifcopenshell.entity_instance) -> None:
         active_slot = bpy.context.scene.transform_orientation_slots[0]
         placement = container.ObjectPlacement
-        combined_matrix = ifcopenshell.util.placement.get_local_placement(placement)[:3, :3]
+        combined_matrix = ifcopenshell.util.placement.get_placement(placement)[:3, :3]
 
         if np.allclose(combined_matrix, np.eye(3), atol=1e-6):
             # this spatial element has global orientation
@@ -573,7 +635,7 @@ class Spatial(bonsai.core.tool.Spatial):
         ):
             # this spatial element is part of a decomposition
             parent_placement = container.Decomposes[0].RelatingObject.ObjectPlacement
-            parent_matrix = ifcopenshell.util.placement.get_local_placement(parent_placement)[:3, :3]
+            parent_matrix = ifcopenshell.util.placement.get_placement(parent_placement)[:3, :3]
             if np.allclose(combined_matrix, parent_matrix, atol=1e-6):
                 # this spatial element has the same orientation as its parent
                 cls.create_orientation_slot(container=container.Decomposes[0].RelatingObject)
@@ -756,28 +818,227 @@ class Spatial(bonsai.core.tool.Spatial):
     # HERE STARTS SPATIAL TOOL
 
     @classmethod
+    def get_or_build_geom_cache(cls) -> dict:
+        """Build or return a cached dict of IFC element shapes for space generation.
+
+        The cache is keyed on ``_GEOM_CACHE_TOKEN`` which is bumped by a
+        ``depsgraph_update_post`` handler when any Object geometry or transform
+        changes, and on undo/redo/load. This means the cache survives space
+        generations (which don't change Object geometry) but is correctly
+        invalidated when a user moves or edits a wall, slab, etc.
+
+        :return: ``{"shapes": {id: {"verts": ndarray, "faces": ndarray, "bottom_z": float, "top_z": float}}, "token": int}``
+        """
+        global _GEOM_CACHE_TOKEN
+        cached = cls._geom_cache.get("current")
+        if cached and cached["token"] == _GEOM_CACHE_TOKEN:
+            return cached
+
+        ifc_file = tool.Ifc.get()
+        include = ifcopenshell.util.space.get_bounding_and_height_elements(ifc_file)
+
+        settings = ifcopenshell.geom.settings()
+        settings.set("disable-opening-subtractions", True)
+        settings.set("use-world-coords", True)
+
+        shapes = {}
+        iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=include)
+        if iterator.initialize():
+            while True:
+                shape = iterator.get()
+                verts = ifcopenshell.util.shape.get_shape_vertices(shape, shape.geometry)
+                faces = ifcopenshell.util.shape.get_faces(shape.geometry)
+                zs = verts[:, 2]
+                shapes[shape.id] = {
+                    "verts": verts,
+                    "faces": faces,
+                    "bottom_z": float(zs.min()),
+                    "top_z": float(zs.max()),
+                }
+                if not iterator.next():
+                    break
+
+        cache = {"shapes": shapes, "token": _GEOM_CACHE_TOKEN}
+        cls._geom_cache["current"] = cache
+        return cache
+
+    @classmethod
     def is_bounding_class(cls, visible_element: ifcopenshell.entity_instance) -> bool:
-        for ifc_class in ["IfcWall", "IfcColumn", "IfcMember", "IfcVirtualElement", "IfcPlate"]:
+        for ifc_class in ifcopenshell.util.space.BOUNDING_CLASSES:
             if visible_element.is_a(ifc_class):
                 return True
         return False
 
     @classmethod
+    def get_boundary_lines_from_ifc_elements(
+        cls,
+        cut_z: float,
+    ) -> tuple[list[shapely.LineString], list[ifcopenshell.entity_instance]]:
+        """Generate boundary lines by bisecting IFC element geometry with a horizontal plane.
+
+        Uses the class-level geometry cache (parallel iterator) instead of
+        iterating Blender visible objects. Works without any Blender objects
+        being loaded.
+
+        :param cut_z: Z elevation of the cutting plane in world coordinates.
+        :return: (boundary_lines, bounding_elements)
+        """
+        cache = cls.get_or_build_geom_cache()
+        return ifcopenshell.util.space.get_boundary_lines(tool.Ifc.get(), cache["shapes"], cut_z)
+
+    @classmethod
     def get_space_polygon_from_context_visible_objects(
-        cls, x: float, y: float
-    ) -> Union[shapely.Polygon, Literal["NO POLYGONS FOUND", "NO POLYGON FOR POINT"]]:
-        boundary_lines = cls.get_boundary_lines_from_context_visible_objects()
-        unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
-        closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
-        if not closed_polygons:
-            return "NO POLYGONS FOUND"
-        space_polygon = None
-        for polygon in closed_polygons.geoms:
-            if shapely.contains_xy(polygon, x, y):
-                space_polygon = shapely.force_3d(polygon)
-        if space_polygon is None:
-            return "NO POLYGON FOR POINT"
-        return space_polygon
+        cls, x: float, y: float, container: Optional[ifcopenshell.entity_instance] = None
+    ) -> tuple[
+        Union[shapely.Polygon, Literal["NO POLYGONS FOUND", "NO POLYGON FOR POINT"]],
+        list[ifcopenshell.entity_instance],
+    ]:
+        props = tool.Model.get_model_props()
+        calculation_rl = props.rl3
+        if container is None:
+            container = tool.Root.get_default_container()
+        container_obj = tool.Ifc.get_object(container)
+        cut_z = container_obj.matrix_world.translation.z + calculation_rl
+
+        # Commit any moved visible bounding objects before reading IFC geometry,
+        # so the IFC-based cache uses the current Blender positions.
+        # Walls/roofs/slabs that affect the space footprint or height must be
+        # committed before the cache is rebuilt; otherwise the IFC geometry read by
+        # the iterator will be stale and a moved roof/slab will not be picked up.
+        affected_classes = ifcopenshell.util.space.BOUNDING_CLASSES + ifcopenshell.util.space.HEIGHT_DETECTION_CLASSES
+        for obj in bpy.context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element is None or not any(element.is_a(c) for c in affected_classes):
+                continue
+            tool.Geometry.commit_placement_if_moved(obj)
+        cls._geom_cache.clear()
+
+        boundary_lines, bounding_elements = cls.get_boundary_lines_from_ifc_elements(cut_z)
+        polygon, _ = ifcopenshell.util.space.get_space_polygon(boundary_lines, x, y)
+        if isinstance(polygon, str):
+            return polygon, []
+        return polygon, bounding_elements
+
+    @classmethod
+    def get_auto_space_height(
+        cls,
+        space_polygon: shapely.Polygon,
+        base_z: float,
+        bounding_walls: list[ifcopenshell.entity_instance],
+    ) -> Optional[float]:
+        """Auto-detect space height from elements above using IFC geometry.
+
+        Delegates to :func:`ifcopenshell.util.space.get_auto_space_height`.
+
+        :param space_polygon: The space footprint polygon in world XY.
+        :param base_z: The space's base Z in world coordinates.
+        :param bounding_walls: List of IFC wall elements bounding the space.
+        :return: Detected height in SI (meters), or None if nothing found.
+        """
+        cache = cls.get_or_build_geom_cache()
+        return ifcopenshell.util.space.get_auto_space_height(
+            tool.Ifc.get(), cache["shapes"], space_polygon, base_z, bounding_walls
+        )
+
+    @classmethod
+    def get_space_volume_strategy(
+        cls,
+        space_polygon: shapely.Polygon,
+        base_z: float,
+        bounding_walls: list[ifcopenshell.entity_instance],
+        container: Optional[ifcopenshell.entity_instance] = None,
+    ) -> tuple[str, Optional[list], Optional[list]]:
+        """Decide how to build the space volume (clipped extrusion or B-rep).
+
+        Rays are cast from the RL cut elevation (``container_z + props.rl3``), the
+        same level at which the space footprint polygon was found.
+        """
+        ifc_file = tool.Ifc.get()
+        cache = cls.get_or_build_geom_cache()
+        start_z = None
+        if container is None:
+            container = tool.Root.get_default_container()
+        if container is not None:
+            container_obj = tool.Ifc.get_object(container)
+            props = tool.Model.get_model_props()
+            start_z = container_obj.matrix_world.translation.z + props.rl3
+        elements = ifcopenshell.util.space.get_bounding_and_height_elements(ifc_file)
+        tree = ifcopenshell.util.space.build_bounding_tree(ifc_file, elements)
+        return ifcopenshell.util.space.detect_space_volume_strategy(
+            ifc_file, cache["shapes"], tree, space_polygon, base_z, bounding_walls, start_z=start_z
+        )
+
+    @classmethod
+    def _get_or_create_body_context(cls, ifc_file: ifcopenshell.file) -> ifcopenshell.entity_instance:
+        """Return the Model/Body/MODEL_VIEW context, creating one if absent."""
+        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        if context is not None:
+            return context
+        # Some subcontexts may not expose the inherited ContextType value, so also
+        # search by ContextIdentifier/TargetView directly.
+        for ctx in ifc_file.by_type("IfcGeometricRepresentationSubContext"):
+            if ctx.ContextIdentifier == "Body" and getattr(ctx, "TargetView", None) == "MODEL_VIEW":
+                return ctx
+        # Create a minimal context if none exists.
+        model_context = ifcopenshell.util.representation.get_context(ifc_file, "Model")
+        if model_context is None:
+            model_context = ifc_file.createIfcGeometricRepresentationContext(
+                ContextType="Model",
+                CoordinateSpaceDimension=3,
+                Precision=1e-5,
+                WorldCoordinateSystem=ifc_file.createIfcAxis2Placement3D(
+                    ifc_file.createIfcCartesianPoint([0.0, 0.0, 0.0])
+                ),
+                TrueNorth=ifc_file.createIfcDirection([0.0, 1.0, 0.0]),
+            )
+        return ifc_file.createIfcGeometricRepresentationSubContext(
+            ParentContext=model_context,
+            ContextIdentifier="Body",
+            TargetView="MODEL_VIEW",
+            ContextType="Model",
+        )
+
+    @classmethod
+    def _remove_existing_body_representations(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Optional[ifcopenshell.entity_instance]:
+        """Remove every existing Body representation from an element.
+
+        Returns the context of the first removed representation, or None.
+        """
+        ifc_file = tool.Ifc.get()
+        if element.Representation is None:
+            return None
+        body_reps = [r for r in element.Representation.Representations if r.RepresentationIdentifier == "Body"]
+        context = None
+        for rep in body_reps:
+            context = rep.ContextOfItems
+            ifcopenshell.api.geometry.unassign_representation(ifc_file, product=element, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=rep)
+        return context
+
+    @classmethod
+    def set_brep_representation_from_mesh(
+        cls,
+        obj: bpy.types.Object,
+        element: ifcopenshell.entity_instance,
+        item: ifcopenshell.entity_instance,
+    ) -> None:
+        """Assign a representation item (clipped solid or B-rep) to the element."""
+        ifc_file = tool.Ifc.get()
+        context = cls._remove_existing_body_representations(element)
+        if context is None:
+            context = cls._get_or_create_body_context(ifc_file)
+
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+        new_body = builder.get_representation(context, item)
+        ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=new_body)
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=new_body,
+        )
 
     @classmethod
     def debug_shape(cls, foo: shapely.Polygon) -> None:
@@ -810,7 +1071,9 @@ class Spatial(bonsai.core.tool.Spatial):
         bpy.context.view_layer.update()
 
     @classmethod
-    def get_boundary_lines_from_context_visible_objects(cls) -> list[shapely.LineString]:
+    def get_boundary_lines_from_context_visible_objects(
+        cls,
+    ) -> tuple[list[shapely.LineString], list[ifcopenshell.entity_instance]]:
         props = tool.Model.get_model_props()
         calculation_rl = props.rl3
         container = tool.Root.get_default_container()
@@ -818,6 +1081,7 @@ class Spatial(bonsai.core.tool.Spatial):
         cut_point = container_obj.matrix_world.translation.copy() + Vector((0, 0, calculation_rl))
         cut_normal = Vector((0, 0, 1))
         boundary_lines = []
+        bounding_elements = []
 
         for obj in bpy.context.visible_objects:
             visible_element = tool.Ifc.get_entity(obj)
@@ -831,6 +1095,7 @@ class Spatial(bonsai.core.tool.Spatial):
             ):
                 continue
 
+            bounding_elements.append(visible_element)
             old_mesh = obj.data
             assert isinstance(old_mesh, bpy.types.Mesh)
             if visible_element.HasOpenings:
@@ -870,7 +1135,7 @@ class Spatial(bonsai.core.tool.Spatial):
                 start, end = tool.Drawing.extend_line(start, end, 0.05)
                 boundary_lines.append(shapely.LineString([start, end]))
 
-        return boundary_lines
+        return boundary_lines, bounding_elements
 
     @classmethod
     def get_gross_mesh_from_element(cls, visible_element: ifcopenshell.entity_instance) -> bpy.types.Mesh:
@@ -916,6 +1181,34 @@ class Spatial(bonsai.core.tool.Spatial):
         mat = Matrix()
         h = 3
         return x, y, z, h, mat
+
+    @classmethod
+    def get_space_reference_point(cls, obj: bpy.types.Object) -> tuple[float, float]:
+        """Return a point inside the space's current footprint, in world XY.
+
+        The bounding box centre does not necessarily lie inside a concave
+        footprint (e.g. an L-shaped room), which would make the polygon lookup
+        pick an unrelated region such as a wall cross-section. The lowest faces
+        of the current mesh form the footprint, so use the largest one and a
+        representative point that is guaranteed to lie inside it.
+        """
+        bpy.context.view_layer.update()
+        if obj.data is not None and len(obj.data.vertices):
+            world_verts = [obj.matrix_world @ v.co for v in obj.data.vertices]
+            min_z = min(v.z for v in world_verts)
+            footprints = []
+            for polygon in obj.data.polygons:
+                points = [world_verts[i] for i in polygon.vertices]
+                if max(p.z for p in points) > min_z + 1e-4:
+                    continue
+                footprint = shapely.Polygon([(p.x, p.y) for p in points])
+                if footprint.area > 0:
+                    footprints.append(footprint)
+            if footprints:
+                point = max(footprints, key=lambda footprint: footprint.area).representative_point()
+                return point.x, point.y
+        x, y, _, _, _ = cls.get_x_y_z_h_mat_from_obj(obj)
+        return x, y
 
     @classmethod
     def get_union_shape_from_selected_objects(cls) -> Polygon:
@@ -1086,13 +1379,9 @@ class Spatial(bonsai.core.tool.Spatial):
         curve = builder.polyline(coords_2d, closed=True)
         item = builder.extrude(curve, magnitude=depth_ifc)
 
-        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if old_body:
-            context = old_body.ContextOfItems
-            ifcopenshell.api.geometry.unassign_representation(ifc_file, product=element, representation=old_body)
-            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_body)
-        else:
-            context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        context = cls._remove_existing_body_representations(element)
+        if context is None:
+            context = cls._get_or_create_body_context(ifc_file)
 
         new_body = builder.get_representation(context, item)
         ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=new_body)
@@ -1111,13 +1400,107 @@ class Spatial(bonsai.core.tool.Spatial):
         poly: Polygon,
         h: float,
         polygon_is_si: bool = True,
+        bounding_walls: Optional[list[ifcopenshell.entity_instance]] = None,
+        container: Optional[ifcopenshell.entity_instance] = None,
     ) -> None:
         """Create or replace the IFC body representation of a space from a polygon.
 
         :param h: The height in SI (meters).
         """
+        # Remove collinear points introduced by the mesh bisection so the
+        # footprint polygon has a minimal vertex count.
+        poly = poly.simplify(0, preserve_topology=True)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        cls.set_extrusion_representation_from_polygon(obj, element, poly, h / unit_scale, polygon_is_si)
+        ifc_file = tool.Ifc.get()
+        poly_si = poly if polygon_is_si else shapely.affinity.scale(poly, unit_scale, unit_scale, origin=(0, 0))
+
+        # Ensure the IFC entity has an ObjectPlacement matching the Blender object,
+        # so the generated representation is in the correct local coordinate system.
+        bpy.context.view_layer.update()
+        # Read the placement after the depsgraph update: objects created earlier in
+        # the same operator (e.g. a new space) have a stale matrix_world until then.
+        # matrix_world.translation is a live view into the matrix, so copy it once
+        # the matrix has been evaluated.
+        origin = obj.matrix_world.translation.copy()
+        # The space builders expect base_z and polygon in SI (world) units.
+        base_z = origin.z
+        matrix = np.array(obj.matrix_world)
+        ifcopenshell.api.geometry.edit_object_placement(
+            ifc_file,
+            product=element,
+            matrix=matrix,
+            is_si=True,
+        )
+
+        for b in list(element.BoundedBy or []):
+            ifcopenshell.api.boundary.remove_boundary(ifc_file, b)
+
+        cls._remove_existing_body_representations(element)
+
+        if cls.get_spatial_props().force_space_height:
+            cls.set_extrusion_representation_from_polygon(obj, element, poly, h / unit_scale, polygon_is_si)
+            return
+        if bounding_walls is None:
+            bounding_walls = []
+            if container is None:
+                container = ifcopenshell.util.element.get_container(element)
+            if container is not None:
+                for wall in ifc_file.by_type("IfcWall"):
+                    if wall in ifcopenshell.util.element.get_decomposition(container):
+                        bounding_walls.append(wall)
+
+        # Detect planes in world SI (same coordinate system as the geom cache).
+        strategy, top_planes, bottom_planes = cls.get_space_volume_strategy(poly_si, base_z, bounding_walls, container)
+
+        # Build the geometry in the space's local coordinate system so the IFC
+        # representation is relative to the object's ObjectPlacement.
+        # Use the full inverse of the object's placement matrix so rotated spaces
+        # keep the correct footprint orientation.
+        matrix_inv = np.array(obj.matrix_world.inverted())
+        # shapely.affine_transform expects [a, b, d, e, xoff, yoff]
+        # where x' = a*x + b*y + xoff, y' = d*x + e*y + yoff.
+        affine_params = [
+            matrix_inv[0, 0],
+            matrix_inv[0, 1],
+            matrix_inv[1, 0],
+            matrix_inv[1, 1],
+            matrix_inv[0, 3],
+            matrix_inv[1, 3],
+        ]
+        local_poly_si = shapely.affinity.affine_transform(poly_si, affine_params)
+        local_base_z = base_z - origin.z
+
+        def localize_plane(plane):
+            point, normal = plane
+            local_point = matrix_inv @ np.array([*point, 1.0])
+            rotation_inv = matrix_inv[:3, :3]
+            local_normal = rotation_inv @ np.array(normal)
+            local_normal = local_normal / np.linalg.norm(local_normal)
+            return (local_point[:3], local_normal)
+
+        local_top_planes = [localize_plane(p) for p in (top_planes or [])]
+        local_bottom_planes = [localize_plane(p) for p in (bottom_planes or [])]
+
+        if strategy == "EXTRUDE_CLIP" and top_planes:
+            item = ifcopenshell.util.space.build_extruded_clipped_space(
+                ifc_file, local_poly_si, local_base_z, local_top_planes, local_bottom_planes
+            )
+            cls.set_brep_representation_from_mesh(obj, element, item)
+        else:
+            shapes = cls.get_or_build_geom_cache()["shapes"]
+            local_shapes = {}
+            for shape_id, shape_data in shapes.items():
+                local_shape_data = dict(shape_data)
+                local_shape_data["top_z"] = shape_data["top_z"] - origin.z
+                local_shape_data["bottom_z"] = shape_data["bottom_z"] - origin.z
+                local_shapes[shape_id] = local_shape_data
+            item = ifcopenshell.util.space.build_brep_space(
+                ifc_file, element, local_shapes, local_poly_si, local_base_z
+            )
+            if item is None:
+                cls.set_extrusion_representation_from_polygon(obj, element, poly, h / unit_scale, polygon_is_si)
+            else:
+                cls.set_brep_representation_from_mesh(obj, element, item)
 
     @classmethod
     def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj: bpy.types.Object) -> None:
@@ -1182,7 +1565,7 @@ class Spatial(bonsai.core.tool.Spatial):
         relating_type_id = props.relating_type_id
         relating_type = ifc_file.by_id(int(relating_type_id))
         ifc_class = relating_type.is_a()
-        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, ifc_file.schema)[0]
+        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, ifc_file.schema)[0].ifc_class
         bonsai.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
@@ -1309,6 +1692,13 @@ class Spatial(bonsai.core.tool.Spatial):
                         for subelement3 in ifcopenshell.util.element.get_parts(subelement2):
                             if subelement3.is_a("IfcBuildingStorey"):
                                 return subelement3
+                # No Building > Storey convention found (e.g. a template-defined
+                # facility). Descend while unambiguous, without hardcoding classes.
+                container = subelement
+                while len(children := ifcopenshell.util.element.get_parts(container)) == 1:
+                    container = children[0]
+                if container != subelement:
+                    return container
         if subelement:
             return subelement
         return None

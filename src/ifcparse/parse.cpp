@@ -1720,28 +1720,36 @@ bool ifcopenshell::file::initialize(const std::string& path, filetype ty, bool r
         storage_.emplace<1>(this, logger_.get());
         header_.reset(new spf_header(this, &logger_.get()));
         bool indexed = false;
-        if (lazy_loading_) {
-            indexed = std::get<impl::in_memory_file_storage>(storage_).index_lazily(path, schema_, max_id_, types_to_bypass_loading_);
+        bool error = false;
+        try {
+            if (lazy_loading_) {
+                indexed = std::get<impl::in_memory_file_storage>(storage_).index_lazily(path, schema_, max_id_, types_to_bypass_loading_);
+                if (!indexed) {
+                    // Start over with the full parser.
+                    storage_.emplace<1>(this, logger_.get());
+                    header_.reset(new spf_header(this, &logger_.get()));
+                    schema_ = nullptr;
+                    max_id_ = 0;
+                    lazy_loading_ = false;
+                }
+            }
             if (!indexed) {
-                // Start over with the full parser.
-                storage_.emplace<1>(this, logger_.get());
-                header_.reset(new spf_header(this, &logger_.get()));
-                schema_ = nullptr;
-                max_id_ = 0;
-                lazy_loading_ = false;
+                if (paged_reading_) {
+                    file_reader<paged_file_impl> s(path, 64 << 10, 64);
+                    std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
+                } else {
+                    file_reader<full_buffer_impl> s(path);
+                    std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
+                }
             }
-        }
-        if (!indexed) {
-            if (paged_reading_) {
-                file_reader<paged_file_impl> s(path, 64 << 10, 64);
-                std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
-            } else {
-                file_reader<full_buffer_impl> s(path);
-                std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
-            }
+        } catch (std::exception& e) {
+            logger_.get().error("SYS", 404, e);
+            storage_.emplace<0>();
+            good_ = file_open_status::READ_ERROR;
+            error = true;
         }
 
-        if ((good_ = std::get<impl::in_memory_file_storage>(storage_).good_)) {
+        if (!error && (good_ = std::get<impl::in_memory_file_storage>(storage_).good_)) {
             // @todo unify these names, it's already confusing enough as it stands
             byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_read_);
             byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
@@ -3462,6 +3470,12 @@ void file::erase_instances_(const std::vector<uint32_t>& ids) {
     std::visit([this, &ids](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
             for (auto id : ids) {
+#ifndef IFOPSH_SAFE_INSTANCE
+                auto it = x.byid_.find(id);
+                if (it != x.byid_.end()) {
+                    delete it->second;
+                }
+#endif
                 byid_.erase(id);
             }
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
@@ -4074,10 +4088,19 @@ void ifcopenshell::file::reset_identity_cache() {
     std::visit([](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             std::lock_guard<std::mutex> lock(x.instance_cache_mutex_);
+#ifndef IFOPSH_SAFE_INSTANCE
+            for (const auto& entry : x.instance_cache_) {
+                delete entry.second;
+            }
+            for (const auto& entry : x.type_instance_cache_) {
+                delete entry.second;
+            }
+#endif
             x.instance_cache_.clear();
             x.type_instance_cache_.clear();
         }
-	}, storage_);
+    },
+               storage_);
 }
 
 void ifcopenshell::file::build_inverses() {

@@ -194,10 +194,9 @@
 %ignore KeepBoundingBoxes;
 %ignore SurfaceColour;
 %ignore ComputeCurvature;
-%ignore FunctionStepType;
-%ignore FunctionStepParam;
 %ignore ModelOffset;
 %ignore ModelRotation;
+%ignore VertexRebaseDistance;
 %ignore TriangulationType;
 %ignore CgalEmitOriginalEdges;
 %ignore OcctNoCleanTriangulation;
@@ -207,12 +206,19 @@
 %ignore MaxOffset;
 %ignore MaxOffsetDeviation;
 %ignore ApplyOffset;
+%ignore OffsetApplied;
 %ignore SvgRidgeAngleMinDegrees;
 %ignore SvgValleyAngleMinDegrees;
 %ignore SvgEmitFlushEdges;
 %ignore SvgUseEdgeClassification;
 %ignore SvgRenderCreaseEdges;
 %ignore SvgRenderSharpEdges;
+%ignore LoftUseRuledSurfaces;
+
+%ignore ifcopenshell::geom::settings_detail::to_string;
+%ignore ifcopenshell::geom::settings_detail::iterator_output_names;
+%ignore ifcopenshell::geom::settings_detail::output_dimensionality_names;
+%ignore ifcopenshell::geom::settings_detail::triangulation_method_names;
 
 %ignore filetype;
 %ignore guess_file_type;

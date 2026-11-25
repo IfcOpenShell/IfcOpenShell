@@ -1,0 +1,9 @@
+# Keep the build context small for the workflow mirrors in docker/.
+# `.git` is deliberately kept: `ruff` honours `.gitignore` through it and
+# `.github/scripts/check-whitespace.py` enumerates files with `git ls-files`.
+build
+**/node_modules
+**/__pycache__
+**/*.pyc
+**/.venv
+docker/.env

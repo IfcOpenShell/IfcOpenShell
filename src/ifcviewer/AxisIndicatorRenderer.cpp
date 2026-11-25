@@ -319,10 +319,10 @@ void AxisIndicatorRenderer::encodePivot(WGPURenderPassEncoder pass,
     const float fovy_rad        = f.camera_fov_y_deg * kPiF / 180.0f;
     const float world_per_pixel = f.camera_distance * std::tan(fovy_rad * 0.5f)
                                   * 2.0f / float(f.viewport_h_px);
-    const float arm_pixels = 30.0f * float(f.device_pixel_ratio);
+    const float arm_pixels = 30.0f * f.device_pixel_ratio;
     const float arm_world  = arm_pixels * world_per_pixel;
 
-    const float dpr    = float(f.device_pixel_ratio);
+    const float dpr    = f.device_pixel_ratio;
     const float line_w = 2.5f * dpr;
     const float vw     = float(f.viewport_w_px);
     const float vh     = float(f.viewport_h_px);
@@ -353,9 +353,9 @@ void AxisIndicatorRenderer::encodeCornerAxis(WGPUCommandEncoder enc,
                                              WGPUTextureView surface_view,
                                              const OverlayFrame& f) {
     if (!corner_pipeline_ || !surface_view) return;
-    const int dpr = std::max(1, f.device_pixel_ratio);
-    const uint32_t gizmo_size = uint32_t(110 * dpr);
-    const uint32_t margin     = uint32_t(10 * dpr);
+    const float dpr = f.device_pixel_ratio;
+    const uint32_t gizmo_size = uint32_t(std::lround(110.0f * dpr));
+    const uint32_t margin     = uint32_t(std::lround(10.0f * dpr));
     if (gizmo_size == 0 || f.viewport_w_px <= 0 || f.viewport_h_px <= 0) return;
     // Bottom-left in WebGPU framebuffer space (y down).
     const uint32_t fb_h = uint32_t(f.viewport_h_px);
@@ -381,7 +381,7 @@ void AxisIndicatorRenderer::encodeCornerAxis(WGPUCommandEncoder enc,
     const Eigen::Matrix4f mvp = z_remap * gp * gv;
 
     uint8_t slot[kAxisUniformSlot];
-    const float line_w = 2.5f * float(dpr);
+    const float line_w = 2.5f * dpr;
     packAxisUniform(slot, mvp, Eigen::Vector3f(0, 0, 0), 1.0f, 1.0f, line_w,
                     float(gizmo_size), float(gizmo_size));
     const uint32_t slot_offset = kSlotCorner * kAxisUniformSlot;

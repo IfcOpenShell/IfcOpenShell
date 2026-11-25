@@ -1,6 +1,9 @@
 
 There are two ways to build pyodide ifcopenshell Python wrapper wheel.
 
+For a container build, run `docker build -f docker/pyodide.Dockerfile -t ifcos-pyodide .`
+from the repository root. See [the Docker documentation](../docker/README.md) for outputs and caches.
+
 1. Using pyodide build system (`build-ifcopenshell-wasm.yml` does it):
 
 - install prebuilt pyodide build and emscripten environment (see `build_pyodide.sh`)
@@ -38,3 +41,13 @@ since it's pure cmake without any additional moving parts.
   - `cd IfcOpenshell/pyodide`
   - `./run_pytest.py setup`
   - `./run_pytest.py run`
+
+Verify geometry for both the monolithic wheel and the minimal IFC4 modular set:
+
+```sh
+PYODIDE_ROOT=$(pyodide config get pyodide_root)
+node pyodide/verify_wheels.mjs "$PYODIDE_ROOT/dist" dist dist-modular
+```
+
+This runs `create_shape` with the Manifold kernel and checks the mesh dimensions.
+It uses normal local library loading, without promoting schema exports to global visibility.

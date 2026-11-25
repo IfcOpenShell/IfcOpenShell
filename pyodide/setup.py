@@ -3,9 +3,9 @@
 # and we need it to get the wheel suffix right.
 import os
 import sys
+import tomllib
 from pathlib import Path
 
-import tomllib
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 

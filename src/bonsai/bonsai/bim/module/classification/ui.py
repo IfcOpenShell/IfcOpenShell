@@ -124,7 +124,11 @@ class BIM_PT_classifications(Panel):
 
 
 class ReferenceUI:
-    layout: Union[bpy.types.UILayout, None]
+    if TYPE_CHECKING:
+
+        @property
+        def layout(self) -> bpy.types.UILayout | None: ...
+
     data: type[
         Union[
             ObjectClassificationsData,

@@ -113,35 +113,45 @@ class entity_instance_mixin:
             return vs
         else:
             schema_name = self.is_a(True).split(".")[0]
+            if schema_name.lower() == "header_section_schema":
+                raise AttributeError("entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name))
+
+            rules = None
             try:
                 rules = importlib.import_module(f"ifcopenshell.express.rules.{schema_name}")
-            except:
+            except Exception:
                 import os
 
                 current_dir_files = {fn.lower(): fn for fn in os.listdir(".")}
                 exp_filename = schema_name.lower() + ".exp"
                 schema_path = current_dir_files.get(exp_filename)
-                if schema_path is None:
-                    raise Exception(
-                        f"Couldn't find express file '{schema_name.lower()}.exp' in the current folder: '{os.getcwd()}'."
-                    )
-                fn = schema_path[:-4] + ".py"
-                if not os.path.exists(fn):
-                    subprocess.run(
-                        [sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True
-                    )
-                    time.sleep(1.0)
-                rules = importlib.import_module(schema_name)
+                if schema_path is not None:
+                    fn = schema_path[:-4] + ".py"
+                    if not os.path.exists(fn):
+                        try:
+                            subprocess.run(
+                                [sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn],
+                                check=True,
+                            )
+                            time.sleep(1.0)
+                        except Exception:
+                            pass
+                    try:
+                        rules = importlib.import_module(schema_name)
+                    except Exception:
+                        pass
 
-            def yield_supertypes():
-                decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
-                while decl:
-                    yield decl.name()
-                    decl = decl.supertype()
+            if rules is not None:
 
-            for sty in yield_supertypes():
-                if fn := getattr(rules, f"calc_{sty}_{name}", None):
-                    return fn(self)
+                def yield_supertypes():
+                    decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
+                    while decl:
+                        yield decl.name()
+                        decl = decl.supertype()
+
+                for sty in yield_supertypes():
+                    if fn := getattr(rules, f"calc_{sty}_{name}", None):
+                        return fn(self)
 
             raise AttributeError("entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name))
 

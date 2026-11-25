@@ -47,9 +47,9 @@ _wireframe_batch_cache: dict[tuple[int, int], dict[str, tuple[GPUBatch, int, lis
 _wireframe_vert_fmt: GPUVertFormat | None = None
 _triangle_batch_cache: dict[tuple[int, int], tuple[GPUBatch, int]] = {}
 _triangle_vert_fmt: GPUVertFormat | None = None
-_last_decorator_cache_token: int | None = None
 _encoding_shader: gpu.types.GPUShader | None = None
 _offscreen: GPUOffScreen | None = None
+_offscreen_size: tuple[int, int] | None = None
 _obj_list: list[[bpy.types.Object, bool]] = []
 
 _SNAP_RADIUS_PX = 10  # half-size of the readback region around the cursor
@@ -99,16 +99,6 @@ def _create_vert_format() -> GPUVertFormat:
     fmt.attr_add(id="pos", comp_type="F32", len=3, fetch_mode="FLOAT")
     fmt.attr_add(id="vert_slot", comp_type="F32", len=1, fetch_mode="FLOAT")
     return fmt
-
-
-def _discard_stale_batches_if_token_changed() -> None:
-    """Clear GPU batches when the decorator cache token is bumped on file load, undo, redo, or depsgraph changes."""
-    global _last_decorator_cache_token
-    token = get_decorator_cache_token()
-    if token != _last_decorator_cache_token:
-        _triangle_batch_cache.clear()
-        _wireframe_batch_cache.clear()
-        _last_decorator_cache_token = token
 
 
 def _find_closest_wireframe_pixel(buffer_data, cx, cy):
@@ -213,8 +203,7 @@ def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch | None, bo
     if _triangle_vert_fmt is None:
         _triangle_vert_fmt = _create_vert_format()
 
-    _discard_stale_batches_if_token_changed()
-    cache_key = (obj.session_uid, get_decorator_cache_token())
+    cache_key = (get_decorator_cache_token(), obj.as_pointer())
     if cache_key in _triangle_batch_cache:
         return _triangle_batch_cache[cache_key]
 
@@ -366,8 +355,7 @@ def _ensure_wireframe_batches(obj: bpy.types.Object) -> dict[str, tuple[GPUBatch
     if _wireframe_vert_fmt is None:
         _wireframe_vert_fmt = _create_vert_format()
 
-    _discard_stale_batches_if_token_changed()
-    cache_key = (obj.session_uid, get_decorator_cache_token())
+    cache_key = (get_decorator_cache_token(), obj.as_pointer())
 
     # Cache hit
     if cache_key in _wireframe_batch_cache:
@@ -465,7 +453,7 @@ def _get_tris_render_ops(objs_to_raycast: list[bpy.types.Object]) -> list[tuple[
 
 
 def _create_tris_snaps(
-    context: bpy.types.Context, event: bpy.types.Event, mouse_read_rect, buffers_list, last_buf, xray_mode
+    context: bpy.types.Context, mouse_pos, mouse_read_rect, buffers_list, last_buf, xray_mode
 ) -> tuple[list[dict], bpy.types.Object | None]:
     """Decode the triangle readback buffer(s) into face snaps.
 
@@ -476,7 +464,7 @@ def _create_tris_snaps(
 
     Args:
         context: Blender context.
-        event: the event carrying the cursor position.
+        mouse_pos: ``(x, y)`` cursor position in region space.
         mouse: ``(mx, read_x, my, read_y)`` cursor and readback origin.
         buffers_list: per-object single-pixel buffers (xray mode only).
         last_buf: full readback region buffer (non-xray mode).
@@ -533,10 +521,10 @@ def _create_tris_snaps(
     snaps: list[dict] = []
     closest_obj = None
     closest_dist = float("inf")
-    ray_origin, _, _ = tool.Raycast.get_viewport_ray_data(context, event)
+    ray_origin, _, _ = tool.Raycast.get_viewport_ray_data(context, mouse_pos)
     for obj_index in hits:
         obj, is_cut_face = _obj_list[obj_index]
-        hit_obj, hit, face_index = tool.Raycast.cast_rays_to_single_object(context, event, obj)
+        hit_obj, hit, face_index = tool.Raycast.cast_rays_to_single_object(context, None, obj, mouse_pos)
         if hit:
             snap: dict = {
                 "point": hit,
@@ -613,7 +601,7 @@ def _get_wireframe_render_ops(
 
 
 def _create_wireframe_snaps(
-    context: bpy.types.Context, event: bpy.types.Event, mouse_read_rect, obj_slots, last_buf
+    context: bpy.types.Context, mouse_pos, mouse_read_rect, obj_slots, last_buf
 ) -> tuple[list[dict], None]:
     """Decode the wireframe readback buffer into vertex/edge snaps.
 
@@ -624,7 +612,7 @@ def _create_wireframe_snaps(
 
     Args:
         context: Blender context.
-        event: the event carrying the cursor position.
+        mouse_pos: ``(x, y)`` cursor position in region space.
         mouse: ``(mx, read_x, my, read_y)`` cursor and readback origin.
         obj_slots: ``[(snap_obj, pts_start, n_pts, lines_start, n_lines), ...]``.
         last_buf: full readback region buffer.
@@ -650,7 +638,7 @@ def _create_wireframe_snaps(
     snap_threshold = tool.Raycast.calculate_snap_threshold(rv3d.view_distance)
 
     # Compute view ray for 3D proximity calculations
-    _, ray_target, ray_direction = tool.Raycast.get_viewport_ray_data(context, event)
+    _, ray_target, ray_direction = tool.Raycast.get_viewport_ray_data(context, mouse_pos)
     try:
         loc = tool.Cad.region_2d_to_location_3d_np(context.region, rv3d, (mx, my), ray_direction)
     except Exception:
@@ -659,7 +647,7 @@ def _create_wireframe_snaps(
     for snap_obj, pts_start, n_pts, lines_start, n_lines in obj_slots:
         if n_pts > 0 and pts_start <= encoded < pts_start + n_pts:
             vi = encoded - pts_start
-            batches = _wireframe_batch_cache.get(id(snap_obj))
+            batches = _wireframe_batch_cache.get((get_decorator_cache_token(), snap_obj.as_pointer()))
             if batches:
                 pts_data = batches.get("POINTS")
                 if pts_data:
@@ -683,7 +671,7 @@ def _create_wireframe_snaps(
 
         if n_lines > 0 and lines_start <= encoded < lines_start + n_lines:
             ei = encoded - lines_start
-            batches = _wireframe_batch_cache.get(id(snap_obj))
+            batches = _wireframe_batch_cache.get((get_decorator_cache_token(), snap_obj.as_pointer()))
             if batches:
                 lines_data = batches.get("LINES")
                 if lines_data:
@@ -995,9 +983,7 @@ class Raycast(bonsai.core.tool.Raycast):
         return True
 
     @classmethod
-    def get_viewport_ray_data(
-        cls, context: bpy.types.Context, event: bpy.types.Event, mouse_pos: tuple[int, int] = None
-    ):
+    def get_viewport_ray_data(cls, context: bpy.types.Context, mouse_pos: tuple[int, int] = None):
         region = context.region
         rv3d = context.region_data
         assert rv3d and region
@@ -1007,8 +993,6 @@ class Raycast(bonsai.core.tool.Raycast):
         # but it temporarily switches the perspective_matrix from camera to the perspective_matrix from ortho view.
         if original_perspective == "CAMERA":
             rv3d.view_perspective = "ORTHO"
-        if not mouse_pos:
-            mouse_pos = event.mouse_region_x, event.mouse_region_y
 
         view_vector = tool.Cad.region_2d_to_vector_3d_np(region, rv3d, mouse_pos)
         ray_origin = tool.Cad.region_2d_to_origin_3d_np(
@@ -1027,14 +1011,10 @@ class Raycast(bonsai.core.tool.Raycast):
     def get_object_ray_data(
         cls,
         context: bpy.types.Context,
-        event: bpy.types.Event,
         obj_matrix: mathutils.Matrix,
         mouse_pos: tuple[int, int] = None,
     ):
-        if mouse_pos:
-            ray_origin, ray_target, _ = cls.get_viewport_ray_data(context, event, mouse_pos)
-        else:
-            ray_origin, ray_target, _ = cls.get_viewport_ray_data(context, event)
+        ray_origin, ray_target, _ = cls.get_viewport_ray_data(context, mouse_pos)
         matrix_inv = obj_matrix.inverted()
         ray_origin_obj = matrix_inv @ ray_origin
         ray_target_obj = matrix_inv @ ray_target
@@ -1046,16 +1026,10 @@ class Raycast(bonsai.core.tool.Raycast):
     def obj_ray_cast(
         cls,
         context: bpy.types.Context,
-        event: bpy.types.Event,
         obj: bpy.types.Object,
         mouse_pos: tuple[int, int] = None,
     ):
-        if mouse_pos:
-            ray_origin_obj, _, ray_direction_obj = cls.get_object_ray_data(
-                context, event, obj.matrix_world.copy(), mouse_pos
-            )
-        else:
-            ray_origin_obj, _, ray_direction_obj = cls.get_object_ray_data(context, event, obj.matrix_world.copy())
+        ray_origin_obj, _, ray_direction_obj = cls.get_object_ray_data(context, obj.matrix_world.copy(), mouse_pos)
         success, location, normal, face_index = obj.ray_cast(ray_origin_obj, ray_direction_obj)
         if success:
             return location, normal, face_index
@@ -1066,7 +1040,7 @@ class Raycast(bonsai.core.tool.Raycast):
     def get_gpu_detection_snaps(
         cls,
         context: bpy.types.Context,
-        event: bpy.types.Event,
+        mouse_pos: tuple[int, int],
         objs_to_raycast: list[bpy.types.Object],
         tris: bool = False,
     ) -> tuple[list[dict], bpy.types.Object | None]:
@@ -1076,11 +1050,15 @@ class Raycast(bonsai.core.tool.Raycast):
         with per-face IDs encoded as colours, then reads the pixel(s)
         under the cursor to find which faces are hit.
 
+        :param mouse_pos: ``(x, y)`` cursor position in region space. A
+            ``bpy.types.Event`` must not be passed here, as events are only
+            valid inside the callback that receives them.
+
         :return: ``(snaps, closest_obj)`` where *snaps* is a list of
             snap dicts (same format as the raycast-based version) and
             *closest_obj* is the single closest object (or None).
         """
-        global _encoding_shader, _offscreen, _obj_list
+        global _encoding_shader, _offscreen, _offscreen_size, _obj_list
 
         if bpy.app.background:
             return [], None
@@ -1111,14 +1089,17 @@ class Raycast(bonsai.core.tool.Raycast):
         # Render to offscreen buffer
 
         w, h = region.width, region.height
-        mx = int(event.mouse_region_x)
-        my = int(event.mouse_region_y)
+        mx = int(mouse_pos[0])
+        my = int(mouse_pos[1])
 
         if _encoding_shader is None:
             _encoding_shader = _create_encoding_shader()  # same shader works for TRIS
 
-        if _offscreen is None:
+        # The offscreen buffer must match the current region size to detect if
+        # region size has changed
+        if _offscreen is None or _offscreen_size != (w, h):
             _offscreen = GPUOffScreen(max(w, 1), max(h, 1), format="RGBA8")
+            _offscreen_size = (w, h)
 
         # Save GPU state so it can be restored even if readback fails.
         prev_depth_mask = gpu.state.depth_mask_get()
@@ -1183,21 +1164,26 @@ class Raycast(bonsai.core.tool.Raycast):
 
         mouse_read_rect = (w, h, mx, my, read_x, read_y)
         if tris:
-            return _create_tris_snaps(context, event, mouse_read_rect, buffers_list, last_buf, xray_mode)
+            return _create_tris_snaps(context, mouse_pos, mouse_read_rect, buffers_list, last_buf, xray_mode)
         else:
-            return _create_wireframe_snaps(context, event, mouse_read_rect, obj_slots, last_buf)
+            return _create_wireframe_snaps(context, mouse_pos, mouse_read_rect, obj_slots, last_buf)
 
     @classmethod
-    def get_gpu_solid_snaps(cls, context, event, objs_to_raycast):
-        return cls.get_gpu_detection_snaps(context, event, objs_to_raycast, tris=True)
+    def get_gpu_solid_snaps(cls, context, mouse_pos, objs_to_raycast):
+        return cls.get_gpu_detection_snaps(context, mouse_pos, objs_to_raycast, tris=True)
 
     @classmethod
-    def get_gpu_wireframe_snaps(cls, context, event, objs_to_raycast):
-        return cls.get_gpu_detection_snaps(context, event, objs_to_raycast)
+    def get_gpu_wireframe_snaps(cls, context, mouse_pos, objs_to_raycast):
+        return cls.get_gpu_detection_snaps(context, mouse_pos, objs_to_raycast)
 
     @classmethod
-    def detect_gpu_snaps(cls, context, event, request):
-        """GPU snap detection callback for ``GpuSnapDecorator``."""
+    def detect_gpu_snaps(cls, context, request):
+        """GPU snap detection callback for ``GpuSnapDecorator``.
+
+        The request carries the cursor position as plain ints; the draw
+        handler must not hold on to a ``bpy.types.Event``, which is only
+        valid inside the callback that receives it.
+        """
         if bpy.app.background:
             return None
 
@@ -1205,8 +1191,9 @@ class Raycast(bonsai.core.tool.Raycast):
         if not objs_to_raycast:
             return None
 
-        solid_snaps, closest_obj = cls.get_gpu_solid_snaps(context, event, objs_to_raycast)
-        wireframe_snaps, _ = cls.get_gpu_wireframe_snaps(context, event, objs_to_raycast)
+        mouse_pos = (request["mouse_x"], request["mouse_y"])
+        solid_snaps, closest_obj = cls.get_gpu_solid_snaps(context, mouse_pos, objs_to_raycast)
+        wireframe_snaps, _ = cls.get_gpu_wireframe_snaps(context, mouse_pos, objs_to_raycast)
         return solid_snaps, closest_obj, wireframe_snaps
 
     @classmethod
@@ -1218,16 +1205,16 @@ class Raycast(bonsai.core.tool.Raycast):
             _triangle_vert_fmt, \
             _encoding_shader, \
             _offscreen, \
-            _obj_list, \
-            _last_decorator_cache_token
+            _offscreen_size, \
+            _obj_list
         _wireframe_batch_cache = {}
         _wireframe_vert_fmt = None
         _triangle_batch_cache = {}
         _triangle_vert_fmt = None
         _encoding_shader = None
         _offscreen = None
+        _offscreen_size = None
         _obj_list = []
-        _last_decorator_cache_token = None
 
     @classmethod
     def ray_cast_by_proximity(
@@ -1241,7 +1228,7 @@ class Raycast(bonsai.core.tool.Raycast):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
-        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, mouse_pos)
         points = []
 
         snap_threshold = cls.calculate_snap_threshold(rv3d.view_distance)
@@ -1338,7 +1325,7 @@ class Raycast(bonsai.core.tool.Raycast):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
-        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, mouse_pos)
         snap_threshold = cls.calculate_snap_threshold(rv3d.view_distance)
 
         try:
@@ -1393,7 +1380,7 @@ class Raycast(bonsai.core.tool.Raycast):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
-        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, mouse_pos)
 
         if tool.Ifc.get():
             default_container_elevation = tool.Root.get_default_container_elevation()
@@ -1416,7 +1403,7 @@ class Raycast(bonsai.core.tool.Raycast):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
-        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, mouse_pos)
         snap_threshold = cls.calculate_snap_threshold(rv3d.view_distance)
 
         try:
@@ -1464,11 +1451,13 @@ class Raycast(bonsai.core.tool.Raycast):
     def cast_rays_to_single_object(
         cls,
         context: bpy.types.Context,
-        event: bpy.types.Event,
+        event: bpy.types.Event | None,
         obj: bpy.types.Object,
+        mouse_pos: tuple[int, int] = None,
     ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
 
-        mouse_pos = event.mouse_region_x, event.mouse_region_y
+        if mouse_pos is None:
+            mouse_pos = event.mouse_region_x, event.mouse_region_y
         hit = None
         face_index = None
         # Wireframes
@@ -1476,18 +1465,18 @@ class Raycast(bonsai.core.tool.Raycast):
             return None, None, None
         # Meshes
         else:
-            hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
+            hit, normal, face_index = tool.Raycast.obj_ray_cast(context, obj, mouse_pos)
             if hit is None:
                 # Tried original mouse position. Now it will try the offsets.
                 original_mouse_pos = mouse_pos
                 for value in cls.mouse_offset:
                     mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
-                    hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj, mouse_pos)
+                    hit, normal, face_index = tool.Raycast.obj_ray_cast(context, obj, mouse_pos)
                     if hit:
                         break
                 mouse_pos = original_mouse_pos
             if hit:
-                hit_world = obj.original.matrix_world @ hit
+                hit_world = obj.matrix_world @ hit
                 return obj, hit_world, face_index
             else:
                 return None, None, None
@@ -1505,7 +1494,8 @@ class Raycast(bonsai.core.tool.Raycast):
         best_hit = None
         best_face_index = None
 
-        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+        mouse_pos = (int(event.mouse_region_x), int(event.mouse_region_y))
+        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, mouse_pos)
 
         for snap_obj in objs_to_raycast:
             if not include_wireframes and (
@@ -1567,7 +1557,8 @@ class Raycast(bonsai.core.tool.Raycast):
         closest_hit = None
         closest_face_index = None
 
-        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+        mouse_pos = (int(event.mouse_region_x), int(event.mouse_region_y))
+        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, mouse_pos)
 
         space = context.space_data
         xray_mode = (space.shading.type == "SOLID" and space.shading.show_xray) or (

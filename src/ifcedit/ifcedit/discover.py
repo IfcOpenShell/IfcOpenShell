@@ -19,8 +19,10 @@
 
 from __future__ import annotations
 
+import functools
 import importlib
 import inspect
+import math
 import pkgutil
 import re
 import typing
@@ -126,6 +128,82 @@ def function_docs(module: str, function: str) -> dict:
     if return_description:
         result["return_description"] = return_description
     return result
+
+
+_STOPWORDS = frozenset("a an and are as by do does for from how i in into is it of on or the this to with".split())
+
+
+def _stem(word: str) -> str:
+    """Reduce a word to a crude stem, so that "materials" matches "material"."""
+    for suffix in ("ies", "es", "s", "ing", "ed"):
+        if word.endswith(suffix) and len(word) - len(suffix) >= 3:
+            return word[: -len(suffix)] + ("y" if suffix == "ies" else "")
+    return word
+
+
+# Abbreviations in API names, spelled out so that a search in plain words finds them.
+_ABBREVIATIONS = {"pset": "property set", "qto": "quantity set"}
+
+
+def _words(text: str) -> set[str]:
+    words = re.findall(r"[a-z0-9]+", text.lower())
+    words = " ".join(_ABBREVIATIONS.get(w, w) for w in words).split()
+    return {_stem(w) for w in words if w not in _STOPWORDS}
+
+
+@functools.cache
+def _search_index() -> tuple[tuple[str, str, frozenset[str], frozenset[str], frozenset[str]], ...]:
+    """(path, summary, name words, summary words, docstring words) for every API function."""
+    index = []
+    for module in list_modules():
+        for name in module["functions"]:
+            fn = _get_underlying_function(module["module"], name)
+            if fn is None:
+                continue
+            doc = inspect.getdoc(fn) or ""
+            summary = doc.split("\n")[0]
+            index.append(
+                (
+                    f"{module['module']}.{name}",
+                    summary,
+                    frozenset(_words(f"{module['module']} {name.replace('_', ' ')}")),
+                    frozenset(_words(summary)),
+                    frozenset(_words(doc)),
+                )
+            )
+    return tuple(index)
+
+
+def search_functions(query: str, limit: int = 20) -> list[dict]:
+    """Find ifcopenshell.api functions by keyword, best match first.
+
+    Use this when the function name is not known: search for what you want
+    to do, such as ``"assign material layer set"``, then read the best
+    match with ``function_docs()``. Search in the API's own terms: "remove"
+    rather than "delete", "edit attributes" rather than "rename", "assign
+    container" rather than "put on a storey". Each query word scores most when it is
+    part of the module or function name, less when it is in the one-line
+    summary, and least when it is elsewhere in the docstring, and a word
+    that few functions use counts for more than a common one. Plurals and
+    simple verb endings are ignored, so ``"materials"`` matches
+    ``material``.
+
+    Returns ``[{"function": "module.function", "description": "...", "score": N}]``.
+
+    :param query: Words describing what you want to do.
+    :param limit: Most results to return.
+    """
+    index = _search_index()
+    words = _words(query)
+    # A word that appears in fewer functions says more about which one is meant.
+    rarity = {w: math.log(len(index) / (1 + sum(w in doc_words for *_, doc_words in index))) for w in words}
+    results = []
+    for path, summary, name_words, summary_words, doc_words in index:
+        score = sum(rarity[w] * (5 * (w in name_words) + 2 * (w in summary_words) + (w in doc_words)) for w in words)
+        if score > 0:
+            results.append({"function": path, "description": summary, "score": round(score, 1)})
+    results.sort(key=lambda r: (-r["score"], r["function"]))
+    return results[:limit]
 
 
 def _get_underlying_function(module: str, function: str):
