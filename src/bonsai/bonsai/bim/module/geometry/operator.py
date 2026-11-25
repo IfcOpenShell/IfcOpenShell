@@ -2506,12 +2506,12 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         if not tool.Ifc.get():
             return tool.Blender.toggle_edit_mode(context)
 
+        objects_in_mode = getattr(context, "objects_in_mode", None) or []
+        edited_item_objs = [o for o in objects_in_mode if tool.Geometry.is_representation_item(o)]
         if not context.active_object:
             return {"FINISHED"}
         self.is_valid = True
 
-        objects_in_mode = getattr(context, "objects_in_mode", None) or []
-        edited_item_objs = [o for o in objects_in_mode if tool.Geometry.is_representation_item(o)]
         tool.Blender.toggle_edit_mode(context)
 
         props = tool.Geometry.get_geometry_props()
