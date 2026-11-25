@@ -90,6 +90,28 @@ class Csv2Ifc:
             return result.date()
         return result
 
+    def parse_duration(self, value: str, hours_per_day: float) -> Union[str, None]:
+        """A CSV duration (2d, 1.5d, 1d4h, 30m) as an IfcDuration of work days and work hours
+
+        A part of a day is work hours of a day of hours_per_day: 1.5d is
+        P1DT4H. Hours do not become days: 30h is PT30H.
+        """
+        parts = {}
+        for unit in "dhms":
+            match = re.findall(rf"(\d+\.?\d*){unit}", value)
+            parts[unit] = float(match[0]) if match else 0.0
+        days = int(parts["d"])
+        seconds = round(
+            (parts["d"] - days) * hours_per_day * 3600 + parts["h"] * 3600 + parts["m"] * 60 + parts["s"], 6
+        )
+        hours, seconds = divmod(seconds, 3600)
+        minutes, seconds = divmod(seconds, 60)
+        time = "".join(f"{int(v)}{unit}" for v, unit in ((hours, "H"), (minutes, "M")) if v)
+        if seconds:
+            time += f"{seconds:g}S"
+        result = (f"{days}D" if days else "") + (f"T{time}" if time else "")
+        return f"P{result}" if result else "P0D"
+
     def get_row_task(self, row):
         hours_per_day = 8
         hierarchy = row[self.headers["Hierarchy"]]
@@ -105,7 +127,7 @@ class Csv2Ifc:
             self.parse_date(row[self.headers["ScheduleFinish"]]) if row[self.headers["ScheduleFinish"]] else None
         )
         scheduled_duration = (
-            ifcopenshell.util.date.string_to_duration(row[self.headers["ScheduleDuration"]])
+            self.parse_duration(row[self.headers["ScheduleDuration"]], hours_per_day)
             if row[self.headers["ScheduleDuration"]]
             else None
         )
@@ -116,7 +138,7 @@ class Csv2Ifc:
             self.parse_date(row[self.headers["ActualFinish"]]) if row[self.headers["ActualFinish"]] else None
         )
         actual_duration = (
-            ifcopenshell.util.date.string_to_duration(row[self.headers["ActualDuration"]])
+            self.parse_duration(row[self.headers["ActualDuration"]], hours_per_day)
             if row[self.headers["ActualDuration"]]
             else None
         )

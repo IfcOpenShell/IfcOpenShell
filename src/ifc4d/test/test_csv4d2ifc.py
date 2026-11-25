@@ -53,3 +53,12 @@ def test_giving_a_finish_date_without_a_time_the_last_work_instant(tmp_path):
     times = convert(tmp_path, ["1,1,A,2026-01-19,2026-01-20,,,,,"])
     assert times["1"].ScheduleFinish == "2026-01-20T17:00:00"
     assert times["1"].ScheduleDuration == "P2D"
+
+
+def test_reading_a_part_of_a_day_as_work_hours():
+    converter = Csv2Ifc()
+    assert converter.parse_duration("1.5d", 8) == "P1DT4H"
+    assert converter.parse_duration("1d4h", 8) == "P1DT4H"
+    assert converter.parse_duration("30h", 8) == "PT30H"
+    assert converter.parse_duration("2d", 8) == "P2D"
+    assert converter.parse_duration("45m", 8) == "PT45M"
