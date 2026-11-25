@@ -49,7 +49,7 @@ if TYPE_CHECKING:
     # NOTE: mathutils is never used at runtime in ifcopenshell,
     # only for type checking to ensure methods are compatible with
     # Blender vectors.
-    from mathutils import Vector  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+    from mathutils import Vector  # pyright: ignore[reportMissingImports]  # ty:ignore[import-not-found]
 
     # Support both numpy arrays and python sequences as inputs.
     VectorType = Union[Sequence[float], Vector, np.ndarray]
@@ -1002,60 +1002,188 @@ class ShapeBuilder:
         """
         return self.file.create_entity("IfcEdge", self.vertex(start), self.vertex(end))
 
-    def face(self, points: SequenceOfVectors) -> ifcopenshell.entity_instance:
+    def face(
+        self, points: SequenceOfVectors, inner_bounds: Sequence[SequenceOfVectors] = ()
+    ) -> ifcopenshell.entity_instance:
         """Create a single topological face
 
         There are many types of faces, but for now we only support planar
-        polyloop defined faces with an outer boundary.
+        polyloop defined faces.
 
         :param points: ordered list of 3d coordinates representing the outer boundary
+        :param inner_bounds: ordered lists of 3d coordinates, one for each hole
         :return: IfcFace
         """
-        verts = [self.file.createIfcCartesianPoint(p) for p in ifc_safe_vector_type(points)]
-        return self.file.createIfcFace([self.file.createIfcFaceOuterBound(self.file.createIfcPolyLoop(verts), True)])
+        bounds = [self.file.createIfcFaceOuterBound(self.polyloop(points), True)]
+        bounds += [self.file.createIfcFaceBound(self.polyloop(p), True) for p in inner_bounds]
+        return self.file.createIfcFace(bounds)
 
-    def face_surface(self, points: SequenceOfVectors) -> ifcopenshell.entity_instance:
+    def polyloop(self, points: SequenceOfVectors) -> ifcopenshell.entity_instance:
+        """Create a closed loop of points
+
+        :param points: ordered list of 3d coordinates, the last not repeating the first
+        :return: IfcPolyLoop
+        """
+        return self.file.createIfcPolyLoop([self.file.createIfcCartesianPoint(p) for p in ifc_safe_vector_type(points)])
+
+    def face_surface(
+        self,
+        points: SequenceOfVectors,
+        inner_bounds: Sequence[SequenceOfVectors] = (),
+        normal: Optional[VectorType] = None,
+        x_axis: Optional[VectorType] = None,
+    ) -> ifcopenshell.entity_instance:
         """Create a planar topological face on an explicit surface
 
         This is the face that structural surface members and surface
         connections require: an IfcFaceSurface whose IfcPlane is the reference
-        surface and gives the local axes, bounded by an IfcEdgeLoop of edges
+        surface and gives the local axes, bounded by IfcEdgeLoops of edges
         between IfcVertexPoints, as for structural curve items.
 
         The plane is placed at the first point, its normal (local z) follows
-        the winding of the points by the right hand rule, and its local x runs
-        along the first edge.
+        the winding of the outer boundary by the right hand rule, and its local
+        x runs along the first edge. Give ``normal`` and ``x_axis`` to keep the
+        local axes of a face being replaced: the boundaries are reversed if
+        they wind the other way round ``normal``, and ``x_axis`` is projected
+        into the plane.
 
         :param points: ordered list of 3d coordinates representing the outer
             boundary, which must lie in one plane
+        :param inner_bounds: ordered lists of 3d coordinates, one for each
+            hole, in the same plane
+        :param normal: optional direction the plane's normal is to point to the
+            side of
+        :param x_axis: optional direction of the plane's local x
         :return: IfcFaceSurface
         """
         coordinates = np.array(points, dtype="d")
-        if len(coordinates) < 3:
-            raise ValueError("A face needs at least 3 points")
-        # Newell's method, which is exact for a planar polygon and does not depend on which corners are convex
-        normal = np.sum(np.cross(coordinates, np.roll(coordinates, -1, axis=0)), axis=0)
-        if np.linalg.norm(normal) == 0.0:
-            raise ValueError("The points of a face must not all lie on one line")
-        normal = normal / np.linalg.norm(normal)
-        x_axis = coordinates[1] - coordinates[0]
-        x_axis = x_axis - np.dot(x_axis, normal) * normal
-        x_axis = x_axis / np.linalg.norm(x_axis)
+        holes = [np.array(p, dtype="d") for p in inner_bounds]
+        if len(coordinates) < 3 or any(len(h) < 3 for h in holes):
+            raise ValueError("A face and each of its holes need at least 3 points")
+        plane_normal = self.get_polygon_normal(coordinates)
+        if normal is not None and np.dot(plane_normal, np.array(normal, dtype="d")) < 0.0:
+            coordinates = coordinates[::-1]
+            holes = [h[::-1] for h in holes]
+            plane_normal = -plane_normal
+        everything = np.vstack([coordinates, *holes])
+        size = np.ptp(everything, axis=0).max()
+        if np.abs((everything - coordinates[0]) @ plane_normal).max() > 1e-5 * size:
+            raise ValueError("The points of a face must lie in one plane")
 
-        vertices = [self.vertex(p) for p in coordinates]
+        x_direction = None
+        if x_axis is not None:
+            x_direction = np.array(x_axis, dtype="d")
+            x_direction = x_direction - np.dot(x_direction, plane_normal) * plane_normal
+            if np.linalg.norm(x_direction) < 1e-6 * np.linalg.norm(x_axis):
+                x_direction = None
+        if x_direction is None:
+            x_direction = coordinates[1] - coordinates[0]
+            x_direction = x_direction - np.dot(x_direction, plane_normal) * plane_normal
+        x_direction = x_direction / np.linalg.norm(x_direction)
+
+        plane = self.file.createIfcPlane(
+            self.file.createIfcAxis2Placement3D(
+                self.file.createIfcCartesianPoint(ifc_safe_vector_type(coordinates[0])),
+                self.file.createIfcDirection(ifc_safe_vector_type(plane_normal)),
+                self.file.createIfcDirection(ifc_safe_vector_type(x_direction)),
+            )
+        )
+        bounds = [self.file.createIfcFaceOuterBound(self.edge_loop(coordinates), True)]
+        bounds += [self.file.createIfcFaceBound(self.edge_loop(h), True) for h in holes]
+        return self.file.createIfcFaceSurface(bounds, plane, True)
+
+    def edge_loop(self, points: SequenceOfVectors) -> ifcopenshell.entity_instance:
+        """Create a closed loop of edges between vertex points
+
+        :param points: ordered list of 3d coordinates, the last not repeating the first
+        :return: IfcEdgeLoop
+        """
+        vertices = [self.vertex(p) for p in np.array(points, dtype="d")]
         edges = [
             self.file.createIfcOrientedEdge(None, None, self.file.createIfcEdge(start, end), True)
             for start, end in zip(vertices, vertices[1:] + vertices[:1])
         ]
-        plane = self.file.createIfcPlane(
-            self.file.createIfcAxis2Placement3D(
-                self.file.createIfcCartesianPoint(ifc_safe_vector_type(coordinates[0])),
-                self.file.createIfcDirection(ifc_safe_vector_type(normal)),
-                self.file.createIfcDirection(ifc_safe_vector_type(x_axis)),
-            )
-        )
-        bound = self.file.createIfcFaceOuterBound(self.file.createIfcEdgeLoop(edges), True)
-        return self.file.createIfcFaceSurface([bound], plane, True)
+        return self.file.createIfcEdgeLoop(edges)
+
+    @staticmethod
+    def get_polygon_normal(points: SequenceOfVectors) -> npt.NDArray[np.float64]:
+        """The unit normal of a planar polygon, by the right hand rule
+
+        Newell's method, which is exact for a planar polygon and does not
+        depend on which corners are convex.
+
+        :param points: ordered list of 3d coordinates
+        :return: unit normal
+        """
+        coordinates = np.array(points, dtype="d")
+        normal = np.sum(np.cross(coordinates, np.roll(coordinates, -1, axis=0)), axis=0)
+        length = np.linalg.norm(normal)
+        if length == 0.0:
+            raise ValueError("The points of a face must not all lie on one line")
+        return normal / length
+
+    @staticmethod
+    def get_mesh_boundaries(
+        vertices: SequenceOfVectors, faces: Sequence[Sequence[int]]
+    ) -> tuple[list[int], list[list[int]]]:
+        """The outer boundary and holes of a mesh that makes up one face
+
+        A mesh read from a face is usually triangulated, so the face is the
+        union of its polygons. Its boundaries are the edges that belong to only
+        one polygon, chained in the direction its polygon winds them.
+
+        :param vertices: 3d coordinates of the mesh's vertices
+        :param faces: polygons of the mesh as lists of vertex indices, all
+            winding the same way round
+        :return: vertex indices of the outer boundary, and those of each hole
+        :raises ValueError: if the mesh has no polygons, more than one outer
+            boundary, or boundaries that touch at a vertex
+        """
+        if not faces:
+            raise ValueError("A face needs at least one polygon")
+        edge_count: dict[frozenset[int], int] = {}
+        for face in faces:
+            for start, end in zip(face, face[1:] + face[:1]):
+                key = frozenset((start, end))
+                edge_count[key] = edge_count.get(key, 0) + 1
+        following: dict[int, int] = {}
+        for face in faces:
+            for start, end in zip(face, face[1:] + face[:1]):
+                if edge_count[frozenset((start, end))] != 1:
+                    continue
+                if start in following:
+                    raise ValueError("The boundaries of a face must not touch at a vertex")
+                following[start] = end
+
+        # Each loop starts where the polygons first meet it, so that a single polygon is its own boundary
+        loops: list[list[int]] = []
+        for face in faces:
+            for start in face:
+                if start not in following:
+                    continue
+                loop = [start]
+                end = following.pop(start)
+                while end != start:
+                    loop.append(end)
+                    if end not in following:
+                        raise ValueError("The boundaries of a face must be closed")
+                    end = following.pop(end)
+                loops.append(loop)
+
+        coordinates = np.array(vertices, dtype="d")
+        normal = np.zeros(3)
+        for face in faces:
+            points = coordinates[list(face)]
+            normal += np.sum(np.cross(points, np.roll(points, -1, axis=0)), axis=0)
+        # Twice the area each loop encloses, positive for an outer boundary and negative for a hole
+        areas = []
+        for loop in loops:
+            points = coordinates[loop]
+            areas.append(np.dot(np.sum(np.cross(points, np.roll(points, -1, axis=0)), axis=0), normal))
+        outer = [loop for loop, area in zip(loops, areas) if area > 0.0]
+        if len(outer) != 1:
+            raise ValueError(f"A face has one outer boundary, not {len(outer)}")
+        return outer[0], [loop for loop, area in zip(loops, areas) if area <= 0.0]
 
     def mirror(
         self,

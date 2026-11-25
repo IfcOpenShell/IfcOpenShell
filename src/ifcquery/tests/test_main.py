@@ -123,3 +123,8 @@ class TestCLI:
         rc, stdout, stderr = run_ifcquery(ifc_path, "--format", "ids", "info", str(wall.id()))
         assert rc == 0
         assert stdout.strip() == str(wall.id())
+
+    def test_structural_json(self, ifc_path):
+        rc, stdout, _ = run_ifcquery(ifc_path, "structural", "--depth", "1")
+        assert rc == 0
+        assert json.loads(stdout) == []

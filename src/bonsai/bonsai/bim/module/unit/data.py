@@ -38,6 +38,7 @@ class UnitsData:
             "assigned_units": cls.assigned_units(),
             "unit_classes": cls.unit_classes(),
             "named_unit_types": cls.named_unit_types(),
+            "derived_unit_types": cls.derived_unit_types(),
             "conversion_unit_types": cls.conversion_unit_types(),
             "total_units": cls.get_total_units(),
         }
@@ -89,6 +90,17 @@ class UnitsData:
         assert (entity := tool.Ifc.schema().declaration_by_name("IfcNamedUnit").as_entity())
         values = ifcopenshell.util.attribute.get_enum_items(entity.all_attributes()[1])
         return [(c, c, "") for c in sorted(values)]
+
+    @classmethod
+    def derived_unit_types(cls):
+        results = []
+        for unit_type in tool.Unit.get_derived_unit_types():
+            composition = " . ".join(
+                t.removesuffix("UNIT").lower() + ("" if e == 1 else str(e))
+                for t, e in tool.Unit.DERIVED_UNIT_COMPOSITIONS[unit_type]
+            )
+            results.append((unit_type, unit_type, f"Built from the project's units: {composition}"))
+        return results
 
     @classmethod
     def conversion_unit_types(cls):

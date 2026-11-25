@@ -87,8 +87,8 @@ class IfcGraphEntityNode(Node):
         expansion_base_attr_count: int
 
     @classmethod
-    def poll(cls, ntree):
-        return ntree.bl_idname == TREE_TYPE
+    def poll(cls, node_tree):
+        return node_tree.bl_idname == TREE_TYPE
 
     def draw_buttons(self, context, layout):
         col = layout.column(align=True)

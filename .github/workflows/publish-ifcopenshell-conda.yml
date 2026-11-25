@@ -136,7 +136,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@v10.3.3
 
       - name: Run conda cleaner
         run: uv run --script conda/clean-old-versions.py

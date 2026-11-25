@@ -21,6 +21,9 @@ import ifcopenshell
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+import ifcopenshell.util.attribute
+import ifcopenshell.util.unit
+import pytest
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -42,6 +45,228 @@ class TestParseDistanceString(NewFile):
         assert subject.parse_distance_string("5'6\"") == (True, 1.6764)
         assert subject.parse_distance_string("-5'6\"") == (True, -1.6764)
         assert subject.parse_distance_string("invalid") == (False, 0.0)
+
+
+class TestAddDerivedUnit(NewFile):
+    def setup_project(self, *units):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        if units:
+            ifcopenshell.api.unit.assign_unit(ifc, units=[u(ifc) for u in units])
+        return ifc
+
+    def test_composes_from_the_project_length_unit(self):
+        ifc = self.setup_project(lambda f: ifcopenshell.api.unit.add_si_unit(f, "LENGTHUNIT", prefix="MILLI"))
+        unit = subject.add_derived_unit("MOMENTOFINERTIAUNIT")
+        assert unit.is_a("IfcDerivedUnit")
+        assert unit.UnitType == "MOMENTOFINERTIAUNIT"
+        assert ifcopenshell.util.unit.get_unit_symbol(unit) == "mm4"
+        assert ifcopenshell.util.unit.get_unit_scale(unit) == pytest.approx(1e-12)
+        # Reuses the project's own millimetre rather than creating another.
+        assert len(ifc.by_type("IfcSIUnit")) == 1
+
+    def test_composes_from_several_project_units(self):
+        self.setup_project(
+            lambda f: ifcopenshell.api.unit.add_si_unit(f, "LENGTHUNIT"),
+            lambda f: ifcopenshell.api.unit.add_si_unit(f, "FORCEUNIT", prefix="KILO"),
+        )
+        unit = subject.add_derived_unit("LINEARFORCEUNIT")
+        assert ifcopenshell.util.unit.get_unit_symbol(unit) == "kN/m"
+        assert ifcopenshell.util.unit.get_unit_scale(unit) == pytest.approx(1e3)
+
+    def test_falls_back_to_unassigned_si_units_for_missing_components(self):
+        ifc = self.setup_project(lambda f: ifcopenshell.api.unit.add_si_unit(f, "LENGTHUNIT"))
+        unit = subject.add_derived_unit("MASSPERLENGTHUNIT")
+        assert ifcopenshell.util.unit.get_unit_symbol(unit) == "kg/m"
+        # The fallback kilogram isn't assigned: that would silently change the project's units.
+        assert ifcopenshell.util.unit.get_project_unit(ifc, "MASSUNIT") is None
+
+    def test_inch_section_properties_in_a_foot_project(self):
+        ifc = self.setup_project(lambda f: ifcopenshell.api.unit.add_conversion_based_unit(f, name="foot"))
+        inch = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="inch")
+        unit = subject.add_derived_unit("MOMENTOFINERTIAUNIT", {"LENGTHUNIT": inch})
+        assert ifcopenshell.util.unit.get_unit_symbol(unit) == "in4"
+        assert ifcopenshell.util.unit.get_unit_scale(unit) == pytest.approx(0.0254**4)
+        assert (
+            ifcopenshell.util.unit.get_unit_symbol(ifcopenshell.util.unit.get_project_unit(ifc, "LENGTHUNIT")) == "ft"
+        )
+
+    def test_chosen_length_unit_only_replaces_length_components(self):
+        self.setup_project(
+            lambda f: ifcopenshell.api.unit.add_conversion_based_unit(f, name="foot"),
+            lambda f: ifcopenshell.api.unit.add_conversion_based_unit(f, name="kip"),
+        )
+        inch = ifcopenshell.api.unit.add_conversion_based_unit(tool.Ifc.get(), name="inch")
+        unit = subject.add_derived_unit("MODULUSOFELASTICITYUNIT", {"LENGTHUNIT": inch})
+        assert ifcopenshell.util.unit.get_unit_symbol(unit) == "kip/in2"
+
+    def test_get_derived_unit_component_types(self):
+        assert subject.get_derived_unit_component_types("MOMENTOFINERTIAUNIT") == ["LENGTHUNIT"]
+        # LINEARMOMENTUNIT repeats length (kN.m/m) but needs only one length picker.
+        assert subject.get_derived_unit_component_types("LINEARMOMENTUNIT") == ["FORCEUNIT", "LENGTHUNIT"]
+
+    def test_every_composition_satisfies_ifc_derived_unit_wr1(self):
+        # IfcDerivedUnit WR1: more than one element, or a single element whose exponent isn't 1.
+        for unit_type, composition in subject.DERIVED_UNIT_COMPOSITIONS.items():
+            assert len(composition) > 1 or composition[0][1] != 1, unit_type
+
+    def test_every_offered_type_builds_a_valid_unit(self):
+        import ifcopenshell.validate
+
+        ifc = self.setup_project()
+        for unit_type in subject.get_derived_unit_types():
+            subject.add_derived_unit(unit_type)
+        logger = ifcopenshell.validate.json_logger()
+        ifcopenshell.validate.validate(ifc, logger, express_rules=True)
+        assert [s for s in logger.statements if "IfcDerivedUnit" in str(s)] == []
+
+    def test_a_repeated_component_type_reuses_one_unit(self):
+        ifc = self.setup_project()
+        unit = subject.add_derived_unit("LINEARMOMENTUNIT")
+        assert [e.Exponent for e in unit.Elements] == [1, 1, -1]
+        assert unit.Elements[1].Unit == unit.Elements[2].Unit
+        assert len(ifc.by_type("IfcSIUnit")) == 2  # one newton, one metre
+
+    def test_every_composition_is_a_real_derived_unit_type(self):
+        all_values = set()
+        for schema in ("IFC2X3", "IFC4", "IFC4X3"):
+            entity = ifcopenshell.schema_by_name(schema).declaration_by_name("IfcDerivedUnit").as_entity()
+            all_values |= set(ifcopenshell.util.attribute.get_enum_items(entity.attribute_by_index(1)))
+        assert set(subject.DERIVED_UNIT_COMPOSITIONS) <= all_values
+
+    def test_every_offered_type_can_be_built(self):
+        ifc = self.setup_project()
+        unit_types = subject.get_derived_unit_types()
+        assert "MOMENTOFINERTIAUNIT" in unit_types
+        assert "USERDEFINED" not in unit_types
+        for unit_type in unit_types:
+            unit = subject.add_derived_unit(unit_type)
+            assert unit.UnitType == unit_type
+            assert ifcopenshell.util.unit.get_unit_symbol(unit)
+
+    def test_only_offers_types_in_the_current_schema(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
+        # AREADENSITYUNIT was introduced in IFC4.
+        assert "AREADENSITYUNIT" not in subject.get_derived_unit_types()
+        assert "MOMENTOFINERTIAUNIT" in subject.get_derived_unit_types()
+
+
+class TestComponentUnitChoices(NewFile):
+    def setup_pa_foot_project(self):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        foot = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="foot")
+        pascal = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="PRESSUREUNIT")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[foot, pascal])
+        return ifc
+
+    def labels(self, unit_type):
+        return [label for _, label, _ in subject.get_component_unit_choices(unit_type)]
+
+    def test_default_then_existing_then_new_units(self):
+        self.setup_pa_foot_project()
+        labels = self.labels("LENGTHUNIT")
+        assert labels[0] == "Default (ft)"
+        assert labels[1] == "foot (ft)"
+        assert "+ inch (in)" in labels
+        assert "+ MILLIMETRE (mm)" in labels
+        assert "+ foot (ft)" not in labels  # already in the file
+
+    def test_pressure_offers_the_imperial_catalog(self):
+        self.setup_pa_foot_project()
+        labels = self.labels("PRESSUREUNIT")
+        assert labels[0] == "Default (Pa)"
+        for expected in ("+ psi (psi)", "+ ksi (ksi)", "+ psf (psf)", "+ ksf (ksf)", "+ KILOPASCAL (kPa)"):
+            assert expected in labels
+        assert "+ PASCAL (Pa)" not in labels  # already in the file
+
+    def test_a_type_without_a_project_unit_defaults_to_si(self):
+        self.setup_pa_foot_project()
+        assert self.labels("FORCEUNIT")[0] == "SI (N)"
+        assert self.labels("MASSUNIT")[0] == "SI (kg)"
+
+    def test_offset_units_are_not_offered(self):
+        self.setup_pa_foot_project()
+        assert not any("fahrenheit" in label for label in self.labels("THERMODYNAMICTEMPERATUREUNIT"))
+
+    def test_resolving_choices(self):
+        ifc = self.setup_pa_foot_project()
+        foot = ifcopenshell.util.unit.get_project_unit(ifc, "LENGTHUNIT")
+        assert subject.resolve_unit_choice("LENGTHUNIT", "0") is None
+        assert subject.resolve_unit_choice("LENGTHUNIT", str(foot.id())) == foot
+        kip = subject.resolve_unit_choice("FORCEUNIT", "+CONV:kip")
+        assert kip.is_a("IfcConversionBasedUnit") and kip.Name == "kip"
+        kpa = subject.resolve_unit_choice("PRESSUREUNIT", "+SI:KILO")
+        assert kpa.is_a("IfcSIUnit") and kpa.Prefix == "KILO"
+        assert subject.resolve_unit_choice("LENGTHUNIT", "+SI:").Prefix is None
+
+    def test_ksi_modulus_of_elasticity_in_a_foot_project(self):
+        ifc = self.setup_pa_foot_project()
+        components = {
+            "FORCEUNIT": subject.resolve_unit_choice("FORCEUNIT", "+CONV:kip"),
+            "LENGTHUNIT": subject.resolve_unit_choice("LENGTHUNIT", "+CONV:inch"),
+        }
+        unit = subject.add_derived_unit("MODULUSOFELASTICITYUNIT", components)
+        assert ifcopenshell.util.unit.get_unit_symbol(unit) == "kip/in2"
+        assert ifcopenshell.util.unit.get_unit_scale(unit) == pytest.approx(6894757.2932)  # = 1 ksi
+        assert (
+            ifcopenshell.util.unit.get_unit_symbol(ifcopenshell.util.unit.get_project_unit(ifc, "LENGTHUNIT")) == "ft"
+        )
+
+
+class TestAddStructuralUnits(NewFile):
+    def get_units(self, system: str) -> dict[str, tuple[str, float]]:
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        bpy.context.scene.unit_settings.system = system
+        units = subject.add_structural_units()
+        return {
+            u.UnitType: (ifcopenshell.util.unit.get_unit_symbol(u), ifcopenshell.util.unit.get_unit_scale(u))
+            for u in units
+        }
+
+    def test_metric(self):
+        units = self.get_units("METRIC")
+        assert units["FORCEUNIT"] == ("kN", 1e3)
+        assert units["TORQUEUNIT"] == ("kN.m", 1e3)
+        assert units["LINEARFORCEUNIT"] == ("kN/m", 1e3)
+        assert units["LINEARMOMENTUNIT"] == ("kN.m/m", 1e3)
+        assert units["PLANARFORCEUNIT"] == ("kN/m2", 1e3)
+        assert units["LINEARSTIFFNESSUNIT"] == ("kN/m", 1e3)
+        assert units["ROTATIONALSTIFFNESSUNIT"] == ("kN.m/rad", 1e3)
+        assert units["MODULUSOFLINEARSUBGRADEREACTIONUNIT"] == ("kN/m2", 1e3)
+        assert units["MODULUSOFROTATIONALSUBGRADEREACTIONUNIT"] == ("kN.m/m.rad", 1e3)
+        assert units["MODULUSOFSUBGRADEREACTIONUNIT"] == ("kN/m3", 1e3)
+        assert units["MODULUSOFELASTICITYUNIT"] == ("N/mm2", pytest.approx(1e6))
+        assert units["SHEARMODULUSUNIT"] == ("N/mm2", pytest.approx(1e6))
+        assert units["MASSDENSITYUNIT"][0] == "kg/m3"  # get_unit_scale counts mass in grams
+        assert len(units) == 13
+
+    def test_imperial(self):
+        kip, foot, inch = 4448.2216153, 0.3048, 0.0254
+        units = self.get_units("IMPERIAL")
+        assert units["FORCEUNIT"] == ("kip", pytest.approx(kip))
+        assert units["TORQUEUNIT"] == ("kip.ft", pytest.approx(kip * foot))
+        assert units["LINEARFORCEUNIT"] == ("kip/ft", pytest.approx(kip / foot))
+        assert units["PLANARFORCEUNIT"] == ("lbf/ft2", pytest.approx(4.4482216153 / foot**2))
+        assert units["LINEARSTIFFNESSUNIT"] == ("kip/in", pytest.approx(kip / inch))
+        assert units["ROTATIONALSTIFFNESSUNIT"] == ("kip.ft/rad", pytest.approx(kip * foot))
+        assert units["MODULUSOFELASTICITYUNIT"] == ("kip/in2", pytest.approx(kip / inch**2))
+        assert units["MASSDENSITYUNIT"][0] == "lb/ft3"
+        assert len(units) == 13
+
+    def test_assigning_them_replaces_none_of_the_scene_units(self):
+        ifc = ifcopenshell.api.project.create_file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc)
+        bpy.context.scene.unit_settings.system = "METRIC"
+        ifcopenshell.api.unit.assign_unit(ifc, units=subject.add_structural_units())
+        assert ifcopenshell.util.unit.get_project_unit(ifc, "LENGTHUNIT").Prefix == "MILLI"
+        assert ifcopenshell.util.unit.get_project_unit(ifc, "PLANEANGLEUNIT") is None
 
 
 class TestClearActiveUnit(NewFile):
@@ -292,6 +517,16 @@ class TestImportUnitAttributes(NewFile):
 
 
 class TestImportUnits(NewFile):
+    def test_derived_units_are_named_by_their_symbol(self):
+        ifc = ifcopenshell.api.project.create_file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(ifc, "LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.add_derived_unit(ifc, "MOMENTOFINERTIAUNIT", None, {length: 4})
+        subject.import_units()
+        props = tool.Unit.get_unit_props()
+        assert [u.name for u in props.units if u.ifc_class == "IfcDerivedUnit"] == ["mm4"]
+
     def test_importing_multiple_units(self):
         ifc = ifcopenshell.api.project.create_file()
         tool.Ifc.set(ifc)

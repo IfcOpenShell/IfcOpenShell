@@ -94,6 +94,12 @@ void SettingsDialog::setupUi() {
         "disable if you see holes in open geometry.");
     general_form->addRow("Backface Culling", backface_culling_check_);
 
+    section_caps_check_ = new QCheckBox(general_body);
+    section_caps_check_->setToolTip(
+        "Fill the cut face where a section plane slices through a solid. "
+        "Not drawn in X-ray.");
+    general_form->addRow("Section Caps", section_caps_check_);
+
     general_section->addBodyWidget(general_body);
 
     auto* loading_section = new components::Section("Loading", components::SectionHeaderMode::Visible, graphics_tab);
@@ -372,6 +378,7 @@ void SettingsDialog::syncFromSettings() {
     geometry_library_edit_->setText(AppSettings::instance().geometryLibrary());
     show_stats_check_->setChecked(AppSettings::instance().showStats());
     backface_culling_check_->setChecked(AppSettings::instance().backfaceCulling());
+    section_caps_check_->setChecked(AppSettings::instance().sectionCaps());
     void_limit_spin_->setValue(AppSettings::instance().voidLimit());
     deflection_tolerance_spin_->setValue(AppSettings::instance().deflectionTolerance());
     angular_tolerance_spin_->setValue(AppSettings::instance().angularTolerance());
@@ -418,6 +425,7 @@ void SettingsDialog::onAccepted() {
     AppSettings::instance().setGeometryLibrary(geometry_library_edit_->text());
     AppSettings::instance().setShowStats(show_stats_check_->isChecked());
     AppSettings::instance().setBackfaceCulling(backface_culling_check_->isChecked());
+    AppSettings::instance().setSectionCaps(section_caps_check_->isChecked());
     AppSettings::instance().setVoidLimit(void_limit_spin_->value());
     AppSettings::instance().setDeflectionTolerance(deflection_tolerance_spin_->value());
     AppSettings::instance().setAngularTolerance(angular_tolerance_spin_->value());

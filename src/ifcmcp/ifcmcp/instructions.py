@@ -47,6 +47,10 @@ occurrence, the occurrence to change one.
 geometry and no container until you add them.
 * Properties are grouped in property sets (pset.add_pset, \
 pset.edit_pset); quantities in quantity sets.
+* A structural analysis model (IfcStructuralAnalysisModel) is a group, not \
+part of the spatial structure, so ifc_tree does not show it. ifc_structural \
+lists each one with its members, connections, load cases and load \
+combinations.
 
 # Units, placement and geometry
 

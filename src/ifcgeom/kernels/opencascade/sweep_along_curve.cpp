@@ -61,7 +61,7 @@ namespace {
 				c0->D1(u0, p, v0);
 				c1->D1(u1, p, v1);
 
-				if (1. - std::abs(v0.Normalized().Dot(v1.Normalized())) > tol) {
+				if (std::acos(std::min(1., std::abs(v0.Normalized().Dot(v1.Normalized())))) > tol) {
 					return false;
 				}
 			}

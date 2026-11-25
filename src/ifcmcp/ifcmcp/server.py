@@ -45,6 +45,7 @@ READ_ONLY_TOOLS = frozenset(
         "ifc_validate",
         "ifc_schedule",
         "ifc_cost",
+        "ifc_structural",
         "ifc_schema",
         "ifc_shape_list",
         "ifc_shape_docs",
@@ -203,6 +204,10 @@ def build_server(allow_execute: bool = False) -> Any:
         return session.ifc_cost(max_depth=max_depth)
 
     @_tool
+    def ifc_structural(max_depth: int | None = None) -> list[dict[str, Any]]:
+        return session.ifc_structural(max_depth=max_depth)
+
+    @_tool
     def ifc_schema(entity_type: str) -> dict[str, Any]:
         return session.ifc_schema(entity_type=entity_type)
 
@@ -302,7 +307,12 @@ def build_server(allow_execute: bool = False) -> Any:
         """Render the loaded IFC model to a PNG image.
 
         Returns an inline image the LLM can inspect to understand the spatial
-        layout of the model or a specific element in context.  If
+        layout of the model or a specific element in context.  Structural
+        analysis items are drawn from their topology: curve members (blue) and
+        connections (orange) as lines, point connections as points; select
+        ``IfcStructuralItem`` for the analysis model alone, ``IfcElement`` for
+        the building without it, or highlight the structural items to see
+        them inside a translucent building.  If
         ``output_path`` is provided the PNG is also saved to that file path.
 
         :param selector: ifcopenshell selector to restrict rendered elements
