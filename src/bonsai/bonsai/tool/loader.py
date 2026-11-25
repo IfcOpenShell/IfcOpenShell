@@ -978,6 +978,8 @@ class Loader(bonsai.core.tool.Loader):
                 continue
             mat = ifcopenshell.util.shape.get_shape_matrix(shape)
             verts = ifcopenshell.util.shape.get_vertices(shape.geometry)
+            if verts.size == 0:
+                continue
             point = (mat @ np_to_4d(verts[0]))[:3]
             if cls.is_point_far_away(point, is_meters=True):
                 # Arbitrary origins should be to the nearest millimeter.
