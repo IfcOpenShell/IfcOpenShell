@@ -9,6 +9,9 @@
 #include <Approx_Curve3d.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepOffsetAPI_MakeOffset.hxx>
+#include <gp_Pln.hxx>
 #include <gp_Pnt.hxx>
 #include <Geom_BSplineCurve.hxx>
 
@@ -32,6 +35,19 @@ using namespace ifcopenshell::geom::kernels;
 using namespace ifcopenshell::geom::util;
 
 namespace {
+	// The same edges in the opposite order and direction.
+	TopoDS_Wire reverse_wire(const TopoDS_Wire& wire) {
+		std::vector<TopoDS_Edge> edges;
+		for (BRepTools_WireExplorer exp(wire); exp.More(); exp.Next()) {
+			edges.push_back(exp.Current());
+		}
+		BRepBuilderAPI_MakeWire mw;
+		for (auto it = edges.rbegin(); it != edges.rend(); ++it) {
+			mw.Add(TopoDS::Edge(it->Reversed()));
+		}
+		return mw.Wire();
+	}
+
 	struct curve_creation_visitor {
 		open_cascade_kernel* kernel;
 		open_cascade_kernel::curve_creation_visitor_result_type result;
@@ -121,6 +137,22 @@ namespace {
 					e_basis = taxonomy::cast<taxonomy::edge>(e_basis)->basis;
 				}
 				auto crv_or_wire = kernel->convert_curve(e_basis);
+				if (e_basis->kind() == taxonomy::OFFSET_CURVE && crv_or_wire.index() == 2) {
+					// The offset of a wire is a wire. The edge spans the whole of it, so only its direction applies.
+					TopoDS_Wire W = std::get<TopoDS_Wire>(crv_or_wire);
+					bool backwards = reversed;
+					if (e->start.index() == 2 && std::get<double>(e->start) > std::get<double>(e->end)) {
+						backwards = !backwards;
+					}
+					if (backwards) {
+						W = reverse_wire(W);
+					}
+					if (e->matrix && !e->matrix->is_identity()) {
+						W = TopoDS::Wire(util::apply_transformation(W, *e->matrix));
+					}
+					return result = W;
+				}
+
 				Handle(Geom_Curve) curve;
 				if (crv_or_wire.index() == 0) {
 					// raise exception
@@ -224,9 +256,39 @@ namespace {
 			return result = W;
 		}
 
-		open_cascade_kernel::curve_creation_visitor_result_type operator()(const taxonomy::offset_curve::ptr&) {
-			// @todo
-			throw std::runtime_error("Offset curves not supported as part of loop");
+		open_cascade_kernel::curve_creation_visitor_result_type operator()(const taxonomy::offset_curve::ptr& oc) {
+			if (!oc->reference) {
+				throw std::runtime_error("Offset curve without reference direction");
+			}
+			auto crv_or_wire = kernel->convert_curve(oc->basis);
+			if (crv_or_wire.index() != 2) {
+				throw std::runtime_error("Offset of an unbounded curve not supported");
+			}
+			const TopoDS_Wire& spine = std::get<TopoDS_Wire>(crv_or_wire);
+			// The spine of a straight line does not define a plane, so the plane of
+			// the reference direction is given explicitly. Intersection joins keep
+			// the distance to the spine constant, as the offset in the taxonomy does.
+			TopoDS_Face plane = BRepBuilderAPI_MakeFace(gp_Pln(gp::Origin(), open_cascade_kernel::convert_xyz<gp_Dir>(*oc->reference)));
+			BRepOffsetAPI_MakeOffset offset(plane, GeomAbs_Intersection, true);
+			// OpenCASCADE offsets an open wire to its left whatever the sign of the
+			// distance. The taxonomy offsets towards reference x tangent, which is
+			// the left as well, so a negative offset runs along the spine backwards.
+			const bool negative = oc->offset < 0.;
+			offset.AddWire(negative ? reverse_wire(spine) : spine);
+			offset.Perform(std::abs(oc->offset));
+			if (!offset.IsDone()) {
+				throw std::runtime_error("Offset curve construction failed");
+			}
+			TopExp_Explorer exp(offset.Shape(), TopAbs_WIRE);
+			if (!exp.More()) {
+				throw std::runtime_error("Offset curve construction produced no wire");
+			}
+			TopoDS_Wire wire = TopoDS::Wire(exp.Current());
+			exp.Next();
+			if (exp.More()) {
+				throw std::runtime_error("Offset curve construction produced more than one wire");
+			}
+			return result = negative ? reverse_wire(wire) : wire;
 		}
 	};
 
@@ -308,7 +370,7 @@ bool open_cascade_kernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& w
 		auto inst = loop->instance.as<express::entity>();
 		auto file = loop->instance.as<express::entity>().file();
 		auto profile = file->get_inverse(inst.id(), file->schema()->declaration_by_name("IfcProfileDef"), -1);
-		force_close = profile.size() > 0;
+		force_close = profile.size() > 0 && loop->closed.value_or(true);
 	}
 
 	wire_builder bld(settings_.get<settings::Precision>().get(), loop->instance ? loop->instance.as<express::entity>() : express::base{});
