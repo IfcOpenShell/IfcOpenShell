@@ -54,6 +54,20 @@
 #include <locale.h>
 #endif
 
+// Floating-point std::to_chars, used by format_double_shortest() below.
+// libstdc++ (GCC 11+) and the MSVC STL (VS 2019 16.4+) announce it with the
+// standard feature-test macro. libc++ has it since LLVM 14 but never defines
+// __cpp_lib_to_chars, so there the availability macro of libc++ 18+ is used,
+// which is 0 when the deployment target predates the dylib that has it (Apple:
+// macOS 13.3, iOS 16.3). Older libc++ keeps the snprintf search.
+#if defined(_LIBCPP_VERSION)
+#if defined(_LIBCPP_AVAILABILITY_HAS_TO_CHARS_FLOATING_POINT) && _LIBCPP_AVAILABILITY_HAS_TO_CHARS_FLOATING_POINT
+#define IFCOPENSHELL_HAS_TO_CHARS_DOUBLE
+#endif
+#elif defined(__cpp_lib_to_chars) && __cpp_lib_to_chars >= 201611L
+#define IFCOPENSHELL_HAS_TO_CHARS_DOUBLE
+#endif
+
 #ifdef USE_MMAP
 #include <boost/filesystem/path.hpp>
 #endif
@@ -1101,8 +1115,9 @@ namespace {
         }
         // Shortest decimal representation of 'd' that round-trips back to the
         // exact same double (like std::to_chars, or Python's repr).
-        // Floating-point `std::to_chars` requires macOS 13.3+, so Apple (and
-        // Emscripten, as for from_chars above) keep the manual search below.
+        // Floating-point `std::to_chars` is not available everywhere (e.g. it
+        // requires macOS 13.3+), see IFCOPENSHELL_HAS_TO_CHARS_DOUBLE above;
+        // without it the manual search below is used.
         //
         // Mirrors libstdc++'s notation-choice bounds (floating_to_chars.cc,
         // __floating_to_chars_shortest) to pick whichever of fixed/scientific is
@@ -1112,7 +1127,7 @@ namespace {
             int mantissa_length = 17;
             int prec = 1;
             bool found = false;
-#if !defined(__APPLE__) && !defined(__EMSCRIPTEN__)
+#ifdef IFCOPENSHELL_HAS_TO_CHARS_DOUBLE
             // Where floating-point std::to_chars is available, its shortest
             // scientific form gives the digit count directly. It is only used
             // when printf rounds to the same digits, so the output stays
