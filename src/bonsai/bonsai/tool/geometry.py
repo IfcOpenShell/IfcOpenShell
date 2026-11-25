@@ -1879,6 +1879,70 @@ class Geometry(bonsai.core.tool.Geometry):
         )
 
     @classmethod
+    def duplicate_representation_item(cls, obj: bpy.types.Object) -> Union[bpy.types.Object, None]:
+        """Add a copy of an item object's item to the representation being edited in item mode.
+
+        The copy keeps the item's style, presentation layer, shape aspect and colour or texture maps.
+        Named profiles are shared, unnamed ones are copied. Call ``reload_representation`` afterwards.
+
+        :return: The new item object, or ``None`` if the item isn't directly in the representation's items,
+            e.g. an operand of a boolean.
+        """
+        ifc_file = tool.Ifc.get()
+        props = cls.get_geometry_props()
+        rep_obj = props.representation_obj
+        assert rep_obj
+        item = cls.get_active_representation(obj)
+        assert item
+        representation = cls.get_active_representation(rep_obj)
+        assert representation
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+        if item not in representation.Items:
+            return None
+
+        def exclude_callback(entity: ifcopenshell.entity_instance) -> bool:
+            return entity.is_a("IfcProfileDef") and bool(entity.ProfileName)
+
+        new_item = ifcopenshell.util.element.copy_deep(
+            ifc_file, item, exclude=["IfcRepresentationMap"], exclude_callback=exclude_callback
+        )
+
+        for styled_item in item.StyledByItem:
+            ifc_file.create_entity("IfcStyledItem", Item=new_item, Styles=styled_item.Styles, Name=styled_item.Name)
+        # IFC2X3 uses LayerAssignments
+        layers = item.LayerAssignment if hasattr(item, "LayerAssignment") else item.LayerAssignments
+        for layer in layers:
+            layer.AssignedItems = tuple(layer.AssignedItems) + (new_item,)
+        for texture_or_colour in tuple(getattr(item, "HasColours", ())) + tuple(getattr(item, "HasTextures", ())):
+            new_map = ifcopenshell.util.element.copy_deep(
+                ifc_file,
+                texture_or_colour,
+                exclude=["IfcColourRgbList", "IfcSurfaceTexture", "IfcTextureVertexList"],
+                exclude_callback=lambda entity: entity == item,
+            )
+            new_map.MappedTo = new_item
+        for inverse in ifc_file.get_inverse(item):
+            if inverse.is_a("IfcShapeRepresentation") and inverse.OfShapeAspect:
+                inverse.Items = tuple(inverse.Items) + (new_item,)
+
+        representation.Items = tuple(representation.Items) + (new_item,)
+
+        mesh = bpy.data.meshes.new("tmp")
+        tool.Ifc.link(new_item, mesh)
+        new_obj = bpy.data.objects.new("tmp", mesh)
+        cls.lock_scale(new_obj)
+        cls.name_item_object(new_obj, new_item)
+        new_obj.matrix_world = rep_obj.matrix_world
+        for collection in obj.users_collection:
+            collection.objects.link(new_obj)
+        props.add_item_object(new_obj, new_item)
+        cls.import_item(new_obj)
+        cls.import_item_attributes(new_obj)
+        if not cls.is_movable(new_item):
+            cls.lock_object(new_obj)
+        return new_obj
+
+    @classmethod
     def remove_representation_item(
         cls, representation_item: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance
     ) -> None:
