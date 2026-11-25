@@ -655,6 +655,7 @@ def get_time_periods(work_time: ifcopenshell.entity_instance) -> list[tuple[date
     return sorted(periods)
 
 
+@cache
 def get_time_of_day(time: str) -> datetime.timedelta:
     # An IfcTime as a duration from midnight. ISO 8601 24:00:00 is the end of the day.
     if time.startswith("24:00"):
