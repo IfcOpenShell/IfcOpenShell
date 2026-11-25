@@ -2341,6 +2341,10 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             self.enable_edit_mode(context)
 
     def handle_multiple_selected_objects(self, context: bpy.types.Context) -> Union[None, set[str]]:
+        selected_objs = context.selected_objects
+        if all(tool.Geometry.is_representation_item(o) for o in selected_objs):
+            self.enable_editing_representation_items(context, selected_objs)
+            return
         obj = context.active_object
         if obj and (tool.Ifc.get_entity(obj) or tool.Geometry.is_representation_item(obj)):
             tool.Blender.select_and_activate_single_object(context, obj)
@@ -2366,16 +2370,55 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                     self.handle_single_object(context, obj)
 
     def enable_editing_representation_item(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
+        kind = self.prepare_item_for_editing(obj)
+        if kind is None:
+            return
+        if kind == "MESH":
+            tool.Blender.select_and_activate_single_object(context, obj)
+        self.enable_edit_mode(context)
+        if kind == "PROFILE":
+            ProfileDecorator.install(context)
+            if not bpy.app.background:
+                tool.Blender.set_viewport_tool("bim.cad_tool")
+
+    def enable_editing_representation_items(self, context: bpy.types.Context, objs: list[bpy.types.Object]) -> None:
+        """Edit several representation items at once, in Blender's multi-object edit mode."""
+        mesh_objs: list[bpy.types.Object] = []
+        profile_objs: list[bpy.types.Object] = []
+        for obj in objs:
+            kind = self.prepare_item_for_editing(obj)
+            if kind == "MESH":
+                mesh_objs.append(obj)
+            elif kind == "PROFILE":
+                profile_objs.append(obj)
+        editable_objs = mesh_objs + profile_objs
+        if not editable_objs:
+            return
+        for obj in context.selected_objects:
+            obj.select_set(obj in editable_objs)
+        if context.active_object not in editable_objs:
+            context.view_layer.objects.active = editable_objs[0]
+        self.enable_edit_mode(context)
+        if profile_objs:
+            ProfileDecorator.install(context, objects=profile_objs)
+            if not bpy.app.background:
+                tool.Blender.set_viewport_tool("bim.cad_tool")
+
+    def prepare_item_for_editing(self, obj: bpy.types.Object) -> Union[Literal["MESH", "PROFILE"], None]:
+        """Load the item's editable geometry into ``obj``.
+
+        :return: "MESH" if the item is edited as a mesh, "PROFILE" if as a profile or curve,
+            or ``None`` if it can't be edited, in which case ``obj`` is deselected.
+        """
         item = tool.Geometry.get_active_representation(obj)
         assert item
         element = tool.Ifc.get_entity(tool.Geometry.get_geometry_props().representation_obj)
         if tool.Geometry.is_meshlike_item(item):
             tool.Geometry.dissolve_triangulated_edges(obj)
-            tool.Blender.select_and_activate_single_object(context, obj)
             assert isinstance(mesh := obj.data, bpy.types.Mesh)
             props = tool.Geometry.get_mesh_props(mesh)
             props.mesh_checksum = tool.Geometry.get_mesh_checksum(mesh)
-            self.enable_edit_mode(context)
+            return "MESH"
         elif (
             item.is_a("IfcSweptAreaSolid")
             and (usage := tool.Model.get_usage_type(element))
@@ -2383,6 +2426,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         ):
             self.report({"INFO"}, f"Parametric {usage} elements cannot be edited directly")
             obj.select_set(False)
+            return None
         elif item.is_a("IfcSweptAreaSolid"):
             tool.Geometry.sync_item_positions()
             res = tool.Model.import_profile((profile := item.SweptArea), obj=obj)
@@ -2392,28 +2436,19 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                     f"Couldn't import profile, editing it directly is not yet supported. Failing profile: {profile}.",
                 )
                 obj.select_set(False)
-                return
-            tool.Ifc.link(item, obj.data)
-            self.enable_edit_mode(context)
-            ProfileDecorator.install(context)
-            if not bpy.app.background:
-                tool.Blender.set_viewport_tool("bim.cad_tool")
+                return None
         elif item.is_a("IfcAnnotationFillArea"):
             tool.Model.import_annotation_fill_area(item, obj=obj)
-            tool.Ifc.link(item, obj.data)
-            self.enable_edit_mode(context)
-            ProfileDecorator.install(context)
-            if not bpy.app.background:
-                tool.Blender.set_viewport_tool("bim.cad_tool")
         elif tool.Geometry.is_curvelike_item(item):
             tool.Model.import_curve(item, obj=obj)
-            tool.Ifc.link(item, obj.data)
-            self.enable_edit_mode(context)
-            ProfileDecorator.install(context)
-            if not bpy.app.background:
-                tool.Blender.set_viewport_tool("bim.cad_tool")
         else:
             self.report({"INFO"}, f"Editing {item.is_a()} geometry is not supported")
+            return None
+        tool.Ifc.link(item, obj.data)
+        # So leaving edit mode can tell an untouched profile from an edited one
+        assert isinstance(mesh := obj.data, bpy.types.Mesh)
+        tool.Geometry.get_mesh_props(mesh).mesh_checksum = tool.Geometry.get_mesh_checksum(mesh)
+        return "PROFILE"
 
     def enable_edit_mode(self, context: bpy.types.Context) -> Union[None, set[str]]:
         if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:
@@ -2475,6 +2510,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         self.is_valid = True
 
+        objects_in_mode = getattr(context, "objects_in_mode", None) or []
+        edited_item_objs = [o for o in objects_in_mode if tool.Geometry.is_representation_item(o)]
         tool.Blender.toggle_edit_mode(context)
 
         props = tool.Geometry.get_geometry_props()
@@ -2492,11 +2529,14 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             if element and element.is_a("IfcRelSpaceBoundary"):
                 return bpy.ops.bim.edit_boundary_geometry()
             elif tool.Geometry.is_representation_item(context.active_object):
-                self.edit_representation_item(context.active_object)
+                item_objs = edited_item_objs or [context.active_object]
+                is_saved = self.edit_representation_items(context, item_objs)
                 tool.Root.reload_item_decorator()
-                # So you can keep hitting tab to cycle out of edit mode
-                context.active_object.select_set(False)
-                bpy.context.view_layer.objects.active = None
+                if is_saved:
+                    # So you can keep hitting tab to cycle out of edit mode
+                    for obj in item_objs:
+                        obj.select_set(False)
+                    bpy.context.view_layer.objects.active = None
                 return {"FINISHED"}
 
         objs = context.selected_objects or [context.active_object]
@@ -2561,7 +2601,127 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc.finish_edit(obj)
         return {"FINISHED"}
 
-    def edit_representation_item(self, obj: bpy.types.Object) -> None:
+    def edit_representation_items(self, context: bpy.types.Context, objs: list[bpy.types.Object]) -> bool:
+        """Save the edited items. Every profile is checked before any item is saved.
+
+        :return: ``True`` if every item was saved, ``False`` if some are back in edit mode to be fixed.
+        """
+        changed_objs: list[bpy.types.Object] = []
+        unchanged_objs: list[bpy.types.Object] = []
+        for obj in objs:
+            if self.is_unchanged_item_edit(obj):
+                unchanged_objs.append(obj)
+            else:
+                changed_objs.append(obj)
+
+        if error := self.validate_profile_edits(changed_objs):
+            self.show_error(context, error)
+            self.reenter_edit_mode(context, objs)
+            return False
+
+        ProfileDecorator.uninstall()
+
+        for obj in unchanged_objs:
+            item = tool.Geometry.get_active_representation(obj)
+            assert item
+            if not tool.Geometry.is_meshlike_item(item):
+                # Swap the profile or curve back for the item's own geometry
+                tool.Geometry.import_item(obj)
+
+        failed_objs: list[bpy.types.Object] = []
+        errors: list[str] = []
+        for obj in changed_objs:
+            if error := self.edit_representation_item(obj, reload=False):
+                failed_objs.append(obj)
+                errors.append(error if len(objs) == 1 else f"{obj.name}: {error}")
+
+        if changed_objs:
+            tool.Geometry.reload_representation(tool.Geometry.get_geometry_props().representation_obj)
+
+        if failed_objs:
+            self.show_error(context, "\n".join(errors))
+            self.reenter_edit_mode(context, failed_objs)
+            return False
+        return True
+
+    def is_unchanged_item_edit(self, obj: bpy.types.Object) -> bool:
+        """Compare against the checksum taken when the item entered edit mode."""
+        assert isinstance(mesh := obj.data, bpy.types.Mesh)
+        checksum = tool.Geometry.get_mesh_props(mesh).mesh_checksum
+        return bool(checksum) and checksum == tool.Geometry.get_mesh_checksum(mesh)
+
+    def validate_profile_edits(self, objs: list[bpy.types.Object]) -> Union[str, None]:
+        """Check the edited profiles and curves without writing anything to the IFC.
+
+        :return: An error message, or ``None`` if every edit can be saved.
+        """
+        invalid: list[str] = []
+        swept_areas: dict[int, str] = {}
+        shared: list[str] = []
+        for obj in objs:
+            item = tool.Geometry.get_active_representation(obj)
+            assert item
+            if item.is_a("IfcSweptAreaSolid"):
+                result = tool.Model.auto_detect_profiles(obj, obj.data, Matrix())
+                is_valid = isinstance(result, dict) and result["profile_def"]
+                profile_id = item.SweptArea.id()
+                if profile_id in swept_areas:
+                    # Saving one would overwrite the other, as both replace the same profile
+                    shared.append(f"{swept_areas[profile_id]} and {obj.name}")
+                swept_areas[profile_id] = obj.name
+            elif item.is_a("IfcAnnotationFillArea"):
+                result = tool.Model.auto_detect_annotation_fill_area(obj, obj.data)
+                is_valid = isinstance(result, dict) and result["annotation_fill_area"]
+            elif tool.Geometry.is_curvelike_item(item):
+                result = tool.Model.auto_detect_curves(obj, obj.data, Matrix())
+                is_valid = isinstance(result, dict) and result["curves"]
+            else:
+                continue
+            if not is_valid:
+                invalid.append(obj.name)
+
+        if invalid and len(objs) == 1:
+            return "INVALID PROFILE"
+        messages = []
+        if invalid:
+            messages.append(f"INVALID PROFILE: {', '.join(invalid)}")
+        if shared:
+            messages.append(f"These items share a profile, so edit them one at a time: {'; '.join(shared)}")
+        return "\n".join(messages) or None
+
+    def show_error(self, context: bpy.types.Context, error: str) -> None:
+        if bpy.app.background:
+            # A popup menu needs a real window
+            self.report({"ERROR"}, error.replace("\n", ". "))
+            return
+
+        def msg(self, context):
+            for line in error.split("\n"):
+                self.layout.label(text=line)
+
+        context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+
+    def reenter_edit_mode(self, context: bpy.types.Context, objs: list[bpy.types.Object]) -> None:
+        for obj in context.selected_objects:
+            obj.select_set(False)
+        for obj in objs:
+            obj.select_set(True)
+        context.view_layer.objects.active = objs[0]
+        profile_objs = []
+        for obj in objs:
+            item = tool.Geometry.get_active_representation(obj)
+            if item and not tool.Geometry.is_meshlike_item(item):
+                profile_objs.append(obj)
+        if profile_objs:
+            ProfileDecorator.install(context, objects=profile_objs if len(objs) > 1 else None)
+        self.enable_edit_mode(context)
+
+    def edit_representation_item(self, obj: bpy.types.Object, reload: bool = True) -> Union[str, None]:
+        """Save one edited item.
+
+        :param reload: Reload the representation object afterwards.
+        :return: An error message if the item couldn't be saved, else ``None``.
+        """
         props = tool.Geometry.get_geometry_props()
         item = tool.Geometry.get_active_representation(obj)
         assert item
@@ -2578,30 +2738,16 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 item.is_a("IfcVertex") or item.is_a("IfcEdge") or obj.data.polygons
             ):
                 try:
-                    tool.Geometry.edit_meshlike_item(obj)
+                    tool.Geometry.edit_meshlike_item(obj, reload=reload)
                 except ValueError as e:
                     # A face that is no longer one planar face, for example
-                    error = str(e)
-
-                    def msg(self, context):
-                        self.layout.label(text=error)
-
-                    bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-                    self.enable_edit_mode(bpy.context)
-                    return
+                    return str(e)
             else:
                 tool.Geometry.import_item(obj)
         elif item.is_a("IfcSweptAreaSolid"):
             ProfileDecorator.uninstall()
             if not (profile := tool.Model.export_profile(obj)):
-
-                def msg(self, context):
-                    self.layout.label(text="INVALID PROFILE")
-
-                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-                ProfileDecorator.install(bpy.context)
-                self.enable_edit_mode(bpy.context)
-                return
+                return "INVALID PROFILE"
 
             old_profile = item.SweptArea
             profile.ProfileName = old_profile.ProfileName
@@ -2610,7 +2756,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
             ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
-            tool.Geometry.reload_representation(props.representation_obj)
+            if reload:
+                tool.Geometry.reload_representation(props.representation_obj)
             tool.Geometry.import_item(obj)
             tool.Geometry.import_item_attributes(obj)
 
@@ -2653,21 +2800,15 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         elif item.is_a("IfcAnnotationFillArea"):
             ProfileDecorator.uninstall()
             if not (profile := tool.Model.export_annotation_fill_area(obj)):
-
-                def msg(self, context):
-                    self.layout.label(text="INVALID PROFILE")
-
-                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-                ProfileDecorator.install(bpy.context)
-                self.enable_edit_mode(bpy.context)
-                return
+                return "INVALID PROFILE"
 
             for inverse in tool.Ifc.get().get_inverse(item):
                 ifcopenshell.util.element.replace_attribute(inverse, item, profile)
             ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
             tool.Ifc.link(profile, obj.data)
 
-            tool.Geometry.reload_representation(props.representation_obj)
+            if reload:
+                tool.Geometry.reload_representation(props.representation_obj)
             tool.Geometry.import_item(obj)
             tool.Geometry.import_item_attributes(obj)
         elif tool.Geometry.is_curvelike_item(item):
@@ -2675,14 +2816,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             new = tool.Model.export_curves(obj)
 
             if not new:
-
-                def msg(self, context):
-                    self.layout.label(text="INVALID PROFILE")
-
-                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-                ProfileDecorator.install(bpy.context)
-                self.enable_edit_mode(bpy.context)
-                return
+                return "INVALID PROFILE"
 
             additional_curves = []
             if len(new) > 1:
@@ -2712,7 +2846,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
 
             if additional_curves:
                 tool.Root.reload_item_decorator()
-            tool.Geometry.reload_representation(props.representation_obj)
+            if reload:
+                tool.Geometry.reload_representation(props.representation_obj)
 
     def enable_edit_mode(self, context):
         if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:

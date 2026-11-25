@@ -121,16 +121,22 @@ class ProfileDecorator:
     installed = None
 
     @classmethod
-    def install(cls, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None):
+    def install(cls, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None, objects=None):
         """Note that operators that change mesh in `exit_edit_mode_callback` can freeze blender.
         The workaround is to move their code to function and use it for callback.
 
-        Example: https://devtalk.blender.org/t/calling-operator-that-saves-bmesh-freezes-blender-forever/28595"""
+        Example: https://devtalk.blender.org/t/calling-operator-that-saves-bmesh-freezes-blender-forever/28595
+
+        :param objects: Objects to draw while they are in edit mode. Defaults to the active object only."""
         if cls.installed:
             cls.uninstall()
         handler = cls()
+        object_names = [o.name for o in objects] if objects else None
         cls.installed = SpaceView3D.draw_handler_add(
-            handler, (context, get_custom_bmesh, draw_faces, exit_edit_mode_callback), "WINDOW", "POST_VIEW"
+            handler,
+            (context, get_custom_bmesh, draw_faces, exit_edit_mode_callback, object_names),
+            "WINDOW",
+            "POST_VIEW",
         )
 
     @classmethod
@@ -154,13 +160,10 @@ class ProfileDecorator:
         faces_color = tool.Blender.transparent_color(self.addon_prefs.decorator_color_special)
         tool.Blender.draw_bmesh_face_tris(bm, vertices_coords, faces_color, self.draw_batch)
 
-    def __call__(self, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None):
+    def __call__(
+        self, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None, object_names=None
+    ):
         self.addon_prefs = tool.Blender.get_addon_preferences()
-        selected_elements_color = self.addon_prefs.decorator_color_selected
-        unselected_elements_color = self.addon_prefs.decorator_color_unselected
-        special_elements_color = self.addon_prefs.decorator_color_special
-        error_elements_color = self.addon_prefs.decorator_color_error
-        background_elements_color = self.addon_prefs.decorator_color_background
 
         obj = context.active_object
 
@@ -170,13 +173,36 @@ class ProfileDecorator:
                 exit_edit_mode_callback()
             return
 
-        if get_custom_bmesh:
-            bm = get_custom_bmesh()
-        else:
-            bm = bmesh.from_edit_mesh(obj.data)
-
         gpu.state.point_size_set(6)
         gpu.state.blend_set("ALPHA")
+
+        # POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()
+        # POLYLINE_UNIFORM_COLOR specific uniforms
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+        self.line_shader.uniform_float("lineWidth", 2.0)
+
+        # general shader
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        self.shader.bind()
+
+        if get_custom_bmesh:
+            self.draw_object(obj, get_custom_bmesh(), draw_faces)
+            return
+
+        objs = [obj]
+        if object_names:
+            objs = [o for name in object_names if (o := bpy.data.objects.get(name)) and o.mode == "EDIT"]
+        for obj in objs:
+            self.draw_object(obj, bmesh.from_edit_mesh(obj.data), draw_faces)
+
+    def draw_object(self, obj: bpy.types.Object, bm: bmesh.types.BMesh, draw_faces: bool) -> None:
+        selected_elements_color = self.addon_prefs.decorator_color_selected
+        unselected_elements_color = self.addon_prefs.decorator_color_unselected
+        special_elements_color = self.addon_prefs.decorator_color_special
+        error_elements_color = self.addon_prefs.decorator_color_error
+        background_elements_color = self.addon_prefs.decorator_color_background
 
         ### Actually drawing
         all_vertices = []
@@ -258,18 +284,6 @@ class ProfileDecorator:
                     preview_edges.append(edge_indices)
                 else:
                     unselected_edges.append(edge_indices)
-
-        ### Actually drawing
-        # POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
-        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
-        self.line_shader.bind()
-        # POLYLINE_UNIFORM_COLOR specific uniforms
-        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
-        self.line_shader.uniform_float("lineWidth", 2.0)
-
-        # general shader
-        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-        self.shader.bind()
 
         # Draw faces
         if draw_faces:

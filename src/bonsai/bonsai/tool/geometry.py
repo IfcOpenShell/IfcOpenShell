@@ -2492,8 +2492,12 @@ class Geometry(bonsai.core.tool.Geometry):
         return ifc_file.createIfcTopologyRepresentation(context, context.ContextIdentifier, "Face", [face])
 
     @classmethod
-    def edit_meshlike_item(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
+    def edit_meshlike_item(
+        cls, obj: bpy.types.Object, reload: bool = True
+    ) -> Union[ifcopenshell.entity_instance, None]:
         """
+        :param reload: Reload the representation object afterwards. Pass ``False`` when editing several items
+            at once and reload once at the end.
         :return: New IfcRepresentationItem or ``None`` if mesh hasn't changed.
         """
         item = tool.Geometry.get_active_representation(obj)
@@ -2541,7 +2545,8 @@ class Geometry(bonsai.core.tool.Geometry):
         tool.Ifc.link(new_item, obj.data)
         if new_item.is_a("IfcEdge") and (element := tool.Ifc.get_entity(rep_obj)):
             tool.Structural.turn_axis_off_edge(element, verts[0], verts[1])
-        cls.reload_representation(rep_obj)
+        if reload:
+            cls.reload_representation(rep_obj)
         return new_item
 
     @classmethod
