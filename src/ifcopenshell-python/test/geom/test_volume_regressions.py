@@ -8,6 +8,7 @@ import pytest
 
 import ifcopenshell
 import ifcopenshell.api.context
+import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.project
 import ifcopenshell.api.root
@@ -136,3 +137,50 @@ def test_create_shape_prefers_body_over_axis_9771(axis_first):
     column.Representation = model.createIfcProductDefinitionShape(Representations=representations)
     shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), column)
     assert len(shape.geometry.verts) // 3 == 8
+
+
+@pytest.mark.parametrize("wire_check", [True, False], ids=["wire_check", "no_wire_check"])
+@pytest.mark.parametrize("spike", [False, True], ids=["clean", "spike"])
+def test_opening_profile_with_backtracking_point_10024(spike, wire_check):
+    # https://github.com/IfcOpenShell/IfcOpenShell/issues/10024
+    model = ifcopenshell.api.project.create_file(version="IFC4")
+    ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+    ifcopenshell.api.unit.assign_unit(model)
+    model_context = ifcopenshell.api.context.add_context(model, context_type="Model")
+    body = ifcopenshell.api.context.add_context(
+        model, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model_context
+    )
+    wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+    representation = ifcopenshell.api.geometry.add_wall_representation(
+        model, context=body, length=4.0, height=3.0, thickness=0.3
+    )
+    ifcopenshell.api.geometry.assign_representation(model, product=wall, representation=representation)
+    ifcopenshell.api.geometry.edit_object_placement(model, product=wall, matrix=np.eye(4))
+    # A 1 x 1 m square through the wall. The spike variant goes (2,2) -> (1.5,2) -> (1.8,2) -> (1,2),
+    # turning back on itself, but encloses the same area.
+    points = [(1.0, 1.0), (2.0, 1.0), (2.0, 2.0)] + ([(1.5, 2.0), (1.8, 2.0)] if spike else []) + [(1.0, 2.0)]
+    polyline = model.createIfcPolyline(
+        [model.createIfcCartesianPoint((x * 1000.0, y * 1000.0)) for x, y in points + points[:1]]
+    )
+    position = model.createIfcAxis2Placement3D(
+        model.createIfcCartesianPoint((0.0, 400.0, 0.0)),
+        model.createIfcDirection((0.0, -1.0, 0.0)),
+        model.createIfcDirection((1.0, 0.0, 0.0)),
+    )
+    solid = model.createIfcExtrudedAreaSolid(
+        model.createIfcArbitraryClosedProfileDef("AREA", None, polyline),
+        position,
+        model.createIfcDirection((0.0, 0.0, 1.0)),
+        500.0,
+    )
+    opening = ifcopenshell.api.root.create_entity(model, ifc_class="IfcOpeningElement")
+    opening.Representation = model.createIfcProductDefinitionShape(
+        None, None, [model.createIfcShapeRepresentation(body, "Body", "SweptSolid", [solid])]
+    )
+    ifcopenshell.api.geometry.edit_object_placement(model, product=opening, matrix=np.eye(4))
+    ifcopenshell.api.feature.add_feature(model, feature=opening, element=wall)
+    settings = ifcopenshell.geom.settings()
+    settings.set("no-wire-intersection-check", not wire_check)
+    shape = ifcopenshell.geom.create_shape(settings, wall)
+    # 4 x 0.3 x 3 m wall minus the 1 x 1 m opening through its 0.3 m thickness.
+    assert ifcopenshell.util.shape.get_volume(shape.geometry) == pytest.approx(3.3)
