@@ -18,8 +18,10 @@
 
 
 import csv
+import datetime
 import locale
 import re
+from typing import Union
 
 import ifcopenshell
 import ifcopenshell.api.root
@@ -81,6 +83,13 @@ class Csv2Ifc:
                 )
         return rels
 
+    def parse_date(self, value: str) -> Union[datetime.date, datetime.datetime, None]:
+        """A CSV date. A value without a time is a date, which gets a work instant from the calendar."""
+        result = ifcopenshell.util.date.string_to_date(value)
+        if result and ":" not in value:
+            return result.date()
+        return result
+
     def get_row_task(self, row):
         hours_per_day = 8
         hierarchy = row[self.headers["Hierarchy"]]
@@ -90,14 +99,10 @@ class Csv2Ifc:
         task_relationships = self.parse_task_rel(row[self.headers["Relationships"]])
 
         scheduled_start_date = (
-            ifcopenshell.util.date.string_to_date(row[self.headers["ScheduleStart"]])
-            if row[self.headers["ScheduleStart"]]
-            else None
+            self.parse_date(row[self.headers["ScheduleStart"]]) if row[self.headers["ScheduleStart"]] else None
         )
         scheduled_finish_date = (
-            ifcopenshell.util.date.string_to_date(row[self.headers["ScheduleFinish"]])
-            if row[self.headers["ScheduleFinish"]]
-            else None
+            self.parse_date(row[self.headers["ScheduleFinish"]]) if row[self.headers["ScheduleFinish"]] else None
         )
         scheduled_duration = (
             ifcopenshell.util.date.string_to_duration(row[self.headers["ScheduleDuration"]])
@@ -105,14 +110,10 @@ class Csv2Ifc:
             else None
         )
         actual_start_date = (
-            ifcopenshell.util.date.string_to_date(row[self.headers["ActualStart"]])
-            if row[self.headers["ActualStart"]]
-            else None
+            self.parse_date(row[self.headers["ActualStart"]]) if row[self.headers["ActualStart"]] else None
         )
         actual_finish_date = (
-            ifcopenshell.util.date.string_to_date(row[self.headers["ActualFinish"]])
-            if row[self.headers["ActualFinish"]]
-            else None
+            self.parse_date(row[self.headers["ActualFinish"]]) if row[self.headers["ActualFinish"]] else None
         )
         actual_duration = (
             ifcopenshell.util.date.string_to_duration(row[self.headers["ActualDuration"]])
