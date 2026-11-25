@@ -149,7 +149,7 @@ endif()
 # .ifcview: the viewer's cached-geometry format (instanced, Morton-chunked,
 # zstd-compressed). The plugin compiles the ifcviewer .ifcview sources directly
 # (no Qt, no wgpu) so it writes exactly the layout the viewer/loader expect.
-if(NOT WASM_BUILD)
+if(WITH_ZSTD AND NOT WASM_BUILD)
     find_package(zstd ${ZSTD_MIN_VERSION} CONFIG REQUIRED)
     # The imported Eigen target is directory-scoped (created by ifcgeom), so
     # this directory needs its own lookup before it can link against it.

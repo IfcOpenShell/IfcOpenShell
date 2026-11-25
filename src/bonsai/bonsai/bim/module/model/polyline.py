@@ -192,10 +192,7 @@ class PolylineOperator:
             for action, settings in instructions.items():
                 if settings["icons"]:
                     for key in settings["keys"]:
-                        if bpy.app.version < (4, 3, 0) and key == "MOUSE_MMB_SCROLL":
-                            self.layout.label(text="MMB")
-                        else:
-                            self.layout.label(text="", icon=key)
+                        self.layout.label(text="", icon=key)
                     self.layout.label(text=action)
                 else:
                     key = settings["keys"][0]
@@ -483,7 +480,7 @@ class PolylineOperator:
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         PolylineDecorator.install(context)
-        GpuSnapDecorator.install(context, event, detection=tool.Raycast.detect_gpu_snaps)
+        GpuSnapDecorator.install(context, detection=tool.Raycast.detect_gpu_snaps)
         tool.Snap.clear_snapping_point()
 
         self.tool_state.use_default_container = False

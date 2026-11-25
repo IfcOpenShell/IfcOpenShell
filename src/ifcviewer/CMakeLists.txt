@@ -151,6 +151,7 @@ set(IFCVIEWER_CORE_SOURCES
     GpuMemory.cpp
     IfcViewReader.cpp
     StreamingThread.cpp
+    SectionCapRenderer.cpp
     SectionGizmoRenderer.cpp
     ViewportCore.cpp
     WgpuDynamicOffsets.cpp

@@ -536,8 +536,8 @@ def main(
             # ty can't bound the length of the unpacked iterables, so it over-counts the args.
             arranged = W.arrange_polygons(
                 *filter(None, (ARRANGE_POLYGON_SETTINGS,)),
-                polies,  # ty:ignore[too-many-positional-arguments]
-                *ifcopenshell.optional_logger_args(logger),
+                polies,
+                *ifcopenshell.optional_logger_args(logger),  # ty: ignore[too-many-positional-arguments]
             )
             svg_data_3 = W.polygons_to_svg(arranged, False)
             dom3 = parseString(svg_data_3)

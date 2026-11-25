@@ -312,13 +312,17 @@ class Polyline(bonsai.core.tool.Polyline):
         if distance < 0 or distance > 0:
             angle = radians(input_ui.get_number_value("A"))
 
-            rot_vector = tool.Cad.angle_3_vectors(second_to_last_point, last_point, snap_vector, angle, degrees=True)
-
-            # When the angle in 180 degrees it might create a rotation vector that is equal to
-            # when the angle is 0 degrees, leading the insertion point to the opposite direction
-            # This prevents the issue by ensuring the negative x direction
-            if round(angle, 4) == round(math.pi, 4):
-                rot_vector.x = -1.0
+            if round(abs(angle), 4) == round(math.pi, 4):
+                # 180 degrees is straight on: the continuation of the previous leg. Rotating by it
+                # is ill-defined when the mouse sits on that leg's line (no rotation axis), so use
+                # the leg's own direction instead. Previously this forced x = -1, which is only
+                # right when the previous leg runs along +X (e.g. the first leg, measured from the
+                # fake +X point above) and sent the point the wrong way for any other leg.
+                rot_vector = (last_point - second_to_last_point).normalized()
+            else:
+                rot_vector = tool.Cad.angle_3_vectors(
+                    second_to_last_point, last_point, snap_vector, angle, degrees=True
+                )
 
             coords = rot_vector * distance + last_point
 

@@ -130,8 +130,46 @@ namespace {
 		return boost::algorithm::istarts_with(basename, "ifcopenshell_") ? basename : "ifcopenshell_" + basename;
 	}
 
+#ifndef PLUGIN_MODULE_POSTFIX
+#define PLUGIN_MODULE_POSTFIX ""
+#endif
+#ifndef PLUGIN_DEBUG_MODULE_POSTFIX
+#define PLUGIN_DEBUG_MODULE_POSTFIX ""
+#endif
+
+	// On Windows, CMake gives Debug plug-ins a postfix (CMAKE_DEBUG_POSTFIX "_d") so that
+	// Debug and Release builds can be installed side by side. Their plug-ins aren't
+	// interchangeable, so only consider modules built in the same configuration as this host:
+	// a Debug host requires the postfix and a Release host skips modules that have it.
+	bool matches_build_configuration(const std::string& basename) {
+		const std::string postfix = PLUGIN_MODULE_POSTFIX;
+		const std::string debug_postfix = PLUGIN_DEBUG_MODULE_POSTFIX;
+		if (!postfix.empty()) {
+			return boost::algorithm::iends_with(basename, postfix);
+		}
+		return debug_postfix.empty() || !boost::algorithm::iends_with(basename, debug_postfix);
+	}
+
 	std::vector<std::string> platform_basenames(const std::string& basename) {
-		return {decorated_basename(basename)};
+		return {decorated_basename(basename) + PLUGIN_MODULE_POSTFIX};
+	}
+
+	std::vector<std::string> platform_basename_prefixes(const std::string& basename_prefix) {
+		return {decorated_basename(basename_prefix)};
+	}
+
+	// The core shared libraries share the ifcopenshell_ prefix with the plugins and are
+	// installed next to them, but they are linked rather than loaded by name and export no
+	// plugin entry points. Where libraries have no platform prefix (Windows) a prefix scan
+	// such as "geometry_" would otherwise match ifcopenshell_geometry_writer and try to
+	// load it as a plugin. Keep in sync with the OUTPUT_NAME of the core library targets.
+	bool is_core_library(const std::string& basename) {
+		for (const char* name : {"ifcopenshell_parse", "ifcopenshell_geometry", "ifcopenshell_geometry_writer", "ifcopenshell_plugin"}) {
+			if (boost::algorithm::iequals(basename, name)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 #ifdef _WIN32
@@ -218,7 +256,7 @@ const std::vector<std::filesystem::path>& ifcopenshell::plugin::manager::search_
 std::vector<std::filesystem::path> ifcopenshell::plugin::manager::discover(const std::string& basename_prefix) const {
 	std::vector<std::filesystem::path> result;
 	const auto suffix = boost::dll::shared_library::suffix().string();
-	const auto basename_prefixes = platform_basenames(basename_prefix);
+	const auto basename_prefixes = platform_basename_prefixes(basename_prefix);
 
 	plugin_debug("discover prefix='" + basename_prefix + "' suffix='" + suffix + "' search_paths=" + std::to_string(search_paths_.size()));
 	for (const auto& search_path : search_paths_) {
@@ -239,9 +277,17 @@ std::vector<std::filesystem::path> ifcopenshell::plugin::manager::discover(const
 			}
 
 			const auto basename = filename.substr(0, filename.size() - suffix.size());
+			if (is_core_library(basename)) {
+				continue;
+			}
 			if (!std::any_of(basename_prefixes.begin(), basename_prefixes.end(), [&basename](const std::string& prefix) {
 				return boost::algorithm::istarts_with(basename, prefix);
 			})) {
+				continue;
+			}
+
+			if (!matches_build_configuration(basename)) {
+				plugin_debug("discover skip other build configuration " + path_string(entry.path()));
 				continue;
 			}
 

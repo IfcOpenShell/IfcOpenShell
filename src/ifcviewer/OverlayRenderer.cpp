@@ -563,7 +563,7 @@ void OverlayRenderer::encodeMarquee(WGPUCommandEncoder enc,
 
     const float w = float(f.viewport_w_px);
     const float h = float(f.viewport_h_px);
-    const float dpr = float(std::max(1, f.device_pixel_ratio));
+    const float dpr = f.device_pixel_ratio;
     const float lx0 = float(std::min(start_logical_px.x(),
                                      current_logical_px.x())) * dpr;
     const float ly0 = float(std::min(start_logical_px.y(),
@@ -1390,7 +1390,7 @@ OverlayRenderer::LabelTexture*
 OverlayRenderer::getOrCreateLabelTexture(const QString& cache_key,
                                              const QString& text,
                                              int font_pt,
-                                             int dpr) {
+                                             float dpr) {
     auto it = label_tex_cache_.find(cache_key);
     if (it != label_tex_cache_.end()) return &it.value();
 
@@ -1412,8 +1412,8 @@ OverlayRenderer::getOrCreateLabelTexture(const QString& cache_key,
     const int pad_y_logical  = 3;
     const int w_logical = text_w_logical + 2 * pad_x_logical;
     const int h_logical = text_h_logical + 2 * pad_y_logical;
-    const int w_px = std::max(1, w_logical * dpr);
-    const int h_px = std::max(1, h_logical * dpr);
+    const int w_px = std::max(1, int(std::ceil(float(w_logical) * dpr)));
+    const int h_px = std::max(1, int(std::ceil(float(h_logical) * dpr)));
 
     QImage img(w_px, h_px, QImage::Format_RGBA8888_Premultiplied);
     img.setDevicePixelRatio(dpr);
@@ -1509,7 +1509,7 @@ void OverlayRenderer::encodeLabels(WGPUCommandEncoder enc,
     }
     if (f.viewport_w_px <= 0 || f.viewport_h_px <= 0) return;
 
-    const int   dpr   = std::max(1, f.device_pixel_ratio);
+    const float dpr   = f.device_pixel_ratio;
     const float w_phys = float(f.viewport_w_px);
     const float h_phys = float(f.viewport_h_px);
 
@@ -1586,7 +1586,7 @@ void OverlayRenderer::encodeLabels(WGPUCommandEncoder enc,
         LabelTexture* tex = getOrCreateLabelTexture(key, hud_text_, 11, dpr);
         if (tex) {
             const WGPUBindGroup bg = tex->bind_group;
-            const float margin_phys = 12.0f * float(dpr);
+            const float margin_phys = 12.0f * dpr;
             const float lx_phys = margin_phys;
             const float ly_phys = margin_phys;
             const float wq = float(tex->width_px);

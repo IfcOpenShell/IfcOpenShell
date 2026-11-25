@@ -237,3 +237,55 @@ TEST_CASE("applyMarqueeToSelection: replace / add / remove", "[camera][selection
         REQUIRE(core.hiddenCount() == 1);
     }
 }
+
+TEST_CASE("section gizmo is hit where it is drawn at fractional display scaling", "[section]") {
+    // An 800x600 logical window at 150% scaling. Mouse positions are logical.
+    struct ScaledHost : MockHost {
+        void  framebufferSize(int& w, int& h) const override { w = 1200; h = 900; }
+        float dpr() const override { return 1.5f; }
+    };
+    ScaledHost host; ViewportCore core(&host);
+    core.setCamera(0, 0, 0, /*dist*/10, /*yaw*/0, /*pitch*/30);
+    // At the orbit target, so the gizmo's origin is at the window centre.
+    REQUIRE(core.addSectionPlaneAtSurface({0, 0, 0}, {0, 0, 1}, 1.0f));
+
+    REQUIRE(core.hitTestSectionGizmo(400, 300) == 0);
+    // The framebuffer centre, where an integer-truncated ratio put it.
+    REQUIRE(core.hitTestSectionGizmo(600, 450) == -1);
+}
+
+TEST_CASE("a section cap can only be where the view ray enters through a plane", "[section]") {
+    MockHost host; ViewportCore core(&host);
+    // Eye at (+10, 0, 0) looking down -X.
+    core.setCamera(0, 0, 0, /*dist*/10, /*yaw*/0, /*pitch*/0);
+    Eigen::Matrix4f view, proj;
+    core.buildViewProj(view, proj);
+    const Eigen::Matrix4f view_proj = proj * view;
+
+    // Clips away x > 2, between the eye and the target.
+    SectionPlane facing;
+    facing.n = Eigen::Vector3f(1, 0, 0);
+    facing.d = -2.0f;
+
+    Eigen::Vector3f point, normal;
+
+    SECTION("a plane between the eye and the model is entered at the plane") {
+        REQUIRE(SectionCapRenderer::rayEntry(view_proj, {facing}, 0.0f, 0.0f, point, normal));
+        REQUIRE_THAT(point.x(), WithinAbs(2.0f, 1e-2f));
+        REQUIRE_THAT(point.y(), WithinAbs(0.0f, 1e-2f));
+        REQUIRE_THAT(point.z(), WithinAbs(0.0f, 1e-2f));
+        REQUIRE_THAT(normal.x(), WithinAbs(1.0f, 1e-6f));
+    }
+    SECTION("an eye already inside the kept region enters nothing") {
+        SectionPlane behind_eye;
+        behind_eye.n = Eigen::Vector3f(1, 0, 0);
+        behind_eye.d = -20.0f;   // clips away x > 20
+        REQUIRE_FALSE(SectionCapRenderer::rayEntry(view_proj, {behind_eye}, 0.0f, 0.0f, point, normal));
+    }
+    SECTION("two planes that leave nothing between them are never entered") {
+        SectionPlane opposite;
+        opposite.n = Eigen::Vector3f(-1, 0, 0);
+        opposite.d = 5.0f;       // clips away x < 5
+        REQUIRE_FALSE(SectionCapRenderer::rayEntry(view_proj, {facing, opposite}, 0.0f, 0.0f, point, normal));
+    }
+}

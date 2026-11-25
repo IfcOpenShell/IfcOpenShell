@@ -383,15 +383,15 @@ class SetFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
     direction: bpy.props.StringProperty()
 
     @classmethod
-    def description(cls, context, operator):
+    def description(cls, context, properties):
         if not PortData.is_loaded:
             PortData.load()
 
         port = PortData.data["is_port"]
         if port:
-            return f"Set port flow direction to {operator.direction}"
+            return f"Set port flow direction to {properties.direction}"
         else:
-            return f"Set flow direction to {operator.direction} for active element relatively to the selected"
+            return f"Set flow direction to {properties.direction} for active element relatively to the selected"
 
     @classmethod
     def poll(cls, context):
@@ -447,8 +447,8 @@ class CycleFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
     port_id: bpy.props.IntProperty()
 
     @classmethod
-    def description(cls, context, operator):
-        port = tool.Ifc.get().by_id(operator.port_id)
+    def description(cls, context, properties):
+        port = tool.Ifc.get().by_id(properties.port_id)
         if port and port.is_a("IfcDistributionPort"):
             current_direction = port.FlowDirection or "NOTDEFINED"
             return f"Current flow direction: {current_direction}. Click to cycle: SOURCE → SINK → SOURCEANDSINK → NOTDEFINED"

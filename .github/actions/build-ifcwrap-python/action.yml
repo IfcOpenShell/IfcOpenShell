@@ -13,7 +13,7 @@ runs:
   using: composite
   steps:
     - name: Set up Python ${{ inputs.python-version }}
-      uses: actions/setup-python@v7
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
       with:
         python-version: ${{ inputs.python-version }}
 
@@ -25,14 +25,17 @@ runs:
 
     - name: Configure standalone IfcPython
       shell: bash
+      env:
+        PYTHON_VERSION: ${{ inputs.python-version }}
+        IFCOPENSHELL_PREFIX: ${{ inputs.ifcopenshell-prefix }}
       run: |
         PYTHON_EXECUTABLE="$(python -c 'import sys; print(sys.executable)')"
         PYTHON_INCLUDE_DIR="$(python -c 'import sysconfig; print(sysconfig.get_path("include"))')"
 
-        cmake -S src/ifcwrap -B "build-ifcwrap-${{ inputs.python-version }}" \
+        cmake -S src/ifcwrap -B "build-ifcwrap-${PYTHON_VERSION}" \
           -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_PREFIX_PATH="${{ inputs.ifcopenshell-prefix }};/usr" \
+          -DCMAKE_PREFIX_PATH="${IFCOPENSHELL_PREFIX};/usr" \
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
           -DPython_EXECUTABLE:FILEPATH="${PYTHON_EXECUTABLE}" \
           -DPython_INCLUDE_DIR:PATH="${PYTHON_INCLUDE_DIR}" \
@@ -41,8 +44,10 @@ runs:
 
     - name: Build and install standalone IfcPython
       shell: bash
+      env:
+        PYTHON_VERSION: ${{ inputs.python-version }}
       run: |
-        cmake --build "build-ifcwrap-${{ inputs.python-version }}" --target install -j "$(nproc)"
+        cmake --build "build-ifcwrap-${PYTHON_VERSION}" --target install -j "$(nproc)"
 
     - name: Import installed IfcPython
       shell: bash

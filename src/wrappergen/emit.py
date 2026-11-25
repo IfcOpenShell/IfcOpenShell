@@ -179,6 +179,8 @@ def _cpp_argument(parameter: ParameterModel, model: ModuleModel) -> str:
     if is_handle_adapter(parameter.adapter):
         target = _class_index(model)[handle_adapter_target(parameter.adapter)]
         actual_type = normalize_cpp_type(parameter.cpp_type)
+        if target.handle_kind == "borrowed_ptr":
+            return f"{parameter.name}->value" if actual_type.endswith("*") else f"*{parameter.name}->value"
         if actual_type.endswith("*"):
             if target.handle_kind == "shared_ptr":
                 return f"{parameter.name}->value.get()"
@@ -195,7 +197,7 @@ def _call_expression(variant: CallableVariant, model: ModuleModel) -> str:
         if variant.owner.handle_kind == "shared_ptr":
             return f"std::make_shared<{variant.owner.cpp_name}>({arguments})"
         return f"{variant.owner.cpp_name}({arguments})"
-    access = "handle->value->" if variant.owner.handle_kind == "shared_ptr" else "handle->value."
+    access = "handle->value->" if variant.owner.handle_kind in {"shared_ptr", "borrowed_ptr"} else "handle->value."
     return f"{access}{variant.callable.cpp_name}({arguments})"
 
 
@@ -230,6 +232,21 @@ def _emit_handle_return_lines(
     model: ModuleModel,
 ) -> None:
     normalized_return = normalize_cpp_type(callable_model.return_cpp_type)
+    if target.handle_kind == "borrowed_ptr":
+        if normalized_return.endswith("*"):
+            lines.append(f"        auto* result = {call_expression};")
+            lines.append("        if (result == nullptr) {")
+            lines.append("            return nullptr;")
+            lines.append("        }")
+            lines.append(f"        return new {_class_c_type(target, model)}{{ result }};")
+        elif callable_model.return_cpp_type.rstrip().endswith(
+            "&"
+        ) and not callable_model.return_cpp_type.rstrip().endswith("&&"):
+            lines.append(f"        auto& result = {call_expression};")
+            lines.append(f"        return new {_class_c_type(target, model)}{{ &result }};")
+        else:
+            raise RuntimeError(f"Borrowed handle '{target.cpp_name}' requires a pointer or lvalue reference return")
+        return
     if normalized_return.endswith("*"):
         lines.append(f"        auto result_ptr = {call_expression};")
         lines.append("        if (result_ptr == nullptr) {")
@@ -390,6 +407,8 @@ def emit_c_api_implementation(model: ModuleModel) -> str:
             lines.append(f"    std::shared_ptr<{class_model.owner_cpp_name}> owner;")
         if class_model.handle_kind == "shared_ptr":
             lines.append(f"    std::shared_ptr<{class_model.cpp_name}> value;")
+        elif class_model.handle_kind == "borrowed_ptr":
+            lines.append(f"    {class_model.cpp_name}* value;")
         else:
             lines.append(f"    {class_model.cpp_name} value;")
         lines.append("};")

@@ -16,7 +16,7 @@ struct IFC_GEOMLIBRARY_API manifold_part {
 	std::optional<manifold::Manifold> solid;
 
 	manifold_part(const manifold::Manifold& s)
-		: mesh(s.CalculateNormals(0).GetMeshGL64()), solid(s) {}
+		: mesh(s.CalculateNormals(0, 10).GetMeshGL64()), solid(s) {}
 
 	manifold_part(const manifold::MeshGL64& s) : mesh(s) {}
 

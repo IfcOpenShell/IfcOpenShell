@@ -127,9 +127,7 @@ class Blender(bonsai.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
     TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME"
-    SEQUENCE_COLOR_SCHEME_ICON: Literal["STRIP_COLOR_03"] = (  # pyright: ignore[reportAssignmentType]
-        "STRIP_COLOR_03" if bpy.app.version >= (4, 4, 0) else "SEQUENCE_COLOR_04"
-    )
+    SEQUENCE_COLOR_SCHEME_ICON = "STRIP_COLOR_03"
 
     BLENDER_ENUM_ITEM = Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int], None]
     """
@@ -1471,6 +1469,34 @@ class Blender(bonsai.core.tool.Blender):
             subprocess.Popen(["open", path])
         else:
             subprocess.Popen(["xdg-open", path])
+
+    @classmethod
+    def reveal_file_in_folder(cls, path: str) -> None:
+        """Open the folder containing ``path`` in the OS file browser, with the file selected where supported."""
+        path = os.path.normpath(path)
+        if platform.system() == "Windows":
+            subprocess.Popen(["explorer", "/select,", path])
+        elif platform.system() == "Darwin":
+            subprocess.Popen(["open", "-R", path])
+        else:
+            try:
+                subprocess.run(
+                    [
+                        "dbus-send",
+                        "--session",
+                        "--print-reply",
+                        "--dest=org.freedesktop.FileManager1",
+                        "/org/freedesktop/FileManager1",
+                        "org.freedesktop.FileManager1.ShowItems",
+                        f"array:string:{Path(path).as_uri()}",
+                        "string:",
+                    ],
+                    check=True,
+                    capture_output=True,
+                    timeout=5,
+                )
+            except (OSError, subprocess.SubprocessError):
+                subprocess.Popen(["xdg-open", os.path.dirname(path)])
 
     @classmethod
     def operator_invoke_filepath_hotkeys(

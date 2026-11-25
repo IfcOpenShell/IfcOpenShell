@@ -1,5 +1,7 @@
 name: Publish IfcOpenShell Python PyPI
 
+permissions: {}
+
 on:
   workflow_dispatch:
 
@@ -51,10 +53,11 @@ jobs:
             short_name: macosm164
           }
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           submodules: recursive
-      - uses: actions/setup-python@v7
+          persist-credentials: false
+      - uses: actions/setup-python@v7.1.0
         with:
           python-version: '3.x'
       - name: Compile
@@ -63,7 +66,7 @@ jobs:
           cd src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
           make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }} IS_STABLE=TRUE
       - name: Publish a Python distribution to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@v1.14.3
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}

@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 import bpy
@@ -59,20 +60,20 @@ class BIM_PT_units(Panel):
             row.operator("bim.assign_scene_units", text="", icon="TOOL_SETTINGS")
             row.operator("bim.disable_unit_editing_ui", text="", icon="CANCEL")
         else:
+            row.operator("bim.convert_units", text="", icon="FILE_REFRESH")
             row.operator("bim.load_units", text="", icon="GREASEPENCIL")
 
         if not self.props.is_editing:
-            row = self.layout.row(align=True)
-            row.label(text="Length Unit", icon="ARROW_LEFTRIGHT")
-            row.label(text=str(UnitsData.data["length_unit"]))
-
-            row = self.layout.row(align=True)
-            row.label(text="Area Unit", icon="ORIENTATION_VIEW")
-            row.label(text=str(UnitsData.data["area_unit"]))
-
-            row = self.layout.row(align=True)
-            row.label(text="Volume Unit", icon="EMPTY_ARROWS")
-            row.label(text=str(UnitsData.data["volume_unit"]))
+            labels = {
+                "LENGTHUNIT": ("Length Unit", "ARROW_LEFTRIGHT"),
+                "AREAUNIT": ("Area Unit", "ORIENTATION_VIEW"),
+                "VOLUMEUNIT": ("Volume Unit", "EMPTY_ARROWS"),
+            }
+            for unit_type, name, ifc_class in UnitsData.data["assigned_units"]:
+                row = self.layout.row(align=True)
+                label, icon = labels.get(unit_type, (unit_type, tool.Unit.get_icon_for_unit_class(ifc_class)))
+                row.label(text=label, icon=icon)
+                row.label(text=str(name))
             return
 
         row = self.layout.row(align=True)
@@ -85,7 +86,15 @@ class BIM_PT_units(Panel):
             op = row.operator("bim.add_conversion_based_unit", text="", icon="ADD")
             op.name = self.props.conversion_unit_types
         elif self.props.unit_classes == "IfcDerivedUnit":
-            pass  # TODO
+            prop_with_search(row, self.props, "derived_unit_types", text="")
+            op = row.operator("bim.add_derived_unit", text="", icon="ADD")
+            op.unit_type = self.props.derived_unit_types
+            choices = {}
+            for component_type in tool.Unit.get_derived_unit_component_types(self.props.derived_unit_types):
+                prop_name = f"derived_{component_type.lower()}"
+                prop_with_search(self.layout.row(align=True), self.props, prop_name)
+                choices[component_type] = tool.Blender.get_enum_safe(self.props, prop_name) or "0"
+            op.components = json.dumps(choices)
         elif self.props.unit_classes == "IfcSIUnit":
             prop_with_search(row, self.props, "named_unit_types", text="")
             op = row.operator("bim.add_si_unit", text="", icon="ADD")

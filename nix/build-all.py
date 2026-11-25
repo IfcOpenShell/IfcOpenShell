@@ -123,10 +123,8 @@ import time
 from collections.abc import Generator, Sequence
 from datetime import date, datetime
 from pathlib import Path
-from typing import IO, Literal, NamedTuple, TypeAlias
+from typing import IO, Literal, NamedTuple, TypeAlias, assert_never
 from urllib.request import urlretrieve
-
-from typing_extensions import assert_never
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "win"))
 # The `nix` package lives next to the repository root, not next to this script.
@@ -201,7 +199,6 @@ class Args(NamedTuple):
     verbose: bool
     shared: bool
     split_instance_builds: bool
-    ifcopenshell_shared: bool
     occt_shared: bool
     mac_cross_compile_intel: bool
     wasm: bool
@@ -291,15 +288,15 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         "--shared",
         action="store_true",
         default=False,
-        help="Build shared libraries. By default will build static.",
+        help="Build dependencies as shared libraries too. By default they are static. "
+        "IfcOpenShell's own libraries are always shared.",
     )
     arg_parser.add_argument(
         "-ifcopenshell-shared",
         "--ifcopenshell-shared",
         action="store_true",
         default=False,
-        help="Build only IfcOpenShell's own libraries as shared (dependencies stay static). "
-        "Redundant if -shared is also passed.",
+        help="No effect, IfcOpenShell's own libraries are always shared. Kept for existing scripts.",
     )
     arg_parser.add_argument(
         "--split-instance-builds",
@@ -421,7 +418,6 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         verbose=namespace.verbose,
         shared=namespace.shared,
         split_instance_builds=namespace.split_instance_builds,
-        ifcopenshell_shared=namespace.ifcopenshell_shared or namespace.shared,
         # -shared implies a shared OCCT too, even overriding an explicit --no-occt-shared.
         occt_shared=namespace.shared
         or (
@@ -691,7 +687,6 @@ if WASM:
         "rocksdb",
         "opencollada",
         "pcre",
-        "IfcGeom",
         "IfcConvert",
         "IfcGeomServer",
         "BonsaiViewer",
@@ -702,7 +697,6 @@ if WASM:
     if NATIVE_WASM:
         # The standalone WASM targets ship the geometry stack and the generated C API.
         # SWIG, Python and the Python wrapper are only needed by the pyodide-hosted flow.
-        SKIP_TARGETS_FOR_WASM.discard("IfcGeom")
         SKIP_TARGETS_FOR_WASM.update(("swig", "python", "IfcOpenShell-Python"))
     SKIP_TARGETS_FOR_WASM = {t.lower() for t in SKIP_TARGETS_FOR_WASM}
     skip_targets = {t for t in targets if t.lower() in SKIP_TARGETS_FOR_WASM}
@@ -1317,6 +1311,10 @@ class Dependencies:
         install_dirs_path = INSTALL_DIR / "install_dirs.json"
         install_dirs_path.write_text(json.dumps(install_dirs, indent=2))
         logger.info(f"Wrote {install_dirs_path}")
+        # Development distributions also need header-only dependencies (Eigen,
+        # CGAL, JSON), which deliberately do not appear in the runtime manifest.
+        development_dirs = {dependency: str(cls.get_install_dir(dependency)) for dependency in cls.names}
+        (INSTALL_DIR / "development_install_dirs.json").write_text(json.dumps(development_dirs, indent=2))
 
 
 if "json" in targets:
@@ -1556,25 +1554,17 @@ if "OpenCOLLADA" in targets:
     )
 
 
-def python_consider_rc(python_version: str) -> str:
-    # TODO: remove after Python 3.15 release.
-    # Python 3.15.0 final was postponed to ~2026-10-09, before that only rc builds are available.
-    if python_version == "3.15.0" and date.today() < date(2026, 11, 1):
-        python_version += "rc3"
-    return python_version
-
-
 PYTHON_INSTALL_DIRS: dict[str, Path] = {}
 """Python version -> install dir."""
 
 if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
     # Use build dir to avoid pushing Python installations to `build-outputs`.
-    UV_PYTHON_INSTALL_DIR = Path(BUILD_DIR) / "uv-python"
+    # Not using `DEPS_DIR / 'build'`, because it gets cleaned up during `--diskcleanup`.
+    UV_PYTHON_INSTALL_DIR = Path(DEPS_DIR) / "uv-python"
     # Provide `UV_PYTHON_INSTALL_DIR` to avoid polluting global uv installation.
     uv_env = os.environ | {"UV_PYTHON_INSTALL_DIR": str(UV_PYTHON_INSTALL_DIR)}
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
-        PYTHON_VERSION = python_consider_rc(PYTHON_VERSION)
         python_request = f"cpython-{PYTHON_VERSION}-macos-x86_64" if MAC_CROSS_COMPILE_INTEL else PYTHON_VERSION
 
         logger.info(f"\rInstalling Python {PYTHON_VERSION} with uv...")
@@ -1808,7 +1798,7 @@ os.makedirs(ifcos_build_dir, exist_ok=True)
 cmake_args = [
     "-DUSE_MMAP=OFF",
     f"-DBUILD_EXAMPLES={OFF_ON[ARGS.build_examples]}",
-    "-DBUILD_SHARED_LIBS=" + OFF_ON[ARGS.ifcopenshell_shared],
+    "-DBUILD_SHARED_LIBS=" + OFF_ON[not WASM],
     "-DGLTF_SUPPORT=ON",
     "-DBoost_NO_BOOST_CMAKE=On",
     "-DCREATE_BUNDLE=On",
@@ -1854,6 +1844,7 @@ else:
     cmake_args.append("-DBUILD_ONLY_COMMON_SCHEMAS=ON")
 
 if "cgal" in targets:
+    cmake_args.append("-DWITH_CGAL=On")
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("cgal")))
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("gmp")))
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("mpfr")))
@@ -1861,6 +1852,7 @@ if "cgal" in targets:
 
 if "occ" in targets:
     cmake_args_prefix_path.append(str(OCCT_INSTALL_PATH))
+    cmake_args.append("-DWITH_OPENCASCADE=On")
 
 if "manifold" in targets:
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("manifold")))
@@ -1912,6 +1904,11 @@ if "swig" in targets:
     # because `find_program` in emscripten toolchain don't use `find_root_path`.
     # As a workaround we provide executable path directly on all platforms.
     cmake_args.append(f"-DSWIG_EXECUTABLE={Dependencies.get_install_dir('swig')}/bin/swig")
+    # Dependency caches can be unpacked under a different workspace prefix.
+    # SWIG otherwise searches the absolute library path baked into its binary.
+    swig_lib = Dependencies.get_install_dir("swig") / "share" / "swig" / SWIG_VERSION
+    os.environ["SWIG_LIB"] = str(swig_lib)
+    cmake_args.append(f"-DSWIG_DIR={swig_lib}")
 
 if os.environ.get("QT_DIR"):
     cmake_args_prefix_path.append(os.environ["QT_DIR"])
@@ -2140,7 +2137,6 @@ if "IfcOpenShell-Python" in targets:
         )
     else:
         for python_version in PYTHON_VERSIONS:
-            python_version = python_consider_rc(python_version)
             python_path = PYTHON_INSTALL_DIRS[python_version]
             # Install to a staging dir, so the wrapper won't end up in the Python installation.
             package_install_dir = Path(DEPS_DIR) / "install" / "ifcopenshell" / "tmp" / f"python-{python_version}"
@@ -2170,7 +2166,7 @@ if NATIVE_WASM:
             # WASM builds always regenerate the C API, which needs the `clang`
             # bindings, so the discovery has to run in this interpreter.
             f"-DPYTHON_EXECUTABLE={sys.executable}",
-            # `WASM_BUILD` defaults these to off because the pyodide flow ships no geometry.
+            # `WASM_BUILD` defaults these to off; the standalone build enables all kernels.
             "-DWITH_OPENCASCADE=ON",
             "-DWITH_CGAL=ON",
             "-DWITH_MANIFOLD=ON",

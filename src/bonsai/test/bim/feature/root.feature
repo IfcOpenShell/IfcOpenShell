@@ -24,7 +24,7 @@ Scenario: Add element - an element with no geometry
     When I click "OK"
     And I select the object "IfcFurniture/Unnamed"
     And I toggle edit mode
-    Then the object "Item/IfcExtrudedAreaSolid/73" exists
+    Then the object "Item/IfcExtrudedAreaSolid/119" exists
 
 Scenario: Add element - an element with extrusion geometry
     Given an empty IFC project
@@ -36,7 +36,7 @@ Scenario: Add element - an element with extrusion geometry
     When I click "OK"
     And I select the object "IfcFurniture/Unnamed"
     And I toggle edit mode
-    Then the object "Item/IfcExtrudedAreaSolid/73" exists
+    Then the object "Item/IfcExtrudedAreaSolid/119" exists
 
 Scenario: Add element - an element with custom tessellation geometry
     Given an empty IFC project
@@ -48,7 +48,7 @@ Scenario: Add element - an element with custom tessellation geometry
     When I click "OK"
     And I select the object "IfcFurniture/Unnamed"
     And I toggle edit mode
-    Then the object "Item/IfcPolygonalFaceSet/72" exists
+    Then the object "Item/IfcPolygonalFaceSet/118" exists
 
 Scenario: Add element - an element with tessellation geometry from an object
     Given an empty IFC project
@@ -62,8 +62,8 @@ Scenario: Add element - an element with tessellation geometry from an object
     When I click "OK"
     And I select the object "IfcFurniture/Unnamed"
     And I toggle edit mode
-    Then the object "Item/IfcPolygonalFaceSet/72" exists
-    And the object "Item/IfcPolygonalFaceSet/72" dimensions are "2,2,2"
+    Then the object "Item/IfcPolygonalFaceSet/118" exists
+    And the object "Item/IfcPolygonalFaceSet/118" dimensions are "2,2,2"
 
 Scenario: Reassign class
     Given an empty IFC project

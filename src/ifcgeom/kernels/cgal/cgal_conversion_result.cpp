@@ -3,6 +3,7 @@
 
 #include <CGAL/Polygon_mesh_processing/repair.h>
 #include <CGAL/Polygon_mesh_processing/self_intersections.h>
+#include "cgal_profile.h"
 #include <CGAL/Polygon_mesh_processing/polygon_soup_to_polygon_mesh.h>
 #include <CGAL/Polygon_mesh_processing/polygon_mesh_to_polygon_soup.h>
 
@@ -365,6 +366,7 @@ void ifcopenshell::geom::cgal_shape::to_nef() const {
 #endif
 
 void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings settings, const ifcopenshell::geom::taxonomy::matrix4& place, ifcopenshell::geom::triangulation* t, int item_id, int surface_style_id, ifcopenshell::logger& logger) const {
+	IFOPSH_CGAL_PROFILE_SCOPE(total, logger, "export.triangulate");
 	if (is_point() || is_wire()) {
 		return;
 	}
@@ -447,6 +449,7 @@ void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings se
 	std::vector<std::set<facet_const_handle>> components;
 	std::map<facet_const_handle, typename decltype(components)::const_iterator> facet_to_component;
 	if (!setting_use_original_edges) {
+		IFOPSH_CGAL_PROFILE_SCOPE(timer, logger, "export.partition_coplanar");
 		partition_coplanar_components(*shape_to_use, components);
 		for (auto it = components.begin(); it != components.end(); ++it) {
 			for (auto& f : *it) {

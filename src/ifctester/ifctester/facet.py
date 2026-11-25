@@ -474,15 +474,21 @@ class PartOf(Facet):
         self.applicability_templates = [
             "An element with an {relation} relationship with an {name}",
             "An element with an {relation} relationship",
+            "An element that is part of an {name} of predefined type {predefinedType}",
+            "An element that is part of an {name}",
         ]
         self.requirement_templates = [
             "An element must have an {relation} relationship with an {name} of predefined type {predefinedType}",
             "An element must have an {relation} relationship with an {name}",
             "An element must have an {relation} relationship",
+            "An element must be part of an {name} of predefined type {predefinedType}",
+            "An element must be part of an {name}",
         ]
         self.prohibited_templates = [
             "An element must not have an {relation} relationship with an {name}",
             "An element must not have an {relation} relationship",
+            "An element must not be part of an {name} of predefined type {predefinedType}",
+            "An element must not be part of an {name}",
         ]
         super().__init__(name, predefinedType, relation, cardinality, instructions)
 

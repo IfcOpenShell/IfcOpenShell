@@ -1,5 +1,7 @@
 name: Publish Docs Unstable
 
+permissions: {}
+
 # Publishes into subdirectories of docs.bonsaibim.org. The stable docs and the
 # landing page in the same repository are published by the bonsai-docs
 # workflow of https://github.com/IfcOpenShell/website on release.
@@ -30,10 +32,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v7.1.0
         with:
           python-version: '3.x'
 
@@ -44,7 +48,7 @@ jobs:
         run: make -C ${{ matrix.docs }} html
 
       - name: Deploy to GitHub Pages (Unstable)
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@v4.1.0
         with:
           # IfcOpenBot's token, which also publishes the stable docs and Bonsai unstable.
           personal_token: ${{ secrets.IFCOPENBOT_TOKEN }}
