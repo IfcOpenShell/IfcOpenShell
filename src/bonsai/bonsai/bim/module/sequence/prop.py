@@ -154,14 +154,12 @@ def updateTaskTimeDateTime(self: "Task", context: bpy.types.Context, startfinish
 
     ifc_file = tool.Ifc.get()
 
-    try:
-        startfinish_datetime = parser.isoparse(startfinish_value)
-    except:
-        try:
-            startfinish_datetime = parser.parse(startfinish_value, dayfirst=True, fuzzy=True)
-        except:
-            setattr(self, startfinish, "-")
-            return
+    import bonsai.bim.module.sequence.helper as helper
+
+    startfinish_datetime = helper.parse_datetime(startfinish_value)
+    if startfinish_datetime is None:
+        setattr(self, startfinish, "-")
+        return
 
     task = ifc_file.by_id(self.ifc_definition_id)
     if task.TaskTime:

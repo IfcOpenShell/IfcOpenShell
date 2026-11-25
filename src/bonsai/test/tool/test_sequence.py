@@ -88,3 +88,21 @@ class TestAssignStatus(NewFile):
 
         bpy.ops.bim.assign_status(status="EXISTING", should_unassign_status=True)
         assert subject.get_element_status(element) == set()
+
+
+class TestParseDatetime:
+    def test_reading_a_value_without_a_time_as_a_date(self):
+        import datetime
+
+        import bonsai.bim.module.sequence.helper as helper
+
+        assert helper.parse_datetime("2026-01-19") == datetime.date(2026, 1, 19)
+        assert helper.parse_datetime("19/01/26") == datetime.date(2026, 1, 19)
+
+    def test_keeping_a_given_time(self):
+        import datetime
+
+        import bonsai.bim.module.sequence.helper as helper
+
+        assert helper.parse_datetime("2026-01-19T13:00:00") == datetime.datetime(2026, 1, 19, 13)
+        assert helper.parse_datetime("19/01/26 13:30") == datetime.datetime(2026, 1, 19, 13, 30)
