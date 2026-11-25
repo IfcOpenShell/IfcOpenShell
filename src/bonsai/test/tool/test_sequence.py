@@ -21,6 +21,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import pytest
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -48,6 +49,24 @@ class TestGetElementStatus(NewFile):
         pset = ifcopenshell.api.pset.add_pset(ifc, element, "EPset_Status")
         ifcopenshell.api.pset.edit_pset(ifc, pset, properties={"Status": ["EXISTING", "TEMPORARY"]})
         assert subject.get_element_status(element) == {"EXISTING", "TEMPORARY"}
+
+
+class TestEnableStatusFiltersOperator(NewFile):
+    @pytest.mark.parametrize("schema", ["IFC2X3", "IFC4", "IFC4X3_ADD2"])
+    def test_enumerated_status_property(self, schema):
+        tool.Project.get_project_props().export_schema = schema
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        element = ifcopenshell.api.root.create_entity(ifc, "IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(ifc, element, "Pset_WallCommon")
+        values = [ifc.create_entity("IfcLabel", v) for v in ("EXISTING", "TEMPORARY")]
+        pset.HasProperties = [ifc.create_entity("IfcPropertyEnumeratedValue", Name="Status", EnumerationValues=values)]
+
+        assert bpy.ops.bim.enable_status_filters() == {"FINISHED"}
+
+        props = tool.Sequence.get_status_props()
+        assert props.is_enabled
+        assert {s.name for s in props.statuses} >= {"No Status", "EXISTING", "TEMPORARY"}
 
 
 class TestAssignStatus(NewFile):

@@ -337,6 +337,7 @@ def add_drawing(
             "Patterns": drawing.get_default_drawing_resource_path("Patterns"),
             "ShadingStyles": (shading_styles_path := drawing.get_default_drawing_resource_path("ShadingStyles")),
             "CurrentShadingStyle": drawing.get_default_shading_style(),
+            "Metadata": drawing.get_default_metadata(),
         },
     )
     drawing.setup_shading_styles_path(shading_styles_path)

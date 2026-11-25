@@ -51,15 +51,15 @@
 #include "BufferPool.h"
 #include "GpuBudget.h"
 #include "GpuMemory.h"
-#include "InstanceCompose.h"
+#include "ModelLookup.h"
 #include "InstancedGeometry.h"
 #include "ModelGpuData.h"
+#include "SectionCapRenderer.h"
 #include "SectionGizmoRenderer.h"
 #include "SectionPlane.h"
 #include "SelectionState.h"
-#include "SidecarCache.h"
 #include "Stopwatch.h"
-#include "StreamingLoader.h"
+#include "IfcViewReader.h"
 #include "StreamingThread.h"
 #include "ViewportHost.h"
 #include "VisibilityState.h"
@@ -120,10 +120,10 @@ public:
                                       const ModelGpuData& m) const;
 
     // Cross-model object_id lookup. Delegates to
-    // InstanceCompose::findInstanceInModels; the wrapper exists so
+    // ModelLookup::findInstanceInModels; the wrapper exists so
     // callers don't have to know about the underlying map of models.
     bool findInstance(uint32_t object_id,
-                      InstanceCompose::InstanceLookup& out) const;
+                      ModelLookup::InstanceLookup& out) const;
 
     // A point that actually lies on the model's first instance — used
     // by the federation false-origin guess on first geometry. Pure
@@ -131,10 +131,10 @@ public:
     bool firstGeometryPointWorldM(uint32_t session_model_id,
                                   Eigen::Vector3d& out) const;
 
-    // The model's georef as seeded from its sidecar by applyCachedModel.
+    // The model's georef as seeded from its .ifcview by applyCachedModel.
     // Returns false when the model is unknown.
     //
-    // This is the sidecar-only equivalent of the desktop's
+    // This is the .ifcview-only equivalent of the desktop's
     // SceneLoader::modelGeoref: composeModelTransformation needs the unit
     // scales and the CoordinateOperation to lift ModelTransformation::a into
     // metres, and on web there is no ifcopenshell::file to re-read them from.
@@ -142,7 +142,7 @@ public:
 
     // The global-id base applyCachedModel added to this model's instance
     // object_ids. Callers that hold the element table separately (the desktop
-    // sidecar path) rebase their element records by the same base so registry
+    // .ifcview path) rebase their element records by the same base so registry
     // ids match the ids pick/selection return. 0 if the model is unknown.
     uint32_t modelObjectIdBase(uint32_t session_model_id) const;
 
@@ -454,7 +454,7 @@ public:
                             const std::vector<std::uint32_t>& idx);
 
     // Synchronous-fallback path: read this chunk's byte ranges from
-    // the sidecar file directly (no worker thread) and apply. Used by
+    // the .ifcview file directly (no worker thread) and apply. Used by
     // the screenshot test on first frame, and any caller that needs a
     // chunk resident inside the same call (no deferred-state to
     // manage). Returns true on success.
@@ -466,7 +466,7 @@ public:
 
     // Build the worker request for a chunk. Walks the chunk's mesh_ids
     // and derives scatter-gather byte/index ranges from each mesh's
-    // sidecar offsets. Pure function of model + chunk metadata; safe to
+    // .ifcview offsets. Pure function of model + chunk metadata; safe to
     // call from the main thread.
     static StreamingThread::Request makeChunkRequest(
         const ModelGpuData& m, std::size_t chunk_idx, std::uint32_t session_model_id);
@@ -484,16 +484,16 @@ public:
     // which is what decouples fetching from the render loop.
     void pumpWebChunkLoads();
 
-    // ---- Sidecar / direct load (#84-q) -----------------------------------
+    // ---- .ifcview / direct load (#84-q) -----------------------------------
     //
-    // Apply a parsed sidecar's metadata + planned chunk layout to
+    // Apply a parsed .ifcview's metadata + planned chunk layout to
     // models_gpu_[session_model_id]. Builds the per-chunk small buffers
     // (visible_draws / prefix_sums / per_chunk_uniform), the per-model
     // mesh + instance storage SSBOs, and the spatial chunk plan; chunk
     // vertex/index slices stay non-resident until the streaming loader
     // brings them in. Triggers an auto-viewAll on the first model (so a
     // freshly-loaded scene frames itself).
-    void applyCachedModel(std::uint32_t session_model_id, StreamingSidecar metadata);
+    void applyCachedModel(std::uint32_t session_model_id, StreamingIfcView metadata);
     // The model's required-tier buffers (mesh + instance storage, per-chunk
     // cull buffers) as one allocation unit — see allocateRequired. False
     // when the device cannot fit them even after the cache yielded.
@@ -501,16 +501,16 @@ public:
                             const std::vector<MeshGpu>& mesh_gpu,
                             const std::vector<InstanceGpu>& inst_gpu);
 
-    // Qt-free sidecar load: readSidecarMetadata + applyCachedModel.
+    // Qt-free .ifcview load: readIfcViewMetadata + applyCachedModel.
     // Used by the web build (and any other non-Qt embedder) so the
-    // public ViewportWindow::loadSidecar's QString + QFile triage
+    // public ViewportWindow::loadIfcView's QString + QFile triage
     // tilde-expansion doesn't have to be replicated. Returns 0 on
     // any failure (device not ready, file missing, magic / version
     // mismatch) and the freshly-assigned session_model_id on success.
-    std::uint32_t loadSidecarFromPath(const std::string& path);
+    std::uint32_t loadIfcViewFromPath(const std::string& path);
 
 #if defined(__EMSCRIPTEN__)
-    // Web byte-range load (#88). Streams a sidecar from a JS-side source
+    // Web byte-range load (#88). Streams a .ifcview from a JS-side source
     // WITHOUT copying the whole file into the wasm heap: head + tail metadata
     // are read via byte ranges, the streaming model is built, and it is tagged
     // web-sourced so each chunk's vertex/index ranges are pulled lazily.
@@ -527,7 +527,7 @@ public:
     // way to learn it — which is what the federation layer needs in order to
     // bind per-model state (transform, display name) that JS may have set
     // against the source_id before the load finished.
-    void loadSidecarMetadataWeb(int source_id, std::string source_label,
+    void loadIfcViewMetadataWeb(int source_id, std::string source_label,
                                 std::function<void(std::uint32_t)> on_loaded = {});
 
     // On-demand fetch of the v15 element metadata block (elements + string
@@ -822,10 +822,37 @@ public:
     // `dpr` scales the ring widths so they hold their apparent size on a
     // HiDPI canvas. No-op when nothing is selected.
     void encodeSelectionOutlinePass(WGPUCommandEncoder enc,
-                                    WGPUTextureView surface_view, int dpr);
+                                    WGPUTextureView surface_view, float dpr);
 
     void setSelectionOutlineEnabled(bool on) { selection_outline_enabled_ = on; }
     bool selectionOutlineEnabled() const     { return selection_outline_enabled_; }
+
+    // ---- Section caps ------------------------------------------------------
+    //
+    // Fill the cross-section where a section plane cuts through a solid (see
+    // SectionCapRenderer). On by default; never drawn in x-ray, where the
+    // point is to see through.
+    void setSectionCapsEnabled(bool enabled);
+    bool sectionCapsEnabled() const { return section_caps_enabled_; }
+    void setSectionCapStyle(const SectionCapStyle& style);
+    const SectionCapStyle& sectionCapStyle() const { return section_cap_style_; }
+
+    // Build the accumulation pipeline; buildPipelines() calls it.
+    bool buildSectionCapPipeline();
+
+    // Accumulate the cap parity for this frame. Must be encoded before the
+    // main pass, which composites the result. Returns false when there is
+    // nothing to cap.
+    bool encodeSectionCapAccumPass(WGPUCommandEncoder enc);
+
+    // Whether caps are being drawn at all this frame.
+    bool sectionCapsActive() const;
+
+    // Whether the pixel can show a cap: caps are active and its view ray
+    // enters the kept region through a section plane. Fills the point on that
+    // plane and the plane's normal.
+    bool sectionCapRayEntry(int x_pixels, int y_pixels,
+                            Eigen::Vector3f& point_out, Eigen::Vector3f& normal_out) const;
 
     // ---- Pick + raycast (#84-t) -------------------------------------------
     //
@@ -863,20 +890,35 @@ public:
                                                        int w, int h,
                                                        std::uint64_t needed_bytes);
 
-    // Build the x-ray box-pick pipeline: vs_pick + fs_boxpick, depth compare
-    // Always with no depth write and no colour targets, so nothing culls a
-    // fragment behind another and the pass's only output is the hit bitmask.
-    bool buildBoxPickPipeline();
+    // Build the two hit-bitmask pipelines: vs_pick with depth compare Always,
+    // no depth write and no colour targets, so nothing culls a fragment behind
+    // another and the pass's only output is a bit per object.
+    //   box_pick_pipeline_  fs_boxpick sets the bit: the x-ray marquee.
+    //   cap_pick_pipeline_  fs_cappick flips it: the section cap pick, which
+    //                       wants the objects with an odd number of faces
+    //                       along the ray (see SectionCapRenderer).
+    bool buildHitFlagsPipelines();
 
-    // Encode the depth-less box-pick pass scissored to (x,y,w,h): zero the hit
-    // bits, draw every visible chunk, copy the bitmask into
-    // hit_flags_staging_buffer_ and submit. Clamps the rect in place and reports
-    // the byte count to map. False if nothing is pickable or the rect is empty.
-    bool encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
-                                    std::uint64_t& needed_bytes_out);
+    // Encode a hit-bitmask pass scissored to (x,y,w,h): zero the bits, draw
+    // every visible chunk with `pipeline`, copy the bitmask into
+    // hit_flags_staging_buffer_ and submit. Clamps the rect in place and
+    // reports the byte count to map. False if nothing is pickable or the rect
+    // is empty.
+    bool encodeHitFlagsPassToStaging(WGPURenderPipeline pipeline,
+                                     int& x, int& y, int& w, int& h,
+                                     std::uint64_t& needed_bytes_out);
     // Read the (already-mapped) hit bitmask → the object ids whose bit is set.
     // Unmaps before returning.
-    std::vector<std::uint32_t> collectMappedXrayHitIds(std::uint64_t needed_bytes);
+    std::vector<std::uint32_t> collectMappedHitIds(std::uint64_t needed_bytes);
+
+    // encodeHitFlagsPassToStaging + a blocking map → the ids. Desktop.
+    std::vector<std::uint32_t> hitFlagsPick(WGPURenderPipeline pipeline,
+                                            int x, int y, int w, int h);
+
+    // The object whose section cap is drawn at the pixel, or 0. Where solids
+    // overlap, any one of them. `normal_out` gets the cut plane's normal.
+    std::uint32_t pickSectionCapAt(int x_pixels, int y_pixels,
+                                   Eigen::Vector3f* normal_out = nullptr);
 
     // CPU half of pickSurfaceAt: cast the pixel's world ray against every
     // instance carrying `object_id`, returning the closest hit's world pos,
@@ -966,6 +1008,15 @@ public:
     // time (a pick issued while another is mapping is dropped → cb(0)).
     void pickObjectAtAsync(int x_pixels, int y_pixels,
                            std::function<void(std::uint32_t)> cb);
+    // The depth-tested half of pickObjectAtAsync: what is visible at the
+    // pixel, section caps aside.
+    void pickVisibleObjectAtAsync(int x_pixels, int y_pixels,
+                                  std::function<void(std::uint32_t)> cb);
+    // Async sibling of hitFlagsPick. Shares the marquee's in-flight state, so
+    // one issued while a box pick is mapping is dropped → cb({}).
+    void hitFlagsPickAsync(WGPURenderPipeline pipeline,
+                           int x, int y, int w, int h,
+                           std::function<void(std::vector<std::uint32_t>)> cb);
 #endif
 
     // Marquee box select: encode the pick pass, copy the (x, y, w, h)
@@ -973,7 +1024,7 @@ public:
     // non-zero ids. Synchronous (rare interaction) — desktop only path.
     //
     // In x-ray this instead runs the depth-less box-pick pass (see
-    // encodeXrayBoxPickToStaging), so the marquee selects THROUGH occluders —
+    // encodeHitFlagsPassToStaging), so the marquee selects THROUGH occluders —
     // matching what x-ray already lets you see. Outside x-ray the depth-tested
     // MRT read stands, so a marquee still takes only what is actually visible.
     std::vector<std::uint32_t> picksInRect(int x, int y, int w, int h);
@@ -1167,7 +1218,7 @@ private:
     bool      render_attachments_ok_ = true;
 
     // The scene's models in load order (ascending session_model_id, minted at
-    // request time — see loadSidecarMetadataWeb). Every per-model API indexes
+    // request time — see loadIfcViewMetadataWeb). Every per-model API indexes
     // against this, so a model keeps a stable UI slot instead of hopping with
     // unordered_map iteration order.
     std::vector<std::uint32_t> modelIdsInLoadOrder() const;
@@ -1229,6 +1280,10 @@ private:
     // Lifted out of the Qt-coupled OverlayRenderer so one identical gizmo draws
     // everywhere; the desktop's OverlayRenderer no longer draws it.
     SectionGizmoRenderer section_gizmo_;
+    SectionCapRenderer   section_caps_;
+    WGPURenderPipeline   section_cap_accum_pipeline_ = nullptr;
+    bool                 section_caps_enabled_       = true;
+    SectionCapStyle      section_cap_style_;
     // Corner axis gizmo + orbit pivot indicator, likewise shared by desktop +
     // web. Same lift out of the Qt-coupled OverlayRenderer.
     AxisIndicatorRenderer axis_indicator_;
@@ -1375,6 +1430,7 @@ private:
     WGPUBuffer         hit_flags_staging_buffer_   = nullptr;
     std::uint64_t      hit_flags_staging_capacity_ = 0;
     WGPURenderPipeline box_pick_pipeline_          = nullptr;
+    WGPURenderPipeline cap_pick_pipeline_          = nullptr;
 #if defined(__EMSCRIPTEN__)
     // Async object-pick state (web). Held while the staging map is in flight;
     // pick_async_cb_ fires with object_id when the spontaneous map resolves.
@@ -1470,7 +1526,7 @@ private:
     std::unordered_map<uint32_t, ModelGpuData> models_gpu_;
     uint32_t next_session_model_id_  = 1;
     // Globally-unique object_id allocator. Each applyCachedModel rebases
-    // the sidecar's local object_ids by base_object_id_so_far so picks
+    // the .ifcview's local object_ids by base_object_id_so_far so picks
     // are unambiguous across models.
     uint32_t next_object_id_ = 1;
 
@@ -1578,7 +1634,7 @@ private:
     // uploadStreamedInstance append into entries keyed by session_model_id; the
     // finalizeModel call moves the entry out, hands it to
     // applyCachedModel, and uploads the chunk slices synchronously.
-    std::unordered_map<std::uint32_t, std::unique_ptr<SidecarData>>
+    std::unordered_map<std::uint32_t, std::unique_ptr<IfcViewData>>
         pending_direct_loads_;
 
     // ---- Render-loop state (#84-x) ---------------------------------------

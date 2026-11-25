@@ -21,6 +21,7 @@ from __future__ import annotations
 import csv
 import importlib
 import os
+import pkgutil
 import re
 from collections import defaultdict
 from collections.abc import Callable
@@ -64,11 +65,10 @@ _parser_presets_configs = {}
 def get_presets_configs() -> dict[ParserPreset, dict[str, Any]]:
     global _parser_presets_configs
     if not _parser_presets_configs:
-        fm_dir = Path(__file__).parent
-        for f in fm_dir.iterdir():
-            if not f.suffix == ".py" or f.name.startswith("_"):
+        for module_info in pkgutil.iter_modules(__path__):
+            preset = module_info.name
+            if preset.startswith("_"):
                 continue
-            preset = f.stem
             module = importlib.import_module(f"ifcfm.{preset}")
             config = getattr(module, "config")
             _parser_presets_configs[preset] = config

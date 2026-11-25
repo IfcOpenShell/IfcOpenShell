@@ -24,6 +24,7 @@ import tempfile
 import pytest
 
 import ifcopenshell
+from ifcopenshell.file import rocksdb_lazy_instance
 
 try:
     import psutil
@@ -137,6 +138,10 @@ def test_rocks_storage_getattr_invalid_attribute():
         with pytest.raises(AttributeError):
             inst.NotARealAttribute
 
+        # Method caches retain lazy instances and their open databases.
+        rocksdb_lazy_instance.is_a.cache_clear()
+        rocksdb_lazy_instance.__len__.cache_clear()
+        del inst
         del f
         gc.collect()
 
@@ -155,6 +160,28 @@ def test_rocks_storage_ids_and_type_lookups():
         assert repr(inst).startswith("#139=IfcRelDefinesByProperties(")
         assert [i.id() for i in f.storage.by_type("IfcColumn")] == [93]
         assert [i.id() for i in f.storage.by_id(93).IsDefinedBy] == [101, 102, 103, 139]
+
+        rocksdb_lazy_instance.is_a.cache_clear()
+        rocksdb_lazy_instance.__len__.cache_clear()
+        del inst
+        del m
+        del f
+        gc.collect()
+
+
+@pytest.mark.parametrize("value", [True, False, "UNKNOWN"])
+def test_rocks_logical_roundtrip(value):
+    with tempfile.TemporaryDirectory() as d:
+        ifc_fn = os.path.join(d, "logical.ifc")
+        rfn = os.path.join(d, "logical.rdb")
+
+        m = ifcopenshell.file(schema="IFC4")
+        layer = m.createIfcMaterialLayer(LayerThickness=0.1, IsVentilated=value)
+        m.write(ifc_fn)
+        ifcopenshell.convert_path_to_rocksdb(ifc_fn, rfn)
+
+        f = ifcopenshell.open(rfn)
+        assert f.by_id(layer.id()).IsVentilated == value
 
         del f
         gc.collect()

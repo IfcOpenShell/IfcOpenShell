@@ -7,8 +7,11 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # Script is assuming that it will be possible to execute it multiple times
 # therefore we're clearing venv each time and ignoring existing 'emsdk' folder.
 
-# Install uv.
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# CI and Docker already supply uv; bootstrap it only for standalone builds.
+if ! command -v uv >/dev/null 2>&1; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.local/bin:$PATH"
+fi
 uv venv --python 3.13 --clear
 source .venv/bin/activate
 
@@ -42,7 +45,7 @@ export BUILD_DIR=`readlink -f ifcopenshell_build`
 # command `make -j5 ifcopenshell_wrapper VERBOSE=1` in directory
 # '/home/runner/work/IfcOpenShell/IfcOpenShell/ifcopenshell_build/Linux/wasm/build/ifcopenshell/build'
 # Sat, 25 Apr 2026 12:18:01 GMT Error: Process completed with exit code 143.
-export IFCOS_NUM_BUILD_PROCS=1
+export IFCOS_NUM_BUILD_PROCS=${IFCOS_NUM_BUILD_PROCS:-1}
 
 # Use build-recipes-no-deps first, so logs would be printed to stdout.
 pyodide build-recipes-no-deps ifcopenshell

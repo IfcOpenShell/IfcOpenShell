@@ -196,7 +196,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
                 if element.is_a("IfcElementType"):
                     ifc_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, schema=tool.Ifc.get().schema)[
                         0
-                    ]
+                    ].ifc_class
                 related_ifc_entities = [ifc_class]
                 if (
                     predefined_type := ifcopenshell.util.element.get_predefined_type(element)

@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any
-
 import ifcopenshell
 import ifcopenshell.api.style
 import ifcopenshell.util.element
@@ -102,38 +100,38 @@ def assign_material_style(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "material": material,
-        "style": style,
-        "context": context,
-        "should_use_presentation_style_assignment": should_use_presentation_style_assignment,
-    }
-    return usecase.execute()
+    return usecase.execute(material, style, context, should_use_presentation_style_assignment)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
+    item_style: ifcopenshell.entity_instance
 
-    def execute(self):
-        self.style = self.settings["style"]
-        if self.file.schema == "IFC2X3" or self.settings["should_use_presentation_style_assignment"]:
-            self.style = self.file.createIfcPresentationStyleAssignment([self.settings["style"]])
+    def execute(
+        self,
+        material: ifcopenshell.entity_instance,
+        style: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+        should_use_presentation_style_assignment: bool,
+    ) -> None:
+        self.item_style = style
+        if self.file.schema == "IFC2X3" or should_use_presentation_style_assignment:
+            self.item_style = self.file.create_entity("IfcPresentationStyleAssignment", [style])
 
-        if self.settings["material"].HasRepresentation:
-            self.modify_existing_definition_representation()
+        if material.HasRepresentation:
+            self.modify_existing_definition_representation(material, style, context)
         else:
-            self.create_new_definition_representation()
+            self.create_new_definition_representation(material, style, context)
 
         # handle material constituents and shape aspects
         material_constituents_names = []
-        for inverse in self.file.get_inverse(self.settings["material"]):
+        for inverse in self.file.get_inverse(material):
             if inverse.is_a("IfcMaterialConstituent") and inverse.Name:
                 material_constituents_names.append(inverse.Name)
         if not material_constituents_names:
             return
 
-        elements = ifcopenshell.util.element.get_elements_by_material(self.file, self.settings["material"])
+        elements = ifcopenshell.util.element.get_elements_by_material(self.file, material)
         shape_aspects = []
         for element in elements:
             shape_aspects += ifcopenshell.util.element.get_shape_aspects(element)
@@ -144,15 +142,20 @@ class Usecase:
 
             for rep in shape_aspect.ShapeRepresentations:
                 ifcopenshell.api.style.assign_representation_styles(
-                    self.file, shape_representation=rep, styles=[self.style]
+                    self.file, shape_representation=rep, styles=[self.item_style]
                 )
 
-    def modify_existing_definition_representation(self):
+    def modify_existing_definition_representation(
+        self,
+        material: ifcopenshell.entity_instance,
+        style: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> None:
         # NOTE: while it's theoritically possible to have multiple styles per 1 material
         # (either with multiple styled items or multiple styles in 1 item)
         # we use an implicit convention that there is only 1 style per material.
-        definition_representation = self.settings["material"].HasRepresentation[0]
-        representation = self.get_styled_representation(definition_representation)
+        definition_representation = material.HasRepresentation[0]
+        representation = self.get_styled_representation(definition_representation, context)
         if representation:
             items = list(representation.Items)
             new_items = []
@@ -160,25 +163,26 @@ class Usecase:
             for item in items:
                 if not item.is_a("IfcStyledItem"):
                     continue
-                if self.has_proposed_style(item):
+                if self.has_proposed_style(item, style):
                     return
-                if self.has_same_style_type(item):
+                if self.has_same_style_type(item, style):
                     same_style_items.append(item)
                 else:
                     new_items.append(item)
             item_to_reuse = same_style_items.pop(0) if same_style_items else None
-            new_items.append(self.create_styled_item(item_to_reuse))
+            new_items.append(self.create_styled_item(style, item_to_reuse))
             representation.Items = new_items
             for item in same_style_items:
                 if self.file.get_total_inverses(item) == 0:
                     self.file.remove(item)
         else:
             representations = list(definition_representation.Representations)
-            representations.append(self.create_styled_representation())
+            representations.append(self.create_styled_representation(style, context))
             definition_representation.Representations = representations
 
-    def has_proposed_style(self, styled_item: ifcopenshell.entity_instance) -> bool:
-        style = self.settings["style"]
+    def has_proposed_style(
+        self, styled_item: ifcopenshell.entity_instance, style: ifcopenshell.entity_instance
+    ) -> bool:
         styles = styled_item.Styles
         if style in styles:
             return True
@@ -190,8 +194,9 @@ class Usecase:
                         return True
         return False
 
-    def has_same_style_type(self, styled_item: ifcopenshell.entity_instance) -> bool:
-        style = self.settings["style"]
+    def has_same_style_type(
+        self, styled_item: ifcopenshell.entity_instance, style: ifcopenshell.entity_instance
+    ) -> bool:
         style_class = style.is_a()
         for s in styled_item.Styles:
             s_class = s.is_a()
@@ -203,45 +208,51 @@ class Usecase:
                         return True
         return False
 
-    def create_new_definition_representation(self):
-        representation = self.create_styled_representation()
-        definition_representation = self.file.create_entity(
-            "IfcMaterialDefinitionRepresentation",
-            **{"Representations": [representation], "RepresentedMaterial": self.settings["material"]},
+    def create_new_definition_representation(
+        self,
+        material: ifcopenshell.entity_instance,
+        style: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> None:
+        representation = self.create_styled_representation(style, context)
+        self.file.create_entity(
+            "IfcMaterialDefinitionRepresentation", Representations=[representation], RepresentedMaterial=material
         )
 
-    def get_styled_representation(self, definition_representation):
+    def get_styled_representation(
+        self, definition_representation: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance | None:
         representations = [
             r
             for r in definition_representation.Representations
-            if r.is_a("IfcStyledRepresentation") and r.ContextOfItems == self.settings["context"]
+            if r.is_a("IfcStyledRepresentation") and r.ContextOfItems == context
         ]
         if representations:
             return representations[0]
 
-    def create_styled_representation(self):
+    def create_styled_representation(
+        self, style: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         return self.file.create_entity(
             "IfcStyledRepresentation",
-            **{
-                "ContextOfItems": self.settings["context"],
-                "RepresentationIdentifier": self.settings["context"].ContextIdentifier,
-                "Items": [self.create_styled_item()],
-            },
+            ContextOfItems=context,
+            RepresentationIdentifier=context.ContextIdentifier,
+            Items=[self.create_styled_item(style)],
         )
 
-    def create_styled_item(self, reuse_item=None):
+    def create_styled_item(
+        self, style: ifcopenshell.entity_instance, reuse_item: ifcopenshell.entity_instance | None = None
+    ) -> ifcopenshell.entity_instance:
         if reuse_item is None:
-            return self.file.create_entity(
-                "IfcStyledItem", **{"Styles": [self.style], "Name": self.settings["style"].Name}
-            )
+            return self.file.create_entity("IfcStyledItem", Styles=[self.item_style], Name=style.Name)
 
         # IfcPresentationStyleAssignment we created end up not being used
         # TODO: do not create IfcPresentationStyleAssignment in the first place
         # as it might get removed
-        if reuse_item.is_a("IfcPresentationStyleAssignment") and self.style.is_a("IfcPresentationStyleAssignment"):
-            self.file.remove(self.style)
-            self.style = reuse_item
+        if reuse_item.is_a("IfcPresentationStyleAssignment") and self.item_style.is_a("IfcPresentationStyleAssignment"):
+            self.file.remove(self.item_style)
+            self.item_style = reuse_item
 
-        reuse_item.Styles = (self.settings["style"],)
-        reuse_item.Name = self.settings["style"].Name
+        reuse_item.Styles = (style,)
+        reuse_item.Name = style.Name
         return reuse_item

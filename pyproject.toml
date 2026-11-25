@@ -4,6 +4,11 @@ version = "0.0.0"
 # Don't provide requires-python explicitly
 # allowing pyprojects to set their own (e.g. bonsai and general ifcopenshell version differ).
 
+[project.optional-dependencies]
+bindgen = [
+    "clang==21.1.7",
+]
+
 [tool.pyright]
 reportInvalidTypeForm = false
 disableBytesTypePromotions = true
@@ -89,10 +94,10 @@ call-non-callable = "ignore"
 # bpy is missing some context manager implementations.
 invalid-context-manager = "ignore"
 # Doesn't go well with `bpy.ops.xxx.yyy`.
-unresolved-attribute = "ignore"
+missing-attribute = "ignore"
 # Too many false positives.
 invalid-argument-type = "ignore"
-invalid-method-override = "ignore"
+incompatible-method-override = "ignore"
 invalid-assignment = "ignore"
 unsound-assignment = "ignore"
 invalid-parameter-default = "ignore"
@@ -104,6 +109,7 @@ unsound-return-statement = "ignore"
 non-callable-init-subclass = "ignore"
 not-iterable = "ignore"
 possibly-missing-attribute = "ignore"
+missing-union-attribute = "ignore"
 no-matching-overload = "ignore"
 not-subscriptable = "ignore"
 unsupported-dynamic-base = "ignore"
@@ -111,6 +117,7 @@ unsupported-operator = "ignore"
 redundant-condition = "ignore"
 redundant-condition-strict = "ignore"
 truthiness-test-of-iterable = "ignore"
+truthiness-test-of-none-union = "ignore"
 # `@persistent` is incorrectly annotated as `Any` in fake-bpy, needs to be resolved upstream.
 dynamic-function-decorator-return = "ignore"
 
@@ -186,6 +193,22 @@ dev-setup.help = "Install repo packages in editable mode"
 ruff = "ruff check"
 
 check-whitespace = "uv run .github/scripts/check-whitespace.py"
+
+zizmor.cmd = "zizmor ."
+zizmor.help = "GitHub workflows security check"
+
+# `gh extension install --pin` has no effect if another version is already installed, so remove it first.
+actions-lock-setup.shell = "gh extension remove actions-lock; gh extension install github/gh-actions-lock --pin v0.5.0"
+actions-lock-setup.interpreter = ["posix", "pwsh"]
+actions-lock-setup.help = "Install pinned gh-actions-lock extension"
+
+actions-lock.cmd = "gh actions-lock --verify"
+actions-lock.help = "Verify GitHub Actions lockfile. Run 'gh actions-lock' to update it."
+
+uv-lock.cmd = "uv lock --project src/bonsai/bundled-wheels"
+uv-lock.help = "Lock Bonsai bundled wheels."
+
+version = "uv run .github/scripts/version.py"
 
 ruff-format = "ruff format"
 

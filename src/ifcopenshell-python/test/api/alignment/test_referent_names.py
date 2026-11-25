@@ -21,12 +21,7 @@ import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
-
-try:
-    ifcopenshell.file(schema="IFC4X3")
-    IFC4X3_AVAILABLE = True
-except RuntimeError:
-    IFC4X3_AVAILABLE = False
+import test.bootstrap
 
 
 @pytest.fixture(scope="module")
@@ -106,7 +101,7 @@ def _label(name):
     return name.rsplit("(", 1)[1].rstrip(")")
 
 
-@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
+@test.bootstrap.requires_ifc4x3
 def test_with_default_names(default_names_alignment):
     file = default_names_alignment.file
     horizontal = ifcopenshell.api.alignment.get_horizontal_layout(default_names_alignment)
@@ -133,7 +128,7 @@ def test_with_default_names(default_names_alignment):
     assert [_label(r.Name) for r in v_nest.RelatedObjects] == expected_v
 
 
-@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
+@test.bootstrap.requires_ifc4x3
 def test_with_callbacks(callback_alignment):
     file = callback_alignment.file
     horizontal = ifcopenshell.api.alignment.get_horizontal_layout(callback_alignment)

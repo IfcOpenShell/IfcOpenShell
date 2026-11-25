@@ -241,9 +241,8 @@ public:
             // @todo this exception is silly. Figure out what
             // to do, but at the moment it is specifically caught
             // in various places.
-            throw impl::storage_type_mismatch(
-                ::impl::variant_type_name<T>::get(), get_type_name(size_and_indices_[index + 1])
-            );
+            throw ::impl::storage_type_mismatch(
+                ::impl::variant_type_name<T>::get(), get_type_name(size_and_indices_[index + 1]));
         }
         using v = typename std::tuple_element<::impl::TypeIndex_v<T, Types...>, ::impl::mapped_types<Types... >>::type;
         if constexpr (::impl::is_unique_ptr<v>::value) {

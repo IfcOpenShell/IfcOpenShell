@@ -35,7 +35,7 @@ The most commonly used utilities to help you get started are:
 - See :func:`ifcopenshell.util.element.get_type` to get the corresponding type
   object (e.g. the wall type definition) of a single occurrence (e.g. an
   individual wall).
-- See :func:`ifcopenshell.util.placement.get_local_placement` to get the XYZ
+- See :func:`ifcopenshell.util.placement.get_placement` to get the XYZ
   placement point of a single object.
 - See :func:`ifcopenshell.util.unit.calculate_unit_scale` to convert between SI
   units and project units.

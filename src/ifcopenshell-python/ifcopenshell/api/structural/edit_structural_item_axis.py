@@ -24,13 +24,18 @@ def edit_structural_item_axis(
     structural_item: ifcopenshell.entity_instance,
     axis: VectorType = (0.0, 0.0, 1.0),
 ) -> None:
-    """Edits the coordinate system of a structural connection
+    """Edits the Axis of a structural curve member or curve connection
 
-    :param structural_item: The IfcStructuralItem you want to modify.
+    The Axis sets the local z direction of the item. It is mandatory, but an
+    item made with :func:`ifcopenshell.api.root.create_entity` has none yet,
+    so this also sets it for the first time.
+
+    :param structural_item: The IfcStructuralCurveMember or
+        IfcStructuralCurveConnection you want to modify.
     :param axis: The unit Z axis vector defined as a list of 3 floats.
         Defaults to (0., 0., 1.).
     :return: None
     """
-    if file.get_total_inverses(axis_dir := structural_item.Axis) == 1:
+    if (axis_dir := structural_item.Axis) and file.get_total_inverses(axis_dir) == 1:
         file.remove(axis_dir)
     structural_item.Axis = file.create_entity("IfcDirection", ifc_safe_vector_type(axis))

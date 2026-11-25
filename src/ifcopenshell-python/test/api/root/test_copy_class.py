@@ -25,6 +25,7 @@ import ifcopenshell.api.group
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
+import ifcopenshell.api.structural
 import ifcopenshell.api.system
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
@@ -259,6 +260,17 @@ class TestCopyClass(test.bootstrap.IFC4):
         assert element2.ConnectedFrom
         assert not new.ConnectedTo
         assert not new.ConnectedFrom
+
+    def test_not_copying_structural_activities(self):
+        point = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        load = ifcopenshell.api.structural.add_structural_load(self.file, ifc_class="IfcStructuralLoadSingleForce")
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            self.file, applied_load=load, structural_member=point, ifc_class="IfcStructuralPointAction"
+        )
+        new = ifcopenshell.api.root.copy_class(self.file, product=point)
+        assert len(self.file.by_type("IfcRelConnectsStructuralActivity")) == 1
+        assert point.AssignedStructuralActivity[0].RelatedStructuralActivity == activity
+        assert not new.AssignedStructuralActivity
 
     def test_maintaining_group_relationships(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")

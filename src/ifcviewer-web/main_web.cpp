@@ -19,7 +19,7 @@
 
 // Web entry point. Wires a WebViewportHost to a ViewportCore, brings up
 // wgpu via emdawnwebgpu (the spec-compatible WebGPU header set that
-// shipped with Dawn), loads the embedded sample sidecar, and drives
+// shipped with Dawn), loads the embedded sample .ifcview, and drives
 // render() per requestAnimationFrame from JS (the host page (web/ifcviewer.js)).
 //
 // The RAF loop lives in the host page (web/ifcviewer.js) — NOT here — because any call into
@@ -553,21 +553,21 @@ extern "C" EMSCRIPTEN_KEEPALIVE void raf_tick_c(void* user) {
     }
 }
 
-// Stream a sidecar from a registered JS byte-source and APPEND it to the scene
+// Stream a .ifcview from a registered JS byte-source and APPEND it to the scene
 // (federation). the host page (web/ifcviewer.js) registers the source first — a picked File or a
 // remote URL, sized up front — into Module.__ifcvSources[source_id], then calls
 // this. Byte-range: the file is never copied whole into the wasm heap; metadata
-// is read via ranges and chunks stream per-chunk, so a 500 MB sidecar stays in
+// is read via ranges and chunks stream per-chunk, so a 500 MB .ifcview stays in
 // the File / on the server. Asynchronous; the model frames itself from the JS
 // completion callback. Call clear_scene_c first to replace instead of append.
-extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_source_c(int source_id) {
+extern "C" EMSCRIPTEN_KEEPALIVE void load_ifcview_from_source_c(int source_id) {
     if (!g_app || !g_app->ready) return;
     // Label the model with whatever name the host page set for this source, so
     // logs identify it rather than saying "source" five times over.
     std::string label = g_app->federation.modelName(source_id);
     if (label.empty()) label = "source " + std::to_string(source_id);
 
-    g_app->core.loadSidecarMetadataWeb(source_id, std::move(label),
+    g_app->core.loadIfcViewMetadataWeb(source_id, std::move(label),
         [source_id](std::uint32_t session_model_id) {
             if (!g_app) return;
             // Binds source -> session model, applies any transform staged
@@ -635,6 +635,39 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_selection_outline_c(int on) {
 }
 extern "C" EMSCRIPTEN_KEEPALIVE int  ifcv_selection_outline_is_on_c() {
     return (g_app && g_app->ready && g_app->core.selectionOutlineEnabled()) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_backface_culling_c(int on) {
+    if (g_app && g_app->ready) g_app->core.setBackfaceCulling(on != 0);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int  ifcv_backface_culling_is_on_c() {
+    return (g_app && g_app->ready && g_app->core.backfaceCulling()) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_section_caps_c(int on) {
+    if (g_app && g_app->ready) g_app->core.setSectionCapsEnabled(on != 0);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int  ifcv_section_caps_is_on_c() {
+    return (g_app && g_app->ready && g_app->core.sectionCapsEnabled()) ? 1 : 0;
+}
+// hatch: 0 none, 1 diagonal, 2 cross. Sizes in CSS pixels; colours are sRGB
+// with straight alpha, 0..1.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_section_cap_style_c(
+        int hatch, float spacing_px, float line_width_px,
+        float hatch_r, float hatch_g, float hatch_b, float hatch_a,
+        float fill_r, float fill_g, float fill_b, float fill_a,
+        float outline_width_px,
+        float outline_r, float outline_g, float outline_b, float outline_a) {
+    if (!g_app || !g_app->ready) return;
+    SectionCapStyle s;
+    s.hatch         = hatch == 0 ? SectionCapStyle::Hatch::None
+                    : hatch == 2 ? SectionCapStyle::Hatch::Cross
+                                 : SectionCapStyle::Hatch::Diagonal;
+    s.spacing_px    = spacing_px;
+    s.line_width_px = line_width_px;
+    s.hatch_color[0] = hatch_r; s.hatch_color[1] = hatch_g; s.hatch_color[2] = hatch_b; s.hatch_color[3] = hatch_a;
+    s.fill_color[0]  = fill_r;  s.fill_color[1]  = fill_g;  s.fill_color[2]  = fill_b;  s.fill_color[3]  = fill_a;
+    s.outline_width_px = outline_width_px;
+    s.outline_color[0] = outline_r; s.outline_color[1] = outline_g; s.outline_color[2] = outline_b; s.outline_color[3] = outline_a;
+    g_app->core.setSectionCapStyle(s);
 }
 
 // ===========================================================================
@@ -798,7 +831,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_model_name_c(int source_id, const 
     if (g_app && name) g_app->federation.setModelName(source_id, name);
 }
 
-// The model's CoordinateOperation as baked into its sidecar, so a host can see
+// The model's CoordinateOperation as baked into its .ifcview, so a host can see
 // what georeferencing a model actually carries: out[0] is 1 when the model has
 // one, out[1..16] the 4x4 in metres (column-major), out[17] the project length
 // unit scale and out[18] the map unit scale. Returns 0 when the source has not
@@ -1031,18 +1064,18 @@ int main(int /*argc*/, char** /*argv*/) {
         g_app->core.buildPickPipeline();
         g_app->core.buildSelectionOutlinePipelines();
 
-        // Load the embedded sample sidecar (mounted into MEMFS via
+        // Load the embedded sample .ifcview (mounted into MEMFS via
         // --embed-file in CMakeLists.txt). The sample stays on the
         // synchronous MEMFS read; user-picked files go through the
-        // Blob.slice byte-range path (load_sidecar_from_blob_c) so large
-        // sidecars never enter the wasm heap.
-        if (const std::uint32_t sample_id = g_app->core.loadSidecarFromPath("/sample.ifcview")) {
+        // Blob.slice byte-range path (load_ifcview_from_blob_c) so large
+        // .ifcview files never enter the wasm heap.
+        if (const std::uint32_t sample_id = g_app->core.loadIfcViewFromPath("/sample.ifcview")) {
             // Bypasses the source registry, so tell the federation directly —
             // otherwise the first-model false-origin guess never runs for a
             // page that only ever shows the sample.
             g_app->federation.onModelLoadedWithoutSource(sample_id);
         } else {
-            Log::warn() << "ifcviewer-web: sample sidecar load failed";
+            Log::warn() << "ifcviewer-web: sample .ifcview load failed";
         }
 
         g_app->ready = true;

@@ -705,11 +705,38 @@ class Loader(bonsai.core.tool.Loader):
         return any(abs(c) > limit for c in coords)
 
     @classmethod
+    def shift_far_vertices(
+        cls, verts: npt.NDArray[np.float64]
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+        """Shift vertices onto their bounding box centre when any is far from the origin.
+
+        :return: The shifted vertices and the shift, zero when none was needed.
+        """
+        if verts.size and cls.is_point_far_away(np.abs(verts).max(axis=0), is_meters=True):
+            centre = (verts.min(axis=0) + verts.max(axis=0)) / 2
+            return verts - centre, centre
+        return verts, np.zeros(3)
+
+    @classmethod
+    def get_rebased_vertices(cls, geometry: W.triangulation) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+        """The geometry's vertices and the offset they are stored relative to."""
+        return cls.shift_far_vertices(ifcopenshell.util.shape.get_vertices(geometry))
+
+    @classmethod
+    def record_cartesian_point_offset(cls, data: bpy.types.ID, offset: npt.NDArray[np.float64]) -> None:
+        """Record on mesh or curve data that its points are stored relative to ``offset``."""
+        data["has_cartesian_point_offset"] = bool(offset.any())
+        if offset.any():
+            data["cartesian_point_offset"] = f"{offset[0]},{offset[1]},{offset[2]}"
+        elif "cartesian_point_offset" in data:
+            del data["cartesian_point_offset"]
+
+    @classmethod
     def is_element_far_away(cls, element: ifcopenshell.entity_instance) -> bool:
         try:
-            placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            placement = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=True)
             point = placement[:, 3][0:3]
-            return tool.Loader.is_point_far_away(point, is_meters=False)
+            return tool.Loader.is_point_far_away(point)
         except:
             return False
 
@@ -771,7 +798,7 @@ class Loader(bonsai.core.tool.Loader):
     ) -> None:
         if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
             return
-        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        placement = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
         offset_point = [placement[0][3], placement[1][3], placement[2][3]]
         cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(
             ifc_file, *offset_point, should_return_in_map_units=False
@@ -989,6 +1016,21 @@ class Loader(bonsai.core.tool.Loader):
         return cls.guess_false_origin_from_elements(ifc_file)
 
     @classmethod
+    def apply_cartesian_point_offset(cls, data: Optional[bpy.types.ID], matrix: np.ndarray) -> np.ndarray:
+        """Move an IFC placement onto the frame of the mesh data.
+
+        A mesh with a cartesian point offset stores its vertices relative to that offset, so
+        the object's matrix is the placement translated along its own axes by the offset.
+        """
+        if not data or not data.get("has_cartesian_point_offset", None):
+            return matrix
+        if not (cartesian_point_offset := data.get("cartesian_point_offset", None)):
+            return matrix
+        matrix = matrix.copy()
+        matrix[:3, 3] += matrix[:3, :3] @ np.array(cartesian_point_offset.split(","), dtype=np.float64)
+        return matrix
+
+    @classmethod
     def apply_blender_offset_to_matrix_world(cls, obj: bpy.types.Object, matrix: np.ndarray) -> Matrix:
         """
         :param matrix: 4x4 numpy matrix.
@@ -1107,6 +1149,15 @@ class Loader(bonsai.core.tool.Loader):
         else:
             assert False, usage.LayerSetDirection
         no *= sense_factor
+        # Detect non-conformant exports (e.g. Revit) where DirectionSense=POSITIVE
+        # but the geometry extrudes in the negative direction. If the mesh centroid
+        # in object local space is on the wrong side of the starting plane, flip no.
+        layers = list(layer_set.MaterialLayers)
+        if bm.verts:
+            mesh_centroid = sum((v.co for v in bm.verts), Vector((0.0, 0.0, 0.0))) / len(bm.verts)
+            if (mesh_centroid - co).dot(no) < 0:
+                no = -no
+                layers = list(reversed(layers))
         # Cache this
         body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         styles = {}
@@ -1114,9 +1165,9 @@ class Loader(bonsai.core.tool.Loader):
         for i, material in enumerate(mesh.materials):
             if style := tool.Ifc.get_entity(material):
                 styles[style] = i
-        last_i = len(layer_set.MaterialLayers) - 1
+        last_i = len(layers) - 1
         bisect_geom = None
-        for i, layer in enumerate(layer_set.MaterialLayers):
+        for i, layer in enumerate(layers):
             if i != last_i:
                 prev_co = co.copy()
                 co += no * layer.LayerThickness * cls.unit_scale

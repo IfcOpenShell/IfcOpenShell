@@ -8,16 +8,15 @@ packs each folder into a tar.gz archive, if it wasn't packed before,
 or unpacks existing archives.
 
 Expected to be executed from 'build' directory (e.g. that might contain 'Linux/x86_64/install').
-
-Usage: python cache_dependencies.py [pack|unpack]
 """
 
+import argparse
 import platform
 import subprocess
 import sys
 import tarfile
 from pathlib import Path
-from typing import Literal
+from typing import Literal, NamedTuple, TypeAlias, assert_never, get_args
 
 CACHE_PREFIX = "cache-"
 
@@ -74,16 +73,28 @@ def unpack_dependencies(install_dir: Path) -> None:
         print(f"Extracted cache: '{tar_path.name}'.")
 
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2 or (action := sys.argv[1].lower()) not in ("pack", "unpack"):
-        print(__doc__)
-        sys.exit(1)
+Action: TypeAlias = Literal["pack", "unpack"]
 
-    if action == "pack":
+
+class Args(NamedTuple):
+    action: Action
+
+
+def parse_args() -> Args:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("action", choices=get_args(Action))
+    namespace = parser.parse_args()
+    return Args(action=namespace.action)
+
+
+ARGS = parse_args()
+
+if __name__ == "__main__":
+    if ARGS.action == "pack":
         install_dir = get_install_dir()
         print(f"Found install dir: '{install_dir}'")
         pack_dependencies(install_dir)
-    else:
+    elif ARGS.action == "unpack":
         # A cache branch that no build has pushed to yet has nothing to unpack.
         install_dir = find_install_dir()
         if install_dir is None:
@@ -91,3 +102,5 @@ if __name__ == "__main__":
         else:
             print(f"Found install dir: '{install_dir}'")
             unpack_dependencies(install_dir)
+    else:
+        assert_never(ARGS.action)

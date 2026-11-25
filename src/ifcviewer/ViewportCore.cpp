@@ -30,6 +30,7 @@
 #include "CameraMath.h"
 #include "GpuAllocScope.h"
 #include "InstanceCompose.h"
+#include "ModelLookup.h"
 #include "Log.h"
 
 
@@ -279,12 +280,12 @@ void ViewportCore::buildViewProj(Eigen::Matrix4f& view_out,
 }
 
 bool ViewportCore::computeSceneAabb(float mn[3], float mx[3]) const {
-    return InstanceCompose::sceneWorldAabb(models_gpu_, mn, mx);
+    return ModelLookup::sceneWorldAabb(models_gpu_, mn, mx);
 }
 
 bool ViewportCore::computeModelsAabb(const std::vector<uint32_t>& session_model_ids,
                                      float mn[3], float mx[3]) const {
-    return InstanceCompose::modelsWorldAabb(models_gpu_, session_model_ids, mn, mx);
+    return ModelLookup::modelsWorldAabb(models_gpu_, session_model_ids, mn, mx);
 }
 
 float ViewportCore::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
@@ -406,8 +407,8 @@ void ViewportCore::recomposeAndUploadModel(uint32_t session_model_id) {
 }
 
 bool ViewportCore::findInstance(uint32_t object_id,
-                                InstanceCompose::InstanceLookup& out) const {
-    return InstanceCompose::findInstanceInModels(object_id, models_gpu_, out);
+                                ModelLookup::InstanceLookup& out) const {
+    return ModelLookup::findInstanceInModels(object_id, models_gpu_, out);
 }
 
 uint32_t ViewportCore::modelObjectIdBase(uint32_t session_model_id) const {
@@ -596,6 +597,17 @@ void ViewportCore::setNavPreset(const char* name) {
 void ViewportCore::setBackfaceCulling(bool enabled) {
     if (backface_culling_ == enabled) return;
     backface_culling_ = enabled;
+    host_->requestFrame();
+}
+
+void ViewportCore::setSectionCapsEnabled(bool enabled) {
+    if (section_caps_enabled_ == enabled) return;
+    section_caps_enabled_ = enabled;
+    host_->requestFrame();
+}
+
+void ViewportCore::setSectionCapStyle(const SectionCapStyle& style) {
+    section_cap_style_ = style;
     host_->requestFrame();
 }
 
@@ -970,11 +982,17 @@ struct PerModel {
 
 struct VsOut {
     @builtin(position) clip_pos: vec4<f32>,
-    @location(0) normal:    vec3<f32>,
     @location(1) color:     vec4<f32>,
     @location(2) world_pos: vec3<f32>,
     @location(3) @interpolate(flat) object_id: u32,
 };
+
+// Normal of the fragment's triangle, facing the viewer.
+fn flatNormal(world_pos: vec3<f32>, front_facing: bool) -> vec3<f32> {
+    // Window y runs downwards, so cross(dpdy, dpdx) faces a front-facing triangle's viewer.
+    let n = normalize(cross(dpdy(world_pos), dpdx(world_pos)));
+    return select(-n, n, front_facing);
+}
 
 // Sign-extend an i8 packed into the byte_idx'th byte of `packed`.
 fn extractI8(packed: u32, byte_idx: u32) -> i32 {
@@ -1010,19 +1028,8 @@ fn find_draw(vid: u32) -> u32 {
     return lo;
 }
 
-@vertex
-fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
-    // Saturate past the end (shouldn't happen given draw() count, but safe).
-    if (vid >= u_model.total_vertex_count) {
-        var degen: VsOut;
-        degen.clip_pos = vec4<f32>(0.0, 0.0, 0.0, 0.0);
-        return degen;
-    }
-
-    let draw_idx = find_draw(vid);
-    let local_v  = vid - prefix_sums[draw_idx];
-    let item     = visible_draws[draw_idx];
-
+// Vertex `local_v` of a visible draw.
+fn pullVertex(item: VisibleDraw, local_v: u32) -> VsOut {
     // Fetch the mesh-local index then the global vertex index.
     let mesh_local_index = indices[item.ebo_first_u32 + local_v];
     let v_global         = item.base_vertex + mesh_local_index;
@@ -1039,22 +1046,12 @@ fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
     let pz = f32(w1 & 0xFFFFu)         / 65535.0;
     let pos_local = mix(mq.aabb_min.xyz, mq.aabb_max.xyz, vec3<f32>(px, py, pz));
 
-    let nx = f32(extractI8(w1, 2u)) / 127.0;
-    let ny = f32(extractI8(w1, 3u)) / 127.0;
-    let n_local = octDecode(vec2<f32>(nx, ny));
-
     let r = f32(w2 & 0xFFu)          / 255.0;
     let g = f32((w2 >>  8u) & 0xFFu) / 255.0;
     let b = f32((w2 >> 16u) & 0xFFu) / 255.0;
     let a = f32((w2 >> 24u) & 0xFFu) / 255.0;
 
     let world4 = inst.transform * vec4<f32>(pos_local, 1.0);
-    let rot = mat3x3<f32>(inst.transform[0].xyz,
-                          inst.transform[1].xyz,
-                          inst.transform[2].xyz);
-    let n_world = normalize(rot * n_local);
-    let det = determinant(rot);
-    let n_final = select(n_world, -n_world, det < 0.0);
 
     var color = vec4<f32>(r, g, b, a);
     if (inst.color_override != 0u) {
@@ -1067,10 +1064,75 @@ fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
 
     var out: VsOut;
     out.clip_pos  = u_frame.view_proj * world4;
-    out.normal    = n_final;
     out.color     = color;
     out.world_pos = world4.xyz;
     out.object_id = inst.object_id;
+    return out;
+}
+
+@vertex
+fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
+    // Saturate past the end (shouldn't happen given draw() count, but safe).
+    if (vid >= u_model.total_vertex_count) {
+        var degen: VsOut;
+        degen.clip_pos = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+        return degen;
+    }
+
+    let draw_idx = find_draw(vid);
+    return pullVertex(visible_draws[draw_idx], vid - prefix_sums[draw_idx]);
+}
+)" R"(
+
+// Whether a draw's instance can have a section cap, and which way its faces
+// wind. 0 when its bounding box crosses no section plane: nothing is cut, and
+// whatever parity an open or badly wound mesh leaves must not be mistaken for
+// a cap. Otherwise +1, or -1 for a mirrored instance, whose triangles wind the
+// other way round on screen.
+fn capFacing(item: VisibleDraw) -> f32 {
+    let t  = instances[item.instance_idx].transform;
+    let mq = meshes[item.mesh_id];
+    let center = (t * vec4<f32>((mq.aabb_min.xyz + mq.aabb_max.xyz) * 0.5, 1.0)).xyz;
+    let half   = (mq.aabb_max.xyz - mq.aabb_min.xyz) * 0.5;
+    var crossed = false;
+    for (var i = 0; i < u_frame.clip_count; i = i + 1) {
+        let p = u_frame.clip_planes[i];
+        // The box's reach along the plane normal.
+        let reach = abs(dot(p.xyz, t[0].xyz)) * half.x
+                  + abs(dot(p.xyz, t[1].xyz)) * half.y
+                  + abs(dot(p.xyz, t[2].xyz)) * half.z;
+        if (abs(dot(p.xyz, center) + p.w) < reach) { crossed = true; }
+    }
+    if (!crossed) { return 0.0; }
+    let det = determinant(mat3x3<f32>(t[0].xyz, t[1].xyz, t[2].xyz));
+    return select(1.0, -1.0, det < 0.0);
+}
+
+struct VsOutCap {
+    @builtin(position) clip_pos: vec4<f32>,
+    @location(1) color:     vec4<f32>,
+    @location(2) world_pos: vec3<f32>,
+    @location(3) @interpolate(flat) object_id: u32,
+    @location(4) @interpolate(flat) facing: f32,
+};
+
+// vs_main for the section cap parity pass: instances that cannot be cut are
+// collapsed so they draw nothing.
+@vertex
+fn vs_cap_accum(@builtin(vertex_index) vid: u32) -> VsOutCap {
+    var out: VsOutCap;
+    if (vid >= u_model.total_vertex_count) { return out; }
+    let draw_idx = find_draw(vid);
+    let item     = visible_draws[draw_idx];
+    let facing   = capFacing(item);
+    if (facing == 0.0) { return out; }
+
+    let v = pullVertex(item, vid - prefix_sums[draw_idx]);
+    out.clip_pos  = v.clip_pos;
+    out.color     = v.color;
+    out.world_pos = v.world_pos;
+    out.object_id = v.object_id;
+    out.facing    = facing;
     return out;
 }
 
@@ -1086,11 +1148,23 @@ fn srgbToLinear(s: vec3<f32>) -> vec3<f32> {
     return select(hi, lo, s <= vec3<f32>(0.04045));
 }
 
+// Selection tint. bit 0 = in selection (cool blue mix), bit 1 = active
+// (slightly stronger blue mix). Matches the GL main shader.
+fn selectionTint(base: vec3<f32>, object_id: u32) -> vec3<f32> {
+    var color = base;
+    if (object_id < arrayLength(&sel_flags)) {
+        let flags = sel_flags[object_id];
+        if ((flags & 1u) != 0u) { color = mix(color, vec3<f32>(0.2, 0.6, 1.0), 0.45); }
+        if ((flags & 2u) != 0u) { color = mix(color, vec3<f32>(0.4, 0.8, 1.0), 0.40); }
+    }
+    return color;
+}
+
 @fragment
-fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
+fn fs_main(in: VsOut, @builtin(front_facing) front_facing: bool) -> @location(0) vec4<f32> {
     if (is_section_clipped(in.world_pos)) { discard; }
 
-    var n = normalize(in.normal);
+    let n = flatNormal(in.world_pos, front_facing);
 
     // World +Z is up (BIM convention). Hemisphere ambient: faces pointing
     // up read sky, faces pointing down read ground, lerp by n.z.
@@ -1100,21 +1174,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let key  = max(dot(n, u_frame.light_dir.xyz), 0.0);
     let fill = max(dot(n, u_frame.fill_dir.xyz),  0.0) * 0.35;
 
-    var color = in.color.xyz * (ambient + (key + fill) * 0.7);
-
-    // Cavity shading: where adjacent fragments have a sharp normal change
-    // (concave creases, edges where two faces meet), darken slightly so
-    // shape boundaries read on flat-colour models. Matches the GL shader.
-    let cavity = clamp(length(fwidth(n)) * 1.5, 0.0, 0.35);
-    color = color * (1.0 - cavity);
-
-    // Selection tint. bit 0 = in selection (cool blue mix), bit 1 = active
-    // (slightly stronger blue mix). Matches the GL main shader.
-    if (in.object_id < arrayLength(&sel_flags)) {
-        let flags = sel_flags[in.object_id];
-        if ((flags & 1u) != 0u) { color = mix(color, vec3<f32>(0.2, 0.6, 1.0), 0.45); }
-        if ((flags & 2u) != 0u) { color = mix(color, vec3<f32>(0.4, 0.8, 1.0), 0.40); }
-    }
+    let color = selectionTint(in.color.xyz * (ambient + (key + fill) * 0.7), in.object_id);
 
     // Cancel the swap chain's implicit linear→sRGB encoding so the final
     // bytes match the GL backend (see srgbToLinear above). Alpha is
@@ -1138,6 +1198,17 @@ fn fs_mask(in: VsOut) -> @location(0) f32 {
     return 1.0;
 }
 
+// Section cap parity (see SectionCapRenderer). Blended additively with no
+// depth test: a face seen from inside its solid adds the object's colour and
+// opacity, one seen from outside takes them away again. The colour is weighted
+// by the opacity so that what is left over divides back out to the colour.
+@fragment
+fn fs_cap_accum(in: VsOutCap, @builtin(front_facing) front_facing: bool) -> @location(0) vec4<f32> {
+    if (is_section_clipped(in.world_pos)) { discard; }
+    let color = selectionTint(in.color.xyz, in.object_id);
+    return vec4<f32>(color * in.color.a, in.color.a) * select(1.0, -1.0, front_facing) * in.facing;
+}
+
 // --------------------------- Pick pipeline ---------------------------------
 // Same vertex pulling as vs_main, but VsOutPick carries only the object_id
 // (flat-interpolated). Fragment writes the object_id to an R32UInt target.
@@ -1147,7 +1218,6 @@ struct VsOutPick {
     @builtin(position) clip_pos: vec4<f32>,
     @location(0) @interpolate(flat) object_id: u32,
     @location(1) world_pos: vec3<f32>,
-    @location(2) normal:    vec3<f32>,
 };
 
 // Section tool needs the actual per-fragment normal (the AABB face was
@@ -1161,20 +1231,9 @@ struct FsOutPick {
     @location(2) world_pos: vec4<f32>,
 };
 
-@vertex
-fn vs_pick(@builtin(vertex_index) vid: u32) -> VsOutPick {
+// Vertex `local_v` of a visible draw, for the pick passes.
+fn pullPickVertex(item: VisibleDraw, local_v: u32) -> VsOutPick {
     var out: VsOutPick;
-    if (vid >= u_model.total_vertex_count) {
-        out.clip_pos  = vec4<f32>(0.0, 0.0, 0.0, 0.0);
-        out.object_id = 0u;
-        out.world_pos = vec3<f32>(0.0, 0.0, 0.0);
-        out.normal    = vec3<f32>(0.0, 0.0, 1.0);
-        return out;
-    }
-
-    let draw_idx = find_draw(vid);
-    let local_v  = vid - prefix_sums[draw_idx];
-    let item     = visible_draws[draw_idx];
     let mesh_local_index = indices[item.ebo_first_u32 + local_v];
     let v_global = item.base_vertex + mesh_local_index;
     let inst = instances[item.instance_idx];
@@ -1190,32 +1249,40 @@ fn vs_pick(@builtin(vertex_index) vid: u32) -> VsOutPick {
     let pos_local = mix(mq.aabb_min.xyz, mq.aabb_max.xyz, pos_norm);
     let world4    = inst.transform * vec4<f32>(pos_local, 1.0);
 
-    // Decode the same octahedral normal as vs_main — pick needs it so
-    // the section tool can drop perpendicular cuts.
-    let nx = f32(extractI8(w1, 2u)) / 127.0;
-    let ny = f32(extractI8(w1, 3u)) / 127.0;
-    let n_local = octDecode(vec2<f32>(nx, ny));
-    let rot = mat3x3<f32>(inst.transform[0].xyz,
-                          inst.transform[1].xyz,
-                          inst.transform[2].xyz);
-    let n_world = normalize(rot * n_local);
-    let det = determinant(rot);
-    let n_final = select(n_world, -n_world, det < 0.0);
-
     out.clip_pos  = u_frame.view_proj * world4;
     out.object_id = inst.object_id;
     out.world_pos = world4.xyz;
-    out.normal    = n_final;
     return out;
 }
 
+@vertex
+fn vs_pick(@builtin(vertex_index) vid: u32) -> VsOutPick {
+    // Zero-initialised: a collapsed vertex carrying the "no object" id.
+    var out: VsOutPick;
+    if (vid >= u_model.total_vertex_count) { return out; }
+    let draw_idx = find_draw(vid);
+    return pullPickVertex(visible_draws[draw_idx], vid - prefix_sums[draw_idx]);
+}
+
+// vs_pick for the section cap pick: like vs_cap_accum, instances that cannot
+// be cut draw nothing.
+@vertex
+fn vs_cappick(@builtin(vertex_index) vid: u32) -> VsOutPick {
+    var out: VsOutPick;
+    if (vid >= u_model.total_vertex_count) { return out; }
+    let draw_idx = find_draw(vid);
+    let item     = visible_draws[draw_idx];
+    if (capFacing(item) == 0.0) { return out; }
+    return pullPickVertex(item, vid - prefix_sums[draw_idx]);
+}
+
 @fragment
-fn fs_pick(in: VsOutPick) -> FsOutPick {
+fn fs_pick(in: VsOutPick, @builtin(front_facing) front_facing: bool) -> FsOutPick {
     if (is_section_clipped(in.world_pos)) { discard; }
     var out: FsOutPick;
     out.object_id = in.object_id;
     // Pack signed normal into RGBA16F (unsigned-ish half range) as ×0.5+0.5.
-    out.normal = vec4<f32>(normalize(in.normal) * 0.5 + vec3<f32>(0.5), 1.0);
+    out.normal = vec4<f32>(flatNormal(in.world_pos, front_facing) * 0.5 + vec3<f32>(0.5), 1.0);
     // Exact surface world position (F32) so surface pick lands on the true face,
     // not a ray-AABB approximation.
     out.world_pos = vec4<f32>(in.world_pos, 1.0);
@@ -1231,6 +1298,17 @@ fn fs_boxpick(in: VsOutPick) {
     let word = in.object_id >> 5u;
     if (word >= arrayLength(&hit_flags)) { return; }
     atomicOr(&hit_flags[word], 1u << (in.object_id & 31u));
+}
+
+// Section cap pick. Flips the bit instead of setting it, so over one pixel an
+// object keeps its bit only if an odd number of its faces survive the clip
+// along the ray — which is the object the cap there belongs to.
+@fragment
+fn fs_cappick(in: VsOutPick) {
+    if (is_section_clipped(in.world_pos)) { discard; }
+    let word = in.object_id >> 5u;
+    if (word >= arrayLength(&hit_flags)) { return; }
+    atomicXor(&hit_flags[word], 1u << (in.object_id & 31u));
 }
 )";
 } // namespace
@@ -1412,6 +1490,10 @@ bool ViewportCore::buildPipelines() {
     // Section-plane gizmo (shared desktop + web). Optional — a failure just
     // means no gizmo, not a dead viewport.
     section_gizmo_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
+
+    // Section caps. Optional as well: without them a cut just reads hollow.
+    section_caps_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
+    buildSectionCapPipeline();
 
     // Corner axis gizmo + orbit pivot indicator (shared desktop + web).
     // Also optional: a failure costs the indicator, not the viewport.
@@ -1784,13 +1866,15 @@ void ViewportCore::applyBudgetToPool() {
 
 std::uint64_t ViewportCore::attachmentBytesPerPixel() {
     // Sizes follow the formats in ensureDepthTexture / ensureMsaaColorTexture /
-    // ensureSelectionOutlineTextures / createPickAttachments.
+    // ensureSelectionOutlineTextures / SectionCapRenderer::ensureTarget /
+    // createPickAttachments.
     constexpr std::uint64_t msaa = kViewportSampleCount;
     return 4 * msaa          // msaa colour, 4 B/sample (any 8-bit RGBA surface)
          + 4 * msaa          // depth32 msaa
          + 1 * msaa          // selection mask msaa (R8)
          + 1                 // selection mask resolve (R8)
          + 4                 // selection scratch (RGBA8)
+         + 8                 // section cap accumulation (RGBA16F)
          + 4 + 8 + 16 + 4;   // pick: R32Uint id, RGBA16F normal, RGBA32F position, depth32
 }
 
@@ -2205,6 +2289,8 @@ void ViewportCore::shutdown() {
     if (main_pipeline_no_cull_)      { wgpuRenderPipelineRelease(main_pipeline_no_cull_);     main_pipeline_no_cull_ = nullptr; }
     if (main_pipeline_transparent_)  { wgpuRenderPipelineRelease(main_pipeline_transparent_); main_pipeline_transparent_ = nullptr; }
     section_gizmo_.destroy();
+    section_caps_.destroy();
+    if (section_cap_accum_pipeline_) { wgpuRenderPipelineRelease(section_cap_accum_pipeline_); section_cap_accum_pipeline_ = nullptr; }
     axis_indicator_.destroy();
     if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
     if (pipeline_layout_)      { wgpuPipelineLayoutRelease(pipeline_layout_);     pipeline_layout_ = nullptr; }
@@ -2230,8 +2316,7 @@ void ViewportCore::shutdown() {
 // computeMeshLocalVolumeQuantised
 // ===========================================================================
 
-#include "StreamingLoader.h"
-#include "SidecarCompress.h"
+#include "IfcViewReader.h"
 
 namespace {
 
@@ -2393,7 +2478,7 @@ bool ViewportCore::applyStreamedChunk(
     // Per-mesh alpha probe. Scan every vertex of every mesh in this chunk
     // for any alpha byte < 255 — fires the mesh_has_alpha flag the cull
     // classifier reads to route instances of this mesh to the transparent
-    // pass. Done here (vs. once at sidecar bake time) because for the
+    // pass. Done here (vs. once at .ifcview bake time) because for the
     // streaming path the bytes only arrive now; the same code services
     // both the worker-result drain and the sync first-frame fallback.
     if (m.mesh_has_alpha.size() == m.meshes.size()) {
@@ -3416,7 +3501,7 @@ void ViewportCore::cullModelCpuUpload(ModelGpuData& m) {
 }
 
 // ===========================================================================
-// Sidecar / direct load (#84-q): applyCachedModel + uploadStreamedMesh +
+// .ifcview / direct load (#84-q): applyCachedModel + uploadStreamedMesh +
 // uploadStreamedInstance + finalizeModel
 // ===========================================================================
 
@@ -3451,13 +3536,13 @@ WGPUBuffer createBufferWithData(WGPUDevice device, WGPUQueue queue,
 
 // Look up (or create) the direct-load staging entry for a given model.
 // Holds a unique_ptr so address stability is preserved as the map grows.
-SidecarData& getOrCreateDirectStaging(
-        std::unordered_map<std::uint32_t, std::unique_ptr<SidecarData>>& staging,
+IfcViewData& getOrCreateDirectStaging(
+        std::unordered_map<std::uint32_t, std::unique_ptr<IfcViewData>>& staging,
         std::uint32_t session_model_id) {
     auto it = staging.find(session_model_id);
     if (it == staging.end()) {
         auto [it_new, _] = staging.emplace(
-            session_model_id, std::make_unique<SidecarData>());
+            session_model_id, std::make_unique<IfcViewData>());
         return *it_new->second;
     }
     return *it->second;
@@ -3524,7 +3609,7 @@ bool ViewportCore::createModelBuffers(std::uint32_t session_model_id,
 }
 
 void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
-                                    StreamingSidecar metadata) {
+                                    StreamingIfcView metadata) {
     if (!device_ || !queue_) {
         Log::warn() << "applyCachedModel without an initialised device";
         return;
@@ -3545,7 +3630,7 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     model_gpu_data.streaming_file_path      = metadata.file_path;
     model_gpu_data.geometry_section_offset  = metadata.geometry_section_offset;
 
-    // Seed the CoordinateOperation from the sidecar (v11+) so a model lands in
+    // Seed the CoordinateOperation from the .ifcview (v11+) so a model lands in
     // global coordinates without anyone having to push it. Before this, the
     // matrix stayed identity unless a host called setModelCoordinateOperation —
     // which only BonsaiViewer does (modules/viewport/View.cpp), so the web
@@ -3560,7 +3645,7 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     // setModelCoordinateOperation early-returns when the value is unchanged.
     model_gpu_data.has_coordinate_operation = metadata.meta.has_coordinate_operation != 0;
     if (model_gpu_data.has_coordinate_operation) {
-        // Sidecar stores column-major, matching Eigen's default storage order.
+        // .ifcview stores column-major, matching Eigen's default storage order.
         model_gpu_data.coordinate_operation_meters =
             Eigen::Map<const Eigen::Matrix4d>(metadata.meta.coordinate_operation_meters);
     }
@@ -3568,8 +3653,8 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     model_gpu_data.units.map_unit_to_meters       = metadata.meta.map_unit_to_meters;
 
     // ---- Spatial chunk plan ----------------------------------------------
-    // A sidecar carries a baked chunk TOC (v14): each chunk is a contiguous
-    // run of meshes, laid out contiguously in the file (see SidecarLayout), so
+    // A .ifcview carries a baked chunk TOC (v14): each chunk is a contiguous
+    // run of meshes, laid out contiguously in the file (see IfcViewLayout), so
     // we build chunks straight from it — one contiguous byte range per chunk.
     // The plan is NOT re-derived here because the float Morton quantisation
     // isn't bit-identical across toolchains (x86 baker vs wasm loader), which
@@ -3588,11 +3673,11 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     if (!metadata.meta.chunks.empty()) {
         // Baked TOC: chunk ci is meshes [first_mesh, first_mesh + mesh_count).
         chunk_mesh_ids.reserve(metadata.meta.chunks.size());
-        for (const auto& sidecar_chunk : metadata.meta.chunks) {
+        for (const auto& ifcview_chunk : metadata.meta.chunks) {
             std::vector<std::uint32_t> mesh_ids;
-            mesh_ids.reserve(sidecar_chunk.mesh_count);
-            for (std::uint32_t k = 0; k < sidecar_chunk.mesh_count; ++k) {
-                const std::uint32_t mesh_index = sidecar_chunk.first_mesh + k;
+            mesh_ids.reserve(ifcview_chunk.mesh_count);
+            for (std::uint32_t k = 0; k < ifcview_chunk.mesh_count; ++k) {
+                const std::uint32_t mesh_index = ifcview_chunk.first_mesh + k;
                 if (mesh_index < n_meshes) mesh_ids.push_back(mesh_index);
             }
             chunk_mesh_ids.push_back(std::move(mesh_ids));
@@ -3691,11 +3776,11 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
         chunk.lod1_index_count = chunk_local_lod1;
         // v16: compressed-blob locators from the baked TOC (streaming path).
         if (chunk_index < metadata.meta.chunks.size()) {
-            const SidecarChunk& sidecar_chunk = metadata.meta.chunks[chunk_index];
-            chunk.v_comp_off = sidecar_chunk.v_comp_off;
-            chunk.v_comp_size = sidecar_chunk.v_comp_size;
-            chunk.i_comp_off = sidecar_chunk.i_comp_off;
-            chunk.i_comp_size = sidecar_chunk.i_comp_size;
+            const IfcViewChunk& ifcview_chunk = metadata.meta.chunks[chunk_index];
+            chunk.v_comp_off = ifcview_chunk.v_comp_off;
+            chunk.v_comp_size = ifcview_chunk.v_comp_size;
+            chunk.i_comp_off = ifcview_chunk.i_comp_off;
+            chunk.i_comp_size = ifcview_chunk.i_comp_size;
         }
         model_gpu_data.vertex_bytes += chunk.vertex_byte_size;
         model_gpu_data.index_count  += std::uint32_t(chunk.index_count);
@@ -3745,7 +3830,7 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     model_gpu_data.element_metadata_comp_size   = metadata.element_metadata_comp_size;
     model_gpu_data.element_metadata_raw_size    = metadata.element_metadata_raw_size;
 
-    // Element metadata, when the caller already read it. readSidecarMetadata
+    // Element metadata, when the caller already read it. readIfcViewMetadata
     // parses the block up front, so a path-based load arrives with it in hand;
     // the web byte-range path deliberately skips it (first paint must not wait
     // on it) and fetches later via loadElementMetadataWeb, arriving here empty.
@@ -3825,7 +3910,7 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
         << " instances=" << inserted_model.instance_count
         << " chunks=" << inserted_model.chunks.size();
 
-    // The instance transforms above came straight from the sidecar, where they
+    // The instance transforms above came straight from the .ifcview, where they
     // were baked with identity federation matrices. Recompose whenever any of
     // them is now non-identity, or the model renders in the wrong place:
     //
@@ -3852,11 +3937,11 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
 
 void ViewportCore::uploadStreamedMesh(const StreamedMesh& mesh) {
     if (mesh.vertices.empty() || mesh.indices.empty()) return;
-    SidecarData& staging = getOrCreateDirectStaging(pending_direct_loads_, mesh.session_model_id);
+    IfcViewData& staging = getOrCreateDirectStaging(pending_direct_loads_, mesh.session_model_id);
 
     // Streamer format: 7 floats / vertex (pos3 + normal3 + color-as-float).
-    // Same quantisation as SidecarBuilder::onMeshReady so direct-load and
-    // sidecar-load produce byte-identical GPU buffers.
+    // Same quantisation as IfcViewAssembler::onMeshReady so direct-load and
+    // .ifcview-load produce byte-identical GPU buffers.
     const std::size_t n_verts = mesh.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS;
 
     float bmin[3] = {  std::numeric_limits<float>::infinity(),
@@ -3905,17 +3990,17 @@ void ViewportCore::uploadStreamedMesh(const StreamedMesh& mesh) {
     info.lod1_ebo_byte_offset = 0;
     info.lod1_index_count     = 0;
 
-    if (staging.meshes.size() <= mesh.local_mesh_id) {
-        staging.meshes.resize(mesh.local_mesh_id + 1);
+    if (staging.meshes.size() <= mesh.mesh_id) {
+        staging.meshes.resize(mesh.mesh_id + 1);
     }
-    staging.meshes[mesh.local_mesh_id] = info;
+    staging.meshes[mesh.mesh_id] = info;
 }
 
 void ViewportCore::uploadStreamedInstance(const StreamedInstance& instance_record) {
-    SidecarData& staging = getOrCreateDirectStaging(pending_direct_loads_, instance_record.session_model_id);
+    IfcViewData& staging = getOrCreateDirectStaging(pending_direct_loads_, instance_record.session_model_id);
 
     InstanceInfo instance{};
-    instance.mesh_id              = instance_record.local_mesh_id;
+    instance.mesh_id              = instance_record.mesh_id;
     instance.object_id            = instance_record.object_id;
     instance.color_override_rgba8 = instance_record.color_override_rgba8;
     instance.session_model_id             = instance_record.session_model_id;
@@ -3930,14 +4015,14 @@ void ViewportCore::uploadStreamedInstance(const StreamedInstance& instance_recor
     staging.instances.push_back(instance);
 }
 
-std::uint32_t ViewportCore::loadSidecarFromPath(const std::string& path) {
+std::uint32_t ViewportCore::loadIfcViewFromPath(const std::string& path) {
     if (!device_ || !queue_) {
-        Log::warn() << "loadSidecarFromPath: wgpu not initialised";
+        Log::warn() << "loadIfcViewFromPath: wgpu not initialised";
         return 0;
     }
-    auto meta_opt = readSidecarMetadata(path);
+    auto meta_opt = readIfcViewMetadata(path);
     if (!meta_opt) {
-        Log::warn() << "loadSidecarFromPath: could not read sidecar metadata from " << path;
+        Log::warn() << "loadIfcViewFromPath: could not read .ifcview metadata from " << path;
         return 0;
     }
     const std::uint32_t session_model_id = next_session_model_id_++;
@@ -3950,14 +4035,14 @@ std::uint32_t ViewportCore::loadSidecarFromPath(const std::string& path) {
 // Web byte-range streaming (#88): Blob.slice source + async chunk loads
 // ===========================================================================
 //
-// The desktop streaming path fopen()s the sidecar and fread()s chunk byte
+// The desktop streaming path fopen()s the .ifcview and fread()s chunk byte
 // ranges synchronously from a worker thread. On web there is no worker (no
 // pthreads yet) and Blob.slice() is inherently async, so chunk bytes are
 // pulled through the JS event loop: webReadRangesAsync issues one Blob.slice
 // per coalesced read plan, scatters the bytes into the destination, then
 // invokes a continuation once the whole range set has landed. The picked
 // File stays in JS (Module.__ifcvFile) — only chunk-sized slices ever enter
-// the wasm heap, so a 500 MB sidecar never does.
+// the wasm heap, so a 500 MB .ifcview never does.
 
 namespace {
 
@@ -4013,7 +4098,7 @@ EM_JS(void, ifcvReadRangeInto, (int sid, int reqId, double offset, double size, 
 // plan has landed, or on the first failure.
 struct WebRangeRead {
     int                          source_id = 0;  // Module.__ifcvSources index
-    std::vector<SidecarReadPlan> plans;
+    std::vector<IfcViewReadPlan> plans;
     std::size_t                  plan_idx = 0;
     std::vector<std::uint8_t>    scratch;
     std::vector<std::uint8_t>    out;
@@ -4035,7 +4120,7 @@ void webIssueCurrentPlan(int id) {
         if (done) done(true, std::move(out));
         return;
     }
-    const SidecarReadPlan& plan = r.plans[r.plan_idx];
+    const IfcViewReadPlan& plan = r.plans[r.plan_idx];
     r.scratch.assign(std::size_t(plan.read_size), 0);
     ifcvReadRangeInto(r.source_id, id, double(plan.file_offset), double(plan.read_size),
                       r.scratch.data());
@@ -4057,7 +4142,7 @@ void webReadRangesAsync(
     r.out.assign(std::size_t(total), 0);
     // Coalesce within 1 MB: each Blob.slice is an async round trip, so a
     // generous gap trades a few wasted bytes for far fewer JS hops.
-    r.plans = planSidecarReadRanges(section_offset, ranges, std::uint64_t(1) << 20);
+    r.plans = planIfcViewReadRanges(section_offset, ranges, std::uint64_t(1) << 20);
     r.done  = std::move(done);
 
     if (r.plans.empty()) {  // nothing to read — complete synchronously
@@ -4084,7 +4169,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_on_range_done(int reqId, int ok) {
         if (done) done(false, {});
         return;
     }
-    const SidecarReadPlan& plan = r.plans[r.plan_idx];
+    const IfcViewReadPlan& plan = r.plans[r.plan_idx];
     for (const auto& s : plan.slices) {
         std::memcpy(r.out.data() + s.dst_offset,
                     r.scratch.data() + s.src_offset, std::size_t(s.bytes));
@@ -4195,9 +4280,9 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t session_model_id, std::size_t
         std::vector<std::uint8_t>  vbytes(static_cast<std::size_t>(v_raw));
         std::vector<std::uint32_t> idx(static_cast<std::size_t>(i_raw / sizeof(std::uint32_t)));
         const bool ok = join->v_ok && join->i_ok
-            && SidecarCompress::decompress(join->vz.data(), join->vz.size(),
+            && decompressIfcViewFrame(join->vz.data(), join->vz.size(),
                                            vbytes.data(), vbytes.size())
-            && SidecarCompress::decompress(join->iz.data(), join->iz.size(),
+            && decompressIfcViewFrame(join->iz.data(), join->iz.size(),
                                            reinterpret_cast<std::uint8_t*>(idx.data()),
                                            std::size_t(i_raw));
         chunk_apply_ms_total_ += emscripten_get_now() - apply_t0;
@@ -4234,15 +4319,15 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t session_model_id, std::size_t
 // here — they stream per chunk through beginWebChunkLoad. `source_label` is a
 // log/identity tag stored as file_path (chunk reads go through the JS source,
 // not this path).
-void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_label,
+void ViewportCore::loadIfcViewMetadataWeb(int source_id, std::string source_label,
                                           std::function<void(std::uint32_t)> on_loaded) {
     if (!device_ || !queue_) {
-        Log::warn() << "loadSidecarMetadataWeb: wgpu not initialised";
+        Log::warn() << "loadIfcViewMetadataWeb: wgpu not initialised";
         return;
     }
     const double fsize = ifcvSourceSize(source_id);
     if (fsize <= 0.0) {
-        Log::warn() << "loadSidecarMetadataWeb: source " << source_id << " has zero size";
+        Log::warn() << "loadIfcViewMetadataWeb: source " << source_id << " has zero size";
         return;
     }
 
@@ -4260,19 +4345,19 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
     const std::uint32_t session_model_id = next_session_model_id_++;
 
     // Head (v16): [header 12][geom_bytes 8]. The two compressed metadata blocks
-    // follow the compressed geometry at SIDECAR_HEAD_BYTES + geom_bytes.
-    webReadRangesAsync(source_id, 0, {{0, SIDECAR_HEAD_BYTES}},
+    // follow the compressed geometry at IFCVIEW_HEAD_BYTES + geom_bytes.
+    webReadRangesAsync(source_id, 0, {{0, IFCVIEW_HEAD_BYTES}},
         [this, fsize, source_id, source_label, session_model_id,
          on_loaded = std::move(on_loaded)]
         (bool ok, std::vector<std::uint8_t>&& head) mutable {
             std::uint64_t geom_bytes = 0;
-            if (!ok || !parseSidecarHead(head.data(), head.size(), geom_bytes)) {
-                Log::warn() << "loadSidecarMetadataWeb: bad sidecar head (wrong version?)";
+            if (!ok || !parseIfcViewHead(head.data(), head.size(), geom_bytes)) {
+                Log::warn() << "loadIfcViewMetadataWeb: bad .ifcview head (wrong version?)";
                 return;
             }
-            const std::uint64_t meta_off = std::uint64_t(SIDECAR_HEAD_BYTES) + geom_bytes;
+            const std::uint64_t meta_off = std::uint64_t(IFCVIEW_HEAD_BYTES) + geom_bytes;
             if (double(meta_off + 16) > fsize) {
-                Log::warn() << "loadSidecarMetadataWeb: metadata past EOF";
+                Log::warn() << "loadIfcViewMetadataWeb: metadata past EOF";
                 return;
             }
             // Geometry metadata block on disk: [comp u64][raw u64][zstd frame].
@@ -4281,7 +4366,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                  on_loaded = std::move(on_loaded)]
                 (bool ok2, std::vector<std::uint8_t>&& h) {
                     if (!ok2 || h.size() < 16) {
-                        Log::warn() << "loadSidecarMetadataWeb: short geometry metadata header";
+                        Log::warn() << "loadIfcViewMetadataWeb: short geometry metadata header";
                         return;
                     }
                     std::uint64_t geometry_metadata_comp = 0, geometry_metadata_raw = 0;
@@ -4289,7 +4374,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                     std::memcpy(&geometry_metadata_raw, h.data() + 8, 8);
                     const std::uint64_t geometry_metadata_off = meta_off + 16;
                     if (double(geometry_metadata_off + geometry_metadata_comp + 16) > fsize) {
-                        Log::warn() << "loadSidecarMetadataWeb: geometry metadata past EOF";
+                        Log::warn() << "loadIfcViewMetadataWeb: geometry metadata past EOF";
                         return;
                     }
                     webReadRangesAsync(source_id, 0,
@@ -4299,23 +4384,23 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                          session_model_id, on_loaded = std::move(on_loaded)]
                         (bool ok3, std::vector<std::uint8_t>&& cz) {
                             if (!ok3) {
-                                Log::warn() << "loadSidecarMetadataWeb: geometry metadata read failed";
+                                Log::warn() << "loadIfcViewMetadataWeb: geometry metadata read failed";
                                 return;
                             }
                             std::vector<std::uint8_t> geometry_metadata(
                                 static_cast<std::size_t>(geometry_metadata_raw));
-                            if (!SidecarCompress::decompress(cz.data(), cz.size(),
+                            if (!decompressIfcViewFrame(cz.data(), cz.size(),
                                                              geometry_metadata.data(),
                                                              geometry_metadata.size())) {
-                                Log::warn() << "loadSidecarMetadataWeb: geometry metadata decompress failed";
+                                Log::warn() << "loadIfcViewMetadataWeb: geometry metadata decompress failed";
                                 return;
                             }
-                            StreamingSidecar sc;
+                            StreamingIfcView sc;
                             sc.file_path               = source_label;
-                            sc.geometry_section_offset = SIDECAR_HEAD_BYTES;
-                            if (!parseSidecarGeometryMetadata(geometry_metadata.data(),
+                            sc.geometry_section_offset = IFCVIEW_HEAD_BYTES;
+                            if (!parseIfcViewGeometryMetadata(geometry_metadata.data(),
                                                               geometry_metadata.size(), sc.meta)) {
-                                Log::warn() << "loadSidecarMetadataWeb: bad geometry metadata";
+                                Log::warn() << "loadIfcViewMetadataWeb: bad geometry metadata";
                                 return;
                             }
                             // Read the element metadata block's 16-byte header to
@@ -4325,7 +4410,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                             // locator is still zero — and a loadElementMetadataWeb
                             // landing in that window (a host page calling
                             // getObjects() as soon as the model appears) cannot
-                            // tell "locator not read yet" from "this sidecar has no
+                            // tell "locator not read yet" from "this .ifcview has no
                             // element block", so it latches the model as
                             // permanently empty. It costs one extra 16-byte
                             // round-trip before first paint.
@@ -4344,7 +4429,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                         sc.element_metadata_comp_size   = dc;
                                         sc.element_metadata_raw_size    = dr;
                                     } else {
-                                        Log::warn() << "loadSidecarMetadataWeb: element metadata"
+                                        Log::warn() << "loadIfcViewMetadataWeb: element metadata"
                                                        " header read failed — no properties for "
                                                     << source_label;
                                     }
@@ -4368,7 +4453,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                     // Reframing per model would jump the camera
                                     // as each federated model streams in.
                                     host_->requestFrame();
-                                    Log::info() << "ifcviewer-web: loaded sidecar (" << source_label
+                                    Log::info() << "ifcviewer-web: loaded .ifcview (" << source_label
                                                 << ", id " << session_model_id << ", " << n_meshes << " meshes, "
                                                 << n_instances << " instances)";
                                     // Last: the model is fully in the scene, so a
@@ -4403,10 +4488,10 @@ void ViewportCore::loadElementMetadataWeb(std::uint32_t session_model_id,
             auto mit = models_gpu_.find(session_model_id);
             if (mit == models_gpu_.end()) { if (done) done(false); return; }
             std::vector<std::uint8_t> buf(static_cast<std::size_t>(raw_size));
-            SidecarData tmp;
+            IfcViewData tmp;
             if (!ok ||
-                !SidecarCompress::decompress(cz.data(), cz.size(), buf.data(), buf.size()) ||
-                !parseSidecarElementMetadata(buf.data(), buf.size(), tmp)) {
+                !decompressIfcViewFrame(cz.data(), cz.size(), buf.data(), buf.size()) ||
+                !parseIfcViewElementMetadata(buf.data(), buf.size(), tmp)) {
                 Log::warn() << "loadElementMetadataWeb: read/decompress/parse failed";
                 if (done) done(false);
                 return;
@@ -4441,7 +4526,7 @@ void ViewportCore::loadAllElementMetadataWeb(std::function<void(bool)> done) {
 }
 
 void ViewportCore::logSelectedObjectGuidWeb(std::uint32_t object_id) {
-    InstanceCompose::InstanceLookup lk;
+    ModelLookup::InstanceLookup lk;
     if (!findInstance(object_id, lk)) return;  // empty pick / unknown id
     const std::uint32_t session_model_id = lk.session_model_id;
     loadElementMetadataWeb(session_model_id, [this, object_id](bool ok) {
@@ -4511,7 +4596,7 @@ namespace {
 
 // Resolve one element record against its model's string table. Offsets that run
 // past the table (or carry zero length) yield an empty string rather than a
-// fabricated one — the sidecar writes no string for an unnamed element.
+// fabricated one — the .ifcview writes no string for an unnamed element.
 ViewportCore::ElementRef makeElementRef(const ModelGpuData& m, int model_index,
                                         const ElementTableRecord& e) {
     auto str = [&m](std::uint32_t offset, std::uint32_t length) {
@@ -4576,7 +4661,7 @@ void ViewportCore::visitModelElements(
 }
 
 bool ViewportCore::elementForObject(std::uint32_t object_id, ElementRef& out) const {
-    InstanceCompose::InstanceLookup lk;
+    ModelLookup::InstanceLookup lk;
     if (!findInstance(object_id, lk)) return false;
     auto it = models_gpu_.find(lk.session_model_id);
     if (it == models_gpu_.end()) return false;
@@ -4623,28 +4708,28 @@ void ViewportCore::finalizeModel(std::uint32_t session_model_id) {
             << ") with no staged data; skipping";
         return;
     }
-    std::unique_ptr<SidecarData> staging_ptr = std::move(it->second);
+    std::unique_ptr<IfcViewData> staging_ptr = std::move(it->second);
     pending_direct_loads_.erase(it);
-    SidecarData& sidecar_data = *staging_ptr;
+    IfcViewData& ifcview_data = *staging_ptr;
 
     if (!device_ || !queue_) {
         Log::warn() << "[wgpu direct] finalizeModel without an initialised device";
         return;
     }
-    if (sidecar_data.meshes.empty() || sidecar_data.instances.empty()) {
+    if (ifcview_data.meshes.empty() || ifcview_data.instances.empty()) {
         Log::info() << "[wgpu direct] finalizeModel(" << session_model_id
-                    << "): empty staging (meshes=" << sidecar_data.meshes.size()
-                    << " instances=" << sidecar_data.instances.size() << ")";
+                    << "): empty staging (meshes=" << ifcview_data.meshes.size()
+                    << " instances=" << ifcview_data.instances.size() << ")";
         return;
     }
 
-    // Build a StreamingSidecar around the staging so applyCachedModel can
+    // Build a StreamingIfcView around the staging so applyCachedModel can
     // run its chunk planner over the same shape it expects from on-disk
     // metadata. file_path is left empty — the streaming worker keys off
     // that to skip these chunks (they're already resident after the
     // applyStreamedChunk loop below).
-    StreamingSidecar metadata;
-    metadata.meta = std::move(sidecar_data);
+    StreamingIfcView metadata;
+    metadata.meta = std::move(ifcview_data);
     // Direct load: geometry is already in memory (uploaded below), streamed
     // from nothing — leave file_path empty so the streaming worker skips it.
     metadata.geometry_section_offset = 0;
@@ -5218,6 +5303,7 @@ bool ViewportCore::ensureRenderAttachments(int width_px, int height_px) {
             ensureMsaaColorTexture(width_px, height_px);
             ensureHizTextures(width_px, height_px);
             ensureSelectionOutlineTextures(width_px, height_px);
+            section_caps_.ensureTarget(width_px, height_px);
             createPickAttachments(width_px, height_px);
         },
         [&]() { releaseRenderAttachments(); },
@@ -5243,6 +5329,7 @@ void ViewportCore::releaseRenderAttachments() {
     releaseMsaaColorTexture();
     releaseHizTextures();
     releaseSelectionOutlineTextures();
+    section_caps_.releaseTarget();
     releasePickResources();
 }
 
@@ -5483,6 +5570,102 @@ void ViewportCore::releaseEdgeResources() {
     if (edge_shader_module_)   { wgpuShaderModuleRelease(edge_shader_module_);edge_shader_module_ = nullptr; }
     if (edge_pipeline_layout_) { wgpuPipelineLayoutRelease(edge_pipeline_layout_); edge_pipeline_layout_ = nullptr; }
     if (edge_bgl_)             { wgpuBindGroupLayoutRelease(edge_bgl_);       edge_bgl_ = nullptr; }
+}
+
+// ===========================================================================
+// Section caps: buildSectionCapPipeline + encodeSectionCapAccumPass. The
+// composite half lives in SectionCapRenderer.
+// ===========================================================================
+
+bool ViewportCore::buildSectionCapPipeline() {
+    WGPUBlendState blend = {};
+    blend.color.srcFactor = WGPUBlendFactor_One;
+    blend.color.dstFactor = WGPUBlendFactor_One;
+    blend.color.operation = WGPUBlendOperation_Add;
+    blend.alpha           = blend.color;
+
+    WGPUColorTargetState target = {};
+    target.format    = SectionCapRenderer::kAccumFormat;
+    target.blend     = &blend;
+    target.writeMask = WGPUColorWriteMask_All;
+
+    WGPUFragmentState frag = {};
+    frag.module      = main_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_cap_accum");
+    frag.targetCount = 1;
+    frag.targets     = &target;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout             = pipeline_layout_;
+    rp_desc.label              = svFromCStr("ifcviewer-wgpu.section_cap_accum_pipeline");
+    rp_desc.vertex.module      = main_shader_module_;
+    rp_desc.vertex.entryPoint  = svFromCStr("vs_cap_accum");
+    rp_desc.vertex.bufferCount = 0;
+    rp_desc.fragment           = &frag;
+    rp_desc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
+    // Both faces, untested against depth: the parity needs every one of them.
+    rp_desc.primitive.cullMode = WGPUCullMode_None;
+    rp_desc.multisample.count  = 1;
+    rp_desc.multisample.mask   = 0xFFFFFFFFu;
+
+    section_cap_accum_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    if (!section_cap_accum_pipeline_) {
+        Log::warn() << "wgpu section cap pipeline creation failed";
+        return false;
+    }
+    return true;
+}
+
+bool ViewportCore::sectionCapsActive() const {
+    return section_caps_enabled_ && !section_planes_.empty() && !xrayActive()
+        && section_cap_accum_pipeline_ && section_caps_.ready();
+}
+
+bool ViewportCore::sectionCapRayEntry(int x_pixels, int y_pixels,
+                                      Eigen::Vector3f& point_out,
+                                      Eigen::Vector3f& normal_out) const {
+    if (!sectionCapsActive() || configured_w_ <= 0 || configured_h_ <= 0) return false;
+    Eigen::Matrix4f view, proj;
+    buildViewProj(view, proj);
+    const float ndc_x = (float(x_pixels) + 0.5f) / float(configured_w_) * 2.0f - 1.0f;
+    const float ndc_y = 1.0f - (float(y_pixels) + 0.5f) / float(configured_h_) * 2.0f;
+    return SectionCapRenderer::rayEntry(proj * view, section_planes_, ndc_x, ndc_y,
+                                        point_out, normal_out);
+}
+
+bool ViewportCore::encodeSectionCapAccumPass(WGPUCommandEncoder enc) {
+    if (!sectionCapsActive() || !frame_bind_group_) return false;
+
+    WGPURenderPassColorAttachment color = {};
+    color.view       = section_caps_.accumView();
+    color.loadOp     = WGPULoadOp_Clear;
+    color.storeOp    = WGPUStoreOp_Store;
+    color.clearValue = {0.0, 0.0, 0.0, 0.0};
+    color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount = 1;
+    pass_desc.colorAttachments     = &color;
+    pass_desc.label                = svFromCStr("ifcviewer-wgpu.section_cap_accum_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    wgpuRenderPassEncoderSetPipeline(pass, section_cap_accum_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
+
+    // Same draw stream as the main pass, opaque and transparent together: a
+    // transparent object is capped too, at its own opacity.
+    for (const auto& [session_model_id, m] : models_gpu_) {
+        if (!m.drawable()) continue;
+        for (const auto& c : m.chunks) {
+            if (!c.bind_group || c.total_visible_vertices == 0) continue;
+            wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
+            wgpuRenderPassEncoderDraw(pass, c.total_visible_vertices, 1, 0, 0);
+        }
+    }
+
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+    return true;
 }
 
 // ===========================================================================
@@ -5868,19 +6051,18 @@ void ViewportCore::encodeSelectionMaskPass(WGPUCommandEncoder enc) {
 
 void ViewportCore::encodeSelectionOutlinePass(WGPUCommandEncoder enc,
                                               WGPUTextureView surface_view,
-                                              int dpr) {
+                                              float dpr) {
     if (!selectionOutlineActive() || !surface_view || !sel_dilate_h_pipeline_) return;
 
     // Ring widths in LOGICAL pixels, scaled here so the halo looks the same
     // on a HiDPI canvas as it does on a 1x one.
-    const float scale = float(std::max(1, dpr));
     SelOutlineUniforms u = {};
     u.inner_color[0] = 1.0f; u.inner_color[1] = 1.0f;
     u.inner_color[2] = 1.0f; u.inner_color[3] = 1.0f;
     u.outer_color[0] = 0.04f; u.outer_color[1] = 0.04f;
     u.outer_color[2] = 0.04f; u.outer_color[3] = 0.85f;
-    u.inner_radius   = 2.0f * scale;
-    u.outer_radius   = 3.0f * scale;
+    u.inner_radius   = 2.0f * dpr;
+    u.outer_radius   = 3.0f * dpr;
     wgpuQueueWriteBuffer(queue_, sel_outline_uniform_buffer_, 0, &u, sizeof(u));
 
     if (!sel_dilate_bind_group_) {
@@ -6093,17 +6275,18 @@ bool ViewportCore::buildPickPipeline() {
         Log::warn() << "wgpu pick pipeline creation failed";
         return false;
     }
-    // The x-ray marquee variant rides along so no caller has to know about it.
+    // The hit-bitmask variants ride along so no caller has to know about them.
     // A failure here is not fatal: picksInRect falls back to the depth-tested
-    // read, which is the pre-x-ray behaviour rather than a broken viewport.
-    buildBoxPickPipeline();
+    // read and a section cap is simply not pickable, rather than a broken
+    // viewport.
+    buildHitFlagsPipelines();
     return true;
 }
 
-bool ViewportCore::buildBoxPickPipeline() {
-    // No colour targets: fs_boxpick's only output is the atomic bit it sets, so
-    // the pass writes no image at all. A render pass still needs one attachment
-    // — the pick depth view serves, bound read-only.
+bool ViewportCore::buildHitFlagsPipelines() {
+    // No colour targets: the fragment's only output is the atomic bit it
+    // touches, so the pass writes no image at all. A render pass still needs
+    // one attachment — the pick depth view serves, bound read-only.
     WGPUFragmentState frag = {};
     frag.module      = main_shader_module_;
     frag.entryPoint  = svFromCStr("fs_boxpick");
@@ -6136,8 +6319,14 @@ bool ViewportCore::buildBoxPickPipeline() {
     rp_desc.multisample.mask    = 0xFFFFFFFFu;
 
     box_pick_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
-    if (!box_pick_pipeline_) {
-        Log::warn() << "wgpu box-pick pipeline creation failed";
+
+    frag.entryPoint           = svFromCStr("fs_cappick");
+    rp_desc.vertex.entryPoint = svFromCStr("vs_cappick");
+    rp_desc.label             = svFromCStr("ifcviewer-wgpu.cap_pick_pipeline");
+    cap_pick_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+
+    if (!box_pick_pipeline_ || !cap_pick_pipeline_) {
+        Log::warn() << "wgpu hit-bitmask pipeline creation failed";
         return false;
     }
     return true;
@@ -6256,6 +6445,7 @@ void ViewportCore::releasePickResources() {
     }
     if (pick_pipeline_)            { wgpuRenderPipelineRelease(pick_pipeline_); pick_pipeline_ = nullptr; }
     if (box_pick_pipeline_)        { wgpuRenderPipelineRelease(box_pick_pipeline_); box_pick_pipeline_ = nullptr; }
+    if (cap_pick_pipeline_)        { wgpuRenderPipelineRelease(cap_pick_pipeline_); cap_pick_pipeline_ = nullptr; }
     if (box_pick_staging_buffer_)  {
         wgpuBufferRelease(box_pick_staging_buffer_);
         box_pick_staging_buffer_ = nullptr;
@@ -6384,6 +6574,11 @@ std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
     if (!ensurePickAttachments(configured_w_, configured_h_)
         || !pick_staging_buffer_) return 0;
     if (normal_out && !pick_normal_staging_buffer_) return 0;
+
+    // A cap is in front of everything the pick pass can see.
+    if (const std::uint32_t cap_id = pickSectionCapAt(x_pixels, y_pixels, normal_out)) {
+        return cap_id;
+    }
 
     encodePickReadbackToStaging(x_pixels, y_pixels, normal_out != nullptr);
 
@@ -6603,6 +6798,22 @@ void ViewportCore::toggleXray() {
 #if defined(__EMSCRIPTEN__)
 void ViewportCore::pickObjectAtAsync(int x_pixels, int y_pixels,
                                      std::function<void(std::uint32_t)> cb) {
+    // A cap is in front of everything the pick pass can see, so ask for it
+    // first and fall back to what is visible.
+    Eigen::Vector3f point, normal;
+    if (sectionCapRayEntry(x_pixels, y_pixels, point, normal)) {
+        hitFlagsPickAsync(cap_pick_pipeline_, x_pixels, y_pixels, 1, 1,
+            [this, x_pixels, y_pixels, cb = std::move(cb)](std::vector<std::uint32_t> ids) mutable {
+                if (!ids.empty()) { if (cb) cb(ids.front()); return; }
+                pickVisibleObjectAtAsync(x_pixels, y_pixels, std::move(cb));
+            });
+        return;
+    }
+    pickVisibleObjectAtAsync(x_pixels, y_pixels, std::move(cb));
+}
+
+void ViewportCore::pickVisibleObjectAtAsync(int x_pixels, int y_pixels,
+                                            std::function<void(std::uint32_t)> cb) {
     // Async sibling of pickObjectAt for the web build, where the blocking
     // map-spin would hang the JS event loop. Encodes the same pick pass, then
     // maps the staging buffer with a spontaneous callback (AllowSpontaneous +
@@ -6783,10 +6994,11 @@ std::vector<std::uint32_t> ViewportCore::collectMappedBoxPickIds(
     return out;
 }
 
-bool ViewportCore::encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
-                                              std::uint64_t& needed_bytes_out) {
+bool ViewportCore::encodeHitFlagsPassToStaging(WGPURenderPipeline pipeline,
+                                               int& x, int& y, int& w, int& h,
+                                               std::uint64_t& needed_bytes_out) {
     if (w <= 0 || h <= 0) return false;
-    if (!box_pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return false;
+    if (!pipeline || !device_ || !queue_ || models_gpu_.empty()) return false;
     if (!hit_flags_buffer_ || hit_flags_words_ == 0) return false;
     if (configured_w_ <= 0 || configured_h_ <= 0) return false;
     if (x < 0) { w += x; x = 0; }
@@ -6833,14 +7045,14 @@ bool ViewportCore::encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
     pass_desc.colorAttachmentCount   = 0;
     pass_desc.colorAttachments       = nullptr;
     pass_desc.depthStencilAttachment = &depth;
-    pass_desc.label                  = svFromCStr("ifcviewer-wgpu.xray_box_pick_pass");
+    pass_desc.label                  = svFromCStr("ifcviewer-wgpu.hit_flags_pass");
 
     WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
     // The scissor is what makes this a BOX pick: geometry is drawn full-screen
-    // as usual, and only fragments landing in the marquee survive to set a bit.
+    // as usual, and only fragments landing in the rect survive to touch a bit.
     wgpuRenderPassEncoderSetScissorRect(pass, std::uint32_t(x), std::uint32_t(y),
                                         std::uint32_t(w), std::uint32_t(h));
-    wgpuRenderPassEncoderSetPipeline(pass, box_pick_pipeline_);
+    wgpuRenderPassEncoderSetPipeline(pass, pipeline);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
     for (const auto& [session_model_id, m] : models_gpu_) {
         if (!m.drawable()) continue;
@@ -6865,7 +7077,7 @@ bool ViewportCore::encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
     return true;
 }
 
-std::vector<std::uint32_t> ViewportCore::collectMappedXrayHitIds(std::uint64_t needed_bytes) {
+std::vector<std::uint32_t> ViewportCore::collectMappedHitIds(std::uint64_t needed_bytes) {
     std::vector<std::uint32_t> out;
     const std::uint32_t* words = static_cast<const std::uint32_t*>(
         wgpuBufferGetConstMappedRange(hit_flags_staging_buffer_, 0, needed_bytes));
@@ -6885,26 +7097,41 @@ std::vector<std::uint32_t> ViewportCore::collectMappedXrayHitIds(std::uint64_t n
     return out;
 }
 
+std::vector<std::uint32_t> ViewportCore::hitFlagsPick(WGPURenderPipeline pipeline,
+                                                      int x, int y, int w, int h) {
+    std::uint64_t hit_bytes = 0;
+    if (!encodeHitFlagsPassToStaging(pipeline, x, y, w, h, hit_bytes)) return {};
+    struct MapReq { bool done = false; bool ok = false; };
+    MapReq req;
+    WGPUBufferMapCallbackInfo mcb = {};
+    mcb.mode = kAsyncCbMode;
+    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                      void* ud1, void* /*ud2*/) {
+        auto* r = static_cast<MapReq*>(ud1);
+        r->done = true;
+        r->ok   = (status == WGPUMapAsyncStatus_Success);
+    };
+    mcb.userdata1 = &req;
+    wgpuBufferMapAsync(hit_flags_staging_buffer_, WGPUMapMode_Read, 0, hit_bytes, mcb);
+    while (!req.done) waitTickInstance(instance_);
+    if (!req.ok) return {};
+    return collectMappedHitIds(hit_bytes);
+}
+
+std::uint32_t ViewportCore::pickSectionCapAt(int x_pixels, int y_pixels,
+                                             Eigen::Vector3f* normal_out) {
+    Eigen::Vector3f point, normal;
+    if (!sectionCapRayEntry(x_pixels, y_pixels, point, normal)) return 0;
+    const auto ids = hitFlagsPick(cap_pick_pipeline_, x_pixels, y_pixels, 1, 1);
+    if (ids.empty()) return 0;
+    if (normal_out) *normal_out = normal;
+    return ids.front();
+}
+
 std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h) {
     // X-ray: select through, via the depth-less bitmask pass.
     if (xrayActive() && box_pick_pipeline_) {
-        std::uint64_t hit_bytes = 0;
-        if (!encodeXrayBoxPickToStaging(x, y, w, h, hit_bytes)) return {};
-        struct MapReq { bool done = false; bool ok = false; };
-        MapReq req;
-        WGPUBufferMapCallbackInfo mcb = {};
-        mcb.mode = kAsyncCbMode;
-        mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
-                          void* ud1, void* /*ud2*/) {
-            auto* r = static_cast<MapReq*>(ud1);
-            r->done = true;
-            r->ok   = (status == WGPUMapAsyncStatus_Success);
-        };
-        mcb.userdata1 = &req;
-        wgpuBufferMapAsync(hit_flags_staging_buffer_, WGPUMapMode_Read, 0, hit_bytes, mcb);
-        while (!req.done) waitTickInstance(instance_);
-        if (!req.ok) return {};
-        return collectMappedXrayHitIds(hit_bytes);
+        return hitFlagsPick(box_pick_pipeline_, x, y, w, h);
     }
 
     std::uint64_t padded_bpr = 0, needed_bytes = 0;
@@ -6928,41 +7155,51 @@ std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h)
 }
 
 #if defined(__EMSCRIPTEN__)
-void ViewportCore::picksInRectAsync(int x, int y, int w, int h,
-                                    std::function<void(std::vector<std::uint32_t>)> cb) {
+void ViewportCore::hitFlagsPickAsync(WGPURenderPipeline pipeline,
+                                     int x, int y, int w, int h,
+                                     std::function<void(std::vector<std::uint32_t>)> cb) {
     auto miss = [&cb]() { if (cb) cb({}); };
     if (box_pick_async_in_flight_) { miss(); return; }
 
-    // X-ray: select through. Same spontaneous-map dance, but the mapped buffer
-    // is a per-object bitmask rather than a rect of the object_id image, so the
-    // rect dims the other callback walks are not needed here.
-    if (xrayActive() && box_pick_pipeline_) {
-        std::uint64_t hit_bytes = 0;
-        if (!encodeXrayBoxPickToStaging(x, y, w, h, hit_bytes)) { miss(); return; }
-        box_pick_async_bytes_     = hit_bytes;
-        box_pick_async_xray_      = true;
-        box_pick_async_in_flight_ = true;
-        box_pick_async_cb_        = std::move(cb);
+    // Same spontaneous-map dance as the object_id rect, but the mapped buffer
+    // is a per-object bitmask, so the rect dims that callback walks are not
+    // needed here.
+    std::uint64_t hit_bytes = 0;
+    if (!encodeHitFlagsPassToStaging(pipeline, x, y, w, h, hit_bytes)) { miss(); return; }
+    box_pick_async_bytes_     = hit_bytes;
+    box_pick_async_xray_      = true;
+    box_pick_async_in_flight_ = true;
+    box_pick_async_cb_        = std::move(cb);
 
-        WGPUBufferMapCallbackInfo xcb = {};
-        xcb.mode = kAsyncCbMode;
-        xcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
-                          void* ud1, void* /*ud2*/) {
-            auto* self = static_cast<ViewportCore*>(ud1);
-            std::vector<std::uint32_t> ids;
-            if (status == WGPUMapAsyncStatus_Success) {
-                ids = self->collectMappedXrayHitIds(self->box_pick_async_bytes_);
-            }
-            auto done = std::move(self->box_pick_async_cb_);
-            self->box_pick_async_cb_        = nullptr;
-            self->box_pick_async_in_flight_ = false;
-            self->box_pick_async_xray_      = false;
-            if (done) done(std::move(ids));
-        };
-        xcb.userdata1 = this;
-        wgpuBufferMapAsync(hit_flags_staging_buffer_, WGPUMapMode_Read, 0, hit_bytes, xcb);
+    WGPUBufferMapCallbackInfo xcb = {};
+    xcb.mode = kAsyncCbMode;
+    xcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                      void* ud1, void* /*ud2*/) {
+        auto* self = static_cast<ViewportCore*>(ud1);
+        std::vector<std::uint32_t> ids;
+        if (status == WGPUMapAsyncStatus_Success) {
+            ids = self->collectMappedHitIds(self->box_pick_async_bytes_);
+        }
+        auto done = std::move(self->box_pick_async_cb_);
+        self->box_pick_async_cb_        = nullptr;
+        self->box_pick_async_in_flight_ = false;
+        self->box_pick_async_xray_      = false;
+        if (done) done(std::move(ids));
+    };
+    xcb.userdata1 = this;
+    wgpuBufferMapAsync(hit_flags_staging_buffer_, WGPUMapMode_Read, 0, hit_bytes, xcb);
+}
+
+void ViewportCore::picksInRectAsync(int x, int y, int w, int h,
+                                    std::function<void(std::vector<std::uint32_t>)> cb) {
+    // X-ray: select through, via the depth-less bitmask pass.
+    if (xrayActive() && box_pick_pipeline_) {
+        hitFlagsPickAsync(box_pick_pipeline_, x, y, w, h, std::move(cb));
         return;
     }
+
+    auto miss = [&cb]() { if (cb) cb({}); };
+    if (box_pick_async_in_flight_) { miss(); return; }
 
     std::uint64_t padded_bpr = 0, needed_bytes = 0;
     if (!encodeBoxPickToStaging(x, y, w, h, padded_bpr, needed_bytes)) { miss(); return; }
@@ -8034,6 +8271,8 @@ void ViewportCore::render() {
 
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
 
+    const bool section_caps = encodeSectionCapAccumPass(enc);
+
     WGPURenderPassColorAttachment color = {};
     color.view          = msaa_color_view_;
     color.resolveTarget = view;
@@ -8107,7 +8346,12 @@ void ViewportCore::render() {
     // Build the per-frame OverlayFrame snapshot.
     int viewport_w_px = 0, viewport_h_px = 0;
     host_->framebufferSize(viewport_w_px, viewport_h_px);
-    const int dpr_int = std::max(1, int(host_->dpr()));
+    const float dpr = host_->dpr();
+
+    // Over the whole scene, under every overlay.
+    if (section_caps) {
+        section_caps_.encodeComposite(pass, vp_this_frame, section_planes_, dpr, section_cap_style_);
+    }
 
     OverlayFrame overlay_frame;
     overlay_frame.view_proj          = vp_this_frame;
@@ -8120,12 +8364,12 @@ void ViewportCore::render() {
     overlay_frame.camera_fov_y_deg   = camera_fov_y_deg_;
     overlay_frame.viewport_w_px      = viewport_w_px;
     overlay_frame.viewport_h_px      = viewport_h_px;
-    overlay_frame.device_pixel_ratio = dpr_int;
+    overlay_frame.device_pixel_ratio = dpr;
 
     // Section-plane gizmo — shared renderer, drawn for desktop + web from here.
     // (The desktop's OverlayRenderer no longer draws it, to avoid doubling.)
     section_gizmo_.encode(pass, vp_this_frame, section_planes_,
-                          viewport_w_px, viewport_h_px, dpr_int, section_selected_index_);
+                          viewport_w_px, viewport_h_px, dpr, section_selected_index_);
 
     // Orbit pivot indicator — same shared-renderer story. Drawn while the host
     // has it gated on (drag) or an afterglow is still running; in the latter
@@ -8149,7 +8393,7 @@ void ViewportCore::render() {
     // Edge silhouette + HiZ resolve, before the surface-targeted overlays.
     if (edges_enabled_) encodeEdgePass(enc, view);
 
-    encodeSelectionOutlinePass(enc, view, dpr_int);
+    encodeSelectionOutlinePass(enc, view, dpr);
 
     int hiz_submitted_slot = -1;
     if (hiz_enabled_) hiz_submitted_slot = encodeHizResolve(enc);
@@ -8507,9 +8751,9 @@ void ViewportCore::clearSectionPlanes() {
 void ViewportCore::sectionLogicalViewport(int& w, int& h) const {
     int fb_w = 0, fb_h = 0;
     host_->framebufferSize(fb_w, fb_h);
-    const int dpr = std::max(1, int(host_->dpr()));
-    w = fb_w / dpr;
-    h = fb_h / dpr;
+    const float dpr = host_->dpr();
+    w = int(std::lround(float(fb_w) / dpr));
+    h = int(std::lround(float(fb_h) / dpr));
 }
 
 int ViewportCore::hitTestSectionGizmo(int x, int y) {

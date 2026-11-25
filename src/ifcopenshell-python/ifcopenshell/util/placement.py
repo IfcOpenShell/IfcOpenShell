@@ -23,6 +23,8 @@ import numpy as np
 import numpy.typing as npt
 
 import ifcopenshell
+import ifcopenshell.geom
+import ifcopenshell.util.unit
 
 MatrixType = npt.NDArray[np.float64]
 """`npt.NDArray[np.float64]`"""
@@ -43,63 +45,20 @@ def a2p(o: Iterable[float], z: Iterable[float], x: Iterable[float]) -> MatrixTyp
     z = z / np.linalg.norm(z)
     y = np.cross(z, x)
     y = y / np.linalg.norm(y)
+    x = np.cross(y, z)  # Project X onto the plane normal to Z, as IfcBuildAxes does
     r = np.eye(4)
     r[:-1, :-1] = x, y, z
     r[-1, :-1] = o
     return r.T
 
 
-def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
-    """Parses an IfcAxis2Placement (2D or 3D) to a 4x4 transformation matrix
+def get_placement(
+    placement: Optional[ifcopenshell.entity_instance] = None, should_return_si: bool = False
+) -> MatrixType:
+    """Parse an object or coordinate placement into a 4x4 transformation matrix
 
-    Note that this function only parses a single placement axis. If you want to
-    get the placement of an element instead, element placements often are made
-    out of multiple placement axes or other alternative placement methods. You
-    should use ``get_local_placement`` instead.
-
-    :param placement: The IfcLocalPlacement enitity
-    :return: A 4x4 numpy matrix
-    """
-    ifc_class = placement.is_a()
-    if ifc_class in ("IfcAxis2Placement3D", "IfcAxis2PlacementLinear"):
-        z = np.array(placement.Axis.DirectionRatios if placement.Axis else (0, 0, 1))
-        x = np.array(placement.RefDirection.DirectionRatios if placement.RefDirection else (1, 0, 0))
-        location = placement.Location
-        if coordinates := getattr(location, "Coordinates", None):
-            o = coordinates
-        else:
-            import ifcopenshell.geom
-
-            settings = ifcopenshell.geom.settings()
-            settings.set("convert-back-units", True)
-            shape = ifcopenshell.geom.create_shape(settings, placement)
-            return np.array(shape.matrix).reshape((4, 4), order="F")
-    elif ifc_class == "IfcAxis2Placement2D":
-        z = np.array((0, 0, 1))
-        if placement.RefDirection:
-            x = np.array(placement.RefDirection.DirectionRatios)
-            x.resize(3)
-        else:
-            x = np.array((1, 0, 0))
-        o = (*placement.Location.Coordinates, 0.0)
-
-    elif ifc_class == "IfcAxis1Placement":
-        axis = placement.Axis
-        z = np.array(axis.DirectionRatios if axis else (0, 0, 1))
-        x = np.array((1, 0, 0))
-        o = placement.Location.Coordinates
-
-    else:
-        assert False, placement
-
-    return a2p(o, z, x)
-
-
-def get_local_placement(placement: Optional[ifcopenshell.entity_instance] = None) -> MatrixType:
-    """Parse a local placement into a 4x4 transformation matrix
-
-    This is typically used to find the location and rotation of an element. The
-    transformation matrix takes the form of:
+    If an IfcObjectPlacement is provided, this is the fully composed matrix
+    with all of its parents.
 
     .. code::
 
@@ -113,63 +72,47 @@ def get_local_placement(placement: Optional[ifcopenshell.entity_instance] = None
     .. code:: python
 
         placement = file.by_type("IfcBeam")[0].ObjectPlacement
-        matrix = ifcopenshell.util.placement.get_local_placement(placement)
+        matrix = ifcopenshell.util.placement.get_placement(placement)
 
-    :param placement: The IfcLocalPlacement entity
+    :param placement: The IfcObjectPlacement, IfcPlacement or
+        IfcCartesianTransformationOperator entity. None gives the identity
+        matrix.
+    :param should_return_si: Return the translation in metres instead of the
+        file's length unit.
     :return: A 4x4 numpy matrix
     """
     if placement is None:
         return np.eye(4)
-    if (rel_to := placement.PlacementRelTo) is None:
-        parent = np.eye(4)
-    else:
-        parent = get_local_placement(rel_to)
-    return np.dot(parent, get_axis2placement(placement.RelativePlacement))
+    mat4 = np.array(ifcopenshell.geom.map_shape(ifcopenshell.geom.settings(), placement).components)
+    if not should_return_si:
+        # map_shape does not respect the "convert-back-units" setting, so we need to apply the unit scale ourselves
+        factor = ifcopenshell.util.unit.calculate_unit_scale(placement.file)
+        mat4[:3, 3] /= factor
+    return mat4
 
 
-def get_cartesiantransformationoperator3d(inst: ifcopenshell.entity_instance) -> MatrixType:
-    """Parses an IfcCartesianTransformationOperator into a 4x4 transformation matrix
-
-    Note that in general you will not need to call this directly. See
-    ``get_mappeditem_transformation`` instead.
-
-    :param item: The IfcCartesianTransformationOperator entity
-    :return: A 4x4 numpy transformation matrix
-    """
-    origin = np.array(inst.LocalOrigin.Coordinates)
-    axis1 = np.array((1.0, 0.0, 0.0))
-    axis2 = np.array((0.0, 1.0, 0.0))
-    axis3 = np.array((0.0, 0.0, 1.0))
-
-    if inst.Axis1:
-        axis1[0:3] = inst.Axis1.DirectionRatios
-    if inst.Axis2:
-        axis2[0:3] = inst.Axis2.DirectionRatios
-    if inst.Axis3:
-        axis3[0:3] = inst.Axis3.DirectionRatios
-
-    m4 = a2p(origin, axis3, axis1)
-    # Negate axis2 (introduce mirroring) when supplied axis2
-    # is opposite of constructed axis2, but remains orthogonal
-    if m4.T[1][0:3].dot(axis2) < 0.0:
-        m4.T[1] *= -1.0
-
-    scale1 = scale2 = scale3 = 1.0
-
-    if inst.Scale:
-        scale1 = inst.Scale
-
+def _operator_placement(inst: ifcopenshell.entity_instance, should_return_si: bool) -> MatrixType:
+    origin = np.zeros(3)
+    origin[: len(inst.LocalOrigin.Coordinates)] = inst.LocalOrigin.Coordinates
+    if should_return_si:
+        origin *= ifcopenshell.util.unit.calculate_unit_scale(inst.file)
+    axes = np.eye(3)
+    for axis, direction in zip(axes, (inst.Axis1, inst.Axis2, getattr(inst, "Axis3", None))):
+        if direction:
+            axis[: len(direction.DirectionRatios)] = direction.DirectionRatios
+    matrix = a2p(origin, axes[2], axes[0])
+    # Mirror when the supplied Axis2 opposes the right-handed Y axis
+    if matrix[:3, 1].dot(axes[1]) < 0.0:
+        matrix[:3, 1] *= -1.0
+    scale = inst.Scale or 1.0
+    scales = [scale, scale, scale if inst.is_a("IfcCartesianTransformationOperator3D") else 1.0]
     if inst.is_a("IfcCartesianTransformationOperator3DnonUniform"):
-        scale2 = inst.Scale2 if inst.Scale2 is not None else scale1
-        scale3 = inst.Scale3 if inst.Scale3 is not None else scale1
-    else:
-        scale2 = scale3 = scale1
-
-    m4.T[0] *= scale1
-    m4.T[1] *= scale2
-    m4.T[2] *= scale3
-
-    return m4
+        scales[1] = inst.Scale2 if inst.Scale2 is not None else scale
+        scales[2] = inst.Scale3 if inst.Scale3 is not None else scale
+    elif inst.is_a("IfcCartesianTransformationOperator2DnonUniform"):
+        scales[1] = inst.Scale2 if inst.Scale2 is not None else scale
+    matrix[:3, :3] *= scales
+    return matrix
 
 
 def get_mappeditem_transformation(item: ifcopenshell.entity_instance) -> MatrixType:
@@ -182,10 +125,7 @@ def get_mappeditem_transformation(item: ifcopenshell.entity_instance) -> MatrixT
     :param item: The IfcMappedItem entity
     :return: A 4x4 numpy transformation matrix
     """
-    m4 = get_axis2placement(item.MappingSource.MappingOrigin)
-    # TODO 2d
-    if item.MappingTarget.is_a("IfcCartesianTransformationOperator3D"):
-        return get_cartesiantransformationoperator3d(item.MappingTarget) @ m4
+    return get_placement(item.MappingTarget) @ get_placement(item.MappingSource.MappingOrigin)
 
 
 def get_storey_elevation(storey: ifcopenshell.entity_instance) -> float:
@@ -198,9 +138,89 @@ def get_storey_elevation(storey: ifcopenshell.entity_instance) -> float:
     :return: The elevation in project units
     """
     if storey.ObjectPlacement:
-        matrix = get_local_placement(storey.ObjectPlacement)
+        matrix = get_placement(storey.ObjectPlacement)
         return matrix[2][3]
     return getattr(storey, "Elevation", 0.0) or 0.0
+
+
+def get_grid_axis_coordinates(axis: ifcopenshell.entity_instance) -> npt.NDArray[np.float64]:
+    """Get the points a grid axis runs through, in world coordinates
+
+    A grid axis curve is defined in the object coordinate system of the IfcGrid
+    it belongs to. The points returned have that grid's placement applied, so
+    axes from different grids in the same file can be compared and intersected
+    directly. Coordinates are in project length units, and 2D points get a Z of
+    0.0 before the placement is applied.
+
+    The points are those of the polygon the geometry engine approximates the
+    curve with, in the order the curve walks them: a straight segment gives its
+    two ends, and an arc, circle or ellipse is subdivided following the default
+    geometry settings. Polylines, indexed poly curves, trimmed curves, composite
+    curves, circles, ellipses and the IFC4X3 alignment curves are read.
+
+    Example:
+
+    .. code:: python
+
+        axis = file.by_type("IfcGridAxis")[0]
+        points = ifcopenshell.util.placement.get_grid_axis_coordinates(axis)
+        start, end = points[0], points[-1]
+
+    :param axis: The IfcGridAxis entity
+    :raises ValueError: If the axis has no AxisCurve, belongs to no IfcGrid, or
+        its curve is unbounded or can not be interpreted.
+    :return: An (n, 3) numpy array of points
+    """
+    curve = axis.AxisCurve
+    if curve is None:
+        raise ValueError(f"IfcGridAxis #{axis.id()} {axis.AxisTag!r} has no AxisCurve")
+    grids = axis.PartOfU or axis.PartOfV or axis.PartOfW
+    if not grids:
+        raise ValueError(f"IfcGridAxis #{axis.id()} {axis.AxisTag!r} belongs to no IfcGrid")
+
+    W = ifcopenshell.ifcopenshell_wrapper
+    settings = ifcopenshell.geom.settings()
+
+    def sample(item):
+        if isinstance(item, W.loop):
+            points = []
+            tolerance = settings.get("precision")
+            for edge in item.children:
+                segment = sample(edge)
+                if points and np.linalg.norm(np.array(points[-1]) - segment[0]) < tolerance:
+                    segment = segment[1:]
+                points.extend(segment)
+            if item.closed and len(points) > 1 and np.linalg.norm(np.array(points[0]) - points[-1]) > tolerance:
+                points.append(points[0])
+            return points
+        if isinstance(item, W.trimmed_curve):
+            end = 1.0
+        elif isinstance(item, (W.circle, W.ellipse)):
+            end = 2 * np.pi
+        else:
+            raise ValueError(f"IfcGridAxis #{axis.id()} {axis.AxisTag!r} has an unbounded {curve.is_a()} as AxisCurve")
+        count = len(item.to_polygon(settings)) - 1
+        return [item.evaluate(0, end * i / count) for i in range(count + 1)]
+
+    try:
+        item = ifcopenshell.geom.map_shape(settings, curve)
+        if item is None:
+            raise ValueError(f"IfcGridAxis #{axis.id()} {axis.AxisTag!r} has an AxisCurve that can not be interpreted")
+        if isinstance(item, W.function_item):
+            evaluator = W.function_item_evaluator(settings, item)
+            points = [np.array(evaluator.evaluate(u))[:3, 3] for u in evaluator.evaluation_points()]
+        else:
+            points = sample(item)
+    except RuntimeError as error:
+        raise ValueError(
+            f"IfcGridAxis #{axis.id()} {axis.AxisTag!r} has an AxisCurve that can not be interpreted: {error}"
+        ) from error
+
+    local = np.ones((len(points), 4))
+    # map_shape does not respect the "convert-back-units" setting, so we need to apply the unit scale ourselves
+    local[:, :3] = np.array(points) / ifcopenshell.util.unit.calculate_unit_scale(axis.file)
+    matrix = get_placement(grids[0].ObjectPlacement)
+    return (matrix @ local.T).T[:, :3]
 
 
 def rotation(angle: float, axis: Literal["X", "Y", "Z"], is_degrees=True) -> MatrixType:

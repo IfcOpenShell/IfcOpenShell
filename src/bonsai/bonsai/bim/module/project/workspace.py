@@ -102,8 +102,8 @@ class ExploreHotkey(bpy.types.Operator):
     description: bpy.props.StringProperty()
 
     @classmethod
-    def description(cls, context, operator):
-        return operator.description or ""
+    def description(cls, context, properties):
+        return properties.description or ""
 
     def execute(self, context):
         getattr(self, f"hotkey_{self.hotkey}")()

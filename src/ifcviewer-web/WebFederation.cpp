@@ -111,7 +111,7 @@ void WebFederation::applyModelTransformation(int source_id) {
 
     // ModelTransformation::a may be authored in the model's pre-CoordinateOperation
     // frame, so composing needs the model's units and CoordinateOperation. Both
-    // come from the sidecar, which is what makes this work with no IFC present.
+    // come from the .ifcview, which is what makes this work with no IFC present.
     ModelGeoref georef;
     if (!core_.modelGeoref(session_model_id, georef)) return;
 

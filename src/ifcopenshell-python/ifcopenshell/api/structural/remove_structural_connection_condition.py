@@ -17,23 +17,23 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api.structural
 import ifcopenshell.util.element
 
 
 def remove_structural_connection_condition(file: ifcopenshell.file, relation: ifcopenshell.entity_instance) -> None:
-    """Removes a relationship between a connection and a condition
+    """Removes a relationship between a member and a connection
 
-    The condition and the member itself is preserved.
+    The relationship's own AppliedCondition (how the member is attached to
+    the connection, such as a release) is removed with it unless something
+    else uses it, as :func:`remove_structural_boundary_condition` does for a
+    connection. The member, the connection and the connection's own
+    AppliedCondition (its support) are preserved.
 
     :param relation: The IfcRelConnectsStructuralMember to remove.
     :return: None
     """
-    if relation.AppliedCondition:
-        ifcopenshell.api.structural.remove_structural_boundary_condition(
-            file,
-            connection=relation.RelatedStructuralConnection,
-        )
+    if (condition := relation.AppliedCondition) and file.get_total_inverses(condition) == 1:
+        file.remove(condition)
     history = relation.OwnerHistory
     file.remove(relation)
     if history:

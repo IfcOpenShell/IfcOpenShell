@@ -40,6 +40,7 @@ Presently, this API supports:
     4. Explicit definition of stationing, including station equations and reverse (decreasing) stationing
     5. Automatic definition of alignment transition point referents
     6. Utility functions for printing business logical and geometric representations, as well as minimal geometry evaluations
+    7. Replacing a layout's segments while keeping the GlobalIds of those that correspond (update_layout_segments)
 
 Future versions of this API may support:
     1. Defining alignments using the PI method, including transition spirals
@@ -95,6 +96,7 @@ from .update_alignment_parameter_segment_tags import update_alignment_parameter_
 from .update_end_point import update_end_point
 from .update_fallback_position import update_fallback_position
 from .update_key_point_referents import update_key_point_referents
+from .update_layout_segments import update_layout_segments
 from .util import *
 
 __all__ = [
@@ -140,4 +142,5 @@ __all__ = [
     "update_end_point",
     "update_fallback_position",
     "update_key_point_referents",
+    "update_layout_segments",
 ]

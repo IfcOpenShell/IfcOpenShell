@@ -42,6 +42,13 @@ class TestListCommand:
 
 
 class TestDocsCommand:
+    def test_search(self):
+        stdout, stderr, rc = run_ifcedit("search", "remove product", "--limit", "2")
+        assert rc == 0
+        data = json.loads(stdout)
+        assert len(data) == 2
+        assert data[0]["function"] == "root.remove_product"
+
     def test_docs_create_entity(self):
         stdout, stderr, rc = run_ifcedit("docs", "root.create_entity")
         assert rc == 0

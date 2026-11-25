@@ -377,7 +377,6 @@ class PolylineDecorator(tool.Blender.ViewportDecorator):
     # __init_subclass__ validation passes; the override install below
     # conditionally registers up to four more handlers based on ui_only.
     draw_methods = (("draw_input_ui", "POST_PIXEL"),)
-    event = None
     input_type = None
     input_ui = None
     angle_snap_mat = None
@@ -388,6 +387,7 @@ class PolylineDecorator(tool.Blender.ViewportDecorator):
     tool_state = None
     relating_type = None
     polyline_points = None
+    mouse_pos = None
 
     @classmethod
     def install(cls, context, ui_only=False):
@@ -420,7 +420,7 @@ class PolylineDecorator(tool.Blender.ViewportDecorator):
         input_ui: tool.Polyline.PolylineUI,
         snapping_point: Vector,
     ) -> None:
-        cls.event = event
+        cls.mouse_pos = (int(event.mouse_region_x), int(event.mouse_region_y))
         cls.tool_state = tool_state
         cls.input_ui = input_ui
 
@@ -503,11 +503,9 @@ class PolylineDecorator(tool.Blender.ViewportDecorator):
             "Z": "Z coord:",
             "AREA": "Area:",
         }
-        try:
-            assert self.event
-            mouse_pos = self.event.mouse_region_x, self.event.mouse_region_y
-        except:
-            mouse_pos = (None, None)
+        mouse_pos = 0, 0
+        if self.mouse_pos:
+            mouse_pos = self.mouse_pos[0], self.mouse_pos[1]
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
@@ -627,7 +625,7 @@ class PolylineDecorator(tool.Blender.ViewportDecorator):
 
         # Length
         if self.measure_type in {"POLYLINE", "POLY_AREA"}:
-            if len(polyline_verts) < 3:
+            if len(polyline_verts) < 2:
                 blf.disable(self.font_id, blf.SHADOW)
                 return
             total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
@@ -1554,16 +1552,16 @@ class ProductDecorator(tool.Blender.ViewportDecorator):
             axis_side = axes["side"]
             point_on_base_axis = tool.Cad.point_on_edge(mouse_point, axis_base)
             point_on_side_axis = tool.Cad.point_on_edge(mouse_point, axis_side)
+            rot_mat = snap_obj.matrix_world.to_quaternion().to_matrix().to_4x4()
             if (point_on_base_axis - mouse_point).length_squared <= (point_on_side_axis - mouse_point).length_squared:
                 # mouse is snapped to the base axis, the preview looks exactly like the placed door / window
-                rot_mat = snap_obj.matrix_world
+                mouse_point.x = point_on_base_axis.x
+                mouse_point.y = point_on_base_axis.y
             else:
                 # mouse is snapped to the side axis, the preview is inverted, rotate it now and correct x position later
-                rot_mat = (
-                    (snap_obj.matrix_world.to_quaternion() @ Quaternion(Vector((0, 0, 1)), radians(180)))
-                    .to_matrix()
-                    .to_4x4()
-                )
+                rot_mat = rot_mat @ Matrix.Rotation(radians(180), 4, "Z")
+                mouse_point.x = point_on_side_axis.x
+                mouse_point.y = point_on_side_axis.y
 
             mouse_point.z = snap_obj.matrix_world.translation.z
 
@@ -2888,39 +2886,48 @@ class GpuSnapDecorator(tool.Blender.ViewportDecorator):
 
     request: dict[str, Any] = {"mouse_x": 0, "mouse_y": 0, "objs_to_raycast": []}
     cache: tuple[list[dict], bpy.types.Object | None, list[dict]] | None = None
+    cache_key: tuple[int, int] | None = None
     detection: Any = None
-    event: Any = None
 
     @classmethod
-    def install(cls, context: bpy.types.Context, event=None, detection=None) -> None:
+    def install(cls, context: bpy.types.Context, detection=None) -> None:
         if detection is not None:
             cls.detection = detection
-        cls.event = event
         cls.request = {"mouse_x": 0, "mouse_y": 0, "objs_to_raycast": []}
         cls.cache = None
+        cls.cache_key = None
         super().install(context)
 
     @classmethod
     def uninstall(cls) -> None:
         cls.cache = None
-        cls.event = None
+        cls.cache_key = None
         super().uninstall()
 
     @classmethod
     def set_request(cls, event, objs_to_raycast: list[bpy.types.Object]) -> None:
-        cls.event = event
         cls.request["mouse_x"] = int(event.mouse_region_x)
         cls.request["mouse_y"] = int(event.mouse_region_y)
         cls.request["objs_to_raycast"] = objs_to_raycast
 
     @classmethod
-    def get_cache(cls) -> tuple[list[dict], bpy.types.Object | None, list[dict]] | None:
+    def get_cache(cls, event=None) -> tuple[list[dict], bpy.types.Object | None, list[dict]] | None:
+        """Return the cached detection result.
+
+        When *event* is given, a result computed for a different cursor
+        position is treated as a miss, so callers never act on stale snaps.
+        """
+        if event is not None and cls.cache_key != (int(event.mouse_region_x), int(event.mouse_region_y)):
+            return None
         return cls.cache
 
     def draw(self, context: bpy.types.Context) -> None:
         cls = type(self)
-        if cls.detection is None or cls.event is None or not cls.request["objs_to_raycast"]:
+        if cls.detection is None or not cls.request["objs_to_raycast"]:
             cls.cache = None
+            cls.cache_key = None
+
             return
 
-        cls.cache = cls.detection(context, cls.event, cls.request)
+        cls.cache = cls.detection(context, cls.request)
+        cls.cache_key = (cls.request["mouse_x"], cls.request["mouse_y"])

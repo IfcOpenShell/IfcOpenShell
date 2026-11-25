@@ -73,7 +73,7 @@ def _run_merge(wall1, wall2, element1, element2, opening_matrices, captured_edit
     is appended to whenever ``edit_object_placement`` fires."""
     from bonsai.bim.module.model.wall import DumbWallJoiner
 
-    def fake_get_local_placement(placement):
+    def fake_get_placement(placement, should_return_si=False):
         for rel in element2.HasOpenings:
             if rel.RelatedOpeningElement.ObjectPlacement is placement:
                 return opening_matrices[rel.RelatedOpeningElement.id()]
@@ -106,8 +106,8 @@ def _run_merge(wall1, wall2, element1, element2, opening_matrices, captured_edit
             side_effect=lambda elem: (p1, p2) if elem is element1 else (p3, p4),
         ),
         patch(
-            "bonsai.bim.module.model.wall.ifcopenshell.util.placement.get_local_placement",
-            side_effect=fake_get_local_placement,
+            "bonsai.bim.module.model.wall.ifcopenshell.util.placement.get_placement",
+            side_effect=fake_get_placement,
         ),
         patch(
             "bonsai.bim.module.model.wall.ifcopenshell.api.geometry.edit_object_placement",
@@ -251,7 +251,7 @@ def test_merge_skips_non_path_connection_rels():
             side_effect=lambda elem: (p1, p2) if elem is element1 else (p3, p4),
         ),
         patch(
-            "bonsai.bim.module.model.wall.ifcopenshell.util.placement.get_local_placement",
+            "bonsai.bim.module.model.wall.ifcopenshell.util.placement.get_placement",
             return_value=np.eye(4),
         ),
         patch(

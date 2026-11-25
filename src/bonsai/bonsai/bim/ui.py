@@ -52,10 +52,12 @@ if TYPE_CHECKING:
 
 
 class IFCFileSelector:
-    layout: bpy.types.UILayout
-
     # Avoid overriding blender prop annotations at runtime.
     if TYPE_CHECKING:
+
+        @property
+        def layout(self) -> bpy.types.UILayout | None: ...
+
         filepath: str
         use_relative_path: bool
 
@@ -339,6 +341,14 @@ class DocPreferences(bpy.types.PropertyGroup):
         default="Blender Default",
         name="Default Shading Style",
     )
+    metadata_default: StringProperty(
+        default="",
+        name="Default Metadata",
+        description=(
+            "Written to EPset_Drawing.Metadata on new drawings. Comma separated list of selector expressions "
+            "evaluated for each drawing element and added to its 'class' attribute, for use in CSS.\nEx: Name, id"
+        ),
+    )
     drawing_font: StringProperty(
         default="OpenGost Type B TT.ttf",
         name="Drawing Font",
@@ -378,6 +388,7 @@ class DocPreferences(bpy.types.PropertyGroup):
         patterns_path: str
         shadingstyles_path: str
         shadingstyle_default: str
+        metadata_default: str
         drawing_font: str
         magic_font_scale: float
         imperial_precision: str
@@ -832,6 +843,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(dprops, "patterns_path")
         layout.prop(dprops, "shadingstyles_path")
         layout.prop(dprops, "shadingstyle_default")
+        layout.prop(dprops, "metadata_default")
         row = layout.row()
         row.prop(dprops, "drawing_font")
         row.prop(dprops, "magic_font_scale")
@@ -1714,6 +1726,27 @@ class BIM_PT_tab_misc(Panel):
         pass
 
 
+class BIM_PT_tab_object_structural(Panel):
+    bl_idname = "BIM_PT_tab_object_structural"
+    bl_label = "Structural"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+    bl_options = {"DEFAULT_CLOSED"}
+    bim_tab_name = "OBJECT"
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) or not tool.Ifc.get():
+            return False
+        element = tool.Ifc.get_entity(context.active_object) if context.active_object else None
+        return bool(element and element.is_a("IfcStructuralItem"))
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_tab_handover(Panel):
     bl_idname = "BIM_PT_tab_handover"
     bl_label = "Handover"
@@ -2011,6 +2044,8 @@ class BIM_PT_decorators_overlay(Panel):
         row = col.row(align=True)
         row.prop(model_props, "show_bounding_box", text="Bounding Box Dimensions")
         row = col.row(align=True)
+        row.prop(tool.Structural.get_structural_props(), "show_loads", text="Structural Loads")
+        row = col.row(align=True)
         row.prop(model_props, "show_cut_decorator", text="Cut Decorator")
         row.prop(model_props, "show_cut_decorator_fill", text="Fill Cut Decorator")
         clip_box_props = tool.ClipBox.get_scene_props(context.scene)
@@ -2050,4 +2085,4 @@ class BIM_PT_snappping(Panel):
         row.prop(groups, "measure", toggle=True)
         layout.separator()
         row = layout.row(align=True)
-        row.prop(prop, "use_gpu_snapping", toggle=True)
+        row.prop(groups, "use_gpu_snapping", toggle=True)

@@ -31,6 +31,10 @@ import ifcopenshell
 import ifcopenshell.api.owner.settings
 import ifcopenshell.api.project
 
+requires_ifc4x3 = pytest.mark.skipif(
+    "IFC4X3_ADD2" not in ifcopenshell.ifcopenshell_wrapper.schema_names(), reason="IFC4X3 not available"
+)
+
 
 class IFC4X3:
     @pytest.fixture(autouse=True)
