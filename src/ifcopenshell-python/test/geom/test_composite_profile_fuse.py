@@ -1,6 +1,7 @@
 # This file was generated with the assistance of an AI coding tool.
 
 import collections
+import os
 
 import pytest
 
@@ -61,3 +62,23 @@ def test_opening_through_a_composite_profile_of_touching_layers_leaves_a_closed_
     )
     removed = hole_length * (hole_height * layers[-1][1] + (strip[1] - strip[0]) * (strip[3] - strip[2]))
     assert ifcopenshell.util.shape.get_volume(geometry) == pytest.approx(solid - removed, rel=1e-6)
+
+
+def test_a_scaled_derived_profile_touching_a_mirrored_profile_extrudes_into_closed_solids():
+    # The T profile of this composite is scaled by a derived profile, which converts it onto a
+    # B-spline surface, and its web tip touches the leg of a mirrored L profile. The fuse
+    # connects the two faces without unifying them, and extruding both leaves a side face
+    # shared by two solids. Such profiles must be extruded one by one, as closed solids.
+    path = os.path.join(os.path.dirname(__file__), "../../../../test/input/IfcCompositeProfileDef.ifc")
+    model = ifcopenshell.open(path)
+    settings = ifcopenshell.geom.settings()
+    settings.set("weld-vertices", True)
+    geometry = ifcopenshell.geom.create_shape(settings, model.by_id(66), geometry_library="opencascade").geometry
+
+    faces = geometry.faces
+    edges = collections.Counter()
+    for a, b, c in zip(faces[0::3], faces[1::3], faces[2::3]):
+        for p, q in ((a, b), (b, c), (c, a)):
+            edges[(min(p, q), max(p, q))] += 1
+    assert all(count == 2 for count in edges.values())
+    assert ifcopenshell.util.shape.get_volume(geometry) == pytest.approx(2.6537e-05, rel=1e-3)
