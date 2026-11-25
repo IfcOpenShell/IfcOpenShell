@@ -2448,6 +2448,9 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         # So leaving edit mode can tell an untouched profile from an edited one
         assert isinstance(mesh := obj.data, bpy.types.Mesh)
         tool.Geometry.get_mesh_props(mesh).mesh_checksum = tool.Geometry.get_mesh_checksum(mesh)
+        if item.is_a("IfcSweptAreaSolid"):
+            # So leaving edit mode can tell a moved profile from a reshaped one
+            mesh["bbim_profile_co"] = [c for v in mesh.vertices for c in v.co]
         return "PROFILE"
 
     def enable_edit_mode(self, context: bpy.types.Context) -> Union[None, set[str]]:
@@ -2621,7 +2624,19 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
 
         ProfileDecorator.uninstall()
 
+        # A profile moved as a whole moves its item, as the export only keeps the profile's 2D shape
+        is_moved = False
+        for obj in changed_objs.copy():
+            if move := self.move_item_with_profile(obj):
+                is_moved = True
+                if move == "WHOLE":
+                    changed_objs.remove(obj)
+                    unchanged_objs.append(obj)
+        if is_moved:
+            tool.Geometry.sync_item_positions()
+
         for obj in unchanged_objs:
+            obj.data.pop("bbim_profile_co", None)
             item = tool.Geometry.get_active_representation(obj)
             assert item
             if not tool.Geometry.is_meshlike_item(item):
@@ -2643,6 +2658,41 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             self.reenter_edit_mode(context, failed_objs)
             return False
         return True
+
+    def move_item_with_profile(self, obj: bpy.types.Object) -> Union[Literal["WHOLE", "OFFSET"], None]:
+        """Move an extrusion's item when its profile was moved, instead of baking the move into the profile.
+
+        If every vertex moved by the same amount, the whole move goes to the item, and the profile's shape is
+        unchanged. Otherwise, only the profile's average offset out of its plane goes to the item.
+        Moves ``obj`` and its mesh; call ``tool.Geometry.sync_item_positions`` afterwards.
+
+        :return: "WHOLE" if the profile only moved, "OFFSET" if it was also reshaped, or ``None`` if the item
+            doesn't move.
+        """
+        assert isinstance(mesh := obj.data, bpy.types.Mesh)
+        original = mesh.get("bbim_profile_co")
+        if original is not None:
+            del mesh["bbim_profile_co"]
+        item = tool.Geometry.get_active_representation(obj)
+        if not (item and item.is_a("IfcSweptAreaSolid")) or not mesh.vertices:
+            return None
+        co = np.empty(len(mesh.vertices) * 3)
+        mesh.vertices.foreach_get("co", co)
+        co = co.reshape(-1, 3)
+
+        is_whole = False
+        if original is not None and len(original) == co.size:
+            deltas = co - np.array(original).reshape(-1, 3)
+            offset = deltas.mean(axis=0)
+            is_whole = np.allclose(deltas, offset, atol=1e-5)
+        if not is_whole:
+            offset = np.array([0.0, 0.0, co[:, 2].mean()])
+        if np.allclose(offset, 0.0, atol=1e-7):
+            return None
+
+        mesh.transform(Matrix.Translation(-Vector(offset)))
+        obj.matrix_world = obj.matrix_world @ Matrix.Translation(Vector(offset))
+        return "WHOLE" if is_whole else "OFFSET"
 
     def is_unchanged_item_edit(self, obj: bpy.types.Object) -> bool:
         """Compare against the checksum taken when the item entered edit mode."""
