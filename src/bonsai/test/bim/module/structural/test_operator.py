@@ -358,6 +358,77 @@ class TestApplyStructuralLoadAxes(NewFile):
         assert activity.AppliedLoad.PlanarForceZ == -3.0
         assert not activity.AppliedLoad.Name.endswith(" local")
 
+    def test_a_line_load_per_projected_length(self):
+        ifc, member = self.make_item("IfcStructuralCurveMember")
+        bpy.ops.bim.apply_structural_load(load_group="0", projected=True, z=-2.0)
+        activity = self.get_activity(member)
+        assert activity.ProjectedOrTrue == "PROJECTED_LENGTH"
+        assert activity.GlobalOrLocal == "GLOBAL_COORDS"
+        assert activity.AppliedLoad.Name.endswith(" projected")
+
+    def test_a_line_load_per_true_length_by_default(self):
+        ifc, member = self.make_item("IfcStructuralCurveMember")
+        bpy.ops.bim.apply_structural_load(load_group="0", z=-2.0)
+        assert self.get_activity(member).ProjectedOrTrue is None
+
+    def test_a_local_line_load_is_per_true_length(self):
+        # IFC allows a load per projected length in global axes only.
+        ifc, member = self.make_item("IfcStructuralCurveMember")
+        bpy.ops.bim.apply_structural_load(load_group="0", axes="LOCAL_COORDS", projected=True, z=-2.0)
+        activity = self.get_activity(member)
+        assert activity.ProjectedOrTrue is None
+        assert activity.AppliedLoad.Name.endswith(" local")
+
+    def test_an_area_load_per_projected_area(self):
+        ifc, surface = self.make_item("IfcStructuralSurfaceMember")
+        bpy.ops.bim.apply_structural_load(load_group="0", projected=True, z=-2.0)
+        activity = self.get_activity(surface)
+        assert activity.ProjectedOrTrue == "PROJECTED_LENGTH"
+        assert activity.GlobalOrLocal == "GLOBAL_COORDS"
+        assert activity.AppliedLoad.Name.endswith(" projected")
+
+    def test_a_local_area_load_is_per_true_area(self):
+        ifc, surface = self.make_item("IfcStructuralSurfaceMember")
+        bpy.ops.bim.apply_structural_load(load_group="0", axes="LOCAL_COORDS", projected=True, z=-2.0)
+        activity = self.get_activity(surface)
+        assert activity.ProjectedOrTrue is None
+        assert activity.AppliedLoad.Name.endswith(" local")
+
+    def test_a_point_load_is_never_projected(self):
+        ifc, point = self.make_item("IfcStructuralPointConnection")
+        bpy.ops.bim.apply_structural_load(load_group="0", projected=True, z=-2.0)
+        assert not self.get_activity(point).AppliedLoad.Name.endswith(" projected")
+
+    def edit_activity(self, activity, **values):
+        case = str(ifcopenshell.util.structural.get_activity_load_cases(activity)[0].id())
+        bpy.ops.bim.edit_structural_load_values(
+            activity=activity.id(), load_group=case, initial_load_group=case, **values
+        )
+
+    def test_editing_a_load_to_per_true_length(self):
+        ifc, member = self.make_item("IfcStructuralCurveMember")
+        bpy.ops.bim.apply_structural_load(load_group="0", projected=True, z=-2.0)
+        activity = self.get_activity(member)
+        self.edit_activity(activity, projected=False, z=-3.0)
+        assert activity.ProjectedOrTrue == "TRUE_LENGTH"
+        assert not activity.AppliedLoad.Name.endswith(" projected")
+
+    def test_editing_a_load_to_per_projected_length(self):
+        ifc, member = self.make_item("IfcStructuralCurveMember")
+        bpy.ops.bim.apply_structural_load(load_group="0", z=-2.0)
+        activity = self.get_activity(member)
+        self.edit_activity(activity, projected=True, z=-2.0)
+        assert activity.ProjectedOrTrue == "PROJECTED_LENGTH"
+        assert activity.AppliedLoad.Name.endswith(" projected")
+
+    def test_editing_a_projected_load_into_local_axes(self):
+        ifc, member = self.make_item("IfcStructuralCurveMember")
+        bpy.ops.bim.apply_structural_load(load_group="0", projected=True, z=-2.0)
+        activity = self.get_activity(member)
+        self.edit_activity(activity, axes="LOCAL_COORDS", projected=True, z=-2.0)
+        assert activity.GlobalOrLocal == "LOCAL_COORDS"
+        assert activity.ProjectedOrTrue == "TRUE_LENGTH"
+
 
 class TestApplyingAChosenLoad(NewFile):
     def setup_points(self):

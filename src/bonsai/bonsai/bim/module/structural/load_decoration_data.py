@@ -377,7 +377,9 @@ class ShaderInfo:
             if len(activity_list) == 0:
                 continue
             rotation = self.get_surface_member_rotation(surf)
-            values = self.get_planar_loads_values(activity_list, rotation)
+            # Loads all per projected area are drawn as given, and labelled so; others are added per true area.
+            projected = all(ifcopenshell.util.structural.is_projected(a) for a, _ in activity_list)
+            values = self.get_planar_loads_values(activity_list, rotation, per_true_area=not projected)
             if maximum == 0:
                 maximum = max([abs(float(i)) for i in values])
                 if maximum == 0:
@@ -422,7 +424,7 @@ class ShaderInfo:
             self.text_info.append(
                 {
                     "position": mat @ center - Vector((orientation @ values) * 0.2 / maximum),
-                    "text": f"{values[2]:.5f} {self.planar_force_unit}",
+                    "text": f"{values[2]:.5f} {self.planar_force_unit}{' projected' if projected else ''}",
                 }
             )
 
@@ -436,11 +438,16 @@ class ShaderInfo:
             )
 
     def get_planar_loads_values(
-        self, activity_list: list[tuple[ifcopenshell.entity_instance, float]], element_rotation_matrix: np.ndarray
+        self,
+        activity_list: list[tuple[ifcopenshell.entity_instance, float]],
+        element_rotation_matrix: np.ndarray,
+        per_true_area: bool = True,
     ) -> np.ndarray:
         """
         returns a numpy array with the sum of the values of structural activities
         applied loads in each direction, multiplied by the factors in load combinations
+        per_true_area: whether forces given per projected area are turned into forces per true area of the member,
+                       as they must be to be added to others; otherwise they are as given
         """
         values = np.zeros(3)
         for item in activity_list:
@@ -453,6 +460,10 @@ class ShaderInfo:
                 temp[1] = load.PlanarForceY if load.PlanarForceY is not None else 0
                 temp[2] = load.PlanarForceZ if load.PlanarForceZ is not None else 0
             temp = temp * factor
+            if per_true_area:
+                temp *= ifcopenshell.util.structural.get_true_length_factor(
+                    activity, temp, element_rotation_matrix[:, 2]
+                )
             transform = self.get_activity_transform_matrix(activity, element_rotation_matrix)
             values += transform @ temp
         return values
@@ -974,6 +985,8 @@ class ShaderInfo:
                 ),
             }
             match_dict = {"fx": x_match or is_local, "fy": y_match, "fz": z_match}
+            # Loads drawn on their own are drawn as given, and those per projected length are labelled so.
+            unit_suffixes = {}
             member_length = Vector(end_co - start_co).length
             processed_loads = self.process_total_linear_loads(activity_list, rotation, member_length)
             linear_loads = processed_loads["linear loads"]
@@ -987,7 +1000,8 @@ class ShaderInfo:
                 keys = keys[3:]
                 maxforce = max([maxforce] + [self.get_largest_load(linear_loads[key]) for key in keys])
                 for i, item in enumerate(activity_list):
-                    own = self.process_total_linear_loads([item], rotation, member_length)
+                    own = self.process_total_linear_loads([item], rotation, member_length, per_true_length=False)
+                    suffix = " projected" if ifcopenshell.util.structural.is_projected(item[0]) else ""
                     if (own_loads := own["linear loads"]) is None:
                         continue
                     if not (resolved := self.resolve_linear_forces(own_loads)):
@@ -997,6 +1011,7 @@ class ShaderInfo:
                             linear_loads[key] = own_loads[base]
                             maxforce = max(maxforce, self.get_largest_load(own_loads[base]))
                             direction_dict[key], match_dict[key] = direction_dict[base], match_dict[base]
+                            unit_suffixes[key] = suffix
                             keys.append(key)
                         continue
                     direction, resultant, largest = resolved
@@ -1009,6 +1024,7 @@ class ShaderInfo:
                     linear_loads[key] = resultant
                     direction_dict[key] = y_axis + z_axis if axial else direction
                     match_dict[key] = axial
+                    unit_suffixes[key] = suffix
                     maxforce = max(maxforce, largest)
                     keys.append(key)
             point_loads = processed_loads["discrete loads"]
@@ -1039,7 +1055,7 @@ class ShaderInfo:
                     color_axis = (0, 1, 0, 1)
 
                 if "f" in key:
-                    unit = self.linear_force_unit
+                    unit = self.linear_force_unit + unit_suffixes.get(key, "")
                     if match_dict[key]:
                         shader = self.shader.new("PARALLEL DISTRIBUTED FORCE")
                     else:
@@ -1280,12 +1296,14 @@ class ShaderInfo:
         activity_list: list[tuple[ifcopenshell.entity_instance, float]],
         element_rotation_matrix: np.ndarray,
         member_length: float,
+        per_true_length: bool = True,
     ) -> ProcessedLoad:
         """returns a dict with total values for applied loads in each direction
         along with the maximum value for the loads in the member and the discrete loads applied
 
+        per_true_length: as for parse_linear_loads_to_dict
         """
-        loads_dict = self.parse_linear_loads_to_dict(activity_list, element_rotation_matrix)
+        loads_dict = self.parse_linear_loads_to_dict(activity_list, element_rotation_matrix, per_true_length)
         const = loads_dict["constant force"]
         quad = loads_dict["quadratic force"]
         sinus = loads_dict["sinus force"]
@@ -1435,10 +1453,15 @@ class ShaderInfo:
         return return_value
 
     def parse_linear_loads_to_dict(
-        self, activity_list: list[tuple[ifcopenshell.entity_instance, float]], element_rotation_matrix: np.ndarray
+        self,
+        activity_list: list[tuple[ifcopenshell.entity_instance, float]],
+        element_rotation_matrix: np.ndarray,
+        per_true_length: bool = True,
     ) -> ParsedLoad:
         """
         get load list
+        per_true_length: whether forces given per projected length are turned into forces per true length of the
+                        member, as they must be to be added to others; otherwise they are as given
         activity_list: list of IfcStructuralCurveAction or IfcStructuralCurveReaction
                         applied in the structural curve member
         global_to_local: transformation matrix from global coordinates to local coordinetes
@@ -1473,12 +1496,16 @@ class ShaderInfo:
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get(), "LENGTHUNIT")
 
-        def get_load_values(load, transform_matrix, factor=1.0):
+        def get_load_values(load, transform_matrix, factor=1.0, activity=None):
             result = np.zeros(6)
             keys = ["LinearForceX", "LinearForceY", "LinearForceZ", "LinearMomentX", "LinearMomentY", "LinearMomentZ"]
             for i, key in enumerate(keys):
                 value = 0 if getattr(load, key, 0) is None else getattr(load, key, 0)
                 result[i] += value * factor
+            if activity is not None and per_true_length:
+                result[:3] *= ifcopenshell.util.structural.get_true_length_factor(
+                    activity, result[:3], element_rotation_matrix[:, 0]
+                )
             return transform_matrix @ result
 
         for item in activity_list:
@@ -1497,7 +1524,7 @@ class ShaderInfo:
                 values = [l for l in getattr(load, "Values", None) if l.is_a() == "IfcStructuralLoadLinearForce"]
                 config_list = []
                 for i, l in enumerate(values):
-                    load_values = get_load_values(l, transform_6by6, factor)
+                    load_values = get_load_values(l, transform_6by6, factor, activity)
                     if i == 0:
                         descr = "start"
                     elif i == len(values) - 1:
@@ -1523,7 +1550,7 @@ class ShaderInfo:
                 point_load_configurations.append(config_list)
 
             else:
-                load_values = get_load_values(load, transform_6by6, factor)
+                load_values = get_load_values(load, transform_6by6, factor, activity)
                 if "CONST" == getattr(activity, "PredefinedType", None) or activity.is_a("IfcStructuralLinearAction"):
                     constant += load_values
                 elif "PARABOLA" == getattr(activity, "PredefinedType", None):

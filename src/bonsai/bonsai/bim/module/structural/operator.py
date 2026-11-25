@@ -1133,7 +1133,7 @@ _NUMBER = r"-?[\d.]+(?:e[-+]?\d+)?"
 _DIRECTION = r"(?: (?:up|down)-(?:left|right))?"
 DEFAULT_LOAD_NAME = re.compile(
     rf"^(?:{_NUMBER} \S+ at {_NUMBER} deg{_DIRECTION}|{_NUMBER} \S+ at {_NUMBER}:{_NUMBER}{_DIRECTION}"
-    rf"|(?:[XYZ] {_NUMBER}(?:, [XYZ] {_NUMBER})*|0) \S+(?: local)?)$"
+    rf"|(?:[XYZ] {_NUMBER}(?:, [XYZ] {_NUMBER})*|0) \S+(?: local| projected)?)$"
 )
 
 
@@ -1150,6 +1150,17 @@ def get_force_components(props: "StructuralForceInput") -> tuple[float, float, f
 def has_local_axes(category: Union[str, None]) -> bool:
     """Whether a force on this kind of item can be given in the item's own axes: a member's"""
     return category in ("IfcStructuralCurveMember", "IfcStructuralSurfaceMember")
+
+
+def can_be_projected(category: Union[str, None]) -> bool:
+    """Whether a force on this kind of item can be given per projected length or area: a line load's, on a curve
+    member, or an area load's, on a surface member"""
+    return category in ("IfcStructuralCurveMember", "IfcStructuralSurfaceMember")
+
+
+def is_projected(props: "StructuralForceInput", category: Union[str, None]) -> bool:
+    """Whether the force in a dialog is given per projected length or area. IFC allows it only in global axes."""
+    return can_be_projected(category) and props.axes == "GLOBAL_COORDS" and props.projected
 
 
 def get_load_unit_symbol(category: str) -> str:
@@ -1174,8 +1185,13 @@ def get_load_unit_symbol(category: str) -> str:
 def get_default_load_name(props: "StructuralForceInput", category: str) -> str:
     unit = get_load_unit_symbol(category)
     values = [f"{axis} {value:g}" for axis, value in zip("XYZ", get_force_components(props)) if value]
-    local = " local" if has_local_axes(category) and props.axes == "LOCAL_COORDS" else ""
-    return f"{', '.join(values) or '0'} {unit}{local}"
+    if has_local_axes(category) and props.axes == "LOCAL_COORDS":
+        suffix = " local"
+    elif is_projected(props, category):
+        suffix = " projected"
+    else:
+        suffix = ""
+    return f"{', '.join(values) or '0'} {unit}{suffix}"
 
 
 def get_load_attributes(
@@ -1229,6 +1245,13 @@ class StructuralForceInput:
         ],
         update=update_force_inputs,
     )
+    projected: bpy.props.BoolProperty(
+        name="Per Projected Length",
+        description="Give the load per length or area of the member projected across its direction, as snow on a "
+        "rafter or a pitched roof is given per horizontal length or plan area, instead of per true length or area "
+        "of the member. Global axes only",
+        update=update_force_inputs,
+    )
     x: bpy.props.FloatProperty(name="X", update=update_force_inputs)
     y: bpy.props.FloatProperty(name="Y", update=update_force_inputs)
     z: bpy.props.FloatProperty(name="Z", update=update_force_inputs)
@@ -1256,6 +1279,9 @@ class StructuralForceInput:
             layout.row().prop(self, "axes", expand=True)
             if self.axes == "LOCAL_COORDS" and category == "IfcStructuralSurfaceMember":
                 layout.label(text="Z is normal to the surface", icon="ORIENTATION_NORMAL")
+        if can_be_projected(category) and self.axes == "GLOBAL_COORDS":
+            text = "Per Projected Area" if category == "IfcStructuralSurfaceMember" else "Per Projected Length"
+            layout.prop(self, "projected", text=text)
         for prop in ("x", "y", "z"):
             layout.prop(self, prop)
         if category in ("IfcStructuralPointConnection", "IfcStructuralCurveMember"):
@@ -1266,6 +1292,25 @@ class StructuralForceInput:
     def get_global_or_local(self, category: str) -> str:
         """The GlobalOrLocal of the activities applying the force"""
         return self.axes if has_local_axes(category) else "GLOBAL_COORDS"
+
+    def get_projected_or_true(self, category: str) -> Union[str, None]:
+        """The ProjectedOrTrue of the activities applying the force, or None for a load that has none"""
+        if not can_be_projected(category):
+            return None
+        return "PROJECTED_LENGTH" if is_projected(self, category) else "TRUE_LENGTH"
+
+    def get_activity_attributes(self, activity: ifcopenshell.entity_instance, category: str) -> dict[str, str]:
+        """The axes and ProjectedOrTrue of the dialog that an activity applying the force does not have yet. Per true
+        length or area is how an activity without a ProjectedOrTrue is read, so it is given one only in place of
+        PROJECTED_LENGTH: activities that never had one keep none."""
+        attributes = {}
+        if activity.GlobalOrLocal != (global_or_local := self.get_global_or_local(category)):
+            attributes["GlobalOrLocal"] = global_or_local
+        if projected_or_true := self.get_projected_or_true(category):
+            current = getattr(activity, "ProjectedOrTrue", None)
+            if current != projected_or_true and not (projected_or_true == "TRUE_LENGTH" and current is None):
+                attributes["ProjectedOrTrue"] = projected_or_true
+        return attributes
 
     def get_load_name(self, category: str) -> str:
         return self.load_name or self.get_default_load_name(category)
@@ -1383,6 +1428,8 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
                 applied_load=load,
                 structural_member=element,
                 global_or_local=self.get_global_or_local(category),
+                # Per true length or area is how one without is read.
+                projected_or_true="PROJECTED_LENGTH" if is_projected(self, category) else None,
             )
             for element in elements
         ]
@@ -1476,6 +1523,7 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         )
         users = self.get_users()
         self.axes = "LOCAL_COORDS" if users and users[0].GlobalOrLocal == "LOCAL_COORDS" else "GLOBAL_COORDS"
+        self.projected = bool(users) and ifcopenshell.util.structural.is_projected(users[0])
         self.load_name = load.Name or ""
         if activities := self.get_movable_activities():
             groups = get_activity_load_groups(activities[0])
@@ -1505,6 +1553,11 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         self.draw_force_inputs(layout, category)
         if has_local_axes(category) and len({u.GlobalOrLocal for u in users}) > 1:
             layout.label(text="Its applied loads use different axes: all will use these", icon="ERROR")
+        if can_be_projected(category) and len({ifcopenshell.util.structural.is_projected(u) for u in users}) > 1:
+            layout.label(
+                text="Only some of its applied loads are per projected length or area: all will be alike",
+                icon="ERROR",
+            )
 
     def cancel(self, context):
         clear_load_preview(context)
@@ -1515,12 +1568,9 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         category = get_load_category(load)
         ifc_file = tool.Ifc.get()
         # The axes first: they decide whether the model's axes apply to the values.
-        global_or_local = self.get_global_or_local(category)
         for activity in self.get_users():
-            if activity.GlobalOrLocal != global_or_local:
-                ifcopenshell.api.attribute.edit_attributes(
-                    ifc_file, product=activity, attributes={"GlobalOrLocal": global_or_local}
-                )
+            if attributes := self.get_activity_attributes(activity, category):
+                ifcopenshell.api.structural.edit_structural_activity(ifc_file, activity=activity, attributes=attributes)
         attributes = self.get_load_attributes(category, load)
         attributes["Name"] = self.get_load_name(category)
         ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
