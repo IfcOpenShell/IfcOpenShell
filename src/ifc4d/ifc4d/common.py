@@ -400,7 +400,6 @@ class ScheduleIfcGenerator:
         exactly. Users may recalculate later if needed.
         """
         date = ifcopenshell.util.date.datetime2ifc
-        hours_per_day = float(calendar["HoursPerDay"] or 8)
 
         task_time.ScheduleStart = date(activity["StartDate"], "IfcDateTime")
         task_time.ScheduleFinish = date(activity["FinishDate"], "IfcDateTime")
@@ -420,14 +419,14 @@ class ScheduleIfcGenerator:
             if value is not None:
                 setattr(task_time, attribute, date(value, "IfcDateTime"))
 
-        # P6 states float in hours against the activity's own calendar, so the
-        # calendar is consulted for nothing more than that conversion.
+        # P6 states float in work hours of the activity's own calendar. An IFC
+        # float is work time too, written as a duration (see get_work_duration).
         for attribute, hours in (
             ("TotalFloat", activity.get("TotalFloat")),
             ("FreeFloat", activity.get("FreeFloat")),
         ):
             if hours is not None:
-                setattr(task_time, attribute, date(timedelta(days=hours / hours_per_day), "IfcDuration"))
+                setattr(task_time, attribute, get_work_duration(hours, calendar))
         if activity.get("TotalFloat") is not None:
             task_time.IsCritical = activity["TotalFloat"] <= 0
 

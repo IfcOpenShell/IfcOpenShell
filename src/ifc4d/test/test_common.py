@@ -128,3 +128,23 @@ class TestLags:
         link = {"PredecessorActivity": 1, "SuccessorActivity": 2, "Type": "FINISH_START", "Lag": -2.5}
         generate([predecessor, successor], [link])
         assert successor["ifc"].IsSuccessorFrom[0].TimeLag.LagValue.wrappedValue == "-PT2H30M"
+
+
+class TestFloats:
+    def test_writing_floats_as_work_time(self):
+        task = activity(1, 1, 8, at(0, 8), at(0, 17), TotalFloat=8, FreeFloat=4)
+        generate([task])
+        assert task["ifc"].TaskTime.TotalFloat == "P1D"
+        assert task["ifc"].TaskTime.FreeFloat == "PT4H"
+        assert task["ifc"].TaskTime.IsCritical is False
+
+    def test_writing_floats_as_work_hours_on_a_calendar_with_days_of_different_lengths(self):
+        task = activity(1, 2, 8, at(0, 8), at(0, 17), TotalFloat=16)
+        generate([task])
+        assert task["ifc"].TaskTime.TotalFloat == "PT16H"
+
+    def test_writing_a_negative_float(self):
+        task = activity(1, 1, 8, at(1, 8), at(1, 17), TotalFloat=-8)
+        generate([task])
+        assert task["ifc"].TaskTime.TotalFloat == "-P1D"
+        assert task["ifc"].TaskTime.IsCritical is True
