@@ -2451,6 +2451,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         if item.is_a("IfcSweptAreaSolid"):
             # So leaving edit mode can tell a moved profile from a reshaped one
             mesh["bbim_profile_co"] = [c for v in mesh.vertices for c in v.co]
+            mesh["bbim_profile_topology"] = tool.Model.get_profile_topology(obj)
         return "PROFILE"
 
     def enable_edit_mode(self, context: bpy.types.Context) -> Union[None, set[str]]:
@@ -2637,6 +2638,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
 
         for obj in unchanged_objs:
             obj.data.pop("bbim_profile_co", None)
+            obj.data.pop("bbim_profile_topology", None)
             item = tool.Geometry.get_active_representation(obj)
             assert item
             if not tool.Geometry.is_meshlike_item(item):
@@ -2673,6 +2675,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         original = mesh.get("bbim_profile_co")
         if original is not None:
             del mesh["bbim_profile_co"]
+        # Edges or arc and circle markers can change without any vertex moving
+        topology = mesh.pop("bbim_profile_topology", None)
         item = tool.Geometry.get_active_representation(obj)
         if not (item and item.is_a("IfcSweptAreaSolid")) or not mesh.vertices:
             return None
@@ -2681,7 +2685,11 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         co = co.reshape(-1, 3)
 
         is_whole = False
-        if original is not None and len(original) == co.size:
+        if (
+            original is not None
+            and len(original) == co.size
+            and topology == tool.Model.get_profile_topology(obj)
+        ):
             deltas = co - np.array(original).reshape(-1, 3)
             offset = deltas.mean(axis=0)
             is_whole = np.allclose(deltas, offset, atol=1e-5)

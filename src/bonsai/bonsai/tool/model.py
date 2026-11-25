@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import collections.abc
+import hashlib
 import json
 from collections.abc import Callable, Iterable, Sequence
 from copy import deepcopy
@@ -512,6 +513,16 @@ class Model(bonsai.core.tool.Model):
             group.add(circle, 1, "REPLACE")
 
         return obj
+
+    @classmethod
+    def get_profile_topology(cls, obj: bpy.types.Object) -> str:
+        """Fingerprint of a profile mesh's edges and arc and circle markers, ignoring vertex positions.
+        Use in object mode."""
+        assert isinstance(mesh := obj.data, bpy.types.Mesh)
+        names = {g.index: g.name for g in obj.vertex_groups}
+        edges = [tuple(e.vertices) for e in mesh.edges]
+        groups = [sorted((names[g.group], round(g.weight, 3)) for g in v.groups) for v in mesh.vertices]
+        return hashlib.md5(repr((edges, groups)).encode()).hexdigest()
 
     @classmethod
     def import_curve(
