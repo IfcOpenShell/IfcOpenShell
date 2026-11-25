@@ -206,6 +206,7 @@
 %ignore MaxOffset;
 %ignore MaxOffsetDeviation;
 %ignore ApplyOffset;
+%ignore OffsetApplied;
 %ignore SvgRidgeAngleMinDegrees;
 %ignore SvgValleyAngleMinDegrees;
 %ignore SvgEmitFlushEdges;
@@ -213,6 +214,11 @@
 %ignore SvgRenderCreaseEdges;
 %ignore SvgRenderSharpEdges;
 %ignore LoftUseRuledSurfaces;
+
+%ignore ifcopenshell::geom::settings_detail::to_string;
+%ignore ifcopenshell::geom::settings_detail::iterator_output_names;
+%ignore ifcopenshell::geom::settings_detail::output_dimensionality_names;
+%ignore ifcopenshell::geom::settings_detail::triangulation_method_names;
 
 %ignore filetype;
 %ignore guess_file_type;

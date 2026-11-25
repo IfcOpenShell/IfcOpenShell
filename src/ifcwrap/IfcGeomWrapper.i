@@ -46,6 +46,19 @@
 	}
 }
 
+%typemap(out) Eigen::Vector3d {
+	const Eigen::Vector3d& v = $1;
+	$result = eigen_to_python_tuple(v);
+}
+
+%typemap(out) std::vector<ifcopenshell::geom::taxonomy::point3> {
+	const std::vector<ifcopenshell::geom::taxonomy::point3>& points = $1;
+	$result = PyTuple_New(points.size());
+	for (size_t i = 0; i < points.size(); ++i) {
+		PyTuple_SetItem($result, i, eigen_to_python_tuple(points[i].ccomponents()));
+	}
+}
+
 // SWIG does not support bool references in a meaningful way, so the
 // ifcopenshell::geom::settings functions degrade to return a read only value
 %typemap(out) double& {
@@ -466,6 +479,22 @@ public:
 
 	void write(const ifcopenshell::geom::native_element* element) override {
 		serializer_->write(element);
+	}
+
+	void setExtras(const std::string& key, const std::string& value) override {
+		serializer_->setExtras(key, value);
+	}
+
+	void setExtras(const std::string& key, int value) override {
+		serializer_->setExtras(key, value);
+	}
+
+	void setExtras(const std::string& key, double value) override {
+		serializer_->setExtras(key, value);
+	}
+
+	void setExtras(const std::string& key, const std::vector<std::string>& value) override {
+		serializer_->setExtras(key, value);
 	}
 
 	void setUnitNameAndMagnitude(const std::string& name, float magnitude) override {

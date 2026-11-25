@@ -26,6 +26,7 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import ifcopenshell.api.structural
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.schema
@@ -303,15 +304,8 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 # Apply geometry.
                 if obj.modifiers:
                     ensure_single_user_mesh(obj.data)
-                    # In older Blender versions 'object.convert'
-                    # still requires object to be both selected and active.
-                    is_old_blender = bpy.app.version < (4, 4, 0)
                     with context.temp_override(selected_editable_objects=[obj]):
-                        if is_old_blender:
-                            tool.Blender.set_active_object(obj)
                         bpy.ops.object.convert(target="MESH")
-                        if is_old_blender:
-                            tool.Blender.clear_objects_selection()
 
                 # Apply scale.
                 if obj.scale != (1, 1, 1):
@@ -376,6 +370,9 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Geometry.reload_representation(obj)
                 elif obj.data is not None:
                     new_obj = tool.Geometry.recreate_object_with_data(obj, None)
+
+            if is_structural:
+                tool.Structural.assign_to_current_structural_analysis_model(element)
 
             # Accomodate existing importers to Blender from other formats that set custom props
             if self.props_to_pset:
@@ -548,6 +545,10 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             ifc_context = int(props.contexts or "0") or None
             if ifc_context:
                 ifc_context = tool.Ifc.get().by_id(ifc_context)
+        if representation_template in ("VERTEX", "EDGE", "FACE"):
+            # Structural items' topology is labelled 'Reference', as IfcStructuralItem requires.
+            tool.Structural.ensure_representation_contexts()
+            ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Reference", "GRAPH_VIEW")
 
         if representation_template in (
             "EMPTY",
@@ -577,6 +578,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             should_add_representation=False,
         )
         element.Description = props.description or None
+        if element.is_a("IfcStructuralItem"):
+            tool.Structural.assign_to_current_structural_analysis_model(element)
 
         if representation_template == "EMTPY" or not ifc_context:
             pass
@@ -814,6 +817,13 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             end = Vector((1, 0, 0)) / unit_scale
             representation = builder.get_representation(ifc_context, [builder.edge(end=end)])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+            is_curve_item = element.is_a("IfcStructuralCurveMember") or element.is_a("IfcStructuralCurveConnection")
+            if is_curve_item and tool.Ifc.get_schema() != "IFC2X3":
+                # Its Axis is mandatory since IFC4 (IFC2X3 has none): the default local z, square to the edge.
+                axis = tool.Structural.get_default_item_axes(end).col[2]
+                ifcopenshell.api.structural.edit_structural_item_axis(
+                    tool.Ifc.get(), structural_item=element, axis=tuple(axis)
+                )
             bonsai.core.geometry.switch_representation(
                 tool.Ifc,
                 tool.Geometry,
@@ -824,7 +834,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             points = [Vector(p) / unit_scale for p in ((0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0))]
-            representation = builder.get_representation(ifc_context, [builder.face(points)])
+            # Structural surface items need an IfcFaceSurface, whose plane gives their local axes.
+            representation = builder.get_representation(ifc_context, [builder.face_surface(points)])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
             bonsai.core.geometry.switch_representation(
                 tool.Ifc,

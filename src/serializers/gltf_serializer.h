@@ -51,6 +51,10 @@ public:
 	virtual ~gltf_serializer();
 	bool ready();
 	void writeHeader();
+	void setExtras(const std::string& key, const std::string& value) override;
+	void setExtras(const std::string& key, int value) override;
+	void setExtras(const std::string& key, double value) override;
+	void setExtras(const std::string& key, const std::vector<std::string>& value) override;
 	void write(const ifcopenshell::geom::triangulation_element* o);
 	void write(const ifcopenshell::geom::native_element* /*o*/) {}
 	void finalize();

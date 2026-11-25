@@ -20,12 +20,12 @@ jobs:
     steps:
       # A push has no pull request to ask the API about, so paths-filter
       # diffs the pushed commits with git and needs the history for that.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         if: github.event_name == 'push'
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+      - uses: dorny/paths-filter@v4.0.3
         id: filter
         if: github.event_name != 'workflow_dispatch'
         with:
@@ -71,10 +71,6 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [upstream-only, detect-ifcopenshell-changes]
     if: needs.detect-ifcopenshell-changes.outputs.should_run == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        build_shared_libs: [shared, static]
     env:
       # Colored output for cmake.
       CLICOLOR_FORCE: "1"
@@ -82,13 +78,13 @@ jobs:
       # Colored output for pytest.
       FORCE_COLOR: "1"
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
             submodules: recursive
             persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version: 3.11
 
@@ -120,7 +116,7 @@ jobs:
           libcgal-dev libeigen3-dev
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ubuntu-22.04-${{ runner.arch }}
           # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
@@ -271,14 +267,20 @@ jobs:
                -DPYTHON_INCLUDE_DIR:PATH=$(python -c "import sysconfig; print(sysconfig.get_path('include'))") \
                -DUSE_MMAP=On \
                -DUSE_CCACHE=ON \
-               -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs == 'shared' && 'ON' || 'OFF' }} \
                -DBUILD_ONLY_COMMON_SCHEMAS=ON \
                -DGLTF_SUPPORT=On \
                -DWITH_ROCKSDB=On \
                -DWITH_MANIFOLD=ON \
                -DWITH_PROJ=ON \
-               -DBUILD_EXAMPLES=ON
+               -DBUILD_EXAMPLES=ON \
+               -DBUILD_IFCOPENSHELL_PARSE_TESTS=ON \
+               -DBUILD_IFCOPENSHELL_GEOMETRY_TESTS=ON
           sudo cmake --build . --target install -j $(nproc)
+
+      - name: Run C++ tests
+        run: |
+          cd build
+          ctest --output-on-failure -j $(nproc)
 
       # - name: Run IfcConvert on Sample files
       #   run: |
@@ -343,11 +345,13 @@ jobs:
           cd ../ifcquery && make test || fail "ifcquery"
           pip install -e ../ifcedit --no-deps
           cd ../ifcedit && make test || fail "ifcedit"
-          # Pinned <2: mcp 2.0.0 renamed mcp.server.fastmcp.FastMCP to
-          # mcp.server.mcpserver.MCPServer, which ifcmcp doesn't support yet.
-          pip install "mcp>=1.0,<2"
+          # ifcmcp is built on mcp 2.x and falls back to mcp 1.x, which
+          # Linux distributions still ship, so test it against both.
+          pip install "mcp>=2,<3"
           pip install -e ../ifcmcp --no-deps
-          cd ../ifcmcp && make test || fail "ifcmcp"
+          cd ../ifcmcp && make test || fail "ifcmcp (mcp 2.x)"
+          pip install "mcp>=1.26,<2"
+          make test || fail "ifcmcp (mcp 1.x)"
           pip install -e ../ifctester --no-deps
           cd ../ifctester && make test || fail "ifctester"
           make build-ids-docs || fail "build-ids-docs"

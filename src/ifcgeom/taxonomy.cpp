@@ -4,6 +4,9 @@
 #include "function_item_evaluator.h"
 #include "profile_helper.h"
 
+#include <set>
+#include <unsupported/Eigen/Splines>
+
 using namespace ifcopenshell::geom::taxonomy;
 namespace taxonomy = ifcopenshell::geom::taxonomy;
 
@@ -12,6 +15,27 @@ constexpr double polygon_pi = boost::math::constants::pi<double>();
 
 Eigen::Vector3d transform_point(const matrix4::ptr& m, const Eigen::Vector3d& p) {
     return m ? (m->ccomponents() * p.homogeneous()).head<3>().eval() : p;
+}
+
+// Resolve explicit polygon endpoints in the shell's coordinate system,
+// including placements on the shell, face, loop, and individual edge.
+bool shell_edge_points(const shell& sh, const face::ptr& f, const loop::ptr& l,
+                       const edge::ptr& e, Eigen::Vector3d& a, Eigen::Vector3d& b) {
+    auto start = std::get_if<point3::ptr>(&e->start);
+    auto end = std::get_if<point3::ptr>(&e->end);
+    if (!start || !end || !*start || !*end) {
+        return false;
+    }
+    auto place = [&](const point3::ptr& p) {
+        return transform_point(sh.matrix, transform_point(f->matrix,
+            transform_point(l->matrix, transform_point(e->matrix, p->ccomponents()))));
+    };
+    a = place(*start);
+    b = place(*end);
+    if (e->orientation.value_or(true) != (f->orientation.value_or(true) == l->orientation.value_or(true))) {
+        std::swap(a, b);
+    }
+    return a.allFinite() && b.allFinite();
 }
 
 double curve_parameter(const item::ptr& basis, const std::variant<boost::blank, point3::ptr, double>& trim) {
@@ -26,6 +50,9 @@ double curve_parameter(const item::ptr& basis, const std::variant<boost::blank, 
         Eigen::Vector3d xyz = (*p)->ccomponents();
         if (c->matrix) {
             xyz = (c->matrix->ccomponents().inverse() * xyz.homogeneous()).head<3>().eval();
+        }
+        if (c->kind() == BSPLINE_CURVE) {
+            throw std::runtime_error("Cartesian trim point projection is not implemented for B-spline curves");
         }
         if (c->kind() == LINE) {
             return xyz.z();
@@ -97,6 +124,150 @@ Eigen::Vector3d endpoint_tangent(const item::ptr& i, bool at_end) {
 }
 } // namespace
 
+bool shell::is_polyhedral() const {
+    for (const auto& f : children) {
+        if (f->basis && f->basis->kind() != PLANE) {
+            return false;
+        }
+        for (const auto& l : f->children) {
+            if (!l->is_polyhedron()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool shell::is_manifold() const {
+    using point_key = std::array<double, 3>;
+    using edge_key = std::pair<point_key, point_key>;
+    std::set<edge_key> unmatched, paired;
+    if (children.empty()) {
+        return false;
+    }
+    for (const auto& f : children) {
+        if (f->children.empty()) {
+            return false;
+        }
+        for (const auto& l : f->children) {
+            if (l->children.size() < 3) {
+                return false;
+            }
+            for (const auto& e : l->children) {
+                Eigen::Vector3d a, b;
+                if (!shell_edge_points(*this, f, l, e, a, b)) {
+                    return false;
+                }
+                point_key p{a.x(), a.y(), a.z()}, q{b.x(), b.y(), b.z()};
+                if (p == q) {
+                    return false;
+                }
+                const edge_key key{p, q}, reverse{q, p};
+                const auto canonical = p < q ? key : reverse;
+                // A parity toggle alone would incorrectly accept four uses.
+                if (paired.count(canonical)) {
+                    return false;
+                }
+                auto opposite = unmatched.find(reverse);
+                if (opposite != unmatched.end()) {
+                    unmatched.erase(opposite);
+                    paired.insert(canonical);
+                } else if (!unmatched.insert(key).second) {
+                    return false; // Two uses in the same direction.
+                }
+            }
+        }
+    }
+    return unmatched.empty();
+}
+
+bool shell::is_coplanar(double linear_tolerance) const {
+    if (!std::isfinite(linear_tolerance) || linear_tolerance < 0.) {
+        return false;
+    }
+    face::ptr reference_face;
+    double largest_box = -1.;
+    for (const auto& f : children) {
+        if (f->children.empty()) {
+            return false;
+        }
+        Eigen::Vector3d low = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+        Eigen::Vector3d high = -low;
+        bool has_points = false;
+        for (const auto& l : f->children) {
+            for (const auto& e : l->children) {
+                Eigen::Vector3d a, b;
+                if (!shell_edge_points(*this, f, l, e, a, b)) {
+                    return false;
+                }
+                low = low.cwiseMin(a).cwiseMin(b);
+                high = high.cwiseMax(a).cwiseMax(b);
+                has_points = true;
+            }
+        }
+        if (!has_points) {
+            return false;
+        }
+        const double size = (high - low).squaredNorm();
+        if (size > largest_box) {
+            largest_box = size;
+            reference_face = f;
+        }
+    }
+    if (!reference_face) {
+        return false;
+    }
+    auto outer = reference_face->children.front();
+    for (const auto& l : reference_face->children) {
+        if (l->external.value_or(false)) {
+            outer = l;
+            break;
+        }
+    }
+    if (outer->children.size() < 3) {
+        return false;
+    }
+    Eigen::Vector3d origin, end;
+    if (!shell_edge_points(*this, reference_face, outer, outer->children.front(), origin, end)) {
+        return false;
+    }
+    Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+    Eigen::Vector3d center = Eigen::Vector3d::Zero();
+    double cross_magnitudes = 0.;
+    for (const auto& e : outer->children) {
+        Eigen::Vector3d a, b;
+        if (!shell_edge_points(*this, reference_face, outer, e, a, b)) {
+            return false;
+        }
+        // Newell's normal about a local origin, avoiding cancellation at
+        // large model coordinates. Reject an indeterminate normal independently
+        // of the distance tolerance, so coplanarity is monotone in tolerance.
+        const Eigen::Vector3d cross = (a - origin).cross(b - origin);
+        normal += cross;
+        cross_magnitudes += cross.norm();
+        center += a - origin;
+    }
+    const double magnitude = normal.norm();
+    if (!std::isfinite(magnitude) || magnitude <= std::numeric_limits<double>::epsilon() * cross_magnitudes) {
+        return false;
+    }
+    normal /= magnitude;
+    center /= static_cast<double>(outer->children.size());
+    for (const auto& f : children) {
+        for (const auto& l : f->children) {
+            for (const auto& e : l->children) {
+                Eigen::Vector3d a, b;
+                if (!shell_edge_points(*this, f, l, e, a, b) ||
+                    std::abs(((a - origin) - center).dot(normal)) > linear_tolerance ||
+                    std::abs(((b - origin) - center).dot(normal)) > linear_tolerance) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
 std::vector<point3> curve::to_polygon(const ifcopenshell::geom::settings& settings, double a, double b, int segments) const {
     if (kind() != LINE && a == -std::numeric_limits<double>::infinity() && b == std::numeric_limits<double>::infinity()) {
         a = 0.;
@@ -166,9 +337,13 @@ std::vector<point3> trimmed_curve::to_polygon(const ifcopenshell::geom::settings
         const Eigen::Vector3d a = std::get<point3::ptr>(start)->ccomponents();
         const Eigen::Vector3d b = std::get<point3::ptr>(end)->ccomponents();
         const int count = std::max(1, polygon_segments);
-        for (int i = 0; i <= count; ++i) {
+        // Preserve shared endpoints exactly; interpolation can round b to a
+        // different coordinate and disconnect adjacent polygonal faces.
+        points.emplace_back(a);
+        for (int i = 1; i < count; ++i) {
             points.emplace_back(a + (b - a) * i / count);
         }
+        points.emplace_back(b);
     } else {
         auto underlying = basis;
         while (auto nested = std::dynamic_pointer_cast<trimmed_curve>(underlying)) {
@@ -216,6 +391,218 @@ std::vector<point3> loop::to_polygon(const ifcopenshell::geom::settings& setting
         p.components() = transform_point(matrix, p.ccomponents());
     }
     return points;
+}
+
+namespace {
+Eigen::Vector3d transform_derivative(const matrix4::ptr& m, int derivative, const Eigen::Vector3d& v) {
+    if (derivative == 0) {
+        return transform_point(m, v);
+    }
+    return m ? (m->ccomponents().topLeftCorner<3, 3>() * v).eval() : v;
+}
+
+Eigen::Vector3d evaluate_item(const item::ptr& i, int derivative, double u) {
+    if (auto c = std::dynamic_pointer_cast<curve>(i)) {
+        return c->evaluate(derivative, u);
+    }
+    if (auto e = std::dynamic_pointer_cast<trimmed_curve>(i)) {
+        return e->evaluate(derivative, u);
+    }
+    if (auto l = std::dynamic_pointer_cast<loop>(i)) {
+        return l->evaluate(derivative, u);
+    }
+    throw std::runtime_error("Evaluation not implemented on this geometry type");
+}
+
+std::vector<double> bspline_knot_vector(const bspline_curve& c) {
+    std::vector<double> knots;
+    for (size_t i = 0; i < c.knots.size() && i < c.multiplicities.size(); ++i) {
+        knots.insert(knots.end(), std::max(0, c.multiplicities[i]), c.knots[i]);
+    }
+    const size_t n = c.control_points.size();
+    if (c.degree < 1 || n < static_cast<size_t>(c.degree) + 1 || knots.size() != n + c.degree + 1 || (c.weights && c.weights->size() != n)) {
+        throw std::runtime_error("Inconsistent B-spline curve definition");
+    }
+    return knots;
+}
+
+Eigen::Vector3d evaluate_bspline(const bspline_curve& c, int derivative, double u) {
+    const auto knots = bspline_knot_vector(c);
+    if (u < knots[c.degree] || u > knots[c.control_points.size()]) {
+        throw std::runtime_error("Parameter outside of the B-spline curve");
+    }
+    using Spline = Eigen::Spline<double, 4>;
+    Spline::ControlPointVectorType controls(4, c.control_points.size());
+    for (size_t i = 0; i < c.control_points.size(); ++i) {
+        const double weight = c.weights ? (*c.weights)[i] : 1.;
+        controls.col(i).head<3>() = c.control_points[i]->ccomponents() * weight;
+        controls(3, i) = weight;
+    }
+    const Spline spline(Eigen::Map<const Spline::KnotVectorType>(knots.data(), knots.size()), controls);
+    const auto homogeneous = spline.derivatives(u, std::min(derivative, c.degree));
+    // The quotient rule on A(u) / w(u), solved for each derivative in turn.
+    std::vector<Eigen::Vector3d> result;
+    std::vector<double> w;
+    for (int k = 0; k <= derivative; ++k) {
+        Eigen::Vector4d h = Eigen::Vector4d::Zero();
+        if (k <= c.degree) {
+            h = homogeneous.col(k).matrix();
+        }
+        w.push_back(h(3));
+        if (w.front() == 0.) {
+            throw std::runtime_error("B-spline curve weight vanishes");
+        }
+        Eigen::Vector3d v = h.head<3>();
+        double binomial = 1.;
+        for (int i = 1; i <= k; ++i) {
+            binomial = binomial * (k - i + 1) / i;
+            v -= binomial * w[i] * result[k - i];
+        }
+        result.push_back(v / w.front());
+    }
+    return result.back();
+}
+
+Eigen::Vector3d evaluate_offset(const offset_curve& c, int derivative, double u) {
+    if (derivative > 1) {
+        throw std::runtime_error("Offset curve derivative not implemented beyond the first");
+    }
+    if (!c.reference) {
+        throw std::runtime_error("Offset curve without reference direction");
+    }
+    const Eigen::Vector3d& reference = c.reference->ccomponents();
+    const Eigen::Vector3d tangent = evaluate_item(c.basis, 1, u);
+    Eigen::Vector3d normal = reference.cross(tangent);
+    const double length = normal.norm();
+    if (length == 0.) {
+        throw std::runtime_error("Offset direction undefined where the tangent is parallel to the reference direction");
+    }
+    normal /= length;
+    if (derivative == 0) {
+        return evaluate_item(c.basis, 0, u) + c.offset * normal;
+    }
+    Eigen::Vector3d turn = reference.cross(evaluate_item(c.basis, 2, u)) / length;
+    turn -= normal * normal.dot(turn);
+    return tangent + c.offset * turn;
+}
+} // namespace
+
+Eigen::Vector3d curve::evaluate(int derivative, double u) const {
+    if (derivative < 0) {
+        throw std::runtime_error("Negative curve derivative");
+    }
+    Eigen::Vector3d v = Eigen::Vector3d::Zero();
+    if (kind() == LINE) {
+        if (derivative == 0) {
+            v.z() = u;
+        } else if (derivative == 1) {
+            v.z() = 1.;
+        }
+    } else if (kind() == CIRCLE || kind() == ELLIPSE) {
+        double rx, ry;
+        if (auto e = dynamic_cast<const ellipse*>(this)) {
+            rx = e->radius;
+            ry = e->radius2;
+        } else {
+            rx = ry = static_cast<const circle*>(this)->radius;
+        }
+        const double c = std::cos(u);
+        const double s = std::sin(u);
+        switch (derivative % 4) {
+        case 0: v << rx * c, ry * s, 0.; break;
+        case 1: v << -rx * s, ry * c, 0.; break;
+        case 2: v << -rx * c, -ry * s, 0.; break;
+        default: v << rx * s, -ry * c, 0.; break;
+        }
+    } else if (auto b = dynamic_cast<const bspline_curve*>(this)) {
+        v = evaluate_bspline(*b, derivative, u);
+    } else if (auto o = dynamic_cast<const offset_curve*>(this)) {
+        v = evaluate_offset(*o, derivative, u);
+    } else {
+        throw std::runtime_error("Evaluation not implemented on this curve type");
+    }
+    return transform_derivative(matrix, derivative, v);
+}
+
+Eigen::Vector3d trimmed_curve::evaluate(int derivative, double u) const {
+    if (derivative < 0) {
+        throw std::runtime_error("Negative curve derivative");
+    }
+    if (!(u >= 0. && u <= 1.)) {
+        throw std::runtime_error("Parameter outside of the trimmed curve");
+    }
+    const bool forward = orientation.value_or(true);
+    const double t = forward ? u : 1. - u;
+    // The derivative of the basis parameter with respect to u.
+    double rate = forward ? 1. : -1.;
+    Eigen::Vector3d v;
+    if ((!basis || basis->kind() == LINE) && start.index() == 1 && end.index() == 1) {
+        const Eigen::Vector3d a = std::get<point3::ptr>(start)->ccomponents();
+        const Eigen::Vector3d b = std::get<point3::ptr>(end)->ccomponents();
+        if (derivative == 0) {
+            v = a + (b - a) * t;
+        } else if (derivative == 1) {
+            v = b - a;
+        } else {
+            v.setZero();
+        }
+    } else {
+        auto underlying = basis;
+        while (auto nested = std::dynamic_pointer_cast<trimmed_curve>(underlying)) {
+            underlying = nested->basis;
+        }
+        auto c = std::dynamic_pointer_cast<curve>(underlying);
+        if (!c) {
+            throw std::runtime_error("Unsupported curve basis");
+        }
+        const bool conic = c->kind() == CIRCLE || c->kind() == ELLIPSE;
+        const bool unbounded = start.index() == 0 && end.index() == 0;
+        double a, b;
+        if (unbounded && conic) {
+            a = 0.;
+            b = 2. * polygon_pi;
+        } else if (auto spline = std::dynamic_pointer_cast<bspline_curve>(c); unbounded && spline) {
+            const auto knots = bspline_knot_vector(*spline);
+            a = knots[spline->degree];
+            b = knots[spline->control_points.size()];
+        } else {
+            a = curve_parameter(underlying, start);
+            b = curve_parameter(underlying, end);
+        }
+        const bool sense = curve_sense.value_or(true);
+        if (!sense) {
+            std::swap(a, b);
+        }
+        if (conic) {
+            a = std::fmod(a, 2. * polygon_pi);
+            b = std::fmod(b, 2. * polygon_pi);
+            if (b <= a) {
+                b += 2. * polygon_pi;
+            }
+        }
+        v = c->evaluate(derivative, sense ? a + (b - a) * t : b - (b - a) * t);
+        rate *= sense ? b - a : a - b;
+    }
+    v *= std::pow(rate, derivative);
+    return transform_derivative(matrix, derivative, v);
+}
+
+Eigen::Vector3d loop::evaluate(int derivative, double u) const {
+    if (derivative < 0) {
+        throw std::runtime_error("Negative curve derivative");
+    }
+    const double count = static_cast<double>(children.size());
+    if (children.empty() || !(u >= 0. && u <= count)) {
+        throw std::runtime_error("Parameter outside of the loop");
+    }
+    const bool forward = orientation.value_or(true);
+    const double t = forward ? u : count - u;
+    const size_t i = std::min(static_cast<size_t>(t), children.size() - 1);
+    Eigen::Vector3d v = children[i]->evaluate(derivative, t - static_cast<double>(i));
+    if (!forward && derivative % 2) {
+        v = -v;
+    }
+    return transform_derivative(matrix, derivative, v);
 }
 
 namespace {

@@ -78,6 +78,11 @@ bool gltf_serializer::ready() {
 void gltf_serializer::writeHeader() {
 	json_["asset"]["generator"] = "IfcOpenShell IfcConvert " + std::string(IFCOPENSHELL_VERSION);
 	json_["asset"]["version"] = "2.0";
+	auto& settings_json = json_["asset"]["extras"]["ifcopenshell-settings"];
+	settings_json = json::object();
+	for (const auto& [name, value] : settings_.to_dictionary()) {
+		std::visit([&](const auto& v) { settings_json[name] = v; }, value);
+	}
 	json_["scene"] = 0;
 
 	node_array_ = json::array();
@@ -86,6 +91,22 @@ void gltf_serializer::writeHeader() {
 	json_["nodes"] = json::array();
 	json_["meshes"] = json::array();
 	json_["materials"] = json::array();
+}
+
+void gltf_serializer::setExtras(const std::string& key, const std::string& value) {
+	json_["asset"]["extras"][key] = value;
+}
+
+void gltf_serializer::setExtras(const std::string& key, int value) {
+	json_["asset"]["extras"][key] = value;
+}
+
+void gltf_serializer::setExtras(const std::string& key, double value) {
+	json_["asset"]["extras"][key] = value;
+}
+
+void gltf_serializer::setExtras(const std::string& key, const std::vector<std::string>& value) {
+	json_["asset"]["extras"][key] = value;
 }
 
 int gltf_serializer::writeMaterial(const ifcopenshell::geom::taxonomy::style::ptr style) {

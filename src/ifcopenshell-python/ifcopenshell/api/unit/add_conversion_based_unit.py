@@ -34,7 +34,7 @@ def add_conversion_based_unit(
     inch, square foot, square yard, acre, square mile, cubic inch, cubic
     foot, cubic yard, litre, fluid ounce UK, fluid ounce US, pint UK, pint
     US, gallon UK, gallon US, degree, ounce, pound, ton UK, ton US, tonne, lbf,
-    kip, psi, ksi, minute, hour, day, btu, and fahrenheit.
+    kip, psi, ksi, psf, ksf, minute, hour, day, btu, and fahrenheit.
 
     :param name: A converted name chosen from the list above.
     :param conversion_offset: If you want to offset the conversion further

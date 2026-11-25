@@ -90,6 +90,23 @@ AI-generated, identify them.
 - **Cosmetic changes**: Do not reformat, rename, or reorganize code that is
   unrelated to your change.
 
+### Before Opening a Pull Request
+
+- **Search for existing work.** Check open pull requests and issues for the
+  same problem, e.g. `gh pr list --state open --search "<issue number>"`,
+  the issue's linked pull requests, and open pull requests touching the same
+  code. If one exists, review or test it rather than submitting a competing
+  fix.
+- **Branch from the target branch.** Start from the current target branch,
+  not from another pull request's branch, unless the pull request is
+  intentionally stacked and says so.
+- **Check intent before changing behaviour.** If a change reverses how
+  something currently works, rather than fixing a crash or wrong output,
+  first find out why it works that way. Check `git log -S` and `git blame`
+  on the affected lines, read the commit messages, and look for tests that
+  assert the current behaviour. If the behaviour was deliberate, open an
+  issue to discuss it before submitting a pull request.
+
 ## Commit Messages
 
 - The **subject line** must be **50 characters or less**.

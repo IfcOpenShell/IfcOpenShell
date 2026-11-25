@@ -155,7 +155,7 @@ classes = [
     prop.BIMMeshProperties,
     prop.BIMFacet,
     prop.BIMFilterGroup,
-    prop.BIMSnapProperties,
+    prop.BIMSnapTarget,
     prop.BIMSnapGroups,
     ui.BIM_UL_clipping_plane,
     ui.BIM_UL_generic,
@@ -176,6 +176,7 @@ classes = [
     ui.BIM_PT_tab_stakeholders,
     # Object information
     ui.BIM_PT_tab_object_metadata,
+    ui.BIM_PT_tab_object_structural,
     ui.BIM_PT_tab_misc,
     # Geometry and materials
     ui.BIM_PT_tab_placement,
@@ -275,7 +276,7 @@ def register():
     bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
-    bpy.types.Scene.BIMSnapProperties = bpy.props.PointerProperty(type=prop.BIMSnapProperties)
+    bpy.types.Scene.BIMSnapProperties = bpy.props.PointerProperty(type=prop.BIMSnapTarget)
     bpy.types.Scene.BIMSnapGroups = bpy.props.PointerProperty(type=prop.BIMSnapGroups)
     bpy.types.Screen.BIMAreaProperties = bpy.props.CollectionProperty(type=prop.BIMAreaProperties)
     bpy.types.Screen.BIMTabProperties = bpy.props.PointerProperty(type=prop.BIMTabProperties)

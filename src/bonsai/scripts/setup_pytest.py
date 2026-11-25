@@ -32,7 +32,9 @@ subprocess.check_call([py_exec, "-m", "ensurepip", "--user"])
 subprocess.check_call([py_exec, "-m", "pip", "install", "--upgrade", "pip"])
 
 sys_paths = [p for p in sys.path if "site-packages" in p and p.startswith(base_python_path)]
-dependencies = ["pytest", "pytest-bdd", "pytest-blender", "pygments"]
+# Keep the pytest cap in sync with the dev group in pyproject.toml:
+# pytest-bdd 9.0.0 uses FixtureManager._arg2fixturedefs, removed in pytest 9.2.
+dependencies = ["pytest<9.2", "pytest-bdd", "pytest-blender", "pygments"]
 
 if sys_paths:
     print("Detected installation directory:", sys_paths[-1])
@@ -41,8 +43,9 @@ else:
     print("Could not detect installation directory. Good luck.")
     command = [py_exec, "-m", "pip", "install", "--upgrade"]
 
-for dep in dependencies:
-    subprocess.check_call(command + [dep])
+# Resolve together so --target installs cannot replace pytest with an uncapped
+# version while installing a later dependency.
+subprocess.check_call(command + dependencies)
 
 try:
     import pygments  # ruff: ignore[unused-import]

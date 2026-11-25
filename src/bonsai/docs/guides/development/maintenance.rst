@@ -49,7 +49,9 @@ When a new Blender version is released and supported:
    * - File
      - What to update
    * - ``.github/workflows/publish-bonsai-unstable.yml``
-     - Blender download URL
+     - ``BLENDER_VERSION``
+   * - ``.github/workflows/test-bonsai.yml``
+     - ``BLENDER_VERSION``
 
 Blender's Bundled Python Version Updated
 -----------------------------------------
@@ -71,8 +73,8 @@ When Blender ships with a new Python version:
      - ``--python-version`` arguments, ``only_py311`` input
    * - ``src/bonsai/Makefile``
      - ``SUPPORTED_PYVERSIONS``, ``blender_version_min`` / ``blender_version_max`` per ``PYVERSION``
-   * - ``src/bonsai/scripts/dev_environment.py``
-     - ``PYTHON_VERSION`` mapping (Blender version, bundled Python version)
+   * - ``src/bonsai/bundled-wheels/pyproject.toml``
+     - ``requires-python``
 
 Release
 -------

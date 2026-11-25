@@ -475,6 +475,69 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         assert not self.file.by_type("IfcRelConnectsStructuralActivity")
         assert list(self.file.by_type("IfcStructuralPointAction")) == [activity]
 
+    def test_removing_structural_activity_relationships_of_an_activity(self):
+        point = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        load = ifcopenshell.api.structural.add_structural_load(self.file, ifc_class="IfcStructuralLoadSingleForce")
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            self.file, applied_load=load, structural_member=point, ifc_class="IfcStructuralPointAction"
+        )
+        ifcopenshell.api.root.remove_product(self.file, product=activity)
+        assert not self.file.by_type("IfcRelConnectsStructuralActivity")
+
+    def test_removing_structural_member_connections_of_a_member(self):
+        member = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralCurveMember")
+        start = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        end = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        for connection in (start, end):
+            ifcopenshell.api.structural.add_structural_member_connection(
+                self.file, relating_structural_member=member, related_structural_connection=connection
+            )
+        ifcopenshell.api.root.remove_product(self.file, product=member)
+        assert not self.file.by_type("IfcRelConnectsStructuralMember")
+        assert len(self.file.by_type("IfcStructuralPointConnection")) == 2
+
+    def test_removing_structural_member_connections_of_a_connection(self):
+        member = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralCurveMember")
+        connection = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        ifcopenshell.api.structural.add_structural_member_connection(
+            self.file, relating_structural_member=member, related_structural_connection=connection
+        )
+        ifcopenshell.api.root.remove_product(self.file, product=connection)
+        assert not self.file.by_type("IfcRelConnectsStructuralMember")
+        assert self.file.by_type("IfcStructuralCurveMember") == (member,)
+
+    def test_removing_the_release_and_axes_of_a_structural_member_connection(self):
+        member = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralCurveMember")
+        connection = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        support = ifcopenshell.api.structural.add_structural_boundary_condition(self.file, connection=connection)
+        relation = ifcopenshell.api.structural.add_structural_member_connection(
+            self.file, relating_structural_member=member, related_structural_connection=connection
+        )
+        ifcopenshell.api.structural.add_structural_boundary_condition(self.file, connection=relation)
+        relation.ConditionCoordinateSystem = self.file.createIfcAxis2Placement3D(
+            self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
+        )
+        ifcopenshell.api.root.remove_product(self.file, product=member)
+        assert self.file.by_type("IfcBoundaryNodeCondition") == (support,)
+        assert connection.AppliedCondition == support
+        assert not self.file.by_type("IfcAxis2Placement3D")
+
+    def test_keeping_a_release_shared_with_another_structural_member_connection(self):
+        member = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralCurveMember")
+        other = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralCurveMember")
+        connection = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        release = ifcopenshell.api.structural.add_structural_boundary_condition(
+            self.file, ifc_class="IfcBoundaryNodeCondition"
+        )
+        for element in (member, other):
+            relation = ifcopenshell.api.structural.add_structural_member_connection(
+                self.file, relating_structural_member=element, related_structural_connection=connection
+            )
+            relation.AppliedCondition = release
+        ifcopenshell.api.root.remove_product(self.file, product=member)
+        assert self.file.by_type("IfcBoundaryNodeCondition") == (release,)
+        assert self.file.by_type("IfcRelConnectsStructuralMember")[0].AppliedCondition == release
+
 
 class TestRemoveProductIFC2X3(TestRemoveProduct, test.bootstrap.IFC2X3):
     pass

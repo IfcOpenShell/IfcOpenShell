@@ -26,6 +26,7 @@ import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
+import ifcopenshell.guid
 import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Matrix
@@ -365,6 +366,82 @@ class TestImportItem(NewFile):
         assert subject.get_cartesian_point_offset(obj) is not None
         assert np.abs([v.co[:] for v in obj.data.vertices]).max() < tool.Loader.settings.distance_limit
         assert self.world_vertices(obj) == sorted(np.round(self.CUBE + self.FAR, 3).tolist())
+
+
+class StructuralFaceFile(NewFile):
+    def create_file(self):
+        ifc = ifcopenshell.api.project.create_file(version="IFC4")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc)  # millimetres
+        model = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        graph = ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Reference", target_view="GRAPH_VIEW", parent=model
+        )
+        body = ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        tool.Ifc.set(ifc)
+        return ifc, graph, body
+
+    def create_object(self, vertices, faces):
+        mesh = bpy.data.meshes.new("Face")
+        mesh.from_pydata(vertices, [], faces)
+        return bpy.data.objects.new("Face", mesh)
+
+
+class TestIsStructuralFaceMesh(StructuralFaceFile):
+    def test_a_mesh_with_polygons_in_the_graph_view(self):
+        ifc, graph, body = self.create_file()
+        obj = self.create_object([(0, 0, 0), (1, 0, 0), (1, 1, 0)], [(0, 1, 2)])
+        assert subject.is_structural_face_mesh(obj, graph)
+        assert not subject.is_structural_face_mesh(obj, body)
+
+    def test_a_mesh_without_polygons(self):
+        ifc, graph, body = self.create_file()
+        obj = self.create_object([(0, 0, 0), (1, 0, 0)], [])
+        assert not subject.is_structural_face_mesh(obj, graph)
+
+
+class TestAddStructuralFaceRepresentation(StructuralFaceFile):
+    SQUARE = [(0, 0, 0), (2, 0, 0), (2, 2, 0), (0, 2, 0)]
+    HOLE = [(0.5, 0.5, 0), (1.5, 0.5, 0), (1.5, 1.5, 0), (0.5, 1.5, 0)]
+    # A square with a square hole, as four quads around the hole
+    FACES = [(0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+
+    def test_a_face_with_a_hole_in_project_units(self):
+        ifc, graph, body = self.create_file()
+        obj = self.create_object(self.SQUARE + self.HOLE, self.FACES)
+        representation = subject.add_structural_face_representation(obj, graph)
+        assert representation.is_a("IfcTopologyRepresentation")
+        assert representation.RepresentationType == "Face"
+        face = representation.Items[0]
+        assert face.is_a("IfcFaceSurface")
+        assert len(face.Bounds) == 2
+        points = sorted(
+            tuple(e.EdgeElement.EdgeStart.VertexGeometry.Coordinates) for e in face.Bounds[0].Bound.EdgeList
+        )
+        assert points == [(0.0, 0.0, 0.0), (0.0, 2000.0, 0.0), (2000.0, 0.0, 0.0), (2000.0, 2000.0, 0.0)]
+
+    def test_the_axes_of_the_face_it_replaces_are_kept(self):
+        ifc, graph, body = self.create_file()
+        element = ifc.createIfcStructuralSurfaceMember(GlobalId=ifcopenshell.guid.new())
+        builder = ShapeBuilder(ifc)
+        old = builder.face_surface(
+            [(0, 0, 0), (1000, 0, 0), (1000, 1000, 0), (0, 1000, 0)], normal=(0, 0, -1), x_axis=(0, 1, 0)
+        )
+        ifcopenshell.api.geometry.assign_representation(
+            ifc, product=element, representation=builder.get_representation(graph, [old])
+        )
+        obj = self.create_object(self.SQUARE, [(0, 1, 2, 3)])
+        tool.Ifc.link(element, obj)
+        face = subject.add_structural_face_representation(obj, graph).Items[0]
+        assert np.allclose(face.FaceSurface.Position.Axis.DirectionRatios, (0, 0, -1))
+        assert np.allclose(face.FaceSurface.Position.RefDirection.DirectionRatios, (0, 1, 0))
+
+    def test_a_mesh_out_of_one_plane_is_refused(self):
+        ifc, graph, body = self.create_file()
+        obj = self.create_object([(0, 0, 0), (2, 0, 0), (2, 2, 1), (0, 2, 0)], [(0, 1, 2), (0, 2, 3)])
+        assert subject.add_structural_face_representation(obj, graph) is None
 
 
 class TestIsBodyRepresentation(NewFile):

@@ -105,3 +105,23 @@ def test_setting_logical():
     inst.LayerOn = True
     assert inst.LayerOn is True
     assert ".T." in str(inst)
+
+
+def test_header_entity_getattr_attributeerror():
+    f = ifcopenshell.file()
+    assert hasattr(f.header.file_name, "author")
+    assert not hasattr(f.header.file_name, "no_such_field")
+    assert getattr(f.header.file_name, "no_such_field", "fallback") == "fallback"
+    with pytest.raises(AttributeError) as exc_info:
+        f.header.file_name.no_such_field
+    assert "has no attribute 'no_such_field'" in str(exc_info.value)
+
+
+def test_entity_instance_getattr_nonexistent_attributeerror():
+    f = ifcopenshell.file()
+    wall = f.create_entity("IfcWall")
+    assert not hasattr(wall, "non_existent_attribute")
+    assert getattr(wall, "non_existent_attribute", "fallback") == "fallback"
+    with pytest.raises(AttributeError) as exc_info:
+        wall.non_existent_attribute
+    assert "has no attribute 'non_existent_attribute'" in str(exc_info.value)
