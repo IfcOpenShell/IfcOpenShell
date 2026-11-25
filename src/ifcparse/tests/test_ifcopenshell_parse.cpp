@@ -2,7 +2,10 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <cmath>
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -11,6 +14,7 @@
 #include <ifcparse/parse.h>
 #include <map>
 #include <plugin/plugin.h>
+#include <random>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -881,4 +885,87 @@ TEST_CASE("Null instance handles can be hashed", "[ifcparse][handles]") {
     CHECK(a == a_copy);
     CHECK(std::hash<express::base>{}(a) == std::hash<express::base>{}(a_copy));
 #endif
+}
+
+namespace {
+// Writes each value as the only coordinate of an IfcCartesianPoint and
+// returns the REAL token the serializer produced for it.
+std::vector<std::string> written_reals(const std::vector<double>& values) {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const auto* point_declaration = file.schema()->declaration_by_name("IfcCartesianPoint");
+    std::vector<std::string> reals;
+    reals.reserve(values.size());
+    for (const double value : values) {
+        auto point = file.create(point_declaration);
+        point.set_attribute_value(0, std::vector<double>{value});
+        std::ostringstream out;
+        point.to_string(out);
+        const std::string text = out.str();
+        const auto begin = text.find("((") + 2;
+        reals.push_back(text.substr(begin, text.find("))", begin) - begin));
+    }
+    return reals;
+}
+} // namespace
+
+TEST_CASE("REALs are written in their shortest round-trip form", "[ifcparse][real]") {
+    const std::vector<std::pair<double, std::string>> cases{
+        {0.0, "0."},
+        {-0.0, "-0."},
+        {1.0, "1."},
+        {-17.5, "-17.5"},
+        {0.1, "0.1"},
+        {1.0 / 3.0, "0.3333333333333333"},
+        {0.0174532925199433, "0.0174532925199433"},
+        {123456.0, "123456."},
+        {1e-5, "1.E-05"},
+        {1e16, "1.E+16"},
+        {1e300, "1.E+300"},
+        {5e-324, "5.E-324"},
+        {2.2250738585072014e-308, "2.2250738585072014E-308"},
+        {std::ldexp(1.0, -1017), "7.1202363472230444E-307"},
+        {1234.5678901234567, "1234.5678901234567"},
+    };
+    std::vector<double> values;
+    for (const auto& c : cases) {
+        values.push_back(c.first);
+    }
+    const auto reals = written_reals(values);
+    REQUIRE(reals.size() == cases.size());
+    for (size_t i = 0; i < cases.size(); ++i) {
+        CHECK(reals[i] == cases[i].second);
+    }
+}
+
+TEST_CASE("Every written REAL reads back as the same double", "[ifcparse][real]") {
+    // Powers of two sit on a binade boundary where the shortest round-trip
+    // digit string is not always printf's correctly rounded value of the same
+    // length, so they are checked exhaustively; random bit patterns cover the rest.
+    std::vector<double> values;
+    for (int exponent = -1074; exponent <= 1023; ++exponent) {
+        values.push_back(std::ldexp(1.0, exponent));
+        values.push_back(-std::ldexp(1.0, exponent));
+    }
+    std::mt19937_64 rng(10342);
+    while (values.size() < 24000) {
+        const uint64_t bits = rng();
+        double value;
+        std::memcpy(&value, &bits, sizeof(value));
+        if (std::isfinite(value)) {
+            values.push_back(value);
+        }
+    }
+    const auto reals = written_reals(values);
+    REQUIRE(reals.size() == values.size());
+    size_t mismatches = 0;
+    std::string first_mismatch;
+    for (size_t i = 0; i < values.size(); ++i) {
+        if (std::strtod(reals[i].c_str(), nullptr) != values[i]) {
+            if (mismatches++ == 0) {
+                first_mismatch = reals[i];
+            }
+        }
+    }
+    INFO("first REAL that does not read back: " << first_mismatch);
+    CHECK(mismatches == 0);
 }
