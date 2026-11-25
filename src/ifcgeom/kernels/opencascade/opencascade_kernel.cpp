@@ -286,16 +286,24 @@ bool ifcopenshell::geom::open_cascade_kernel::convert_impl(const taxonomy::revol
 		convert_xyz<gp_Pnt>(*r->axis_origin),
 		convert_xyz<gp_Dir>(*r->direction));
 
-	TopoDS_Shape face;
-	if (!convert(taxonomy::cast<taxonomy::face>(r->basis), face)) {
+	// As in the extrusion, a loop basis denotes a swept surface and revolves
+	// into a shell.
+	TopoDS_Shape basis;
+	if (r->basis->kind() == taxonomy::LOOP) {
+		TopoDS_Wire wire;
+		if (!convert(taxonomy::cast<taxonomy::loop>(r->basis), wire)) {
+			return false;
+		}
+		basis = wire;
+	} else if (!convert(taxonomy::cast<taxonomy::face>(r->basis), basis)) {
 		return false;
 	}
 
 	TopoDS_Shape shape;
 	if (r->angle) {
-		shape = BRepPrimAPI_MakeRevol(face, ax, *r->angle);
+		shape = BRepPrimAPI_MakeRevol(basis, ax, *r->angle);
 	} else {
-		shape = BRepPrimAPI_MakeRevol(face, ax);
+		shape = BRepPrimAPI_MakeRevol(basis, ax);
 	}
 
 	results.emplace_back(conversion_result(

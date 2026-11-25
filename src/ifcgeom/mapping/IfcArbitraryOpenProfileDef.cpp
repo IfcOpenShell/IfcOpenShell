@@ -25,10 +25,12 @@ using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcArbitraryOpenProfileDef& inst) {
 	auto mapped = map(inst.Curve());
-    if (mapped->kind() == taxonomy::LOOP) {
-        auto r = taxonomy::loop::ptr((taxonomy::loop*)mapped->clone_());
-        r->closed = false;
-        return r;
-    }
-    return mapped;
+	if (!mapped) {
+		return nullptr;
+	}
+	// A single curve segment is wrapped in a loop as well, so that the kernels
+	// can tell an open profile from a closed one.
+	auto r = taxonomy::loop::ptr(taxonomy::cast<taxonomy::loop>(mapped)->clone_());
+	r->closed = false;
+	return r;
 }

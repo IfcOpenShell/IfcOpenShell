@@ -301,7 +301,7 @@ bool open_cascade_kernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& w
 		auto inst = loop->instance.as<express::entity>();
 		auto file = loop->instance.as<express::entity>().file();
 		auto profile = file->get_inverse(inst.id(), file->schema()->declaration_by_name("IfcProfileDef"), -1);
-		force_close = profile.size() > 0;
+		force_close = profile.size() > 0 && loop->closed.value_or(true);
 	}
 
 	wire_builder bld(settings_.get<settings::Precision>().get(), loop->instance ? loop->instance.as<express::entity>() : express::base{});

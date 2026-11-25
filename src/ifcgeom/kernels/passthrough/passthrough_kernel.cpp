@@ -198,7 +198,7 @@ namespace {
 	}
 
 	taxonomy::shell::ptr shell_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision) {
-		if (!extrusion || extrusion->depth <= precision) {
+		if (!extrusion || extrusion->depth <= precision || extrusion->basis->kind() == taxonomy::LOOP) {
 			return nullptr;
 		}
 		auto face = taxonomy::dcast<taxonomy::face>(extrusion->basis);
