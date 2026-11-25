@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Literal
+from typing import Literal, Optional
 
+import ifcopenshell
 import ifcopenshell.api.root
+import ifcopenshell.ifcopenshell_wrapper
 
 
 def add_structural_activity(
@@ -28,6 +30,7 @@ def add_structural_activity(
     ifc_class: str = "IfcStructuralPlanarAction",
     predefined_type: str = "CONST",
     global_or_local: Literal["GLOBAL_COORDS", "LOCAL_COORDS"] = "GLOBAL_COORDS",
+    projected_or_true: Optional[Literal["PROJECTED_LENGTH", "TRUE_LENGTH"]] = None,
 ) -> ifcopenshell.entity_instance:
     """Adds a new structural activity
 
@@ -46,6 +49,12 @@ def add_structural_activity(
         assigned to. However, the directions of the applied load may either
         be specified globally or locally depending on how this argument is
         set. Choose from GLOBAL_COORDS or LOCAL_COORDS.
+    :param projected_or_true: For a load on a curve or a surface, whether
+        it is given per length or area of the member projected across its
+        direction (PROJECTED_LENGTH), as snow on a rafter or a pitched roof
+        is given per horizontal length or plan area, or per true length or
+        area (TRUE_LENGTH). IFC allows PROJECTED_LENGTH only in global
+        coordinates. None leaves it unset, which is read as TRUE_LENGTH.
     :param applied_load: The IfcStructuralLoad that is applied in this
         activity.
     :param structural_member: The IfcStructuralMember that the load is
@@ -53,6 +62,13 @@ def add_structural_activity(
     :return: The newly created entity based on the ifc_class
     """
 
+    if projected_or_true is not None:
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(file.schema_identifier)
+        attributes = [a.name() for a in schema.declaration_by_name(ifc_class).all_attributes()]
+        if "ProjectedOrTrue" not in attributes:
+            raise ValueError(f"{ifc_class} has no ProjectedOrTrue: only loads on curves and surfaces have")
+        if projected_or_true == "PROJECTED_LENGTH" and global_or_local == "LOCAL_COORDS":
+            raise ValueError("A load per projected length or area must be in global coordinates")
     activity = ifcopenshell.api.root.create_entity(
         file,
         ifc_class=ifc_class,
@@ -60,6 +76,8 @@ def add_structural_activity(
     )
     activity.AppliedLoad = applied_load
     activity.GlobalOrLocal = global_or_local
+    if projected_or_true is not None:
+        activity.ProjectedOrTrue = projected_or_true
 
     rel = ifcopenshell.api.root.create_entity(file, ifc_class="IfcRelConnectsStructuralActivity")
     rel.RelatingElement = structural_member
