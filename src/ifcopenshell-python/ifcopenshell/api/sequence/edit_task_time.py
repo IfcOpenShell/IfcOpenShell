@@ -121,15 +121,17 @@ class Usecase:
 
     def calculate_finish(self):
         work_day = ifcopenshell.util.sequence.get_work_day_duration(self.task, self.calendar)
+        duration_type = self.task_time.DurationType
+        duration = self.task_time.ScheduleDuration
+        start = ifcopenshell.util.date.ifc2datetime(self.task_time.ScheduleStart)
+        # A task of work days starts at the start of a working day: a part of a day counts as a full day.
+        aligned_start = ifcopenshell.util.sequence.snap_task_date(
+            start, "START", duration, duration_type, self.calendar, work_day
+        )
+        if aligned_start != start:
+            self.task_time.ScheduleStart = ifcopenshell.util.date.datetime2ifc(aligned_start, "IfcDateTime")
         finish = ifcopenshell.util.sequence.get_start_or_finish_date(
-            ifcopenshell.util.date.ifc2datetime(self.task_time.ScheduleStart),
-            ifcopenshell.util.sequence.get_work_duration(
-                self.task_time.ScheduleDuration, self.task_time.DurationType, work_day
-            ),
-            self.task_time.DurationType,
-            self.calendar,
-            date_type="FINISH",
-            work_day=work_day,
+            aligned_start, duration, duration_type, self.calendar, date_type="FINISH", work_day=work_day
         )
         self.task_time.ScheduleFinish = ifcopenshell.util.date.datetime2ifc(finish, "IfcDateTime")
 
@@ -137,14 +139,13 @@ class Usecase:
         start = ifcopenshell.util.date.ifc2datetime(self.task_time.ScheduleStart)
         finish = ifcopenshell.util.date.ifc2datetime(self.task_time.ScheduleFinish)
         if self.task_time.DurationType == "ELAPSEDTIME":
-            duration = finish - start
+            self.task_time.ScheduleDuration = ifcopenshell.util.date.datetime2ifc(finish - start, "IfcDuration")
         else:
-            # Work days and work hours, in the form of get_work_duration
+            # Whole work days, and the work time after them
             work_day = ifcopenshell.util.sequence.get_work_day_duration(self.task, self.calendar)
-            work = ifcopenshell.util.sequence.get_work_time(start, finish, self.calendar, work_day)
-            work_days, rest = divmod(work, work_day)
-            duration = datetime.timedelta(days=work_days) + rest
-        self.task_time.ScheduleDuration = ifcopenshell.util.date.datetime2ifc(duration, "IfcDuration")
+            self.task_time.ScheduleDuration = ifcopenshell.util.sequence.get_work_duration_between(
+                start, finish, self.calendar, work_day
+            )
 
     def get_task(self) -> ifcopenshell.entity_instance:
         return next(e for e in self.file.get_inverse(self.task_time) if e.is_a("IfcTask"))

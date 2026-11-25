@@ -136,13 +136,7 @@ class Usecase:
         if not task.TaskTime:
             return
 
-        duration = (
-            ifcopenshell.util.sequence.get_work_duration(
-                task.TaskTime.ScheduleDuration, task.TaskTime.DurationType, self.get_work_day(task)
-            )
-            if task.TaskTime.ScheduleDuration
-            else datetime.timedelta()
-        )
+        duration = task.TaskTime.ScheduleDuration
 
         finishes = []
         starts = []
@@ -210,6 +204,12 @@ class Usecase:
                         ifcopenshell.util.sequence.get_work_finish(date, *self.get_work_hours(process, duration_type))
                     )
 
+        # A task of work days starts at the start of a working day and finishes at the end of a working day.
+        calendar, work_day, duration_type = self.get_calendar(task), self.get_work_day(task), task.TaskTime.DurationType
+        snap = ifcopenshell.util.sequence.snap_task_date
+        starts = [snap(d, "START", duration, duration_type, calendar, work_day) for d in starts]
+        finishes = [snap(d, "FINISH", duration, duration_type, calendar, work_day) for d in finishes]
+
         if starts and finishes:
             start = max(starts)
             finish = max(finishes)
@@ -228,38 +228,23 @@ class Usecase:
                 task.TaskTime.ScheduleStart = start_ifc
                 task.TaskTime.ScheduleFinish = ifcopenshell.util.date.datetime2ifc(potential_finish, "IfcDateTime")
             else:
+                start, finish = ifcopenshell.util.sequence.get_task_dates_from_finish(
+                    finish, duration, duration_type, calendar, work_day
+                )
                 finish_ifc = ifcopenshell.util.date.datetime2ifc(finish, "IfcDateTime")
                 if task.TaskTime.ScheduleFinish == finish_ifc and not is_first_task:
                     return
                 task.TaskTime.ScheduleFinish = finish_ifc
-                task.TaskTime.ScheduleStart = ifcopenshell.util.date.datetime2ifc(
-                    ifcopenshell.util.sequence.get_start_or_finish_date(
-                        finish,
-                        duration,
-                        task.TaskTime.DurationType,
-                        self.get_calendar(task),
-                        date_type="START",
-                        work_day=self.get_work_day(task),
-                    ),
-                    "IfcDateTime",
-                )
+                task.TaskTime.ScheduleStart = ifcopenshell.util.date.datetime2ifc(start, "IfcDateTime")
         elif finishes:
-            finish = max(finishes)
+            start, finish = ifcopenshell.util.sequence.get_task_dates_from_finish(
+                max(finishes), duration, duration_type, calendar, work_day
+            )
             finish_ifc = ifcopenshell.util.date.datetime2ifc(finish, "IfcDateTime")
             if task.TaskTime.ScheduleFinish == finish_ifc and not is_first_task:
                 return
             task.TaskTime.ScheduleFinish = finish_ifc
-            task.TaskTime.ScheduleStart = ifcopenshell.util.date.datetime2ifc(
-                ifcopenshell.util.sequence.get_start_or_finish_date(
-                    finish,
-                    duration,
-                    task.TaskTime.DurationType,
-                    self.get_calendar(task),
-                    date_type="START",
-                    work_day=self.get_work_day(task),
-                ),
-                "IfcDateTime",
-            )
+            task.TaskTime.ScheduleStart = ifcopenshell.util.date.datetime2ifc(start, "IfcDateTime")
         elif starts:
             start = max(starts)
             start_ifc = ifcopenshell.util.date.datetime2ifc(start, "IfcDateTime")

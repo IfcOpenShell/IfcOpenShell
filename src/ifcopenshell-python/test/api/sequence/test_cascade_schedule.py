@@ -174,13 +174,24 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
 
     def test_cascading_finish_to_start_at_the_finish_instant(self):
         task = self._create_task("P1DT4H")
-        task2 = self._create_task("P1D")
+        task2 = self._create_task("PT8H")
         self._create_sequence(task, task2, "FINISH_START")
 
         ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
         assert task.TaskTime.ScheduleFinish == "2000-01-02T13:00:00"
         assert task2.TaskTime.ScheduleStart == "2000-01-02T13:00:00"
         assert task2.TaskTime.ScheduleFinish == "2000-01-03T13:00:00"
+
+    def test_cascading_a_task_of_work_days_from_the_next_working_day(self):
+        task = self._create_task("P1DT4H")
+        task2 = self._create_task("P1D")
+        self._create_sequence(task, task2, "FINISH_START")
+
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        # A part of a day counts as a full day: the task of one work day takes all of the next working day.
+        assert task.TaskTime.ScheduleFinish == "2000-01-02T13:00:00"
+        assert task2.TaskTime.ScheduleStart == "2000-01-03T09:00:00"
+        assert task2.TaskTime.ScheduleFinish == "2000-01-03T17:00:00"
 
     def test_cascading_finish_to_start_through_the_calendar_time_periods(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")

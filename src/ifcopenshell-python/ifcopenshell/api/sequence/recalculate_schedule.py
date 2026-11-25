@@ -134,9 +134,9 @@ class Usecase:
         work_day = ifcopenshell.util.sequence.get_work_day_duration(task, calendar)
         if task.TaskTime and task.TaskTime.ScheduleDuration:
             duration_type = task.TaskTime.DurationType
-            duration = ifcopenshell.util.sequence.get_work_duration(
-                task.TaskTime.ScheduleDuration, duration_type, work_day
-            )
+            duration = task.TaskTime.ScheduleDuration
+            if not ifcopenshell.util.date.parse_duration(duration):
+                duration = datetime.timedelta()  # A milestone
         else:
             duration = datetime.timedelta()
             duration_type = "ELAPSEDTIME"
@@ -213,6 +213,12 @@ class Usecase:
             date, duration or datetime.timedelta(), node["duration_type"], node["calendar"], node["work_day"]
         )
 
+    def snap_task_date(self, node: dict, date: datetime.datetime, date_type: str, is_forward: bool):
+        # A task of work days starts at the start of a working day and finishes at the end of a working day.
+        return ifcopenshell.util.sequence.snap_task_date(
+            date, date_type, node["duration"], node["duration_type"], node["calendar"], node["work_day"], is_forward
+        )
+
     def get_work_hours(self, node: dict) -> tuple[Optional[ifcopenshell.entity_instance], datetime.timedelta]:
         # The calendar and the work day that give the work periods of the node.
         if node["duration_type"] == "ELAPSEDTIME":
@@ -230,6 +236,7 @@ class Usecase:
             finishes = []
             starts = []
             if data.get("early_start") is not None:
+                data["early_start"] = self.snap_task_date(data, data["early_start"], "START", True)
                 data["early_finish"] = ifcopenshell.util.sequence.get_start_or_finish_date(
                     data["early_start"],
                     data["duration"],
@@ -276,6 +283,8 @@ class Usecase:
                         finishes.append(
                             ifcopenshell.util.sequence.get_work_finish(date, *self.get_work_hours(node_data))
                         )
+            starts = [self.snap_task_date(data, d, "START", True) for d in starts]
+            finishes = [self.snap_task_date(data, d, "FINISH", True) for d in finishes]
             if starts and finishes:
                 data["early_start"] = max(starts)
                 data["early_finish"] = max(finishes)
@@ -289,12 +298,8 @@ class Usecase:
                 if potential_finish > data["early_finish"]:
                     data["early_finish"] = potential_finish
                 else:
-                    data["early_start"] = ifcopenshell.util.sequence.get_start_or_finish_date(
-                        data["early_finish"],
-                        data["duration"],
-                        data["duration_type"],
-                        data["calendar"],
-                        date_type="START",
+                    data["early_start"], data["early_finish"] = ifcopenshell.util.sequence.get_task_dates_from_finish(
+                        data["early_finish"], data["duration"], data["duration_type"], data["calendar"]
                     )
             elif finishes:
                 data["early_finish"] = max(finishes)
@@ -312,12 +317,8 @@ class Usecase:
                 date_type="FINISH",
             )
         elif data.get("early_start") is None:
-            data["early_start"] = ifcopenshell.util.sequence.get_start_or_finish_date(
-                data["early_finish"],
-                data["duration"],
-                data["duration_type"],
-                data["calendar"],
-                date_type="START",
+            data["early_start"], data["early_finish"] = ifcopenshell.util.sequence.get_task_dates_from_finish(
+                data["early_finish"], data["duration"], data["duration_type"], data["calendar"]
             )
 
         return True
@@ -406,6 +407,8 @@ class Usecase:
                             successor_data,
                         )
                     )
+            starts = [self.snap_task_date(data, d, "START", False) for d in starts]
+            finishes = [self.snap_task_date(data, d, "FINISH", False) for d in finishes]
             if starts and finishes:
                 data["late_start"] = min(starts)
                 data["late_finish"] = min(finishes)
@@ -418,12 +421,8 @@ class Usecase:
                         date_type="FINISH",
                     )
                 else:
-                    data["late_start"] = ifcopenshell.util.sequence.get_start_or_finish_date(
-                        data["late_finish"],
-                        data["duration"],
-                        data["duration_type"],
-                        data["calendar"],
-                        date_type="START",
+                    data["late_start"], data["late_finish"] = ifcopenshell.util.sequence.get_task_dates_from_finish(
+                        data["late_finish"], data["duration"], data["duration_type"], data["calendar"], is_forward=False
                     )
             elif finishes:
                 data["late_finish"] = min(finishes)
@@ -441,12 +440,8 @@ class Usecase:
                 date_type="FINISH",
             )
         elif data.get("late_start") is None:
-            data["late_start"] = ifcopenshell.util.sequence.get_start_or_finish_date(
-                data["late_finish"],
-                data["duration"],
-                data["duration_type"],
-                data["calendar"],
-                date_type="START",
+            data["late_start"], data["late_finish"] = ifcopenshell.util.sequence.get_task_dates_from_finish(
+                data["late_finish"], data["duration"], data["duration_type"], data["calendar"], is_forward=False
             )
 
         if data["duration_type"] == "WORKTIME":
