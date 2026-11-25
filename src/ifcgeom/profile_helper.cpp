@@ -114,6 +114,34 @@ void ifcopenshell::geom::remove_duplicate_points_from_loop(std::vector<taxonomy:
 	}
 }
 
+void ifcopenshell::geom::remove_backtracking_points_from_loop(std::vector<taxonomy::point3::ptr>& polygon, double tol) {
+	// Removes the tips of spikes in a closed loop: points where the loop turns
+	// back onto the segment it came along, such as b in a -> b -> c with c on
+	// the line through a and b, on the side of b towards a.
+	for (;;) {
+		bool removed = false;
+		const std::size_t n = polygon.size();
+		if (n < 3) break;
+		for (size_t i = 0; i < n; ++i) {
+			const Eigen::Vector3d& a = polygon[(i + n - 1) % n]->ccomponents();
+			const Eigen::Vector3d& b = polygon[i]->ccomponents();
+			const Eigen::Vector3d& c = polygon[(i + 1) % n]->ccomponents();
+			const Eigen::Vector3d ab = b - a;
+			const Eigen::Vector3d bc = c - b;
+			// The cross product divided by either segment length is the distance of the
+			// other end point to the line through that segment.
+			if (ab.dot(bc) < 0. && ab.cross(bc).norm() < tol * std::min(ab.norm(), bc.norm())) {
+				polygon.erase(polygon.begin() + i);
+				// The points on both sides of the tip can now coincide.
+				remove_duplicate_points_from_loop(polygon, true, tol);
+				removed = true;
+				break;
+			}
+		}
+		if (!removed) break;
+	}
+}
+
 taxonomy::loop::ptr ifcopenshell::geom::polygon_from_points(const std::vector<taxonomy::point3::ptr>& ps, bool external) {
 	auto loop = taxonomy::make<taxonomy::loop>();
 	loop->external = external;
