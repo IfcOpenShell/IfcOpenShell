@@ -12,6 +12,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.sequence
 import ifcopenshell.guid
 import ifcopenshell.util.date
+import ifcopenshell.util.sequence
 
 
 class WorkSlot(TypedDict):
@@ -71,6 +72,51 @@ class WBSEntry(TypedDict):
     ifc: Union[ifcopenshell.entity_instance, None]
     rel: Union[ifcopenshell.entity_instance, None]
     activities: list[int]
+
+
+def is_uniform_calendar(calendar: Calendar) -> bool:
+    """True if each working day of the calendar has HoursPerDay work hours
+
+    An IfcDuration work day is one working day of its calendar, with the
+    length of that day (see ifcopenshell.util.sequence.offset_work_days).
+    Thus work hours can become work days only if all the working days have
+    the same length.
+    """
+    if not calendar.get("ifc"):
+        return True  # Each day has one work period of HoursPerDay
+    hours_per_day = timedelta(hours=float(calendar["HoursPerDay"] or 8))
+    for work_time in calendar["ifc"].WorkingTimes or []:
+        periods = ifcopenshell.util.sequence.get_time_periods(work_time)
+        if periods and sum((end - start for start, end in periods), timedelta()) != hours_per_day:
+            return False
+    # An exception with time periods gives a day with less work hours.
+    return not any(ifcopenshell.util.sequence.get_time_periods(w) for w in calendar["ifc"].ExceptionTimes or [])
+
+
+def get_work_duration(hours: float, calendar: Calendar) -> str:
+    """Work hours as an IfcDuration of whole work days or work hours
+
+    P6 and MS Project count durations and lags in work hours. A WORKTIME
+    work day is one working day of its calendar, and a task of work days
+    starts at the start of a working day (see
+    ifcopenshell.util.sequence.get_start_or_finish_date). Thus the result
+    is whole work days (P2D) only if the hours are whole days of a uniform
+    calendar (see is_uniform_calendar). Else it is work hours only (PT12H),
+    which are exact. Thus it gives the same dates as the source.
+    """
+    sign = "-" if hours < 0 else ""
+    seconds = round(abs(hours) * 3600, 6)
+    days = 0
+    day_seconds = float(calendar["HoursPerDay"] or 8) * 3600
+    if seconds and is_uniform_calendar(calendar) and not seconds % day_seconds:
+        days, seconds = divmod(seconds, day_seconds)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+    time = "".join(f"{int(v)}{unit}" for v, unit in ((hours, "H"), (minutes, "M")) if v)
+    if seconds:
+        time += f"{round(seconds, 6):g}S"
+    result = (f"{int(days)}D" if days else "") + (f"T{time}" if time else "")
+    return f"{sign}P{result}" if result else "P0D"
 
 
 class ScheduleIfcGenerator:
@@ -361,7 +407,7 @@ class ScheduleIfcGenerator:
         task_time.DurationType = "WORKTIME"
         planned = activity["PlannedDuration"]
         if planned is not None and (float(planned) or activity["StartDate"] == activity["FinishDate"]):
-            task_time.ScheduleDuration = date(timedelta(days=float(planned) / hours_per_day), "IfcDuration")
+            task_time.ScheduleDuration = get_work_duration(float(planned), calendar)
 
         for attribute, value in (
             ("ActualStart", activity.get("ActualStartDate")),
@@ -457,11 +503,12 @@ class ScheduleIfcGenerator:
                 rel_sequence = self.file.create_entity("IfcRelSequence", **attributes)
             lag = float(relationship["Lag"])
             if lag:
-                calendar = self.calendars[self.activities[relationship["PredecessorActivity"]]["CalendarObjectId"]]
+                # A WORKTIME lag counts in the work time of the successor.
+                calendar = self.calendars[self.activities[relationship["SuccessorActivity"]]["CalendarObjectId"]]
                 ifcopenshell.api.sequence.assign_lag_time(
                     self.file,
                     rel_sequence=rel_sequence,
-                    lag_value=timedelta(days=lag / float(calendar["HoursPerDay"] or 8)),
+                    lag_value=get_work_duration(lag, calendar),
                     duration_type="WORKTIME",
                 )
 
