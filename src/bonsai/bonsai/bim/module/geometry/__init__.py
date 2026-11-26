@@ -72,6 +72,7 @@ classes = (
     operator.SelectByRepresentationType,
     operator.SelectConnection,
     operator.SelectRepresentationItem,
+    operator.ClickRepresentationItem,
     operator.SwitchRepresentation,
     operator.UnassignRepresentationItemLayer,
     operator.UnassignRepresentationItemStyle,

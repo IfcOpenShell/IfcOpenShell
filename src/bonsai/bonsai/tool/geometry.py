@@ -2292,6 +2292,147 @@ class Geometry(bonsai.core.tool.Geometry):
             tool.Root.reload_item_decorator()
 
     @classmethod
+    def get_nested_item_ids(cls, item: ifcopenshell.entity_instance) -> set[int]:
+        """The item's id, and the ids of the items inside it if it is a boolean or CSG solid."""
+        results = {item.id()}
+        if item.is_a("IfcBooleanResult"):
+            results.update(cls.get_nested_item_ids(item.FirstOperand))
+            results.update(cls.get_nested_item_ids(item.SecondOperand))
+        elif item.is_a("IfcCsgSolid"):
+            results.update(cls.get_nested_item_ids(item.TreeRootExpression))
+        return results
+
+    @classmethod
+    def get_listed_item_ids(cls, props: BIMObjectGeometryProperties) -> dict[int, set[int]]:
+        """Each item in the representation items list, mapped to its own and its nested item ids."""
+        ifc_file = tool.Ifc.get()
+        results: dict[int, set[int]] = {}
+        for ui_item in props.items:
+            try:
+                results[ui_item.ifc_definition_id] = cls.get_nested_item_ids(ifc_file.by_id(ui_item.ifc_definition_id))
+            except RuntimeError:
+                continue  # The list is stale
+        return results
+
+    @classmethod
+    def get_edit_mesh_objects(cls) -> list[bpy.types.Object]:
+        return [o for o in bpy.context.view_layer.objects if o.mode == "EDIT" and isinstance(o.data, bpy.types.Mesh)]
+
+    @classmethod
+    def get_selected_representation_items(cls, props: BIMObjectGeometryProperties) -> set[int]:
+        """Ids of the listed items whose geometry is selected in the viewport.
+
+        In item mode, those whose item objects are selected. In edit mode, those with a selected vertex in an edited
+        item object, or a selected face in an edited element mesh.
+        """
+        selected: set[int] = set()
+        if bpy.context.mode == "EDIT_MESH":
+            for obj in cls.get_edit_mesh_objects():
+                bm = bmesh.from_edit_mesh(obj.data)
+                if cls.is_representation_item(obj):
+                    if any(v.select for v in bm.verts):
+                        selected.add(cls.get_mesh_props(obj.data).ifc_definition_id)
+                elif item_id_layer := bm.faces.layers.int.get("ios_item_ids"):
+                    selected.update(face[item_id_layer] for face in bm.faces if face.select)
+        elif (gprops := cls.get_geometry_props()).representation_obj:
+            for item_obj in gprops.item_objs:
+                if (obj := item_obj.obj) and obj.select_get():
+                    selected.add(cls.get_mesh_props(obj.data).ifc_definition_id)
+        return {ui_id for ui_id, item_ids in cls.get_listed_item_ids(props).items() if item_ids & selected}
+
+    @classmethod
+    def follow_active_representation_item(cls) -> None:
+        """In item mode, highlight the active item object's row in the representation items list.
+
+        Sets the raw index, so the list's update callback doesn't change the selection. Covers item edit mode too,
+        where selecting a vertex of another edited item makes it the active object.
+        """
+        gprops = cls.get_geometry_props()
+        if not (rep_obj := gprops.representation_obj) or not (obj := bpy.context.active_object):
+            return
+        if not cls.is_representation_item(obj):
+            return
+        props = cls.get_object_geometry_props(rep_obj)
+        if not props.is_editing:
+            return
+        item_id = cls.get_mesh_props(obj.data).ifc_definition_id
+        listed = cls.get_listed_item_ids(props)
+        for index, ui_item in enumerate(props.items):
+            if item_id in listed.get(ui_item.ifc_definition_id, ()):
+                if props.active_item_index != index:
+                    props["active_item_index"] = index
+                return
+
+    @classmethod
+    def select_representation_items_in_scene(
+        cls,
+        props: BIMObjectGeometryProperties,
+        ui_item_ids: Iterable[int],
+        state: bool = True,
+        extend: bool = False,
+    ) -> None:
+        """Select, or with ``state`` False deselect, the geometry of items in the representation items list.
+
+        In item mode, their item objects, the first becoming the active object. In edit mode, all of an edited item
+        object, or the faces of an edited element mesh that come from them. Otherwise does nothing.
+
+        :param extend: Leave the rest of the selection as it is, instead of deselecting it.
+        """
+        listed = cls.get_listed_item_ids(props)
+        ui_item_ids = list(ui_item_ids)
+        item_ids: set[int] = set().union(*(listed.get(i, set()) for i in ui_item_ids))
+
+        context = bpy.context
+        if context.mode == "EDIT_MESH":
+            for obj in cls.get_edit_mesh_objects():
+                bm = bmesh.from_edit_mesh(obj.data)
+                if cls.is_representation_item(obj):
+                    if cls.get_mesh_props(obj.data).ifc_definition_id in item_ids:
+                        value = state
+                    elif not extend:
+                        value = False
+                    else:
+                        continue
+                    for elements in (bm.verts, bm.edges, bm.faces):
+                        for element in elements:
+                            element.select = value
+                elif item_id_layer := bm.faces.layers.int.get("ios_item_ids"):
+                    if state:
+                        keep = [f for f in bm.faces if f.select] if extend else []
+                        keep += [f for f in bm.faces if f[item_id_layer] in item_ids]
+                    else:
+                        # Deselecting a face also deselects the vertices it shares, so reselect what stays selected
+                        keep = [f for f in bm.faces if f.select and f[item_id_layer] not in item_ids] if extend else []
+                    for elements in (bm.verts, bm.edges, bm.faces):
+                        for element in elements:
+                            element.select = False
+                    for face in keep:
+                        face.select_set(True)
+                else:
+                    continue
+                bm.select_flush_mode()
+                bmesh.update_edit_mesh(obj.data)
+            return
+
+        gprops = cls.get_geometry_props()
+        if not gprops.representation_obj:
+            return
+        active_item_ids = listed.get(ui_item_ids[0], set()) if state and ui_item_ids else set()
+        active_obj = None
+        for item_obj in gprops.item_objs:
+            if not (obj := item_obj.obj):
+                continue
+            item_id = cls.get_mesh_props(obj.data).ifc_definition_id
+            if item_id in item_ids:
+                tool.Blender.set_object_selection(obj, state)
+            elif not extend:
+                tool.Blender.set_object_selection(obj, False)
+            if item_id in active_item_ids:
+                active_obj = obj
+        if active_obj:
+            context.view_layer.objects.active = active_obj
+
+    @classmethod
     def import_item_attributes(cls, obj: bpy.types.Object) -> None:
         props = tool.Geometry.get_mesh_props(obj.data)
         props.item_attributes.clear()

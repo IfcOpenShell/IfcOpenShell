@@ -218,6 +218,12 @@ def update_is_editing_item_layer(self: "BIMObjectGeometryProperties", context: b
     self.property_unset("is_editing_item_layer")
 
 
+def update_active_item_index(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> None:
+    # Clicking a row (or moving through the list with the arrow keys) selects just that item's geometry
+    if active_item := self.active_item:
+        tool.Geometry.select_representation_items_in_scene(self, [active_item.ifc_definition_id])
+
+
 class BIMObjectGeometryProperties(PropertyGroup):
     # Representations UI.
     contexts: EnumProperty(items=get_contexts, name="Contexts")
@@ -236,7 +242,7 @@ class BIMObjectGeometryProperties(PropertyGroup):
     # Representation items UI.
     is_editing: BoolProperty(name="Is Editing", default=False)
     items: CollectionProperty(name="Representation Items", type=RepresentationItem)
-    active_item_index: IntProperty(name="Active Representation Item Index")
+    active_item_index: IntProperty(name="Active Representation Item Index", update=update_active_item_index)
     is_editing_item_style: BoolProperty(name="Is Editing Item's Style", default=False)
     representation_item_style: EnumProperty(items=get_styles, name="Representation Item Style")
     is_editing_item_shape_aspect: BoolProperty(name="Is Editing Item's Shape Aspect", default=False)

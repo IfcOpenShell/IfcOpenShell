@@ -252,6 +252,8 @@ class BIM_PT_representation_items(Panel):
             op = row.operator("bim.remove_representation_item", icon="X", text="")
             op.representation_item_id = props.active_item.ifc_definition_id
 
+        # Rows are checked when their geometry is selected in the viewport, so the two always agree
+        BIM_UL_representation_items.selected_item_ids = tool.Geometry.get_selected_representation_items(props)
         self.layout.template_list("BIM_UL_representation_items", "", props, "items", props, "active_item_index")
 
         item_is_active = props.active_item_index < len(props.items)
@@ -631,13 +633,26 @@ class BIM_PT_workarounds(Panel):
 
 
 class BIM_UL_representation_items(UIList):
-    def draw_item(self, context, layout: bpy.types.UILayout, data, item, icon, active_data, active_propname):
+    # Set by BIM_PT_representation_items before drawing the list
+    selected_item_ids: set[int] = set()
+
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item, icon, active_data, active_propname, index=0
+    ):
         if item:
             icon = "MATERIAL" if item.surface_style else "MESH_UVSPHERE"
             row = layout.row(align=True)
             item_name = item.name
             if item.shape_aspect:
                 item_name = f"{item.shape_aspect} {item_name}"
-            row.label(text=item_name, icon=icon)
+            is_selected = item.ifc_definition_id in self.selected_item_ids
+            selected_icon = "CHECKBOX_HLT" if is_selected else "CHECKBOX_DEHLT"
+            op = row.operator("bim.click_representation_item", text="", icon=selected_icon, emboss=False)
+            op.index = index
+            op.toggle = True
+            sub = row.row(align=True)
+            sub.alignment = "LEFT"
+            op = sub.operator("bim.click_representation_item", text=item_name, icon=icon, emboss=False)
+            op.index = index
             if item.layer:
                 row.label(text="", icon="STICKY_UVS_LOC")

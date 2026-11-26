@@ -3541,6 +3541,41 @@ class SelectRepresentationItem(bpy.types.Operator):
         return results
 
 
+class ClickRepresentationItem(bpy.types.Operator):
+    bl_idname = "bim.click_representation_item"
+    bl_label = "Select Representation Item"
+    bl_description = (
+        "Select this item's geometry, in item mode or edit mode.\n\n"
+        "Ctrl+Click to add it to or remove it from the selection"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()
+    extend: bpy.props.BoolProperty(name="Extend", default=False, options={"SKIP_SAVE"})
+    toggle: bpy.props.BoolProperty(
+        name="Toggle", description="Always add or remove, as Ctrl+Click does", default=False, options={"SKIP_SAVE"}
+    )
+
+    def invoke(self, context, event):
+        self.extend = event.ctrl
+        return self.execute(context)
+
+    def execute(self, context):
+        if not (obj := tool.Geometry.get_active_or_representation_obj()):
+            return {"CANCELLED"}
+        props = tool.Geometry.get_object_geometry_props(obj)
+        if not 0 <= self.index < len(props.items):
+            return {"CANCELLED"}
+        item_id = props.items[self.index].ifc_definition_id
+        # The raw value, so its update callback doesn't select the item on its own
+        props["active_item_index"] = self.index
+        if self.extend or self.toggle:
+            is_selected = item_id in tool.Geometry.get_selected_representation_items(props)
+            tool.Geometry.select_representation_items_in_scene(props, [item_id], state=not is_selected, extend=True)
+        else:
+            tool.Geometry.select_representation_items_in_scene(props, [item_id])
+        return {"FINISHED"}
+
+
 def poll_editing_representation_item_style(cls, context):
     if not (obj := tool.Geometry.get_active_or_representation_obj()):
         return False
