@@ -60,10 +60,17 @@ class TestAddActionLoads:
         assert data["loadsLC"]["FX"] == pytest.approx([100.0])
         assert data["loadsLC"]["FY"] == pytest.approx([0.0])
 
-    def test_local_point_load_on_edge(self, converter):
+    def test_local_point_load_on_vertex(self, converter):
         action, load_case = add_point_action(converter.file, "LOCAL_COORDS")
-        element = {"geometry_type": "Edge", "orientation": np.eye(3)}
+        element = {"geometry_type": "Vertex", "orientation": np.eye(3)}
         data = make_data()
         converter.add_action_loads(element, action, data, [load_case])
         assert data["loadsLC"]["FX"] == pytest.approx([100.0])
         assert data["loadsLC"]["FY"] == pytest.approx([0.0])
+
+    def test_refusing_a_point_load_on_an_edge(self, converter):
+        # It would be written as a force per metre along the whole member.
+        action, load_case = add_point_action(converter.file, "GLOBAL_COORDS")
+        element = {"geometry_type": "Edge", "orientation": np.eye(3)}
+        with pytest.raises(NotImplementedError, match="point load on a curve member"):
+            converter.add_action_loads(element, action, make_data(), [load_case])
