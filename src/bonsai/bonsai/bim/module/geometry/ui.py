@@ -274,6 +274,8 @@ class BIM_PT_representation_items(Panel):
             prop_with_search(row, props, "representation_item_style", icon="SHADING_RENDERED", text="")
             row.operator("bim.edit_representation_item_style", icon="CHECKMARK", text="")
             row.operator("bim.disable_editing_representation_item_style", icon="CANCEL", text="")
+            if (total := len(BIM_UL_representation_items.selected_item_ids)) > 1:
+                self.layout.label(text=f"Applies to the {total} selected items", icon="INFO")
         else:
             if surface_style:
                 row.label(text=surface_style, icon="SHADING_RENDERED")
@@ -654,5 +656,10 @@ class BIM_UL_representation_items(UIList):
             sub.alignment = "LEFT"
             op = sub.operator("bim.click_representation_item", text=item_name, icon=icon, emboss=False)
             op.index = index
+            if item.surface_style:
+                sub = row.row(align=True)
+                sub.alignment = "RIGHT"
+                sub.active = False  # Greyed, so the item name stays the main text
+                sub.label(text=item.surface_style)
             if item.layer:
                 row.label(text="", icon="STICKY_UVS_LOC")

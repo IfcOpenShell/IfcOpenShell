@@ -3646,12 +3646,48 @@ class EditRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
         else:
             surface_style = ifc_file.by_id(int(props.representation_item_style))
 
-        assert (active_item := props.active_item)
-        representation_item_id = active_item.ifc_definition_id
-        representation_item = ifc_file.by_id(representation_item_id)
+        # Every item selected in the viewport (checked in the list), or else the active one
+        item_ids = tool.Geometry.get_selected_representation_items(props)
+        if not item_ids:
+            assert (active_item := props.active_item)
+            item_ids = {active_item.ifc_definition_id}
 
-        tool.Style.assign_style_to_representation_item(representation_item, surface_style)
+        from bonsai.bim.module.material.data import ObjectMaterialData
+
+        if not ObjectMaterialData.is_loaded:
+            ObjectMaterialData.load()
+        constituents = set(ObjectMaterialData.data["active_material_constituents"])
+        skipped: list[str] = []
+        restyled: set[int] = set()
+        for ui_item in props.items:
+            if ui_item.ifc_definition_id not in item_ids:
+                continue
+            if ui_item.shape_aspect and ui_item.shape_aspect in constituents:
+                # As in poll_editing_representation_item_style, its material constituent gives its style
+                skipped.append(f"{ui_item.shape_aspect} {ui_item.name}")
+                continue
+            item = ifc_file.by_id(ui_item.ifc_definition_id)
+            tool.Style.assign_style_to_representation_item(item, surface_style)
+            restyled.update(tool.Geometry.get_nested_item_ids(item))
         tool.Geometry.reload_representation(obj)
+
+        # In item mode (not edit mode), show the new style on the item objects too
+        gprops = tool.Geometry.get_geometry_props()
+        if restyled and gprops.representation_obj and context.mode == "OBJECT":
+            tool.Geometry.sync_item_positions()  # So re-importing keeps moves not yet saved
+            for item_obj in gprops.item_objs:
+                if not (restyled_obj := item_obj.obj):
+                    continue
+                if tool.Geometry.get_mesh_props(restyled_obj.data).ifc_definition_id in restyled:
+                    restyled_obj.data.materials.clear()  # import_item appends the style's material
+                    tool.Geometry.import_item(restyled_obj)
+
+        # Show the new style names in the list now, without relying on its listener, which an add-on reload drops.
+        # This also subscribes it again.
+        if props.is_editing:
+            tool.Geometry.enable_editing_representation_items(obj)
+        if skipped:
+            self.report({"INFO"}, f"Style comes from the material constituent, not changed: {', '.join(skipped)}")
 
 
 class DisableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
