@@ -17,6 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 # This file was generated with the assistance of an AI coding tool.
 
+import ifcopenshell.api.group
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
 import ifcopenshell.api.structural
 import ifcopenshell.guid
 import test.bootstrap
@@ -90,3 +93,49 @@ class TestRemoveStructuralLoadCase(test.bootstrap.IFC4):
         )
         ifcopenshell.api.structural.remove_structural_load_case(self.file, load_case=load_case)
         assert model.LoadedBy is None
+
+    def add_point_load(self, group, name="P"):
+        point = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection", name=name)
+        load = ifcopenshell.api.structural.add_structural_load(
+            self.file, name="10 kN", ifc_class="IfcStructuralLoadSingleForce"
+        )
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            self.file, applied_load=load, structural_member=point, ifc_class="IfcStructuralPointAction"
+        )
+        ifcopenshell.api.group.assign_group(self.file, products=[activity], group=group)
+        return point, load, activity
+
+    def test_removing_the_activities_in_a_load_case(self):
+        load_case = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Dead")
+        point, load, activity = self.add_point_load(load_case)
+        ifcopenshell.api.structural.remove_structural_load_case(self.file, load_case=load_case)
+        assert not self.file.by_type("IfcStructuralActivity")
+        assert not self.file.by_type("IfcRelConnectsStructuralActivity")
+        # The point and the load definition, which other activities may share, are kept.
+        assert point.id() and load.id()
+
+    def test_removing_the_load_groups_in_a_load_case_with_their_activities(self):
+        load_case = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Dead")
+        load_group = ifcopenshell.api.structural.add_structural_load_group(self.file, name="Slab")
+        ifcopenshell.api.group.assign_group(self.file, products=[load_group], group=load_case)
+        self.add_point_load(load_group)
+        ifcopenshell.api.structural.remove_structural_load_case(self.file, load_case=load_case)
+        assert not self.file.by_type("IfcStructuralLoadGroup")
+        assert not self.file.by_type("IfcStructuralActivity")
+
+    def test_keeping_an_activity_that_another_load_case_also_groups(self):
+        dead = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Dead")
+        live = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Live")
+        point, load, activity = self.add_point_load(dead)
+        ifcopenshell.api.group.assign_group(self.file, products=[activity], group=live)
+        ifcopenshell.api.structural.remove_structural_load_case(self.file, load_case=dead)
+        assert self.file.by_type("IfcStructuralActivity") == (activity,)
+        assert [r.RelatingGroup for r in activity.HasAssignments] == [live]
+
+    def test_removing_the_property_sets_of_a_load_case(self):
+        load_case = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Dead")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=load_case, name="Pset_Custom")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Note": "Kept nowhere"})
+        ifcopenshell.api.structural.remove_structural_load_case(self.file, load_case=load_case)
+        assert not self.file.by_type("IfcPropertySet")
+        assert not self.file.by_type("IfcRelDefinesByProperties")
