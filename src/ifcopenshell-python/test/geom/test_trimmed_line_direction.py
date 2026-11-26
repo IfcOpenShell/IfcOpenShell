@@ -38,4 +38,6 @@ def test_profile_of_lines_trimmed_against_their_direction_extrudes_to_the_author
     settings = ifcopenshell.geom.settings()
     geometry = ifcopenshell.geom.create_shape(settings, solid, geometry_library="opencascade")
     assert ifcopenshell.util.shape.get_volume(geometry) == pytest.approx(width * height * depth, rel=1e-6)
-    assert "GEO208" not in ifcopenshell.get_log()
+    log = ifcopenshell.get_log()
+    assert "GEO208" not in log
+    assert "GEO416" in log

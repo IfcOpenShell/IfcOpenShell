@@ -167,6 +167,7 @@ namespace {
 						// parameter without reversing the edge, so a segment whose first trim
 						// lies beyond the second along the basis curve would run from p2 to p1.
 						if (BRep_Tool::Pnt(TopExp::FirstVertex(E, true)).Distance(p1) > BRep_Tool::Pnt(TopExp::LastVertex(E, true)).Distance(p1)) {
+							ifcopenshell::logger::root().warning("GEO", 416, "Trim1 lies beyond Trim2 along the basis curve, segment reversed to run from Trim1 to Trim2:", e->instance);
 							E.Reverse();
 						}
 					}
