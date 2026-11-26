@@ -5,6 +5,11 @@ import subprocess
 import sys
 import tempfile
 
+import ifcopenshell.api.group
+import ifcopenshell.api.project
+import ifcopenshell.api.root
+import ifcopenshell.guid
+
 from ifcquery.relations import relations
 
 
@@ -262,6 +267,31 @@ class TestStructuralRelations:
             "analysis_models": _refs(f.by_type("IfcStructuralAnalysisModel")),
             "load_cases": [{**_refs([case])[0], "factor": 3.0}],
         }
+
+    def test_load_case_given_its_factor_by_a_load_group(self):
+        # As RFEM writes combinations: a load group of type LOAD_GROUP for each factor
+        f = ifcopenshell.api.project.create_file(version="IFC4")
+        ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject")
+        groups = {}
+        for name, predefined_type, coefficient in (
+            ("Q", "LOAD_CASE", None),
+            ("Q x 1.5", "LOAD_GROUP", 1.5),
+            ("CO1", "LOAD_COMBINATION", None),
+        ):
+            groups[name] = f.createIfcStructuralLoadGroup(
+                ifcopenshell.guid.new(),
+                Name=name,
+                PredefinedType=predefined_type,
+                ActionType="NOTDEFINED",
+                ActionSource="NOTDEFINED",
+                Coefficient=coefficient,
+            )
+        ifcopenshell.api.group.assign_group(f, products=[groups["Q"]], group=groups["Q x 1.5"])
+        ifcopenshell.api.group.assign_group(f, products=[groups["Q x 1.5"]], group=groups["CO1"])
+        structural = relations(f, groups["Q"])["structural"]
+        assert structural == {"load_combinations": [{**_refs([groups["CO1"]])[0], "factor": 1.5}]}
+        # The load group giving the factor is not a load case of the combination
+        assert "load_combinations" not in relations(f, groups["Q x 1.5"]).get("structural", {})
 
     def test_structural_entities_are_in_the_flat_list(self, structural_model):
         f = structural_model
