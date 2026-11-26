@@ -55,8 +55,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularPyramid& inst) {
 
 		std::vector<taxonomy::point3::ptr> points{
 			taxonomy::make<taxonomy::point3>(0, 0, 0),
-			taxonomy::make<taxonomy::point3>(0, dy, 0),
-			taxonomy::make<taxonomy::point3>(0.5*dx, 0.5*dy, dz)
+			taxonomy::make<taxonomy::point3>(0.5*dx, 0.5*dy, dz),
+			taxonomy::make<taxonomy::point3>(0, dy, 0)
 		};
 
 		points.push_back(points.front());
@@ -69,8 +69,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularPyramid& inst) {
 
 		std::vector<taxonomy::point3::ptr> points{
 			taxonomy::make<taxonomy::point3>(0, dy, 0),
-			taxonomy::make<taxonomy::point3>(dx, dy, 0),
-			taxonomy::make<taxonomy::point3>(0.5*dx, 0.5*dy, dz)
+			taxonomy::make<taxonomy::point3>(0.5*dx, 0.5*dy, dz),
+			taxonomy::make<taxonomy::point3>(dx, dy, 0)
 		};
 
 		points.push_back(points.front());
@@ -83,8 +83,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularPyramid& inst) {
 
 		std::vector<taxonomy::point3::ptr> points{
 			taxonomy::make<taxonomy::point3>(dx, dy, 0),
-			taxonomy::make<taxonomy::point3>(dx, 0, 0),
-			taxonomy::make<taxonomy::point3>(0.5*dx, 0.5*dy, dz)
+			taxonomy::make<taxonomy::point3>(0.5*dx, 0.5*dy, dz),
+			taxonomy::make<taxonomy::point3>(dx, 0, 0)
 		};
 
 		points.push_back(points.front());
@@ -97,8 +97,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularPyramid& inst) {
 
 		std::vector<taxonomy::point3::ptr> points{
 			taxonomy::make<taxonomy::point3>(dx, 0, 0),
-			taxonomy::make<taxonomy::point3>(0, 0, 0),
-			taxonomy::make<taxonomy::point3>(0.5*dx, 0.5*dy, dz)
+			taxonomy::make<taxonomy::point3>(0.5*dx, 0.5*dy, dz),
+			taxonomy::make<taxonomy::point3>(0, 0, 0)
 		};
 
 		points.push_back(points.front());
