@@ -559,7 +559,9 @@ bool ifcopenshell::geom::util::wire_intersections(const TopoDS_Wire& wire, NColl
 									double _, __;
 									opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, _, __);
 									BRepBuilderAPI_MakeEdge me(crv, kept, cut);
-									mw.Add(me.Edge());
+									// MakeEdge runs along the curve. Keep the sense the wire traverses
+									// the original edge with, or a cycle that starts here runs backwards.
+									mw.Add(TopoDS::Edge(me.Edge().Oriented(e.Orientation())));
 								}
 
 								first = false;
