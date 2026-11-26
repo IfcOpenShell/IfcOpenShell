@@ -459,29 +459,19 @@ class DumbProfileJoiner:
         self.profile = material.CompositeProfile or material.MaterialProfiles[0].Profile
         self.clippings = []
 
-        for rel in getattr(element, "ConnectedTo", []) or ():
-            connection = getattr(rel, "RelatingConnectionType", None)
-            other = tool.Ifc.get_object(getattr(rel, "RelatedElement", None))
-            if connection not in ["ATPATH", "NOTDEFINED", None] and other:
+        for rel in element.ConnectedTo:
+            connection = rel.RelatingConnectionType
+            other = tool.Ifc.get_object(rel.RelatedElement)
+            if connection not in ["ATPATH", "NOTDEFINED"]:
                 self.join(
-                    obj,
-                    other,
-                    connection,
-                    getattr(rel, "RelatedConnectionType", None),
-                    is_relating=True,
-                    description=getattr(rel, "Description", None),
+                    obj, other, connection, rel.RelatedConnectionType, is_relating=True, description=rel.Description
                 )
-        for rel in getattr(element, "ConnectedFrom", []) or ():
-            connection = getattr(rel, "RelatedConnectionType", None)
-            other = tool.Ifc.get_object(getattr(rel, "RelatingElement", None))
-            if connection not in ["ATPATH", "NOTDEFINED", None] and other:
+        for rel in element.ConnectedFrom:
+            connection = rel.RelatedConnectionType
+            other = tool.Ifc.get_object(rel.RelatingElement)
+            if connection not in ["ATPATH", "NOTDEFINED"]:
                 self.join(
-                    obj,
-                    other,
-                    connection,
-                    getattr(rel, "RelatingConnectionType", None),
-                    is_relating=False,
-                    description=getattr(rel, "Description", None),
+                    obj, other, connection, rel.RelatingConnectionType, is_relating=False, description=rel.Description
                 )
 
         new_matrix = copy.deepcopy(obj.matrix_world)
@@ -977,7 +967,8 @@ class Rotate90(bpy.types.Operator, tool.Ifc.Operator):
                 profile_objs.append(obj)
             elif usage == "LAYER2":
                 layer2_objs.append(obj)
-            if getattr(element, "ConnectedTo", None) or getattr(element, "ConnectedFrom", None):
+            # Structural members are not IfcElements, and have no path connections.
+            if element.is_a("IfcElement") and (element.ConnectedTo or element.ConnectedFrom):
                 ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element, connection_type="ATSTART")
                 ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element, connection_type="ATEND")
                 ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element, connection_type="ATPATH")
