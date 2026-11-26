@@ -20,6 +20,7 @@ import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.api.structural
 import ifcopenshell.util.element
+import ifcopenshell.util.structural
 
 
 def remove_structural_load_case(file: ifcopenshell.file, load_case: ifcopenshell.entity_instance) -> None:
@@ -29,21 +30,38 @@ def remove_structural_load_case(file: ifcopenshell.file, load_case: ifcopenshell
     with it, except those that another load group or load case also groups:
     they are only taken out of this one. Its property sets are removed too.
 
+    The load case is taken out of its load combinations as
+    :func:`ifcopenshell.api.structural.unassign_structural_load_combination`
+    does, so that a load group giving it its factor in one, left grouping
+    nothing, goes too.
+
     :param load_case: The IfcStructuralLoadCase to remove.
     :return: None
     """
-    members = {o for rel in load_case.IsGroupedBy for o in rel.RelatedObjects}
-    for member in members:
-        if not member.is_a("IfcStructuralActivity") and not member.is_a("IfcStructuralLoadGroup"):
-            continue
-        if any(
-            rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup != load_case for rel in member.HasAssignments or ()
-        ):
-            continue
-        if member.is_a("IfcStructuralActivity"):
-            ifcopenshell.api.structural.remove_structural_activity(file, activity=member)
-        else:
-            ifcopenshell.api.structural.remove_structural_load_group(file, load_group=member)
+    for combination in ifcopenshell.util.structural.get_load_case_combinations(load_case):
+        ifcopenshell.api.structural.unassign_structural_load_combination(
+            file, load_case=load_case, load_combination=combination
+        )
+    load_groups = [
+        o
+        for rel in load_case.IsGroupedBy
+        for o in rel.RelatedObjects
+        if o.is_a("IfcStructuralLoadGroup") and _is_only_in(o, {load_case})
+    ]
+    # An activity in the load case and in a load group in it, too, goes with them.
+    removed = {load_case, *load_groups}
+    activities = {
+        o
+        for group in removed
+        for rel in group.IsGroupedBy
+        for o in rel.RelatedObjects
+        if o.is_a("IfcStructuralActivity")
+    }
+    for activity in activities:
+        if _is_only_in(activity, removed):
+            ifcopenshell.api.structural.remove_structural_activity(file, activity=activity)
+    for load_group in load_groups:
+        ifcopenshell.api.structural.remove_structural_load_group(file, load_group=load_group)
     for rel in list(load_case.IsDefinedBy):
         if rel.is_a("IfcRelDefinesByProperties"):
             ifcopenshell.api.pset.remove_pset(file, product=load_case, pset=rel.RelatingPropertyDefinition)
@@ -63,3 +81,8 @@ def remove_structural_load_case(file: ifcopenshell.file, load_case: ifcopenshell
     file.remove(load_case)
     if history:
         ifcopenshell.util.element.remove_deep2(file, history)
+
+
+def _is_only_in(product: ifcopenshell.entity_instance, groups: set[ifcopenshell.entity_instance]) -> bool:
+    """Whether every group the product is grouped into is one of these"""
+    return all(rel.RelatingGroup in groups for rel in product.HasAssignments or () if rel.is_a("IfcRelAssignsToGroup"))
