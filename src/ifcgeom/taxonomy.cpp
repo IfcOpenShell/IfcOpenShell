@@ -1609,9 +1609,9 @@ ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x
 
 		std::array<taxonomy::point3::ptr, 4> points{
 			taxonomy::make<taxonomy::point3>(x + 0, y + 0,  z + 0),
-			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + 0),
+			taxonomy::make<taxonomy::point3>(x + 0, y + 0,  z + dz),
 			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + dz),
-			taxonomy::make<taxonomy::point3>(x + 0, y + 0,  z + dz)
+			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + 0)
 		};
 
 		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
@@ -1630,9 +1630,9 @@ ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x
 
 		std::array<taxonomy::point3::ptr, 4> points{
 			taxonomy::make<taxonomy::point3>(x + dx, y + 0,  z + 0),
-			taxonomy::make<taxonomy::point3>(x + dx, y + 0,  z + dz),
+			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + 0),
 			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + dz),
-			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + 0)
+			taxonomy::make<taxonomy::point3>(x + dx, y + 0,  z + dz)
 		};
 
 		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
@@ -1651,9 +1651,9 @@ ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x
 
 		std::array<taxonomy::point3::ptr, 4> points{
 			taxonomy::make<taxonomy::point3>(x + 0,  y + 0, z + 0),
-			taxonomy::make<taxonomy::point3>(x + 0,  y + 0, z + dz),
+			taxonomy::make<taxonomy::point3>(x + dx, y + 0, z + 0),
 			taxonomy::make<taxonomy::point3>(x + dx, y + 0, z + dz),
-			taxonomy::make<taxonomy::point3>(x + dx, y + 0, z + 0)
+			taxonomy::make<taxonomy::point3>(x + 0,  y + 0, z + dz)
 		};
 
 		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
@@ -1672,9 +1672,9 @@ ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x
 
 		std::array<taxonomy::point3::ptr, 4> points{
 			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + 0),
-			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + 0),
+			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + dz),
 			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + dz),
-			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + dz)
+			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + 0)
 		};
 
 		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
@@ -1693,9 +1693,9 @@ ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x
 
 		std::array<taxonomy::point3::ptr, 4> points{
 			taxonomy::make<taxonomy::point3>(x + 0, y + 0, z + 0),
-			taxonomy::make<taxonomy::point3>(x + dx, y + 0, z + 0),
+			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + 0),
 			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + 0),
-			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + 0)
+			taxonomy::make<taxonomy::point3>(x + dx, y + 0, z + 0)
 		};
 
 		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
@@ -1714,9 +1714,9 @@ ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x
 
 		std::array<taxonomy::point3::ptr, 4> points{
 			taxonomy::make<taxonomy::point3>(x + 0, y + 0, z + dz),
-			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + dz),
+			taxonomy::make<taxonomy::point3>(x + dx, y + 0, z + dz),
 			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + dz),
-			taxonomy::make<taxonomy::point3>(x + dx, y + 0, z + dz)
+			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + dz)
 		};
 
 		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
