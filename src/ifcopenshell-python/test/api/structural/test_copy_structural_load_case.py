@@ -21,6 +21,7 @@ import ifcopenshell.api.group
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
+import ifcopenshell.guid
 import ifcopenshell.util.element
 import test.bootstrap
 
@@ -50,6 +51,13 @@ class TestCopyStructuralLoadCase(test.bootstrap.IFC4):
         assert copy.GlobalId != load_case.GlobalId
         assert copy.Name == "Dead (copy)"
         assert copy.ActionType == "PERMANENT_G" and copy.ActionSource == "DEAD_LOAD_G"
+
+    def test_a_second_copy_gets_a_unique_name(self):
+        load_case = ifcopenshell.api.structural.add_structural_load_case(self.file, name="Dead")
+        first = ifcopenshell.api.structural.copy_structural_load_case(self.file, load_case=load_case)
+        second = ifcopenshell.api.structural.copy_structural_load_case(self.file, load_case=load_case)
+        third = ifcopenshell.api.structural.copy_structural_load_case(self.file, load_case=load_case)
+        assert (first.Name, second.Name, third.Name) == ("Dead (copy)", "Dead (copy 2)", "Dead (copy 3)")
 
     def test_naming_the_copy(self):
         load_case = ifcopenshell.api.structural.add_structural_load_case(self.file, name="About A")
@@ -87,6 +95,42 @@ class TestCopyStructuralLoadCase(test.bootstrap.IFC4):
         (copied,) = get_members(copied_group)
         assert copied != activity and copied.AppliedLoad == load
         assert get_members(load_group) == [activity]
+
+    def test_a_copied_activity_stays_relative_to_its_items_placement_and_in_the_projects_context(self):
+        context = self.file.createIfcGeometricRepresentationContext(
+            ContextType="Model", CoordinateSpaceDimension=3, Precision=1e-5, WorldCoordinateSystem=self.axes()
+        )
+        self.file.createIfcProject(ifcopenshell.guid.new(), RepresentationContexts=[context])
+        load_case = ifcopenshell.api.structural.add_structural_load_case(self.file)
+        point, load, activity = self.add_point_load(load_case, "A")
+        point.ObjectPlacement = self.file.createIfcLocalPlacement(None, self.axes())
+        activity.ObjectPlacement = self.file.createIfcLocalPlacement(point.ObjectPlacement, self.axes())
+        vertex = self.file.createIfcVertexPoint(self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+        activity.Representation = self.file.createIfcProductDefinitionShape(
+            Representations=[self.file.createIfcTopologyRepresentation(context, "Reference", "Vertex", [vertex])]
+        )
+        copy = ifcopenshell.api.structural.copy_structural_load_case(self.file, load_case=load_case)
+        (copied,) = get_members(copy)
+        assert copied.ObjectPlacement != activity.ObjectPlacement
+        assert copied.ObjectPlacement.PlacementRelTo == point.ObjectPlacement
+        assert copied.Representation != activity.Representation
+        assert copied.Representation.Representations[0].ContextOfItems == context
+        assert len(self.file.by_type("IfcRepresentationContext")) == 1
+
+    def test_load_groups_grouped_by_factor_keep_their_factor(self):
+        load_case = ifcopenshell.api.structural.add_structural_load_case(self.file)
+        load_group = ifcopenshell.api.structural.add_structural_load_group(self.file, name="Slab")
+        self.file.createIfcRelAssignsToGroupByFactor(
+            ifcopenshell.guid.new(), RelatedObjects=[load_group], RelatingGroup=load_case, Factor=1.5
+        )
+        copy = ifcopenshell.api.structural.copy_structural_load_case(self.file, load_case=load_case)
+        (rel,) = copy.IsGroupedBy
+        assert rel.is_a("IfcRelAssignsToGroupByFactor") and rel.Factor == 1.5
+        assert rel.RelatedObjects[0] != load_group and rel.RelatedObjects[0].Name == "Slab"
+        assert load_case.IsGroupedBy[0].RelatedObjects == (load_group,)
+
+    def axes(self):
+        return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)))
 
     def test_copying_property_sets_as_the_copys_own(self):
         load_case = ifcopenshell.api.structural.add_structural_load_case(self.file)
