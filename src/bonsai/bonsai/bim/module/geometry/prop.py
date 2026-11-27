@@ -31,7 +31,7 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 
 import bonsai.tool as tool
-from bonsai.bim.module.geometry.data import RepresentationsData, ViewportData
+from bonsai.bim.module.geometry.data import RepresentationItemsData, RepresentationsData, ViewportData
 
 
 def get_contexts(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -96,6 +96,22 @@ def get_shape_aspects(self: "BIMObjectGeometryProperties", context: bpy.types.Co
     return RepresentationsData.data["shape_aspects"]
 
 
+def get_item_constituents(
+    self: "BIMObjectGeometryProperties", context: bpy.types.Context
+) -> list[tuple[str, str, str]]:
+    if not RepresentationItemsData.is_loaded:
+        RepresentationItemsData.load()
+    return RepresentationItemsData.data["constituents"]
+
+
+def get_constituent_materials(
+    self: "BIMObjectGeometryProperties", context: bpy.types.Context
+) -> list[tuple[str, str, str]]:
+    if not RepresentationItemsData.is_loaded:
+        RepresentationItemsData.load()
+    return RepresentationItemsData.data["materials"]
+
+
 def get_material_constituents(self: "ShapeAspect", context: bpy.types.Context, edit_text: str) -> list[str]:
     from bonsai.bim.module.material.data import ObjectMaterialData
 
@@ -143,6 +159,11 @@ class RepresentationItem(PropertyGroup):
     shape_aspect: StringProperty(name="Shape Aspect")
     shape_aspect_id: IntProperty(name="Shape Aspect IFC ID")
     tags: StringProperty(name="Tags")
+    is_style_from_material: BoolProperty(name="Is Style From Material", default=False)
+    material: StringProperty(name="Material", description="The material the item is made of, if known")
+    is_material_from_element: BoolProperty(
+        name="Is Material From Element", description="The material is the whole element's, not a constituent's"
+    )
 
     if TYPE_CHECKING:
         name: str
@@ -154,6 +175,9 @@ class RepresentationItem(PropertyGroup):
         shape_aspect: str
         shape_aspect_id: int
         tags: str
+        is_style_from_material: bool
+        material: str
+        is_material_from_element: bool
 
 
 class RepresentationItemObject(PropertyGroup):
@@ -250,6 +274,20 @@ class BIMObjectGeometryProperties(PropertyGroup):
         items=get_shape_aspects, name="Representation Item Shape Aspect", update=update_shape_aspect
     )
     shape_aspect_attrs: PointerProperty(type=ShapeAspect)
+    representation_item_constituent: EnumProperty(
+        items=get_item_constituents,
+        name="Material Constituent",
+        description="The material constituent the items are made of, through a shape aspect named after it",
+    )
+    is_adding_constituent: BoolProperty(
+        name="Add Material Constituent",
+        description="Add a constituent to the element's material constituent set and make the items out of it",
+        default=False,
+    )
+    new_constituent_name: StringProperty(name="Name", description="Name of the new material constituent")
+    new_constituent_material: EnumProperty(
+        items=get_constituent_materials, name="Material", description="Material the new constituent is made of"
+    )
     is_editing_item_layer: BoolProperty(
         name="Is Editing Item's Presentation Layer",
         description="Toggle editing presentation layer for the item.",
@@ -274,6 +312,10 @@ class BIMObjectGeometryProperties(PropertyGroup):
         is_editing_item_shape_aspect: bool
         representation_item_shape_aspect: str
         shape_aspect_attrs: ShapeAspect
+        representation_item_constituent: str
+        is_adding_constituent: bool
+        new_constituent_name: str
+        new_constituent_material: str
         is_editing_item_layer: bool
         representation_item_layer: str
 
@@ -282,6 +324,26 @@ GeometryMode = Literal["OBJECT", "ITEM", "EDIT"]
 
 
 class BIMGeometryProperties(PropertyGroup):
+    show_item_type: BoolProperty(
+        name="Show Types",
+        description="Show each item's type, such as an extrusion or a face set, in the representation items list",
+        default=False,
+    )
+    show_item_shape_aspect: BoolProperty(
+        name="Show Shape Aspects",
+        description="Show each item's shape aspect in the representation items list",
+        default=True,
+    )
+    show_item_material: BoolProperty(
+        name="Show Materials",
+        description="Show the material each item is made of in the representation items list",
+        default=True,
+    )
+    show_item_style: BoolProperty(
+        name="Show Styles",
+        description="Show each item's style in the representation items list",
+        default=True,
+    )
     # Revit workaround
     should_use_presentation_style_assignment: BoolProperty(name="Force Presentation Style Assignment", default=False)
     # RIB iTwo, DESITE BIM workaround
@@ -339,6 +401,10 @@ class BIMGeometryProperties(PropertyGroup):
     )
 
     if TYPE_CHECKING:
+        show_item_type: bool
+        show_item_shape_aspect: bool
+        show_item_material: bool
+        show_item_style: bool
         should_use_presentation_style_assignment: bool
         should_force_faceted_brep: bool
         should_force_triangulation: bool

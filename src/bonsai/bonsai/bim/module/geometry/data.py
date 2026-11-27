@@ -207,8 +207,52 @@ class RepresentationItemsData:
     def load(cls):
         cls.data = {
             "total_items": cls.total_items(),
+            "representation_type": cls.representation_type(),
+            "constituents": cls.constituents(),
+            "materials": cls.materials(),
+            "single_material": cls.single_material(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def representation_type(cls) -> str:
+        """The active representation's type, or for a mapped one, the type of the representation it maps."""
+        obj = tool.Geometry.get_active_or_representation_obj()
+        representation = tool.Geometry.get_active_representation(obj) if obj else None
+        if not representation or not representation.is_a("IfcShapeModel"):
+            return ""
+        return ifcopenshell.util.representation.resolve_representation(representation).RepresentationType or ""
+
+    @classmethod
+    def constituents(cls) -> list[tuple[str, str, str]]:
+        """Choices for an item's material: the element's named constituents, then none or another aspect."""
+        results: list[tuple[str, str, str]] = []
+        obj = tool.Geometry.get_active_or_representation_obj()
+        element = tool.Ifc.get_entity(obj) if obj else None
+        if element and (constituent_set := tool.Geometry.get_material_constituent_set(element)):
+            for constituent in constituent_set.MaterialConstituents or ():
+                if not constituent.Name:
+                    continue  # Only a named constituent can be matched by a shape aspect
+                material = constituent.Material.Name if constituent.Material else "No Material"
+                description = f"The {constituent.Name} constituent, made of {material}"
+                results.append((str(constituent.id()), f"{constituent.Name} — {material}", description))
+        results.append(("NONE", "(none)", "Take the items out of their material constituent"))
+        results.append(("OTHER", "Other Shape Aspect...", "Use a shape aspect not named after a material constituent"))
+        return results
+
+    @classmethod
+    def single_material(cls) -> str:
+        """The element's material, when it's one IfcMaterial for the whole element."""
+        obj = tool.Geometry.get_active_or_representation_obj()
+        element = tool.Ifc.get_entity(obj) if obj else None
+        if element and (material := tool.Geometry.get_element_single_material(element)):
+            return material.Name or "Unnamed"
+        return ""
+
+    @classmethod
+    def materials(cls) -> list[tuple[str, str, str]]:
+        materials = [(str(m.id()), m.Name or "Unnamed", "") for m in tool.Ifc.get().by_type("IfcMaterial")]
+        return sorted(materials, key=lambda m: m[1].lower())
 
     @classmethod
     def total_items(cls) -> int:

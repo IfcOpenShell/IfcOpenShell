@@ -221,7 +221,7 @@ class BIM_PT_representation_items(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
-    bl_parent_id = "BIM_PT_tab_representations"
+    bl_parent_id = "BIM_PT_tab_object_materials"  # After Object Material: items are mostly styled here
 
     @classmethod
     def poll(cls, context):
@@ -237,7 +237,12 @@ class BIM_PT_representation_items(Panel):
         props = tool.Geometry.get_object_geometry_props(obj)
 
         row = self.layout.row(align=True)
-        row.label(text=f"{RepresentationItemsData.data['total_items']} Items Found")
+        total_items = RepresentationItemsData.data["total_items"]
+        representation_type = RepresentationItemsData.data["representation_type"]
+        header = f"{total_items} Items"
+        if representation_type:
+            header += f" · {representation_type}"
+        row.label(text=header)
 
         if props.is_editing:
             row.operator("bim.disable_editing_representation_items", icon="CANCEL", text="")
@@ -248,13 +253,36 @@ class BIM_PT_representation_items(Panel):
         if props.active_item:
             row = self.layout.row(align=True)
             row.alignment = "RIGHT"
-            op = row.operator("bim.select_representation_item", icon="RESTRICT_SELECT_OFF", text="")
             op = row.operator("bim.remove_representation_item", icon="X", text="")
             op.representation_item_id = props.active_item.ifc_definition_id
 
         # Rows are checked when their geometry is selected in the viewport, so the two always agree
         BIM_UL_representation_items.selected_item_ids = tool.Geometry.get_selected_representation_items(props)
+
+        # Splitting and joining items
+        gprops = tool.Geometry.get_geometry_props()
+        if gprops.representation_obj:
+            tools = self.layout.row(align=True)
+            tools.alignment = "LEFT"
+            # The selection in vertex mode, else the selected items' loose parts
+            op = tools.operator("bim.override_mesh_separate", icon="MOD_EXPLODE", text="Separate")
+            op.type = "SELECTED" if context.mode == "EDIT_MESH" else "LOOSE"
+            tools.operator("bim.join_representation_items", icon="AUTOMERGE_ON", text="Join")
+
+        heading = self.layout.row(align=True)
+        heading.label(text="", icon="BLANK1")  # Over the checkboxes
+        columns = BIM_UL_representation_items.get_columns()
+        for cell, column in zip(BIM_UL_representation_items.split_columns(heading, len(columns)), columns):
+            cell.label(text=BIM_UL_representation_items.COLUMN_TITLES[column])
         self.layout.template_list("BIM_UL_representation_items", "", props, "items", props, "active_item_index")
+
+        # Which columns the list shows
+        toggles = self.layout.row(align=True)
+        toggles.alignment = "LEFT"
+        toggles.prop(gprops, "show_item_type", icon="MESH_CUBE", text="")
+        toggles.prop(gprops, "show_item_shape_aspect", icon="SHAPEKEY_DATA", text="")
+        toggles.prop(gprops, "show_item_material", icon="MATERIAL", text="")
+        toggles.prop(gprops, "show_item_style", icon="SHADING_RENDERED", text="")
 
         item_is_active = props.active_item_index < len(props.items)
         if not item_is_active:
@@ -265,17 +293,94 @@ class BIM_PT_representation_items(Panel):
         surface_style_id = active_item.surface_style_id
         shape_aspect = active_item.shape_aspect
         layer = active_item.layer
+        element = tool.Ifc.get_entity(obj)
+        representation_item = tool.Ifc.get_entity_by_id(active_item.ifc_definition_id)
+        constituent = None
+        if element and representation_item:
+            constituent = tool.Geometry.get_item_constituent(element, representation_item)
+        total_selected = len(BIM_UL_representation_items.selected_item_ids)
+        single_material = RepresentationItemsData.data["single_material"]
+
+        # Material: the material constituent an item is made of, through a shape aspect named after it.
+        row = self.layout.row(align=True)
+        if props.is_editing_item_shape_aspect and props.is_adding_constituent:
+            row.label(text="New Material Constituent", icon="MATERIAL")
+            row.operator("bim.disable_editing_representation_item_shape_aspect", icon="CANCEL", text="")
+            self.layout.prop(props, "new_constituent_name")
+            self.layout.prop(props, "new_constituent_material", icon="MATERIAL")
+            op = self.layout.operator(
+                "bim.edit_representation_item_constituent", icon="CHECKMARK", text="Add and Assign"
+            )
+            op.is_new = True
+            if total_selected > 1:
+                self.layout.label(text=f"Applies to the {total_selected} selected items", icon="INFO")
+            if single_material:
+                self.layout.label(text=f"{single_material} becomes a constituent too, for the other items", icon="INFO")
+        elif props.is_editing_item_shape_aspect:
+            row.prop(props, "representation_item_constituent", icon="MATERIAL", text="")
+            choice = props.representation_item_constituent
+            if choice == "OTHER":
+                # A shape aspect with any name, which only gives a material if it matches a constituent
+                row.operator("bim.edit_representation_item_shape_aspect", icon="CHECKMARK", text="")
+            else:
+                row.operator("bim.edit_representation_item_constituent", icon="CHECKMARK", text="")
+            row.operator("bim.disable_editing_representation_item_shape_aspect", icon="CANCEL", text="")
+            row.prop(props, "is_adding_constituent", icon="ADD", text="")
+            if choice == "OTHER":
+                self.layout.prop(props, "representation_item_shape_aspect", icon="SHAPEKEY_DATA", text="")
+                if props.representation_item_shape_aspect == "NEW":
+                    shape_aspect_attrs = props.shape_aspect_attrs
+                    self.layout.prop(shape_aspect_attrs, "name")
+                    self.layout.prop(shape_aspect_attrs, "description")
+            elif total_selected > 1:
+                self.layout.label(text=f"Applies to the {total_selected} selected items", icon="INFO")
+            if single_material:
+                self.layout.label(text=f"The whole element is {single_material}, add a constituent with +", icon="INFO")
+            elif len(RepresentationItemsData.data["constituents"]) == 2:  # Only none and other
+                self.layout.label(text="The element has no material constituents yet, add one with +", icon="INFO")
+        else:
+            if constituent:
+                material = constituent.Material.Name if constituent.Material else "No Material"
+                row.label(text=f"{constituent.Name} → {material}", icon="MATERIAL")
+            elif shape_aspect:
+                row.label(text=f"Shape Aspect: {shape_aspect}", icon="SHAPEKEY_DATA")
+            elif single_material:
+                # One IfcMaterial for the whole element, not a constituent of it
+                sub = row.row(align=True)
+                sub.active = not surface_style or active_item.is_style_from_material  # Greyed when overridden
+                sub.label(text=f"Whole Element: {single_material}", icon="OBJECT_DATA")
+            else:
+                sub = row.row(align=True)
+                sub.active = not surface_style  # Greyed when a style is set on the item directly instead
+                sub.label(text="No Material Constituent", icon="MATERIAL")
+            row.operator("bim.enable_editing_representation_item_shape_aspect", icon="GREASEPENCIL", text="")
+            op = row.operator("bim.enable_editing_representation_item_shape_aspect", icon="ADD", text="")
+            op.adding = True
+            if shape_aspect:
+                row.operator("bim.remove_representation_item_from_shape_aspect", icon="X", text="")
 
         # Style.
         row = self.layout.row(align=True)
-        if props.is_editing_item_style:
+        if (constituent or active_item.is_style_from_material) and not props.is_editing_item_style:
+            # The style comes from the item's material; change it on the material instead
+            source = constituent.Name if constituent else single_material
+            sub = row.row(align=True)
+            sub.active = False  # Greyed, as it isn't set here
+            sub.label(text=f"{surface_style or 'No Surface Style'} (from {source})", icon="SHADING_RENDERED")
+            if not constituent:
+                # A single material's style can still be overridden on the item
+                row.operator("bim.enable_editing_representation_item_style", icon="GREASEPENCIL", text="")
+            if surface_style:
+                op = row.operator("bim.styles_ui_select", icon="ZOOM_SELECTED", text="")
+                op.style_id = surface_style_id
+        elif props.is_editing_item_style:
             # NOTE: we currently support 1 item having just 1 style
             # when IfcStyledItem can actually have multiple styles
             prop_with_search(row, props, "representation_item_style", icon="SHADING_RENDERED", text="")
             row.operator("bim.edit_representation_item_style", icon="CHECKMARK", text="")
             row.operator("bim.disable_editing_representation_item_style", icon="CANCEL", text="")
-            if (total := len(BIM_UL_representation_items.selected_item_ids)) > 1:
-                self.layout.label(text=f"Applies to the {total} selected items", icon="INFO")
+            if total_selected > 1:
+                self.layout.label(text=f"Applies to the {total_selected} selected items", icon="INFO")
         else:
             if surface_style:
                 row.label(text=surface_style, icon="SHADING_RENDERED")
@@ -315,22 +420,6 @@ class BIM_PT_representation_items(Panel):
             else:
                 text = "Has no colour mapping"
             self.layout.label(text=text, icon="COLOR")
-
-        # Shape aspect.
-        row = self.layout.row(align=True)
-        if props.is_editing_item_shape_aspect:
-            row.prop(props, "representation_item_shape_aspect", icon="SHAPEKEY_DATA", text="")
-            row.operator("bim.edit_representation_item_shape_aspect", icon="CHECKMARK", text="")
-            row.operator("bim.disable_editing_representation_item_shape_aspect", icon="CANCEL", text="")
-            if props.representation_item_shape_aspect == "NEW":
-                shape_aspect_attrs = props.shape_aspect_attrs
-                self.layout.prop(shape_aspect_attrs, "name")
-                self.layout.prop(shape_aspect_attrs, "description")
-        else:
-            row.label(text=shape_aspect or "No Shape Aspect", icon="SHAPEKEY_DATA")
-            row.operator("bim.enable_editing_representation_item_shape_aspect", icon="GREASEPENCIL", text="")
-            if shape_aspect:
-                row.operator("bim.remove_representation_item_from_shape_aspect", icon="X", text="")
 
 
 class BIM_PT_connections(Panel):
@@ -637,29 +726,78 @@ class BIM_PT_workarounds(Panel):
 class BIM_UL_representation_items(UIList):
     # Set by BIM_PT_representation_items before drawing the list
     selected_item_ids: set[int] = set()
+    COLUMN_TITLES = {"TYPE": "Type", "SHAPE_ASPECT": "Shape Aspect", "MATERIAL": "Material", "STYLE": "Style"}
+
+    @staticmethod
+    def get_columns() -> list[str]:
+        """The columns shown, which can be toggled in the panel's header."""
+        gprops = tool.Geometry.get_geometry_props()
+        columns = []
+        if gprops.show_item_type:
+            columns.append("TYPE")
+        if gprops.show_item_shape_aspect:
+            columns.append("SHAPE_ASPECT")
+        if gprops.show_item_material:
+            columns.append("MATERIAL")
+        if gprops.show_item_style:
+            columns.append("STYLE")
+        return columns
+
+    @staticmethod
+    def split_columns(layout: bpy.types.UILayout, count: int) -> list[bpy.types.UILayout]:
+        """Equal width cells, the same in the headings and the rows so they line up."""
+        cells = []
+        current = layout.row(align=True)
+        for remaining in range(count, 1, -1):
+            split = current.split(factor=1 / remaining, align=True)
+            cells.append(split.row(align=True))
+            current = split.row(align=True)
+        if count:
+            cells.append(current)
+        return cells
 
     def draw_item(
         self, context, layout: bpy.types.UILayout, data, item, icon, active_data, active_propname, index=0
     ):
         if item:
-            icon = "MATERIAL" if item.surface_style else "MESH_UVSPHERE"
             row = layout.row(align=True)
-            item_name = item.name
-            if item.shape_aspect:
-                item_name = f"{item.shape_aspect} {item_name}"
+            # Representation items have no name, so the tooltip says which item a row is
+            tooltip = f"{item.name} #{item.ifc_definition_id}"
             is_selected = item.ifc_definition_id in self.selected_item_ids
             selected_icon = "CHECKBOX_HLT" if is_selected else "CHECKBOX_DEHLT"
             op = row.operator("bim.click_representation_item", text="", icon=selected_icon, emboss=False)
             op.index = index
             op.toggle = True
-            sub = row.row(align=True)
-            sub.alignment = "LEFT"
-            op = sub.operator("bim.click_representation_item", text=item_name, icon=icon, emboss=False)
-            op.index = index
-            if item.surface_style:
-                sub = row.row(align=True)
-                sub.alignment = "RIGHT"
-                sub.active = False  # Greyed, so the item name stays the main text
-                sub.label(text=item.surface_style)
+            op.tooltip = tooltip
+
+            # Each cell is clickable to select the item, and blank when the item has nothing for it
+            columns = self.get_columns()
+            for cell, column in zip(self.split_columns(row, len(columns)), columns):
+                if column == "TYPE":
+                    text = item.name.removeprefix("Ifc")  # The class, shortened to fit
+                    op = cell.operator("bim.click_representation_item", text=text, emboss=False)
+                elif column == "SHAPE_ASPECT":
+                    op = cell.operator("bim.click_representation_item", text=item.shape_aspect, emboss=False)
+                elif column == "MATERIAL":
+                    cell.active = not item.is_material_from_element  # Greyed when it's the whole element's
+                    op = cell.operator("bim.click_representation_item", text=item.material, emboss=False)
+                elif item.surface_style:
+                    cell.active = not item.is_style_from_material  # Greyed when it comes from the material
+                    # A preview of the style's Blender material, as in Blender's material list
+                    style = tool.Ifc.get_entity_by_id(item.surface_style_id)
+                    material = tool.Ifc.get_object(style) if style else None
+                    if isinstance(material, bpy.types.Material):
+                        op = cell.operator(
+                            "bim.click_representation_item",
+                            text=item.surface_style,
+                            icon_value=layout.icon(material),
+                            emboss=False,
+                        )
+                    else:
+                        op = cell.operator("bim.click_representation_item", text=item.surface_style, emboss=False)
+                else:
+                    op = cell.operator("bim.click_representation_item", text="", emboss=False)
+                op.index = index
+                op.tooltip = tooltip
             if item.layer:
                 row.label(text="", icon="STICKY_UVS_LOC")

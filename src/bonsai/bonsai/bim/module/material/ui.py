@@ -142,7 +142,8 @@ class BIM_PT_object_material(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not (obj := context.active_object):
+        # In item mode, the element whose items are being edited
+        if not (obj := tool.Geometry.get_active_or_representation_obj()):
             return False
         ifc_id = tool.Blender.get_ifc_definition_id(obj)
         if not ifc_id:
@@ -157,8 +158,13 @@ class BIM_PT_object_material(Panel):
         if not ObjectMaterialData.is_loaded:
             ObjectMaterialData.load()
 
-        obj = context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
         assert obj
+        self.obj = obj
+        # In item mode an item is active, so the buttons here are pointed at the element instead
+        self.is_item_mode = obj != context.active_object
+        if self.is_item_mode:
+            self.layout.context_pointer_set("active_object", obj)
         self.file = tool.Ifc.get()
         self.oprops = tool.Blender.get_object_bim_props(obj)
         self.props = tool.Material.get_object_material_props(obj)
@@ -186,7 +192,9 @@ class BIM_PT_object_material(Panel):
         row = self.layout.row(align=True)
         prop_with_search(row, self.props, "material_type", text="")
         prop_with_search(row, self.props, "material", text="")
-        row.operator("bim.assign_material", icon="ADD", text="")
+        op = row.operator("bim.assign_material", icon="ADD", text="")
+        if self.is_item_mode:
+            op.obj = self.obj.name  # Not the selected items
 
     def draw_material_ui(self):
         row = self.layout.row(align=True)
@@ -202,7 +210,9 @@ class BIM_PT_object_material(Panel):
             op = row.operator("bim.material_ui_select", icon="ZOOM_SELECTED", text="")
             op.material_id = ObjectMaterialData.data["material_id"]
             row.operator("bim.enable_editing_assigned_material", icon="GREASEPENCIL", text="")
-            row.operator("bim.unassign_material", icon="X", text="")
+            op = row.operator("bim.unassign_material", icon="X", text="")
+            if self.is_item_mode:
+                op.obj = self.obj.name  # Not the selected items
 
         if ObjectMaterialData.data["material_class"] == "IfcMaterial":
             self.draw_single_ui()
@@ -273,8 +283,7 @@ class BIM_PT_object_material(Panel):
             op = box_row.operator(f"bim.add_{ObjectMaterialData.data['set_item_name']}", icon="ADD", text="")
             setattr(op, f"{ObjectMaterialData.data['set_item_name']}_set", ObjectMaterialData.data["set"]["id"])
 
-        active_object = bpy.context.active_object
-        self.layerset_bounds(box, active_object, location="Top_Interior")
+        self.layerset_bounds(box, self.obj, location="Top_Interior")
 
         if not ObjectMaterialData.data["set_items"]:
             row = box.row()
@@ -291,7 +300,7 @@ class BIM_PT_object_material(Panel):
             else:
                 self.draw_read_only_set_item_ui(box, set_item)
 
-        self.layerset_bounds(box, active_object, location="Bottom_Exterior")
+        self.layerset_bounds(box, self.obj, location="Bottom_Exterior")
 
     def draw_editable_set_item_profile_ui(self, box, set_item):
         # box = self.layout.box()
@@ -385,7 +394,7 @@ class BIM_PT_object_material(Panel):
 
         # Display OffsetFromReferenceLine for layer sets
         if "Layer" in ObjectMaterialData.data["material_class"]:
-            obj = bpy.context.active_object
+            obj = self.obj
             if obj:
                 element = tool.Ifc.get_entity(obj)
                 if element:
@@ -451,8 +460,7 @@ class BIM_PT_object_material(Panel):
         self.layout.label(text=header_text)
         row = self.layout.row(align=True)
         box = row.box()
-        active_object = bpy.context.active_object
-        self.layerset_bounds(box, active_object, location="Top_Interior")
+        self.layerset_bounds(box, self.obj, location="Top_Interior")
 
         if not ObjectMaterialData.data["set_items"]:
             row = box.row()
@@ -472,7 +480,7 @@ class BIM_PT_object_material(Panel):
                 op = row.operator("bim.select_by_material", text=material_name, emboss=False)
                 op.material = material_id
 
-        self.layerset_bounds(box, active_object, location="Bottom_Exterior")
+        self.layerset_bounds(box, self.obj, location="Bottom_Exterior")
 
     def layerset_bounds(self, layout, obj, location="Top_Interior"):
         set_usage = ObjectMaterialData.data.get("set_usage", {})

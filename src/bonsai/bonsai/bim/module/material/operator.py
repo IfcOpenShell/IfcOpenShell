@@ -322,10 +322,12 @@ class AddConstituent(bpy.types.Operator, tool.Ifc.Operator):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         omprops = tool.Material.get_object_material_props(obj)
         self.file = tool.Ifc.get()
+        constituent_set = self.file.by_id(self.constituent_set)
+        material = self.file.by_id(int(omprops.material))
+        # Named, so a shape aspect can match it and the representation items can be made of it
+        name = tool.Geometry.get_free_constituent_name(constituent_set, "Unnamed")
         ifcopenshell.api.material.add_constituent(
-            self.file,
-            constituent_set=self.file.by_id(self.constituent_set),
-            material=self.file.by_id(int(omprops.material)),
+            self.file, constituent_set=constituent_set, material=material, name=name
         )
 
 
