@@ -15,7 +15,7 @@ import pytest
 from mathutils import Vector
 
 import bonsai.tool as tool
-from bonsai.bim.module.structural.data import LoadGroupDecorationData
+from bonsai.bim.module.structural.data import LoadGroupDecorationData, StructuralLoadCasesData
 from bonsai.bim.module.structural.decorator import LoadsDecorator
 from bonsai.bim.module.structural.operator import PickStructuralLoads, get_load_unit_symbol
 from test.bim.bootstrap import NewFile
@@ -402,3 +402,39 @@ class TestApplyingAChosenLoad(NewFile):
         props.applicable_structural_loads = str(other.id())
         tool.Structural.follow_active_item_load()
         assert props.applicable_structural_loads == str(other.id())
+
+
+class TestApplyingAnUnnamedLoad(TestApplyingAChosenLoad):
+    """RFEM 6 exports name none of their loads"""
+
+    def setup_points(self):
+        ifc, case, load, objects = super().setup_points()
+        load.Name = None
+        return ifc, case, load, objects
+
+    def test_the_picker_offers_an_unnamed_load_by_its_id(self):
+        ifc, case, load, objects = self.setup_points()
+        self.select(objects, {"B"}, "B")
+        props = tool.Structural.get_structural_props()
+        props.applicable_structural_load_types = "IfcStructuralLoadSingleForce"
+        assert StructuralLoadCasesData.data["applicable_structural_loads"] == [
+            (str(load.id()), f"Unnamed #{load.id()}", "")
+        ]
+        props.applicable_structural_loads = str(load.id())
+        assert StructuralLoadCasesData.chosen_load_id(props) == load.id()
+
+
+class TestChosenLoadWithNothingToChoose(NewFile):
+    def test_there_is_no_chosen_load_when_none_is_of_the_type(self):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.structural.add_structural_load(ifc, name="F", ifc_class="IfcStructuralLoadSingleForce")
+        props = tool.Structural.get_structural_props()
+        StructuralLoadCasesData.load()
+        # Nothing selected offers only temperature loads, and there are none.
+        assert props.applicable_structural_load_types == "IfcStructuralLoadTemperature"
+        assert StructuralLoadCasesData.data["applicable_structural_loads"] == []
+        assert StructuralLoadCasesData.chosen_load_id(props) is None
+        case = ifcopenshell.api.structural.add_structural_load_case(ifc, name="Case")
+        with pytest.raises(RuntimeError, match="No structural load of the chosen type"):
+            bpy.ops.bim.add_structural_activity(load_group=case.id())
