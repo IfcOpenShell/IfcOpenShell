@@ -307,7 +307,7 @@ class BIM_PT_representation_items(Panel):
             row.label(text="New Material Constituent", icon="MATERIAL")
             row.operator("bim.disable_editing_representation_item_shape_aspect", icon="CANCEL", text="")
             self.layout.prop(props, "new_constituent_name")
-            self.layout.prop(props, "new_constituent_material", icon="MATERIAL")
+            prop_with_search(self.layout, props, "new_constituent_material", icon="MATERIAL")
             op = self.layout.operator(
                 "bim.edit_representation_item_constituent", icon="CHECKMARK", text="Add and Assign"
             )
