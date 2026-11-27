@@ -57,7 +57,7 @@ dependencies = [
     # Provides networkx graph analysis for project dependency calculations
     "networkx>=3.6",
     # Required by IFCDiff
-    "deepdiff>=9.0.0",
+    "deepdiff>=9.2.1",
     # Required by IFCCSV and ifcopenshell.util.selector
     "lark>=1.3.1",
     # Required by IFC4D
