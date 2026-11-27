@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+from collections.abc import Callable
 from math import degrees
 from typing import TYPE_CHECKING, Literal, Union
 
@@ -811,6 +812,29 @@ class EditStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
             attributes=attributes,
         )
         bpy.ops.bim.disable_editing_structural_load_case()
+        return {"FINISHED"}
+
+
+class DuplicateStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.duplicate_structural_load_case"
+    bl_label = "Duplicate Structural Load Case"
+    bl_description = (
+        "Copy the load case with its load groups and applied loads, which share their load definitions with the "
+        "original's, so a load edited once changes in both"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    load_case: bpy.props.IntProperty()
+    # For what other add-ons keep about a load case outside it, to follow it to the copy: called with the load case
+    # and its copy.
+    callbacks: list[Callable[[ifcopenshell.entity_instance, ifcopenshell.entity_instance], None]] = []
+
+    def _execute(self, context):
+        load_case = tool.Ifc.get().by_id(self.load_case)
+        copy = ifcopenshell.api.structural.copy_structural_load_case(tool.Ifc.get(), load_case=load_case)
+        for callback in DuplicateStructuralLoadCase.callbacks:
+            callback(load_case, copy)
+        if LoadsDecorator.is_installed:
+            LoadsDecorator.update()
         return {"FINISHED"}
 
 
