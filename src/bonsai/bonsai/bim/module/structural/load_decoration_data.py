@@ -869,10 +869,11 @@ class ShaderInfo:
         colors = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1)]
 
         for moment, (direction, d2), color in zip(moments, directions, colors):
-            if moment == 0:
-                continue
             d1 = -(direction * moment)
-            d1 = d1 / np.linalg.norm(d1)
+            # A moment too small to give a direction, as the 1e-308 RFEM writes for unset components, is none.
+            if not (length := np.linalg.norm(d1)):
+                continue
+            d1 = d1 / length
             self.info.append(
                 {
                     "shader": self.shader.new("SINGLE MOMENT"),
