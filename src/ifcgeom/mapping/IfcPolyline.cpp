@@ -47,6 +47,16 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyline& inst) {
 		logger_.warning("GEO", 276, "Removed " + std::to_string(previous_size - polygon.size()) + " (near) duplicate points from:", inst);
 	}
 
+	if (closed_by_proximity) {
+		// A closed polyline that turns back on itself, e.g. (2,2) (1.5,2) (1.8,2),
+		// has overlapping edges that make faces and booleans based on it invalid (#10024).
+		previous_size = polygon.size();
+		remove_backtracking_points_from_loop(polygon, eps);
+		if (polygon.size() != previous_size) {
+			logger_.warning("GEO", 415, "Removed " + std::to_string(previous_size - polygon.size()) + " points where the polyline turns back on itself from:", inst);
+		}
+	}
+
 	if (polygon.size() < 2) {
 		// We somehow need to signal we fail this curve on purpose not to trigger an error.
 		logger_.warning("GEO", 277, "Invalid polyline with " + std::to_string(polygon.size()) + " points:", inst);

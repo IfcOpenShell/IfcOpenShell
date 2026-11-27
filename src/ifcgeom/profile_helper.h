@@ -44,6 +44,8 @@ namespace ifcopenshell {
 
 		IFC_GEOM_API void remove_duplicate_points_from_loop(std::vector<taxonomy::point3::ptr>& polygon, bool closed, double tol);
 
+		IFC_GEOM_API void remove_backtracking_points_from_loop(std::vector<taxonomy::point3::ptr>& polygon, double tol);
+
 		IFC_GEOM_API std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>> remove_duplicate_points_from_loop(const std::vector<taxonomy::point3::ptr>& polygon, const std::vector<std::string>& tags);
 	}
 
