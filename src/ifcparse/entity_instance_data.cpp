@@ -435,7 +435,7 @@ bool ::impl::serialize(std::string& val, const empty_aggregate_of_aggregate&)
 
 bool ::impl::serialize(std::string& val, const boost::logic::tribool& t)
 {
-    char tt = t == boost::logic::indeterminate ? 2 : t ? 1 : 0;
+    char tt = boost::logic::indeterminate(t) ? 2 : t ? 1 : 0;
     val.resize(sizeof(char) + 1);
     val[0] = type_encoder::encode_type<boost::logic::tribool>();
     memcpy(val.data() + 1, &tt, sizeof(char));

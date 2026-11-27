@@ -349,6 +349,24 @@ class BIMStructuralProperties(PropertyGroup):
         max=8,
         update=update_loads_display,
     )
+    arrow_thickness: FloatProperty(
+        name="Arrow Thickness",
+        description="Scale point force arrows' shafts and heads together",
+        default=1.0,
+        min=0.25,
+        max=5.0,
+        step=10,
+        update=update_loads_display,
+    )
+    label_size: FloatProperty(
+        name="Label Size",
+        description="Scale the labels of shown loads",
+        default=1.0,
+        min=0.5,
+        max=4.0,
+        step=10,
+        update=update_loads_display,
+    )
     show_force_angles: BoolProperty(
         name="Angles",
         description="Mark the angle of each point force from a horizontal reference axis",
@@ -426,6 +444,8 @@ class BIMStructuralProperties(PropertyGroup):
         angle_reference: str
         force_decimals: int
         angle_decimals: int
+        arrow_thickness: float
+        label_size: float
 
 
 class BIMObjectStructuralProperties(PropertyGroup):

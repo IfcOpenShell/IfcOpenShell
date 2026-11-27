@@ -21,66 +21,70 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geom;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef&) {
-	return nullptr;
-
-	/*
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef& inst) {
 	const double d = inst.Thickness() * length_unit_ / 2.;
-	auto f = taxonomy::make<taxonomy::face>();
-	auto ofc = taxonomy::make<taxonomy::offset_curve>();
-	ofc->basis = map(inst.Curve());
-	ofc->offset = d;
-	// @todo
-	// f->children.push_back(ofc);
-	return f;
-	*/
+	const double eps = settings_.get<settings::Precision>().get();
 
-	// @todo we still need to handle this in the geometry libraries
-
-	/*
-	TopoDS_Wire wire;
-	if (!convert_wire(inst.Curve(), wire)) return false;
-
-	// BRepOffsetAPI_MakeOffset insists on creating circular arc
-	// segments for joining the curves that constitute the center
-	// line. This is probably not in accordance with the IFC spec.
-	// Although it does not specify a method to join segments
-	// explicitly, it does dictate 'a constant thickness along the
-	// curve'. Therefore for simple singular wires a quick
-	// alternative is provided that uses a straight join.
-
-	TopExp_Explorer exp(wire, TopAbs_EDGE);
-	TopoDS_Edge edge = TopoDS::Edge(exp.Current());
-	exp.Next();
-
-	if (!exp.More()) {
-		double u1, u2;
-		Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, u1, u2);
-
-		Handle(Geom_TrimmedCurve) trim = new Geom_TrimmedCurve(curve, u1, u2);
-
-		Handle(Geom_OffsetCurve) c1 = new Geom_OffsetCurve(trim,  d, gp::DZ());
-		Handle(Geom_OffsetCurve) c2 = new Geom_OffsetCurve(trim, -d, gp::DZ());
-
-		gp_Pnt c1a, c1b, c2a, c2b;
-		c1->D0(c1->FirstParameter(), c1a);
-		c1->D0(c1->LastParameter(), c1b);
-		c2->D0(c2->FirstParameter(), c2a);
-		c2->D0(c2->LastParameter(), c2b);
-
-		BRepBuilderAPI_MakeWire mw;
-		mw.Add(BRepBuilderAPI_MakeEdge(c1));
-		mw.Add(BRepBuilderAPI_MakeEdge(c1a, c2a));
-		mw.Add(BRepBuilderAPI_MakeEdge(c2));
-		mw.Add(BRepBuilderAPI_MakeEdge(c2b, c1b));
-
-		face = BRepBuilderAPI_MakeFace(mw.Wire());
-	} else {
-		BRepOffsetAPI_MakeOffset offset(BRepBuilderAPI_MakeFace(gp_Pln(gp::Origin(), gp::DZ())));
-		offset.AddWire(wire);
-		offset.Perform(d);
-		face = BRepBuilderAPI_MakeFace(TopoDS::Wire(offset));
+	if (d < eps) {
+		logger_.warning("GEO", 331, "Thickness below precision for:", inst);
+		return nullptr;
 	}
-	return true;
-	*/
+
+	auto mapped = taxonomy::cast<taxonomy::loop>(map(inst.Curve()));
+	if (!mapped || mapped->children.empty()) {
+		logger_.warning("GEO", 332, "No curve for:", inst);
+		return nullptr;
+	}
+	// The centerline is open, however it is referenced by a profile.
+	auto crv = taxonomy::loop::ptr(mapped->clone_());
+	crv->closed = false;
+	const double end = static_cast<double>(crv->children.size());
+
+	// The area is bounded by the offsets of the centerline on either side and
+	// straight connections at its ends. The kernels construct the offsets.
+	auto reference = taxonomy::make<taxonomy::direction3>(0, 0, 1);
+	auto left = taxonomy::make<taxonomy::offset_curve>();
+	left->basis = crv;
+	left->offset = d;
+	left->reference = reference;
+	auto right = taxonomy::make<taxonomy::offset_curve>();
+	right->basis = crv;
+	right->offset = -d;
+	right->reference = reference;
+
+	auto point_at = [](const taxonomy::offset_curve::ptr& c, double u) {
+		Eigen::Vector3d p = c->evaluate(0, u);
+		return taxonomy::make<taxonomy::point3>(p.x(), p.y(), p.z());
+	};
+	auto left_start = point_at(left, 0.);
+	auto left_end = point_at(left, end);
+	auto right_start = point_at(right, 0.);
+	auto right_end = point_at(right, end);
+	if ((left_start->ccomponents() - left_end->ccomponents()).norm() < eps) {
+		logger_.warning("GEO", 333, "Closed centerline for:", inst);
+		return nullptr;
+	}
+
+	auto along_right = taxonomy::make<taxonomy::edge>();
+	along_right->basis = right;
+	along_right->start = 0.;
+	along_right->end = end;
+	auto back_along_left = taxonomy::make<taxonomy::edge>();
+	back_along_left->basis = left;
+	back_along_left->start = end;
+	back_along_left->end = 0.;
+
+	auto loop = taxonomy::make<taxonomy::loop>();
+	loop->children = {
+		along_right,
+		taxonomy::make<taxonomy::edge>(right_end, left_end),
+		back_along_left,
+		taxonomy::make<taxonomy::edge>(left_start, right_start),
+	};
+	loop->closed = true;
+	loop->external = true;
+
+	auto face = taxonomy::make<taxonomy::face>();
+	face->children = { loop };
+	return face;
 }

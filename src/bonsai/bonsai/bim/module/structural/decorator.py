@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
 from collections.abc import Iterable
 from typing import Union
 
@@ -29,7 +30,7 @@ from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
 
 import bonsai.tool as tool
-from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
+from bonsai.bim.module.structural.load_decoration_data import ScreenGrid, ShaderInfo
 
 
 def update_loads_after_moves(scene: bpy.types.Scene, depsgraph: bpy.types.Depsgraph) -> None:
@@ -227,14 +228,15 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
 
         self.depth_array = n / (f - (f - n) * depth_array) * (f - n)
 
-        placed: list[tuple[float, float, float, float]] = []
+        placed = self.get_screen_segments(context)
+        font_size = 20.0 * tool.Structural.get_structural_props().label_size
         for info in self.text_info:
             if not self.is_visible(info):
                 continue
             text_position = self.location_3d_to_region_2d(info["position"], context)
             if text_position is not None:
                 font_id = 0
-                blf.size(font_id, 20.0)
+                blf.size(font_id, font_size)
                 x, y = text_position[0], text_position[1]
                 if (away := info.get("away")) is not None:
                     x, y = self.place_beside(info["position"], away, x, y, info["text"], context, placed)
@@ -252,12 +254,13 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         y: float,
         text: str,
         context: bpy.types.Context,
-        placed: Union[list[tuple[float, float, float, float]], None] = None,
+        placed: Union[ScreenGrid, None] = None,
     ) -> tuple[float, float]:
         """Offset a label from its anchor towards away, so that it sits beside its line rather than on it.
 
-        :param placed: The boxes of labels already drawn. The label moves further away until it clears them,
-            and its box is added.
+        :param placed: The boxes of labels already drawn, and the arrows and lines on screen. The label moves
+            until it clears them, or, if it cannot clear the lines within reach, to the nearest place clear of the
+            other labels, and its box is added.
         """
         start = location_3d_to_region_2d(context.region, context.region_data, Vector(position))
         end = location_3d_to_region_2d(context.region, context.region_data, Vector(position) + Vector(away))
@@ -265,22 +268,61 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
             return x, y
         direction = (end - start).normalized()
         width, height = blf.dimensions(0, text)
-        gap = 12
-        # The text box goes on the away side of the anchor, centred across directions near perpendicular to it.
-        x += gap * direction.x + (0 if direction.x > 0.3 else -width if direction.x < -0.3 else -width / 2)
-        y += gap * direction.y + (0 if direction.y > 0.3 else -height if direction.y < -0.3 else -height / 2)
+
+        def get_box(towards: Vector, gap: float) -> tuple[float, float]:
+            """The text box on the towards side of the anchor, centred across directions near perpendicular to it"""
+            return (
+                x + gap * towards.x + (0 if towards.x > 0.3 else -width if towards.x < -0.3 else -width / 2),
+                y + gap * towards.y + (0 if towards.y > 0.3 else -height if towards.y < -0.3 else -height / 2),
+            )
+
         if placed is None:
-            return x, y
+            return get_box(direction, 12)
         margin = 3
-        for _ in range(40):
-            if not any(
-                x < px + pw + margin and px < x + width + margin and y < py + ph + margin and py < y + height + margin
-                for px, py, pw, ph in placed
-            ):
+        # The nearest place clear of other labels and of lines, trying its own direction first at each distance,
+        # then turning further from it, so that it moves round an arrow beside it rather than across it.
+        turns = [math.radians(t) for t in (0, 30, -30, 60, -60, 90, -90, 135, -135, 180)]
+        candidates = [
+            Vector(
+                (
+                    direction.x * math.cos(t) - direction.y * math.sin(t),
+                    direction.x * math.sin(t) + direction.y * math.cos(t),
+                )
+            )
+            for t in turns
+        ]
+        # This runs on every redraw, so a label that finds no clear place within a number of tries keeps the nearest
+        # one clear of the other labels.
+        steps, tries = 60, 60
+        chosen = fallback = None  # Clear of all; clear of the labels only, if lines cannot be cleared too.
+        for step in range(steps):
+            for towards in candidates:
+                bx, by = get_box(towards, 12 + 4 * step)
+                if placed.overlaps_box(bx, by, width, height, margin):
+                    continue
+                fallback = fallback or (bx, by)
+                tries -= 1
+                if tries < 0 or not placed.crosses_segment(
+                    bx - margin, by - margin, width + 2 * margin, height + 2 * margin
+                ):
+                    chosen = (bx, by) if tries >= 0 else fallback
+                    break
+            if chosen:
                 break
-            x, y = x + 4 * direction.x, y + 4 * direction.y
-        placed.append((x, y, width, height))
+        x, y = chosen or fallback or get_box(direction, 12)
+        placed.add_box(x, y, width, height)
         return x, y
+
+    def get_screen_segments(self, context: bpy.types.Context) -> ScreenGrid:
+        """The visible arrows and solid lines, as angle arcs, on screen, for labels to keep off"""
+        segments = ScreenGrid()
+        for info in self.shader_info:
+            if not (ends := info.get("segment")) or not self.is_visible(info):
+                continue
+            points = [location_3d_to_region_2d(context.region, context.region_data, Vector(p)) for p in ends]
+            if None not in points:
+                segments.add_segment(*((p.x, p.y) for p in points))
+        return segments
 
     def location_3d_to_region_2d(self, coord: Iterable, context: bpy.types.Context) -> Union[Vector, None]:
         """Convert from 3D space to 2D screen space.

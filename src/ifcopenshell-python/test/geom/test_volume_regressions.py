@@ -136,3 +136,63 @@ def test_create_shape_prefers_body_over_axis_9771(axis_first):
     column.Representation = model.createIfcProductDefinitionShape(Representations=representations)
     shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), column)
     assert len(shape.geometry.verts) // 3 == 8
+
+
+def center_line_solid(model, context, placement, curve, thickness):
+    profile = model.createIfcCenterLineProfileDef("AREA", None, curve, thickness)
+    solid = model.createIfcExtrudedAreaSolid(profile, placement, model.createIfcDirection((0.0, 0.0, 1.0)), 1.0)
+    representation = model.createIfcShapeRepresentation(context, "Body", "SweptSolid", [solid])
+    product = model.createIfcBuildingElementProxy(
+        ifcopenshell.guid.new(),
+        None,
+        "Flashing",
+        None,
+        None,
+        model.createIfcLocalPlacement(None, placement),
+        model.createIfcProductDefinitionShape(None, None, [representation]),
+    )
+    return product
+
+
+def center_line_model():
+    model = ifcopenshell.file(schema="IFC4")
+    placement = model.createIfcAxis2Placement3D(model.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+    context = model.createIfcGeometricRepresentationContext(None, "Model", 3, 1e-5, placement, None)
+    units = model.createIfcUnitAssignment(
+        [
+            model.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE"),
+            model.createIfcSIUnit(None, "PLANEANGLEUNIT", None, "RADIAN"),
+        ]
+    )
+    model.createIfcProject(ifcopenshell.guid.new(), None, "Test", None, None, None, None, [context], units)
+    return model, context, placement
+
+
+def volume_of(product, geometry_library):
+    settings = ifcopenshell.geom.settings()
+    settings.set("use-world-coords", True)
+    shape = ifcopenshell.geom.create_shape(settings, product, geometry_library=geometry_library)
+    return ifcopenshell.util.shape.get_volume(shape.geometry)
+
+
+@pytest.mark.parametrize(
+    "points, length",
+    [(((0.0, 0.0), (1.0, 0.0)), 1.0), (((0.0, 0.0), (1.0, 0.0), (1.0, 1.0)), 2.0)],
+    ids=["straight", "mitered"],
+)
+@pytest.mark.parametrize("geometry_library", ["opencascade", "cgal"])
+def test_center_line_profile_volume_2077(points, length, geometry_library):
+    model, context, placement = center_line_model()
+    curve = model.createIfcPolyline([model.createIfcCartesianPoint(p) for p in points])
+    product = center_line_solid(model, context, placement, curve, 0.1)
+    assert volume_of(product, geometry_library) == pytest.approx(length * 0.1, rel=1e-6)
+
+
+@pytest.mark.parametrize("geometry_library, tolerance", [("opencascade", 1e-3), ("cgal", 1e-2)])
+def test_center_line_profile_with_an_arc_2077(geometry_library, tolerance):
+    model, context, placement = center_line_model()
+    circle = model.createIfcCircle(model.createIfcAxis2Placement2D(model.createIfcCartesianPoint((0.0, 0.0))), 1.0)
+    trims = [model.createIfcParameterValue(0.0)], [model.createIfcParameterValue(math.pi / 2)]
+    arc = model.createIfcTrimmedCurve(circle, *trims, True, "PARAMETER")
+    product = center_line_solid(model, context, placement, arc, 0.1)
+    assert volume_of(product, geometry_library) == pytest.approx(math.pi / 2 * 0.1, rel=tolerance)

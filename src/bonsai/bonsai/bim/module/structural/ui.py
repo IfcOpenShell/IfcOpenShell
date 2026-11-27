@@ -641,6 +641,11 @@ class BIM_PT_structural_load_cases(Panel):
 
     def draw_load_case_attributes_ui(self, layout):
         draw_attributes(self.props.load_case_attributes, layout)
+        load_case = next(
+            (c for c in StructuralLoadCasesData.data["load_cases"] if c["id"] == self.props.active_load_case_id), None
+        )
+        if not load_case or not load_case["has_self_weight_attribute"]:
+            return
         box = layout.box()
         box.prop(self.props, "load_case_has_self_weight", text="Self-Weight")
         if self.props.load_case_has_self_weight:
@@ -843,6 +848,9 @@ class BIM_PT_show_structural_activities(Panel):
         row = self.layout.row(align=True)
         row.prop(self.props, "force_decimals")
         row.prop(self.props, "angle_decimals")
+        row = self.layout.row(align=True)
+        row.prop(self.props, "label_size")
+        row.prop(self.props, "arrow_thickness")
 
 
 class BIM_PT_structural_loads(Panel):

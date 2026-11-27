@@ -31,8 +31,8 @@ def unassign_material(file: ifcopenshell.file, products: list[ifcopenshell.entit
 
     If the product does not have a material, nothing happens.
 
-    Unassigning a LayerSet or ProfileSet from the product type will also
-    remove all Usages of the set.
+    Unassigning a LayerSet or ProfileSet from a product type also removes
+    its occurrences' usages of that set. Usages on other products are retained.
 
     :param products: The list IfcProducts that may or may not have a material
     :return: None
@@ -70,37 +70,25 @@ class Usecase:
         self.unassign_materials()
 
     def remove_material_usages_from_types(self) -> None:
-        # remove material usages from types
+        occurrences = set()
         for product in self.products:
             if not product.is_a("IfcTypeObject"):
                 continue
             material = ifcopenshell.util.element.get_material(product)
-            if not material:
+            if not material or material.is_a() not in ("IfcMaterialLayerSet", "IfcMaterialProfileSet"):
                 continue
-            if material.is_a() in ["IfcMaterialLayerSet", "IfcMaterialProfileSet"]:
-                # Remove set usages
-                # TODO: be more considerate and remove only usages
-                # associated with the set + product type, not all usages?
-                for inverse in self.file.get_inverse(material):
-                    if self.file.schema == "IFC2X3":
-                        if not inverse.is_a("IfcMaterialLayerSetUsage"):
-                            continue
-                        # in IFC2X3 there is no .AssociatedTo
-                        for inverse2 in self.file.get_inverse(inverse):
-                            if inverse2.is_a("IfcRelAssociatesMaterial"):
-                                history = inverse2.OwnerHistory
-                                self.file.remove(inverse2)
-                                if history:
-                                    ifcopenshell.util.element.remove_deep2(self.file, history)
-                    else:
-                        if not inverse.is_a("IfcMaterialUsageDefinition"):
-                            continue
-                        for rel in inverse.AssociatedTo:
-                            history = rel.OwnerHistory
-                            self.file.remove(rel)
-                            if history:
-                                ifcopenshell.util.element.remove_deep2(self.file, history)
-                    self.file.remove(inverse)
+            for occurrence in ifcopenshell.util.element.get_types(product):
+                usage = ifcopenshell.util.element.get_material(occurrence, should_inherit=False)
+                if usage and (
+                    (usage.is_a("IfcMaterialLayerSetUsage") and usage.ForLayerSet == material)
+                    or (usage.is_a("IfcMaterialProfileSetUsage") and usage.ForProfileSet == material)
+                ):
+                    occurrences.add(occurrence)
+        if occurrences:
+            usecase = Usecase()
+            usecase.file = self.file
+            usecase.products = occurrences
+            usecase.unassign_materials()
 
     def unassign_materials(self) -> None:
         associations: set[ifcopenshell.entity_instance] = set()

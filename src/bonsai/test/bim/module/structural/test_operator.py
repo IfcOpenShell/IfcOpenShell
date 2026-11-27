@@ -12,13 +12,14 @@ import ifcopenshell.api.structural
 import ifcopenshell.api.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.guid
 import ifcopenshell.util.structural
 import ifcopenshell.util.unit
 import pytest
 from mathutils import Vector
 
 import bonsai.tool as tool
-from bonsai.bim.module.structural.data import LoadGroupDecorationData
+from bonsai.bim.module.structural.data import LoadGroupDecorationData, StructuralLoadCasesData
 from bonsai.bim.module.structural.decorator import LoadsDecorator
 from bonsai.bim.module.structural.operator import PickStructuralLoads, get_load_unit_symbol
 from test.bim.bootstrap import NewFile
@@ -239,6 +240,27 @@ class TestLoadCaseSelfWeight(NewFile):
         props.load_case_has_self_weight = False
         bpy.ops.bim.edit_structural_load_case()
         assert load_case.SelfWeightCoefficients is None
+
+    def test_a_load_group_typed_load_case_has_no_self_weight(self):
+        # RFEM writes load cases as IfcStructuralLoadGroup, which has no SelfWeightCoefficients.
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        load_case = ifc.createIfcStructuralLoadGroup(
+            GlobalId=ifcopenshell.guid.new(),
+            Name="Q",
+            PredefinedType="LOAD_CASE",
+            ActionType="VARIABLE_Q",
+            ActionSource="LIVE_LOAD_Q",
+        )
+        StructuralLoadCasesData.load()
+        (data,) = StructuralLoadCasesData.data["load_cases"]
+        assert data["self_weight"] is None
+        assert data["has_self_weight_attribute"] is False
+        props = tool.Structural.get_structural_props()
+        bpy.ops.bim.enable_editing_structural_load_case(load_case=load_case.id())
+        props.load_case_attributes["Name"].string_value = "Imposed"
+        bpy.ops.bim.edit_structural_load_case()
+        assert load_case.Name == "Imposed"
 
 
 class TestGetLoadUnitSymbol(NewFile):

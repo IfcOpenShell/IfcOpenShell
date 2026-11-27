@@ -185,8 +185,9 @@ class Structural(bonsai.core.tool.Structural):
         """The load groups loading an analysis model. Without a model, every load case.
 
         These are the groups the model is loaded by. Some programs, such as RFEM, leave LoadedBy empty: then they
-        are the load cases that no model lists and whose loads are all on items of this model and of no other.
-        A case that could belong to more than one model is left out rather than guessed."""
+        are the load cases that no model lists and whose loads are all on items of this model and of no other,
+        and the load combinations that no model lists and whose load cases are all among them. A case that could
+        belong to more than one model is left out rather than guessed."""
         ifc_file = tool.Ifc.get()
         cases = [g for g in ifc_file.by_type("IfcStructuralLoadGroup") if cls.is_load_case(g)]
         if model is None:
@@ -205,6 +206,12 @@ class Structural(bonsai.core.tool.Structural):
             loaded = {ifcopenshell.util.structural.get_activity_item(a) for a in activities} - {None}
             if loaded and [m for m, items in models.items() if loaded <= items] == [model]:
                 inferred.append(case)
+        for combination in ifc_file.by_type("IfcStructuralLoadGroup"):
+            if combination.PredefinedType != "LOAD_COMBINATION" or combination.LoadGroupFor:
+                continue
+            combined = ifcopenshell.util.structural.get_combination_factors(combination)
+            if combined and all(c in inferred for c in combined):
+                inferred.append(combination)
         return inferred
 
     @classmethod

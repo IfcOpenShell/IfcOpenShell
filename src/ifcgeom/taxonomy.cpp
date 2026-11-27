@@ -268,7 +268,87 @@ bool shell::is_coplanar(double linear_tolerance) const {
     return true;
 }
 
+namespace {
+// The polygon of the basis, offset with straight miter joins so that the
+// distance to the basis stays constant along the curve.
+std::vector<point3> offset_polygon(const offset_curve& c, const ifcopenshell::geom::settings& settings, double a, double b) {
+    if (!c.reference) {
+        throw std::runtime_error("Offset curve without reference direction");
+    }
+    std::vector<point3> basis;
+    double end;
+    if (auto l = std::dynamic_pointer_cast<loop>(c.basis)) {
+        basis = l->to_polygon(settings);
+        end = static_cast<double>(l->children.size());
+    } else if (auto e = std::dynamic_pointer_cast<trimmed_curve>(c.basis)) {
+        basis = e->to_polygon(settings);
+        end = 1.;
+    } else {
+        throw std::runtime_error("Polygonal approximation not implemented on this offset curve basis");
+    }
+    const bool unbounded = !std::isfinite(a) && !std::isfinite(b);
+    const bool reversed = a == end && b == 0.;
+    if (!unbounded && !reversed && !(a == 0. && b == end)) {
+        throw std::runtime_error("Polygonal approximation not implemented on a partial offset curve");
+    }
+
+    const double tolerance = settings.get<ifcopenshell::geom::settings::Precision>().get();
+    std::vector<Eigen::Vector3d> pts;
+    for (auto& p : basis) {
+        if (pts.empty() || (pts.back() - p.ccomponents()).norm() > tolerance) {
+            pts.push_back(p.ccomponents());
+        }
+    }
+    if (pts.size() < 2) {
+        throw std::runtime_error("Offset curve basis without length");
+    }
+    const Eigen::Vector3d reference = c.reference->ccomponents();
+    const size_t n = pts.size();
+    std::vector<Eigen::Vector3d> normals(n - 1);
+    for (size_t i = 0; i < n - 1; ++i) {
+        normals[i] = reference.cross(pts[i + 1] - pts[i]);
+        const double length = normals[i].norm();
+        if (length == 0.) {
+            throw std::runtime_error("Offset direction undefined where the tangent is parallel to the reference direction");
+        }
+        normals[i] /= length;
+    }
+    std::vector<Eigen::Vector3d> miters(n);
+    miters.front() = normals.front();
+    miters.back() = normals.back();
+    for (size_t i = 1; i < n - 1; ++i) {
+        const double denominator = 1. + normals[i - 1].dot(normals[i]);
+        if (denominator < 1.e-9) {
+            throw std::runtime_error("Offset curve reverses onto itself");
+        }
+        miters[i] = (normals[i - 1] + normals[i]) / denominator;
+    }
+    std::vector<point3> points;
+    points.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+        points.emplace_back(pts[i] + c.offset * miters[i]);
+    }
+    for (size_t i = 0; i < n - 1; ++i) {
+        // An inner corner eats into its segments. When nothing of a segment is left the outline folds over.
+        if ((points[i + 1].ccomponents() - points[i].ccomponents()).dot(pts[i + 1] - pts[i]) <= 0.) {
+            throw std::runtime_error("Offset curve turn too sharp for its offset");
+        }
+    }
+    if (reversed) {
+        std::reverse(points.begin(), points.end());
+    }
+    return points;
+}
+} // namespace
+
 std::vector<point3> curve::to_polygon(const ifcopenshell::geom::settings& settings, double a, double b, int segments) const {
+    if (auto o = dynamic_cast<const offset_curve*>(this)) {
+        auto points = offset_polygon(*o, settings, a, b);
+        for (auto& p : points) {
+            p.components() = transform_point(matrix, p.ccomponents());
+        }
+        return points;
+    }
     if (kind() != LINE && a == -std::numeric_limits<double>::infinity() && b == std::numeric_limits<double>::infinity()) {
         a = 0.;
         b = 2. * polygon_pi;
@@ -1609,9 +1689,9 @@ ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x
 
 		std::array<taxonomy::point3::ptr, 4> points{
 			taxonomy::make<taxonomy::point3>(x + 0, y + 0,  z + 0),
-			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + 0),
+			taxonomy::make<taxonomy::point3>(x + 0, y + 0,  z + dz),
 			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + dz),
-			taxonomy::make<taxonomy::point3>(x + 0, y + 0,  z + dz)
+			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + 0)
 		};
 
 		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
@@ -1630,9 +1710,9 @@ ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x
 
 		std::array<taxonomy::point3::ptr, 4> points{
 			taxonomy::make<taxonomy::point3>(x + dx, y + 0,  z + 0),
-			taxonomy::make<taxonomy::point3>(x + dx, y + 0,  z + dz),
+			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + 0),
 			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + dz),
-			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + 0)
+			taxonomy::make<taxonomy::point3>(x + dx, y + 0,  z + dz)
 		};
 
 		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
@@ -1651,9 +1731,9 @@ ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x
 
 		std::array<taxonomy::point3::ptr, 4> points{
 			taxonomy::make<taxonomy::point3>(x + 0,  y + 0, z + 0),
-			taxonomy::make<taxonomy::point3>(x + 0,  y + 0, z + dz),
+			taxonomy::make<taxonomy::point3>(x + dx, y + 0, z + 0),
 			taxonomy::make<taxonomy::point3>(x + dx, y + 0, z + dz),
-			taxonomy::make<taxonomy::point3>(x + dx, y + 0, z + 0)
+			taxonomy::make<taxonomy::point3>(x + 0,  y + 0, z + dz)
 		};
 
 		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
@@ -1672,9 +1752,9 @@ ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x
 
 		std::array<taxonomy::point3::ptr, 4> points{
 			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + 0),
-			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + 0),
+			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + dz),
 			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + dz),
-			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + dz)
+			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + 0)
 		};
 
 		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
@@ -1693,9 +1773,9 @@ ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x
 
 		std::array<taxonomy::point3::ptr, 4> points{
 			taxonomy::make<taxonomy::point3>(x + 0, y + 0, z + 0),
-			taxonomy::make<taxonomy::point3>(x + dx, y + 0, z + 0),
+			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + 0),
 			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + 0),
-			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + 0)
+			taxonomy::make<taxonomy::point3>(x + dx, y + 0, z + 0)
 		};
 
 		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
@@ -1714,9 +1794,9 @@ ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x
 
 		std::array<taxonomy::point3::ptr, 4> points{
 			taxonomy::make<taxonomy::point3>(x + 0, y + 0, z + dz),
-			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + dz),
+			taxonomy::make<taxonomy::point3>(x + dx, y + 0, z + dz),
 			taxonomy::make<taxonomy::point3>(x + dx, y + dy, z + dz),
-			taxonomy::make<taxonomy::point3>(x + dx, y + 0, z + dz)
+			taxonomy::make<taxonomy::point3>(x + 0, y + dy, z + dz)
 		};
 
 		loop->children.push_back(make<taxonomy::edge>(points[0], points[1]));
