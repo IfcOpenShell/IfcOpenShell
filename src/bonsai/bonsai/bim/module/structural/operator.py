@@ -1460,11 +1460,7 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
     def invoke(self, context, event):
         load = self.get_load()
         if not (category := get_load_category(load)):
-            # Only forces have a dialog; other loads use the attribute editor of the Structural Loads panel.
-            bpy.ops.bim.load_structural_loads()
-            bpy.ops.bim.enable_editing_structural_load(structural_load=load.id())
-            self.report({"INFO"}, f"Editing {load.Name or 'Unnamed'} in the Structural Loads panel")
-            return {"FINISHED"}
+            return self.edit_in_loads_panel(load)
         self.load_category = category
         _, _, force_attributes, moment_attributes = APPLY_LOAD_CLASSES[category]
         # In Blender's axes, as the force is drawn, whatever axes its model gives it in.
@@ -1485,6 +1481,13 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         # Set last, so that filling in the values above does not start a preview.
         self.preview_load = load.id()
         return context.window_manager.invoke_props_dialog(self, width=350)
+
+    def edit_in_loads_panel(self, load: ifcopenshell.entity_instance) -> set[str]:
+        """Only forces have a dialog; other loads use the attribute editor of the Structural Loads panel"""
+        bpy.ops.bim.load_structural_loads()
+        bpy.ops.bim.enable_editing_structural_load(structural_load=load.id())
+        self.report({"INFO"}, f"Editing {load.Name or 'Unnamed'} in the Structural Loads panel")
+        return {"FINISHED"}
 
     def get_users(self) -> list[ifcopenshell.entity_instance]:
         """The applied loads that use the load"""
@@ -1513,7 +1516,8 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
     def _execute(self, context):
         ShaderInfo.preview = {}  # The edit below refreshes the shown loads.
         load = self.get_load()
-        category = get_load_category(load)
+        if not (category := get_load_category(load)):
+            return self.edit_in_loads_panel(load)  # Run without its dialog, as from a script.
         ifc_file = tool.Ifc.get()
         # The axes first: they decide whether the model's axes apply to the values.
         global_or_local = self.get_global_or_local(category)

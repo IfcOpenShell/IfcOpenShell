@@ -515,6 +515,7 @@ class StructuralLoadsData:
             "total_loads": cls.total_loads(),
             "load_classes": cls.load_classes(),
             "structural_load_types": cls.structural_load_types(),
+            "configurations": cls.configurations(),
         }
         cls.is_loaded = True
 
@@ -525,6 +526,40 @@ class StructuralLoadsData:
     @classmethod
     def load_classes(cls):
         return {l.id(): l.is_a() for l in tool.Ifc.get().by_type("IfcStructuralLoad")}
+
+    @classmethod
+    def configurations(cls) -> dict[int, list[dict]]:
+        """The loads of each load configuration, with where each is and its values
+
+        The attribute editor shows only a configuration's Name, as its Values and Locations are lists.
+        """
+        ifc_file = tool.Ifc.get()
+        length_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT")
+        length = ifcopenshell.util.unit.get_unit_symbol(length_unit) if length_unit else "m"
+        results = {}
+        for configuration in ifc_file.by_type("IfcStructuralLoadConfiguration"):
+            locations = configuration.Locations or ()
+            parts = []
+            for i, load in enumerate(configuration.Values):
+                location = None
+                if i < len(locations):
+                    location = ", ".join(f"{v:g}" for v in locations[i]) + f" {length}"
+                values = [
+                    f"{name} {value:g}"
+                    for name, value in load.get_info(include_identifier=False, recursive=False).items()
+                    if isinstance(value, float) and value
+                ]
+                parts.append(
+                    {
+                        "id": load.id(),
+                        "name": load.Name,
+                        "ifc_class": load.is_a(),
+                        "location": location,
+                        "values": ", ".join(values) if values else "No values",
+                    }
+                )
+            results[configuration.id()] = parts
+        return results
 
     @classmethod
     def structural_load_types(cls):
