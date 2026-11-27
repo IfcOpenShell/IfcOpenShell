@@ -4165,6 +4165,8 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Geometry.get_geometry_props()
         if previous_obj := props.representation_obj:
             previous_obj.hide_set(False)
+            if previous_obj != obj and tool.Geometry.get_object_geometry_props(previous_obj).is_editing:
+                tool.Geometry.disable_editing_representation_items(previous_obj)
         props.representation_obj = obj
         obj.hide_set(True)
         tool.Geometry.lock_object(obj)
@@ -4231,6 +4233,9 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
         tool.Root.reload_item_decorator()
 
         element = tool.Ifc.get_entity(obj)
+        if element:
+            # The representation items list opens with item mode, and closes with it in disable_item_mode
+            tool.Geometry.enable_editing_representation_items(obj)
         if (
             element
             and element.is_a("IfcAnnotation")

@@ -2807,6 +2807,10 @@ class Geometry(bonsai.core.tool.Geometry):
     def disable_item_mode(cls) -> None:
         props = tool.Geometry.get_geometry_props()
         if props.representation_obj:
+            if cls.get_object_geometry_props(props.representation_obj).is_editing and tool.Ifc.get_entity(
+                props.representation_obj
+            ):
+                cls.disable_editing_representation_items(props.representation_obj)
             props.representation_obj.hide_set(False)
             cls.unlock_object(props.representation_obj)
             tool.Blender.set_active_object(props.representation_obj)
