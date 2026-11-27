@@ -515,7 +515,7 @@ class Project(bonsai.core.tool.Project):
         if isinstance(ifc_file, ifcopenshell.sqlite):
             mvd = ifc_file.mvd_str
         else:
-            mvd = "".join(ifc_file.header.file_description.description)
+            mvd = "".join(ifc_file.header.file_description.description or ())
         if f"[" in mvd:
             mvd = mvd.split("[")[1][0:-1]
 
