@@ -433,8 +433,10 @@ class StructuralLoadCasesData:
                 {
                     "id": load_case.id(),
                     "name": load_case.Name or "Unnamed",
-                    "self_weight": tuple(load_case.SelfWeightCoefficients)
-                    if load_case.SelfWeightCoefficients
+                    # Only an IfcStructuralLoadCase has self-weight, not a load group typed LOAD_CASE.
+                    "has_self_weight_attribute": load_case.is_a("IfcStructuralLoadCase"),
+                    "self_weight": tuple(coefficients)
+                    if (coefficients := getattr(load_case, "SelfWeightCoefficients", None))
                     else None,
                     "load_groups": load_groups,
                     "activities": activities,
