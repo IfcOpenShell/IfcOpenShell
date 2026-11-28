@@ -42,21 +42,27 @@ class IfcClassData:
 
     @classmethod
     def load(cls):
+        # is_loaded is set before the helpers run, as reading their enums calls load() again when it is False.
         cls.is_loaded = True
         cls.data = {}
-        cls.data["ifc_products"] = cls.ifc_products()
-        cls.data["ifc_classes"] = cls.ifc_classes()
-        cls.data["ifc_classes_suggestions"] = cls.ifc_classes_suggestions()  # Call AFTER cls.ifc_classes()
-        cls.data["representation_template"] = cls.representation_template()
-        cls.data["contexts"] = cls.contexts()
+        try:
+            cls.data["ifc_products"] = cls.ifc_products()
+            cls.data["ifc_classes"] = cls.ifc_classes()
+            cls.data["ifc_classes_suggestions"] = cls.ifc_classes_suggestions()  # Call AFTER cls.ifc_classes()
+            cls.data["representation_template"] = cls.representation_template()
+            cls.data["contexts"] = cls.contexts()
 
-        cls.data["has_entity"] = cls.has_entity()
-        cls.data["name"] = cls.name()
-        cls.data["has_inherited_predefined_type"] = cls.has_inherited_predefined_type()
-        cls.data["ifc_class"] = cls.ifc_class()
-        cls.data["ifc_predefined_types"] = cls.ifc_predefined_types()
-        cls.data["can_reassign_class"] = cls.can_reassign_class()
-        cls.data["profile"] = cls.profile()
+            cls.data["has_entity"] = cls.has_entity()
+            cls.data["name"] = cls.name()
+            cls.data["has_inherited_predefined_type"] = cls.has_inherited_predefined_type()
+            cls.data["ifc_class"] = cls.ifc_class()
+            cls.data["ifc_predefined_types"] = cls.ifc_predefined_types()
+            cls.data["can_reassign_class"] = cls.can_reassign_class()
+            cls.data["profile"] = cls.profile()
+        except Exception:
+            # Clear the flag on a failed populate so the next access retries a full load (see #6398).
+            cls.is_loaded = False
+            raise
 
     @classmethod
     def ifc_products(cls):
@@ -68,7 +74,11 @@ class IfcClassData:
     def ifc_classes(cls):
         rprops = tool.Root.get_root_props()
         ifc_product = rprops.ifc_product
-        declaration = tool.Ifc.schema().declaration_by_name(ifc_product)
+        try:
+            declaration = tool.Ifc.schema().declaration_by_name(ifc_product)
+        except RuntimeError:
+            # The stored ifc_product can be stale for the active schema, so declaration_by_name may raise; return empty (see #6398).
+            return []
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]
         if ifc_product == "IfcElementType":
@@ -89,7 +99,11 @@ class IfcClassData:
         types_enum = []
         rprops = tool.Root.get_root_props()
         ifc_class = rprops.ifc_class
-        declaration = tool.Ifc.schema().declaration_by_name(ifc_class).as_entity()
+        try:
+            declaration = tool.Ifc.schema().declaration_by_name(ifc_class).as_entity()
+        except RuntimeError:
+            # ifc_class can be stale or empty, so declaration_by_name may raise; return empty (see #6398).
+            return types_enum
         assert declaration
         version = tool.Ifc.get_schema()
         for attribute in declaration.attributes():
