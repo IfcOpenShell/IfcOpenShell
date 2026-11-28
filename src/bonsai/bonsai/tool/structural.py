@@ -326,6 +326,34 @@ class Structural(bonsai.core.tool.Structural):
             pass  # Not offered for the current selection.
 
     @classmethod
+    def get_load_items(cls, load: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        """The structural items a load is applied to, directly or as part of a load configuration"""
+        ifc_file = load.file
+        loads, items = [load], []
+        while loads:
+            current = loads.pop()
+            for inverse in ifc_file.get_inverse(current):
+                if inverse.is_a("IfcStructuralLoadConfiguration"):
+                    loads.append(inverse)
+                elif inverse.is_a("IfcStructuralActivity") and inverse.AppliedLoad == current:
+                    for rel in inverse.AssignedToStructuralItem:
+                        if (item := rel.RelatingElement) and item not in items:
+                            items.append(item)
+        return items
+
+    @classmethod
+    def select_load_items(cls, load: ifcopenshell.entity_instance) -> None:
+        """Select the objects of the structural items a load is applied to, in place of the current selection"""
+        context = bpy.context
+        view_layer = context.view_layer
+        objects = [
+            obj
+            for item in cls.get_load_items(load)
+            if (obj := tool.Ifc.get_object(item)) and view_layer.objects.get(obj.name)
+        ]
+        tool.Blender.set_objects_selection(context, objects[0] if objects else None, objects)
+
+    @classmethod
     def get_group_activities(
         cls, item: ifcopenshell.entity_instance, group: ifcopenshell.entity_instance
     ) -> list[ifcopenshell.entity_instance]:

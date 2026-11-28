@@ -1592,6 +1592,27 @@ class ShowStructuralLoadCase(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SelectStructuralLoadItems(bpy.types.Operator):
+    bl_idname = "bim.select_structural_load_items"
+    bl_label = "Select Structural Load Items"
+    bl_description = "Select the structural items this load is applied to"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = tool.Structural.get_structural_props()
+        if not 0 <= self.index < len(props.structural_loads):
+            return {"CANCELLED"}
+        if props.active_structural_load_index == self.index:
+            # Setting the same index runs no update.
+            tool.Structural.select_load_items(
+                tool.Ifc.get().by_id(props.structural_loads[self.index].ifc_definition_id)
+            )
+        else:
+            props.active_structural_load_index = self.index  # Which selects its items.
+        return {"FINISHED"}
+
+
 class LoadStructuralLoads(bpy.types.Operator):
     bl_idname = "bim.load_structural_loads"
     bl_label = "Load Structural Loads"
