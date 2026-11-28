@@ -54,6 +54,20 @@
 #include <locale.h>
 #endif
 
+// Floating-point std::to_chars, used by format_double_shortest() below.
+// libstdc++ (GCC 11+) and the MSVC STL (VS 2019 16.4+) announce it with the
+// standard feature-test macro. libc++ has it since LLVM 14 but never defines
+// __cpp_lib_to_chars, so there the availability macro of libc++ 18+ is used,
+// which is 0 when the deployment target predates the dylib that has it (Apple:
+// macOS 13.3, iOS 16.3). Older libc++ keeps the snprintf search.
+#if defined(_LIBCPP_VERSION)
+#if defined(_LIBCPP_AVAILABILITY_HAS_TO_CHARS_FLOATING_POINT) && _LIBCPP_AVAILABILITY_HAS_TO_CHARS_FLOATING_POINT
+#define IFCOPENSHELL_HAS_TO_CHARS_DOUBLE
+#endif
+#elif defined(__cpp_lib_to_chars) && __cpp_lib_to_chars >= 201611L
+#define IFCOPENSHELL_HAS_TO_CHARS_DOUBLE
+#endif
+
 #ifdef USE_MMAP
 #include <boost/filesystem/path.hpp>
 #endif
@@ -1101,8 +1115,9 @@ namespace {
         }
         // Shortest decimal representation of 'd' that round-trips back to the
         // exact same double (like std::to_chars, or Python's repr).
-        // Using actual `std::to_chars` requires macOS 13.3+, so we implement this manually,
-        // until we drop support for older targets.
+        // Floating-point `std::to_chars` is not available everywhere (e.g. it
+        // requires macOS 13.3+), see IFCOPENSHELL_HAS_TO_CHARS_DOUBLE above;
+        // without it the manual search below is used.
         //
         // Mirrors libstdc++'s notation-choice bounds (floating_to_chars.cc,
         // __floating_to_chars_shortest) to pick whichever of fixed/scientific is
@@ -1110,11 +1125,34 @@ namespace {
         static inline void format_double_shortest(char (&buf)[64], double d) {
             char sci[64];
             int mantissa_length = 17;
-            for (int prec = 1; prec <= 17; ++prec) {
+            int prec = 1;
+            bool found = false;
+#ifdef IFCOPENSHELL_HAS_TO_CHARS_DOUBLE
+            // Where floating-point std::to_chars is available, its shortest
+            // scientific form gives the digit count directly. It is only used
+            // when printf rounds to the same digits, so the output stays
+            // identical to the search below, which handles the rest.
+            char shortest[64];
+            const std::to_chars_result r = std::to_chars(shortest, shortest + sizeof(shortest) - 1, d, std::chars_format::scientific);
+            *r.ptr = '\0';
+            int digits = 0;
+            for (const char* c = shortest; *c && *c != 'e'; ++c) {
+                digits += *c >= '0' && *c <= '9';
+            }
+            if (digits >= 1 && digits <= 17) {
+                prec = digits;
+                snprintf(sci, sizeof(sci), "%.*e", prec - 1, d);
+                if (strcmp(sci, shortest) == 0) {
+                    mantissa_length = prec;
+                    found = true;
+                }
+            }
+#endif
+            for (; !found && prec <= 17; ++prec) {
                 snprintf(sci, sizeof(sci), "%.*e", prec - 1, d);
                 if (strtod(sci, nullptr) == d) {
                     mantissa_length = prec;
-                    break;
+                    found = true;
                 }
             }
             const char* exp_str = strchr(sci, 'e');
