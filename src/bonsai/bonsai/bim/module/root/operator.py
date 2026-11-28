@@ -283,14 +283,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 )
                 continue
 
-            if (
-                self.should_add_representation
-                and not is_structural
-                and isinstance(obj.data, bpy.types.Mesh)
-                and obj.data.polygons
-            ):
-                # Export mesh as tesselation.
-
+            def apply_modifiers_and_scale() -> None:
                 def ensure_single_user_mesh(mesh: bpy.types.Mesh) -> None:
                     if mesh.users == 1:
                         return
@@ -317,6 +310,47 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     if is_negative and bpy.app.version >= (5, 1, 0):
                         for polygon in obj.data.polygons:
                             polygon.flip()
+
+            if (
+                self.should_add_representation
+                and is_structural
+                and isinstance(obj.data, bpy.types.Mesh)
+                and obj.data.vertices
+            ):
+                # A structural item's mesh is its topology: a vertex, an edge or a face.
+                apply_modifiers_and_scale()
+                try:
+                    representation = tool.Structural.add_mesh_topology_representation(obj, ifc_class)
+                except ValueError as e:
+                    self.report({"ERROR"}, f"Object '{obj.name}' {e}.")
+                    continue
+                element = core.assign_class(
+                    tool.Ifc,
+                    tool.Collector,
+                    tool.Root,
+                    obj=obj,
+                    ifc_class=ifc_class,
+                    predefined_type=predefined_type,
+                    should_add_representation=False,
+                )
+                ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+                if (edge := representation.Items[0]).is_a("IfcEdge"):
+                    # A curve item's Axis is mandatory since IFC4.
+                    start, end = (v.VertexGeometry.Coordinates for v in (edge.EdgeStart, edge.EdgeEnd))
+                    tool.Structural.turn_axis_off_edge(element, start, end)
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc, tool.Geometry, obj=obj, representation=representation
+                )
+                # The topology is in the object's own coordinates, so its placement must be there with it.
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            elif (
+                self.should_add_representation
+                and not is_structural
+                and isinstance(obj.data, bpy.types.Mesh)
+                and obj.data.polygons
+            ):
+                # Export mesh as tesselation.
+                apply_modifiers_and_scale()
 
                 if tool.Geometry.mesh_has_loose_geometry(obj.data):
                     self.report(

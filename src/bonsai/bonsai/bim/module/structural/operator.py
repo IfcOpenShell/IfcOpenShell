@@ -800,16 +800,15 @@ class EditStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = tool.Structural.get_structural_props()
         attributes = bonsai.bim.helper.export_attributes(props.load_case_attributes)
-        if props.load_case_has_self_weight:
-            attributes["SelfWeightCoefficients"] = list(props.load_case_self_weight)
-        else:
-            attributes["SelfWeightCoefficients"] = None
         self.file = tool.Ifc.get()
-        ifcopenshell.api.structural.edit_structural_load_case(
-            self.file,
-            load_case=self.file.by_id(props.active_load_case_id),
-            attributes=attributes,
-        )
+        load_case = self.file.by_id(props.active_load_case_id)
+        # Only an IfcStructuralLoadCase has self-weight, not a load group typed LOAD_CASE.
+        if load_case.is_a("IfcStructuralLoadCase"):
+            if props.load_case_has_self_weight:
+                attributes["SelfWeightCoefficients"] = list(props.load_case_self_weight)
+            else:
+                attributes["SelfWeightCoefficients"] = None
+        ifcopenshell.api.structural.edit_structural_load_case(self.file, load_case=load_case, attributes=attributes)
         bpy.ops.bim.disable_editing_structural_load_case()
         return {"FINISHED"}
 
