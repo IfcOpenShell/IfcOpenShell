@@ -29,6 +29,7 @@ import svgwrite
 from odf.opendocument import load as load_ods
 from odf.style import Style
 from odf.table import Table, TableCell, TableColumn, TableRow
+from odf.teletype import extractText
 from odf.text import P
 
 import bonsai.tool as tool
@@ -63,6 +64,8 @@ class Scheduler:
             debug=False,
             id="root",
         )
+        # Keep runs of spaces (ODF `<text:s>`) from being collapsed by renderers.
+        self.svg.attribs["xml:space"] = "preserve"
         self.padding = 1
         self.margin = 1
 
@@ -568,7 +571,10 @@ class Scheduler:
         :param wrap_text: if True, text will be wrapped to fit in cell
         :param cell_width: width of cell, used for wrapping text
         """
-        text_lines = [str(p) for p in p_tags]
+        # extractText expands ODF space, tab and line-break elements that str(p) drops.
+        text_lines = []
+        for p in p_tags:
+            text_lines.extend(extractText(p).split("\n"))
         box_alignment_params = SvgWriter.get_box_alignment_parameters(box_alignment)
         text_params = {"font-size": font_size}
         if bold:
