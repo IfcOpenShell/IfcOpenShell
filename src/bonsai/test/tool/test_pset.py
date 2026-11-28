@@ -131,6 +131,42 @@ class TestImportingATemplatedQuantityRespectsItsOwnUnitOverride(NewFile):
         assert metadata.float_value == 2500.0  # raw stored value, not rescaled
 
 
+class TestImportPsetFromTemplateWithOptionalAttributesUnset(NewFile):
+    def test_template_type_unset(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        pset_template = ifc.createIfcPropertySetTemplate(
+            Name="Pset_Test",
+            TemplateType="PSET_TYPEDRIVENOVERRIDE",
+            HasPropertyTemplates=[
+                ifc.createIfcSimplePropertyTemplate(Name="A", PrimaryMeasureType="IfcLabel"),
+                ifc.createIfcSimplePropertyTemplate(
+                    Name="B", TemplateType="P_SINGLEVALUE", PrimaryMeasureType="IfcLabel"
+                ),
+            ],
+        )
+        obj = bpy.data.objects.new("Beam", None)
+        subject.import_pset_from_template(pset_template, None, obj.PsetProperties)
+        assert [p.name for p in obj.PsetProperties.properties] == ["B"]
+
+    def test_enumerators_unset(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        pset_template = ifc.createIfcPropertySetTemplate(
+            Name="Pset_Test",
+            TemplateType="PSET_TYPEDRIVENOVERRIDE",
+            HasPropertyTemplates=[
+                ifc.createIfcSimplePropertyTemplate(Name="A", TemplateType="P_ENUMERATEDVALUE"),
+                ifc.createIfcSimplePropertyTemplate(
+                    Name="B", TemplateType="P_SINGLEVALUE", PrimaryMeasureType="IfcLabel"
+                ),
+            ],
+        )
+        obj = bpy.data.objects.new("Beam", None)
+        subject.import_pset_from_template(pset_template, None, obj.PsetProperties)
+        assert [p.name for p in obj.PsetProperties.properties] == ["B"]
+
+
 class TestIsMeasurableSpecialType(NewFile):
     def test_run(self):
         for special_type in ("", "DATE", "DATETIME", "LOGICAL", "URI", "DURATION"):
