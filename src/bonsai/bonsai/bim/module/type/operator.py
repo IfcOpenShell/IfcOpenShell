@@ -245,6 +245,9 @@ class SelectType(bpy.types.Operator):
         if self.relating_type:  # if operator button sends a relating_type, the iterator only selects this one type
             element = tool.Ifc.get().by_id(self.relating_type)
             obj = tool.Ifc.get_object(element)
+            if obj is None:
+                self.report({"WARNING"}, "Type has no corresponding Blender object to select.")
+                return {"CANCELLED"}
             selected_objs = [obj]
         else:  # else, the iterator selects all the types of all the selected objects
             selected_objs = context.selected_objects
