@@ -178,6 +178,27 @@ class AuthoringData:
         return results
 
     @classmethod
+    def refresh_relating_type_id(cls) -> None:
+        """Recompute the ``relating_type_id`` enum items for whatever
+        ``ifc_class`` is currently selected, without changing ``ifc_class``.
+
+        Blender does not invoke an ``EnumProperty``'s ``update`` callback
+        when it is assigned the value it already holds, so reassigning
+        ``props.ifc_class`` to its current value (e.g. after duplicating a
+        type of the already-active class) does **not** refresh this cache.
+        Callers that need the item list to reflect entities created,
+        renamed or deleted since the panel last drew - without an
+        intervening ``ifc_class`` change - must call this explicitly.
+        """
+        cls.data["type_elements"] = cls.type_elements()
+        cls.data["type_elements_filtered"] = cls.type_elements_filtered()
+        cls.data["relating_type_id"] = cls.relating_type_id()
+        cls.data["relating_type_data"] = cls.relating_type_data()
+        cls.data["total_types"] = cls.total_types()
+        cls.data["total_pages"] = cls.total_pages()
+        cls.data["paginated_relating_types"] = cls.paginated_relating_types()
+
+    @classmethod
     def get_type_data(cls, element: ifcopenshell.entity_instance) -> dict[str, Any]:
         predefined_type = ifcopenshell.util.element.get_predefined_type(element)
         if predefined_type == "NOTDEFINED":
