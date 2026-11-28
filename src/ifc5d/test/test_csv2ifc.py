@@ -148,6 +148,10 @@ class TestCsv2Ifc:
             parent_row = next(row for row in worksheet.iter_rows(min_row=2) if row[0].value == "DB.1")
             assert parent_row[4].value.startswith("=SUM(")
 
+    def test_sum_cells_normalizes_cell_references_to_uppercase(self):
+        writer = ifc5d.ifc5Dspreadsheet.Ifc5Dwriter(ifcopenshell.file(), "")
+        assert writer.sum_cells(["E35", "e36", "e37"]) == "=SUM(E35,E36,E37)"
+
 
 class TestSerialiseCostQuantities:
     def test_quantity_name_with_special_characters_round_trips_as_json(self):
