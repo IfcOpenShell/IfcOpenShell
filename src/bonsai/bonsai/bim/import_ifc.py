@@ -303,10 +303,24 @@ class IfcImporter:
         if self.ifc_import_settings.should_setup_viewport_camera:
             self.setup_viewport_camera()
         tool.Spatial.run_spatial_import_spatial_decomposition()
-        if default_container := tool.Spatial.guess_default_container():
+        if default_container := self.get_previous_default_container() or tool.Spatial.guess_default_container():
             tool.Spatial.set_default_container(default_container)
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
+
+    def get_previous_default_container(self) -> Union[ifcopenshell.entity_instance, None]:
+        """Keep the default container chosen in the previous session (e.g. restored from a
+        metadata blend file), as long as it still is a spatial container in this file."""
+        container_id = tool.Spatial.get_spatial_props().default_container
+        if not container_id:
+            return None
+        try:
+            container = self.file.by_id(container_id)
+        except RuntimeError:
+            return None
+        if not hasattr(container, "ContainsElements"):
+            return None
+        return container
 
     def process_context_filter(self) -> None:
         """Setup contexts. Necessary for importing elements representations."""
