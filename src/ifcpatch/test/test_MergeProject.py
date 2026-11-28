@@ -81,6 +81,32 @@ class TestMergeProjects(test.bootstrap.IFC4):
         output = ifcpatch.execute({"file": self.file, "recipe": "MergeProjects", "arguments": [second_file]})
         assert len(output.by_type("IfcGeometricRepresentationContext")) == 2
 
+    def test_never_emits_duplicate_contexts(self):
+        # The merge must never leave duplicate geometric contexts. Its own
+        # context reuse (remove_deep2 over an unordered set) is order-sensitive
+        # and can silently leave a merged-in context behind, and the input may
+        # already contain duplicates; either way the output must be collapsed.
+        # See #8700. A pre-existing duplicate in the main file is a
+        # deterministic stand-in - reuse_existing_contexts only touches
+        # merged-in contexts, so without the final dedupe it survives.
+        self.file = self.setup_project(self.file)
+        body = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
+        self.file.create_entity(
+            "IfcGeometricRepresentationSubContext",
+            ContextType="Model",
+            ContextIdentifier="Body",
+            TargetView="MODEL_VIEW",
+            ParentContext=body.ParentContext,
+        )
+        second_file = self.setup_project()
+        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProjects", "arguments": [second_file]})
+        bodies = [
+            c
+            for c in output.by_type("IfcGeometricRepresentationSubContext")
+            if c.ContextType == "Model" and c.ContextIdentifier == "Body" and c.TargetView == "MODEL_VIEW"
+        ]
+        assert len(bodies) == 1
+
     def test_using_the_georeferencing_of_the_original_project(self):
         if self.file.schema == "IFC2X3":
             return
