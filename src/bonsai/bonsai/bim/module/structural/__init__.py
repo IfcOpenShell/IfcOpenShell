@@ -75,6 +75,7 @@ classes = (
     operator.RemoveStructuralLoadCombination,
     operator.EnableEditingStructuralLoadGroupActivities,
     operator.LoadStructuralLoads,
+    operator.SelectStructuralLoadItems,
     operator.DisableStructuralLoadEditingUI,
     operator.AddStructuralLoad,
     operator.EnableEditingStructuralLoad,

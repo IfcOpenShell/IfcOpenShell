@@ -148,6 +148,42 @@ class TestLoadStructuralLoads(NewFile):
         props.show_unused_loads_only = False
         assert sorted(load.name for load in props.structural_loads) == ["Unused", "Used"]
 
+    def test_clicking_a_load_selects_the_items_it_is_applied_to(self):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        shared = ifcopenshell.api.structural.add_structural_load(
+            ifc, name="Shared", ifc_class="IfcStructuralLoadSingleForce"
+        )
+        ifcopenshell.api.structural.add_structural_load(ifc, name="Unused", ifc_class="IfcStructuralLoadSingleForce")
+        objects = {}
+        for name in ("A", "B", "C"):
+            element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralPointConnection", name=name)
+            obj = bpy.data.objects.new(name, None)
+            bpy.context.scene.collection.objects.link(obj)
+            tool.Ifc.link(element, obj)
+            objects[name] = obj
+        for name in ("A", "B"):
+            ifcopenshell.api.structural.add_structural_activity(
+                ifc,
+                applied_load=shared,
+                structural_member=tool.Ifc.get_entity(objects[name]),
+                ifc_class="IfcStructuralPointAction",
+            )
+        objects["C"].select_set(True)
+        bpy.ops.bim.load_structural_loads()
+        props = tool.Structural.get_structural_props()
+        names = [load.name for load in props.structural_loads]
+        props.active_structural_load_index = names.index("Shared")
+        assert sorted(obj.name for obj in bpy.context.selected_objects) == ["A", "B"]
+        assert bpy.context.view_layer.objects.active in (objects["A"], objects["B"])
+        props.active_structural_load_index = names.index("Unused")
+        assert not bpy.context.selected_objects
+        bpy.ops.bim.select_structural_load_items(index=names.index("Shared"))
+        assert sorted(obj.name for obj in bpy.context.selected_objects) == ["A", "B"]
+        objects["C"].select_set(True)  # Clicked again, the same load selects its items again.
+        bpy.ops.bim.select_structural_load_items(index=names.index("Shared"))
+        assert sorted(obj.name for obj in bpy.context.selected_objects) == ["A", "B"]
+
 
 class TestShowStructuralLoadCase(NewFile):
     def test_showing_and_hiding_a_load_case(self):

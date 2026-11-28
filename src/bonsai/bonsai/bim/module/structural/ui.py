@@ -914,10 +914,16 @@ class BIM_UL_structural_loads(UIList):
         icon,
         active_data,
         active_propname,
+        index=0,
     ):
         if item:
             row = layout.row(align=True)
-            row.label(text=f"{item.name} ({item.number_of_inverse_references})")
+            op = row.operator(
+                "bim.select_structural_load_items",
+                text=f"{item.name} ({item.number_of_inverse_references})",
+                emboss=False,
+            )
+            op.index = index
             row.label(text=StructuralLoadsData.data["load_classes"][item.ifc_definition_id])
 
             if data.active_structural_load_id == item.ifc_definition_id:

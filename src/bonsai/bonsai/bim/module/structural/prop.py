@@ -53,6 +53,17 @@ def update_unused_loads_only(self: "BIMStructuralProperties", context: bpy.types
     bpy.ops.bim.load_structural_loads()
 
 
+def update_active_structural_load_index(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
+    if not 0 <= self.active_structural_load_index < len(self.structural_loads):
+        return
+    item = self.structural_loads[self.active_structural_load_index]
+    try:
+        load = tool.Ifc.get().by_id(item.ifc_definition_id)
+    except RuntimeError:
+        return
+    tool.Structural.select_load_items(load)
+
+
 def get_buildings(self: "BIMStructuralProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not StructuralAnalysisModelsData.is_loaded:
         StructuralAnalysisModelsData.load()
@@ -266,7 +277,9 @@ class BIMStructuralProperties(PropertyGroup):
     active_load_group_activity_index: IntProperty(name="Active Load Group Activity Index")
 
     structural_loads: CollectionProperty(name="Structural Loads", type=StructuralLoad)
-    active_structural_load_index: IntProperty(name="Active Structural Load Index")
+    active_structural_load_index: IntProperty(
+        name="Active Structural Load Index", update=update_active_structural_load_index
+    )
     active_structural_load_id: IntProperty(name="Active Structural Load Id")
     is_editing_loads: BoolProperty(name="Is Editing Loads", default=False)
     structural_load_types: EnumProperty(items=get_structural_load_types, name="Structural Load Types")
