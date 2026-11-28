@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+import ifcopenshell.util.sequence
 
 
 def remove_time_period(file: ifcopenshell.file, time_period: ifcopenshell.entity_instance) -> None:
@@ -54,3 +55,5 @@ def remove_time_period(file: ifcopenshell.file, time_period: ifcopenshell.entity
         ifcopenshell.api.sequence.remove_time_period(model, time_period=afternoon)
     """
     file.remove(time_period)
+    ifcopenshell.util.sequence.is_working_day.cache_clear()
+    ifcopenshell.util.sequence.is_calendar_applicable.cache_clear()
