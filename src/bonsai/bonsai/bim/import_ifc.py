@@ -87,7 +87,10 @@ class MaterialCreator:
         if self.ifc_import_settings.load_indexed_maps:
             self.load_texture_maps(shape_has_openings)
         self.assign_material_slots_to_faces()
-        tool.Geometry.record_object_materials(obj)
+        # On reimport (tool.Geometry.reimport_element_representations) obj still holds its old data
+        # here - None if it was an EMPTY - and change_data() records the checksum once the new mesh is on.
+        if obj.data == mesh:
+            tool.Geometry.record_object_materials(obj)
         del self.mesh["ios_materials"]
 
     def load_existing_materials(self) -> None:
