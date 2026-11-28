@@ -2135,7 +2135,11 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         ifc_exporter = export_ifc.IfcExporter(settings)
         print("Starting export")
         settings.logger.info("Starting export")
-        ifc_exporter.export()
+        try:
+            ifc_exporter.export()
+        except (RuntimeError, OSError) as e:
+            self.report({"ERROR"}, f"Failed to write IFC file: {e}")
+            return {"CANCELLED"}
         settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))
         print("Export finished in {:.2f} seconds".format(time.time() - start))
         # New project created in Bonsai should be in recent projects too.
