@@ -100,37 +100,49 @@ int ifcopenshell::geom::util::surface_genus(const TopoDS_Shape& s) {
 	return genus;
 }
 
-bool ifcopenshell::geom::util::is_manifold(const TopoDS_Shape& a) {
-	if (a.ShapeType() == TopAbs_COMPOUND || a.ShapeType() == TopAbs_SOLID) {
-		TopoDS_Iterator it(a);
-		for (; it.More(); it.Next()) {
-			if (!is_manifold(it.Value())) {
-				return false;
+namespace {
+	// Applies pred to the number of faces bounding every non-degenerate edge, per shell.
+	template <typename Pred>
+	bool edge_face_counts_satisfy(const TopoDS_Shape& a, Pred pred) {
+		if (a.ShapeType() == TopAbs_COMPOUND || a.ShapeType() == TopAbs_SOLID) {
+			TopoDS_Iterator it(a);
+			for (; it.More(); it.Next()) {
+				if (!edge_face_counts_satisfy(it.Value(), pred)) {
+					return false;
+				}
 			}
+			return true;
+		} else {
+			NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
+			TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
+
+			for (int i = 1; i <= map.Extent(); ++i) {
+				const TopoDS_Edge& e = TopoDS::Edge(map.FindKey(i));
+
+				TopoDS_Vertex v0, v1;
+				TopExp::Vertices(e, v0, v1);
+				const bool degenerate = !v0.IsNull() && !v1.IsNull() && v0.IsSame(v1);
+
+				if (degenerate) {
+					continue;
+				}
+
+				if (!pred(map.FindFromIndex(i).Extent())) {
+					return false;
+				}
+			}
+
+			return true;
 		}
-		return true;
-	} else {
-        NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
-		TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
-
-		for (int i = 1; i <= map.Extent(); ++i) {
-			const TopoDS_Edge& e = TopoDS::Edge(map.FindKey(i));
-
-			TopoDS_Vertex v0, v1;
-			TopExp::Vertices(e, v0, v1);
-			const bool degenerate = !v0.IsNull() && !v1.IsNull() && v0.IsSame(v1);
-
-			if (degenerate) {
-				continue;
-			}
-
-			if (map.FindFromIndex(i).Extent() != 2) {
-				return false;
-			}
-		}
-
-		return true;
 	}
+}
+
+bool ifcopenshell::geom::util::is_manifold(const TopoDS_Shape& a) {
+	return edge_face_counts_satisfy(a, [](int faces) { return faces == 2; });
+}
+
+bool ifcopenshell::geom::util::is_closed(const TopoDS_Shape& a) {
+	return edge_face_counts_satisfy(a, [](int faces) { return faces >= 2; });
 }
 
 

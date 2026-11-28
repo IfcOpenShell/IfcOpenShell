@@ -32,6 +32,8 @@ namespace ifcopenshell::geom {
 		IFC_GEOMLIBRARY_API int surface_genus(const TopoDS_Shape&);
 
 		IFC_GEOMLIBRARY_API bool is_manifold(const TopoDS_Shape& a);
+		// Every edge bounds at least two faces: a closed surface that may touch itself along an edge.
+		IFC_GEOMLIBRARY_API bool is_closed(const TopoDS_Shape& a);
 
 		// For axis placements detect equality early in order for the
 		// relatively computionaly expensive gp_Trsf calculation to be skipped
