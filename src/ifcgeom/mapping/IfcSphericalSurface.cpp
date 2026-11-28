@@ -23,17 +23,11 @@ using namespace ifcopenshell::geom;
 
 #ifdef SCHEMA_HAS_IfcSphericalSurface
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSphericalSurface&) {
-	return nullptr;
-
-	/*
-	gp_Trsf trsf;
-	ifcopenshell::geom::Kernel::convert(inst.Position(), trsf);
-
-	// IfcElementarySurface.Position has unit scale factor
-	face = BRepBuilderAPI_MakeFace(new Geom_SphericalSurface(gp::XOY(), inst.Radius() * length_unit_), getValue(GV_PRECISION)).Face().Moved(trsf);
-	return true;
-	*/
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSphericalSurface& inst) {
+	auto sphere = taxonomy::make<taxonomy::sphere>();
+	sphere->radius = inst.Radius() * length_unit_;
+	sphere->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
+	return sphere;
 }
 
 #endif
