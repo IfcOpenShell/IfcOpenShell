@@ -38,7 +38,7 @@ import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
 from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
 from bonsai.bim.module.model.wall_offset_gizmos import WALL_OFFSET_GIZMO_CONFIGS
-from bonsai.bim.module.model.window import create_bm_box, create_bm_window
+from bonsai.bim.module.model.window import create_bm_box, create_bm_window, has_shared_model_body
 from bonsai.bim.parametric_lifecycle import FeatureModifierEditMixin, PickTypeMixin
 
 if TYPE_CHECKING:
@@ -158,8 +158,12 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
         element.OperationType = props.door_type
 
     # occurrences attributes
+    # Mirror the geometry path above: an occurrence with its own Body
+    # representation keeps its own OverallWidth/OverallHeight too.
     occurrences = tool.Ifc.get_all_element_occurrences(element)
     for occurrence in occurrences:
+        if occurrence != element and not has_shared_model_body(occurrence, model_representation):
+            continue
         occurrence.OverallWidth = props.overall_width / si_conversion
         occurrence.OverallHeight = props.overall_height / si_conversion
 
