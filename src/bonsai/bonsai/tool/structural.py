@@ -316,8 +316,8 @@ class Structural(bonsai.core.tool.Structural):
         except RuntimeError:
             return
         load = next((a.AppliedLoad for a in cls.get_group_activities(element, group) if a.AppliedLoad), None)
-        if not load or not load.Name:
-            return  # The picker lists named loads only.
+        if not load:
+            return
         try:
             if props.applicable_structural_load_types != load.is_a():
                 props.applicable_structural_load_types = load.is_a()

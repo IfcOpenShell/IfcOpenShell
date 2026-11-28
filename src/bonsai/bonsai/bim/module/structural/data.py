@@ -471,10 +471,23 @@ class StructuralLoadCasesData:
         props = tool.Structural.get_structural_props()
         results = []
         for load in tool.Ifc.get().by_type("IfcStructuralLoad"):
-            if not load.Name or not load.is_a(props.applicable_structural_load_types):
+            if not load.is_a(props.applicable_structural_load_types):
                 continue
-            results.append((str(load.id()), load.Name or "Unnamed", ""))
+            # Some files, such as RFEM 6 exports, name none of their loads: tell them apart by their id.
+            results.append((str(load.id()), load.Name or f"Unnamed #{load.id()}", ""))
         return results
+
+    @classmethod
+    def chosen_load_id(cls, props) -> Union[int, None]:
+        """The id of the load chosen in the applicable loads picker, if it offers any
+
+        The picker is not read when it offers nothing, as Blender warns on every read of an enum with no items.
+        """
+        if not cls.is_loaded:
+            cls.load()
+        if not cls.data["applicable_structural_loads"] or not props.applicable_structural_loads:
+            return None
+        return int(props.applicable_structural_loads)
 
 
 class StructuralLoadCombinationsData:

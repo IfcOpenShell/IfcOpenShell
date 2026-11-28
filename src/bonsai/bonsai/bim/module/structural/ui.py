@@ -551,11 +551,20 @@ class BIM_UL_structural_analysis_models(UIList):
                 op.structural_analysis_model = item.ifc_definition_id
 
 
+def draw_applicable_loads_picker(layout: bpy.types.UILayout, props) -> None:
+    """The loads of the chosen type to apply, or a label saying there are none"""
+    if StructuralLoadCasesData.data["applicable_structural_loads"]:
+        layout.prop(props, "applicable_structural_loads", text="")
+    else:
+        # Drawing an enum with no items makes Blender warn on every redraw.
+        layout.label(text="No Loads of This Type")
+
+
 def draw_apply_load_button(layout: bpy.types.UILayout, props, group_id: int) -> None:
     """The button applying the chosen load to the selected items, saying which, or that none would take it"""
     ifc_file = tool.Ifc.get()
     try:
-        load = ifc_file.by_id(int(props.applicable_structural_loads)) if props.applicable_structural_loads else None
+        load = ifc_file.by_id(load_id) if (load_id := StructuralLoadCasesData.chosen_load_id(props)) else None
         group = ifc_file.by_id(group_id)
     except (RuntimeError, ValueError):
         load, group = None, None
@@ -677,7 +686,7 @@ class BIM_PT_structural_load_cases(Panel):
                 row.operator("bim.remove_structural_activity", text="", icon="X").activity = activity["id"]
         row = box.row(align=True)
         row.prop(self.props, "applicable_structural_load_types", text="")
-        row.prop(self.props, "applicable_structural_loads", text="")
+        draw_applicable_loads_picker(row, self.props)
         draw_apply_load_button(box, self.props, load_case["id"])
 
         if not load_case["load_groups"]:
@@ -697,7 +706,7 @@ class BIM_PT_structural_load_cases(Panel):
     def draw_editable_load_group_activities_ui(self, layout, load_group):
         row = layout.row(align=True)
         row.prop(self.props, "applicable_structural_load_types", text="")
-        row.prop(self.props, "applicable_structural_loads", text="")
+        draw_applicable_loads_picker(row, self.props)
         draw_apply_load_button(layout, self.props, load_group["id"])
         layout.template_list(
             "BIM_UL_structural_activities",

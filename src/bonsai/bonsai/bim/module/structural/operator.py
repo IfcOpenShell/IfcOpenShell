@@ -1067,11 +1067,11 @@ class AddStructuralActivity(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.props = tool.Structural.get_structural_props()
-        if not self.props.applicable_structural_loads:
+        if not (load_id := StructuralLoadCasesData.chosen_load_id(self.props)):
             self.report({"ERROR"}, "No structural load of the chosen type to apply.")
             return {"CANCELLED"}
         self.file = tool.Ifc.get()
-        load = self.file.by_id(int(self.props.applicable_structural_loads))
+        load = self.file.by_id(load_id)
         group = self.file.by_id(self.load_group)
         # The selected items that can take the load and don't have it here already, as the button says.
         targets = tool.Structural.get_load_targets(context.selected_objects, load, group)
