@@ -97,7 +97,7 @@ def updateResourceUsage(self: "Resource", context: object) -> None:
 class Resource(PropertyGroup):
     name: StringProperty(name="Name", update=updateResourceName)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
-    schedule_usage: FloatProperty(name="Schedule Usage", update=updateResourceUsage)
+    schedule_usage: FloatProperty(name="Schedule Usage", min=0.01, update=updateResourceUsage)
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
