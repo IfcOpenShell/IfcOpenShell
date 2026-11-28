@@ -411,3 +411,13 @@ class TestLineForcesAlongTheirResultant(NewIfc):
         (value,) = info.curve_members.values()
         loads = info.process_total_linear_loads(value["activities"], np.eye(3), member_length)["linear loads"]
         assert len(loads["fy"]["polyline"]) == len(loads["fz"]["polyline"]) == 2
+
+
+class TestPointMoments(NewFile):
+    def test_a_negligible_moment_is_not_drawn(self):
+        # RFEM writes leftovers such as 1.9e-308 where a component is unset, too small to give a direction.
+        info = ShaderInfo()
+        info.shader = MagicMock()  # No GPU in background mode.
+        with np.errstate(divide="raise", invalid="raise"):
+            info.get_point_moment_args((1.94069306614094e-308, 0.0, 5.0), (0.0, 0.0, 0.0), np.eye(3))
+        assert [i["uniforms"][0][1] for i in info.info] == [(0, 0, 1, 1)]

@@ -10,12 +10,16 @@ import ifcopenshell.api.group
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
 import ifcopenshell.api.unit
+import ifcopenshell.guid
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import ifcopenshell.util.structural
+import ifcopenshell.util.unit
 import pytest
 from mathutils import Vector
 
 import bonsai.tool as tool
-from bonsai.bim.module.structural.data import LoadGroupDecorationData, StructuralLoadsData
+from bonsai.bim.module.structural.data import LoadGroupDecorationData, StructuralLoadCasesData, StructuralLoadsData
 from bonsai.bim.module.structural.decorator import LoadsDecorator
 from bonsai.bim.module.structural.operator import PickStructuralLoads, get_load_unit_symbol
 from bonsai.bim.module.structural.ui import BIM_PT_structural_loads
@@ -303,6 +307,27 @@ class TestLoadCaseSelfWeight(NewFile):
         bpy.ops.bim.edit_structural_load_case()
         assert load_case.SelfWeightCoefficients is None
 
+    def test_a_load_group_typed_load_case_has_no_self_weight(self):
+        # RFEM writes load cases as IfcStructuralLoadGroup, which has no SelfWeightCoefficients.
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        load_case = ifc.createIfcStructuralLoadGroup(
+            GlobalId=ifcopenshell.guid.new(),
+            Name="Q",
+            PredefinedType="LOAD_CASE",
+            ActionType="VARIABLE_Q",
+            ActionSource="LIVE_LOAD_Q",
+        )
+        StructuralLoadCasesData.load()
+        (data,) = StructuralLoadCasesData.data["load_cases"]
+        assert data["self_weight"] is None
+        assert data["has_self_weight_attribute"] is False
+        props = tool.Structural.get_structural_props()
+        bpy.ops.bim.enable_editing_structural_load_case(load_case=load_case.id())
+        props.load_case_attributes["Name"].string_value = "Imposed"
+        bpy.ops.bim.edit_structural_load_case()
+        assert load_case.Name == "Imposed"
+
 
 class TestGetLoadUnitSymbol(NewFile):
     def make_file(self) -> ifcopenshell.file:
@@ -468,3 +493,97 @@ class TestApplyingAChosenLoad(NewFile):
         props.applicable_structural_loads = str(other.id())
         tool.Structural.follow_active_item_load()
         assert props.applicable_structural_loads == str(other.id())
+
+
+class TestAssigningAStructuralClassToAMesh(NewFile):
+    def add_mesh(self, verts, edges=(), faces=(), location=(0.0, 0.0, 0.0)) -> bpy.types.Object:
+        mesh = bpy.data.meshes.new("Mesh")
+        mesh.from_pydata(verts, edges, faces)
+        obj = bpy.data.objects.new("Mesh", mesh)
+        obj.location = location
+        bpy.context.scene.collection.objects.link(obj)
+        bpy.context.view_layer.update()
+        return obj
+
+    def assign(self, obj, ifc_class, predefined_type=""):
+        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=ifc_class, predefined_type=predefined_type)
+        return tool.Ifc.get_entity(obj)
+
+    def topology(self, element):
+        representation = ifcopenshell.util.representation.get_representation(
+            element, "Model", "Reference", "GRAPH_VIEW"
+        )
+        assert representation and representation.is_a("IfcTopologyRepresentation")
+        assert len(representation.Items) == 1
+        return representation.Items[0]
+
+    def world(self, element, point) -> Vector:
+        # In metres, as the project's unit is millimetres.
+        matrix = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
+        return Vector((matrix @ (*point, 1.0))[:3]) * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+    def test_a_vertex_becomes_a_point_connection(self):
+        bpy.ops.bim.create_project()
+        obj = self.add_mesh([(0.0, 0.0, 0.0)], location=(1.0, 2.0, 3.0))
+        element = self.assign(obj, "IfcStructuralPointConnection")
+        vertex = self.topology(element)
+        assert vertex.is_a("IfcVertexPoint")
+        assert self.world(element, vertex.VertexGeometry.Coordinates) == Vector((1.0, 2.0, 3.0))
+
+    def test_an_edge_becomes_a_curve_member_with_an_axis(self):
+        bpy.ops.bim.create_project()
+        obj = self.add_mesh([(0.0, 0.0, 0.0), (0.0, 0.0, 3.0)], [(0, 1)], location=(1.0, 2.0, 0.0))
+        obj.scale = (1.0, 1.0, 2.0)
+        element = self.assign(obj, "IfcStructuralCurveMember", "RIGID_JOINED_MEMBER")
+        edge = self.topology(element)
+        assert edge.is_a("IfcEdge")
+        start, end = (self.world(element, v.VertexGeometry.Coordinates) for v in (edge.EdgeStart, edge.EdgeEnd))
+        assert (start - Vector((1.0, 2.0, 0.0))).length < 1e-6
+        assert (end - Vector((1.0, 2.0, 6.0))).length < 1e-6  # Scaled.
+        assert abs(Vector(element.Axis.DirectionRatios).normalized().z) < 1e-6  # Square to the column.
+
+    def test_a_loop_of_four_edges_becomes_a_surface_member(self):
+        bpy.ops.bim.create_project()
+        verts = [(0.0, 0.0, 0.0), (2.0, 0.0, 0.0), (2.0, 1.0, 0.0), (0.0, 1.0, 0.0)]
+        obj = self.add_mesh(verts, [(0, 1), (2, 3), (1, 2), (3, 0)])
+        element = self.assign(obj, "IfcStructuralSurfaceMember", "SHELL")
+        face = self.topology(element)
+        assert face.is_a("IfcFaceSurface")
+        assert len(face.Bounds) == 1
+        assert len(face.Bounds[0].Bound.EdgeList) == 4
+
+    def test_faces_with_a_hole_become_a_surface_connection(self):
+        bpy.ops.bim.create_project()
+        # A grid of 3 by 3 squares without the middle one.
+        verts = [(float(x), float(y), 0.0) for y in range(4) for x in range(4)]
+        faces = [(4 * y + x, 4 * y + x + 1, 4 * y + x + 5, 4 * y + x + 4) for y in range(3) for x in range(3)]
+        del faces[4]
+        obj = self.add_mesh(verts, faces=faces)
+        element = self.assign(obj, "IfcStructuralSurfaceConnection")
+        face = self.topology(element)
+        assert face.is_a("IfcFaceSurface")
+        assert sorted(len(b.Bound.EdgeList) for b in face.Bounds) == [4, 12]
+
+    @pytest.mark.parametrize(
+        "ifc_class, predefined_type, verts, edges, faces",
+        [
+            ("IfcStructuralPointConnection", "", [(0, 0, 0), (1, 0, 0)], [(0, 1)], []),
+            (
+                "IfcStructuralCurveMember",
+                "RIGID_JOINED_MEMBER",
+                [(0, 0, 0), (1, 0, 0), (1, 1, 0)],
+                [(0, 1), (1, 2)],
+                [],
+            ),
+            ("IfcStructuralSurfaceMember", "SHELL", [(0, 0, 0), (1, 0, 0), (1, 1, 0)], [(0, 1), (1, 2)], []),
+            ("IfcStructuralSurfaceMember", "SHELL", [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 1)], [], [(0, 1, 2, 3)]),
+        ],
+    )
+    def test_refusing_a_mesh_that_does_not_fit_the_class(self, ifc_class, predefined_type, verts, edges, faces):
+        bpy.ops.bim.create_project()
+        obj = self.add_mesh(verts, edges, faces)
+        total = len(list(tool.Ifc.get()))
+        with pytest.raises(RuntimeError, match=f"Object 'Mesh' .*{ifc_class}"):
+            self.assign(obj, ifc_class, predefined_type)
+        assert tool.Ifc.get_entity(obj) is None
+        assert len(list(tool.Ifc.get())) == total
