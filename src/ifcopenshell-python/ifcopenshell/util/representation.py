@@ -331,8 +331,8 @@ def resolve_items(
     for item in representation.Items or []:  # Be forgiving of invalid IFCs because Revit :(
         if item.is_a("IfcMappedItem"):
             rep_matrix = ifcopenshell.util.placement.get_mappeditem_transformation(item)
-            if not np.allclose(rep_matrix, np.eye(4)):
-                rep_matrix = rep_matrix @ matrix.copy()
+            # Always compose, even for an identity rep_matrix, so the outer matrix is carried through.
+            rep_matrix = matrix.copy() @ rep_matrix
             results.extend(resolve_items(item.MappingSource.MappedRepresentation, rep_matrix))
         else:
             results.append(ResolvedItemDict(matrix=matrix.copy(), item=item))
