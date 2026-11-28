@@ -86,6 +86,8 @@ def update_window_modifier_representation(context: bpy.types.Context) -> None:
         }
         representation_data["panel_properties"].append(panel_data)
 
+    body = tool.Model.get_body_context()
+
     active_context = tool.Geometry.get_active_representation_context(obj)
 
     # ELEVATION_VIEW representation
@@ -97,7 +99,6 @@ def update_window_modifier_representation(context: bpy.types.Context) -> None:
 
     # MODEL_VIEW representation
     # (Model/Body defined only BEFORE Plan/Body to prevent #2744)
-    body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
     representation_data["context"] = body
     representation_data["part_of_product"] = ifcopenshell.util.representation.get_part_of_product(element, body)
     model_representation = ifcopenshell.api.geometry.add_window_representation(ifc_file, **representation_data)
