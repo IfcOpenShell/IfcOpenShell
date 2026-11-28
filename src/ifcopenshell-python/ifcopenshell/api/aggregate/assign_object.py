@@ -88,6 +88,19 @@ def assign_object(
         return
 
     products_set = set(products)
+
+    # Refuse to close a loop in the aggregation tree (see #7154).
+    ancestor = relating_object
+    ancestors: set[ifcopenshell.entity_instance] = set()
+    while ancestor is not None and ancestor not in ancestors:
+        ancestors.add(ancestor)
+        ancestor = ifcopenshell.util.element.get_aggregate(ancestor)
+    cycling = products_set & ancestors
+    if cycling:
+        raise ValueError(
+            "Cannot aggregate an object under itself or one of its descendants "
+            f"(would create a cyclic aggregation): {cycling}"
+        )
     is_decomposed_by = next((i for i in relating_object.IsDecomposedBy if i.is_a("IfcRelAggregates")), None)
 
     previous_aggregates_rels: set[ifcopenshell.entity_instance] = set()
