@@ -55,6 +55,7 @@ namespace {
 // the whole flow finishes.
 void clearScene(SessionState& session, ViewportWindow& viewport) {
     viewport.setSelectedObjectId(0);
+    viewport.clearSectionPlanes();
     session.setSelectedObjectId(0);
     for (uint32_t session_model_id : session.sessionModelIds()) {
         viewport.removeModel(session_model_id);
