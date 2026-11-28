@@ -492,3 +492,72 @@ class ScheduleIfcGenerator:
         self.file = ifcopenshell.file(schema="IFC4")
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         self.work_plan = self.file.create_entity("IfcWorkPlan")
+
+
+def get_task_work_hours(task: ifcopenshell.entity_instance) -> float:
+    """The work hours of a task, as P6 and MS Project count them
+
+    If the task has a ScheduleStart and a ScheduleFinish, the work hours are
+    the work time between them in the calendar of the task. Thus the source
+    and the export give the same dates. Else, the work hours come from the
+    ScheduleDuration, with the nominal length of a work day.
+    """
+    task_time = task.TaskTime
+    calendar = ifcopenshell.util.sequence.derive_calendar(task)
+    work_day = ifcopenshell.util.sequence.get_work_day_duration(task, calendar)
+    if task_time.ScheduleStart and task_time.ScheduleFinish:
+        start, finish = (to_datetime(d) for d in (task_time.ScheduleStart, task_time.ScheduleFinish))
+        return ifcopenshell.util.sequence.get_work_time(start, finish, calendar, work_day) / timedelta(hours=1)
+    if not task_time.ScheduleDuration:
+        return 0.0
+    return get_nominal_work_hours(task_time.ScheduleDuration, task_time.DurationType, work_day)
+
+
+def get_lag_work_hours(rel: ifcopenshell.entity_instance) -> float:
+    """The work hours of the IfcLagTime of a sequence, as P6 and MS Project count them
+
+    A lag counts in the time of the successor, from the date of the
+    predecessor that the link uses. An IfcRatioMeasure is a part of the work
+    hours of the predecessor.
+    """
+    lag_time = rel.TimeLag
+    predecessor, successor = rel.RelatingProcess, rel.RelatedProcess
+    if lag_time.LagValue.is_a("IfcRatioMeasure"):
+        if not predecessor.TaskTime:
+            return 0.0
+        return lag_time.LagValue.wrappedValue * get_task_work_hours(predecessor)
+    calendar = ifcopenshell.util.sequence.derive_calendar(successor)
+    work_day = ifcopenshell.util.sequence.get_work_day_duration(successor, calendar)
+    lag = lag_time.LagValue.wrappedValue
+    predecessor_time = predecessor.TaskTime
+    date = None
+    if predecessor_time:
+        is_from_finish = rel.SequenceType in ("FINISH_START", "FINISH_FINISH", None, "NOTDEFINED", "USERDEFINED")
+        date = predecessor_time.ScheduleFinish if is_from_finish else predecessor_time.ScheduleStart
+    if date:
+        date = to_datetime(date)
+        end = ifcopenshell.util.sequence.offset_date(date, lag, lag_time.DurationType, calendar, work_day)
+        return ifcopenshell.util.sequence.get_work_time(date, end, calendar, work_day) / timedelta(hours=1)
+    return get_nominal_work_hours(lag, lag_time.DurationType, work_day)
+
+
+def get_nominal_work_hours(value: str, duration_type: str, work_day: timedelta) -> float:
+    """The work hours of an IfcDuration without dates
+
+    A work day has the nominal length of the calendar (see
+    ifcopenshell.util.sequence.get_work_day_duration), and an ELAPSEDTIME
+    day has 24 hours.
+    """
+    day = timedelta(days=1) if duration_type == "ELAPSEDTIME" else work_day
+    duration = ifcopenshell.util.sequence.get_work_duration(value, duration_type, day)
+    duration = getattr(duration, "tdelta", duration)
+    sign, duration = (-1 if duration < timedelta() else 1), abs(duration)
+    return sign * (duration.days * day + duration - timedelta(days=duration.days)) / timedelta(hours=1)
+
+
+def to_datetime(value: str) -> datetime:
+    """An IfcDateTime or IfcDate as a datetime. A date is the date at 00:00."""
+    result = ifcopenshell.util.date.ifc2datetime(value)
+    if not isinstance(result, datetime):
+        result = datetime.combine(result, datetime.min.time())
+    return result

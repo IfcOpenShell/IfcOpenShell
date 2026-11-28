@@ -79,7 +79,10 @@ def add_time_period(
     """
     time_period = file.create_entity("IfcTimePeriod")
     time_period.StartTime = ifcopenshell.util.date.datetime2ifc(start_time, "IfcTime")
-    time_period.EndTime = ifcopenshell.util.date.datetime2ifc(end_time, "IfcTime")
+    if isinstance(end_time, str) and end_time.startswith("24:00"):
+        time_period.EndTime = "24:00:00"  # ISO 8601 end of the day
+    else:
+        time_period.EndTime = ifcopenshell.util.date.datetime2ifc(end_time, "IfcTime")
     time_periods = list(recurrence_pattern.TimePeriods or [])
     time_periods.append(time_period)
     recurrence_pattern.TimePeriods = time_periods
