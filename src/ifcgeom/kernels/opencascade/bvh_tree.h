@@ -790,6 +790,20 @@ namespace ifcopenshell::geom {
 							}
 						}
 
+						// Aligned overlaps have all vertices on B's boundary, so also witness the centroid.
+						{
+							const gp_Pnt centroid(
+								(verts_a[tri[0]].X() + verts_a[tri[1]].X() + verts_a[tri[2]].X()) / 3.0,
+								(verts_a[tri[0]].Y() + verts_a[tri[1]].Y() + verts_a[tri[2]].Y()) / 3.0,
+								(verts_a[tri[0]].Z() + verts_a[tri[1]].Z() + verts_a[tri[2]].Z()) / 3.0
+							);
+							if ( ! obb_b.IsOut(centroid)
+									&& is_point_in_shape(centroid, bvh_b, tris_b, verts_b)
+									&& is_point_in_shape(centroid, bvh_b, tris_b, verts_b, true)) {
+								points_in_b.push_back(centroid);
+							}
+						}
+
 						// If there are no points in b, this may be a "piercing" triangle.
 						if (points_in_b.empty()) {
 							gp_Vec v1_a_vec(verts_a[tri[0]].XYZ());
