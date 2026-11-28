@@ -187,3 +187,13 @@ class TestSplitObjectsWithCutter(test.bim.bootstrap.NewFile):
         assert new_objs[0].name == "Cube.001"
         assert obj.dimensions[2] == 1
         assert new_objs[0].dimensions[2] == 1
+
+
+class TestQuickFavoritePropertySetValue(test.bim.bootstrap.NewFile):
+    def test_integer_value_for_an_enum_property(self):
+        favorite = tool.Misc.get_misc_props().quick_favorites.add()
+        item = favorite.properties.add()
+        item.value_prop = "enum_value"
+        item.set_enum_items([("1", "One", ""), ("2", "Two", "")])
+        item.set_value(2)
+        assert item.enum_value == "2"
