@@ -2464,7 +2464,11 @@ class Model(bonsai.core.tool.Model):
         # First convert to Shapely
         polygons = {}
         for curve in curves:
-            geometry = ifcopenshell.geom.create_shape(settings, curve)
+            try:
+                geometry = ifcopenshell.geom.create_shape(settings, curve)
+            except RuntimeError:
+                # The kernel rejects a degenerate curve outright, so treat it as an invalid profile.
+                return (False, "INVALID_SHAPE")
             assert isinstance(geometry, W.triangulation)
             v = ifcopenshell.util.shape.get_vertices(geometry, is_2d=True)
             v = np.round(v, 4)  # Round to nearest 0.1mm, otherwise things like circles don't polygonise reliably
