@@ -125,18 +125,9 @@ def get_gross_stair_area(obj: bpy.types.Object) -> float:
 def get_parametric_axis(obj: bpy.types.Object) -> Literal["AXIS2", "AXIS3", None]:
     element = tool.Ifc.get_entity(obj)
     assert element
-    relating_type = ifcopenshell.util.element.get_type(element)
-    if relating_type:
-        parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
-        if parametric:
-            layer_set_direction = None
-            layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
-            if layer_set_direction == "AXIS2":
-                return "AXIS2"
-            elif layer_set_direction == "AXIS3":
-                return "AXIS3"
-            else:
-                return None
+    layer_set_direction = ifc5d.qto.IfcOpenShell.get_covering_parametric_axis(element)
+    if layer_set_direction in ("AXIS2", "AXIS3"):
+        return layer_set_direction
     return None
 
 

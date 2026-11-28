@@ -690,20 +690,23 @@ class IfcOpenShell(QtoCalculator):
 
     @staticmethod
     def get_covering_parametric_axis(element: ifcopenshell.entity_instance) -> Union[str, None]:
-        """Get an IfcCovering's layer set direction, as authored by Bonsai's covering type.
+        """Get an IfcCovering's layer set direction.
+
+        The type's ``EPset_Parametric.LayerSetDirection`` is used if present,
+        otherwise the occurrence's ``IfcMaterialLayerSetUsage.LayerSetDirection``.
 
         :param element: IFC element entity.
         :return: ``"AXIS2"`` for wall-like coverings, ``"AXIS3"`` for slab-like
-            coverings (e.g. floors or ceilings), or ``None`` if the covering's
-            type has no ``EPset_Parametric.LayerSetDirection``.
+            coverings (e.g. floors or ceilings), or ``None`` if neither is set.
         """
-        relating_type = ifcopenshell.util.element.get_type(element)
-        if not relating_type:
-            return None
-        parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
-        if not parametric:
-            return None
-        return parametric.get("LayerSetDirection")
+        if relating_type := ifcopenshell.util.element.get_type(element):
+            parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
+            if parametric and (layer_set_direction := parametric.get("LayerSetDirection")):
+                return layer_set_direction
+        material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+        if material and material.is_a("IfcMaterialLayerSetUsage"):
+            return material.LayerSetDirection
+        return None
 
     @classmethod
     def get_covering_area(cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType) -> float:
