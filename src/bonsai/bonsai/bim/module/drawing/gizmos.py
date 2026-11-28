@@ -49,6 +49,8 @@ __all__ = [  # ruff: ignore[unsorted-dunder-all]
     "build_snap_cache",
     "clear_snap_cache",
     "get_billboard_rotation",
+    "get_billboard_scale",
+    "strip_billboard_scale",
     "get_camera_direction",
     "generate_circle_vertices",
     "create_circle_arc",
@@ -1723,12 +1725,51 @@ def clear_snap_cache() -> None:
     _snap_manager.clear_snap_cache()
 
 
+def get_icon_zoom_scale(context: bpy.types.Context) -> float:
+    """Uniform factor (<= 1.0) that keeps a ``DEFAULT_BILLBOARD_SCALE`` icon from
+    growing past the ``gizmo_icon_max_size`` preference (in pixels) on screen.
+
+    Icons keep their model size while that fits under the cap, so zooming out
+    shrinks them with the model; zooming in past the cap holds them at a fixed
+    pixel size instead of letting them cover the geometry. Measured at the view
+    pivot, which is exact in orthographic views and close in perspective."""
+    rv3d = context.region_data
+    region = context.region
+    if rv3d is None or region is None or not region.width:
+        return 1.0
+    max_px = tool.Blender.get_addon_preferences().gizmo_icon_max_size
+    if max_px <= 0:
+        return 1.0
+    depth = abs((rv3d.perspective_matrix @ rv3d.view_location.to_4d()).w)
+    px_per_metre = rv3d.window_matrix[0][0] * region.width / (2.0 * max(depth, 1e-6))
+    icon_px = DEFAULT_BILLBOARD_SCALE * px_per_metre
+    cap_px = max_px * context.preferences.system.ui_scale
+    if icon_px <= cap_px:
+        return 1.0
+    return cap_px / icon_px
+
+
 def get_billboard_rotation(context: bpy.types.Context) -> Matrix:
-    """Get rotation matrix that makes an object face the camera."""
+    """Get the matrix that makes an icon face the camera.
+
+    The rotation carries the uniform ``get_icon_zoom_scale`` factor, so icons
+    built with ``billboarded_at`` and screen-space offsets built from this matrix
+    (``get_screen_up``, ``top_down_clearance``) shrink together when zoomed in.
+    Use ``strip_billboard_scale`` for world-sized decorations."""
     rv3d = context.region_data
     if rv3d is None:
         return Matrix.Identity(4)
-    return rv3d.view_matrix.to_3x3().transposed().to_4x4()
+    return rv3d.view_matrix.to_3x3().transposed().to_4x4() @ Matrix.Scale(get_icon_zoom_scale(context), 4)
+
+
+def get_billboard_scale(billboard_rot: Matrix) -> float:
+    """Zoom factor carried by a ``get_billboard_rotation`` matrix."""
+    return billboard_rot.col[0].xyz.length
+
+
+def strip_billboard_scale(billboard_rot: Matrix) -> Matrix:
+    """Pure camera-facing rotation, without the icon zoom factor."""
+    return billboard_rot @ Matrix.Scale(1.0 / get_billboard_scale(billboard_rot), 4)
 
 
 def billboarded_at(world_pos: Vector, billboard_rot: Matrix, scale: float = DEFAULT_BILLBOARD_SCALE) -> Matrix:
@@ -1751,7 +1792,8 @@ def billboarded_along_axis(
     only its in-plane orientation changes. Falls back to plain
     ``billboarded_at`` when the axis is near-parallel to the view direction
     (no usable screen projection)."""
-    camera_forward = billboard_rot @ Vector((0.0, 0.0, 1.0))
+    zoom = get_billboard_scale(billboard_rot)
+    camera_forward = (billboard_rot @ Vector((0.0, 0.0, 1.0))).normalized()
     projected = axis_world - camera_forward * axis_world.dot(camera_forward)
     if projected.length < 1e-4:
         return billboarded_at(world_pos, billboard_rot, scale)
@@ -1761,12 +1803,12 @@ def billboarded_along_axis(
     rot[0][:3] = (projected.x, y_axis.x, camera_forward.x)
     rot[1][:3] = (projected.y, y_axis.y, camera_forward.y)
     rot[2][:3] = (projected.z, y_axis.z, camera_forward.z)
-    return Matrix.Translation(world_pos) @ rot @ Matrix.Scale(scale, 4)
+    return Matrix.Translation(world_pos) @ rot @ Matrix.Scale(scale * zoom, 4)
 
 
 def get_screen_up(billboard_rot: Matrix) -> Vector:
     """Camera's screen-up direction in world space — local +Y of the billboard
-    rotation. Use to lift a gizmo above an anchor in a way that stays
+    rotation, carrying its icon zoom factor. Use to lift a gizmo above an anchor in a way that stays
     perpendicular to the view plane (world +Z collapses to zero on-screen in
     top-down view and lands lifted gizmos on top of their anchors)."""
     return billboard_rot @ Vector((0.0, 1.0, 0.0))
@@ -5443,7 +5485,7 @@ class BaseParametricGizmoGroup:
         ``world_base`` lifted along screen-up by ``SCREEN_STACK_OFFSET`` so
         the icons stay individually visible and clickable."""
         if tool.Blender.is_view_top_down(context):
-            return world_base + tool.Blender.get_screen_up_world(context) * cls.SCREEN_STACK_OFFSET
+            return world_base + get_screen_up(get_billboard_rotation(context)) * cls.SCREEN_STACK_OFFSET
         return world_top
 
     @classmethod
@@ -6817,7 +6859,8 @@ class BaseSchematicGizmoGroup(BaseParametricGizmoGroup):
 
     def update_schematic_dimensions(self, context: bpy.types.Context, mw: Matrix, props) -> None:
         """Position and size each schematic-anchored dimension gizmo."""
-        billboard_rot = self._frame_billboard_rot
+        # Schematic dimensions have world-unit lengths, so the schematic stays model-sized.
+        billboard_rot = strip_billboard_scale(self._frame_billboard_rot)
         view_rotation = self.schematic_view_rotation
         anchor = self._compute_schematic_anchor(props, mw, billboard_rot)
         should_show = self.schematic_should_show(props)
@@ -7043,7 +7086,7 @@ class BaseSchematicGizmoGroup(BaseParametricGizmoGroup):
             return
 
         mw = obj.matrix_world
-        billboard_rot = get_billboard_rotation(context)
+        billboard_rot = strip_billboard_scale(get_billboard_rotation(context))
         anchor = owner_cls.compute_schematic_anchor(
             mw,
             owner_cls._get_element_height_class(props),
