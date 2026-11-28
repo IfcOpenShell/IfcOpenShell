@@ -319,7 +319,7 @@ class Ifc2Csv:
                 if resource_class == "IfcLaborResource":
                     labor_output = output
                 else:
-                    equipment_output, labor_output = None, output
+                    equipment_output = output
 
         # Get usage_value.
         usage_value = None
