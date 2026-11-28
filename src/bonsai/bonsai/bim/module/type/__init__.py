@@ -23,6 +23,7 @@ from . import operator, prop, ui
 classes = (
     operator.AssignType,
     operator.AutoRenameOccurrences,
+    operator.ConvertToType,
     operator.DisableEditingType,
     operator.DisableEditingTypeAttributes,
     operator.DuplicateType,
@@ -43,7 +44,9 @@ classes = (
 
 def register():
     bpy.types.Object.BIMTypeProperties = bpy.props.PointerProperty(type=prop.BIMTypeProperties)
+    bpy.types.VIEW3D_MT_object_context_menu.append(ui.object_context_menu)
 
 
 def unregister():
     del bpy.types.Object.BIMTypeProperties
+    bpy.types.VIEW3D_MT_object_context_menu.remove(ui.object_context_menu)
