@@ -2440,8 +2440,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
                     mat = tuple(mat)
                     blender_mat = blender_mats.get(mat, None)
                     if not blender_mat:
-                        blender_mat = bpy.data.materials.new("Chunk")
-                        blender_mat.diffuse_color = mat
+                        blender_mat = self.create_flat_material("Chunk", mat)
                         blender_mats[mat] = blender_mat
                     mat_results.append(blender_mat)
 
@@ -2572,8 +2571,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
                 material_name = f"{diffuse[0]}-{diffuse[1]}-{diffuse[2]}-{diffuse[3]}"
                 blender_mat = self.blender_mats.get(material_name, None)
                 if not blender_mat:
-                    blender_mat = bpy.data.materials.new(material_name)
-                    blender_mat.diffuse_color = diffuse
+                    blender_mat = self.create_flat_material(material_name, diffuse)
                     self.blender_mats[material_name] = blender_mat
                 slot_index = mesh.materials.find(material.name)
                 if slot_index == -1:
@@ -2598,6 +2596,23 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         obj["ifc_filepath"] = self.filepath
 
         self.collection.objects.link(obj)
+
+    def create_flat_material(self, name: str, rgba: tuple[float, ...]) -> bpy.types.Material:
+        material = bpy.data.materials.new(name)
+        material.diffuse_color = rgba
+        if material.node_tree:
+            bsdf = next((n for n in material.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
+            if bsdf:
+                if "Base Color" in bsdf.inputs:
+                    bsdf.inputs["Base Color"].default_value = (*rgba[:3], 1.0)
+                if "Alpha" in bsdf.inputs:
+                    bsdf.inputs["Alpha"].default_value = rgba[3]
+        if rgba[3] < 1.0:
+            if hasattr(material, "surface_render_method"):
+                material.surface_render_method = "BLENDED"
+            else:
+                material.blend_method = "BLEND"
+        return material
 
     def create_object(
         self,
