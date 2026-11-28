@@ -189,6 +189,40 @@ def get_combination_factors(
     return factors
 
 
+def get_load_case_combinations(load_case: ifcopenshell.entity_instance) -> dict[ifcopenshell.entity_instance, float]:
+    """The load combinations a load case is in, with its factor in each
+
+    The load case may be grouped into a combination directly, or through
+    the load groups that give it its factor there (see
+    :func:`get_combination_factors`).
+
+    :param load_case: An IfcStructuralLoadCase, or an IfcStructuralLoadGroup
+        of type LOAD_CASE
+    :return: Each load combination of the load case, with the factor
+        :func:`get_combination_factors` gives the load case in it
+    """
+    combinations = []
+    seen = set()
+    pending = [load_case]
+    while pending:
+        group = pending.pop()
+        for rel in group.HasAssignments or ():
+            if not rel.is_a("IfcRelAssignsToGroup") or rel.RelatingGroup in seen:
+                continue
+            parent = rel.RelatingGroup
+            seen.add(parent)
+            if parent.is_a("IfcStructuralLoadGroup") and parent.PredefinedType == "LOAD_COMBINATION":
+                combinations.append(parent)
+            elif is_factor_group(parent):
+                pending.append(parent)
+    result = {}
+    for combination in combinations:
+        factors = get_combination_factors(combination)
+        if load_case in factors:
+            result[combination] = factors[load_case]
+    return result
+
+
 def get_group_activities(load_group: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """The activities of a load group, with those of the load groups in it
 

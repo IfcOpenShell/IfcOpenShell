@@ -81,14 +81,8 @@ def _structural_relations(element: ifcopenshell.entity_instance) -> dict[str, An
             factors = util.get_combination_factors(element)
             structural["load_cases"] = [{**_ref(c), "factor": f} for c, f in factors.items()]
         else:
-            combinations = [
-                g
-                for g in ifcopenshell.util.element.get_groups(element)
-                if g.is_a("IfcStructuralLoadGroup") and g.PredefinedType == "LOAD_COMBINATION"
-            ]
-            structural["load_combinations"] = [
-                {**_ref(c), "factor": util.get_combination_factors(c)[element]} for c in combinations
-            ]
+            combinations = util.get_load_case_combinations(element)
+            structural["load_combinations"] = [{**_ref(c), "factor": f} for c, f in combinations.items()]
     return {k: v for k, v in structural.items() if v}
 
 
