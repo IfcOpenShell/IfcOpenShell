@@ -18,6 +18,7 @@
 from typing import Any
 
 import ifcopenshell
+import ifcopenshell.util.sequence
 
 
 def edit_work_calendar(
@@ -45,3 +46,5 @@ def edit_work_calendar(
     """
     for name, value in attributes.items():
         setattr(work_calendar, name, value)
+    ifcopenshell.util.sequence.is_working_day.cache_clear()
+    ifcopenshell.util.sequence.is_calendar_applicable.cache_clear()

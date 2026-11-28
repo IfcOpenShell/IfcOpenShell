@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
 import ifcopenshell.api.sequence
+import ifcopenshell.util.sequence
 
 
 def remove_work_time(file: ifcopenshell.file, work_time: ifcopenshell.entity_instance) -> None:
@@ -46,3 +47,5 @@ def remove_work_time(file: ifcopenshell.file, work_time: ifcopenshell.entity_ins
         ifcopenshell.api.sequence.unassign_recurrence_pattern(file, recurrence_pattern)
 
     file.remove(work_time)
+    ifcopenshell.util.sequence.is_working_day.cache_clear()
+    ifcopenshell.util.sequence.is_calendar_applicable.cache_clear()

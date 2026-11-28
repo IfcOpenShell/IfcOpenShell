@@ -19,6 +19,7 @@
 from typing import Any
 
 import ifcopenshell.util.date
+import ifcopenshell.util.sequence
 
 
 def edit_work_time(
@@ -63,3 +64,5 @@ def edit_work_time(
             work_time[5] = value
         else:
             setattr(work_time, name, value)
+    ifcopenshell.util.sequence.is_working_day.cache_clear()
+    ifcopenshell.util.sequence.is_calendar_applicable.cache_clear()
