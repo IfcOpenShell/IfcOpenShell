@@ -205,6 +205,12 @@ class ShapeAspect(PropertyGroup):
     )
 
 
+def update_active_item_index(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> None:
+    # Clicking a row (or moving through the list with the arrow keys) selects just that item's geometry
+    if active_item := self.active_item:
+        tool.Geometry.select_representation_items_in_scene(self, [active_item.ifc_definition_id])
+
+
 def update_is_adding_representation_layer(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> None:
     if self.is_adding_representation_layer:
         ifc_file = tool.Ifc.get()
@@ -240,12 +246,6 @@ def update_is_editing_item_layer(self: "BIMObjectGeometryProperties", context: b
 
     self.property_unset("representation_item_layer")
     self.property_unset("is_editing_item_layer")
-
-
-def update_active_item_index(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> None:
-    # Clicking a row (or moving through the list with the arrow keys) selects just that item's geometry
-    if active_item := self.active_item:
-        tool.Geometry.select_representation_items_in_scene(self, [active_item.ifc_definition_id])
 
 
 class BIMObjectGeometryProperties(PropertyGroup):
