@@ -150,7 +150,15 @@ endif()
 # zstd-compressed). The plugin compiles the ifcviewer .ifcview sources directly
 # (no Qt, no wgpu) so it writes exactly the layout the viewer/loader expect.
 if(WITH_ZSTD AND NOT WASM_BUILD)
-    find_package(zstd ${ZSTD_MIN_VERSION} CONFIG REQUIRED)
+    find_package(zstd ${ZSTD_MIN_VERSION} CONFIG QUIET)
+    if(TARGET zstd::libzstd_static)
+        set(ifcview_zstd_library zstd::libzstd_static)
+    else()
+        # No zstd CONFIG package on this system — fall back to pkg-config.
+        find_package(PkgConfig REQUIRED)
+        pkg_check_modules(ZSTD REQUIRED IMPORTED_TARGET libzstd>=${ZSTD_MIN_VERSION})
+        set(ifcview_zstd_library PkgConfig::ZSTD)
+    endif()
     # The imported Eigen target is directory-scoped (created by ifcgeom), so
     # this directory needs its own lookup before it can link against it.
     find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
@@ -166,7 +174,7 @@ if(WITH_ZSTD AND NOT WASM_BUILD)
             ${ifcviewer_src_dir}/IfcViewLayout.cpp
             ${ifcviewer_src_dir}/ChunkPlanner.cpp
             ${ifcviewer_src_dir}/LodBuilder.cpp
-        LIBRARIES Eigen3::Eigen zstd::libzstd_static
+        LIBRARIES Eigen3::Eigen ${ifcview_zstd_library}
     )
     target_include_directories(geometry_serializer_ifcview PRIVATE ${ifcviewer_src_dir})
     if(WITH_MESH_OPTIMIZER)
