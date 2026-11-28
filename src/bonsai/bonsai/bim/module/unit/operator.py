@@ -92,6 +92,7 @@ class DisableUnitEditingUI(bpy.types.Operator):
 class RemoveUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_unit"
     bl_label = "Remove Unit"
+    bl_description = "Remove the unit from the project"
     bl_options = {"REGISTER", "UNDO"}
     unit: bpy.props.IntProperty()
 
@@ -102,6 +103,7 @@ class RemoveUnit(bpy.types.Operator, tool.Ifc.Operator):
 class AddConversionBasedUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_conversion_based_unit"
     bl_label = "Add Conversion Based Unit"
+    bl_description = "Add a new unit converted from an SI unit, such as an imperial unit"
     bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty()
 
@@ -112,6 +114,7 @@ class AddConversionBasedUnit(bpy.types.Operator, tool.Ifc.Operator):
 class AddMonetaryUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_monetary_unit"
     bl_label = "Add Monetary Unit"
+    bl_description = "Add a new currency unit to the project"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -121,6 +124,7 @@ class AddMonetaryUnit(bpy.types.Operator, tool.Ifc.Operator):
 class AddSIUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_si_unit"
     bl_label = "Add SI Unit"
+    bl_description = "Add a new SI unit of the provided type to the project"
     bl_options = {"REGISTER", "UNDO"}
     unit_type: bpy.props.StringProperty()
 
@@ -162,6 +166,7 @@ class AddUnitFromChoice(bpy.types.Operator, tool.Ifc.Operator):
 class AddContextDependentUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_context_dependent_unit"
     bl_label = "Add Context Dependent Unit"
+    bl_description = "Add a new custom unit that does not map to a standard SI unit"
     bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty()
     unit_type: bpy.props.StringProperty()
@@ -173,6 +178,7 @@ class AddContextDependentUnit(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingUnit(bpy.types.Operator):
     bl_idname = "bim.enable_editing_unit"
     bl_label = "Enable Editing Unit"
+    bl_description = "Load the attributes of the selected unit for editing"
     bl_options = {"REGISTER", "UNDO"}
     unit: bpy.props.IntProperty()
 
@@ -184,6 +190,7 @@ class EnableEditingUnit(bpy.types.Operator):
 class DisableEditingUnit(bpy.types.Operator):
     bl_idname = "bim.disable_editing_unit"
     bl_label = "Disable Editing Unit"
+    bl_description = "Close the unit editing form without saving changes"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
@@ -194,6 +201,7 @@ class DisableEditingUnit(bpy.types.Operator):
 class EditUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_unit"
     bl_label = "Edit Unit"
+    bl_description = "Save the edited attributes to the unit"
     bl_options = {"REGISTER", "UNDO"}
     unit: bpy.props.IntProperty()
 
