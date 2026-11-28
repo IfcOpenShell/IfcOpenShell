@@ -972,7 +972,8 @@ class Rotate90(bpy.types.Operator, tool.Ifc.Operator):
                 profile_objs.append(obj)
             elif usage == "LAYER2":
                 layer2_objs.append(obj)
-            if element.ConnectedTo or element.ConnectedFrom:
+            # Structural members are not IfcElements, and have no path connections.
+            if element.is_a("IfcElement") and (element.ConnectedTo or element.ConnectedFrom):
                 ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element, connection_type="ATSTART")
                 ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element, connection_type="ATEND")
                 ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element, connection_type="ATPATH")
