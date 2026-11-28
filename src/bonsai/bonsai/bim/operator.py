@@ -274,9 +274,61 @@ class SaveBlendMetadataFile(bpy.types.Operator):
     bl_label = "Save Blend Metadata File"
     bl_options = {"REGISTER", "UNDO"}
 
+    # Background Blender still writing the metadata file, its log and the files to remove once it is done.
+    process: "subprocess.Popen[str] | None" = None
+    process_log = None
+    process_files: tuple[str, ...] = ()
+    process_target = ""
+
+    @staticmethod
+    def set_status(text: str | None) -> None:
+        """Show *text* in the status bar, there is no operator to report to once the background Blender is done."""
+        for workspace in bpy.data.workspaces:
+            workspace.status_text_set(text)
+
+    @classmethod
+    def clear_status(cls) -> None:
+        if cls.process is None:
+            cls.set_status(None)
+
+    @classmethod
+    def finish_process(cls) -> float | None:
+        """Timer callback: print the background Blender output and remove its temporary files once it has exited."""
+        if cls.process is None:
+            return None
+        if cls.process.poll() is None:
+            return 0.5
+
+        cls.process_log.seek(0)
+        output = cls.process_log.read()
+        cls.process_log.close()
+        # Print the output from the background process (includes debug info)
+        if output:
+            print("\n=== Background Blender Output ===")
+            print(output)
+
+        for path in cls.process_files:
+            with contextlib.suppress(OSError):
+                os.remove(path)
+
+        succeeded = cls.process.returncode == 0
+        cls.process = None
+        cls.process_log = None
+        cls.process_files = ()
+        if not bpy.app.background:
+            name = os.path.basename(cls.process_target)
+            if succeeded:
+                cls.set_status(f"Metadata blend file saved: {name}")
+            else:
+                cls.set_status(f"Failed to save metadata blend file {name}, see the system console")
+            bpy.app.timers.register(cls.clear_status, first_interval=5.0)
+        return None
+
     def execute(self, context):
         """
         Save the current blend file as a metadata-only file (no geometry), preserving settings, window arrangement, geometry nodes, etc.
+
+        The cleanup runs in a background Blender that is not waited for, so saving does not freeze the interface.
         """
         props = tool.Blender.get_bim_props()
         ifc_file = getattr(props, "ifc_file", None)
@@ -289,6 +341,13 @@ class SaveBlendMetadataFile(bpy.types.Operator):
             blendmetadata_path = ifc_file[:-4] + suffix
         else:
             blendmetadata_path = ifc_file + suffix
+
+        cls = type(self)
+        if cls.process is not None and cls.process.poll() is None:
+            # A previous save is still being written and this one supersedes it.
+            cls.process.kill()
+            cls.process.wait()
+        cls.finish_process()
 
         ifc_dir = os.path.dirname(ifc_file)
         temp_path = os.path.join(ifc_dir, "__temp_blendmetadata.blend")
@@ -339,6 +398,13 @@ for mat_name in ifcstyle_material_names:
         bpy.data.materials.remove(bpy.data.materials[mat_name], do_unlink=True)
 
 bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
+
+# 7. The temporary copy is no longer needed (the parent Blender may be closed by now)
+import os
+try:
+    os.remove(r'{temp_path}')
+except OSError:
+    pass
 """
         import tempfile
 
@@ -347,25 +413,23 @@ bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
             script_path = script_file.name
 
         blender_exe = bpy.app.binary_path
-        import subprocess
 
-        result = subprocess.run(
-            [blender_exe, temp_path, "--background", "--python", script_path], capture_output=True, text=True
+        cls.process_log = tempfile.TemporaryFile("w+")
+        cls.process_files = (temp_path, script_path)
+        cls.process_target = blendmetadata_path
+        cls.process = subprocess.Popen(
+            [blender_exe, temp_path, "--background", "--python", script_path],
+            stdout=cls.process_log,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
 
-        # Print the output from the background process (includes debug info)
-        if result.stdout:
-            print("\n=== Background Blender Output ===")
-            print(result.stdout)
-        if result.stderr:
-            print("\n=== Background Blender Errors ===")
-            print(result.stderr)
-
-        try:
-            os.remove(temp_path)
-            os.remove(script_path)
-        except Exception:
-            pass
+        if bpy.app.background:
+            cls.process.wait()
+            cls.finish_process()
+        else:
+            cls.set_status(f"Saving metadata blend file in background: {os.path.basename(blendmetadata_path)}...")
+            bpy.app.timers.register(cls.finish_process, first_interval=0.5, persistent=True)
 
         return {"FINISHED"}
 
