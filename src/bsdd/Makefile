@@ -18,6 +18,7 @@
 
 PACKAGE_NAME:=bsdd.py
 IS_MODULE:=true
+EXTRA_MODULES:=bsdd_json.py type_hints.py
 include ../common.mk
 
 .PHONY: test
