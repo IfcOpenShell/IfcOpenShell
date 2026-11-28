@@ -99,3 +99,15 @@ index acdca71a9f..6c6e29b374 100644
  if (NOT CMAKE_SCRIPT_MODE_FILE)
         cmake_policy(POP)
  endif()
+diff --git a/src/BRepFill/BRepFill_Sweep.cxx b/src/BRepFill/BRepFill_Sweep.cxx
+--- a/src/BRepFill/BRepFill_Sweep.cxx
++++ b/src/BRepFill/BRepFill_Sweep.cxx
+@@ -1666,7 +1666,7 @@
+     CL->D1(F2d, P2d, V2d);
+     S->D1(P2d.X(), P2d.Y(), POnS, du, dv);
+     V3d.SetLinearForm(V2d.X(), du, V2d.Y(), dv);
+-    reverse = ( dC3d.Angle(V3d) > Tol);
++    reverse = ( dC3d.Angle(V3d) > M_PI/2);
+   }
+   if (reverse ) { // Return curve 2d
+     CL = new (Geom2d_TrimmedCurve)(L, F2d, L2d);
