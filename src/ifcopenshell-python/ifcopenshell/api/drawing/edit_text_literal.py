@@ -28,7 +28,7 @@ def edit_text_literal(
     For more information about the attributes and data types of an
     IfcTextLiteral, consult the IFC documentation.
 
-    :param reference: The IfcTextLiteral entity you want to edit
+    :param text_literal: The IfcTextLiteral entity you want to edit
     :param attributes: a dictionary of attribute names and values.
     :return: None
 

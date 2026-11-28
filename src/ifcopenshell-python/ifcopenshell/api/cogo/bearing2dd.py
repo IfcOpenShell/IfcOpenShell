@@ -31,7 +31,7 @@ def bearing2dd(bearing: str) -> float:
     ss.s is second (required)
     E|W is E or W for East or West
 
-    :param str: the bearing string
+    :param bearing: the bearing string
     :return: Angle in radian
     """
     error_msg = "Invalid bearing string"
