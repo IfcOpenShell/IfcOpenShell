@@ -20,8 +20,10 @@ import datetime
 
 import pytest
 
+import ifcopenshell.api.control
 import ifcopenshell.api.root
 import ifcopenshell.api.sequence
+import ifcopenshell.util.sequence
 import test.bootstrap
 
 
@@ -62,6 +64,21 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         assert task.TaskTime.TotalFloat == "P0D"
         assert task.TaskTime.FreeFloat == "P0D"
         assert task.TaskTime.IsCritical is True
+
+    def test_recalculating_with_a_calendar_that_never_has_a_working_day(self):
+        self._add_work_schedule()
+        task = self._create_task("P2D")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
+        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar, time_type="WorkingTimes")
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(
+            self.file, parent=work_time, recurrence_type="WEEKLY"
+        )
+        ifcopenshell.api.sequence.edit_recurrence_pattern(
+            self.file, recurrence_pattern=pattern, attributes={"WeekdayComponent": []}
+        )
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_objects=[task])
+        with pytest.raises(ifcopenshell.util.sequence.NoWorkingDayError):
+            ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
 
     def test_recalculating_finish_to_start(self):
         self._add_work_schedule()

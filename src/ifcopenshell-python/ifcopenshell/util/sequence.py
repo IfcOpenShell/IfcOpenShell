@@ -36,6 +36,18 @@ RECURRENCE_TYPE = Literal[
     "YEARLY_BY_DAY_OF_MONTH",
     "YEARLY_BY_POSITION",
 ]
+# Weekdays and dates repeat after one 400 year Gregorian cycle.
+GREGORIAN_CYCLE_DAYS = 146097
+
+
+class NoWorkingDayError(Exception):
+    """Raised when a work calendar applies to a date but never reaches a working day."""
+
+    def __init__(self, calendar: ifcopenshell.entity_instance, day) -> None:
+        self.calendar = calendar
+        self.day = day
+        name = calendar.Name or "Unnamed"
+        super().__init__(f'Work calendar "{name}" has no working day within 400 years of {day:%Y-%m-%d}.')
 
 
 def derive_date(
@@ -139,11 +151,17 @@ def offset_date(start, duration, duration_type: DURATION_TYPE, calendar: ifcopen
 
     abs_duration = abs(duration.days + months * 30 + years * 12 * 30)
     date_offset = datetime.timedelta(days=1 if duration.days > 0 else -1)
+    non_working_days = 0
     while abs_duration > 0:
-        if duration_type == "ELAPSEDTIME" or not is_calendar_applicable(current_date, calendar):
+        if (
+            duration_type == "ELAPSEDTIME"
+            or not is_calendar_applicable(current_date, calendar)
+            or is_working_day(current_date, calendar)
+        ):
             abs_duration -= 1
-        elif is_working_day(current_date, calendar):
-            abs_duration -= 1
+            non_working_days = 0
+        elif (non_working_days := non_working_days + 1) > GREGORIAN_CYCLE_DAYS:
+            raise NoWorkingDayError(calendar, start)
         current_date += date_offset
     if duration.days > 0:
         current_date = get_soonest_working_day(current_date, duration_type, calendar)
@@ -153,23 +171,24 @@ def offset_date(start, duration, duration_type: DURATION_TYPE, calendar: ifcopen
 
 
 def get_soonest_working_day(start, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance):
-    if duration_type == "ELAPSEDTIME" or not is_calendar_applicable(start, calendar):
+    if duration_type == "ELAPSEDTIME":
         return start
-    while not is_working_day(start, calendar):
-        if not is_calendar_applicable(start, calendar):
-            break
-        start += datetime.timedelta(days=1)
-    return start
+    return _get_working_day(start, calendar, datetime.timedelta(days=1))
 
 
 def get_recent_working_day(start, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance):
-    if duration_type == "ELAPSEDTIME" or not is_calendar_applicable(start, calendar):
+    if duration_type == "ELAPSEDTIME":
         return start
-    while not is_working_day(start, calendar):
-        if not is_calendar_applicable(start, calendar):
-            break
-        start -= datetime.timedelta(days=1)
-    return start
+    return _get_working_day(start, calendar, datetime.timedelta(days=-1))
+
+
+def _get_working_day(start, calendar: ifcopenshell.entity_instance, step: datetime.timedelta):
+    day = start
+    for _ in range(GREGORIAN_CYCLE_DAYS):
+        if not is_calendar_applicable(day, calendar) or is_working_day(day, calendar):
+            return day
+        day += step
+    raise NoWorkingDayError(calendar, start)
 
 
 @cache
