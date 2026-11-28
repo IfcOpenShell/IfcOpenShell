@@ -427,6 +427,17 @@ class Drawing(bonsai.core.tool.Drawing):
         return rep
 
     @classmethod
+    def get_spatial_geometry_corners(cls, element: ifcopenshell.entity_instance) -> list[Vector]:
+        """World-space bounding-box corners of the mesh geometry contained in a spatial element."""
+        return [
+            obj.matrix_world @ Vector(corner)
+            for rel in getattr(element, "ContainsElements", [])
+            for contained in rel.RelatedElements
+            if (obj := tool.Ifc.get_object(contained)) and getattr(obj, "type", None) == "MESH"
+            for corner in obj.bound_box
+        ]
+
+    @classmethod
     def create_camera(
         cls,
         name: str,
@@ -442,6 +453,16 @@ class Drawing(bonsai.core.tool.Drawing):
         else:
             props.camera_type = "ORTHO"
         camera_data.ortho_scale = 50  # The default of 6m is too small
+        # Size plans of non-storey containers to the container's extent.
+        if isinstance(location_hint, int) and location_hint and target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
+            spatial = tool.Ifc.get().by_id(location_hint)
+            if not spatial.is_a("IfcBuildingStorey") and (corners := cls.get_spatial_geometry_corners(spatial)):
+                span = max(
+                    max(c.x for c in corners) - min(c.x for c in corners),
+                    max(c.y for c in corners) - min(c.y for c in corners),
+                )
+                if span > 0:
+                    camera_data.ortho_scale = span * 1.1
         camera_data.clip_start = 0.002  # 2mm is close to zero but allows any GPU-drawn lines to be visible.
         if target_view == "MODEL_VIEW":
             assert (space := tool.Blender.get_view3d_space())
@@ -859,9 +880,16 @@ class Drawing(bonsai.core.tool.Drawing):
                 # Flip Z axis.
                 m.col[2] *= -1
             if location_hint:
-                storey = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint))
+                spatial = tool.Ifc.get().by_id(location_hint)
+                storey = tool.Ifc.get_object(spatial)
                 assert isinstance(storey, bpy.types.Object)
                 z = storey.matrix_world.translation.z
+                if not spatial.is_a("IfcBuildingStorey") and (corners := cls.get_spatial_geometry_corners(spatial)):
+                    # Center on the container's own contents, not the cursor/origin.
+                    x = (min(c.x for c in corners) + max(c.x for c in corners)) / 2
+                    y = (min(c.y for c in corners) + max(c.y for c in corners)) / 2
+                    # Sit above the top of the geometry, not the container placement.
+                    z = max(c.z for c in corners)
                 if target_view == "PLAN_VIEW":
                     # Keep default camera direction - Z-.
                     m.translation = (x, y, z + 1.6)
