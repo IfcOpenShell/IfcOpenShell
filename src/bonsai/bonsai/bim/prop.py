@@ -872,6 +872,11 @@ class BIMFacet(PropertyGroup):
         ],
         default="ADD",
     )
+    enabled: BoolProperty(
+        name="Enabled",
+        description="Include this filter in the query. Disabled filters are kept as a /* ... */ comment",
+        default=True,
+    )
 
     if TYPE_CHECKING:
         pset: str
@@ -879,6 +884,7 @@ class BIMFacet(PropertyGroup):
         type: str
         comparison: Literal["=", "!=", ">=", "<=", ">", "<", "*=", "!*="]
         filter_mode: Literal["ADD", "SUBTRACT", "FILTER"]
+        enabled: bool
 
 
 class BIMFilterGroup(PropertyGroup):
