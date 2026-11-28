@@ -8,10 +8,23 @@ export type IteratorFilter = number[] | string[];
 
 /** Optional native iterator configuration. */
 export interface IteratorOptions {
+  /** The published WASM build is single-threaded; values above 1 throw. */
   numThreads?: number;
   include?: IteratorFilter;
   exclude?: IteratorFilter;
   geometryLibrary?: string;
+}
+
+/** One JSON message emitted by the iterator's native logger. */
+export interface IteratorLogEntry {
+  level: 'Performance' | 'Debug' | 'notice' | 'warning' | 'error';
+  message: string;
+  time: string;
+  code?: string;
+  /** IFC STEP representation of the product being processed. */
+  product?: string;
+  /** IFC STEP representation of the instance associated with the message. */
+  instance?: string;
 }
 
 /** Synchronous native iterator. Load schema, mapping and kernel plugins before construction. */
@@ -37,5 +50,10 @@ export class Iterator extends IfcOpenshellGeomIterator {
     if (!handle || handle.ptr === 0) throw new IfcOpenShellError('Failed to create iterator');
     super(handle);
     this.sourceFile = file;
+  }
+
+  /** Returns this iterator's accumulated messages without clearing them. */
+  getLogEntries(): IteratorLogEntry[] {
+    return this.getLog().split('\n').filter(line => line.trim()).map(line => JSON.parse(line) as IteratorLogEntry);
   }
 }
