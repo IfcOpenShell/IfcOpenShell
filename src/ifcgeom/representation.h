@@ -34,16 +34,19 @@ namespace ifcopenshell::geom {
 			const ifcopenshell::geom::settings settings_;
 			const std::string entity_;
 			std::string id_;
+			const ifcopenshell::declaration* declaration_;
 		public:
-			explicit representation(const ifcopenshell::geom::settings& settings, const std::string& entity, const std::string& id)
+			explicit representation(const ifcopenshell::geom::settings& settings, const std::string& entity, const std::string& id, const ifcopenshell::declaration* decl = nullptr)
 				: settings_(settings)
 				, entity_(entity)
 				, id_(id)
+				, declaration_(decl)
 			{}
 			const ifcopenshell::geom::settings& settings() const { return settings_; }
 			const std::string& entity() const {
 				return entity_;
 			}
+			const ifcopenshell::declaration* declaration() const { return declaration_; }
 			// id starts with representation id and then it may have the following dash separated elements:
 			// - layerset-layerset_id
 			// - material-material_id
@@ -58,8 +61,8 @@ namespace ifcopenshell::geom {
 			native(const native& other);
 			native& operator=(const native& other);
 		public:
-			native(const ifcopenshell::geom::settings& settings, const std::string& entity, const std::string& id, const std::vector<ifcopenshell::geom::conversion_result>& shapes)
-				: representation(settings, entity, id)
+			native(const ifcopenshell::geom::settings& settings, const std::string& entity, const std::string& id, const std::vector<ifcopenshell::geom::conversion_result>& shapes, const ifcopenshell::declaration* decl = nullptr)
+				: representation(settings, entity, id, decl)
 				, shapes_(shapes)
 			{}
 			virtual ~native() {}
