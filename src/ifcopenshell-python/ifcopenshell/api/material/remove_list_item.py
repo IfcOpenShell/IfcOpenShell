@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.material
 
 
 def remove_list_item(
@@ -24,8 +25,9 @@ def remove_list_item(
 ) -> None:
     """Removes an item in an material list
 
-    Note that it is invalid to have zero items in a list, so you should leave
-    at least one item to ensure a valid IFC dataset.
+    It is invalid to have zero items in a material list. If you remove the
+    last item, the entire IfcMaterialList is removed instead, following the
+    same convention as ifcopenshell.api.material.remove_material_set.
 
     :param material_list: The IfcMaterialList entity you want to remove an
         item from.
@@ -53,4 +55,7 @@ def remove_list_item(
     """
     materials = list(material_list.Materials)
     materials.pop(material_index)
-    material_list.Materials = materials
+    if materials:
+        material_list.Materials = materials
+    else:
+        ifcopenshell.api.material.remove_material_set(file, material=material_list)
