@@ -515,6 +515,13 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
             self.write_table(cost_schedule)
         self.doc.save(os.path.join(self.output, file_name), True)
 
+    # ODS stores formulas in OpenFormula syntax: [.A1] references separated by ";".
+    def multiply_cells(self, cell1, cell2):
+        return "of:=[.{}]*[.{}]".format(cell1, cell2)
+
+    def sum_cells(self, list_of_cells):
+        return "of:=SUM({})".format(";".join("[.{}]".format(cell) for cell in list_of_cells))
+
     def write_table(self, cost_schedule):
         from odf.number import CurrencySymbol, Number
         from odf.table import Table, TableCell, TableRow
