@@ -100,6 +100,32 @@ class TestGetQuantityMeasures:
         assert measures["Qto_WallBaseQuantities"]["NetWeight"] == "IfcMassMeasure"
 
 
+class TestEmptyGeometry:
+    def test_geometric_quantities_are_skipped(self):
+        f = ifcopenshell.file(schema="IFC4X3")
+        ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject", name="Test")
+        ifcopenshell.api.unit.assign_unit(f)
+        model = ifcopenshell.api.context.add_context(f, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        wall = ifcopenshell.api.root.create_entity(f, ifc_class="IfcWall")
+        wall.ObjectPlacement = f.createIfcLocalPlacement(
+            None, f.createIfcAxis2Placement3D(f.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+        )
+
+        def box():
+            profile = f.createIfcRectangleProfileDef("AREA", None, None, 1.0, 1.0)
+            position = f.createIfcAxis2Placement3D(f.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+            return f.createIfcExtrudedAreaSolid(profile, position, f.createIfcDirection((0.0, 0.0, 1.0)), 1.0)
+
+        nothing = f.createIfcBooleanResult("DIFFERENCE", box(), box())
+        rep = f.createIfcShapeRepresentation(body, "Body", "CSG", [nothing])
+        wall.Representation = f.createIfcProductDefinitionShape(None, None, [rep])
+        results = ifc5d.qto.quantify(f, {wall}, ifc5d.qto.rules["IFC4X3QtoBaseQuantities"])
+        assert results[wall]["Qto_WallBaseQuantities"] == {}
+
+
 class TestEditQtos:
     def setup_method(self):
         self.file = ifcopenshell.file(schema="IFC4X3")
