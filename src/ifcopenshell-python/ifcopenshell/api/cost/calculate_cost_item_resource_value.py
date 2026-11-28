@@ -18,6 +18,7 @@
 
 import ifcopenshell.api.cost
 import ifcopenshell.util.resource
+import ifcopenshell.util.sequence
 
 
 def calculate_cost_item_resource_value(file: ifcopenshell.file, cost_item: ifcopenshell.entity_instance) -> None:
@@ -105,7 +106,11 @@ def calculate_cost_item_resource_value(file: ifcopenshell.file, cost_item: ifcop
         if cost is None:
             continue
         if unit and "day" in unit:
-            quantity = quantity / 8  # Assume 8 hour working day - TODO implement resource calendar
+            calendar = ifcopenshell.util.resource.get_calendar(resource)
+            hours_in_day = ifcopenshell.util.sequence.get_hours_in_day(calendar)
+            # Fall back to an 8 hour working day if the resource (or its
+            # parent resource / task) has no calendar with defined working hours.
+            quantity = quantity / (hours_in_day or 8)
         formula = "{}*{}".format(cost, quantity)
         cost_value = ifcopenshell.api.cost.add_cost_value(file, parent=cost_item)
         cost_value.Name = resource.Name
