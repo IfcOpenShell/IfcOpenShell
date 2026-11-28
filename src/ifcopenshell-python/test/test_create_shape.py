@@ -251,6 +251,41 @@ def test_iterator_native_output_is_retrieved_with_get(num_threads):
     assert element.id == element_id
 
 
+@pytest.mark.parametrize("schema", ["IFC2X3", "IFC4", "IFC4X3"])
+def test_blank_units_in_context(schema):
+    f = ifcopenshell.file(schema=schema)
+    axis = f.createIfcAxis2Placement3D(f.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+    context = f.create_entity(
+        "IfcGeometricRepresentationContext",
+        ContextType="Model",
+        CoordinateSpaceDimension=3,
+        Precision=1e-5,
+        WorldCoordinateSystem=axis,
+    )
+    units = f.createIfcUnitAssignment([f.createIfcSIUnit(UnitType="LENGTHUNIT", Name="METRE")])
+    project = f.create_entity(
+        "IfcProject", GlobalId=ifcopenshell.guid.new(), RepresentationContexts=[context], UnitsInContext=units
+    )
+    points = [f.createIfcCartesianPoint(p) for p in ((0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0))]
+    solid = f.createIfcExtrudedAreaSolid(
+        f.createIfcArbitraryClosedProfileDef("AREA", None, f.createIfcPolyline(points)),
+        axis,
+        f.createIfcDirection((0.0, 0.0, 1.0)),
+        1.0,
+    )
+    wall = f.create_entity("IfcWall", GlobalId=ifcopenshell.guid.new())
+    wall.Representation = f.createIfcProductDefinitionShape(
+        Representations=[f.createIfcShapeRepresentation(context, "Body", "SweptSolid", [solid])]
+    )
+    project.UnitsInContext = None
+
+    settings = ifcopenshell.geom.settings()
+    iterator = ifcopenshell.geom.iterator(settings, f)
+    assert iterator.initialize()
+    assert iterator.get().id == wall.id()
+    assert len(ifcopenshell.geom.create_shape(settings, wall).geometry.verts) == 24
+
+
 def test_logging():
     assert ifcopenshell.logger
     logger = ifcopenshell.logger()
