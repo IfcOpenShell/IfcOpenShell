@@ -25,6 +25,7 @@ from typing import Any, Literal, NamedTuple, Optional, Union, cast, get_args
 
 import ifcopenshell
 import ifcopenshell.api.cost
+import ifcopenshell.api.nest
 import ifcopenshell.api.pset
 import ifcopenshell.api.resource
 import ifcopenshell.api.root
@@ -73,6 +74,10 @@ class Csv2Ifc:
     - empty rows are skipped.
     - 'HIERARCHY' must be the first column.
     - See SUPPORTED_COLUMN above for the list of supported columns.
+    - If a row has a 'GUID' matching an existing IfcConstructionResource in
+      the model, that resource is updated in place instead of creating a
+      new one. Rows with no 'GUID', an empty 'GUID', or a 'GUID' not found
+      in the model create a new resource, as before.
 
     Example:
 
@@ -164,6 +169,10 @@ class Csv2Ifc:
                 "class": quantity_class,
             }
 
+        guid = None
+        if (header_index := self.headers.get("GUID", None)) is not None:
+            guid = row[header_index] or None
+
         return {
             "Name": str(name).strip() if name else None,
             "Description": row[self.headers["DESCRIPTION"]],
@@ -173,6 +182,7 @@ class Csv2Ifc:
             "children": [],
             "usage": row[self.headers["USAGE"]],
             "quantity_data": quantity_data,
+            "GUID": guid,
         }
 
     def create_ifc(self) -> None:
@@ -186,9 +196,35 @@ class Csv2Ifc:
         for resource in resources:
             self.create_resource(resource, parent)
 
+    def get_existing_resource(self, guid: Union[str, None]) -> Union[ifcopenshell.entity_instance, None]:
+        if not guid:
+            return None
+        try:
+            element = self.file.by_guid(guid)
+        except RuntimeError:
+            return None
+        if not element.is_a("IfcConstructionResource"):
+            print(
+                f"WARNING. GUID '{guid}' from the CSV belongs to a '{element.is_a()}', not a resource. A new resource will be created instead of updating it."
+            )
+            return None
+        return element
+
     def create_resource(self, resource: dict[str, Any], parent: Union[ifcopenshell.entity_instance, None]) -> None:
         assert self.file
-        if parent is None:
+        existing_resource = self.get_existing_resource(resource.get("GUID"))
+        if existing_resource is not None:
+            resource["ifc"] = existing_resource
+            if existing_resource.is_a() != resource["class"]:
+                print(
+                    f"WARNING. GUID '{resource['GUID']}' is a '{existing_resource.is_a()}' in the model "
+                    f"but the CSV row TYPE resolves to '{resource['class']}'. Keeping the existing class."
+                )
+            if parent is not None:
+                ifcopenshell.api.nest.assign_object(
+                    self.file, related_objects=[existing_resource], relating_object=parent
+                )
+        elif parent is None:
             resource["ifc"] = ifcopenshell.api.resource.add_resource(self.file, ifc_class=resource["class"])
         else:
             resource["ifc"] = ifcopenshell.api.resource.add_resource(
@@ -205,10 +241,15 @@ class Csv2Ifc:
                 properties=resource["Productivity"],
             )
         if resource["BaseCostValue"]:
-            cost_value = ifcopenshell.api.cost.add_cost_value(self.file, parent=resource["ifc"])
+            existing_cost_values = resource["ifc"].BaseCosts
+            cost_value = existing_cost_values[0] if existing_cost_values else None
+            if cost_value is None:
+                cost_value = ifcopenshell.api.cost.add_cost_value(self.file, parent=resource["ifc"])
             cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(resource["BaseCostValue"])
         if usage_value := resource["usage"]:
-            usage = ifcopenshell.api.resource.add_resource_time(self.file, resource=resource["ifc"])
+            usage = resource["ifc"].Usage
+            if usage is None:
+                usage = ifcopenshell.api.resource.add_resource_time(self.file, resource=resource["ifc"])
             ifcopenshell.api.resource.edit_resource_time(self.file, usage, {"ScheduleUsage": float(usage_value)})
 
         if quantity_data := resource["quantity_data"]:
