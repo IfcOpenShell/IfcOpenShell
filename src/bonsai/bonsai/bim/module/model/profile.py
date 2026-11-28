@@ -54,8 +54,10 @@ class DumbProfileGenerator:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
     def generate(
-        self, insertion_type: Literal["CURSOR", "POLYLINE"] = "CURSOR"
-    ) -> Union[tuple[list[ProfileFrom2PointsReturn], bool], bpy.types.Object, None]:
+        self,
+        insertion_type: Literal["CURSOR", "POLYLINE"] = "CURSOR",
+        coords: Optional[tuple[Vector, Vector]] = None,
+    ) -> Union[tuple[list[ProfileFrom2PointsReturn], bool], ProfileFrom2PointsReturn, bpy.types.Object, None]:
         self.insertion_type = insertion_type
         self.file = tool.Ifc.get()
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -79,6 +81,9 @@ class DumbProfileGenerator:
         self.rotation = 0
         self.location = Vector((0, 0, 0))
         self.cardinal_point = int(props.cardinal_point)
+        if coords is not None:
+            self.insertion_type = "POLYLINE"
+            return self.create_profile_from_2_points(coords)
         if self.insertion_type == "POLYLINE":
             return self.derive_from_polyline()
         elif self.insertion_type == "CURSOR":
