@@ -236,7 +236,8 @@ class DecorationShader:
                 "float body = step(abs(co.x),0.2*spacing)*step(2.*spacing,co.y);"
                 f"float arrow = step({1 / ARROW_HEAD_FLARE:.4f}*abs(co.x)+0.02,abs(co.y))"
                 "*step(co.y,2.*spacing)*step(0.,co.y);"
-                "float d = clamp(body+arrow,0.0,0.5);"
+                # Opaque, so that an arrow covers the dashed axes and construction lines drawn before it.
+                "float d = clamp(body+arrow,0.0,1.0);"
                 "if (d == 0.0) discard;"
                 "FragColor = vec4(color.xyz,d*color.w);"
                 "}"

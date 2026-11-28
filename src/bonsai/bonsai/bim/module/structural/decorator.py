@@ -186,7 +186,10 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         """draw the 3D representation of loads"""
         if not self.decoration_data.is_empty:
             hovered = self.hovered["info"] if self.hovered else -1
-            for i, info in enumerate(self.shader_info):
+            # Dashed lines first, as axes and construction are, so that arrows and solid lines cover them.
+            order = sorted(range(len(self.shader_info)), key=lambda i: not self.shader_info[i].get("dashed"))
+            for i in order:
+                info = self.shader_info[i]
                 if not self.is_visible(info):
                     continue
                 shader = info["shader"]

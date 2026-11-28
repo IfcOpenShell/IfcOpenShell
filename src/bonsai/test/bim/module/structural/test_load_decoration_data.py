@@ -98,6 +98,14 @@ class TestArrowHeads(NewFile):
             assert across / along >= ARROW_HEAD_FLARE
 
 
+class TestDashedLinesDrawnFirst(NewFile):
+    def test_dashed_lines_are_marked_to_be_drawn_first(self):
+        info = get_headless_shader_info()
+        info.add_dashed_line(np.zeros(3), np.array((1.0, 0.0, 0.0)), 1.0, (1, 1, 1, 1))
+        info.add_dashed_line(np.zeros(3), np.array((1.0, 0.0, 0.0)), 1.0, (1, 1, 1, 1), dashed=False)
+        assert [entry["dashed"] for entry in info.info] == [True, False]
+
+
 class TestBoxCrossesSegments:
     # A label's box from (0, 0), 10 wide and 5 high.
     def test_lines_crossing_or_inside(self):

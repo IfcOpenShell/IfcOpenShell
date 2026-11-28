@@ -856,6 +856,7 @@ class ShaderInfo:
                 "uniforms": [["color", color], ["spacing", size * 0.03 if dashed else size * 1000]],
                 # On screen, labels keep off a solid line, as an angle's arc; dashed guides they may cross.
                 "segment": None if dashed else (start, end),
+                "dashed": dashed,
             }
         )
 
