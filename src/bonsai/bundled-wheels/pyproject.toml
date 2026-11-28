@@ -22,7 +22,7 @@ dependencies = [
     # Provides express rule validation for ifcopenshell.validate
     # Blender's extension wheels take precedence over its Python site-packages.
     # Keep this cap in sync with pyproject.toml and scripts/setup_pytest.py for pytest-bdd.
-    "pytest<9.2",
+    "pytest<9.3",
     # Provides Brickschema functionality
     # Is not platform specific but has platform specific dependencies.
     # The SQLAlchemy store must be 0.7.1 or later (SQLAlchemy 2.1, rdflib 7, and the
