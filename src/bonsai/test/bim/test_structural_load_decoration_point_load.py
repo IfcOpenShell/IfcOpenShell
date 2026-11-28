@@ -135,12 +135,30 @@ class TestPointForcesArePickable(NewIfc):
             info.update()
         return info
 
-    def test_each_of_several_forces_picks_its_own_load(self):
+    def test_a_drawer_draws_each_force_its_own_way_picking_its_own_load(self):
         _, activities = self.apply_forces((300.0, 400.0), (-200.0, 0.0))
-        tool.Structural.get_structural_props().force_display = "PARALLELOGRAM"
-        info = self.draw()
-        # The resultant stands for no one load, so it is not pickable.
+        calls = []
+
+        # As an add-on might: each force from the point, with its applied load to pick it by.
+        def drawer(builder, forces, activity_ids, location, axes, scale, size):
+            calls.append((len(forces), list(activity_ids)))
+            for force, activity in zip(forces, activity_ids):
+                tip = location + force * scale
+                builder.add_force_arrow(location, tip, (1, 1, 1, 1), builder.force_unit, size, activity=activity)
+            return True
+
+        with mock.patch.object(ShaderInfo, "point_force_drawers", [drawer]):
+            info = self.draw()
+        assert calls == [(2, [a.id() for a in activities])]
         assert sorted(p["activity"] for p in info.pickables) == sorted(a.id() for a in activities)
+        assert len(info.info) == 2  # Bonsai drew nothing more: no components, no resultant.
+
+    def test_a_drawer_that_declines_leaves_bonsais_drawing(self):
+        self.apply_forces((300.0, 400.0), (-200.0, 0.0))
+        tool.Structural.get_structural_props().force_display = "BOTH"
+        drawn = len(self.draw().info)
+        with mock.patch.object(ShaderInfo, "point_force_drawers", [lambda *args: False]):
+            assert len(self.draw().info) == drawn
 
     def test_the_components_of_a_resultant_of_several_forces_are_not_pickable(self):
         self.apply_forces((300.0, 400.0), (-200.0, 0.0))
