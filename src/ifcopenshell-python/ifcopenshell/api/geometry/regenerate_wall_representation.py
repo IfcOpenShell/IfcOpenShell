@@ -26,6 +26,7 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
+import ifcopenshell.api.style
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -36,6 +37,26 @@ import ifcopenshell.util.unit
 # Possible optimisation to linalg.norm?
 
 PrioritisedLayer = namedtuple("PrioritisedLayer", "priority thickness")
+
+
+def get_representation_styles(
+    representation: ifcopenshell.entity_instance,
+) -> list[ifcopenshell.entity_instance]:
+    """Collect each item's surface style, in item order."""
+    styles = []
+    for item in representation.Items:
+        for styled_item in item.StyledByItem:
+            item_styles = []
+            for style in styled_item.Styles:
+                if style.is_a("IfcPresentationStyleAssignment"):
+                    item_styles.extend(style.Styles)
+                else:
+                    item_styles.append(style)
+            surface_style = next((s for s in item_styles if s.is_a("IfcSurfaceStyle")), None)
+            if surface_style is not None:
+                styles.append(surface_style)
+                break
+    return styles
 
 
 def regenerate_wall_representation(
@@ -336,6 +357,14 @@ class Regenerator:
 
         body_rep = builder.get_representation(self.body, items=[item])
         if old_rep := ifcopenshell.util.representation.get_representation(wall, self.body):
+            styles = get_representation_styles(old_rep)
+            if styles:
+                ifcopenshell.api.style.assign_representation_styles(
+                    self.file, shape_representation=body_rep, styles=styles
+                )
+            for old_item in old_rep.Items:
+                for styled_item in list(old_item.StyledByItem):
+                    self.file.remove(styled_item)
             ifcopenshell.util.element.replace_element(old_rep, body_rep)
             ifcopenshell.util.element.remove_deep2(self.file, old_rep)
         else:
