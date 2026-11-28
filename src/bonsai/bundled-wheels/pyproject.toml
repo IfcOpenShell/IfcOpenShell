@@ -67,7 +67,7 @@ dependencies = [
     "python-socketio[asyncio-client]>=5.18.1",
     "aiohttp>=3.14.5",
     # Required to access platform specific paths
-    "platformdirs>=4.14.5",
+    "platformdirs>=4.14.8",
     # Required by light module
     "pytz>=2026.6",
     "tzfpy>=2.1.2",
