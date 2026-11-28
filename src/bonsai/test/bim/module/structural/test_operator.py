@@ -19,9 +19,10 @@ import pytest
 from mathutils import Vector
 
 import bonsai.tool as tool
-from bonsai.bim.module.structural.data import LoadGroupDecorationData, StructuralLoadCasesData
+from bonsai.bim.module.structural.data import LoadGroupDecorationData, StructuralLoadCasesData, StructuralLoadsData
 from bonsai.bim.module.structural.decorator import LoadsDecorator
 from bonsai.bim.module.structural.operator import PickStructuralLoads, get_load_unit_symbol
+from bonsai.bim.module.structural.ui import BIM_PT_structural_loads
 from test.bim.bootstrap import NewFile
 
 
@@ -147,6 +148,71 @@ class TestLoadStructuralLoads(NewFile):
         assert [load.name for load in props.structural_loads] == ["Unused"]
         props.show_unused_loads_only = False
         assert sorted(load.name for load in props.structural_loads) == ["Unused", "Used"]
+
+
+class TestLoadConfiguration(NewFile):
+    """An RFEM 6 member load: a configuration of a linear force at each end"""
+
+    def setup_configuration(self):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc)  # Millimetres.
+        start = ifc.createIfcStructuralLoadLinearForce(None, 2000.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        end = ifc.createIfcStructuralLoadLinearForce("End", 1500.0, 0.0, -2.5, 0.0, 0.0, 0.0)
+        configuration = ifc.createIfcStructuralLoadConfiguration(None, (start, end), ((0.0,), (3500.0,)))
+        return ifc, configuration, start, end
+
+    def test_the_data_gives_each_load_its_location_and_values(self):
+        ifc, configuration, start, end = self.setup_configuration()
+        StructuralLoadsData.load()
+        assert StructuralLoadsData.data["configurations"][configuration.id()] == [
+            {
+                "id": start.id(),
+                "name": None,
+                "ifc_class": "IfcStructuralLoadLinearForce",
+                "location": "0 mm",
+                "values": "LinearForceX 2000",
+            },
+            {
+                "id": end.id(),
+                "name": "End",
+                "ifc_class": "IfcStructuralLoadLinearForce",
+                "location": "3500 mm",
+                "values": "LinearForceX 1500, LinearForceZ -2.5",
+            },
+        ]
+
+    def test_a_configuration_without_locations(self):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        planar = ifc.createIfcStructuralLoadPlanarForce(None, 0.0, 0.0, 0.0)
+        configuration = ifc.createIfcStructuralLoadConfiguration(None, (planar,), None)
+        StructuralLoadsData.load()
+        (part,) = StructuralLoadsData.data["configurations"][configuration.id()]
+        assert part["location"] is None
+        assert part["values"] == "No values"
+
+    def test_editing_a_configuration_shows_its_loads(self):
+        ifc, configuration, start, end = self.setup_configuration()
+        # Configurations have no force dialog, so the operator hands them to the Load Definitions panel.
+        bpy.ops.bim.edit_structural_load_values(structural_load=configuration.id())
+        props = tool.Structural.get_structural_props()
+        assert props.active_structural_load_id == configuration.id()
+        StructuralLoadsData.load()
+        panel = SimpleNamespace(layout=mock.MagicMock(), props=props)
+        panel.draw_configuration_ui = lambda parts: BIM_PT_structural_loads.draw_configuration_ui(panel, parts)
+        BIM_PT_structural_loads.draw(panel, bpy.context)
+        box = panel.layout.box.return_value
+        labels = [c.kwargs["text"] for c in box.label.call_args_list + box.row.return_value.label.call_args_list]
+        assert labels == [
+            "2 Loads in This Configuration",
+            "At 0 mm: LinearForce",
+            "At 3500 mm: LinearForce End",
+            "LinearForceX 2000",
+            "LinearForceX 1500, LinearForceZ -2.5",
+        ]
 
 
 class TestShowStructuralLoadCase(NewFile):

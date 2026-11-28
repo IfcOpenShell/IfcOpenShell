@@ -902,6 +902,22 @@ class BIM_PT_structural_loads(Panel):
 
         if self.props.active_structural_load_id:
             bonsai.bim.helper.draw_attributes(self.props.structural_load_attributes, self.layout)
+            parts = StructuralLoadsData.data["configurations"].get(self.props.active_structural_load_id)
+            if parts is not None:
+                self.draw_configuration_ui(parts)
+
+    def draw_configuration_ui(self, parts: list[dict]) -> None:
+        """What a load configuration is made of: each load, where it is, and its values"""
+        box = self.layout.box()
+        box.label(text=f"{len(parts)} Load{'s' if len(parts) != 1 else ''} in This Configuration", icon="ANIM_DATA")
+        for part in parts:
+            title = part["ifc_class"].removeprefix("IfcStructuralLoad")
+            if part["name"]:
+                title += f" {part['name']}"
+            if part["location"]:
+                title = f"At {part['location']}: {title}"
+            box.label(text=title)
+            box.row().label(text=part["values"], icon="BLANK1")
 
 
 class BIM_UL_structural_loads(UIList):
