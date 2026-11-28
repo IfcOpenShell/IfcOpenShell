@@ -33,6 +33,7 @@ def toggle_decorations_on_load(*args):
     props = tool.Project.get_project_props()
     if props.clipping_planes:
         ClippingPlaneDecorator.install(bpy.context)
+        restart_clipping_planes_refresh()
     else:
         ClippingPlaneDecorator.uninstall()
 
@@ -40,6 +41,29 @@ def toggle_decorations_on_load(*args):
     # since selected_vertices and other data is stored in queried object's
     # custom attributes and they get purged after Blender session is closed
     # as queried object is linked from separate .blend file.
+
+
+def restart_clipping_planes_refresh() -> None:
+    """Relaunch the clipping planes modal, which does not survive a .blend reload (#4641)."""
+    if bpy.app.background:
+        return
+
+    def _launch() -> None:
+        if not tool.Project.get_project_props().clipping_planes:
+            return None
+        wm = bpy.context.window_manager
+        if not wm or not wm.windows:
+            return None
+        # The modal's refresh needs a 3D viewport to apply the clip planes.
+        if not any(a.type == "VIEW_3D" for w in wm.windows for a in w.screen.areas):
+            return None
+        try:
+            bpy.ops.bim.refresh_clipping_planes("INVOKE_DEFAULT")
+        except RuntimeError:
+            pass
+        return None
+
+    bpy.app.timers.register(_launch, first_interval=0.1)
 
 
 class ProjectDecorator:
