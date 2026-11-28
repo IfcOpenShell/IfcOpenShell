@@ -34,7 +34,7 @@ import numpy.typing as npt
 from mathutils import Vector
 
 import bonsai.tool as tool
-from bonsai.bim.module.structural.shader import DecorationShader
+from bonsai.bim.module.structural.shader import ARROW_HEAD_FLARE, DecorationShader
 
 
 class MemberInfo(TypedDict):
@@ -798,8 +798,11 @@ class ShaderInfo:
         direction = (tip - tail) / length
         # The shader works in units of a fifth of size: the head is 2 * spacing of them long.
         unit = size / 5
+        # The shader draws within a triangle from the tip, which is made wide enough at the head's base for its
+        # flare, ARROW_HEAD_FLARE of its length to either side: a long arrow's would otherwise narrow its head.
+        spread = max(1.0, 1.1 * ARROW_HEAD_FLARE * length / unit)
         d2, d3 = self.get_perpendicular_axes(direction)
-        d2, d3 = d2 * unit, d3 * unit
+        d2, d3 = d2 * unit * spread, d3 * unit * spread
         self.info.append(
             {
                 "shader": self.shader.new("SINGLE FORCE"),
@@ -807,10 +810,10 @@ class ShaderInfo:
                     "position": [tip, tail + d2, tail - d2, tail + d3, tail - d3],
                     "coord": [
                         (0, 0, 0),
-                        (1, length / unit, 0),
-                        (-1, length / unit, 0),
-                        (1, length / unit, 0),
-                        (-1, length / unit, 0),
+                        (spread, length / unit, 0),
+                        (-spread, length / unit, 0),
+                        (spread, length / unit, 0),
+                        (-spread, length / unit, 0),
                     ],
                 },
                 "indices": [(0, 1, 2), (0, 3, 4)],
@@ -853,6 +856,7 @@ class ShaderInfo:
                 "uniforms": [["color", color], ["spacing", size * 0.03 if dashed else size * 1000]],
                 # On screen, labels keep off a solid line, as an angle's arc; dashed guides they may cross.
                 "segment": None if dashed else (start, end),
+                "dashed": dashed,
             }
         )
 

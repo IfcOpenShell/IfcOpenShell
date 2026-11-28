@@ -20,6 +20,9 @@ from typing import Literal
 
 import gpu
 
+# How far a force arrow's head flares to either side at its base, as a fraction of its length.
+ARROW_HEAD_FLARE = 0.55
+
 
 class DecorationShader:
     "shader for the load decorations"
@@ -231,8 +234,10 @@ class DecorationShader:
                 "void main()"
                 "{"
                 "float body = step(abs(co.x),0.2*spacing)*step(2.*spacing,co.y);"
-                "float arrow = step(3.5*abs(co.x)+0.02,abs(co.y))*step(co.y,2.*spacing)*step(0.,co.y);"
-                "float d = clamp(body+arrow,0.0,0.5);"
+                f"float arrow = step({1 / ARROW_HEAD_FLARE:.4f}*abs(co.x)+0.02,abs(co.y))"
+                "*step(co.y,2.*spacing)*step(0.,co.y);"
+                # Opaque, so that an arrow covers the dashed axes and construction lines drawn before it.
+                "float d = clamp(body+arrow,0.0,1.0);"
                 "if (d == 0.0) discard;"
                 "FragColor = vec4(color.xyz,d*color.w);"
                 "}"

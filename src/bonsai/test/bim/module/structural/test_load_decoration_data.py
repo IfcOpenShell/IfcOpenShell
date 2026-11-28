@@ -37,6 +37,7 @@ import bonsai.bim.module.structural.decorator as decorator_module
 import bonsai.tool as tool
 from bonsai.bim.module.structural.decorator import LoadsDecorator
 from bonsai.bim.module.structural.load_decoration_data import ScreenGrid, ShaderInfo, box_crosses_segments
+from bonsai.bim.module.structural.shader import ARROW_HEAD_FLARE
 from test.bim.bootstrap import NewFile, NewIfc
 
 
@@ -78,6 +79,31 @@ class TestArrowThickness(NewFile):
         default = self.get_spacing()
         tool.Structural.get_structural_props().arrow_thickness = 2.0
         assert math.isclose(self.get_spacing(), 2 * default)
+
+
+def get_headless_shader_info() -> ShaderInfo:
+    tool.Ifc.set(ifcopenshell.file())
+    info = ShaderInfo()
+    info.shader = SimpleNamespace(new=lambda name: None)  # Headless, there is no GPU to make shaders with.
+    return info
+
+
+class TestArrowHeads(NewFile):
+    def test_a_heads_triangle_is_wide_enough_for_its_flare_at_any_length(self):
+        for length in (0.1, 1.0, 10.0):
+            info = get_headless_shader_info()
+            info.add_force_arrow(np.zeros(3), np.array((0.0, 0.0, length)), (1, 0, 0, 1), "1 kN", 1.0)
+            # At the base, the triangle reaches this far to either side, in lengths of the arrow.
+            across, along = info.info[-1]["args"]["coord"][1][:2]
+            assert across / along >= ARROW_HEAD_FLARE
+
+
+class TestDashedLinesDrawnFirst(NewFile):
+    def test_dashed_lines_are_marked_to_be_drawn_first(self):
+        info = get_headless_shader_info()
+        info.add_dashed_line(np.zeros(3), np.array((1.0, 0.0, 0.0)), 1.0, (1, 1, 1, 1))
+        info.add_dashed_line(np.zeros(3), np.array((1.0, 0.0, 0.0)), 1.0, (1, 1, 1, 1), dashed=False)
+        assert [entry["dashed"] for entry in info.info] == [True, False]
 
 
 class TestBoxCrossesSegments:
