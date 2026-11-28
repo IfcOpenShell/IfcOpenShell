@@ -785,7 +785,8 @@ class Usecase:
 
         # Utils method for the loop.
         def get_tuple_type(tuple_: tuple) -> type:
-            while isinstance(tuple_, tuple):
+            # An empty aggregate such as () or ((),) has no element type to inspect.
+            while isinstance(tuple_, tuple) and tuple_:
                 tuple_ = tuple_[0]
             return type(tuple_)
 
