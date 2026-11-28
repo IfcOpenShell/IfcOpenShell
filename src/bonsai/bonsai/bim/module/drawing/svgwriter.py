@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import base64
 import math
 import os
 import shutil
@@ -291,6 +292,7 @@ class SvgWriter:
         self.height = self.raw_height * self.svg_scale
 
     def add_stylesheet(self):
+        self.embed_fonts()
         paths = self.resource_paths["Stylesheet"]
         if not paths:
             return
@@ -305,6 +307,24 @@ class SvgWriter:
                 css.append(stylesheet.read())
         if css:
             self.svg.defs.add(self.svg.style("\n".join(css)))
+
+    def embed_fonts(self) -> None:
+        """Embed the bundled fonts as base64 @font-face rules, as the stylesheets only name them. See #5433."""
+        font_faces = []
+        formats = (("ttf", "truetype", "font/ttf"), ("otf", "opentype", "font/otf"))
+        for extension, font_format, mime in formats:
+            for font_path in tool.Blender.get_data_dir_paths("fonts", f"*.{extension}"):
+                try:
+                    font_data = base64.b64encode(font_path.read_bytes()).decode("ascii")
+                except OSError:
+                    print(f"WARNING. Couldn't read bundled font for embedding: {font_path}")
+                    continue
+                font_faces.append(
+                    f"@font-face {{ font-family: '{font_path.stem}'; "
+                    f"src: url(data:{mime};base64,{font_data}) format('{font_format}'); }}"
+                )
+        if font_faces:
+            self.svg.defs.add(self.svg.style("\n".join(font_faces)))
 
     def add_markers(self):
         path = self.resource_paths["Markers"]
