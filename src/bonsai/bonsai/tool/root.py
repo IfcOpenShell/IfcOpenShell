@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import bpy
@@ -98,7 +99,8 @@ class Root(bonsai.core.tool.Root):
             dest.Representation = ifcopenshell.util.element.copy_deep(
                 tool.Ifc.get(),
                 source.Representation,
-                exclude=["IfcGeometricRepresentationContext"],
+                # An occurrence never owns the IfcRepresentationMap it maps, its type does.
+                exclude=["IfcGeometricRepresentationContext", "IfcRepresentationMap"],
                 exclude_callback=exclude_callback,
                 copied_entities=copied_entities,
             )
@@ -120,6 +122,64 @@ class Root(bonsai.core.tool.Root):
     @classmethod
     def does_type_have_representations(cls, element: ifcopenshell.entity_instance) -> bool:
         return bool(element.RepresentationMaps)
+
+    @classmethod
+    def has_independent_representation(cls, element: ifcopenshell.entity_instance) -> bool:
+        """``True`` if the element carries its own geometry inline rather than mapped type geometry."""
+        if not (representation := getattr(element, "Representation", None)):
+            return False
+        for rep in representation.Representations:
+            for item in rep.Items:
+                if not item.is_a("IfcMappedItem"):
+                    return True
+        return False
+
+    @classmethod
+    def get_mapped_items(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        """All ``IfcMappedItem``\\ s used by an occurrence's representations."""
+        if not (representation := getattr(element, "Representation", None)):
+            return []
+        return [i for rep in representation.Representations for i in rep.Items if i.is_a("IfcMappedItem")]
+
+    @classmethod
+    def has_mapped_representation(cls, element: ifcopenshell.entity_instance) -> bool:
+        """``True`` if any of the element's representations maps geometry that
+        it shares with its type. Such geometry is owned by the type's
+        ``IfcRepresentationMap`` and must never be styled or edited through the
+        occurrence, or every sibling occurrence changes with it."""
+        return bool(cls.get_mapped_items(element))
+
+    @classmethod
+    def has_transformed_mapped_representation(cls, element: ifcopenshell.entity_instance) -> bool:
+        """``True`` if the element applies its own transform to the geometry it
+        maps from its type, so it is not an identity instance of that type.
+
+        Exporters such as AutoCAD Architecture map one unit-sized shape and
+        give each occurrence an ``IfcCartesianTransformationOperator3DnonUniform``
+        that scales it to length. Re-mapping the type instead of copying such
+        an occurrence discards that transform (issue #7996)."""
+        return any(not cls.is_identity_mapping_target(i.MappingTarget) for i in cls.get_mapped_items(element))
+
+    @classmethod
+    def is_identity_mapping_target(cls, target: ifcopenshell.entity_instance) -> bool:
+        """``True`` if an ``IfcMappedItem``'s ``MappingTarget`` leaves the
+        mapped geometry untouched."""
+        if target.is_a("IfcCartesianTransformationOperator3D"):
+            matrix = ifcopenshell.util.placement.get_cartesiantransformationoperator3d(target)
+            return all(
+                math.isclose(matrix[i][j], float(i == j), rel_tol=1e-5, abs_tol=1e-8)
+                for i in range(4)
+                for j in range(4)
+            )
+        # 2D operators, conservatively treated as transformed unless plainly identity.
+        if any(coordinate != 0.0 for coordinate in target.LocalOrigin.Coordinates):
+            return False
+        scales = [target.Scale]
+        if target.is_a("IfcCartesianTransformationOperator2DnonUniform"):
+            scales.append(target.Scale2)
+        if any(scale is not None and scale != 1.0 for scale in scales):
+            return False
+        return target.Axis1 is None and target.Axis2 is None
 
     @classmethod
     def get_decomposition_relationships(
