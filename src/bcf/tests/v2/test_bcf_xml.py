@@ -1,6 +1,7 @@
 """BCF XML tests."""
 
 import uuid
+import zipfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -93,6 +94,17 @@ def test_save_keep_open(build_sample) -> None:
         bcf.save(file_path, keep_open=True)
         assert bcf._zip_file is not None
         bcf._zip_file.close()
+
+
+def test_save_new_topic_reference_file(build_sample) -> None:
+    bcf, th = build_sample
+    th.reference_files["../model.ifc"] = b"ifc"
+    th.header = mdl.Header(file=[mdl.HeaderFile(reference="../model.ifc", is_external=False)])
+    with TemporaryDirectory() as tmp_dir:
+        file_path = Path(tmp_dir) / "test.bcf"
+        bcf.save(file_path)
+        with zipfile.ZipFile(file_path) as bcf_zip:
+            assert bcf_zip.read("model.ifc") == b"ifc"
 
 
 def test_massive_bcf(xml_handler) -> None:
