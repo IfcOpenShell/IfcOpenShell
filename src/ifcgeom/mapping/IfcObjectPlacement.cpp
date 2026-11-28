@@ -24,6 +24,40 @@ using namespace ifcopenshell::geom;
 #include <deque>
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
+	auto places_ignored_object = [this](const IfcSchema::IfcObjectPlacement& placement) {
+		for (auto& placed_product : placement.PlacesObject()) {
+			if ((placement_rel_to_type_ && placed_product.declaration().is(*placement_rel_to_type_)) ||
+				(placement_rel_to_instance_ && placed_product == placement_rel_to_instance_)) {
+				return true;
+			}
+		}
+		return false;
+	};
+
+	auto placement_parent = [](const IfcSchema::IfcObjectPlacement& placement) {
+#ifdef SCHEMA_IfcObjectPlacement_HAS_PlacementRelTo
+		return placement.PlacementRelTo();
+#else
+		if (placement.as<IfcSchema::IfcLocalPlacement>()) {
+			return placement.as<IfcSchema::IfcLocalPlacement>().PlacementRelTo();
+		}
+		return IfcSchema::IfcObjectPlacement();
+#endif
+	};
+
+	// #6102 only the outermost match is ignored, so nested sites share one frame
+	auto is_outermost_match = [&](const IfcSchema::IfcObjectPlacement& placement) {
+		if (!places_ignored_object(placement)) {
+			return false;
+		}
+		for (auto parent = placement_parent(placement); parent; parent = placement_parent(parent)) {
+			if (places_ignored_object(parent)) {
+				return false;
+			}
+		}
+		return true;
+	};
+
 	if (placement_rel_to_type_ || placement_rel_to_instance_) {
 		using queue_item = std::pair<IfcSchema::IfcObjectPlacement, int>;
 		std::deque<queue_item> q = {{inst, 0}};
@@ -35,12 +69,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 				continue;
 			}
 
-			std::vector<IfcSchema::IfcProduct> self_places = placement.PlacesObject();
-			for (auto& placed_product : self_places) {
-				if ((placement_rel_to_type_ && placed_product.declaration().is(*placement_rel_to_type_)) ||
-					(placement_rel_to_instance_ && placed_product == placement_rel_to_instance_)) {
-					return taxonomy::make<taxonomy::matrix4>();
-				}
+			if (is_outermost_match(placement)) {
+				return taxonomy::make<taxonomy::matrix4>();
 			}
 
 			// Look for two levels deep, we want to know if we're at or *above* the
@@ -92,13 +122,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 
 	bool parent_placement_ignored = false;
 	if (relative_to && (placement_rel_to_type_ || placement_rel_to_instance_)) {
-		std::vector<IfcSchema::IfcProduct> parent_places = relative_to.PlacesObject();
-        for (auto& pp : parent_places) {
-            if ((placement_rel_to_type_ && pp.declaration().is(*placement_rel_to_type_)) ||
-                (placement_rel_to_instance_ && pp == placement_rel_to_instance_)) {
-				parent_placement_ignored = true;
-			}
-		}
+		parent_placement_ignored = is_outermost_match(relative_to);
 	}
 
 	taxonomy::matrix4::ptr result;
