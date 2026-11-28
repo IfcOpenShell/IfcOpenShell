@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from math import cos, radians
 from typing import TYPE_CHECKING, Literal, Optional, Union
 
@@ -91,10 +92,64 @@ def get_volume(geometry: W.triangulation) -> float:
     faces = geometry.faces
     grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
     volumes = [
-        signed_triangle_volume(grouped_verts[faces[i]], grouped_verts[faces[i + 1]], grouped_verts[faces[i + 2]])
+        signed_triangle_volume(
+            grouped_verts[faces[i]],
+            grouped_verts[faces[i + 1]],
+            grouped_verts[faces[i + 2]],
+        )
         for i in range(0, len(faces), 3)
     ]
     return abs(sum(volumes))
+
+
+def get_center_of_mass(geometry: W.triangulation) -> list[float]:
+    """Calculates the center of mass of a geometry in local coordinates
+
+    Center of Mass of non-manifold geometry will be unpredictable.
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :return: a list representing the XYZ center of mass
+    """
+
+    # https://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up
+    def signed_triangle_volume(p1, p2, p3):
+        v321 = p3[0] * p2[1] * p1[2]
+        v231 = p2[0] * p3[1] * p1[2]
+        v312 = p3[0] * p1[1] * p2[2]
+        v132 = p1[0] * p3[1] * p2[2]
+        v213 = p2[0] * p1[1] * p3[2]
+        v123 = p1[0] * p2[1] * p3[2]
+        return (1.0 / 6.0) * (-v321 + v231 + v312 - v132 - v213 + v123)
+
+    # Can't optimize it using buffers - performance seems to get only worse.
+    verts = geometry.verts
+    faces = geometry.faces
+    grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
+    Total_Volumes = 0
+    center_of_mass: list[float] = [0.0, 0.0, 0.0]
+    for i in range(0, len(faces), 3):
+        _vol = signed_triangle_volume(
+            grouped_verts[faces[i]],
+            grouped_verts[faces[i + 1]],
+            grouped_verts[faces[i + 2]],
+        )
+        Total_Volumes += _vol
+
+        volume_weighted_center_of_volume_grouped_verts = deepcopy(grouped_verts[faces[i]])
+
+        for _i_xyz in range(3):
+            for j in range(2):
+                volume_weighted_center_of_volume_grouped_verts[_i_xyz] += grouped_verts[faces[i + j + 1]][_i_xyz]
+            # centre of mass of any uniform density tetrahedron is the same as its centroid
+            # consider all triangular faces of the mesh form a tetrahedron with origin
+            # and their centroid is mean of four points (including implicit origin point [0,0,0])
+            center_of_mass[_i_xyz] += (volume_weighted_center_of_volume_grouped_verts[_i_xyz] / 4.0) * _vol
+
+    if Total_Volumes > 0:
+        for _i_xyz in range(3):
+            center_of_mass[_i_xyz] = center_of_mass[_i_xyz] / Total_Volumes
+
+    return center_of_mass
 
 
 def get_x(geometry: W.triangulation) -> float:
@@ -304,12 +359,16 @@ def get_faces_material_style_ids(geometry: W.triangulation) -> npt.NDArray[np.in
     return np.frombuffer(geometry.material_ids_buffer, dtype="i")
 
 
-def get_faces_representation_item_ids(geometry: W.triangulation) -> npt.NDArray[np.int32]:
+def get_faces_representation_item_ids(
+    geometry: W.triangulation,
+) -> npt.NDArray[np.int32]:
     """Get representation item ids for the geometry faces."""
     return np.frombuffer(geometry.item_ids_buffer, dtype="i")
 
 
-def get_edges_representation_item_ids(geometry: W.triangulation) -> npt.NDArray[np.int32]:
+def get_edges_representation_item_ids(
+    geometry: W.triangulation,
+) -> npt.NDArray[np.int32]:
     """Get representation item ids for the geometry edges.
 
     Can be useful for geometry without faces and in general is more universal
@@ -358,6 +417,57 @@ def get_element_vertices(
         return verts
     mat = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=is_si)
     return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
+
+
+def get_shape_center_of_mass(
+    shape: ShapeElementType,
+    geometry: W.triangulation,
+) -> npt.NDArray[np.float64]:
+    """Get the shape's center of mass as a numpy array in global coordinates
+
+    Center of Mass of non-manifold geometry will be unpredictable.
+
+    :param element: The element occurrence
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :param is_si: Whether the geometry is in SI metres (the default kernel
+        output) or in the file's length unit (the ``convert-back-units``
+        setting). The placement is applied in the same unit.
+    :return: A numpy array listing the COM vertex, a numpy array with XYZ coordinates.
+        Array shape: (1, 3)
+    """
+
+    center_of_mass = np.array(get_center_of_mass(geometry)).reshape(-1, 3)
+    mat = get_shape_matrix(shape)
+    return np.delete(
+        (mat @ np.hstack((center_of_mass, np.ones((len(center_of_mass), 1)))).T).T,
+        -1,
+        axis=1,
+    )
+
+
+def get_element_center_of_mass(
+    element: ifcopenshell.entity_instance,
+    geometry: W.triangulation,
+    is_si: bool = True,
+) -> npt.NDArray[np.float64]:
+    """Get the element's center of mass as a numpy array in global coordinates
+
+    Volumes of non-manifold geometry will be unpredictable.
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :return: A numpy array listing the COM vertex, a numpy array with XYZ coordinates.
+        Array shape: (1, 3)
+    """
+
+    center_of_mass = np.array(get_center_of_mass(geometry)).reshape(-1, 3)
+    if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
+        return center_of_mass
+    mat = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=is_si)
+    return np.delete(
+        (mat @ np.hstack((center_of_mass, np.ones((len(center_of_mass), 1)))).T).T,
+        -1,
+        axis=1,
+    )
 
 
 def get_bottom_elevation(geometry: W.triangulation) -> float:
@@ -438,7 +548,9 @@ def get_element_top_elevation(
     return max([v[2] for v in get_element_vertices(element, geometry, is_si)])
 
 
-def get_bbox(vertices: npt.NDArray[np.float64]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+def get_bbox(
+    vertices: npt.NDArray[np.float64],
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Gets the bounding box of vertices
 
     :param vertices: An iterable of vertices
@@ -541,7 +653,11 @@ def get_max_side_area(geometry: W.triangulation) -> float:
     :param geometry: Geometry output calculated by IfcOpenShell
     :return: The maximum surface area from either the X, Y, or Z axis.
     """
-    return max(get_side_area(geometry, axis="X"), get_side_area(geometry, axis="Y"), get_side_area(geometry, axis="Z"))
+    return max(
+        get_side_area(geometry, axis="X"),
+        get_side_area(geometry, axis="Y"),
+        get_side_area(geometry, axis="Z"),
+    )
 
 
 def get_top_area(geometry: W.triangulation) -> float:
@@ -698,7 +814,9 @@ def get_footprint_perimeter(geometry: W.triangulation) -> float:
     return np.sum([np.linalg.norm(vertices[e[0]] - vertices[e[1]]) for e in (all_edges - shared_edges)]).item()
 
 
-def get_profiles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+def get_profiles(
+    element: ifcopenshell.entity_instance,
+) -> list[ifcopenshell.entity_instance]:
     """Gets all 2D profiles used in the definition of a parametric shape
 
     Profiles may be retrieved either from material profile sets or from swept
@@ -713,7 +831,9 @@ def get_profiles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.ent
     return [e.SweptArea for e in get_extrusions(element)]
 
 
-def get_extrusions(element: ifcopenshell.entity_instance) -> Union[list[ifcopenshell.entity_instance], None]:
+def get_extrusions(
+    element: ifcopenshell.entity_instance,
+) -> Union[list[ifcopenshell.entity_instance], None]:
     """Gets all extruded area solids used to define an element's model body geometry
 
     :param element: The element occurrence
@@ -736,7 +856,9 @@ def get_extrusions(element: ifcopenshell.entity_instance) -> Union[list[ifcopens
     return extrusions
 
 
-def get_base_extrusions(element: ifcopenshell.entity_instance) -> Union[list[ifcopenshell.entity_instance], None]:
+def get_base_extrusions(
+    element: ifcopenshell.entity_instance,
+) -> Union[list[ifcopenshell.entity_instance], None]:
     """Gets all base extrusions used to define an element's model body geometry
 
     A base extrusion is assumed to be an extrusion prior to all boolean
@@ -947,7 +1069,11 @@ def dissolve_faces(
             v_list = list(e)
             for tri_idx in tri_indices:
                 f = faces[tri_idx]
-                f_edges = [(int(f[0]), int(f[1])), (int(f[1]), int(f[2])), (int(f[2]), int(f[0]))]
+                f_edges = [
+                    (int(f[0]), int(f[1])),
+                    (int(f[1]), int(f[2])),
+                    (int(f[2]), int(f[0])),
+                ]
                 for fe in f_edges:
                     if frozenset(fe) == e:
                         edge_adjacency[fe[0]] = fe[1]
