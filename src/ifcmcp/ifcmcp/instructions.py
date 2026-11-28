@@ -1,11 +1,13 @@
 # This file was generated with the assistance of an AI coding tool.
 """Instructions the MCP server sends to the client when it connects."""
 
-INSTRUCTIONS = """\
+_INTRO = """\
 MCP server for querying and editing IFC building models. Load a file with \
 ifc_load, or start an empty model with ifc_new, then use the query and edit \
 tools. Edits stay in memory until ifc_save writes them to disk.
+"""
 
+_WORKING = """
 # Working with a model
 
 Respect the existing structure and naming in a model. Inspect before you \
@@ -17,19 +19,23 @@ counts, and page through ifc_select results with limit and offset.
 
 Elements are identified by their STEP id, the integer `id` that query and \
 edit results return. ifc_info, ifc_relations and ifc_clash also accept a \
-GlobalId. Pass entity arguments to ifc_edit as STEP ids, written as \
-strings: "42", or "5,6,7" for a list.
+GlobalId.
+"""
 
+_EDITING = """
 # Editing
 
 Find the right function with ifc_search, in the API's own terms ("assign \
 container", "edit attributes"), or browse with ifc_list. Read its \
 parameters with ifc_docs before calling ifc_edit. Prefer ifcopenshell.api functions over creating raw \
 entities: they maintain the relationships that keep a model valid. Check \
-the result of each edit with the query tools. Each ifc_edit, ifc_shape and \
-ifc_quantify call is one undo step: ifc_undo reverts it and ifc_redo \
-reapplies it. A call that fails changes nothing.
+the result of each edit with the query tools. {undo}
 
+Pass entity arguments to ifc_edit as STEP ids, written as strings: "42", \
+or "5,6,7" for a list.
+"""
+
+_CONCEPTS = """
 # IFC concepts
 
 * Spatial structure: IfcProject > IfcSite > IfcBuilding > \
@@ -51,7 +57,9 @@ pset.edit_pset); quantities in quantity sets.
 part of the spatial structure, so ifc_tree does not show it. ifc_structural \
 lists each one with its members, connections, load cases and load \
 combinations.
+"""
 
+_UNITS = """
 # Units, placement and geometry
 
 * A model's length unit is whatever its IfcUnitAssignment says: millimetres \
@@ -71,7 +79,9 @@ its container's placement.
 * Geometry belongs to a representation context. A new model needs a Model \
 context and a Body subcontext (context.add_context) before any geometry can \
 be added; ifc_contexts lists those in the model.
+"""
 
+_SCHEMAS = """
 # Schemas
 
 ifc_new defaults to IFC4. IFC2X3 requires owner history on every rooted \
@@ -82,6 +92,52 @@ else, or creating entities fails.
 Use ifc_schema to look up what an IFC class means and which attributes and \
 predefined types it has.
 """
+
+INSTRUCTIONS = (
+    _INTRO
+    + _WORKING
+    + _EDITING.format(
+        undo="Each ifc_edit, ifc_shape and ifc_quantify call is one undo step: ifc_undo "
+        "reverts it and ifc_redo reapplies it. A call that fails changes nothing."
+    )
+    + _CONCEPTS
+    + _UNITS
+    + _SCHEMAS
+)
+
+# ifcmcp --bonsai works on the model open in Bonsai, with BONSAI_TOOLS only.
+BONSAI_INSTRUCTIONS = (
+    """\
+MCP server for working on the IFC model open in Bonsai, the Blender add-on. \
+It works on the live session: each call sees the user's latest changes, \
+including unsaved ones, and the user sees each edit in Bonsai as soon as it \
+is made. Saving the model is left to the user.
+
+# Bonsai
+
+When the user refers to "this", "these" or "the selected" elements, call \
+bonsai_selection to find out which. To show the user what you mean, select \
+the elements with bonsai_select, which also zooms to them; bonsai_view \
+turns the viewport to a standard direction. bonsai_screenshot shows you the \
+3D viewport as the user sees it: use it to check the result of a geometry \
+edit. These tools change the selection and the view, never the model.
+"""
+    + _WORKING
+    + _EDITING.format(
+        undo="Each ifc_edit, ifc_shape and ifc_quantify call is one step in Bonsai's "
+        "undo history, which it shares with the user's own changes. ifc_undo reverts "
+        "the last step only if it is one of these calls, and ifc_redo reapplies it; "
+        "they never undo the user's work. A call that fails changes nothing."
+    )
+    + _CONCEPTS
+    + _UNITS
+    + """
+# Schema
+
+Use ifc_schema to look up what an IFC class means and which attributes and \
+predefined types it has.
+"""
+)
 
 EXECUTE_INSTRUCTIONS = """
 # Running code

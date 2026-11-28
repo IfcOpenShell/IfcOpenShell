@@ -7,7 +7,7 @@ import inspect
 from typing import Any
 
 from ifcmcp.core import IfcSession
-from ifcmcp.instructions import EXECUTE_INSTRUCTIONS, INSTRUCTIONS
+from ifcmcp.instructions import BONSAI_INSTRUCTIONS, EXECUTE_INSTRUCTIONS, INSTRUCTIONS
 
 try:
     from mcp.server.mcpserver import MCPServer  # type: ignore
@@ -52,26 +52,61 @@ READ_ONLY_TOOLS = frozenset(
     }
 )
 
+# Tools offered for the model open in Bonsai. Bonsai runs each edit as one of
+# its own undo steps, and ifc_undo and ifc_redo step through Bonsai's history.
+BONSAI_TOOLS = READ_ONLY_TOOLS | {"ifc_edit", "ifc_shape", "ifc_quantify", "ifc_undo", "ifc_redo"}
+# Tools that only Bonsai offers, on its selection and 3D viewport rather than the model.
+BONSAI_VIEW_TOOLS = frozenset({"bonsai_selection", "bonsai_select", "bonsai_view", "bonsai_screenshot"})
+
+# Descriptions for tools that behave differently on the model open in Bonsai.
+BONSAI_DESCRIPTIONS = {
+    "ifc_undo": """Undo the last change made by ``ifc_edit``, ``ifc_shape`` or ``ifc_quantify``.
+
+Each of those calls is one step in Bonsai's undo history, which it shares
+with the user's own changes. Fails, changing nothing, when the last step in
+Bonsai is not one of these calls, so the user's work is never undone.
+Returns how many of these steps can still be undone and redone in a row.""",
+    "ifc_redo": """Redo the last change undone by ``ifc_undo``.
+
+Any new change in Bonsai after an undo, made through these tools or by the
+user, discards what could be redone. Fails, changing nothing, when the next
+step in Bonsai's undo history is not one of these calls. Returns how many of
+these steps can still be undone and redone in a row.""",
+}
+
 
 def _annotations(name: str) -> Any:
     # camelCase arguments, because mcp 1.x accepts no other spelling.
-    if name in READ_ONLY_TOOLS:
+    if name in READ_ONLY_TOOLS or name in ("bonsai_selection", "bonsai_screenshot"):
         return ToolAnnotations(readOnlyHint=True, openWorldHint=False)
+    if name in BONSAI_VIEW_TOOLS:
+        # They change the selection or the view, but never the model.
+        return ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False)
     return ToolAnnotations(readOnlyHint=False, destructiveHint=True, openWorldHint=False)
 
 
-def build_server(allow_execute: bool = False) -> Any:
+def build_server(allow_execute: bool = False, bonsai_port: int | None = None) -> Any:
     """Create the MCP server if the dependency is available.
 
     :param allow_execute: Offer ``ifc_execute``, which runs arbitrary Python
         sent by the client.
+    :param bonsai_port: Work on the model open in Bonsai, through the MCP
+        bridge listening on this port, instead of a model held here. Only
+        ``BONSAI_TOOLS`` are offered, and never ``ifc_execute``.
     """
     if MCPServer is None:
         raise ImportError(
             "The mcp package is not installed. Install with: pip install ifcmcp[mcp] (or add 'mcp' to your environment)."
         )
 
-    session = IfcSession(allow_execute=allow_execute)
+    if bonsai_port is None:
+        session = IfcSession(allow_execute=allow_execute)
+        instructions = INSTRUCTIONS + (EXECUTE_INSTRUCTIONS if allow_execute else "")
+    else:
+        from ifcmcp.bonsai import BonsaiSession
+
+        session = BonsaiSession(port=bonsai_port)
+        instructions = BONSAI_INSTRUCTIONS
 
     def _keep_reason(fn):
         """Raise a tool's failure as ToolError so its reason reaches the agent.
@@ -94,15 +129,21 @@ def build_server(allow_execute: bool = False) -> Any:
 
     def _tool(fn):
         """Register a tool, taking its MCP description from the identically-named
-        IfcSession method rather than duplicating it here."""
+        IfcSession method rather than duplicating it here. Bonsai is offered
+        only BONSAI_TOOLS, with BONSAI_DESCRIPTIONS where they differ."""
+        description = inspect.getdoc(getattr(IfcSession, fn.__name__))
+        if bonsai_port is not None:
+            if fn.__name__ not in BONSAI_TOOLS:
+                return fn
+            description = BONSAI_DESCRIPTIONS.get(fn.__name__, description)
         return server.tool(
-            description=inspect.getdoc(getattr(IfcSession, fn.__name__)),
+            description=description,
             annotations=_annotations(fn.__name__),
         )(_keep_reason(fn))
 
     server = MCPServer(
         name="ifc-mcp",
-        instructions=INSTRUCTIONS + (EXECUTE_INSTRUCTIONS if allow_execute else ""),
+        instructions=instructions,
     )
 
     # ---- Lifecycle ----
@@ -215,7 +256,7 @@ def build_server(allow_execute: bool = False) -> Any:
     def ifc_quantify(rule: str, selector: str = "") -> dict[str, Any]:
         return session.ifc_quantify(rule=rule, selector=selector)
 
-    if allow_execute:
+    if allow_execute and bonsai_port is None:
 
         @_tool
         def ifc_execute(code: str) -> dict[str, Any]:
@@ -330,4 +371,64 @@ def build_server(allow_execute: bool = False) -> Any:
                 f.write(png_bytes)
         return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mimeType="image/png")]
 
+    if bonsai_port is not None:
+        # These draw the model held here, and can write files.
+        server.remove_tool("ifc_plot")
+        server.remove_tool("ifc_render")
+        _add_bonsai_view_tools(server, session, _keep_reason)
+
     return server
+
+
+def _add_bonsai_view_tools(server: Any, session: Any, keep_reason: Any) -> None:
+    """Register the tools on Bonsai's selection and 3D viewport."""
+
+    @server.tool(annotations=_annotations("bonsai_selection"))
+    @keep_reason
+    def bonsai_selection() -> dict[str, Any]:
+        """List the elements the user has selected in Bonsai, and the active one.
+
+        Call this when the user refers to "this", "these" or "the selected"
+        elements. Returns ``count``, ``active`` and up to 200 ``selected``
+        elements, each with its STEP ``id``, ``type`` and ``name``.
+        """
+        return session.call("bonsai_selection", {})
+
+    @server.tool(annotations=_annotations("bonsai_select"))
+    @keep_reason
+    def bonsai_select(element_ids: list[int | str], frame: bool = True) -> dict[str, Any]:
+        """Select elements in Bonsai, replacing the user's selection, to show the user what you mean.
+
+        The first element becomes the active one. Elements without an object
+        in Bonsai, and hidden ones, are left out and listed in ``no_object``
+        and ``hidden``; an element not yet in a spatial container is hidden.
+
+        :param element_ids: STEP ids or GlobalIds of the elements.
+        :param frame: Zoom the 3D viewport to the selected elements.
+        """
+        return session.call("bonsai_select", {"element_ids": element_ids, "frame": frame})
+
+    @server.tool(annotations=_annotations("bonsai_view"))
+    @keep_reason
+    def bonsai_view(direction: str = "", frame: str = "selected") -> dict[str, Any]:
+        """Turn and zoom the 3D viewport in Bonsai.
+
+        :param direction: ``iso`` (from the front right, above), ``top``,
+            ``bottom``, ``front``, ``back``, ``left`` or ``right``. Leave
+            empty to keep the current direction.
+        :param frame: ``selected`` to zoom to the selected elements (or to
+            everything if none are selected), ``all`` to zoom to everything,
+            or empty to keep the zoom.
+        """
+        return session.call("bonsai_view", {"direction": direction, "frame": frame})
+
+    @server.tool(structured_output=False, annotations=_annotations("bonsai_screenshot"))
+    @keep_reason
+    def bonsai_screenshot() -> list[ImageContent]:
+        """Show the 3D viewport in Bonsai as the user sees it, as a PNG image.
+
+        Use it to check the result of an edit, after bonsai_select or
+        bonsai_view has pointed the viewport at it.
+        """
+        result = session.call("bonsai_screenshot", {})
+        return [ImageContent(type="image", data=result["png_base64"], mimeType="image/png")]
