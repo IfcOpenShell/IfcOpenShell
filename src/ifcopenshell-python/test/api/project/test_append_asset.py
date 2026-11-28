@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import pytest
 
 import ifcopenshell.api.classification
 import ifcopenshell.api.context
@@ -576,6 +577,69 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
             ifcopenshell.util.element.get_pset(new_annotation, "Pset_AnnotationLineOfSight", "RoadVisibleDistanceLeft")
             == 0.01
         )
+
+    def make_revolved_asset(
+        self, angle_unit: str | None, angle: float
+    ) -> tuple[ifcopenshell.file, ifcopenshell.entity_instance]:
+        """A library with a wall whose body is a revolved solid, in radians, degrees or no angle unit."""
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        if angle_unit == "degree":
+            ifcopenshell.api.unit.assign_unit(
+                library, units=[ifcopenshell.api.unit.add_conversion_based_unit(library, name="degree")]
+            )
+        elif angle_unit == "radian":
+            ifcopenshell.api.unit.assign_unit(
+                library, units=[ifcopenshell.api.unit.add_si_unit(library, unit_type="PLANEANGLEUNIT")]
+            )
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        builder = ShapeBuilder(library)
+        model = ifcopenshell.api.context.add_context(library, context_type="Model")
+        profile = builder.profile(builder.rectangle((1, 1), position=(1, 0)))
+        position = library.createIfcAxis2Placement3D(library.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+        axis = library.createIfcAxis1Placement(library.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+        item = library.createIfcRevolvedAreaSolid(profile, position, axis, angle)
+        representation = builder.get_representation(model, item)
+        ifcopenshell.api.geometry.assign_representation(library, element, representation)
+        return library, element
+
+    @pytest.mark.parametrize(
+        "library_unit, angle, project_unit, expected",
+        [
+            ("radian", np.pi, "degree", 180.0),
+            (None, np.pi, "degree", 180.0),  # No unit is radians, IFC's default.
+            ("degree", 90.0, "radian", np.pi / 2),
+            ("degree", 90.0, "degree", 90.0),
+            ("radian", np.pi, None, np.pi),
+        ],
+    )
+    def test_append_converts_plane_angles_between_units(self, library_unit, angle, project_unit, expected):
+        library, element = self.make_revolved_asset(library_unit, angle)
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        if project_unit == "degree":
+            ifcopenshell.api.unit.assign_unit(
+                self.file, units=[ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="degree")]
+            )
+        elif project_unit == "radian":
+            ifcopenshell.api.unit.assign_unit(
+                self.file, units=[ifcopenshell.api.unit.add_si_unit(self.file, unit_type="PLANEANGLEUNIT")]
+            )
+        ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+        assert self.file.by_type("IfcRevolvedAreaSolid")[0].Angle == pytest.approx(expected)
+
+    def test_append_leaves_angle_property_values_with_their_own_unit(self):
+        library, element = self.make_revolved_asset("radian", np.pi)
+        degree = ifcopenshell.api.unit.add_conversion_based_unit(library, name="degree")
+        pset = ifcopenshell.api.pset.add_pset(library, product=element, name="Foo_Bar")
+        pset.HasProperties = [
+            library.createIfcPropertySingleValue("BeamAngle", None, library.createIfcPlaneAngleMeasure(30.0), degree)
+        ]
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(
+            self.file, units=[ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="degree")]
+        )
+        new = ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+        assert ifcopenshell.util.element.get_pset(new, "Foo_Bar", "BeamAngle") == 30.0
 
     def test_append_presentation_layer_for_representation_item(self):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
