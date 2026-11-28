@@ -172,7 +172,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.20.1" },
     { name = "brickschema", specifier = ">=0.8.0" },
     { name = "brickschema-rdflib-sqlalchemy", specifier = ">=0.7.1" },
-    { name = "cjio", specifier = ">=0.8,<0.10" },
+    { name = "cjio", specifier = ">=0.10.1,<0.11" },
     { name = "deepdiff", specifier = ">=9.0.0" },
     { name = "elementpath", specifier = ">=5.1.4" },
     { name = "ezdxf", specifier = ">=1.4.5" },
@@ -264,15 +264,15 @@ wheels = [
 
 [[package]]
 name = "cjio"
-version = "0.9.0"
+version = "0.10.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3c/88/ed04e275edf764e16a9c17b150d11454a347aee791b62e6837e28d40bc84/cjio-0.9.0.tar.gz", hash = "sha256:69a22e64096f91bca1476995d34b7551c1dba31fa93aa5524319c185db4b767c", size = 50471, upload-time = "2023-09-28T06:38:40.121Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/33/125385a9e3438b3d31dcb2d788719ca4e929e98675c7a8c1e2e5507c898f/cjio-0.10.1.tar.gz", hash = "sha256:8788a1333bcac3dc74fc3fa4c9f220b3015a742eb4c27af55161ec077a75fc44", size = 48480, upload-time = "2025-05-09T17:31:20.614Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/71/93ac21730165742d6345f901f03fab64cbe8f5fa9b34555affe746eb8d35/cjio-0.9.0-py2.py3-none-any.whl", hash = "sha256:4d93de1ec87cd86cc8bccda246f606040897fca6d8cfa65c588bf70154fbff54", size = 49250, upload-time = "2023-09-28T06:38:38.041Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/f4/a17562cebde0944eef88c06a9d1421fee8736cc3f27210c15d1548e24ab2/cjio-0.10.1-py2.py3-none-any.whl", hash = "sha256:c5fc8938afabc016f6d36d99cd4e4a035ddb8d9b7852369cb9f41107979557db", size = 41594, upload-time = "2025-05-09T17:31:18.657Z" },
 ]
 
 [[package]]
