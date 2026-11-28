@@ -56,6 +56,15 @@ class TestValidateInput(NewFile):
         # Angle.
         assert subject.validate_input("25", "A") == (True, "25.0")
 
+    def test_comma_decimal_separator(self):
+        ifc = ifcopenshell.api.project.create_file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT", prefix=None)
+        ifcopenshell.api.unit.assign_unit(ifc, [unit])
+        bpy.context.scene.unit_settings.system = "METRIC"
+        assert subject.validate_input("2,5", "D") == (True, "2.5")
+
 
 class TestCalculateDistanceAndAngle(NewFile):
     def test_it_does_not_crash_when_distance_is_zero_and_should_round(self, monkeypatch):
