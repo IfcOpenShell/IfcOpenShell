@@ -163,6 +163,14 @@ class TestGetObjectData(NewFile):
         assert subject.get_object_data(obj) == obj.data
 
 
+class TestGetRepresentationItem(NewFile):
+    def test_none_object_returns_none(self):
+        assert subject.get_representation_item(None) is None
+
+    def test_is_none_object_returns_false(self):
+        assert subject.is_representation_item(None) is False
+
+
 class TestGetObjectMaterialsWithoutStyles(NewFile):
     def test_run(self):
         material1 = bpy.data.materials.new("Material")
