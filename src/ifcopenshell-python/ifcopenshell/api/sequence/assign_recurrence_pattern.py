@@ -115,4 +115,6 @@ def assign_recurrence_pattern(
         if (recurrence_old := parent.Recurrence) and file.get_total_inverses(recurrence_old) == 1:
             file.remove(recurrence_old)
         parent.Recurrence = recurrence
+    ifcopenshell.util.sequence.is_working_day.cache_clear()
+    ifcopenshell.util.sequence.is_calendar_applicable.cache_clear()
     return recurrence

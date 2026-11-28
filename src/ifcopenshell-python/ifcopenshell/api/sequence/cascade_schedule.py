@@ -21,7 +21,6 @@ from typing import Optional, Union
 
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
-from ifcopenshell.util.sequence import DURATION_TYPE
 
 
 def cascade_schedule(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> None:
@@ -112,7 +111,19 @@ class Usecase:
 
     def execute(self, task: ifcopenshell.entity_instance):
         self.calendar_cache = {}
+        self.project_start = self.get_project_start(task)
         self.cascade_task(task, is_first_task=True)
+
+    def get_project_start(self, task: ifcopenshell.entity_instance) -> Union[datetime.datetime, None]:
+        # The earliest start of the tasks without predecessors, as in recalculate_schedule.
+        if not (work_schedule := ifcopenshell.util.sequence.get_task_work_schedule(task)):
+            return None
+        starts = [
+            self.get_task_time_attribute(t, "ScheduleStart")
+            for t in ifcopenshell.util.sequence.get_work_schedule_tasks(work_schedule)
+            if not t.IsNestedBy and not ifcopenshell.util.sequence.get_sequence_assignment(t, "predecessor")
+        ]
+        return min((start for start in starts if start), default=None)
 
     def cascade_task(
         self,
@@ -136,119 +147,46 @@ class Usecase:
         if not task.TaskTime:
             return
 
-        duration = (
-            ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleDuration)
-            if task.TaskTime.ScheduleDuration
-            else datetime.timedelta()
-        )
+        duration = task.TaskTime.ScheduleDuration
 
         finishes = []
         starts = []
 
         for rel in ifcopenshell.util.sequence.get_sequence_assignment(task, "predecessor"):
             predecessor = rel.RelatingProcess
-            predecessor_duration = (
-                ifcopenshell.util.date.ifc2datetime(predecessor.TaskTime.ScheduleDuration)
-                if predecessor.TaskTime and predecessor.TaskTime.ScheduleDuration
-                else datetime.timedelta()
-            )
-            if rel.SequenceType == "FINISH_START":
-                finish = self.get_task_time_attribute(predecessor, "ScheduleFinish")
-                if not finish:
-                    continue
-                days = 0 if predecessor_duration.days == 0 else 1
-                duration_type = "WORKTIME"
-                if rel.TimeLag:
-                    # updated to handle IfcRatioMeasure as a TimeLag value
-                    days += (
-                        self.get_lag_time_days(rel.TimeLag)
-                        if rel.TimeLag.LagValue.is_a("IfcDuration")
-                        else predecessor_duration.days * rel.TimeLag.LagValue.wrappedValue
-                    )
-                    duration_type = rel.TimeLag.DurationType
-                if days:
-                    starts.append(
-                        datetime.datetime.combine(
-                            self.offset_date(finish, days, duration_type, self.get_calendar(task)),
-                            datetime.time(9),
-                        )
-                    )
-                    starts.append(
-                        datetime.datetime.combine(
-                            self.offset_date(
-                                finish,
-                                days,
-                                duration_type,
-                                self.get_calendar(predecessor),
-                            ),
-                            datetime.time(9),
-                        )
-                    )
-                else:
-                    starts.append(finish)
-            elif rel.SequenceType == "START_START":
-                start = self.get_task_time_attribute(predecessor, "ScheduleStart")
-                if not start:
-                    continue
-                if rel.TimeLag:
-                    days = (
-                        self.get_lag_time_days(rel.TimeLag)
-                        if rel.TimeLag.LagValue.is_a("IfcDuration")
-                        else predecessor_duration.days * rel.TimeLag.LagValue.wrappedValue
-                    )
-                    duration_type = rel.TimeLag.DurationType
-                    starts.append(self.offset_date(start, days, duration_type, self.get_calendar(task)))
-                    starts.append(self.offset_date(start, days, duration_type, self.get_calendar(predecessor)))
-                else:
-                    starts.append(start)
-            elif rel.SequenceType == "FINISH_FINISH":
-                finish = self.get_task_time_attribute(predecessor, "ScheduleFinish")
-                if not finish:
-                    continue
-                if rel.TimeLag:
-                    days = (
-                        self.get_lag_time_days(rel.TimeLag)
-                        if rel.TimeLag.LagValue.is_a("IfcDuration")
-                        else predecessor_duration.days * rel.TimeLag.LagValue.wrappedValue
-                    )
-                    duration_type = rel.TimeLag.DurationType
-                    finishes.append(self.offset_date(finish, days, duration_type, self.get_calendar(task)))
-                    finishes.append(self.offset_date(finish, days, duration_type, self.get_calendar(predecessor)))
-                else:
-                    finishes.append(finish)
-            elif rel.SequenceType == "START_FINISH":
-                start = self.get_task_time_attribute(predecessor, "ScheduleStart")
-                if not start:
-                    continue
-                days = -1
-                duration_type = "WORKTIME"
-                if rel.TimeLag:
-                    days += (
-                        self.get_lag_time_days(rel.TimeLag)
-                        if rel.TimeLag.LagValue.is_a("IfcDuration")
-                        else predecessor_duration.days * rel.TimeLag.LagValue.wrappedValue
-                    )
-                    duration_type = rel.TimeLag.DurationType
-                if days or rel.TimeLag:
-                    finishes.append(
-                        datetime.datetime.combine(
-                            self.offset_date(start, days, duration_type, self.get_calendar(task)),
-                            datetime.time(17),
-                        )
-                    )
-                    finishes.append(
-                        datetime.datetime.combine(
-                            self.offset_date(
-                                start,
-                                days,
-                                duration_type,
-                                self.get_calendar(predecessor),
-                            ),
-                            datetime.time(17),
-                        )
-                    )
-                else:
-                    finishes.append(start)
+            if rel.SequenceType in ("FINISH_START", "FINISH_FINISH"):
+                date = self.get_task_time_attribute(predecessor, "ScheduleFinish")
+            elif rel.SequenceType in ("START_START", "START_FINISH"):
+                date = self.get_task_time_attribute(predecessor, "ScheduleStart")
+            else:
+                continue
+            if not date:
+                continue
+            lag = datetime.timedelta()
+            if rel.TimeLag:
+                # The lag is work time of the task (WORKTIME) or continuous time (ELAPSEDTIME).
+                lag = ifcopenshell.util.sequence.get_lag_time(rel.TimeLag, task, predecessor)
+                date = ifcopenshell.util.sequence.offset_lag(
+                    date, lag, rel.TimeLag.DurationType, self.get_calendar(task), self.get_work_day(task)
+                )
+            if rel.SequenceType in ("FINISH_START", "START_START"):
+                starts.append(self.snap(task, date, "START"))
+            else:
+                # A finish after a finish, or after a limit in continuous time, stops after that instant.
+                is_elapsed = rel.TimeLag and rel.TimeLag.DurationType == "ELAPSEDTIME" and lag
+                is_strict = rel.SequenceType == "FINISH_FINISH" or bool(is_elapsed)
+                is_strict = is_strict or self.get_time(task) != self.get_time(predecessor)
+                finishes.append(self.snap(task, date, "FINISH", is_strict))
+
+        if (starts or finishes) and self.project_start:
+            # A task with predecessors also starts after the start of the project.
+            starts.append(self.snap(task, self.project_start, "START"))
+
+        # A task of work days starts at the start of a working day and finishes at the end of a working day.
+        calendar, work_day, duration_type = self.get_calendar(task), self.get_work_day(task), task.TaskTime.DurationType
+        snap = ifcopenshell.util.sequence.snap_task_date
+        starts = [snap(d, "START", duration, duration_type, calendar, work_day) for d in starts]
+        finishes = [snap(d, "FINISH", duration, duration_type, calendar, work_day) for d in finishes]
 
         if starts and finishes:
             start = max(starts)
@@ -259,6 +197,7 @@ class Usecase:
                 task.TaskTime.DurationType,
                 self.get_calendar(task),
                 date_type="FINISH",
+                work_day=self.get_work_day(task),
             )
             if potential_finish > finish:
                 start_ifc = ifcopenshell.util.date.datetime2ifc(start, "IfcDateTime")
@@ -267,36 +206,23 @@ class Usecase:
                 task.TaskTime.ScheduleStart = start_ifc
                 task.TaskTime.ScheduleFinish = ifcopenshell.util.date.datetime2ifc(potential_finish, "IfcDateTime")
             else:
+                start, finish = ifcopenshell.util.sequence.get_task_dates_from_finish(
+                    finish, duration, duration_type, calendar, work_day
+                )
                 finish_ifc = ifcopenshell.util.date.datetime2ifc(finish, "IfcDateTime")
                 if task.TaskTime.ScheduleFinish == finish_ifc and not is_first_task:
                     return
                 task.TaskTime.ScheduleFinish = finish_ifc
-                task.TaskTime.ScheduleStart = ifcopenshell.util.date.datetime2ifc(
-                    ifcopenshell.util.sequence.get_start_or_finish_date(
-                        finish,
-                        duration,
-                        task.TaskTime.DurationType,
-                        self.get_calendar(task),
-                        date_type="START",
-                    ),
-                    "IfcDateTime",
-                )
+                task.TaskTime.ScheduleStart = ifcopenshell.util.date.datetime2ifc(start, "IfcDateTime")
         elif finishes:
-            finish = max(finishes)
+            start, finish = ifcopenshell.util.sequence.get_task_dates_from_finish(
+                max(finishes), duration, duration_type, calendar, work_day
+            )
             finish_ifc = ifcopenshell.util.date.datetime2ifc(finish, "IfcDateTime")
             if task.TaskTime.ScheduleFinish == finish_ifc and not is_first_task:
                 return
             task.TaskTime.ScheduleFinish = finish_ifc
-            task.TaskTime.ScheduleStart = ifcopenshell.util.date.datetime2ifc(
-                ifcopenshell.util.sequence.get_start_or_finish_date(
-                    finish,
-                    duration,
-                    task.TaskTime.DurationType,
-                    self.get_calendar(task),
-                    date_type="START",
-                ),
-                "IfcDateTime",
-            )
+            task.TaskTime.ScheduleStart = ifcopenshell.util.date.datetime2ifc(start, "IfcDateTime")
         elif starts:
             start = max(starts)
             start_ifc = ifcopenshell.util.date.datetime2ifc(start, "IfcDateTime")
@@ -310,6 +236,7 @@ class Usecase:
                     task.TaskTime.DurationType,
                     self.get_calendar(task),
                     date_type="FINISH",
+                    work_day=self.get_work_day(task),
                 ),
                 "IfcDateTime",
             )
@@ -323,18 +250,36 @@ class Usecase:
                 for nested_task in rel.RelatedObjects or []
             ]
 
-    def get_lag_time_days(self, lag_time: ifcopenshell.entity_instance) -> int:
-        return ifcopenshell.util.date.ifc2datetime(lag_time.LagValue.wrappedValue).days
-
     def get_calendar(self, task: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         if task.id() not in self.calendar_cache:
             self.calendar_cache[task.id()] = ifcopenshell.util.sequence.derive_calendar(task)
         return self.calendar_cache[task.id()]
 
-    def offset_date(
-        self, date: datetime.datetime, days: int, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance
-    ) -> datetime.datetime:
-        return ifcopenshell.util.sequence.offset_date(date, datetime.timedelta(days=days), duration_type, calendar)
+    def get_work_day(self, task: ifcopenshell.entity_instance) -> datetime.timedelta:
+        return ifcopenshell.util.sequence.get_work_day_duration(task, self.get_calendar(task))
+
+    def get_work_hours(self, task: ifcopenshell.entity_instance) -> tuple:
+        # The work periods of the task. A milestone and a task in elapsed time have no work periods.
+        task_time = task.TaskTime
+        duration = task_time.ScheduleDuration if task_time else None
+        if (
+            not duration
+            or not ifcopenshell.util.date.parse_duration(duration)
+            or task_time.DurationType == "ELAPSEDTIME"
+        ):
+            return None
+        return self.get_calendar(task), self.get_work_day(task)
+
+    def get_time(self, task: ifcopenshell.entity_instance) -> tuple:
+        # The time of the task: its work periods, and if it is in elapsed time.
+        task_time = task.TaskTime
+        is_elapsed = not task_time or not task_time.ScheduleDuration or task_time.DurationType == "ELAPSEDTIME"
+        return self.get_calendar(task), self.get_work_day(task), is_elapsed
+
+    def snap(self, task: ifcopenshell.entity_instance, date: datetime.datetime, date_type: str, is_strict=False):
+        if not (hours := self.get_work_hours(task)):
+            return date
+        return ifcopenshell.util.sequence.snap_date(date, date_type, *hours, is_strict=is_strict)
 
     def get_task_time_attribute(
         self, task: ifcopenshell.entity_instance, attribute: str
