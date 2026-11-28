@@ -18,6 +18,15 @@
       "node": "./index.js",
       "default": "./browser.js"
     },
+    "./core": {
+      "types": "./core.d.ts",
+      "node": "./core.node.js",
+      "default": "./core.js"
+    },
+    "./plugins/*": {
+      "types": "./plugin.d.ts",
+      "default": "./plugins/*.js"
+    },
     "./api": {
       "types": "./api.d.ts",
       "import": "./wasm/ifcopenshell_api.mjs",
@@ -27,6 +36,12 @@
   },
   "files": [
     "asset-manifest.js",
+    "core.js",
+    "core.node.js",
+    "core.d.ts",
+    "plugin.d.ts",
+    "plugins/",
+    "urls.js",
     "api.d.ts",
     "browser.js",
     "index.js",

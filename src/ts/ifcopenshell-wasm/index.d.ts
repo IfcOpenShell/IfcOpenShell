@@ -30,6 +30,24 @@ export type IfcOpenshellApiFactory = (
   },
 ) => Promise<unknown>;
 
+export type EmscriptenOption =
+  | null | boolean | number | string
+  | EmscriptenOption[]
+  | { [key: string]: EmscriptenOption }
+  | ((path: string, prefix: string) => string);
+
+export interface CoreWasmAssets {
+  initModule: (options?: Record<string, EmscriptenOption>) => Promise<object>;
+  createIfcOpenshellModule: (
+    initModule: CoreWasmAssets['initModule'],
+    wasmUrl?: string,
+    opts?: Parameters<IfcOpenshellApiFactory>[2],
+  ) => Promise<import('./api.js').IfcOpenshellModule>;
+  wasmUrl: string;
+  pluginBaseUrl: string;
+  pluginLoader?: PluginLoader;
+}
+
 export interface ResolvedWasmAssets {
   initModule: EmscriptenModuleFactory;
   wasmUrl: string;

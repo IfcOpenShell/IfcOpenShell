@@ -1,10 +1,5 @@
 
-import initModule from './wasm/ifcopenshell_wasm.mjs';
-import { createIfcOpenshellModule } from './wasm/ifcopenshell_api.mjs';
-
-export { createIfcOpenshellModule, initModule };
-export const wasmUrl = new URL('./wasm/ifcopenshell_wasm.wasm', import.meta.url).href;
-export const pluginBaseUrl = import.meta.url;
+export { createIfcOpenshellModule, initModule, wasmUrl, pluginBaseUrl } from './core.js';
 export const manifest = {
   "schema": {
     "ifc2x3": { wasm: new URL("./wasm/plugins/ifcopenshell_parse_schema_ifc2x3.wasm", import.meta.url).href },

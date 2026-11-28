@@ -32,23 +32,17 @@ export {
   isIfcOpenShellAbortError,
 };
 
-/**
- * Initialize the packaged or explicitly configured WASM runtime.
- *
- * Plugins are loaded lazily through {@link IfcOpenShell.loadPlugin}.
- * File and Iterator support explicit disposal; other handles use GC cleanup.
- *
- * @param options Asset locations and optional plugin-loader overrides.
- * @returns An initialized, frozen runtime facade.
- */
-export function init(options: InitOptions = {}): Promise<IfcOpenShell> {
+export function init(
+  options: InitOptions = {},
+  resolveRuntime?: () => Promise<WasmAssets>,
+): Promise<IfcOpenShell> {
   if (initialization) {
     if (Object.keys(options).length) {
       return Promise.reject(new IfcOpenShellError('Runtime is already initializing or initialized; configure it only on the first init() call'));
     }
     return initialization;
   }
-  initialization = initialize(options).then(value => {
+  initialization = initialize(options, resolveRuntime).then(value => {
     ifcopenshell = value.raw;
     fs = value.fs;
     return value;
@@ -70,13 +64,19 @@ export function schemaByName(name: string) {
 export let fs: EmscriptenFS | null;
 let initialization: Promise<IfcOpenShell> | undefined;
 
-async function initialize(options: InitOptions): Promise<IfcOpenShell> {
+async function initialize(
+  options: InitOptions,
+  resolveRuntime?: () => Promise<WasmAssets>,
+): Promise<IfcOpenShell> {
+  if (!options.wasmAssets && !resolveRuntime) {
+    throw new IfcOpenShellError('wasmAssets is required by ifcopenshell/core');
+  }
   let assets: WasmAssets;
   if (options.wasmAssets) {
     assets = options.wasmAssets;
   } else {
     try {
-      assets = await resolveRuntime();
+      assets = await resolveRuntime!();
     } catch (error) {
       throw new IfcOpenShellError('Failed to resolve packaged WASM assets', error);
     }
@@ -112,11 +112,6 @@ async function initialize(options: InitOptions): Promise<IfcOpenShell> {
   };
   raw.setInstanceFactory(adoptInstance);
   return Object.freeze(runtime);
-}
-
-async function resolveRuntime(): Promise<WasmAssets> {
-  const wasm = await import('@ifcopenshell/wasm');
-  return await wasm.resolveWasmAssets() as WasmAssets;
 }
 
 async function resolveApiFactory(assets: WasmAssets): Promise<IfcOpenshellApiFactory> {

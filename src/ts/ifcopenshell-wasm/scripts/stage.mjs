@@ -71,23 +71,47 @@ function toPosixPath(path) {
 
 function writeAssetManifest() {
   const manifest = JSON.parse(readFileSync(join(DEST, 'ifcopenshell_plugins.json'), 'utf8'));
-  const writeEntry = (entry) => {
+  const writeEntry = (entry, prefix = './wasm/') => {
     const fields = [
-      `wasm: new URL(${JSON.stringify(`./wasm/${toPosixPath(entry.wasm)}`)}, import.meta.url).href`,
+      `wasm: new URL(${JSON.stringify(`${prefix}${toPosixPath(entry.wasm)}`)}, import.meta.url).href`,
     ];
     if (entry.depends) {
       fields.push(`depends: ${JSON.stringify(entry.depends)}`);
     }
     return `{ ${fields.join(', ')} }`;
   };
-  const lines = [
+  const core = [
     '',
     "import initModule from './wasm/ifcopenshell_wasm.mjs';",
     "import { createIfcOpenshellModule } from './wasm/ifcopenshell_api.mjs';",
     '',
     'export { createIfcOpenshellModule, initModule };',
+    "export { resolveUrls } from './urls.js';",
     "export const wasmUrl = new URL('./wasm/ifcopenshell_wasm.wasm', import.meta.url).href;",
     'export const pluginBaseUrl = import.meta.url;',
+    'export const pluginLoader = undefined;',
+    '',
+  ];
+  writeFileSync(join(PACKAGE_ROOT, 'core.js'), core.join('\n'));
+  writeFileSync(join(PACKAGE_ROOT, 'core.node.js'), `
+import moduleFactory from './wasm/ifcopenshell_wasm.node.mjs';
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+export { createIfcOpenshellModule } from './wasm/ifcopenshell_api.mjs';
+export { resolveUrls } from './urls.js';
+export const wasmUrl = new URL('./wasm/ifcopenshell_wasm.wasm', import.meta.url).href;
+export const pluginBaseUrl = import.meta.url;
+export const pluginLoader = (url) => readFile(fileURLToPath(url));
+let wasmBinary;
+export async function initModule(options = {}) {
+  wasmBinary ??= readFile(new URL(wasmUrl));
+  return moduleFactory({ ...options, wasmBinary: await wasmBinary });
+}
+`);
+  rmSync(join(PACKAGE_ROOT, 'plugins'), { recursive: true, force: true });
+  const lines = [
+    '',
+    "export { createIfcOpenshellModule, initModule, wasmUrl, pluginBaseUrl } from './core.js';",
     'export const manifest = {',
   ];
 
@@ -95,6 +119,9 @@ function writeAssetManifest() {
     lines.push(`  ${JSON.stringify(kind)}: {`);
     for (const [id, entry] of Object.entries(entries)) {
       lines.push(`    ${JSON.stringify(id)}: ${writeEntry(entry)},`);
+      const pluginDir = join(PACKAGE_ROOT, 'plugins', kind);
+      mkdirSync(pluginDir, { recursive: true });
+      writeFileSync(join(pluginDir, `${id}.js`), `export default ${writeEntry(entry, '../../wasm/')};\n`);
     }
     lines.push('  },');
   }
