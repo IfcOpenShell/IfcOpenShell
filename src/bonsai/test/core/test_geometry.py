@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from types import SimpleNamespace
+
 import bonsai.core.geometry as subject
 from test.core.bootstrap import geometry, ifc, style, surveyor  # ruff: ignore[unused-import]
 
@@ -289,3 +291,31 @@ class TestRemoveConnection:
     def test_run(self, geometry):
         geometry.remove_connection("connection").should_be_called()
         subject.remove_connection(geometry, connection="connection")
+
+
+class TestGetSimilarOpenings:
+    def test_two_openings_sharing_the_same_placement_are_similar(self, ifc):
+        placement = "placement"
+        opening = SimpleNamespace(id=1, ObjectPlacement=placement)
+        other_opening = SimpleNamespace(id=2, ObjectPlacement=placement)
+        model = SimpleNamespace(by_type=lambda ifc_class: [opening, other_opening])
+
+        ifc.get().should_be_called().will_return(model)
+        assert subject.get_similar_openings(ifc, opening) == [other_opening]
+
+    def test_openings_with_no_placement_yet_are_not_similar(self, ifc):
+        opening = SimpleNamespace(ObjectPlacement=None)
+        assert subject.get_similar_openings(ifc, opening) == []
+
+
+class TestGetSimilarOpeningsBuildingObjs:
+    def test_run(self, ifc):
+        wall = "wall"
+        opening = SimpleNamespace(VoidsElements=[SimpleNamespace(RelatingBuildingElement=wall)])
+
+        ifc.get_object(wall).should_be_called().will_return("wall_obj")
+        assert subject.get_similar_openings_building_objs(ifc, [opening]) == ["wall_obj"]
+
+    def test_openings_that_have_not_voided_anything_yet_are_skipped(self, ifc):
+        opening = SimpleNamespace(VoidsElements=())
+        assert subject.get_similar_openings_building_objs(ifc, [opening]) == []
