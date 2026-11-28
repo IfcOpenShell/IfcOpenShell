@@ -78,6 +78,7 @@ if TYPE_CHECKING:
         BIMDoorProperties,
         BIMDuctSegmentProperties,
         BIMExternalParametricGeometryProperties,
+        BIMFramingProperties,
         BIMModelProperties,
         BIMPipeSegmentProperties,
         BIMPolylineProperties,
@@ -119,6 +120,10 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_railing_props(cls, obj: bpy.types.Object) -> BIMRailingProperties:
         return obj.BIMRailingProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_framing_props(cls, obj: bpy.types.Object) -> BIMFramingProperties:
+        return obj.BIMFramingProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_slab_props(cls, obj: bpy.types.Object) -> BIMSlabProperties:
@@ -1731,6 +1736,8 @@ class Model(bonsai.core.tool.Model):
         for obj in decomposed_objs:
             if not obj.data:
                 continue
+            if tool.Geometry.regenerate_framing_host(obj):
+                continue
             element = tool.Ifc.get_entity(obj)
             body = tool.Geometry.get_body_representation(element)
             bonsai.core.geometry.switch_representation(
@@ -3246,6 +3253,22 @@ class Model(bonsai.core.tool.Model):
         material_set = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
         new_thickness = sum([l.LayerThickness for l in material_set.MaterialLayers])
         DumbSlabPlaner().change_thickness(element, new_thickness)
+
+    @classmethod
+    def is_framing(cls, element: ifcopenshell.entity_instance) -> bool:
+        return tool.Parametric.is_framing(element)
+
+    @classmethod
+    def apply_framing_type(cls, obj: bpy.types.Object) -> None:
+        from bonsai.bim.module.model.framing import apply_framing_type
+
+        apply_framing_type(obj)
+
+    @classmethod
+    def regenerate_framing(cls, obj: bpy.types.Object) -> None:
+        from bonsai.bim.module.model.framing import regenerate_framing
+
+        regenerate_framing(obj)
 
     @classmethod
     def regenerate_profile(cls, obj: bpy.types.Object) -> None:

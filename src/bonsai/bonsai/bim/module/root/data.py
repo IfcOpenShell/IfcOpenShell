@@ -223,6 +223,12 @@ class IfcClassData:
                 ),
             ]
         )
+        from bonsai.bim.module.model.framing import is_framing_class
+
+        if ifc_class and is_framing_class(ifc_class):
+            templates.extend(
+                [None, ("FRAMING", "Framing", "A framing system of members and infill, laid along a path")]
+            )
         return templates
 
     @classmethod

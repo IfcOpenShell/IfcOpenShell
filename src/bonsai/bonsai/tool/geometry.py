@@ -172,6 +172,8 @@ class Geometry(bonsai.core.tool.Geometry):
                         continue
                     if tool.Ifc.get_entity(voided_obj) is None:
                         continue
+                    if cls.regenerate_framing_host(voided_obj):
+                        continue
                     current_rep = cls.get_active_representation(voided_obj)
                     if current_rep is None:
                         continue
@@ -188,7 +190,17 @@ class Geometry(bonsai.core.tool.Geometry):
             if element is not None:
                 cls._host_recut_queue[element.id()] = (voided_obj, representation)
             return
+        if cls.regenerate_framing_host(voided_obj):
+            return
         bonsai.core.geometry.switch_representation(tool.Ifc, cls, obj=voided_obj, representation=representation)
+
+    @classmethod
+    def regenerate_framing_host(cls, voided_obj: bpy.types.Object) -> bool:
+        """A framing host lays its members out around its openings, so it regenerates
+        instead of only recutting. False if it is not one."""
+        from bonsai.bim.module.model.framing import regenerate_framing_host
+
+        return regenerate_framing_host(voided_obj)
 
     @classmethod
     def update_host_representation(cls, voided_obj: bpy.types.Object) -> None:

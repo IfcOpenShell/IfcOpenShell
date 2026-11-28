@@ -166,6 +166,7 @@ class Parametric(bonsai.core.tool.Parametric):
             "stair", has_non_editable_path=True, supports_build_edit_lifecycle=True, has_default_parameters=True
         ),
         ParametricObject("railing", supports_build_edit_lifecycle=True, has_default_parameters=True),
+        ParametricObject("framing"),
         ParametricObject("roof", supports_build_edit_lifecycle=True, has_default_parameters=True),
         ParametricObject("array", supports_build_edit_lifecycle=True),
         ParametricObject("pipe_segment", supports_build_edit_lifecycle=True),
@@ -181,6 +182,7 @@ class Parametric(bonsai.core.tool.Parametric):
     WINDOW: ClassVar[ParametricObject]
     STAIR: ClassVar[ParametricObject]
     RAILING: ClassVar[ParametricObject]
+    FRAMING: ClassVar[ParametricObject]
     ROOF: ClassVar[ParametricObject]
     ARRAY: ClassVar[ParametricObject]
     PIPE_SEGMENT: ClassVar[ParametricObject]
@@ -450,6 +452,12 @@ class Parametric(bonsai.core.tool.Parametric):
         if element is None:
             return False
         return tool.Pset.get_element_pset(element, "BBIM_Railing") is not None
+
+    @classmethod
+    def is_framing(cls, element: entity_instance) -> bool:
+        if element is None:
+            return False
+        return tool.Pset.get_element_pset(element, "BBIM_Framing") is not None
 
     @classmethod
     def is_roof(cls, element: entity_instance) -> bool:

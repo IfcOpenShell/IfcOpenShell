@@ -40,6 +40,7 @@ def refresh():
     WindowData.is_loaded = False
     DoorData.is_loaded = False
     RailingData.is_loaded = False
+    FramingData.is_loaded = False
     RoofData.is_loaded = False
 
 
@@ -599,6 +600,110 @@ class RailingData:
     @classmethod
     def path_data(cls):
         return cls.data["pset_data"]["data_dict"]["path_data"]
+
+
+class FramingData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {}
+        cls.data["pset_data"] = cls.pset_data()
+        cls.data["profiles"] = cls.profiles()
+        cls.data["materials"] = cls.materials()
+        cls.data["refusal"] = cls.refusal()
+        if not cls.data["pset_data"]:
+            return
+        cls.data["system_owner"] = cls.system_owner()
+        cls.data["occurrences"] = cls.occurrences()
+        cls.data["summary"] = cls.summary()
+        cls.data["height"] = cls.height()
+        cls.data["error"] = cls.error()
+
+    @classmethod
+    def element(cls) -> Optional[ifcopenshell.entity_instance]:
+        obj = bpy.context.active_object
+        return tool.Ifc.get_entity(obj) if obj else None
+
+    @classmethod
+    def pset_data(cls) -> Optional[dict[str, Any]]:
+        if not (element := cls.element()):
+            return None
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Framing")
+        if not pset:
+            return None
+        return {
+            "system": json.loads(pset.get("Data") or "{}"),
+            "guide": json.loads(pset.get("Guide") or "{}"),
+        }
+
+    @classmethod
+    def refusal(cls) -> Optional[str]:
+        from bonsai.bim.module.model.framing import framing_refusal
+
+        return framing_refusal(cls.element())
+
+    @classmethod
+    def system_owner(cls) -> Optional[str]:
+        """The type's name when the system comes from the type, else None."""
+        from bonsai.bim.module.model.framing import get_system_owner
+
+        owner = get_system_owner(cls.element())
+        if owner and owner.is_a("IfcTypeObject"):
+            return owner.Name or "Unnamed"
+        return None
+
+    @classmethod
+    def occurrences(cls) -> int:
+        element = cls.element()
+        if element.is_a("IfcTypeObject"):
+            return len(ifcopenshell.util.element.get_types(element))
+        if element_type := ifcopenshell.util.element.get_type(element):
+            return len(ifcopenshell.util.element.get_types(element_type))
+        return 1
+
+    @classmethod
+    def height(cls) -> Optional[str]:
+        """The occurrence's own height, formatted in scene units, or None for a type."""
+        from bonsai.bim.module.model.framing import get_occurrence_height
+
+        element = cls.element()
+        if element.is_a("IfcTypeObject"):
+            return None
+        unit_settings = bpy.context.scene.unit_settings
+        return bpy.utils.units.to_string(
+            unit_settings.system, "LENGTH", get_occurrence_height(element), precision=3, split_unit=False
+        )
+
+    @classmethod
+    def summary(cls) -> list[str]:
+        members = cls.data["pset_data"]["system"].get("members", [])
+        kinds = {"V": "vertical", "H": "horizontal", "INFILL": "infill"}
+        return [f"{m.get('name', '?')} ({kinds.get(m.get('kind'), '?')})" for m in members]
+
+    @classmethod
+    def error(cls) -> Optional[str]:
+        from bonsai.bim.module.model.framing import get_framing_error
+
+        return get_framing_error(cls.element())
+
+    @classmethod
+    def profiles(cls) -> list[tuple[str, str, str, str, int]]:
+        # The step id doubles as the enum number, so a stored choice survives the list changing.
+        items = [("0", "None", "No profile", "", 0)]
+        profiles = [p for p in tool.Ifc.get().by_type("IfcProfileDef") if p.ProfileName]
+        for profile in natsorted(profiles, key=lambda p: p.ProfileName):
+            items.append((str(profile.id()), profile.ProfileName, profile.is_a(), "", profile.id()))
+        return items
+
+    @classmethod
+    def materials(cls) -> list[tuple[str, str, str, str, int]]:
+        items = [("0", "None", "No material", "", 0)]
+        for material in natsorted(tool.Ifc.get().by_type("IfcMaterial"), key=lambda m: m.Name or ""):
+            items.append((str(material.id()), material.Name or "Unnamed", material.Category or "", "", material.id()))
+        return items
 
 
 class RoofData:
