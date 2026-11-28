@@ -56,7 +56,7 @@ import ifcopenshell.api.sequence
 import ifcopenshell.guid
 import ifcopenshell.util.date
 
-from .common import ScheduleIfcGenerator
+from .common import ScheduleIfcGenerator, get_work_duration
 
 # MS Project counts weekdays from Sunday. IFC counts from Monday, but the
 # generator takes the day by name, so the names are all that is needed here.
@@ -173,7 +173,8 @@ class MSPIfcGenerator(ScheduleIfcGenerator):
                 ifcopenshell.api.sequence.assign_lag_time(
                     self.file,
                     rel_sequence=rel_sequence,
-                    lag_value=datetime.timedelta(days=relationship["Lag"] / self.hours_per_day(predecessor)),
+                    # A WORKTIME lag counts in the work time of the successor.
+                    lag_value=get_work_duration(relationship["Lag"], self.calendar_for(successor)),
                     duration_type="WORKTIME",
                 )
 
@@ -184,14 +185,14 @@ class MSPIfcGenerator(ScheduleIfcGenerator):
             return self.wbs[uid]["ifc"]
         return None
 
-    def hours_per_day(self, task):
-        """The working day a lag against this task is counted in."""
+    def calendar_for(self, task):
+        """The calendar a lag against this task is counted in."""
         for rel in task.HasAssignments or []:
             if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkCalendar"):
                 calendar = self.calendars.get(rel.RelatingControl.Identification)
                 if calendar and calendar["HoursPerDay"]:
-                    return float(calendar["HoursPerDay"])
-        return float(self.default_hours_per_day)
+                    return calendar
+        return {"HoursPerDay": float(self.default_hours_per_day)}
 
 
 class MSP2Ifc:

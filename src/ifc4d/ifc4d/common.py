@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Any, NotRequired, TypedDict, Union
 
 import ifcopenshell
@@ -12,6 +12,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.sequence
 import ifcopenshell.guid
 import ifcopenshell.util.date
+import ifcopenshell.util.sequence
 
 
 class WorkSlot(TypedDict):
@@ -71,6 +72,62 @@ class WBSEntry(TypedDict):
     ifc: Union[ifcopenshell.entity_instance, None]
     rel: Union[ifcopenshell.entity_instance, None]
     activities: list[int]
+
+
+def get_end_time(end: Union[time, str]) -> Union[time, str]:
+    """The end of a work period. An end at 00:00 is the end of the day (24:00)
+
+    MS Project and P6 write a period to midnight, or a day of 24 hours, with
+    an end at 00:00. An IfcTimePeriod ends at 24:00:00 for this.
+    """
+    if str(end).startswith("00:00"):
+        return "24:00:00"
+    return end
+
+
+def is_uniform_calendar(calendar: Calendar) -> bool:
+    """True if each working day of the calendar has HoursPerDay work hours
+
+    An IfcDuration work day is one working day of its calendar, with the
+    length of that day (see ifcopenshell.util.sequence.offset_work_days).
+    Thus work hours can become work days only if all the working days have
+    the same length.
+    """
+    if not calendar.get("ifc"):
+        return True  # Each day has one work period of HoursPerDay
+    hours_per_day = timedelta(hours=float(calendar["HoursPerDay"] or 8))
+    for work_time in calendar["ifc"].WorkingTimes or []:
+        periods = ifcopenshell.util.sequence.get_time_periods(work_time)
+        if periods and sum((end - start for start, end in periods), timedelta()) != hours_per_day:
+            return False
+    # An exception with time periods gives a day with less work hours.
+    return not any(ifcopenshell.util.sequence.get_time_periods(w) for w in calendar["ifc"].ExceptionTimes or [])
+
+
+def get_work_duration(hours: float, calendar: Calendar) -> str:
+    """Work hours as an IfcDuration of whole work days or work hours
+
+    P6 and MS Project count durations and lags in work hours. A WORKTIME
+    work day is one working day of its calendar, and a task of work days
+    starts at the start of a working day (see
+    ifcopenshell.util.sequence.get_start_or_finish_date). Thus the result
+    is whole work days (P2D) only if the hours are whole days of a uniform
+    calendar (see is_uniform_calendar). Else it is work hours only (PT12H),
+    which are exact. Thus it gives the same dates as the source.
+    """
+    sign = "-" if hours < 0 else ""
+    seconds = round(abs(hours) * 3600, 6)
+    days = 0
+    day_seconds = float(calendar["HoursPerDay"] or 8) * 3600
+    if seconds and is_uniform_calendar(calendar) and not seconds % day_seconds:
+        days, seconds = divmod(seconds, day_seconds)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+    time = "".join(f"{int(v)}{unit}" for v, unit in ((hours, "H"), (minutes, "M")) if v)
+    if seconds:
+        time += f"{round(seconds, 6):g}S"
+    result = (f"{int(days)}D" if days else "") + (f"T{time}" if time else "")
+    return f"{sign}P{result}" if result else "P0D"
 
 
 class ScheduleIfcGenerator:
@@ -167,7 +224,7 @@ class ScheduleIfcGenerator:
                     self.file,
                     recurrence_pattern=recurrence,
                     start_time=work_time["Start"],
-                    end_time=work_time["Finish"],
+                    end_time=get_end_time(work_time["Finish"]),
                 )
 
     def process_exceptions(
@@ -251,7 +308,7 @@ class ScheduleIfcGenerator:
                     self.file,
                     recurrence_pattern=recurrence,
                     start_time=work_time["Start"],
-                    end_time=work_time["Finish"],
+                    end_time=get_end_time(work_time["Finish"]),
                 )
 
     def create_tasks(self, work_schedule: ifcopenshell.entity_instance) -> None:
@@ -354,14 +411,13 @@ class ScheduleIfcGenerator:
         exactly. Users may recalculate later if needed.
         """
         date = ifcopenshell.util.date.datetime2ifc
-        hours_per_day = float(calendar["HoursPerDay"] or 8)
 
         task_time.ScheduleStart = date(activity["StartDate"], "IfcDateTime")
         task_time.ScheduleFinish = date(activity["FinishDate"], "IfcDateTime")
         task_time.DurationType = "WORKTIME"
         planned = activity["PlannedDuration"]
         if planned is not None and (float(planned) or activity["StartDate"] == activity["FinishDate"]):
-            task_time.ScheduleDuration = date(timedelta(days=float(planned) / hours_per_day), "IfcDuration")
+            task_time.ScheduleDuration = get_work_duration(float(planned), calendar)
 
         for attribute, value in (
             ("ActualStart", activity.get("ActualStartDate")),
@@ -374,14 +430,14 @@ class ScheduleIfcGenerator:
             if value is not None:
                 setattr(task_time, attribute, date(value, "IfcDateTime"))
 
-        # P6 states float in hours against the activity's own calendar, so the
-        # calendar is consulted for nothing more than that conversion.
+        # P6 states float in work hours of the activity's own calendar. An IFC
+        # float is work time too, written as a duration (see get_work_duration).
         for attribute, hours in (
             ("TotalFloat", activity.get("TotalFloat")),
             ("FreeFloat", activity.get("FreeFloat")),
         ):
             if hours is not None:
-                setattr(task_time, attribute, date(timedelta(days=hours / hours_per_day), "IfcDuration"))
+                setattr(task_time, attribute, get_work_duration(hours, calendar))
         if activity.get("TotalFloat") is not None:
             task_time.IsCritical = activity["TotalFloat"] <= 0
 
@@ -457,11 +513,12 @@ class ScheduleIfcGenerator:
                 rel_sequence = self.file.create_entity("IfcRelSequence", **attributes)
             lag = float(relationship["Lag"])
             if lag:
-                calendar = self.calendars[self.activities[relationship["PredecessorActivity"]]["CalendarObjectId"]]
+                # A WORKTIME lag counts in the work time of the successor.
+                calendar = self.calendars[self.activities[relationship["SuccessorActivity"]]["CalendarObjectId"]]
                 ifcopenshell.api.sequence.assign_lag_time(
                     self.file,
                     rel_sequence=rel_sequence,
-                    lag_value=timedelta(days=lag / float(calendar["HoursPerDay"] or 8)),
+                    lag_value=get_work_duration(lag, calendar),
                     duration_type="WORKTIME",
                 )
 
