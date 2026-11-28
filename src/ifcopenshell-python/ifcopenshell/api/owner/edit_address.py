@@ -34,6 +34,9 @@ def edit_address(file: ifcopenshell.file, address: ifcopenshell.entity_instance,
 
     .. code:: python
 
+        organisation = ifcopenshell.api.owner.add_organisation(model,
+            identification="AWB", name="Architects Without Ballpens")
+
         # A snail mail address
         postal = ifcopenshell.api.owner.add_address(model,
             assigned_object=organisation, ifc_class="IfcPostalAddress")
