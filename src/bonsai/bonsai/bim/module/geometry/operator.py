@@ -1201,12 +1201,54 @@ class OverrideDuplicateMove(bpy.types.Operator):
         return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=False)
 
     def _execute(self, context):
+        if getattr(self, "is_duplicating_items", False):
+            return OverrideDuplicateMove.duplicate_representation_items(self, context)
         return OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context)
+
+    @staticmethod
+    def duplicate_representation_items(operator: bpy.types.Operator, context: bpy.types.Context) -> None:
+        """Add copies of the selected items to the representation being edited in item mode."""
+        item_objs = [o for o in context.selected_objects if tool.Geometry.is_representation_item(o)]
+        # Copy the items where they are now, not where they were last saved
+        tool.Geometry.sync_item_positions()
+        new_objs: list[bpy.types.Object] = []
+        skipped: list[str] = []
+        for obj in item_objs:
+            if new_obj := tool.Geometry.duplicate_representation_item(obj):
+                new_objs.append(new_obj)
+            else:
+                skipped.append(obj.name)
+        if new_objs:
+            tool.Geometry.reload_representation(tool.Geometry.get_geometry_props().representation_obj)
+            tool.Root.reload_item_decorator()
+        for obj in context.selected_objects:
+            obj.select_set(False)
+        for obj in new_objs:
+            obj.select_set(True)
+        if new_objs:
+            context.view_layer.objects.active = new_objs[-1]
+        if skipped:
+            names = ", ".join(skipped)
+            operator.report({"INFO"}, f"Only items directly in the representation can be duplicated: {names}")
+        if any(not tool.Geometry.is_movable(tool.Geometry.get_active_representation(o)) for o in new_objs):
+            operator.report({"INFO"}, "Mesh items are copied in place. Edit the copy to move it")
 
     @staticmethod
     def execute_duplicate_operator(
         operator: bpy.types.Operator, context: bpy.types.Context, linked: bool = False
     ) -> set["rna_enums.OperatorReturnItems"]:
+        if (
+            tool.Ifc.get()
+            and tool.Geometry.get_geometry_props().representation_obj
+            and any(tool.Geometry.is_representation_item(o) for o in context.selected_objects)
+        ):
+            if linked:
+                operator.report({"INFO"}, "Linked duplicates of representation items aren't supported")
+                return {"CANCELLED"}  # Stops the macro's move too
+            operator.is_duplicating_items = True
+            IfcStore.execute_ifc_operator(operator, context)
+            return {"FINISHED"}
+
         # Deep magick from the dawn of time
         if tool.Ifc.get() and tool.Model.has_selected_ifc_objects(include_active=False):
             IfcStore.execute_ifc_operator(operator, context)
