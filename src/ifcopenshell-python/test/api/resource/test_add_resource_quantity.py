@@ -59,6 +59,24 @@ class TestAddResourceQuantity(test.bootstrap.IFC4):
 
             ifcopenshell.api.resource.remove_resource(self.file, resource)
 
+    def test_subcontract_resources_support_physical_quantities(self):
+        self.file.create_entity("IfcProject")  # add_resource
+        resource = ifcopenshell.api.resource.add_resource(self.file, ifc_class="IfcSubContractResource")
+
+        for quantity_type in (
+            "IfcQuantityTime",
+            "IfcQuantityLength",
+            "IfcQuantityArea",
+            "IfcQuantityVolume",
+            "IfcQuantityWeight",
+            "IfcQuantityCount",
+        ):
+            quantity = ifcopenshell.api.resource.add_resource_quantity(
+                self.file, resource=resource, ifc_class=quantity_type
+            )
+            assert quantity.is_a(quantity_type)
+            assert resource.BaseQuantity == quantity
+
 
 class TestAddResourceQuantityIFC2X3(test.bootstrap.IFC2X3, TestAddResourceQuantity):
     pass
