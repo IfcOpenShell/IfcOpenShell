@@ -586,6 +586,11 @@ def sync_references(
         if not drawing_tool.is_auto_annotation(element):
             continue
 
+        # Only elements we generated ourselves are eligible for the auto
+        # sync/cleanup below (see is_generated_reference_annotation).
+        if not drawing_tool.is_generated_reference_annotation(element):
+            continue
+
         # Skip spatial elements - should never sync their placement
         if element.is_a("IfcSpatialElement"):
             continue
@@ -617,6 +622,7 @@ def sync_references(
             if annotation := drawing_tool.generate_reference_annotation(drawing, reference_element, context):
                 ifc.run("drawing.assign_product", relating_product=reference_element, related_object=annotation)
                 ifc.run("group.assign_group", group=group, products=[annotation])
+                drawing_tool.mark_as_generated_reference_annotation(annotation)
                 collector.assign(ifc.get_object(annotation))
 
 
