@@ -2441,7 +2441,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
                     blender_mat = blender_mats.get(mat, None)
                     if not blender_mat:
                         blender_mat = bpy.data.materials.new("Chunk")
-                        blender_mat.diffuse_color = mat
+                        self._apply_material_color(blender_mat, mat)
                         blender_mats[mat] = blender_mat
                     mat_results.append(blender_mat)
 
@@ -2573,7 +2573,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
                 blender_mat = self.blender_mats.get(material_name, None)
                 if not blender_mat:
                     blender_mat = bpy.data.materials.new(material_name)
-                    blender_mat.diffuse_color = diffuse
+                    self._apply_material_color(blender_mat, diffuse)
                     self.blender_mats[material_name] = blender_mat
                 slot_index = mesh.materials.find(material.name)
                 if slot_index == -1:
@@ -2598,6 +2598,32 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         obj["ifc_filepath"] = self.filepath
 
         self.collection.objects.link(obj)
+
+    def _apply_material_color(
+        self, blender_mat: bpy.types.Material, rgba: tuple[float, float, float, float] | np.ndarray
+    ) -> None:
+        r, g, b, a = float(rgba[0]), float(rgba[1]), float(rgba[2]), float(rgba[3])
+        blender_mat.diffuse_color = (r, g, b, a)
+        if not getattr(blender_mat, "use_nodes", False):
+            return
+        node_tree = getattr(blender_mat, "node_tree", None)
+        nodes = getattr(node_tree, "nodes", None)
+        if not nodes:
+            return
+        bsdf = next((n for n in nodes if getattr(n, "type", None) == "BSDF_PRINCIPLED"), None)
+        if not bsdf:
+            return
+        inputs = getattr(bsdf, "inputs", None)
+        if not inputs:
+            return
+        base_color = inputs.get("Base Color") if hasattr(inputs, "get") else None
+        if base_color is not None and hasattr(base_color, "default_value"):
+            base_color.default_value = (r, g, b, 1.0)
+        alpha_input = inputs.get("Alpha") if hasattr(inputs, "get") else None
+        if alpha_input is not None and hasattr(alpha_input, "default_value"):
+            alpha_input.default_value = a
+        if a < 1.0 and hasattr(blender_mat, "surface_render_method"):
+            blender_mat.surface_render_method = "BLENDED"
 
     def create_object(
         self,
