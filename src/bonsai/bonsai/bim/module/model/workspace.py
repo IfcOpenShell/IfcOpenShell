@@ -796,8 +796,19 @@ class EditObjectUI:
             row.operator("bim.offset_walls", icon="FILE_REFRESH", text="")
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
-            row.prop(data=cls.props, property="x_angle", text="Angle" if ui_context != "TOOL_HEADER" else "A")
-            op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
+            row.prop(data=cls.props, property="slope_method", text="", icon_only=True, expand=True)
+            row.prop(data=cls.props, property="slope_input_mode", text="")
+            if cls.props.slope_input_mode == "RATIO":
+                row.prop(data=cls.props, property="slope_rise", text="Rise" if ui_context != "TOOL_HEADER" else "R")
+                row.prop(data=cls.props, property="slope_run", text="Run" if ui_context != "TOOL_HEADER" else "/")
+            else:
+                row.prop(
+                    data=cls.props, property="slope_degrees", text="Angle (°)" if ui_context != "TOOL_HEADER" else "A°"
+                )
+            if cls.props.slope_method == "ROTATION":
+                op = row.operator("bim.change_slab_rotation_x_angle", icon="FILE_REFRESH", text="")
+            else:
+                op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
             op.x_angle = cls.props.x_angle
 
         elif AuthoringData.data["active_material_usage"] == "PROFILE":
