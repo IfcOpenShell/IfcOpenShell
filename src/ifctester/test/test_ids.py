@@ -77,6 +77,27 @@ class TestIds:
         specs2 = ids.from_string(xml)
         assert len(specs2.specifications) == 1
 
+    def test_reading_an_ids_with_totaldigits_warns_but_still_loads(self):
+        model = ifcopenshell.file()
+        wall = model.createIfcWall(Name="42.123456")
+        specs = ids.Ids()
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        restriction = ids.Restriction(options={"fractionDigits": 2}, base="decimal")
+        spec.requirements.append(ids.Attribute(name="Name", value=restriction))
+        specs.specifications.append(spec)
+        xml = specs.to_string()
+        with pytest.warns(UserWarning, match="fractionDigits"):
+            specs2 = ids.from_string(xml)
+        run(
+            "fractionDigits is parsed but not enforced, so the wall still passes",
+            specs2,
+            model,
+            True,
+            [wall],
+            [],
+        )
+
     def test_create_an_ids_with_all_possible_information(self):
         specs = ids.Ids(
             title="title",
