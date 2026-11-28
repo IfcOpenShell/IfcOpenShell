@@ -1905,6 +1905,23 @@ class BIMPolylineProperties(PropertyGroup):
         measurement_polyline: bpy.types.bpy_prop_collection_idprop[Polyline]
 
 
+class BIMPolylineSettings(PropertyGroup):
+    drawing_type_items = [
+        ("POLYLINE", "POLYLINE", "Polyline", "DRIVER_ROTATIONAL_DIFFERENCE", 1),
+        ("RECTANGLE", "RECTANGLE", "Rectangle", "FACESEL", 2),
+    ]
+    drawing_type: bpy.props.EnumProperty(items=drawing_type_items, default="POLYLINE")
+    rectangle_angle: bpy.props.FloatProperty(
+        name="Rectangle Angle",
+        description="Rotation (radians) of the rectangle frame around its first corner",
+        default=0.0,
+    )
+
+    if TYPE_CHECKING:
+        drawing_type: Literal["POLYLINE", "RECTANGLE"]
+        rectangle_angle: float
+
+
 class ProductPreviewItem(PropertyGroup):
     value_3d: bpy.props.FloatVectorProperty()
     value_2d: bpy.props.FloatVectorProperty(size=2)
