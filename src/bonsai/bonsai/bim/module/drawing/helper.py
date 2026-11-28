@@ -494,15 +494,17 @@ def parse_diagram_scale(camera: bpy.types.Camera) -> float:
     return float(numerator) / float(denominator)
 
 
-def ortho_view_frame(
-    camera: bpy.types.Camera, margin: float = 0.015
-) -> tuple[float, float, float, float, float, float]:
-    """Calculates 2d bounding box of camera view area.
+def ortho_view_frame(camera: bpy.types.Camera, margin: float = 20.0) -> tuple[float, float, float, float, float, float]:
+    """Calculates 2d bounding box of camera view area, inset to leave room for
+    auto-generated reference annotations (section/elevation/grid tags, storey
+    level marks) drawn at its edges.
 
     Similar to `bpy.types.Camera.view_frame`
 
     :param camera: camera of drawing
-    :param margin: margins, in scene units
+    :param margin: margin to reserve on the printed drawing, in mm, converted
+        to world space using the drawing scale (a fixed paper-space size needs
+        more world space to be left clear the smaller the drawing scale is).
     :return: (xmin, xmax, ymin, ymax, zmin, zmax) in local camera coordinates
     """
     props = tool.Drawing.get_camera_props(camera)
@@ -511,8 +513,8 @@ def ortho_view_frame(
     hwidth = size * 0.5
     hheight = size * 0.5 * aspect
     scale = parse_diagram_scale(camera)
-    xmarg = margin * scale
-    ymarg = margin * scale * aspect
+    xmarg = min((margin / 1000) / scale, hwidth * 0.4)
+    ymarg = min(xmarg * aspect, hheight * 0.4)
     return (-hwidth + xmarg, hwidth - xmarg, -hheight + ymarg, hheight - ymarg, -camera.clip_start, -camera.clip_end)
 
 
