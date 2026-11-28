@@ -497,6 +497,9 @@ class IfcCsv:
         for i, value in enumerate(row):
             if i == 0:
                 continue  # Skip GlobalId
+            if isinstance(value, float) and value != value:
+                # pandas reads a blank XLSX/ODS cell as float `nan`; treat it as empty.
+                value = empty
             if value == null:
                 value = None
             elif value == empty:
