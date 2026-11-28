@@ -257,6 +257,16 @@ class BIM_PT_object_material(Panel):
 
         total_items = len(ObjectMaterialData.data["set_items"])
 
+        if (
+            set_item_name == "profile"
+            and total_items > 1
+            and not ObjectMaterialData.data["set"].get("has_composite_profile")
+        ):
+            warning_row = self.layout.row()
+            warning_row.label(
+                text="Only the first profile is used for geometry without a Composite Profile", icon="ERROR"
+            )
+
         row = self.layout.row(align=True)
         box = row.box()
 
