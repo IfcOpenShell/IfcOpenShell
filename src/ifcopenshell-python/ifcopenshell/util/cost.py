@@ -100,6 +100,21 @@ def calculate_applied_value(
     return 0.0
 
 
+def calculate_total_applied_value(
+    root_element: ifcopenshell.entity_instance, category_filter: Optional[str] = None
+) -> float:
+    """Sum :func:`calculate_applied_value` over all cost values of a cost item.
+
+    :param root_element: The IfcCostItem whose CostValues are summed.
+    :param category_filter: Optionally filter by cost value category.
+    :return: The total applied value of the cost item.
+    """
+    result = 0.0
+    for cost_value in root_element.CostValues or []:
+        result += calculate_applied_value(root_element, cost_value, category_filter)
+    return result
+
+
 def sum_child_root_elements(root_element: ifcopenshell.entity_instance, category_filter: Optional[str] = None) -> float:
     result = 0.0
     for rel in root_element.IsNestedBy:
