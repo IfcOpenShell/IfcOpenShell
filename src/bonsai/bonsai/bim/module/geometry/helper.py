@@ -47,10 +47,11 @@ class Helper:
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
         bm.faces.ensure_lookup_table()
-        face = None
-        for face in bm.faces:
-            if face.normal.z < -0.1:
-                break
+        if not bm.faces:
+            bm.free()
+            return {"profile": [], "extrusion": None}
+
+        face = next((f for f in bm.faces if f.normal.z < -0.1), bm.faces[0])
         profile = [l.vert.index for l in face.loops]
         extrusion = self.detect_extrusion_edge(bm, face)
 
@@ -71,17 +72,15 @@ class Helper:
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
         bm.faces.ensure_lookup_table()
-        potential_faces = []
-        for face in bm.faces:
-            if len(face.verts) > 4:
-                potential_faces.append(face)
+        potential_faces = [face for face in bm.faces if len(face.verts) > 4]
+        if not potential_faces:
+            potential_faces = list(bm.faces)
 
-        # TODO: replace with next(..., None)
-        face = None
-        for face in potential_faces:
-            if face.normal.z < -0.1:
-                break
-        assert face is not None
+        if not potential_faces:
+            bm.free()
+            return {"profile": [], "extrusion": None}
+
+        face = next((f for f in potential_faces if f.normal.z < -0.1), potential_faces[0])
 
         profile = [l.vert.index for l in face.loops]
         extrusion = self.detect_extrusion_edge(bm, face)
@@ -103,21 +102,17 @@ class Helper:
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
         bm.faces.ensure_lookup_table()
-        potential_faces = []
-        for face in bm.faces:
-            total_verts = len(face.verts)
-            if total_verts > 4 or total_verts == 3:
-                potential_faces.append(face)
+        potential_faces = [face for face in bm.faces if len(face.verts) > 4 or len(face.verts) == 3]
 
         if not potential_faces:
-            potential_faces = bm.faces
+            potential_faces = list(bm.faces)
 
-        # TODO: replace with next(..., None)
-        face = None
-        for face in potential_faces:
-            if face.normal.z < -0.1:
-                break
-        assert face is not None
+        if not potential_faces:
+            bm.free()
+            return {"profile": [], "extrusion": None}
+
+        face = next((f for f in potential_faces if f.normal.z < -0.1), potential_faces[0])
+
         profile = [l.vert.index for l in face.loops]
         extrusion = self.detect_extrusion_edge(bm, face)
 
@@ -145,30 +140,29 @@ class Helper:
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
         bm.faces.ensure_lookup_table()
-        potential_faces = []
-        for face in bm.faces:
-            total_verts = len(face.verts)
-            if total_verts > 4:
-                potential_faces.append(face)
+        potential_faces = [face for face in bm.faces if len(face.verts) > 4]
 
-        # TODO: replace with next(..., None)
-        face = None
-        for face in potential_faces:
-            if face.normal.z < -0.1:
-                break
-        assert face is not None
+        if not potential_faces:
+            bm.free()
+            return {"profile": [], "inner_curves": [], "extrusion": None}
+
+        face = next((f for f in potential_faces if f.normal.z < -0.1), potential_faces[0])
 
         end_faces = []
         end_face_normal = face.normal
-        for face in bm.faces:
-            if (face.normal - end_face_normal).length < 0.001:
-                end_faces.append(face)
+        for f in bm.faces:
+            if (f.normal - end_face_normal).length < 0.001:
+                end_faces.append(f)
+
+        if not end_faces:
+            bm.free()
+            return {"profile": [], "inner_curves": [], "extrusion": None}
 
         loop_edges = set()
-        for face in end_faces:
-            potential_edges = set(face.edges)
+        for f in end_faces:
+            potential_edges = set(f.edges)
             for face2 in end_faces:
-                if face == face2:
+                if f == face2:
                     continue
                 potential_edges -= set(face2.edges)
             loop_edges |= potential_edges
@@ -214,17 +208,22 @@ class Helper:
             loop_bm = bmesh.new()
             for vert in loop_vertices:
                 loop_bm.verts.new(vert.co)
-            face = loop_bm.faces.new(loop_bm.verts)
+            f = loop_bm.faces.new(loop_bm.verts)
 
             loop_vertex_indices = [v.index for v in loop_vertices]
-            face_area = face.calc_area()
+            face_area = f.calc_area()
             if face_area > max_area:
                 max_area = face_area
                 outer_loop = loop_vertex_indices
             inner_loops.append(loop_vertex_indices)
             loop_bm.free()
 
-        inner_loops.remove(outer_loop)
+        if not loops or outer_loop is None:
+            bm.free()
+            return {"profile": [], "inner_curves": [], "extrusion": None}
+
+        if outer_loop in inner_loops:
+            inner_loops.remove(outer_loop)
 
         extrusion = self.detect_extrusion_edge(bm, end_faces[0])
 
