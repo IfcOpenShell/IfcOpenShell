@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from math import sin
 from typing import Literal, TypedDict, Union
 
@@ -154,6 +154,18 @@ class ScreenGrid:
 class ShaderInfo:
     # Values of a load being edited, by load id, shown in place of its own until the edit is confirmed or cancelled.
     preview: dict[int, dict[str, Union[float, None]]] = {}
+
+    # Other add-ons drawing the forces at a point their own way, such as added by the parallelogram law. Each is
+    # called as drawer(builder, forces, activities, location, axes, scale, size), after forces of no size are left
+    # out, for point loads and for the resultants of line loads alike:
+    #   forces: the X, Y and Z components of each force in Blender's axes, as numpy arrays;
+    #   activities: the id of the applied load each force is, or 0, to pass to add_force_arrow so it can be picked;
+    #   location: the point; axes: a matrix whose columns are the X, Y and Z axes shown, global or the item's own;
+    #   scale: Blender length per unit of force; size: the longest arrow's length, which heads and dashes suit.
+    # One that returns True has drawn them, and Bonsai draws nothing more there. Of the builder, a drawer may use
+    # add_force_arrow, add_dashed_line, get_label_side, force_unit, and text_info, a list of labels each a dict of
+    # "position", "text", "color" and "away", the direction the label keeps to from its position.
+    point_force_drawers: list[Callable[..., bool]] = []
 
     def __init__(self) -> None:
         self.is_empty = True
@@ -590,7 +602,8 @@ class ShaderInfo:
         activities: Union[list[int], None] = None,
     ) -> None:
         """Draw point forces at a point from the point outwards, to scale, as chosen by force_display:
-        the components or resultant of their sum, or each force added by the parallelogram law or tip to tail.
+        the components or resultant of their sum, or each force added by the parallelogram law or tip to tail,
+        unless one of point_force_drawers draws them.
 
         forces: the X, Y and Z components of each force, in the reference frame being shown
         activities: the id of the activity applying each force, if any
@@ -623,6 +636,9 @@ class ShaderInfo:
 
         # Components lie on the axes, so they get no angle.
         axes = rotation if props.reference_frame == "LOCAL_COORDS" else np.eye(3)
+        for drawer in self.point_force_drawers:
+            if drawer(self, forces, activities, location, axes, scale, size):
+                return
         values = axes.T @ resultant
         axis_colors = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1)]
         components = [
@@ -791,7 +807,13 @@ class ShaderInfo:
         label_at_middle: bool = False,
         activity: int = 0,
     ) -> None:
-        """Add an arrow from tail to tip, its head and shaft sized to size, the longest arrow drawn with it"""
+        """Add an arrow from tail to tip, its head and shaft sized to size, the longest arrow drawn with it.
+
+        spacing: the shaft's width, 0.2 for a force and 0.3 for a resultant, scaled by Arrow Thickness
+        label_away: the direction its label keeps to, along the arrow if None
+        label_at_middle: label it at its middle rather than its tip, as a tip-to-tail chain's arrows are
+        activity: the id of the applied load it is, if one, so that picking it edits that load
+        """
         length = np.linalg.norm(tip - tail)
         if not length:
             return
@@ -834,6 +856,7 @@ class ShaderInfo:
     def add_dashed_line(
         self, start: np.ndarray, end: np.ndarray, size: float, color: tuple, dashed: bool = True
     ) -> None:
+        """Add a line from start to end, dashed unless not, its width and dashes suited to size"""
         width = size * 0.003
         length = np.linalg.norm(end - start)
         if not length:
