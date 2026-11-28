@@ -165,6 +165,24 @@ class TestShowStructuralLoadCase(NewFile):
         bpy.ops.bim.show_structural_load_case(load_case=case.id())
         assert not props.show_loads
 
+    def test_apply_load_offers_the_load_case_shown_first(self):
+        from bonsai.bim.module.structural.operator import get_shown_apply_load_group
+
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        model = ifcopenshell.api.structural.add_structural_analysis_model(ifc)
+        first = ifcopenshell.api.structural.add_structural_load_case(ifc, name="About B")
+        second = ifcopenshell.api.structural.add_structural_load_case(ifc, name="Pair at B")
+        model.LoadedBy = [first, second]
+        LoadGroupDecorationData.is_loaded = False
+        props = tool.Structural.get_structural_props()
+        props.activity_type = "Action"
+        assert get_shown_apply_load_group(None, bpy.context) is None  # No eye open.
+        bpy.ops.bim.show_structural_load_case(load_case=second.id())
+        assert get_shown_apply_load_group(None, bpy.context) == str(second.id())
+        bpy.ops.bim.show_structural_load_case(load_case=second.id())  # Hidden again.
+        assert get_shown_apply_load_group(None, bpy.context) is None
+
 
 def region(type, x, y, width, height, data=None):
     return SimpleNamespace(type=type, x=x, y=y, width=width, height=height, data=data)
