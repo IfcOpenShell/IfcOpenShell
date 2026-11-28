@@ -28,6 +28,35 @@ import pytest
 import ifc5d.qto
 
 
+class TestFootingQuantities:
+    def test_gross_and_outer_quantities_are_computed(self):
+        file = ifcopenshell.file(schema="IFC4X3")
+        ifcopenshell.api.root.create_entity(file, ifc_class="IfcProject", name="Test")
+        metre = file.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")
+        sqm = file.createIfcSIUnit(None, "AREAUNIT", None, "SQUARE_METRE")
+        cum = file.createIfcSIUnit(None, "VOLUMEUNIT", None, "CUBIC_METRE")
+        ifcopenshell.api.unit.assign_unit(file, units=[metre, sqm, cum])
+        model = ifcopenshell.api.context.add_context(file, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        footing = ifcopenshell.api.root.create_entity(file, ifc_class="IfcFooting")
+        footing.ObjectPlacement = file.createIfcLocalPlacement(
+            None, file.createIfcAxis2Placement3D(file.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+        )
+        profile = file.createIfcRectangleProfileDef("AREA", None, None, 2.0, 1.0)
+        position = file.createIfcAxis2Placement3D(file.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+        solid = file.createIfcExtrudedAreaSolid(profile, position, file.createIfcDirection((0.0, 0.0, 1.0)), 0.5)
+        rep = file.createIfcShapeRepresentation(body, "Body", "SweptSolid", [solid])
+        footing.Representation = file.createIfcProductDefinitionShape(None, None, [rep])
+
+        rules = ifc5d.qto.rules["IFC4X3QtoBaseQuantities"]
+        quantities = ifc5d.qto.quantify(file, {footing}, rules)[footing]["Qto_FootingBaseQuantities"]
+        assert quantities["GrossVolume"] == pytest.approx(1.0)
+        assert quantities["GrossSurfaceArea"] == pytest.approx(7.0)
+        assert quantities["OuterSurfaceArea"] == pytest.approx(3.0)
+
+
 class TestOpeningQuantities:
     """Openings authored in a Z-up local frame, as produced by Bonsai (#6835)."""
 
