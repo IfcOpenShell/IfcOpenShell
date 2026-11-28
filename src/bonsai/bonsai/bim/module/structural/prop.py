@@ -318,16 +318,6 @@ class BIMStructuralProperties(PropertyGroup):
             ("BOTH", "Both", "Show the resultant of point forces with their components"),
             ("RESULTANT", "Resultant", "Show only the resultant of point forces"),
             ("COMPONENTS", "Components", "Show only the X, Y and Z components of point forces"),
-            (
-                "PARALLELOGRAM",
-                "Parallelogram",
-                "Show each point force from its point, adding them into their resultant by the parallelogram law",
-            ),
-            (
-                "TIP_TO_TAIL",
-                "Tip-to-Tail",
-                "Show each point force tip to tail, with their resultant closing the chain",
-            ),
         ],
         name="Point Forces",
         default="BOTH",
@@ -365,25 +355,6 @@ class BIMStructuralProperties(PropertyGroup):
         min=0.5,
         max=4.0,
         step=10,
-        update=update_loads_display,
-    )
-    show_force_angles: BoolProperty(
-        name="Angles",
-        description="Mark the angle of each point force from a horizontal reference axis",
-        default=True,
-        update=update_loads_display,
-    )
-    angle_reference: EnumProperty(
-        items=[
-            (
-                "HORIZONTAL",
-                "Nearest Horizontal",
-                "The acute angle from the nearest horizontal axis, as statics texts draw",
-            ),
-            ("POSITIVE_X", "+X Axis", "The angle counter-clockwise from the +X axis"),
-        ],
-        name="Angle From",
-        default="HORIZONTAL",
         update=update_loads_display,
     )
     force_scale: FloatProperty(
@@ -440,8 +411,6 @@ class BIMStructuralProperties(PropertyGroup):
         load_group_to_show: str
         force_display: str
         force_scale: float
-        show_force_angles: bool
-        angle_reference: str
         force_decimals: int
         angle_decimals: int
         arrow_thickness: float

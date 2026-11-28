@@ -135,13 +135,6 @@ class TestPointForcesArePickable(NewIfc):
             info.update()
         return info
 
-    def test_each_of_several_forces_picks_its_own_load(self):
-        _, activities = self.apply_forces((300.0, 400.0), (-200.0, 0.0))
-        tool.Structural.get_structural_props().force_display = "PARALLELOGRAM"
-        info = self.draw()
-        # The resultant stands for no one load, so it is not pickable.
-        assert sorted(p["activity"] for p in info.pickables) == sorted(a.id() for a in activities)
-
     def test_a_drawer_draws_each_force_its_own_way_picking_its_own_load(self):
         _, activities = self.apply_forces((300.0, 400.0), (-200.0, 0.0))
         calls = []

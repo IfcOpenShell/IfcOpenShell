@@ -841,10 +841,6 @@ class BIM_PT_show_structural_activities(Panel):
         row.prop(self.props, "force_display")
         row = self.layout.row(align=True)
         row.prop(self.props, "force_scale")
-        row.prop(self.props, "show_force_angles")
-        if self.props.show_force_angles:
-            row = self.layout.row(align=True)
-            row.prop(self.props, "angle_reference")
         row = self.layout.row(align=True)
         row.prop(self.props, "force_decimals")
         row.prop(self.props, "angle_decimals")
