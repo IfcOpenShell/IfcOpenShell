@@ -85,6 +85,7 @@ classes = (
     product.MirrorElements,
     product.SetActiveType,
     workspace.Hotkey,
+    workspace.CrossSelect,
     workspace.BIM_MT_add_representation_item,
     wall.AddPerpendicularWall,
     wall.AddWallsFromSlab,
