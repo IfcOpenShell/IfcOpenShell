@@ -61,6 +61,7 @@ import bonsai.core.spatial
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.model import preview_base
+from bonsai.bim.module.model.data import ItemData
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 if TYPE_CHECKING:
@@ -2609,6 +2610,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
             tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
             ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
+            # The item profile dropdown lists named profiles, and a named one now has a new id
+            ItemData.is_loaded = False
 
             tool.Geometry.reload_representation(props.representation_obj)
             tool.Geometry.import_item(obj)
