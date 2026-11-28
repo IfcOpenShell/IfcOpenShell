@@ -231,8 +231,8 @@ def parse_duration(value: Union[str, None]) -> Union[datetime.timedelta, None]:
             try:
                 final_string = "P"
                 value_upper = value.upper()
-                for char in value_upper:
-                    if char.isdigit():
+                for i, char in enumerate(value_upper):
+                    if char.isdigit() or (char == "." and final_string[-1].isdigit()):
                         final_string += char
                     elif char == "D":
                         final_string += "D"
@@ -241,6 +241,8 @@ def parse_duration(value: Union[str, None]) -> Union[datetime.timedelta, None]:
                     elif char == "W":
                         final_string += "W"
                     elif char == "M":
+                        if value_upper.startswith("MIN", i) and "T" not in final_string:
+                            final_string = final_string[:1] + "T" + final_string[1:]
                         final_string += "M"
                     elif char == "Y":
                         final_string += "Y"
@@ -249,10 +251,6 @@ def parse_duration(value: Union[str, None]) -> Union[datetime.timedelta, None]:
                             final_string[:1] + "T" + final_string[1:] if "T" not in final_string else final_string
                         )
                         final_string += "H"
-                    elif char == "M":
-                        if "MIN" in value_upper and "T" not in final_string:
-                            final_string = final_string[:1] + "T" + final_string[1:]
-                        final_string += "M"
                     elif char == "S":
                         final_string = (
                             final_string[:1] + "T" + final_string[1:] if "T" not in final_string else final_string
