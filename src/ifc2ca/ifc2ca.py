@@ -597,6 +597,12 @@ class Ifc2CA:
         if element["geometry_type"] in ["Vertex", "Edge"]:
             force_projection_coeff, moment_projection_coeff = None, None
             if action.is_a("IfcStructuralPointAction") and load.is_a("IfcStructuralLoadSingleForce"):
+                if element["geometry_type"] == "Edge":
+                    # The templates write every load on an Edge as FORCE_POUTRE, per metre along all of it.
+                    raise NotImplementedError(
+                        f"{action} is a point load on a curve member, which ifc2ca cannot apply yet: "
+                        "it needs a node at the load's position on the member"
+                    )
                 FX = tempFX = load.ForceX if load.ForceX is not None else 0.0
                 FY = tempFY = load.ForceY if load.ForceY is not None else 0.0
                 FZ = tempFZ = load.ForceZ if load.ForceZ is not None else 0.0
@@ -611,6 +617,9 @@ class Ifc2CA:
                     MX = np.array([tempMX, tempMY, tempMZ]).dot(element["orientation"][:, 0])
                     MY = np.array([tempMX, tempMY, tempMZ]).dot(element["orientation"][:, 1])
                     MZ = np.array([tempMX, tempMY, tempMZ]).dot(element["orientation"][:, 2])
+                # A point load has no length to project against, in GLOBAL_COORDS or LOCAL_COORDS.
+                force_projection_coeff = 1.0
+                moment_projection_coeff = 1.0
 
             elif action.is_a("IfcStructuralLinearAction") and load.is_a("IfcStructuralLoadLinearForce"):
                 FX = tempFX = load.LinearForceX if load.LinearForceX is not None else 0.0
