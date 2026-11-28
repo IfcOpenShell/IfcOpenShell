@@ -40,7 +40,7 @@ dependencies = [
     # Required by drawing module
     "lxml>=6.1.3",
     # Required by drawing module for markdown hyperlinks in annotations
-    "markdown-it-py>=4.2.0",
+    "markdown-it-py>=4.3.0",
     "mdurl>=0.1.2",
     # Required by qto and drawing module
     "shapely>=2.2.0",
