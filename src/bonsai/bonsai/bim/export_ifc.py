@@ -97,7 +97,13 @@ class IfcExporter:
         return results
 
     def sync_object_placement(self, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
-        element = self.file.by_id(tool.Blender.get_object_bim_props(obj).ifc_definition_id)
+        ifc_definition_id = tool.Blender.get_object_bim_props(obj).ifc_definition_id
+        if not ifc_definition_id:
+            return None
+        try:
+            element = self.file.by_id(ifc_definition_id)
+        except RuntimeError:
+            return None
         # Handle camera scales specially
         if obj.type == "CAMERA":
             # Check if this is a reflected ceiling plan camera
