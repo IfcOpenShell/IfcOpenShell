@@ -1234,7 +1234,23 @@ class Geometry(bonsai.core.tool.Geometry):
 
         for element in element_types:
             if obj := tool.Ifc.get_object(element):
-                if representation := ifcopenshell.util.representation.get_representation(element, context):
+                # A type may hold several representations in one context (e.g. a 'Body' body
+                # plus a 'Reference' opening template), and get_representation() matches only
+                # by context. When base_representation is one of this type's own
+                # representations - i.e. we are reimporting it directly, such as switching to
+                # the Reference rep - render exactly that, otherwise the context lookup could
+                # return the wrong one. But element_types also contains each occurrence's
+                # type (see above), for which base_representation is not theirs; fall back to
+                # the context lookup there (and skip, as before, when it has none).
+                type_representations = [
+                    ifcopenshell.util.representation.resolve_representation(rm.MappedRepresentation)
+                    for rm in (element.RepresentationMaps or [])
+                ]
+                if base_representation in type_representations:
+                    representation = base_representation
+                else:
+                    representation = ifcopenshell.util.representation.get_representation(element, context)
+                if representation:
                     geometry = ifcopenshell.geom.create_shape(
                         settings, representation, geometry_library=geometry_library
                     )
@@ -2492,8 +2508,12 @@ class Geometry(bonsai.core.tool.Geometry):
         return ifc_file.createIfcTopologyRepresentation(context, context.ContextIdentifier, "Face", [face])
 
     @classmethod
-    def edit_meshlike_item(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
+    def edit_meshlike_item(
+        cls, obj: bpy.types.Object, reload: bool = True
+    ) -> Union[ifcopenshell.entity_instance, None]:
         """
+        :param reload: Reload the representation object afterwards. Pass ``False`` when editing several items
+            at once and reload once at the end.
         :return: New IfcRepresentationItem or ``None`` if mesh hasn't changed.
         """
         item = tool.Geometry.get_active_representation(obj)
@@ -2541,7 +2561,8 @@ class Geometry(bonsai.core.tool.Geometry):
         tool.Ifc.link(new_item, obj.data)
         if new_item.is_a("IfcEdge") and (element := tool.Ifc.get_entity(rep_obj)):
             tool.Structural.turn_axis_off_edge(element, verts[0], verts[1])
-        cls.reload_representation(rep_obj)
+        if reload:
+            cls.reload_representation(rep_obj)
         return new_item
 
     @classmethod
