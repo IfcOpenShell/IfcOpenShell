@@ -774,6 +774,21 @@ class Drawing(bonsai.core.tool.Drawing):
                 return rel.RelatingDocument
 
     @classmethod
+    def get_drawing_for_sheet_reference(
+        cls, reference: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """Find the drawing whose document Location matches a sheet reference (names may not survive sanitising)."""
+        if not (location := getattr(reference, "Location", None)):
+            return None
+        for drawing in tool.Ifc.get().by_type("IfcAnnotation"):
+            if drawing.ObjectType != "DRAWING":
+                continue
+            drawing_reference = cls.get_drawing_document(drawing)
+            if drawing_reference and drawing_reference.Location == location:
+                return drawing
+        return None
+
+    @classmethod
     def get_drawing_references(cls, drawing: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
         results: set[ifcopenshell.entity_instance] = set()
         for inverse in tool.Ifc.get().get_inverse(drawing):
