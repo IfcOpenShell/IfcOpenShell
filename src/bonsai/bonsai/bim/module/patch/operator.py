@@ -129,7 +129,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
         ifc_patch_output = props.ifc_patch_output or props.ifc_patch_input
 
         output = ifcpatch.execute(args)
-        if tool.Patch.does_patch_has_output(recipe_name):
+        if tool.Patch.does_patch_has_output(recipe_name) and ifc_patch_output:
             ifcpatch.write(output, ifc_patch_output)
         self.report({"INFO"}, f"{recipe_name} patch executed successfully")
         return {"FINISHED"}
