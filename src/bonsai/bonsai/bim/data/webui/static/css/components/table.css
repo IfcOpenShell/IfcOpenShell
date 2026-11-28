@@ -87,7 +87,8 @@ td {
 
 .selected-cell,
 .clickable-cell:hover {
-  border: 2px solid var(--highlight-over);
+  outline: 2px solid var(--highlight-over);
+  outline-offset: -2px;
   cursor: pointer;
 }
 
