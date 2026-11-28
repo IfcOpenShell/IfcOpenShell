@@ -616,6 +616,7 @@ class TestAddAnnotation:
             context="context",
             ifc_representation_class="ifc_representation_class",
         ).should_be_called().will_return("element")
+        drawing.setup_annotation_object_type("element", "object_type").should_be_called()
         drawing.get_drawing_group("drawing").should_be_called().will_return("group")
         drawing.run_type_assign_type(element="element", relating_type="element_type").should_be_called()
         ifc.run("group.assign_group", group="group", products=["element"]).should_be_called()
@@ -649,6 +650,7 @@ class TestAddAnnotation:
             context="context",
             ifc_representation_class="ifc_representation_class",
         ).should_be_called().will_return("element")
+        drawing.setup_annotation_object_type("element", "object_type").should_be_called()
         drawing.run_type_assign_type(element="element", relating_type="element_type").should_be_called()
         drawing.get_drawing_group("drawing").should_be_called().will_return("group")
         ifc.run("group.assign_group", group="group", products=["element"]).should_be_called()

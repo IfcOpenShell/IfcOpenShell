@@ -539,6 +539,7 @@ def add_annotation(
             context=context,
             ifc_representation_class=drawing_tool.get_ifc_representation_class(object_type),
         )
+        drawing_tool.setup_annotation_object_type(element, object_type)
         if relating_type:
             drawing_tool.run_type_assign_type(element=element, relating_type=relating_type)
         ifc.run("group.assign_group", group=drawing_tool.get_drawing_group(drawing), products=[element])
