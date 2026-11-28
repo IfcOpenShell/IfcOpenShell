@@ -217,7 +217,7 @@ def string_to_duration(duration_string):
     return isodate.duration_isoformat(datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds))
 
 
-def parse_duration(value: Union[str, None]) -> Union[datetime.timedelta, None]:
+def parse_duration(value: Union[str, None]) -> Union[datetime.timedelta, isodate.Duration, None]:
     if not value:
         return None
     if isinstance(value, str):

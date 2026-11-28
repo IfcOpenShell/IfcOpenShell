@@ -28,6 +28,14 @@
     "./util": {
       "types": "./dist/util/index.d.ts",
       "import": "./dist/util/index.js"
+    },
+    "./util/*": {
+      "types": "./dist/python/util/*.d.ts",
+      "import": "./dist/python/util/*.js"
+    },
+    "./api/*": {
+      "types": "./dist/python/api/*/index.d.ts",
+      "import": "./dist/python/api/*/index.js"
     }
   },
   "files": [
@@ -35,7 +43,9 @@
   ],
   "scripts": {
     "clean": "node scripts/clean.mjs",
-    "build": "npm run clean && tsc",
+    "build": "npm run clean && tsc && node scripts/copy-python-data.mjs && tsc -p tsconfig.python.json",
+    "generate": "python ../../transpiler/generate.py",
+    "record": "python ../../transpiler/parity/record.py",
     "docs": "typedoc",
     "docs:sphinx": "typedoc --options typedoc.sphinx.jsonc && node scripts/prepare-sphinx-docs.mjs",
     "docs:check": "typedoc --emit none",
