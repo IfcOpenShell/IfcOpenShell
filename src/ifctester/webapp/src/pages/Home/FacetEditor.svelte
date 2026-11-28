@@ -75,7 +75,7 @@
                     <option value="IFCRELASSIGNSTOGROUP">IFCRELASSIGNSTOGROUP</option>
                     <option value="IFCRELCONTAINEDINSPATIALSTRUCTURE">IFCRELCONTAINEDINSPATIALSTRUCTURE</option>
                     <option value="IFCRELNESTS">IFCRELNESTS</option>
-                    <option value="IFCRELVOIDSELEMENT IFCRELFILLSELEMENT">IFCRELVOIDSELEMENT IFCRELFILLSELEMENT</option>
+                    <option value="IFCRELVOIDSELEMENT IFCRELFILLSELEMENT">Host element of an opening or its filling</option>
                 </select>
             </div>
         {/if}
