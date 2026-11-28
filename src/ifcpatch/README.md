@@ -36,6 +36,7 @@ Utility for applying modification recipes to IFC files. IfcPatch enables program
 ### Geometry and Representation
 - **AssignConstituentFractions** - Assign fractions to material constituents
 - **DowngradeIndexedPolyCurve** - Convert indexed poly curves to simpler representations
+- **MoveMappingTargetsToPlacements** - Move mapped item targets into object placements so mapped geometry is shared
 - **RemoveSiteRepresentation** - Remove geometric representation from site elements
 
 ### Merging and Optimization
