@@ -457,7 +457,10 @@ class Bsdd(bonsai.core.tool.Bsdd):
 
     @classmethod
     def get_active_bsdd_library(cls) -> Union[ifcopenshell.entity_instance, None]:
-        for document in tool.Ifc.get().by_type("IfcLibraryInformation"):
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return None
+        for document in ifc_file.by_type("IfcLibraryInformation"):
             if document.Name == "BBIM_Active_bSDD":
                 return document
 
@@ -484,9 +487,9 @@ class Bsdd(bonsai.core.tool.Bsdd):
         assert props.dictionaries
 
         ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return
         library = cls.get_active_bsdd_library()
-        if not library:
-            library = ifcopenshell.api.library.add_library(ifc_file, "BBIM_Active_bSDD")
 
         active_bsdd: dict[str, BSDDDictionary] = {d.uri: d for d in props.dictionaries if d.is_active}
         refs_to_remove: list[ifcopenshell.entity_instance] = []
