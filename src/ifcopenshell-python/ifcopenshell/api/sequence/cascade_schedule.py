@@ -24,7 +24,9 @@ import ifcopenshell.util.sequence
 from ifcopenshell.util.sequence import DURATION_TYPE
 
 
-def cascade_schedule(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> None:
+def cascade_schedule(
+    file: ifcopenshell.file, task: ifcopenshell.entity_instance, recalculate_start_task: bool = True
+) -> None:
     """Cascades start and end dates of tasks based on durations
 
     Given a start task with a start date and duration, the end date, and the
@@ -44,6 +46,9 @@ def cascade_schedule(file: ifcopenshell.file, task: ifcopenshell.entity_instance
     be equivalent to be Tuesday 8am, for instance.
 
     :param task: The start task to begin cascading from.
+    :param recalculate_start_task: Whether a task without predecessors is
+        moved to the working days of its calendar and has its end date
+        recalculated. If False, only its successors are recalculated.
     :return: None
 
     Example:
@@ -104,14 +109,15 @@ def cascade_schedule(file: ifcopenshell.file, task: ifcopenshell.entity_instance
     """
     usecase = Usecase()
     usecase.file = file
-    return usecase.execute(task)
+    return usecase.execute(task, recalculate_start_task)
 
 
 class Usecase:
     file: ifcopenshell.file
 
-    def execute(self, task: ifcopenshell.entity_instance):
+    def execute(self, task: ifcopenshell.entity_instance, recalculate_start_task: bool = True):
         self.calendar_cache = {}
+        self.recalculate_start_task = recalculate_start_task
         self.cascade_task(task, is_first_task=True)
 
     def cascade_task(
@@ -134,6 +140,9 @@ class Usecase:
             raise RecursionError("Recursive tasks found. Could not cascade schedule.")
 
         if not task.TaskTime:
+            if self.recalculate_start_task:
+                for nested_task in ifcopenshell.util.sequence.get_nested_tasks(task):
+                    self.cascade_task(nested_task, task_sequence=task_sequence + [task])
             return
 
         duration = (
@@ -145,7 +154,8 @@ class Usecase:
         finishes = []
         starts = []
 
-        for rel in ifcopenshell.util.sequence.get_sequence_assignment(task, "predecessor"):
+        predecessors = ifcopenshell.util.sequence.get_sequence_assignment(task, "predecessor")
+        for rel in predecessors:
             predecessor = rel.RelatingProcess
             predecessor_duration = (
                 ifcopenshell.util.date.ifc2datetime(predecessor.TaskTime.ScheduleDuration)
@@ -313,6 +323,25 @@ class Usecase:
                 ),
                 "IfcDateTime",
             )
+        elif (
+            self.recalculate_start_task
+            and not predecessors
+            and (start := self.get_task_time_attribute(task, "ScheduleStart"))
+        ):
+            duration_type = task.TaskTime.DurationType
+            calendar = self.get_calendar(task)
+            working_start = ifcopenshell.util.sequence.get_soonest_working_day(start, duration_type, calendar)
+            if duration.days:
+                finish = ifcopenshell.util.sequence.get_start_or_finish_date(
+                    working_start, duration, duration_type, calendar, date_type="FINISH"
+                )
+            elif finish := self.get_task_time_attribute(task, "ScheduleFinish"):
+                finish = ifcopenshell.util.sequence.get_soonest_working_day(
+                    finish + (working_start - start), duration_type, calendar
+                )
+            task.TaskTime.ScheduleStart = ifcopenshell.util.date.datetime2ifc(working_start, "IfcDateTime")
+            if finish:
+                task.TaskTime.ScheduleFinish = ifcopenshell.util.date.datetime2ifc(finish, "IfcDateTime")
 
         for rel in task.IsPredecessorTo:
             self.cascade_task(rel.RelatedProcess, task_sequence=task_sequence + [task])

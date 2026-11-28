@@ -63,4 +63,4 @@ def edit_sequence(
     for name, value in attributes.items():
         setattr(rel_sequence, name, value)
     if "SequenceType" in attributes.keys():
-        ifcopenshell.api.sequence.cascade_schedule(file, task=rel_sequence.RelatedProcess)
+        ifcopenshell.api.sequence.cascade_schedule(file, task=rel_sequence.RelatedProcess, recalculate_start_task=False)
