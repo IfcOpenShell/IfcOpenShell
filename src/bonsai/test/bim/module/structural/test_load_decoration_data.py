@@ -314,6 +314,93 @@ class TestLocalAxesTurnWithTheItem(NewFile):
         assert np.allclose(values[:3], (0.0, 5.0, 0.0), atol=1e-5)
 
 
+class TestLoadsPerProjectedLength(NewFile):
+    """Snow on a rafter is given per horizontal length: per length of the member projected across the load"""
+
+    def make_load(self, projected_or_true="PROJECTED_LENGTH", global_or_local="GLOBAL_COORDS"):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        context = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralCurveMember")
+        # A rafter at 60 degrees to the horizontal: its horizontal projection is half its length.
+        start, end = (
+            ifc.createIfcVertexPoint(ifc.createIfcCartesianPoint(p))
+            for p in ((0.0, 0.0, 0.0), (1.0, 0.0, math.sqrt(3.0)))
+        )
+        member.Representation = ifc.createIfcProductDefinitionShape(
+            Representations=[
+                ifc.createIfcTopologyRepresentation(context, "Reference", "Edge", [ifc.createIfcEdge(start, end)])
+            ]
+        )
+        member.Axis = ifc.createIfcDirection((0.0, 1.0, 0.0))
+        obj = bpy.data.objects.new("Member", None)
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(member, obj)
+        load = ifcopenshell.api.structural.add_structural_load(ifc, ifc_class="IfcStructuralLoadLinearForce")
+        ifcopenshell.api.structural.edit_structural_load(ifc, structural_load=load, attributes={"LinearForceZ": -2.0})
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            ifc,
+            ifc_class="IfcStructuralLinearAction",
+            applied_load=load,
+            structural_member=member,
+            global_or_local=global_or_local,
+        )
+        activity.ProjectedOrTrue = projected_or_true
+        tool.Structural.get_structural_props().reference_frame = "GLOBAL_COORDS"
+        info = ShaderInfo()
+        return info, activity, info.get_curve_member_rotation(member)
+
+    def test_it_is_added_to_others_per_true_length(self):
+        info, activity, rotation = self.make_load()
+        values = info.parse_linear_loads_to_dict([(activity, 1.0)], rotation)["constant force"]
+        assert np.allclose(values[:3], (0.0, 0.0, -1.0))
+
+    def test_it_is_drawn_on_its_own_as_given(self):
+        info, activity, rotation = self.make_load()
+        values = info.parse_linear_loads_to_dict([(activity, 1.0)], rotation, per_true_length=False)
+        assert np.allclose(values["constant force"][:3], (0.0, 0.0, -2.0))
+
+    def test_a_load_per_true_length_is_as_given(self):
+        info, activity, rotation = self.make_load(projected_or_true="TRUE_LENGTH")
+        values = info.parse_linear_loads_to_dict([(activity, 1.0)], rotation)["constant force"]
+        assert np.allclose(values[:3], (0.0, 0.0, -2.0))
+
+
+class TestAreaLoadsPerProjectedArea(NewFile):
+    """Snow on a pitched roof is given per plan area: per area of the member projected across the load"""
+
+    def make_load(self, projected_or_true="PROJECTED_LENGTH"):
+        ifc = ifcopenshell.file(schema="IFC4")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        member = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcStructuralSurfaceMember")
+        load = ifcopenshell.api.structural.add_structural_load(ifc, ifc_class="IfcStructuralLoadPlanarForce")
+        ifcopenshell.api.structural.edit_structural_load(ifc, structural_load=load, attributes={"PlanarForceZ": -2.0})
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            ifc, ifc_class="IfcStructuralPlanarAction", applied_load=load, structural_member=member
+        )
+        activity.ProjectedOrTrue = projected_or_true
+        tool.Structural.get_structural_props().reference_frame = "GLOBAL_COORDS"
+        # A roof pitched at 60 degrees: its plan area is half its area. Its normal is the third column.
+        s, c = math.sin(math.radians(60)), math.cos(math.radians(60))
+        rotation = np.array(((c, 0.0, -s), (0.0, 1.0, 0.0), (s, 0.0, c)))
+        return ShaderInfo(), activity, rotation
+
+    def test_it_is_added_to_others_per_true_area(self):
+        info, activity, rotation = self.make_load()
+        assert np.allclose(info.get_planar_loads_values([(activity, 1.0)], rotation), (0.0, 0.0, -1.0))
+
+    def test_it_is_drawn_as_given(self):
+        info, activity, rotation = self.make_load()
+        values = info.get_planar_loads_values([(activity, 1.0)], rotation, per_true_area=False)
+        assert np.allclose(values, (0.0, 0.0, -2.0))
+
+    def test_a_load_per_true_area_is_as_given(self):
+        info, activity, rotation = self.make_load(projected_or_true="TRUE_LENGTH")
+        assert np.allclose(info.get_planar_loads_values([(activity, 1.0)], rotation), (0.0, 0.0, -2.0))
+
+
 class TestLineForcesAlongTheirResultant(NewIfc):
     """A line load's force components are drawn as one load along their resultant, as an area load is"""
 
@@ -390,6 +477,24 @@ class TestLineForcesAlongTheirResultant(NewIfc):
         # Local Y now points down, along the global load: their sum would be 9.
         ifcopenshell.api.structural.edit_structural_item_axis(tool.Ifc.get(), structural_item=member, axis=(0, -1, 0))
         assert self.get_scale() == {5.0}
+
+    def get_labels(self):
+        info = ShaderInfo()
+        info.shader = MagicMock()
+        info.get_structural_elements_and_activities()
+        info.get_linear_loads()
+        return {t["text"] for t in info.text_info}
+
+    def test_a_load_per_projected_length_is_labelled_so(self):
+        self.make_member()
+        bpy.ops.bim.apply_structural_load(load_group="0", projected=True, z=-2.0)
+        props = tool.Structural.get_structural_props()
+        props.reference_frame = "GLOBAL_COORDS"
+        labels = self.get_labels()
+        assert labels and all(label.endswith(" projected") for label in labels)
+        props.force_display = "COMPONENTS"
+        # Added to others, it is per true length, and not labelled.
+        assert not any(label.endswith(" projected") for label in self.get_labels())
 
     def test_loads_on_different_members_share_a_scale(self):
         self.make_member()
