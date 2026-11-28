@@ -146,8 +146,7 @@ class CoveringToolUI:
                 if thumbnail := AuthoringData.data["relating_type_data"].get("thumbnail"):
                     box.template_icon(icon_value=thumbnail, scale=5)
                 else:
-                    op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
-                    op.ifc_class = cls.props.ifc_class
+                    box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
 
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
