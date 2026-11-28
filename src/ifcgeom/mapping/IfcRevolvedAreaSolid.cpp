@@ -23,10 +23,15 @@ using namespace ifcopenshell::geom;
 
 #include <boost/math/constants/constants.hpp>
 
+#include <algorithm>
+#include <limits>
+
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRevolvedAreaSolid& inst) {
 	const double ang = inst.Angle() * angle_unit_;
 
-	taxonomy::cast<taxonomy::face>(map(inst.SweptArea()));
+	auto face = taxonomy::cast<taxonomy::face>(map(inst.SweptArea()));
+	auto axis_origin = taxonomy::cast<taxonomy::point3>(map(inst.Axis().Location()));
+	auto axis_direction = taxonomy::cast<taxonomy::direction3>(map(inst.Axis().Axis()));
 
 	std::optional<double> angle;
 
@@ -43,51 +48,38 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRevolvedAreaSolid& inst) {
 		angle = ang;
 	}
 
-	return taxonomy::make<taxonomy::revolve>(
-		matrix,
-		taxonomy::cast<taxonomy::face>(map(inst.SweptArea())),
-		taxonomy::cast<taxonomy::point3>(map(inst.Axis().Location())),
-		taxonomy::cast<taxonomy::direction3>(map(inst.Axis().Axis())),
-		angle
-	);
-
-	/*
 	{
 		// https://github.com/IfcOpenShell/IfcOpenShell/issues/1030
-		// Check whether Axis does not intersect SweptArea
-
-		double min_dot = +std::numeric_limits<double>::infinity();
-		double max_dot = -std::numeric_limits<double>::infinity();
-
-		gp_Ax2 ax(ax1.Location(), gp::DZ(), ax1.Direction());
-
-		TopExp_Explorer exp(face, TopAbs_EDGE);
-		for (; exp.More(); exp.Next()) {
-			BRepAdaptor_Curve crv(TopoDS::Edge(exp.Current()));
-			GCPnts_QuasiUniformDeflection tessellater(crv, getValue(GV_PRECISION));
-
-			int n = tessellater.NbPoints();
-			for (int i = 1; i <= n; ++i) {
-				double d = ax.YDirection().XYZ().Dot(tessellater.Value(i).XYZ());
-				if (d < min_dot) {
-					min_dot = d;
+		// The axis shall not intersect the interior of the swept area. The swept
+		// area lies in the XY plane of Position, so the sign of the distance to
+		// the axis, measured along the in-plane normal of the axis, tells on
+		// which side of the axis a point lies.
+		const Eigen::Vector3d origin = axis_origin->ccomponents();
+		const Eigen::Vector3d normal = Eigen::Vector3d::UnitZ().cross(axis_direction->ccomponents()).normalized();
+		double min_distance = +std::numeric_limits<double>::infinity();
+		double max_distance = -std::numeric_limits<double>::infinity();
+		for (const auto& loop : face->children) {
+			for (const auto& p : loop->to_polygon(settings_)) {
+				Eigen::Vector3d q = p.ccomponents();
+				if (face->matrix) {
+					q = (face->matrix->ccomponents() * q.homogeneous()).head<3>();
 				}
-				if (d > max_dot) {
-					max_dot = d;
-				}
+				const double d = normal.dot(q - origin);
+				min_distance = std::min(min_distance, d);
+				max_distance = std::max(max_distance, d);
 			}
 		}
-
-		bool intersecting;
-		if (std::abs(min_dot) > std::abs(max_dot)) {
-			intersecting = max_dot > + getValue(GV_PRECISION);
-		} else {
-			intersecting = min_dot < - getValue(GV_PRECISION);
-		}
-
-		if (intersecting) {
-			ifcopenshell::logger::root().warning("Warning Axis and SweptArea intersecting", l);
+		const double tolerance = settings_.get<settings::Precision>().get();
+		if (min_distance < -tolerance && max_distance > tolerance) {
+			logger_.warning("GEO", 329, "Axis intersects SweptArea of:", inst);
 		}
 	}
-	*/
+
+	return taxonomy::make<taxonomy::revolve>(
+		matrix,
+		face,
+		axis_origin,
+		axis_direction,
+		angle
+	);
 }
