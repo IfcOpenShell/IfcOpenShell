@@ -1735,16 +1735,23 @@ class Sequence(bonsai.core.tool.Sequence):
             "Outputs": {cs.name: cs.color[0:3] for cs in props.task_output_colors},
         }
 
-        group = [g for g in ifc_file.by_type("IfcGroup") if g.Name == name]
+        # Only reuse an existing animation colour scheme, never a user's group of the same name.
+        group = next(
+            (
+                g
+                for g in ifc_file.by_type("IfcGroup")
+                if g.Name == name and tool.Group.get_description_type(g) == "BBIM_AnimationColorScheme"
+            ),
+            None,
+        )
         if group:
-            group = group[0]
             description = json.loads(group.Description)
             description["colourscheme"] = colour_scheme
             group.Description = json.dumps(description)
         else:
             description = json.dumps({"type": "BBIM_AnimationColorScheme", "colourscheme": colour_scheme})
             group = ifcopenshell.api.group.add_group(ifc_file, name=name, description=description)
-        return group[0]
+        return group
 
     @classmethod
     def load_animation_color_scheme(cls, scheme: Optional[ifcopenshell.entity_instance]) -> None:
