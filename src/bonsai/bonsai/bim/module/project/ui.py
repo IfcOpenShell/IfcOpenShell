@@ -30,6 +30,7 @@ import bonsai.tool as tool
 from bonsai.bim.helper import draw_attributes, prop_with_search
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.project.data import LinksData, ProjectData
+from bonsai.bim.module.project.prop import GEOMETRY_LIBRARY_ITEMS
 from bonsai.bim.ui import draw_multiline_text
 
 if TYPE_CHECKING:
@@ -412,6 +413,41 @@ class BIM_PT_new_project_wizard(Panel):
             row.prop(git_props, "local_folder")
             row = box.row()
             row.operator("ifcgit.clone_repo", icon="IMPORT")
+
+
+class BIM_PT_geometry_loading(Panel):
+    bl_label = "Geometry Loading"
+    bl_idname = "BIM_PT_geometry_loading"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_project_setup"
+
+    @classmethod
+    def poll(cls, context):
+        return bool(tool.Ifc.get())
+
+    def draw(self, context):
+        self.layout.use_property_decorate = False
+        self.layout.use_property_split = True
+        pprops = tool.Project.get_project_props()
+        self.layout.prop(pprops, "geometry_library")
+        self.layout.prop(pprops, "deflection_tolerance")
+        self.layout.prop(pprops, "angular_tolerance")
+
+        if not tool.Project.geometry_settings_match_defaults(pprops):
+            preferences = tool.Blender.get_addon_preferences()
+            library = dict((i[0], i[1]) for i in GEOMETRY_LIBRARY_ITEMS)[preferences.geometry_library]
+            box = self.layout.box()
+            row = box.row(align=True)
+            row.label(text=f"Your default: {library}", icon="INFO")
+            row.operator("bim.use_geometry_defaults", text="Use My Default")
+
+        row = self.layout.row(align=True)
+        row.operator("bim.reload_geometry", text="Reload Selected", icon="FILE_REFRESH")
+        row.operator("bim.reload_geometry", text="Reload All", icon="FILE_REFRESH").should_reload_all = True
+        self.layout.operator("bim.save_geometry_defaults", icon="PREFERENCES")
 
 
 class BIM_PT_project_library(Panel):

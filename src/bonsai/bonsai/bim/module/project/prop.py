@@ -35,6 +35,7 @@ from bpy.types import PropertyGroup
 
 import bonsai.bim.helper
 import bonsai.tool as tool
+from bonsai.bim.helper import GEOMETRY_LIBRARY_ITEMS
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.project.data import ProjectData, ProjectLibraryData
 from bonsai.bim.prop import Attribute, ObjProperty
@@ -324,6 +325,11 @@ class PendingArrayRepair(PropertyGroup):
         ifc_definition_id: int
 
 
+def update_geometry_settings(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
+    # A choice made for this scene, which the user's defaults must not override on load.
+    self["has_geometry_settings"] = True
+
+
 class BIMProjectProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     is_loading: BoolProperty(name="Is Loading", default=False)
@@ -354,14 +360,15 @@ class BIMProjectProperties(PropertyGroup):
     filter_query: StringProperty(name="Filter Query")
     should_filter_spatial_elements: BoolProperty(name="Filter Spatial Elements", default=False)
     geometry_library: bpy.props.EnumProperty(
-        items=[
-            ("opencascade", "OpenCASCADE", "Best for stability and accuracy"),
-            ("cgal", "CGAL", "Best for speed"),
-            ("cgal-simple", "CGAL Simple", "CGAL without booleans"),
-            ("hybrid-cgal-simple-opencascade", "Hybrid CGAL-OCC", "First CGAL then fallback to OCC"),
-        ],
+        items=GEOMETRY_LIBRARY_ITEMS,
         name="Geometry Library",
         default="hybrid-cgal-simple-opencascade",
+        update=update_geometry_settings,
+    )
+    has_geometry_settings: BoolProperty(
+        name="Has Geometry Settings",
+        description="Whether this scene's geometry loading settings were chosen, rather than left at the defaults",
+        default=False,
     )
     should_use_cpu_multiprocessing: BoolProperty(name="CPU Multiprocessing", default=True)
     should_merge_materials_by_colour: BoolProperty(name="Merge Materials by Colour", default=False)
@@ -374,8 +381,8 @@ class BIMProjectProperties(PropertyGroup):
         ),
         default=False,
     )
-    deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.05)
-    angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
+    deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.05, update=update_geometry_settings)
+    angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5, update=update_geometry_settings)
     void_limit: IntProperty(
         name="Void Limit",
         default=30,
@@ -540,6 +547,7 @@ class BIMProjectProperties(PropertyGroup):
         filter_query: str
         should_filter_spatial_elements: bool
         geometry_library: Literal["opencascade", "cgal", "cgal-simple", "hybrid-cgal-simple-opencascade"]
+        has_geometry_settings: bool
         should_use_cpu_multiprocessing: bool
         should_merge_materials_by_colour: bool
         should_load_geometry: bool

@@ -74,6 +74,23 @@ class Project(bonsai.core.tool.Project):
         return bpy.context.scene.BIMProjectProperties
 
     @classmethod
+    def apply_geometry_defaults(cls, pprops: BIMProjectProperties) -> None:
+        """Copy the user's default geometry loading settings into a scene."""
+        preferences = tool.Blender.get_addon_preferences()
+        pprops.geometry_library = preferences.geometry_library
+        pprops.deflection_tolerance = preferences.deflection_tolerance
+        pprops.angular_tolerance = preferences.angular_tolerance
+
+    @classmethod
+    def geometry_settings_match_defaults(cls, pprops: BIMProjectProperties) -> bool:
+        preferences = tool.Blender.get_addon_preferences()
+        return (
+            pprops.geometry_library == preferences.geometry_library
+            and abs(pprops.deflection_tolerance - preferences.deflection_tolerance) < 1e-6
+            and abs(pprops.angular_tolerance - preferences.angular_tolerance) < 1e-6
+        )
+
+    @classmethod
     def get_measure_tool_settings(cls) -> MeasureToolSettings:
         assert (scene := bpy.context.scene)
         return scene.MeasureToolSettings  # pyright: ignore[reportAttributeAccessIssue]
