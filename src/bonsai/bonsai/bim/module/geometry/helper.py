@@ -151,6 +151,9 @@ class Helper:
             if total_verts > 4:
                 potential_faces.append(face)
 
+        if not potential_faces:
+            potential_faces = bm.faces
+
         # TODO: replace with next(..., None)
         face = None
         for face in potential_faces:
