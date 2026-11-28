@@ -266,6 +266,7 @@ class Material(bonsai.core.tool.Material):
                     ifc_file,
                     constituent_set=material_set,
                     material=material,
+                    name=material.Name or "Unnamed",
                 )
         elif material_set.is_a() == "IfcMaterialLayerSet":
             if not material_set.MaterialLayers:
@@ -340,6 +341,9 @@ class Material(bonsai.core.tool.Material):
     def update_elements_using_material(cls, material: ifcopenshell.entity_instance) -> None:
         # update elements that are using this material
         elements = ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
+        # Items made of a material constituent carry a copy of its style, so give them the new one
+        for element in elements:
+            tool.Geometry.update_shape_aspect_styles(element)
         objects = [tool.Ifc.get_object(e) for e in elements]
         tool.Geometry.reload_representation(objects)
 

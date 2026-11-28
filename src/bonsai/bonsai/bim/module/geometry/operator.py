@@ -66,6 +66,8 @@ from bonsai.bim.module.model.decorator import ProfileDecorator
 if TYPE_CHECKING:
     from bpy.stub_internal import rna_enums
 
+    from bonsai.bim.module.geometry.prop import BIMObjectGeometryProperties
+
 
 class EditObjectPlacement(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_object_placement"
@@ -116,11 +118,11 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         if not tool.Ifc.get():
             return bpy.ops.mesh.separate(type=self.type)
         elif context.mode == "EDIT_MESH":
-            if any(
-                tool.Ifc.get_entity(obj) or tool.Geometry.is_representation_item(obj) for obj in context.objects_in_mode
-            ):
+            if any(tool.Ifc.get_entity(obj) for obj in context.objects_in_mode):
                 self.report({"WARNING"}, "IFC Separate is not yet supported for EDIT mode with IFC elements.")
                 return {"CANCELLED"}
+            if any(tool.Geometry.is_representation_item(obj) for obj in context.objects_in_mode):
+                return self.separate_edited_items(context)
             return bpy.ops.mesh.separate(type=self.type)
 
         if self.type == "SELECTED":
@@ -164,60 +166,98 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         assert (element := tool.Ifc.get_entity(representation_obj))
 
         if tool.Geometry.is_meshlike_item(item):
+            gprops = tool.Geometry.get_geometry_props()
             bpy.ops.mesh.separate(type=self.type)
             # Nothing got separated.
             if len(context.selected_objects) == 1:
                 return False
 
-            gprops = tool.Geometry.get_geometry_props()
-            rep_obj = gprops.representation_obj
-            assert rep_obj
-            representation = tool.Geometry.get_active_representation(rep_obj)
-            assert representation
-            representation = ifcopenshell.util.representation.resolve_representation(representation)
-            representation_type: str = representation.RepresentationType
-
-            items: list[ifcopenshell.entity_instance] = list(representation.Items)
+            # Every part, the original object's included, becomes a new item like the one it came from
+            index = next(i for i, item_obj in enumerate(gprops.item_objs) if item_obj.obj == obj)
+            gprops.item_objs.remove(index)
             for obj_ in context.selected_objects:
-                items.append(self.add_meshlike_item(obj_, representation_type))
-            items.remove(item)
-            representation.Items = items
-
-            gprops.remove_item_object_by_entity(item)
+                obj_.show_in_front = True
+                tool.Geometry.lock_object(obj_)
+                tool.Geometry.add_meshlike_item_from_object(obj_, item)
             tool.Geometry.remove_representation_item(item, element)
+            return True
+        elif self.type == "LOOSE" and tool.Geometry.is_separable_profile_item(item):
+            # Each of a composite profile's sub-profiles is a loose part
+            if not (new_items := tool.Geometry.split_profile_item(item)):
+                return False
+            tool.Geometry.import_item(obj)
+            new_objs = [tool.Geometry.create_item_object(new_item, obj) for new_item in new_items]
+            for obj_ in [obj] + new_objs:
+                obj_.select_set(True)
             return True
         else:
             self.report({"INFO"}, f"Separating an {item.is_a()} is not supported")
             return False
 
-    def add_meshlike_item(self, obj: bpy.types.Object, representation_type: str) -> ifcopenshell.entity_instance:
-        props = tool.Geometry.get_geometry_props()
-        obj.show_in_front = True
-        tool.Geometry.lock_object(obj)
+    def separate_edited_items(self, context: bpy.types.Context) -> set[str]:
+        """Separate the items in edit mode, after saving their edits: their selection, loose parts or materials."""
+        names = [o.name for o in context.objects_in_mode if tool.Geometry.is_representation_item(o)]
 
-        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        rep_obj = props.representation_obj
+        # A profile's selected loops are taken out while it's still a profile, so leaving edit mode saves the rest
+        split_profiles: list[tuple[str, ifcopenshell.entity_instance, Union[ifcopenshell.entity_instance, None]]] = []
+        if self.type == "SELECTED":
+            for name in names:
+                obj = bpy.data.objects[name]
+                item = tool.Geometry.get_active_representation(obj)
+                if not (item and tool.Geometry.is_separable_profile_item(item)):
+                    continue
+                result = tool.Geometry.split_off_selected_profile_loops(obj)
+                if isinstance(result, str):
+                    self.report({"ERROR"}, result)
+                    return {"CANCELLED"}
+                elif result:
+                    split_profiles.append((name, *result))
+
+        # Leave edit mode the usual way, which saves the edits and keeps the selection
+        bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
+        if context.mode == "EDIT_MESH":
+            return {"CANCELLED"}  # An edit couldn't be saved, and its error was shown
+        objs = [obj for name in names if (obj := bpy.data.objects.get(name))]
+        rep_obj = tool.Geometry.get_geometry_props().representation_obj
         assert rep_obj
-        assert isinstance(obj.data, bpy.types.Mesh)
-        verts = tool.Blender.get_verts_coordinates(obj.data.vertices)
-        verts = verts.astype("d")
-        if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj)) is not None:
-            verts += coordinate_offset
-        verts /= unit_scale
-        faces = [p.vertices[:] for p in obj.data.polygons]
 
-        if representation_type in ("Brep", "AdvancedBrep"):
-            item = builder.faceted_brep(verts, faces)
-        elif representation_type == "Tessellation":
-            item = builder.mesh(verts, faces)
+        new_objs: list[bpy.types.Object] = []
+        if self.type == "SELECTED":
+            split_names = {name for name, *_ in split_profiles}
+            for name, profile, position in split_profiles:
+                obj = bpy.data.objects[name]
+                item = tool.Geometry.get_active_representation(obj)
+                assert item
+                new_item = tool.Geometry.add_extrusion_like(item, profile, position)
+                new_objs.append(tool.Geometry.create_item_object(new_item, obj))
+            for obj in objs:
+                item = tool.Geometry.get_active_representation(obj)
+                if item and tool.Geometry.is_separable_item(item):
+                    if new_obj := tool.Geometry.separate_selected_faces(obj):
+                        new_objs.append(new_obj)
+                elif item and obj.name not in split_names and not tool.Geometry.is_separable_profile_item(item):
+                    self.report({"INFO"}, f"Separating an {item.is_a()} by selection is not supported")
+            if not new_objs:
+                self.report(
+                    {"WARNING"},
+                    "Select some, but not all, of a mesh item's faces or a profile's loops to separate them",
+                )
+                return {"FINISHED"}
         else:
-            assert False, f"Unexpected representation type: '{representation_type}'."
+            is_separated = False
+            for obj in objs:
+                bpy.ops.object.select_all(action="DESELECT")
+                is_separated |= self.separate_item(context, obj)
+                new_objs.extend(context.selected_objects)
+            if not is_separated:
+                return {"FINISHED"}
 
-        tool.Geometry.name_item_object(obj, item)
-        tool.Ifc.link(item, obj.data)
-        props.add_item_object(obj, item)
-        return item
+        tool.Geometry.reload_representation(rep_obj)
+        tool.Root.reload_item_decorator()
+        tool.Blender.set_objects_selection(context, new_objs[-1], new_objs, clear_previous_selection=True)
+        if tool.Geometry.get_object_geometry_props(rep_obj).is_editing:
+            tool.Geometry.enable_editing_representation_items(rep_obj)
+        return {"FINISHED"}
 
     def separate_element(
         self, context: bpy.types.Context, element: ifcopenshell.entity_instance, obj: bpy.types.Object
@@ -416,6 +456,55 @@ class SelectConnection(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.select_connection(tool.Geometry, connection=tool.Ifc.get().by_id(self.connection))
+
+
+class SelectByRepresentationType(bpy.types.Operator):
+    bl_idname = "bim.select_by_representation_type"
+    bl_label = "Select By Representation Type"
+    bl_description = (
+        "Select objects whose active representation matches this type. "
+        "Ctrl+Click to also include objects that have this type in any representation (active or not)"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    representation_type: bpy.props.StringProperty()
+    select_inactive: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        self.select_inactive = event.ctrl
+        return self.execute(context)
+
+    def execute(self, context):
+        ifc = tool.Ifc.get()
+        if not ifc:
+            return {"CANCELLED"}
+        # Strip the "*" suffix used for mapped/resolved representations.
+        target_type = self.representation_type.rstrip("*")
+        matched = 0
+        for obj in context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                obj.select_set(False)
+                continue
+            if self.select_inactive:
+                # Ctrl: match any representation on the element, active or not.
+                has_type = any(
+                    (ifcopenshell.util.representation.resolve_representation(rep).RepresentationType or "") == target_type
+                    for rep in ifcopenshell.util.representation.get_representations_iter(element)
+                )
+            else:
+                # Default: match only the currently active (displayed) representation.
+                active_rep = tool.Geometry.get_active_representation(obj)
+                if active_rep is None:
+                    obj.select_set(False)
+                    continue
+                resolved = ifcopenshell.util.representation.resolve_representation(active_rep)
+                has_type = (resolved.RepresentationType or "") == target_type
+            obj.select_set(has_type)
+            if has_type:
+                matched += 1
+        mode = "any representation" if self.select_inactive else "active representation"
+        self.report({"INFO"}, f"Selected {matched} object(s) with RepresentationType '{target_type}' ({mode})")
+        return {"FINISHED"}
 
 
 class RemoveConnection(bpy.types.Operator, tool.Ifc.Operator):
@@ -713,6 +802,16 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_representation)
         if mprops.ifc_parameters:
             core.get_representation_ifc_parameters(tool.Geometry, obj=obj)
+
+        # Persist an edited opening void onto its filling type's 'Reference' template so the
+        # change survives type duplication/append/switching and propagates to siblings. This
+        # catches the edited_objs commit path; the in-place item edit is caught in
+        # bim.override_mode_set_object.
+        edited_element = tool.Ifc.get_entity(obj)
+        if edited_element and edited_element.is_a("IfcOpeningElement"):
+            from bonsai.bim.module.model.opening import FilledOpeningGenerator
+
+            FilledOpeningGenerator().update_type_template_from_opening(edited_element)
 
 
 class UpdateParametricRepresentation(bpy.types.Operator):
@@ -2341,6 +2440,10 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             self.enable_edit_mode(context)
 
     def handle_multiple_selected_objects(self, context: bpy.types.Context) -> Union[None, set[str]]:
+        selected_objs = context.selected_objects
+        if all(tool.Geometry.is_representation_item(o) for o in selected_objs):
+            self.enable_editing_representation_items(context, selected_objs)
+            return
         obj = context.active_object
         if obj and (tool.Ifc.get_entity(obj) or tool.Geometry.is_representation_item(obj)):
             tool.Blender.select_and_activate_single_object(context, obj)
@@ -2366,16 +2469,55 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                     self.handle_single_object(context, obj)
 
     def enable_editing_representation_item(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
+        kind = self.prepare_item_for_editing(obj)
+        if kind is None:
+            return
+        if kind == "MESH":
+            tool.Blender.select_and_activate_single_object(context, obj)
+        self.enable_edit_mode(context)
+        if kind == "PROFILE":
+            ProfileDecorator.install(context)
+            if not bpy.app.background:
+                tool.Blender.set_viewport_tool("bim.cad_tool")
+
+    def enable_editing_representation_items(self, context: bpy.types.Context, objs: list[bpy.types.Object]) -> None:
+        """Edit several representation items at once, in Blender's multi-object edit mode."""
+        mesh_objs: list[bpy.types.Object] = []
+        profile_objs: list[bpy.types.Object] = []
+        for obj in objs:
+            kind = self.prepare_item_for_editing(obj)
+            if kind == "MESH":
+                mesh_objs.append(obj)
+            elif kind == "PROFILE":
+                profile_objs.append(obj)
+        editable_objs = mesh_objs + profile_objs
+        if not editable_objs:
+            return
+        for obj in context.selected_objects:
+            obj.select_set(obj in editable_objs)
+        if context.active_object not in editable_objs:
+            context.view_layer.objects.active = editable_objs[0]
+        self.enable_edit_mode(context)
+        if profile_objs:
+            ProfileDecorator.install(context, objects=profile_objs)
+            if not bpy.app.background:
+                tool.Blender.set_viewport_tool("bim.cad_tool")
+
+    def prepare_item_for_editing(self, obj: bpy.types.Object) -> Union[Literal["MESH", "PROFILE"], None]:
+        """Load the item's editable geometry into ``obj``.
+
+        :return: "MESH" if the item is edited as a mesh, "PROFILE" if as a profile or curve,
+            or ``None`` if it can't be edited, in which case ``obj`` is deselected.
+        """
         item = tool.Geometry.get_active_representation(obj)
         assert item
         element = tool.Ifc.get_entity(tool.Geometry.get_geometry_props().representation_obj)
         if tool.Geometry.is_meshlike_item(item):
             tool.Geometry.dissolve_triangulated_edges(obj)
-            tool.Blender.select_and_activate_single_object(context, obj)
             assert isinstance(mesh := obj.data, bpy.types.Mesh)
             props = tool.Geometry.get_mesh_props(mesh)
             props.mesh_checksum = tool.Geometry.get_mesh_checksum(mesh)
-            self.enable_edit_mode(context)
+            return "MESH"
         elif (
             item.is_a("IfcSweptAreaSolid")
             and (usage := tool.Model.get_usage_type(element))
@@ -2383,6 +2525,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         ):
             self.report({"INFO"}, f"Parametric {usage} elements cannot be edited directly")
             obj.select_set(False)
+            return None
         elif item.is_a("IfcSweptAreaSolid"):
             tool.Geometry.sync_item_positions()
             res = tool.Model.import_profile((profile := item.SweptArea), obj=obj)
@@ -2392,28 +2535,25 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                     f"Couldn't import profile, editing it directly is not yet supported. Failing profile: {profile}.",
                 )
                 obj.select_set(False)
-                return
-            tool.Ifc.link(item, obj.data)
-            self.enable_edit_mode(context)
-            ProfileDecorator.install(context)
-            if not bpy.app.background:
-                tool.Blender.set_viewport_tool("bim.cad_tool")
+                return None
         elif item.is_a("IfcAnnotationFillArea"):
             tool.Model.import_annotation_fill_area(item, obj=obj)
-            tool.Ifc.link(item, obj.data)
-            self.enable_edit_mode(context)
-            ProfileDecorator.install(context)
-            if not bpy.app.background:
-                tool.Blender.set_viewport_tool("bim.cad_tool")
         elif tool.Geometry.is_curvelike_item(item):
             tool.Model.import_curve(item, obj=obj)
-            tool.Ifc.link(item, obj.data)
-            self.enable_edit_mode(context)
-            ProfileDecorator.install(context)
-            if not bpy.app.background:
-                tool.Blender.set_viewport_tool("bim.cad_tool")
         else:
             self.report({"INFO"}, f"Editing {item.is_a()} geometry is not supported")
+            return None
+        tool.Ifc.link(item, obj.data)
+        assert isinstance(mesh := obj.data, bpy.types.Mesh)
+        if item.is_a("IfcSweptAreaSolid"):
+            # So leaving edit mode can tell a moved profile from a reshaped one
+            mesh["bbim_profile_co"] = [c for v in mesh.vertices for c in v.co]
+            if item.is_a("IfcExtrudedAreaSolid"):
+                tool.Model.add_extrusion_handle(obj, item)
+            mesh["bbim_profile_topology"] = tool.Model.get_profile_topology(obj)
+        # So leaving edit mode can tell an untouched profile from an edited one
+        tool.Geometry.get_mesh_props(mesh).mesh_checksum = tool.Geometry.get_mesh_checksum(mesh)
+        return "PROFILE"
 
     def enable_edit_mode(self, context: bpy.types.Context) -> Union[None, set[str]]:
         if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:
@@ -2471,6 +2611,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         if not tool.Ifc.get():
             return tool.Blender.toggle_edit_mode(context)
 
+        objects_in_mode = getattr(context, "objects_in_mode", None) or []
+        edited_item_objs = [o for o in objects_in_mode if tool.Geometry.is_representation_item(o)]
         if not context.active_object:
             return {"FINISHED"}
         self.is_valid = True
@@ -2492,11 +2634,24 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             if element and element.is_a("IfcRelSpaceBoundary"):
                 return bpy.ops.bim.edit_boundary_geometry()
             elif tool.Geometry.is_representation_item(context.active_object):
-                self.edit_representation_item(context.active_object)
+                item_objs = edited_item_objs or [context.active_object]
+                is_saved = self.edit_representation_items(context, item_objs)
+                if is_saved:
+                    # If we just edited an opening's void item, persist the new shape onto the
+                    # filling type's 'Reference' template so it survives type duplication/append/
+                    # switching and propagates to siblings.
+                    rep_obj = tool.Geometry.get_geometry_props().representation_obj
+                    edited_element = tool.Ifc.get_entity(rep_obj) if rep_obj else None
+                    if edited_element and edited_element.is_a("IfcOpeningElement"):
+                        from bonsai.bim.module.model.opening import FilledOpeningGenerator
+
+                        FilledOpeningGenerator().update_type_template_from_opening(edited_element)
                 tool.Root.reload_item_decorator()
-                # So you can keep hitting tab to cycle out of edit mode
-                context.active_object.select_set(False)
-                bpy.context.view_layer.objects.active = None
+                if is_saved:
+                    # So you can keep hitting tab to cycle out of edit mode
+                    for obj in item_objs:
+                        obj.select_set(False)
+                    bpy.context.view_layer.objects.active = None
                 return {"FINISHED"}
 
         objs = context.selected_objects or [context.active_object]
@@ -2561,7 +2716,216 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc.finish_edit(obj)
         return {"FINISHED"}
 
-    def edit_representation_item(self, obj: bpy.types.Object) -> None:
+    def edit_representation_items(self, context: bpy.types.Context, objs: list[bpy.types.Object]) -> bool:
+        """Save the edited items. Every profile is checked before any item is saved.
+
+        :return: ``True`` if every item was saved, ``False`` if some are back in edit mode to be fixed.
+        """
+        changed_objs: list[bpy.types.Object] = []
+        unchanged_objs: list[bpy.types.Object] = []
+        for obj in objs:
+            if self.is_unchanged_item_edit(obj):
+                unchanged_objs.append(obj)
+            else:
+                changed_objs.append(obj)
+
+        plans = {obj: plan for obj in changed_objs if (plan := self.plan_profile_edit(obj))}
+        if error := self.validate_profile_edits(changed_objs, plans):
+            self.show_error(context, error)
+            self.reenter_edit_mode(context, objs)
+            return False
+
+        ProfileDecorator.uninstall()
+
+        # Moving a profile moves its item and its handle sets its depth, as the export only keeps the 2D shape
+        is_moved = False
+        is_extruded = False
+        for obj, (offset, state, extrusion) in plans.items():
+            is_moved |= self.move_item_with_profile(obj, offset)
+            is_extruded |= self.edit_extrusion(obj, extrusion)
+            if state != "RESHAPED":
+                changed_objs.remove(obj)
+                unchanged_objs.append(obj)
+        if is_moved:
+            tool.Geometry.sync_item_positions()
+
+        for obj in unchanged_objs:
+            item = tool.Geometry.get_active_representation(obj)
+            assert item
+            if not tool.Geometry.is_meshlike_item(item):
+                # Swap the profile or curve back for the item's own geometry
+                tool.Geometry.import_item(obj)
+
+        failed_objs: list[bpy.types.Object] = []
+        errors: list[str] = []
+        for obj in changed_objs:
+            if error := self.edit_representation_item(obj, reload=False):
+                failed_objs.append(obj)
+                errors.append(error if len(objs) == 1 else f"{obj.name}: {error}")
+
+        if changed_objs or is_extruded:
+            tool.Geometry.reload_representation(tool.Geometry.get_geometry_props().representation_obj)
+
+        for obj in objs:
+            if obj not in failed_objs:
+                self.clear_profile_edit(obj)
+
+        if failed_objs:
+            self.show_error(context, "\n".join(errors))
+            self.reenter_edit_mode(context, failed_objs)
+            return False
+        return True
+
+    def plan_profile_edit(self, obj: bpy.types.Object) -> Union[tuple, None]:
+        """See ``tool.Model.plan_profile_edit``. ``None`` if ``obj`` isn't a swept solid's profile."""
+        item = tool.Geometry.get_active_representation(obj)
+        assert isinstance(mesh := obj.data, bpy.types.Mesh)
+        if not (item and item.is_a("IfcSweptAreaSolid")) or not mesh.vertices:
+            return None
+        co = np.empty(len(mesh.vertices) * 3)
+        mesh.vertices.foreach_get("co", co)
+        co = co.reshape(-1, 3)
+        handles = sorted(tool.Model.get_extrusion_handle_indices(obj))
+        is_profile = np.ones(len(co), dtype=bool)
+        is_profile[handles] = False
+        handle_co = co[handles[0]] if handles else None
+        is_locked = tool.Geometry.get_geometry_props().is_extrusion_direction_locked
+        is_topology_changed = mesh.get("bbim_profile_topology") != tool.Model.get_profile_topology(obj)
+        return tool.Model.plan_profile_edit(mesh, co[is_profile], handle_co, is_locked, is_topology_changed)
+
+    def move_item_with_profile(self, obj: bpy.types.Object, offset: npt.NDArray[np.float64]) -> bool:
+        """Move ``obj`` by ``offset`` in its own frame, keeping its mesh in place.
+
+        Call ``tool.Geometry.sync_item_positions`` afterwards to write the item's Position.
+
+        :return: ``True`` if it moved.
+        """
+        if not offset.any():
+            return False
+        assert isinstance(mesh := obj.data, bpy.types.Mesh)
+        mesh.transform(Matrix.Translation(-Vector(offset)))
+        obj.matrix_world = obj.matrix_world @ Matrix.Translation(Vector(offset))
+        return True
+
+    def edit_extrusion(self, obj: bpy.types.Object, extrusion: Union[npt.NDArray[np.float64], None]) -> bool:
+        """Set an extrusion's depth and direction from its new extrusion vector, in metres in the item's frame.
+
+        :return: ``True`` if the IFC changed.
+        """
+        if extrusion is None:
+            return False
+        ifc_file = tool.Ifc.get()
+        item = tool.Geometry.get_active_representation(obj)
+        assert item
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        length = float(np.linalg.norm(extrusion))
+        item.Depth = length / unit_scale
+        direction = extrusion / length
+        old_direction = np.array(item.ExtrudedDirection.DirectionRatios, dtype=float)
+        if not np.allclose(direction, old_direction / np.linalg.norm(old_direction), atol=1e-9):
+            old_entity = item.ExtrudedDirection
+            item.ExtrudedDirection = ifc_file.createIfcDirection(direction.tolist())
+            ifcopenshell.util.element.remove_deep2(ifc_file, old_entity)
+        return True
+
+    def clear_profile_edit(self, obj: bpy.types.Object) -> None:
+        """Remove what Tab in stored on a profile to compare against."""
+        if isinstance(mesh := obj.data, bpy.types.Mesh):
+            for key in ("bbim_profile_co", "bbim_profile_topology", "bbim_extrusion_vector", "bbim_extrusion_handle"):
+                mesh.pop(key, None)
+        for group in list(obj.vertex_groups):
+            if tool.Model.EXTRUSION_HANDLE_GROUP in group.name:
+                obj.vertex_groups.remove(group)
+
+    def is_unchanged_item_edit(self, obj: bpy.types.Object) -> bool:
+        """Compare against the checksum taken when the item entered edit mode."""
+        assert isinstance(mesh := obj.data, bpy.types.Mesh)
+        checksum = tool.Geometry.get_mesh_props(mesh).mesh_checksum
+        return bool(checksum) and checksum == tool.Geometry.get_mesh_checksum(mesh)
+
+    def validate_profile_edits(
+        self, objs: list[bpy.types.Object], plans: dict[bpy.types.Object, tuple]
+    ) -> Union[str, None]:
+        """Check the edited profiles and curves without writing anything to the IFC.
+
+        :param plans: ``plan_profile_edit`` of each swept solid's profile.
+        :return: An error message, or ``None`` if every edit can be saved.
+        """
+        invalid: list[str] = []
+        swept_areas: dict[int, str] = {}
+        shared: list[str] = []
+        flat: list[str] = []
+        for obj in objs:
+            item = tool.Geometry.get_active_representation(obj)
+            assert item
+            plan = plans.get(obj)
+            if plan and plan[2] is not None and not tool.Model.is_valid_extrusion(obj.data, plan[2]):
+                flat.append(obj.name)
+            if plan and plan[1] != "RESHAPED":
+                continue  # The profile itself isn't rewritten
+            if item.is_a("IfcSweptAreaSolid"):
+                result = tool.Model.auto_detect_profiles(obj, obj.data, Matrix())
+                is_valid = isinstance(result, dict) and result["profile_def"]
+                profile_id = item.SweptArea.id()
+                if profile_id in swept_areas:
+                    # Saving one would overwrite the other, as both replace the same profile
+                    shared.append(f"{swept_areas[profile_id]} and {obj.name}")
+                swept_areas[profile_id] = obj.name
+            elif item.is_a("IfcAnnotationFillArea"):
+                result = tool.Model.auto_detect_annotation_fill_area(obj, obj.data)
+                is_valid = isinstance(result, dict) and result["annotation_fill_area"]
+            elif tool.Geometry.is_curvelike_item(item):
+                result = tool.Model.auto_detect_curves(obj, obj.data, Matrix())
+                is_valid = isinstance(result, dict) and result["curves"]
+            else:
+                continue
+            if not is_valid:
+                invalid.append(obj.name)
+
+        if invalid and not flat and len(objs) == 1:
+            return "INVALID PROFILE"
+        messages = []
+        if invalid:
+            messages.append(f"INVALID PROFILE: {', '.join(invalid)}")
+        if shared:
+            messages.append(f"These items share a profile, so edit them one at a time: {'; '.join(shared)}")
+        if flat:
+            messages.append(f"The extrusion handle can't reach or cross the profile: {', '.join(flat)}")
+        return "\n".join(messages) or None
+
+    def show_error(self, context: bpy.types.Context, error: str) -> None:
+        if bpy.app.background:
+            # A popup menu needs a real window
+            self.report({"ERROR"}, error.replace("\n", ". "))
+            return
+
+        def msg(self, context):
+            for line in error.split("\n"):
+                self.layout.label(text=line)
+
+        context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+
+    def reenter_edit_mode(self, context: bpy.types.Context, objs: list[bpy.types.Object]) -> None:
+        for obj in context.selected_objects:
+            obj.select_set(False)
+        for obj in objs:
+            obj.select_set(True)
+        context.view_layer.objects.active = objs[0]
+        profile_objs = []
+        for obj in objs:
+            item = tool.Geometry.get_active_representation(obj)
+            if item and not tool.Geometry.is_meshlike_item(item):
+                profile_objs.append(obj)
+        if profile_objs:
+            ProfileDecorator.install(context, objects=profile_objs if len(objs) > 1 else None)
+        self.enable_edit_mode(context)
+
+    def edit_representation_item(self, obj: bpy.types.Object, reload: bool = True) -> Union[str, None]:
+        """Save one edited item.
+
+        :param reload: Reload the representation object afterwards.
+        :return: An error message if the item couldn't be saved, else ``None``.
+        """
         props = tool.Geometry.get_geometry_props()
         item = tool.Geometry.get_active_representation(obj)
         assert item
@@ -2578,30 +2942,16 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 item.is_a("IfcVertex") or item.is_a("IfcEdge") or obj.data.polygons
             ):
                 try:
-                    tool.Geometry.edit_meshlike_item(obj)
+                    tool.Geometry.edit_meshlike_item(obj, reload=reload)
                 except ValueError as e:
                     # A face that is no longer one planar face, for example
-                    error = str(e)
-
-                    def msg(self, context):
-                        self.layout.label(text=error)
-
-                    bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-                    self.enable_edit_mode(bpy.context)
-                    return
+                    return str(e)
             else:
                 tool.Geometry.import_item(obj)
         elif item.is_a("IfcSweptAreaSolid"):
             ProfileDecorator.uninstall()
             if not (profile := tool.Model.export_profile(obj)):
-
-                def msg(self, context):
-                    self.layout.label(text="INVALID PROFILE")
-
-                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-                ProfileDecorator.install(bpy.context)
-                self.enable_edit_mode(bpy.context)
-                return
+                return "INVALID PROFILE"
 
             old_profile = item.SweptArea
             profile.ProfileName = old_profile.ProfileName
@@ -2610,7 +2960,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
             ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
-            tool.Geometry.reload_representation(props.representation_obj)
+            if reload:
+                tool.Geometry.reload_representation(props.representation_obj)
             tool.Geometry.import_item(obj)
             tool.Geometry.import_item_attributes(obj)
 
@@ -2653,21 +3004,15 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         elif item.is_a("IfcAnnotationFillArea"):
             ProfileDecorator.uninstall()
             if not (profile := tool.Model.export_annotation_fill_area(obj)):
-
-                def msg(self, context):
-                    self.layout.label(text="INVALID PROFILE")
-
-                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-                ProfileDecorator.install(bpy.context)
-                self.enable_edit_mode(bpy.context)
-                return
+                return "INVALID PROFILE"
 
             for inverse in tool.Ifc.get().get_inverse(item):
                 ifcopenshell.util.element.replace_attribute(inverse, item, profile)
             ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
             tool.Ifc.link(profile, obj.data)
 
-            tool.Geometry.reload_representation(props.representation_obj)
+            if reload:
+                tool.Geometry.reload_representation(props.representation_obj)
             tool.Geometry.import_item(obj)
             tool.Geometry.import_item_attributes(obj)
         elif tool.Geometry.is_curvelike_item(item):
@@ -2675,14 +3020,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             new = tool.Model.export_curves(obj)
 
             if not new:
-
-                def msg(self, context):
-                    self.layout.label(text="INVALID PROFILE")
-
-                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-                ProfileDecorator.install(bpy.context)
-                self.enable_edit_mode(bpy.context)
-                return
+                return "INVALID PROFILE"
 
             additional_curves = []
             if len(new) > 1:
@@ -2712,7 +3050,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
 
             if additional_curves:
                 tool.Root.reload_item_decorator()
-            tool.Geometry.reload_representation(props.representation_obj)
+            if reload:
+                tool.Geometry.reload_representation(props.representation_obj)
 
     def enable_edit_mode(self, context):
         if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:
@@ -3153,23 +3492,110 @@ class FlipObject(bpy.types.Operator):
 class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_representation_items"
     bl_label = "Enable Editing Representation Items"
-    bl_description = "Enable editing representation items for all selected objects."
+    bl_description = "Enable editing representation items for all selected objects, and enter item mode"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        for obj in tool.Geometry.get_selected_objects_with_representations():
+        objs = tool.Geometry.get_selected_objects_with_representations()
+        props = tool.Geometry.get_geometry_props()
+        obj = context.active_object
+        if context.mode == "OBJECT" and not props.representation_obj and obj and obj.data and tool.Ifc.get_entity(obj):
+            bpy.ops.bim.import_representation_items()  # The same as the item mode switch
+        if props.representation_obj:
+            objs.add(props.representation_obj)
+        for obj in objs:
             tool.Geometry.enable_editing_representation_items(obj)
 
 
 class DisableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_representation_items"
     bl_label = "Disable Editing Representation Items"
-    bl_description = "Disable editing representation items for all selected objects"
+    bl_description = "Disable editing representation items for all selected objects, and leave item mode"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        for obj in tool.Geometry.get_selected_objects_with_representations():
+        objs = tool.Geometry.get_selected_objects_with_representations()
+        props = tool.Geometry.get_geometry_props()
+        if props.representation_obj:
+            objs.add(props.representation_obj)
+        for obj in objs:
             tool.Geometry.disable_editing_representation_items(obj)
+        if props.representation_obj and props.mode != "OBJECT":
+            props.mode = "OBJECT"  # Its update leaves item mode, the same as the mode switch
+
+
+class JoinRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.join_representation_items"
+    bl_label = "Join Items"
+    bl_description = (
+        "Join the selected mesh items, or extrusions, into the active one (in vertex mode, the edited items with "
+        "something selected, after saving the edits). The joined item keeps the active item's style, and an "
+        "extrusion its depth and profile plane. Extrusions must have the same direction, with profiles that "
+        "don't overlap"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Geometry.get_geometry_props().representation_obj:
+            cls.poll_message_set("Only in item mode")
+            return False
+        return True
+
+    def _execute(self, context):
+        is_editing = context.mode == "EDIT_MESH"
+        objs = context.objects_in_mode if is_editing else context.selected_objects
+        objs = [o for o in objs if tool.Geometry.is_representation_item(o)]
+        if is_editing:
+            # Of the edited items, those with something selected, else all of them
+            objs = [o for o in objs if self.has_selected_vertices(o)] or objs
+        active = context.active_object
+        target = active if active in objs else (objs[0] if objs else None)
+        items = {o.name: tool.Geometry.get_active_representation(o) for o in objs}
+        meshes = [name for name, item in items.items() if item and tool.Geometry.is_separable_item(item)]
+        profiles = [name for name, item in items.items() if item and tool.Geometry.is_separable_profile_item(item)]
+        names = meshes if target and target.name in meshes else profiles
+        if len(names) < 2 or not target or target.name not in names:
+            self.report(
+                {"ERROR"},
+                "Select two or more mesh items (tessellations or faceted breps), or two or more extrusions, to join",
+            )
+            return {"CANCELLED"}
+        target_name = target.name
+
+        if is_editing:
+            bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
+            if context.mode == "EDIT_MESH":
+                return {"CANCELLED"}  # An edit couldn't be saved, and its error was shown
+
+        objs = [obj for name in names if (obj := bpy.data.objects.get(name))]
+        target = bpy.data.objects[target_name]
+        if names is profiles:
+            target_item = tool.Geometry.get_active_representation(target)
+            others = [o for o in objs if o != target]
+            other_items = [tool.Geometry.get_active_representation(o) for o in others]
+            if error := tool.Geometry.join_profile_items(target_item, other_items):
+                self.report({"ERROR"}, error)
+                return {"CANCELLED"}
+            for obj in others:
+                tool.Geometry.delete_ifc_item(obj)
+            tool.Geometry.import_item(target)
+            tool.Geometry.reload_representation(tool.Geometry.get_geometry_props().representation_obj)
+            tool.Root.reload_item_decorator()
+            tool.Blender.set_objects_selection(context, target, [target], clear_previous_selection=True)
+        else:
+            tool.Blender.set_objects_selection(context, target, objs, clear_previous_selection=True)
+            bpy.ops.bim.override_object_join()
+        rep_obj = tool.Geometry.get_geometry_props().representation_obj
+        if rep_obj and tool.Geometry.get_object_geometry_props(rep_obj).is_editing:
+            tool.Geometry.enable_editing_representation_items(rep_obj)
+
+    def has_selected_vertices(self, obj: bpy.types.Object) -> bool:
+        """Whether an item in edit mode has a selected vertex, not counting an extrusion's handle."""
+        obj.update_from_editmode()
+        assert isinstance(mesh := obj.data, bpy.types.Mesh)
+        handles = tool.Model.get_extrusion_handle_indices(obj)
+        return any(v.select and v.index not in handles for v in mesh.vertices)
 
 
 class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -3242,6 +3668,49 @@ class SelectRepresentationItem(bpy.types.Operator):
         return results
 
 
+class ClickRepresentationItem(bpy.types.Operator):
+    bl_idname = "bim.click_representation_item"
+    bl_label = "Select Representation Item"
+    bl_description = (
+        "Select this item's geometry, in item mode or edit mode, and make it the active one, keeping the other "
+        "selected items.\n\n"
+        "Ctrl+Click, or click its checkbox, to add it to or remove it from the selection"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()
+    extend: bpy.props.BoolProperty(name="Extend", default=False, options={"SKIP_SAVE"})
+    toggle: bpy.props.BoolProperty(
+        name="Toggle", description="Always add or remove, as Ctrl+Click does", default=False, options={"SKIP_SAVE"}
+    )
+    tooltip: bpy.props.StringProperty(name="Tooltip", options={"HIDDEN", "SKIP_SAVE"})
+
+    @classmethod
+    def description(cls, context, properties):
+        # Representation items have no name, so each row says which item it is here
+        return f"{properties.tooltip}\n\n{cls.bl_description}" if properties.tooltip else cls.bl_description
+
+    def invoke(self, context, event):
+        self.extend = event.ctrl
+        return self.execute(context)
+
+    def execute(self, context):
+        if not (obj := tool.Geometry.get_active_or_representation_obj()):
+            return {"CANCELLED"}
+        props = tool.Geometry.get_object_geometry_props(obj)
+        if not 0 <= self.index < len(props.items):
+            return {"CANCELLED"}
+        item_id = props.items[self.index].ifc_definition_id
+        # The raw value, so its update callback doesn't select the item on its own
+        props["active_item_index"] = self.index
+        if self.extend or self.toggle:
+            is_selected = item_id in tool.Geometry.get_selected_representation_items(props)
+            tool.Geometry.select_representation_items_in_scene(props, [item_id], state=not is_selected, extend=True)
+        else:
+            # Added to the selection, so clicking through the rows doesn't lose the items checked so far
+            tool.Geometry.select_representation_items_in_scene(props, [item_id], extend=True)
+        return {"FINISHED"}
+
+
 def poll_editing_representation_item_style(cls, context):
     if not (obj := tool.Geometry.get_active_or_representation_obj()):
         return False
@@ -3312,12 +3781,40 @@ class EditRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
         else:
             surface_style = ifc_file.by_id(int(props.representation_item_style))
 
-        assert (active_item := props.active_item)
-        representation_item_id = active_item.ifc_definition_id
-        representation_item = ifc_file.by_id(representation_item_id)
+        # Every item selected in the viewport (checked in the list), or else the active one
+        item_ids = tool.Geometry.get_selected_representation_items(props)
+        if not item_ids:
+            assert (active_item := props.active_item)
+            item_ids = {active_item.ifc_definition_id}
 
-        tool.Style.assign_style_to_representation_item(representation_item, surface_style)
+        from bonsai.bim.module.material.data import ObjectMaterialData
+
+        if not ObjectMaterialData.is_loaded:
+            ObjectMaterialData.load()
+        constituents = set(ObjectMaterialData.data["active_material_constituents"])
+        skipped: list[str] = []
+        restyled: set[int] = set()
+        for ui_item in props.items:
+            if ui_item.ifc_definition_id not in item_ids:
+                continue
+            if ui_item.shape_aspect and ui_item.shape_aspect in constituents:
+                # As in poll_editing_representation_item_style, its material constituent gives its style
+                skipped.append(f"{ui_item.shape_aspect} {ui_item.name}")
+                continue
+            item = ifc_file.by_id(ui_item.ifc_definition_id)
+            tool.Style.assign_style_to_representation_item(item, surface_style)
+            restyled.update(tool.Geometry.get_nested_item_ids(item))
         tool.Geometry.reload_representation(obj)
+
+        # In item mode (not edit mode), show the new style on the item objects too
+        tool.Geometry.reimport_item_objects(restyled)
+
+        # Show the new style names in the list now, without relying on its listener, which an add-on reload drops.
+        # This also subscribes it again.
+        if props.is_editing:
+            tool.Geometry.enable_editing_representation_items(obj)
+        if skipped:
+            self.report({"INFO"}, f"Style comes from the material constituent, not changed: {', '.join(skipped)}")
 
 
 class DisableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -3404,17 +3901,39 @@ class EnableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Op
     bl_idname = "bim.enable_editing_representation_item_shape_aspect"
     bl_label = "Enable Editing Representation Item Shape Aspect"
     bl_options = {"REGISTER", "UNDO"}
+    adding: bpy.props.BoolProperty(
+        name="Adding", description="Open the form for a new material constituent", default=False, options={"SKIP_SAVE"}
+    )
+
+    @classmethod
+    def description(cls, context, properties):
+        if properties.adding:
+            return (
+                "Add a material constituent and make the selected items out of it. A single material for the whole "
+                "element becomes a constituent set, with that material as a constituent for the other items"
+            )
+        return "Choose the material constituent the selected items are made of, or another shape aspect"
 
     def _execute(self, context):
         obj = tool.Geometry.get_active_or_representation_obj()
         assert obj
         props = tool.Geometry.get_object_geometry_props(obj)
         props.is_editing_item_shape_aspect = True
+        props.is_adding_constituent = self.adding
+        props.new_constituent_name = ""
 
         # set dropdown to currently active shape aspect
         shape_aspect_id = props.active_item.shape_aspect_id
         if shape_aspect_id != 0:
             props.representation_item_shape_aspect = str(shape_aspect_id)
+
+        # Set the material dropdown to the item's constituent, or to "other" for a shape aspect not named after one
+        element = tool.Ifc.get_entity(obj)
+        item = tool.Ifc.get_entity_by_id(props.active_item.ifc_definition_id)
+        if element and item and (constituent := tool.Geometry.get_item_constituent(element, item)):
+            props.representation_item_constituent = str(constituent.id())
+        elif shape_aspect_id:
+            props.representation_item_constituent = "OTHER"
 
 
 class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
@@ -3436,21 +3955,17 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
         representation_item = ifc_file.by_id(representation_item_id)
 
         if props.representation_item_shape_aspect == "NEW":
-            active_representation = tool.Geometry.get_active_representation(obj)
-            # find IfcProductRepresentationSelect based on current representation
-            product_shape = None
-            if hasattr(element, "Representation"):  # IfcProduct
-                product_shape = element.Representation
-            else:  # IfcTypeProduct
-                for representation_map in element.RepresentationMaps:
-                    if representation_map.MappedRepresentation == active_representation:
-                        product_shape = representation_map
+            # Where the item's representation belongs: for an occurrence mapped from its type, the type's map,
+            # not the occurrence's own representation
+            base_representation = tool.Geometry.get_item_base_representation(representation_item)
+            assert base_representation
+            product_shape = tool.Geometry.get_representation_product_shape(base_representation)
             previous_shape_aspect_id = props.active_item.shape_aspect_id
             # will be None if item didn't had a shape aspect
             previous_shape_aspect = tool.Ifc.get_entity_by_id(previous_shape_aspect_id)
             assert product_shape is not None
             shape_aspect = tool.Geometry.create_shape_aspect(
-                product_shape, active_representation, [representation_item], previous_shape_aspect
+                product_shape, base_representation, [representation_item], previous_shape_aspect
             )
         else:
             shape_aspect = ifc_file.by_id(int(props.representation_item_shape_aspect))
@@ -3458,7 +3973,7 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
 
         # set attributes from UI
         shape_aspect_attrs = props.shape_aspect_attrs
-        shape_aspect.Name = shape_aspect_attrs.name
+        shape_aspect.Name = shape_aspect_attrs.name.strip() or "Unnamed"
         shape_aspect.Description = shape_aspect_attrs.description
 
         shape_aspect_representation = tool.Geometry.get_shape_aspect_representation_for_item(
@@ -3486,6 +4001,112 @@ class DisableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.O
         assert obj
         props = tool.Geometry.get_object_geometry_props(obj)
         props.is_editing_item_shape_aspect = False
+        props.is_adding_constituent = False
+
+
+class EditRepresentationItemConstituent(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_representation_item_constituent"
+    bl_label = "Assign Material Constituent"
+    bl_description = (
+        "Make the selected items (or the active one) out of this material constituent, through a shape aspect "
+        "named after it, and give them its material's style"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    is_new: bpy.props.BoolProperty(
+        name="Is New",
+        description="Add the constituent named in the form first, instead of using the one chosen in the list",
+        default=False,
+        options={"SKIP_SAVE"},
+    )
+
+    def _execute(self, context):
+        obj = tool.Geometry.get_active_or_representation_obj()
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        props = tool.Geometry.get_object_geometry_props(obj)
+        ifc_file = tool.Ifc.get()
+
+        item_ids = tool.Geometry.get_selected_representation_items(props)
+        if not item_ids:
+            assert (active_item := props.active_item)
+            item_ids = {active_item.ifc_definition_id}
+        items = [ifc_file.by_id(i) for i in item_ids]
+
+        choice = props.representation_item_constituent
+        if self.is_new:
+            self.split_constituent = None
+            if not (constituent := self.add_constituent(element, props)):
+                return {"CANCELLED"}
+            tool.Geometry.assign_items_to_constituent(element, items, constituent)
+            if self.split_constituent:
+                # The other items were made of the single material, so make them out of its constituent. Items
+                # with a style or shape aspect of their own are left alone.
+                others = [
+                    ifc_file.by_id(i.ifc_definition_id)
+                    for i in props.items
+                    if i.ifc_definition_id not in item_ids
+                    and not i.shape_aspect
+                    and (not i.surface_style or i.is_style_from_material)
+                ]
+                tool.Geometry.assign_items_to_constituent(element, others, self.split_constituent)
+                items.extend(others)
+        elif choice == "NONE":
+            tool.Geometry.unassign_items_from_constituents(element, items)
+        else:
+            tool.Geometry.assign_items_to_constituent(element, items, ifc_file.by_id(int(choice)))
+
+        props.is_editing_item_shape_aspect = False
+        props.is_adding_constituent = False
+        tool.Geometry.reload_representation(obj)
+        restyled: set[int] = set()
+        for item in items:
+            restyled.update(tool.Geometry.get_nested_item_ids(item))
+        tool.Geometry.reimport_item_objects(restyled)
+        tool.Geometry.enable_editing_representation_items(obj)
+
+    def add_constituent(
+        self, element: ifcopenshell.entity_instance, props: "BIMObjectGeometryProperties"
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """Add the new constituent from the panel to the element's constituent set, creating the set if needed."""
+        ifc_file = tool.Ifc.get()
+        name = props.new_constituent_name.strip()
+        if not name:
+            single_material = tool.Geometry.get_element_single_material(element)
+            name = tool.Geometry.get_free_constituent_name(
+                tool.Geometry.get_material_constituent_set(element),
+                "Unnamed",
+                taken=[single_material.Name] if single_material else (),
+            )
+        if not (material_id := tool.Blender.get_enum_safe(props, "new_constituent_material")):
+            self.report({"ERROR"}, "Choose a material for the new constituent")
+            return None
+        material = ifc_file.by_id(int(material_id))
+
+        constituent_set = tool.Geometry.get_material_constituent_set(element)
+        if constituent_set is None and (single_material := tool.Geometry.get_element_single_material(element)):
+            if name == (single_material.Name or "Unnamed"):
+                self.report({"ERROR"}, f"{name} is already the element's material, give the constituent another name")
+                return None
+            # Adding a second material turns the single one into a constituent set
+            constituent_set = tool.Geometry.convert_material_to_constituent_set(element)
+            self.split_constituent = constituent_set.MaterialConstituents[0]
+        elif constituent_set is None:
+            if current := ifcopenshell.util.element.get_material(element, should_skip_usage=True):
+                self.report({"ERROR"}, f"The element's material is an {current.is_a()}, not a material constituent set")
+                return None
+            # Materials usually belong on the type, which occurrences inherit
+            owner = ifcopenshell.util.element.get_type(element) or element
+            constituent_set = ifcopenshell.api.material.add_material_set(
+                ifc_file, name=owner.Name or "Unnamed", set_type="IfcMaterialConstituentSet"
+            )
+            ifcopenshell.api.material.assign_material(
+                ifc_file, products=[owner], type="IfcMaterialConstituentSet", material=constituent_set
+            )
+        elif any(c.Name == name for c in constituent_set.MaterialConstituents or ()):
+            self.report({"ERROR"}, f"There is already a constituent called {name}")
+            return None
+        return ifcopenshell.api.material.add_constituent(ifc_file, constituent_set, material, name=name)
 
 
 class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
@@ -3544,6 +4165,8 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Geometry.get_geometry_props()
         if previous_obj := props.representation_obj:
             previous_obj.hide_set(False)
+            if previous_obj != obj and tool.Geometry.get_object_geometry_props(previous_obj).is_editing:
+                tool.Geometry.disable_editing_representation_items(previous_obj)
         props.representation_obj = obj
         obj.hide_set(True)
         tool.Geometry.lock_object(obj)
@@ -3610,6 +4233,9 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
         tool.Root.reload_item_decorator()
 
         element = tool.Ifc.get_entity(obj)
+        if element:
+            # The representation items list opens with item mode, and closes with it in disable_item_mode
+            tool.Geometry.enable_editing_representation_items(obj)
         if (
             element
             and element.is_a("IfcAnnotation")

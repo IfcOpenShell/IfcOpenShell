@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import collections.abc
+import hashlib
 import json
 from collections.abc import Callable, Iterable, Sequence
 from copy import deepcopy
@@ -54,6 +55,7 @@ import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
 import mathutils
 import numpy as np
+import numpy.typing as npt
 import shapely
 from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
 from mathutils import Matrix, Vector
@@ -512,6 +514,115 @@ class Model(bonsai.core.tool.Model):
             group.add(circle, 1, "REPLACE")
 
         return obj
+
+    EXTRUSION_HANDLE_GROUP = "BBIM_EXTRUSION_HANDLE"
+
+    @classmethod
+    def add_extrusion_handle(cls, obj: bpy.types.Object, extrusion: ifcopenshell.entity_instance) -> None:
+        """Add a loose vertex to an imported profile at the far end of its extrusion.
+
+        It sits at the profile's centre plus the extrusion vector, in the item's own frame. The extrusion vector
+        and the handle's position are stored on the mesh, to tell how the handle moved when leaving edit mode
+        (see ``plan_profile_edit``). Call after storing the profile's own vertices as ``bbim_profile_co``.
+        """
+        assert isinstance(mesh := obj.data, bpy.types.Mesh)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        co = np.empty(len(mesh.vertices) * 3)
+        mesh.vertices.foreach_get("co", co)
+        centre = co.reshape(-1, 3).mean(axis=0)
+        direction = np.array(extrusion.ExtrudedDirection.DirectionRatios, dtype=float)
+        vector = direction / np.linalg.norm(direction) * extrusion.Depth * unit_scale
+
+        mesh.vertices.add(1)
+        handle = mesh.vertices[-1]
+        handle.co = centre + vector
+        for group in list(obj.vertex_groups):
+            if cls.EXTRUSION_HANDLE_GROUP in group.name:
+                obj.vertex_groups.remove(group)
+        obj.vertex_groups.new(name=cls.EXTRUSION_HANDLE_GROUP).add([handle.index], 1.0, "REPLACE")
+        mesh["bbim_extrusion_vector"] = vector.tolist()
+        mesh["bbim_extrusion_handle"] = list(handle.co)  # As stored, in single precision
+
+    @classmethod
+    def get_profile_topology(cls, obj: bpy.types.Object) -> str:
+        """Fingerprint of a profile mesh's edges and arc and circle markers, ignoring vertex positions and the
+        extrusion handle. Use in object mode."""
+        assert isinstance(mesh := obj.data, bpy.types.Mesh)
+        names = {g.index: g.name for g in obj.vertex_groups}
+        edges = [tuple(e.vertices) for e in mesh.edges]
+        groups = [
+            sorted(
+                (names[g.group], round(g.weight, 3))
+                for g in v.groups
+                if cls.EXTRUSION_HANDLE_GROUP not in names[g.group]
+            )
+            for v in mesh.vertices
+        ]
+        return hashlib.md5(repr((edges, groups)).encode()).hexdigest()
+
+    @classmethod
+    def plan_profile_edit(
+        cls,
+        mesh: bpy.types.Mesh,
+        profile_co: npt.NDArray[np.float64],
+        handle_co: Optional[Sequence[float]],
+        is_direction_locked: bool,
+        is_topology_changed: bool = False,
+    ) -> tuple[npt.NDArray[np.float64], Literal["UNCHANGED", "MOVED", "RESHAPED"], npt.NDArray[np.float64] | None]:
+        """Work out how an edited extrusion's profile and handle change its item, without changing anything.
+
+        The profile export keeps only the profile's 2D shape, so a move of the profile goes to the item's Position:
+        all of it if every vertex moved by the same amount, else only its average offset out of the profile's
+        plane. The handle marks the extrusion's far end: its movement, less the profile's, changes the extrusion
+        vector. With the direction locked, only the part along the extrusion counts.
+
+        :param mesh: The profile mesh, with ``bbim_profile_co`` and, for an extrusion with a handle,
+            ``bbim_extrusion_vector`` and ``bbim_extrusion_handle``.
+        :param profile_co: The profile's vertices now, without the handle, in the item's frame.
+        :param handle_co: The handle's position now, or ``None`` if there is no handle.
+        :param is_topology_changed: Edges or arc and circle markers changed (see ``get_profile_topology``),
+            so the profile was reshaped even if no vertex moved.
+        :return: The move of the item's Position in its own frame, whether the profile's shape changed,
+            and the new extrusion vector in the moved frame, or ``None`` if it is unchanged.
+        """
+        offset = np.array([0.0, 0.0, profile_co[:, 2].mean() if len(profile_co) else 0.0])
+        state = "RESHAPED"
+        original = mesh.get("bbim_profile_co")
+        if not is_topology_changed and original is not None and len(original) == profile_co.size:
+            deltas = profile_co - np.array(original, dtype=float).reshape(-1, 3)
+            mean = deltas.mean(axis=0)
+            if np.allclose(deltas, mean, atol=1e-5):
+                state = "UNCHANGED" if np.allclose(mean, 0.0, atol=1e-7) else "MOVED"
+                offset = mean
+        if np.allclose(offset, 0.0, atol=1e-7):
+            offset = np.zeros(3)
+
+        extrusion = None
+        original_handle = mesh.get("bbim_extrusion_handle")
+        if handle_co is not None and original_handle is not None:
+            vector = np.array(mesh["bbim_extrusion_vector"], dtype=float)
+            delta = np.array(handle_co, dtype=float) - np.array(original_handle, dtype=float) - offset
+            if is_direction_locked:
+                direction = vector / np.linalg.norm(vector)
+                delta = direction * (delta[2] / direction[2])
+            if not np.allclose(delta, 0.0, atol=1e-6):
+                extrusion = vector + delta
+        return offset, state, extrusion
+
+    @classmethod
+    def is_valid_extrusion(cls, mesh: bpy.types.Mesh, extrusion: npt.NDArray[np.float64]) -> bool:
+        """``False`` if the handle was dragged onto or past the profile's plane."""
+        vector = np.array(mesh["bbim_extrusion_vector"], dtype=float)
+        return bool(extrusion[2] * vector[2] > 0 and abs(extrusion[2]) > 1e-6)
+
+    @classmethod
+    def get_extrusion_handle_indices(cls, obj: bpy.types.Object) -> set[int]:
+        """Indices of ``obj``'s extrusion handle vertices. Use in object mode."""
+        groups = {g.index for g in obj.vertex_groups if cls.EXTRUSION_HANDLE_GROUP in g.name}
+        if not groups:
+            return set()
+        assert isinstance(mesh := obj.data, bpy.types.Mesh)
+        return {v.index for v in mesh.vertices if any(g.group in groups and g.weight == 1.0 for g in v.groups)}
 
     @classmethod
     def import_curve(
@@ -2104,6 +2215,10 @@ class Model(bonsai.core.tool.Model):
         """Regenerate only the mapped source used by ``filling``'s opening so
         it matches ``filling``'s current parametric dimensions.
 
+        A custom or manually adjusted void is left frozen - regenerating it would reset
+        it to the filling's bounding box, discarding the user's edit. Such an opening is
+        only ever changed by the user adjusting it again.
+
         Returns the voided host Blender object so the caller can recut it,
         or ``None`` if ``filling`` has no opening to refresh or the host is
         an aggregate (no mesh data to recut against)."""
@@ -2123,12 +2238,14 @@ class Model(bonsai.core.tool.Model):
             return voided_obj
         old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
 
+        generator = FilledOpeningGenerator()
+        if generator.should_preserve_opening(opening):
+            return voided_obj
+
         ifcopenshell.api.geometry.unassign_representation(ifc_file, product=opening, representation=old_representation)
 
         filling_obj = tool.Ifc.get_object(filling)
-        new_representation = FilledOpeningGenerator().generate_opening_from_filling(
-            filling, filling_obj, voided_obj.dimensions[1]
-        )
+        new_representation = generator.generate_opening_from_filling(filling, filling_obj, voided_obj.dimensions[1])
 
         for inverse in ifc_file.get_inverse(old_representation):
             ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
@@ -2163,6 +2280,13 @@ class Model(bonsai.core.tool.Model):
             voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
             if voided_obj is not None:
                 voided_objs.add(voided_obj)
+
+            # Preserve user-authored opening geometry (e.g. an IfcPolygonalFaceSet
+            # or other tessellation) instead of replacing it with a default extrusion.
+            from bonsai.bim.module.model.opening import FilledOpeningGenerator
+
+            if FilledOpeningGenerator().is_opening_representation_custom(opening):
+                continue
 
             body = tool.Geometry.get_body_representation(opening)
             if body is None:
@@ -2285,6 +2409,15 @@ class Model(bonsai.core.tool.Model):
 
         bm = bmesh.new()
         bm.from_mesh(mesh)
+        # An extrusion's handle vertex is not part of its profile
+        handle_groups = {i for i, group in enumerate(obj.vertex_groups) if cls.EXTRUSION_HANDLE_GROUP in group.name}
+        if handle_groups and (deform_layer := bm.verts.layers.deform.active):
+            handles = [
+                v
+                for v in bm.verts
+                if handle_groups.intersection(tool.Blender.bmesh_get_vertex_groups(v, deform_layer))
+            ]
+            bmesh.ops.delete(bm, geom=handles, context="VERTS")
         # Looser than auto_detect_curves' VTX_PRECISION: profiles must close into
         # a single loop, so nearly-coincident endpoints should snap together.
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=WELD_TOLERANCE)

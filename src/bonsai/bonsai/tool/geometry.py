@@ -42,6 +42,8 @@ import ifcopenshell
 import ifcopenshell.api.boundary
 import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
+import ifcopenshell.api.layer
+import ifcopenshell.api.material
 import ifcopenshell.api.group
 import ifcopenshell.api.profile
 import ifcopenshell.api.pset
@@ -1234,7 +1236,23 @@ class Geometry(bonsai.core.tool.Geometry):
 
         for element in element_types:
             if obj := tool.Ifc.get_object(element):
-                if representation := ifcopenshell.util.representation.get_representation(element, context):
+                # A type may hold several representations in one context (e.g. a 'Body' body
+                # plus a 'Reference' opening template), and get_representation() matches only
+                # by context. When base_representation is one of this type's own
+                # representations - i.e. we are reimporting it directly, such as switching to
+                # the Reference rep - render exactly that, otherwise the context lookup could
+                # return the wrong one. But element_types also contains each occurrence's
+                # type (see above), for which base_representation is not theirs; fall back to
+                # the context lookup there (and skip, as before, when it has none).
+                type_representations = [
+                    ifcopenshell.util.representation.resolve_representation(rm.MappedRepresentation)
+                    for rm in (element.RepresentationMaps or [])
+                ]
+                if base_representation in type_representations:
+                    representation = base_representation
+                else:
+                    representation = ifcopenshell.util.representation.get_representation(element, context)
+                if representation:
                     geometry = ifcopenshell.geom.create_shape(
                         settings, representation, geometry_library=geometry_library
                     )
@@ -1694,6 +1712,8 @@ class Geometry(bonsai.core.tool.Geometry):
         )
         props = cls.get_object_geometry_props(obj)
         props.is_editing = True
+        # Rows are re-sorted below, so keep the active row on the same item rather than the same index
+        active_item_id = active_item.ifc_definition_id if (active_item := props.active_item) else None
         props.items.clear()
 
         def add_tag(item, tag: str) -> None:
@@ -1708,6 +1728,14 @@ class Geometry(bonsai.core.tool.Geometry):
             # Shape aspects must be considered from the PartOfProductDefinitionShape level
             element = tool.Ifc.get_entity(obj)
             assert element
+            constituent_materials = {}
+            if constituent_set := cls.get_material_constituent_set(element):
+                constituent_materials = {c.Name: c.Material for c in constituent_set.MaterialConstituents or ()}
+            constituent_names = set(constituent_materials)
+            # A single material is what every item is made of, and styles those without a style of their own
+            single_material_style = None
+            if single_material := cls.get_element_single_material(element):
+                single_material_style = tool.Material.get_style(single_material)
             product_reps = []
             if element.is_a("IfcProduct"):
                 product_reps = [element.Representation]
@@ -1758,11 +1786,30 @@ class Geometry(bonsai.core.tool.Geometry):
                     if aspect := item_aspect.get(item, None):
                         new.shape_aspect = aspect.Name
                         new.shape_aspect_id = aspect.id()
+                        # Its style is a copy of its material constituent's (see apply_shape_aspect_style)
+                        new.is_style_from_material = bool(new.surface_style) and aspect.Name in constituent_names
+                    if new.shape_aspect in constituent_materials:
+                        material = constituent_materials[new.shape_aspect]
+                        new.material = (material.Name or "Unnamed") if material else ""
+                    elif single_material and not new.shape_aspect:
+                        new.material = single_material.Name or "Unnamed"
+                        new.is_material_from_element = True
+                    if single_material_style and not new.surface_style:
+                        new.surface_style = single_material_style.Name or "Unnamed"
+                        new.surface_style_id = single_material_style.id()
+                        new.is_style_from_material = True
 
             # sort created items
             sorted_items = sorted(props.items[:], key=lambda i: (not i.shape_aspect, i.shape_aspect))
             for i, item in enumerate(sorted_items[:-1]):  # last item is sorted automatically
                 props.items.move(props.items[:].index(item), i)
+
+            if active_item_id is not None:
+                for i, item in enumerate(props.items):
+                    if item.ifc_definition_id == active_item_id:
+                        # The raw value, so the update callback doesn't select the item
+                        props["active_item_index"] = i
+                        break
 
     @classmethod
     def refresh_representation_items(cls, element_id: int) -> bool:
@@ -1931,7 +1978,7 @@ class Geometry(bonsai.core.tool.Geometry):
         if styled_item:
             consider_inverses.remove(styled_item)
             ifc_file.remove(styled_item)
-        if layer and len(layer.Items) == 1:
+        if layer and len(layer.AssignedItems) == 1:
             consider_inverses.remove(layer)
             ifc_file.remove(layer)
         if colour:
@@ -2080,6 +2127,211 @@ class Geometry(bonsai.core.tool.Geometry):
                 if inverse.OfShapeAspect:
                     if inverse.OfShapeAspect[0] == shape_aspect:
                         return inverse
+
+    @classmethod
+    def get_item_base_representation(
+        cls, item: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """The shape representation an item is part of, not counting shape aspect representations."""
+        for inverse in tool.Ifc.get().get_inverse(item):
+            if inverse.is_a("IfcShapeRepresentation") and not inverse.OfShapeAspect:
+                return inverse
+
+    @classmethod
+    def get_representation_product_shape(
+        cls, representation: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """The IfcProductDefinitionShape or IfcRepresentationMap a representation belongs to.
+
+        For an occurrence whose geometry is mapped from its type, an item's representation belongs to the type's
+        representation map, which is where shape aspects of that item belong too.
+        """
+        if representation.OfProductRepresentation:
+            return representation.OfProductRepresentation[0]
+        if representation.RepresentationMap:
+            return representation.RepresentationMap[0]
+
+    @classmethod
+    def get_item_shape_aspect(cls, item: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        for inverse in tool.Ifc.get().get_inverse(item):
+            if inverse.is_a("IfcShapeRepresentation") and inverse.OfShapeAspect:
+                return inverse.OfShapeAspect[0]
+
+    @classmethod
+    def get_material_constituent_set(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """The element's material constituent set, which may come from its type."""
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        if material and material.is_a("IfcMaterialConstituentSet"):
+            return material
+
+    @classmethod
+    def get_element_single_material(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """The element's material when it's one IfcMaterial for the whole element, which may come from its type."""
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        if material and material.is_a("IfcMaterial"):
+            return material
+
+    @classmethod
+    def get_free_constituent_name(
+        cls, constituent_set: Union[ifcopenshell.entity_instance, None], name: str, taken: Iterable[str] = ()
+    ) -> str:
+        """The name, numbered past the set's constituent names and any others taken, as each must be unique."""
+        taken = set(taken)
+        if constituent_set:
+            taken.update(c.Name for c in constituent_set.MaterialConstituents or ())
+        result, number = name, 1
+        while result in taken:
+            number += 1
+            result = f"{name} {number}"
+        return result
+
+    @classmethod
+    def convert_material_to_constituent_set(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        """Turn the element's single IfcMaterial into a constituent set, with that material as its first constituent.
+
+        The set replaces the material where it was assigned, on the element or on its type.
+        """
+        ifc_file = tool.Ifc.get()
+        material = cls.get_element_single_material(element)
+        assert material
+        if ifcopenshell.util.element.get_material(element, should_skip_usage=True, should_inherit=False) == material:
+            owner = element
+        else:
+            owner = ifcopenshell.util.element.get_type(element) or element
+        constituent_set = ifcopenshell.api.material.add_material_set(
+            ifc_file, name=owner.Name or "Unnamed", set_type="IfcMaterialConstituentSet"
+        )
+        ifcopenshell.api.material.add_constituent(ifc_file, constituent_set, material, name=material.Name or "Unnamed")
+        ifcopenshell.api.material.assign_material(
+            ifc_file, products=[owner], type="IfcMaterialConstituentSet", material=constituent_set
+        )
+        return constituent_set
+
+    @classmethod
+    def get_item_constituent(
+        cls, element: ifcopenshell.entity_instance, item: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """The material constituent an item gets its material from: the one its shape aspect is named after."""
+        if not (shape_aspect := cls.get_item_shape_aspect(item)) or not shape_aspect.Name:
+            return None
+        if not (constituent_set := cls.get_material_constituent_set(element)):
+            return None
+        return next((c for c in constituent_set.MaterialConstituents or () if c.Name == shape_aspect.Name), None)
+
+    @classmethod
+    def apply_shape_aspect_style(
+        cls,
+        element: ifcopenshell.entity_instance,
+        shape_aspect: ifcopenshell.entity_instance,
+        item: ifcopenshell.entity_instance,
+    ) -> None:
+        """Give an item the style of the material constituent its shape aspect is named after, or no style."""
+        styles = cls.get_shape_aspect_styles(element, shape_aspect, item)
+        style = next((s for s in styles if s.is_a("IfcSurfaceStyle")), styles[0] if styles else None)
+        tool.Style.assign_style_to_representation_item(item, style)
+
+    @classmethod
+    def assign_items_to_constituent(
+        cls,
+        element: ifcopenshell.entity_instance,
+        items: Iterable[ifcopenshell.entity_instance],
+        constituent: ifcopenshell.entity_instance,
+    ) -> None:
+        """Make items out of a material constituent, through a shape aspect named after it, and style them with it.
+
+        The shape aspect is reused or created where each item's representation belongs (see
+        ``get_representation_product_shape``). The style an item had from a previous constituent is removed.
+        """
+        for item in items:
+            if not (base_representation := cls.get_item_base_representation(item)):
+                continue
+            if not (product_shape := cls.get_representation_product_shape(base_representation)):
+                continue
+            previous = cls.get_item_shape_aspect(item)
+            is_same_aspect = previous and previous.PartOfProductDefinitionShape == product_shape
+            if is_same_aspect and previous.Name == constituent.Name:
+                shape_aspect = previous
+            else:
+                if previous:
+                    cls.remove_shape_aspect_style_from_item(element, previous, item)
+                shape_aspect = next(
+                    (a for a in getattr(product_shape, "HasShapeAspects", ()) if a.Name == constituent.Name), None
+                )
+                if shape_aspect:
+                    cls.add_representation_item_to_shape_aspect([item], shape_aspect)
+                else:
+                    shape_aspect = cls.create_shape_aspect(product_shape, base_representation, [item], previous)
+                    shape_aspect.Name = constituent.Name
+            cls.apply_shape_aspect_style(element, shape_aspect, item)
+
+    @classmethod
+    def unassign_items_from_constituents(
+        cls, element: ifcopenshell.entity_instance, items: Iterable[ifcopenshell.entity_instance]
+    ) -> None:
+        """Take items out of their shape aspects, removing the style they had from its material constituent."""
+        for item in items:
+            if shape_aspect := cls.get_item_shape_aspect(item):
+                cls.remove_shape_aspect_style_from_item(element, shape_aspect, item)
+                cls.remove_representation_items_from_shape_aspect([item], shape_aspect)
+
+    @classmethod
+    def remove_shape_aspect_style_from_item(
+        cls,
+        element: ifcopenshell.entity_instance,
+        shape_aspect: ifcopenshell.entity_instance,
+        item: ifcopenshell.entity_instance,
+    ) -> None:
+        """Remove the style an item has from its shape aspect's material constituent, keeping other styles."""
+        if not item.StyledByItem:
+            return
+        styles = set(cls.get_shape_aspect_styles(element, shape_aspect, item))
+        current = tool.Style.get_representation_item_style(item)
+        if current and current in styles:
+            tool.Style.assign_style_to_representation_item(item, None)
+
+    @classmethod
+    def update_shape_aspect_styles(cls, element: ifcopenshell.entity_instance) -> bool:
+        """Restyle the items of an element's shape aspects named after its material constituents.
+
+        For when a constituent's material changes style, so items made out of it follow.
+
+        :return: ``True`` if any item was restyled.
+        """
+        if not (constituent_set := cls.get_material_constituent_set(element)):
+            return False
+        names = {c.Name for c in constituent_set.MaterialConstituents or () if c.Name}
+        product_shapes = []
+        if getattr(element, "Representation", None):
+            product_shapes.append(element.Representation)
+        product_shapes.extend(getattr(element, "RepresentationMaps", None) or ())
+        is_changed = False
+        for product_shape in product_shapes:
+            for shape_aspect in getattr(product_shape, "HasShapeAspects", ()):
+                if shape_aspect.Name not in names:
+                    continue
+                for representation in shape_aspect.ShapeRepresentations:
+                    for item in representation.Items:
+                        cls.apply_shape_aspect_style(element, shape_aspect, item)
+                        is_changed = True
+        return is_changed
+
+    @classmethod
+    def reimport_item_objects(cls, item_ids: set[int]) -> None:
+        """In item mode (not edit mode), re-import the item objects of these items, e.g. to show a new style."""
+        gprops = cls.get_geometry_props()
+        if not item_ids or not gprops.representation_obj or bpy.context.mode != "OBJECT":
+            return
+        cls.sync_item_positions()  # So re-importing keeps moves not yet saved
+        for item_obj in gprops.item_objs:
+            if not (obj := item_obj.obj):
+                continue
+            if cls.get_mesh_props(obj.data).ifc_definition_id in item_ids:
+                obj.data.materials.clear()  # import_item appends the style's material
+                cls.import_item(obj)
 
     @classmethod
     def get_shape_aspect_styles(
@@ -2276,6 +2528,147 @@ class Geometry(bonsai.core.tool.Geometry):
             tool.Root.reload_item_decorator()
 
     @classmethod
+    def get_nested_item_ids(cls, item: ifcopenshell.entity_instance) -> set[int]:
+        """The item's id, and the ids of the items inside it if it is a boolean or CSG solid."""
+        results = {item.id()}
+        if item.is_a("IfcBooleanResult"):
+            results.update(cls.get_nested_item_ids(item.FirstOperand))
+            results.update(cls.get_nested_item_ids(item.SecondOperand))
+        elif item.is_a("IfcCsgSolid"):
+            results.update(cls.get_nested_item_ids(item.TreeRootExpression))
+        return results
+
+    @classmethod
+    def get_listed_item_ids(cls, props: BIMObjectGeometryProperties) -> dict[int, set[int]]:
+        """Each item in the representation items list, mapped to its own and its nested item ids."""
+        ifc_file = tool.Ifc.get()
+        results: dict[int, set[int]] = {}
+        for ui_item in props.items:
+            try:
+                results[ui_item.ifc_definition_id] = cls.get_nested_item_ids(ifc_file.by_id(ui_item.ifc_definition_id))
+            except RuntimeError:
+                continue  # The list is stale
+        return results
+
+    @classmethod
+    def get_edit_mesh_objects(cls) -> list[bpy.types.Object]:
+        return [o for o in bpy.context.view_layer.objects if o.mode == "EDIT" and isinstance(o.data, bpy.types.Mesh)]
+
+    @classmethod
+    def get_selected_representation_items(cls, props: BIMObjectGeometryProperties) -> set[int]:
+        """Ids of the listed items whose geometry is selected in the viewport.
+
+        In item mode, those whose item objects are selected. In edit mode, those with a selected vertex in an edited
+        item object, or a selected face in an edited element mesh.
+        """
+        selected: set[int] = set()
+        if bpy.context.mode == "EDIT_MESH":
+            for obj in cls.get_edit_mesh_objects():
+                bm = bmesh.from_edit_mesh(obj.data)
+                if cls.is_representation_item(obj):
+                    if any(v.select for v in bm.verts):
+                        selected.add(cls.get_mesh_props(obj.data).ifc_definition_id)
+                elif item_id_layer := bm.faces.layers.int.get("ios_item_ids"):
+                    selected.update(face[item_id_layer] for face in bm.faces if face.select)
+        elif (gprops := cls.get_geometry_props()).representation_obj:
+            for item_obj in gprops.item_objs:
+                if (obj := item_obj.obj) and obj.select_get():
+                    selected.add(cls.get_mesh_props(obj.data).ifc_definition_id)
+        return {ui_id for ui_id, item_ids in cls.get_listed_item_ids(props).items() if item_ids & selected}
+
+    @classmethod
+    def follow_active_representation_item(cls) -> None:
+        """In item mode, highlight the active item object's row in the representation items list.
+
+        Sets the raw index, so the list's update callback doesn't change the selection. Covers item edit mode too,
+        where selecting a vertex of another edited item makes it the active object.
+        """
+        gprops = cls.get_geometry_props()
+        if not (rep_obj := gprops.representation_obj) or not (obj := bpy.context.active_object):
+            return
+        if not cls.is_representation_item(obj):
+            return
+        props = cls.get_object_geometry_props(rep_obj)
+        if not props.is_editing:
+            return
+        item_id = cls.get_mesh_props(obj.data).ifc_definition_id
+        listed = cls.get_listed_item_ids(props)
+        for index, ui_item in enumerate(props.items):
+            if item_id in listed.get(ui_item.ifc_definition_id, ()):
+                if props.active_item_index != index:
+                    props["active_item_index"] = index
+                return
+
+    @classmethod
+    def select_representation_items_in_scene(
+        cls,
+        props: BIMObjectGeometryProperties,
+        ui_item_ids: Iterable[int],
+        state: bool = True,
+        extend: bool = False,
+    ) -> None:
+        """Select, or with ``state`` False deselect, the geometry of items in the representation items list.
+
+        In item mode, their item objects, the first becoming the active object. In edit mode, all of an edited item
+        object, or the faces of an edited element mesh that come from them. Otherwise does nothing.
+
+        :param extend: Leave the rest of the selection as it is, instead of deselecting it.
+        """
+        listed = cls.get_listed_item_ids(props)
+        ui_item_ids = list(ui_item_ids)
+        item_ids: set[int] = set().union(*(listed.get(i, set()) for i in ui_item_ids))
+
+        context = bpy.context
+        if context.mode == "EDIT_MESH":
+            for obj in cls.get_edit_mesh_objects():
+                bm = bmesh.from_edit_mesh(obj.data)
+                if cls.is_representation_item(obj):
+                    if cls.get_mesh_props(obj.data).ifc_definition_id in item_ids:
+                        value = state
+                    elif not extend:
+                        value = False
+                    else:
+                        continue
+                    for elements in (bm.verts, bm.edges, bm.faces):
+                        for element in elements:
+                            element.select = value
+                elif item_id_layer := bm.faces.layers.int.get("ios_item_ids"):
+                    if state:
+                        keep = [f for f in bm.faces if f.select] if extend else []
+                        keep += [f for f in bm.faces if f[item_id_layer] in item_ids]
+                    else:
+                        # Deselecting a face also deselects the vertices it shares, so reselect what stays selected
+                        keep = [f for f in bm.faces if f.select and f[item_id_layer] not in item_ids] if extend else []
+                    for elements in (bm.verts, bm.edges, bm.faces):
+                        for element in elements:
+                            element.select = False
+                    for face in keep:
+                        face.select_set(True)
+                else:
+                    continue
+                bm.select_flush_mode()
+                bmesh.update_edit_mesh(obj.data)
+            return
+
+        gprops = cls.get_geometry_props()
+        if not gprops.representation_obj:
+            return
+        active_item_ids = listed.get(ui_item_ids[0], set()) if state and ui_item_ids else set()
+        active_obj = None
+        for item_obj in gprops.item_objs:
+            if not (obj := item_obj.obj):
+                continue
+            item_id = cls.get_mesh_props(obj.data).ifc_definition_id
+            if item_id in item_ids:
+                tool.Blender.set_object_selection(obj, state)
+            elif not extend:
+                tool.Blender.set_object_selection(obj, False)
+            if item_id in active_item_ids:
+                active_obj = obj
+        if active_obj:
+            context.view_layer.objects.active = active_obj
+
+    @classmethod
     def import_item_attributes(cls, obj: bpy.types.Object) -> None:
         props = tool.Geometry.get_mesh_props(obj.data)
         props.item_attributes.clear()
@@ -2414,6 +2807,10 @@ class Geometry(bonsai.core.tool.Geometry):
     def disable_item_mode(cls) -> None:
         props = tool.Geometry.get_geometry_props()
         if props.representation_obj:
+            if cls.get_object_geometry_props(props.representation_obj).is_editing and tool.Ifc.get_entity(
+                props.representation_obj
+            ):
+                cls.disable_editing_representation_items(props.representation_obj)
             props.representation_obj.hide_set(False)
             cls.unlock_object(props.representation_obj)
             tool.Blender.set_active_object(props.representation_obj)
@@ -2492,8 +2889,12 @@ class Geometry(bonsai.core.tool.Geometry):
         return ifc_file.createIfcTopologyRepresentation(context, context.ContextIdentifier, "Face", [face])
 
     @classmethod
-    def edit_meshlike_item(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
+    def edit_meshlike_item(
+        cls, obj: bpy.types.Object, reload: bool = True
+    ) -> Union[ifcopenshell.entity_instance, None]:
         """
+        :param reload: Reload the representation object afterwards. Pass ``False`` when editing several items
+            at once and reload once at the end.
         :return: New IfcRepresentationItem or ``None`` if mesh hasn't changed.
         """
         item = tool.Geometry.get_active_representation(obj)
@@ -2541,8 +2942,350 @@ class Geometry(bonsai.core.tool.Geometry):
         tool.Ifc.link(new_item, obj.data)
         if new_item.is_a("IfcEdge") and (element := tool.Ifc.get_entity(rep_obj)):
             tool.Structural.turn_axis_off_edge(element, verts[0], verts[1])
-        cls.reload_representation(rep_obj)
+        if reload:
+            cls.reload_representation(rep_obj)
         return new_item
+
+    @classmethod
+    def is_separable_item(cls, item: ifcopenshell.entity_instance) -> bool:
+        """Whether an item is a mesh whose faces can be separated into another item, or joined with others."""
+        return item.is_a("IfcTessellatedFaceSet") or item.is_a("IfcFacetedBrep")
+
+    @classmethod
+    def separate_selected_faces(cls, obj: bpy.types.Object) -> Union[bpy.types.Object, None]:
+        """Move an item object's selected faces into a new item, with the same style, shape aspect and layers.
+
+        A face is selected when all its vertices are, as left by edit mode. The new item is added to the same
+        representation, and its object is imported like the other item objects.
+
+        :return: The new item's object, or ``None`` if no faces, or all of them, are selected.
+        """
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        item = cls.get_active_representation(obj)
+        assert item and cls.is_separable_item(item)
+
+        selected_verts = {v.index for v in mesh.vertices if v.select}
+        selected_faces = [p.index for p in mesh.polygons if all(v in selected_verts for v in p.vertices)]
+        if not selected_faces or len(selected_faces) == len(mesh.polygons):
+            return None
+
+        # The new item's faces, with their vertices renumbered
+        coordinates = tool.Blender.get_verts_coordinates(mesh.vertices).astype("d")
+        old_faces = [mesh.polygons[i].vertices[:] for i in selected_faces]
+        used_verts = sorted({v for face in old_faces for v in face})
+        new_indices = {v: i for i, v in enumerate(used_verts)}
+        verts = coordinates[used_verts]
+        faces = [[new_indices[v] for v in face] for face in old_faces]
+
+        # Take them out of the original, with the edges and vertices only they used
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bm.faces.ensure_lookup_table()
+        bmesh.ops.delete(bm, geom=[bm.faces[i] for i in selected_faces], context="FACES_ONLY")
+        bmesh.ops.delete(bm, geom=[e for e in bm.edges if not e.link_faces], context="EDGES")
+        bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_edges], context="VERTS")
+        bm.to_mesh(mesh)
+        bm.free()
+        item = cls.edit_meshlike_item(obj, reload=False) or item
+
+        new_item = cls.add_meshlike_item_like(item, verts, faces)
+        return cls.create_item_object(new_item, obj)
+
+    @classmethod
+    def add_meshlike_item_from_object(
+        cls, obj: bpy.types.Object, source_item: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
+        """Make a new item from a mesh object split off another item, which becomes the new item's object.
+
+        The item goes in the source item's representation, with its style, shape aspect and layers. It's a faceted
+        brep in a brep representation, else a polygonal face set.
+        """
+        props = cls.get_geometry_props()
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        verts = tool.Blender.get_verts_coordinates(mesh.vertices).astype("d")
+        item = cls.add_meshlike_item_like(source_item, verts, [p.vertices[:] for p in mesh.polygons])
+        cls.name_item_object(obj, item)
+        tool.Ifc.link(item, mesh)
+        props.add_item_object(obj, item)
+        return item
+
+    @classmethod
+    def add_meshlike_item_like(
+        cls, source_item: ifcopenshell.entity_instance, verts: npt.NDArray[np.float64], faces: list
+    ) -> ifcopenshell.entity_instance:
+        """Add a mesh item next to ``source_item``, with its style, shape aspect and layers.
+
+        :param verts: In metres, as in the item objects, before the representation's coordinate offset.
+        :return: A faceted brep in a brep representation, else a polygonal face set.
+        """
+        ifc_file = tool.Ifc.get()
+        rep_obj = cls.get_geometry_props().representation_obj
+        assert rep_obj
+        verts = verts.copy()
+        if (coordinate_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
+            verts += coordinate_offset
+        verts /= ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+
+        representation = cls.get_item_base_representation(source_item)
+        assert representation
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+        if representation.RepresentationType in ("Brep", "AdvancedBrep") or source_item.is_a("IfcManifoldSolidBrep"):
+            item = builder.faceted_brep(verts, faces)
+        else:
+            item = builder.mesh(verts, faces)
+        representation.Items = list(representation.Items) + [item]
+        cls.copy_item_associations(source_item, item)
+        return item
+
+    @classmethod
+    def copy_item_associations(cls, source_item: ifcopenshell.entity_instance, item: ifcopenshell.entity_instance):
+        """Give a new item split off another the other's surface style, shape aspect and layers."""
+        ifc_file = tool.Ifc.get()
+        for styled_item in source_item.StyledByItem:
+            styles = styled_item.Styles
+            if styles and styles[0].is_a("IfcPresentationStyleAssignment"):
+                styles = styles[0].Styles
+            if style := next((s for s in styles if s.is_a("IfcSurfaceStyle")), None):
+                tool.Style.assign_style_to_representation_item(item, style)
+        if shape_aspect := cls.get_item_shape_aspect(source_item):
+            cls.add_representation_item_to_shape_aspect([item], shape_aspect)
+        layers = getattr(source_item, "LayerAssignment", None) or getattr(source_item, "LayerAssignments", ())
+        for layer in layers:
+            ifcopenshell.api.layer.assign_layer(ifc_file, items=[item], layer=layer)
+
+    @classmethod
+    def is_separable_profile_item(cls, item: ifcopenshell.entity_instance) -> bool:
+        """Whether an item is an extrusion whose profile can be split into other extrusions, or joined with theirs.
+
+        Not for elements whose extrusions follow a layer or profile set, as their profiles are parametric.
+        """
+        if not item.is_a("IfcExtrudedAreaSolid"):
+            return False
+        rep_obj = cls.get_geometry_props().representation_obj
+        element = tool.Ifc.get_entity(rep_obj) if rep_obj else None
+        return not (element and tool.Model.get_usage_type(element))
+
+    @classmethod
+    def add_extrusion_like(
+        cls,
+        source_item: ifcopenshell.entity_instance,
+        profile: ifcopenshell.entity_instance,
+        position: Union[ifcopenshell.entity_instance, None] = None,
+    ) -> ifcopenshell.entity_instance:
+        """Add an extrusion of ``profile`` next to ``source_item``, with its direction, depth, style, shape aspect
+        and layers.
+
+        :param position: The new extrusion's Position, else a copy of the source's.
+        """
+        ifc_file = tool.Ifc.get()
+        if position is None and source_item.Position:
+            position = ifcopenshell.util.element.copy_deep(ifc_file, source_item.Position)
+        direction = ifc_file.createIfcDirection(source_item.ExtrudedDirection.DirectionRatios)
+        item = ifc_file.createIfcExtrudedAreaSolid(profile, position, direction, source_item.Depth)
+        representation = cls.get_item_base_representation(source_item)
+        assert representation
+        representation.Items = list(representation.Items) + [item]
+        cls.copy_item_associations(source_item, item)
+        return item
+
+    @classmethod
+    def create_item_object(cls, item: ifcopenshell.entity_instance, like_obj: bpy.types.Object) -> bpy.types.Object:
+        """Make an item object for a new item, in the same collections as ``like_obj``, imported from IFC."""
+        props = cls.get_geometry_props()
+        mesh = bpy.data.meshes.new("tmp")
+        obj = bpy.data.objects.new("tmp", mesh)
+        obj.matrix_world = like_obj.matrix_world
+        for collection in like_obj.users_collection:
+            collection.objects.link(obj)
+        cls.name_item_object(obj, item)
+        tool.Ifc.link(item, mesh)
+        props.add_item_object(obj, item)
+        cls.lock_scale(obj)
+        cls.import_item(obj)
+        cls.import_item_attributes(obj)
+        if not cls.is_movable(item):
+            cls.lock_object(obj)
+        return obj
+
+    @classmethod
+    def split_off_selected_profile_loops(
+        cls, obj: bpy.types.Object
+    ) -> Union[tuple[ifcopenshell.entity_instance, Union[ifcopenshell.entity_instance, None]], str, None]:
+        """Take an edited profile's selected loops out of it, into a new profile.
+
+        Use in edit mode, before leaving it saves what is left. A loop is selected when all its vertices are.
+
+        :return: The new profile and a copy of the item's Position, as the loops are in its frame. ``None`` if no
+            loops, or all of them, are selected. An error message if the selected loops aren't a valid profile.
+        """
+        ifc_file = tool.Ifc.get()
+        item = cls.get_active_representation(obj)
+        assert item and isinstance(mesh := obj.data, bpy.types.Mesh)
+        obj.update_from_editmode()  # So the mesh's vertices, which tell the handle, match the edited ones
+        handles = set(tool.Model.get_extrusion_handle_indices(obj))
+        bm = bmesh.from_edit_mesh(mesh)
+        bm.verts.ensure_lookup_table()
+        seen: set[int] = set(handles)
+        loops: list[list[int]] = []
+        for vert in bm.verts:
+            if vert.index in seen:
+                continue
+            seen.add(vert.index)
+            stack, loop = [vert], []
+            while stack:
+                v = stack.pop()
+                loop.append(v.index)
+                for edge in v.link_edges:
+                    if (other := edge.other_vert(v)).index not in seen:
+                        seen.add(other.index)
+                        stack.append(other)
+            loops.append(loop)
+        selected = {i for loop in loops if all(bm.verts[i].select for i in loop) for i in loop}
+        if not selected or len(selected) == len(bm.verts) - len(handles):
+            return None
+
+        # Export the selected loops from a copy, as leaving edit mode does
+        tmp_obj = obj.copy()
+        tmp_obj.data = mesh.copy()
+        tmp_bm = bmesh.new()
+        tmp_bm.from_mesh(tmp_obj.data)
+        tmp_bm.verts.ensure_lookup_table()
+        bmesh.ops.delete(tmp_bm, geom=[v for v in tmp_bm.verts if v.index not in selected], context="VERTS")
+        tmp_bm.to_mesh(tmp_obj.data)
+        tmp_bm.free()
+        profile = tool.Model.export_profile(tmp_obj)
+        tmp_mesh = tmp_obj.data
+        bpy.data.objects.remove(tmp_obj)
+        bpy.data.meshes.remove(tmp_mesh)
+        if not profile:
+            return "The selected loops aren't a valid profile"
+
+        bmesh.ops.delete(bm, geom=[bm.verts[i] for i in selected], context="VERTS")
+        bmesh.update_edit_mesh(mesh)
+        position = ifcopenshell.util.element.copy_deep(ifc_file, item.Position) if item.Position else None
+        return profile, position
+
+    @classmethod
+    def split_profile_item(cls, item: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        """Split an extrusion of a composite profile into one extrusion per sub-profile.
+
+        The item keeps the first sub-profile.
+
+        :return: The new extrusions, empty if there is nothing to split or the profile is shared with others.
+        """
+        ifc_file = tool.Ifc.get()
+        profile = item.SweptArea
+        if not profile.is_a("IfcCompositeProfileDef") or len(profile.Profiles) < 2:
+            return []
+        if ifc_file.get_total_inverses(profile) > 1:
+            return []
+        first, *others = profile.Profiles
+        item.SweptArea = first
+        new_items = [cls.add_extrusion_like(item, other) for other in others]
+        ifc_file.remove(profile)
+        return new_items
+
+    @classmethod
+    def join_profile_items(
+        cls, target: ifcopenshell.entity_instance, items: list[ifcopenshell.entity_instance]
+    ) -> Union[str, None]:
+        """Give ``target`` a profile made of its own and the other extrusions' profiles. The others aren't removed.
+
+        They must extrude in the same direction, from profiles that don't overlap. The joined extrusion keeps the
+        target's depth and plane: the other profiles are flattened onto it along its normal. A profile inside
+        another's hole stays an island in it.
+
+        :return: An error message if they can't be joined, else ``None``.
+        """
+        import shapely
+        import shapely.ops
+
+        ifc_file = tool.Ifc.get()
+
+        def get_matrix(item: ifcopenshell.entity_instance) -> npt.NDArray[np.float64]:
+            if not item.Position:
+                return np.eye(4)
+            return np.array(ifcopenshell.util.placement.get_placement(item.Position, should_return_si=True))
+
+        def get_direction(item: ifcopenshell.entity_instance) -> npt.NDArray[np.float64]:
+            direction = np.array(item.ExtrudedDirection.DirectionRatios, dtype=float)
+            return get_matrix(item)[:3, :3] @ (direction / np.linalg.norm(direction))
+
+        target_matrix_i = np.linalg.inv(get_matrix(target))
+        for item in items:
+            if not np.allclose(get_direction(item), get_direction(target), atol=1e-6):
+                return "Only extrusions in the same direction can be joined"
+
+        # Every profile as edges in the target's frame, with their arcs and circles, in one mesh
+        verts: list[Vector] = []
+        edges: list[tuple[int, int]] = []
+        groups: list[tuple[str, list[int]]] = []
+        areas = []
+        for item in [target] + items:
+            matrix = Matrix((target_matrix_i @ get_matrix(item)).tolist())
+            profile_obj = tool.Model.import_profile(item.SweptArea, position=matrix)
+            if not profile_obj:
+                return f"Couldn't read the profile of {item.is_a()} #{item.id()}"
+            profile_mesh = profile_obj.data
+            offset = len(verts)
+            co = [v.co.copy() for v in profile_mesh.vertices]
+            item_edges = [tuple(e.vertices) for e in profile_mesh.edges]
+            for group in profile_obj.vertex_groups:
+                members = [v.index for v in profile_mesh.vertices if any(g.group == group.index for g in v.groups)]
+                groups.append((group.name, [i + offset for i in members]))
+            bpy.data.objects.remove(profile_obj)
+            bpy.data.meshes.remove(profile_mesh)
+            for c in co:
+                c.z = 0.0  # Flattened onto the target's plane
+            verts.extend(co)
+            edges.extend((a + offset, b + offset) for a, b in item_edges)
+
+            # Its area by the even-odd rule, to check for overlaps
+            neighbours: dict[int, list[int]] = defaultdict(list)
+            for a, b in item_edges:
+                neighbours[a].append(b)
+                neighbours[b].append(a)
+            area = shapely.Polygon()
+            visited: set[int] = set()
+            for start in neighbours:
+                if start in visited:
+                    continue
+                ring, previous, current = [], None, start
+                while current not in visited:
+                    visited.add(current)
+                    ring.append((co[current].x, co[current].y))
+                    following = [n for n in neighbours[current] if n != previous and n not in visited]
+                    previous, current = current, (following[0] if following else start)
+                if len(ring) > 2:
+                    area = area.symmetric_difference(shapely.Polygon(ring).buffer(0))
+            if area.area < 1e-8:
+                return f"The profile of {item.is_a()} #{item.id()} is edge-on to the active one's plane"
+            areas.append(area)
+
+        for i, a in enumerate(areas):
+            for b in areas[i + 1 :]:
+                if a.intersection(b).area > 1e-4 * min(a.area, b.area):
+                    return "Only extrusions whose profiles don't overlap can be joined"
+
+        mesh = bpy.data.meshes.new("tmp")
+        mesh.from_pydata(verts, edges, [])
+        obj = bpy.data.objects.new("tmp", mesh)
+        for name, members in groups:
+            obj.vertex_groups.new(name=name).add(members, 1, "REPLACE")
+        profile = tool.Model.export_profile(obj)
+        bpy.data.objects.remove(obj)
+        bpy.data.meshes.remove(mesh)
+        if not profile:
+            return "The joined profiles aren't a valid profile"
+
+        old_profile = target.SweptArea
+        profile.ProfileName = old_profile.ProfileName
+        target.SweptArea = profile
+        if not ifc_file.get_total_inverses(old_profile):
+            ifcopenshell.util.element.remove_deep2(ifc_file, old_profile)
+        return None
 
     @classmethod
     def split_by_loose_parts(cls, obj: bpy.types.Object) -> list[bpy.types.Mesh]:

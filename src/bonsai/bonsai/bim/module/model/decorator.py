@@ -35,6 +35,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import mathutils
+import numpy as np
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
 from bpy_extras.view3d_utils import location_3d_to_region_2d
@@ -121,16 +122,22 @@ class ProfileDecorator:
     installed = None
 
     @classmethod
-    def install(cls, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None):
+    def install(cls, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None, objects=None):
         """Note that operators that change mesh in `exit_edit_mode_callback` can freeze blender.
         The workaround is to move their code to function and use it for callback.
 
-        Example: https://devtalk.blender.org/t/calling-operator-that-saves-bmesh-freezes-blender-forever/28595"""
+        Example: https://devtalk.blender.org/t/calling-operator-that-saves-bmesh-freezes-blender-forever/28595
+
+        :param objects: Objects to draw while they are in edit mode. Defaults to the active object only."""
         if cls.installed:
             cls.uninstall()
         handler = cls()
+        object_names = [o.name for o in objects] if objects else None
         cls.installed = SpaceView3D.draw_handler_add(
-            handler, (context, get_custom_bmesh, draw_faces, exit_edit_mode_callback), "WINDOW", "POST_VIEW"
+            handler,
+            (context, get_custom_bmesh, draw_faces, exit_edit_mode_callback, object_names),
+            "WINDOW",
+            "POST_VIEW",
         )
 
     @classmethod
@@ -154,13 +161,10 @@ class ProfileDecorator:
         faces_color = tool.Blender.transparent_color(self.addon_prefs.decorator_color_special)
         tool.Blender.draw_bmesh_face_tris(bm, vertices_coords, faces_color, self.draw_batch)
 
-    def __call__(self, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None):
+    def __call__(
+        self, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None, object_names=None
+    ):
         self.addon_prefs = tool.Blender.get_addon_preferences()
-        selected_elements_color = self.addon_prefs.decorator_color_selected
-        unselected_elements_color = self.addon_prefs.decorator_color_unselected
-        special_elements_color = self.addon_prefs.decorator_color_special
-        error_elements_color = self.addon_prefs.decorator_color_error
-        background_elements_color = self.addon_prefs.decorator_color_background
 
         obj = context.active_object
 
@@ -170,13 +174,36 @@ class ProfileDecorator:
                 exit_edit_mode_callback()
             return
 
-        if get_custom_bmesh:
-            bm = get_custom_bmesh()
-        else:
-            bm = bmesh.from_edit_mesh(obj.data)
-
         gpu.state.point_size_set(6)
         gpu.state.blend_set("ALPHA")
+
+        # POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()
+        # POLYLINE_UNIFORM_COLOR specific uniforms
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+        self.line_shader.uniform_float("lineWidth", 2.0)
+
+        # general shader
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        self.shader.bind()
+
+        if get_custom_bmesh:
+            self.draw_object(obj, get_custom_bmesh(), draw_faces)
+            return
+
+        objs = [obj]
+        if object_names:
+            objs = [o for name in object_names if (o := bpy.data.objects.get(name)) and o.mode == "EDIT"]
+        for obj in objs:
+            self.draw_object(obj, bmesh.from_edit_mesh(obj.data), draw_faces)
+
+    def draw_object(self, obj: bpy.types.Object, bm: bmesh.types.BMesh, draw_faces: bool) -> None:
+        selected_elements_color = self.addon_prefs.decorator_color_selected
+        unselected_elements_color = self.addon_prefs.decorator_color_unselected
+        special_elements_color = self.addon_prefs.decorator_color_special
+        error_elements_color = self.addon_prefs.decorator_color_error
+        background_elements_color = self.addon_prefs.decorator_color_background
 
         ### Actually drawing
         all_vertices = []
@@ -194,11 +221,15 @@ class ProfileDecorator:
 
         arc_groups = []
         circle_groups = []
+        handle_groups = set()
         for i, group in enumerate(obj.vertex_groups):
             if "IFCARCINDEX" in group.name:
                 arc_groups.append(i)
             elif "IFCCIRCLE" in group.name:
                 circle_groups.append(i)
+            elif tool.Model.EXTRUSION_HANDLE_GROUP in group.name:
+                handle_groups.add(i)
+        handles: list[bmesh.types.BMVert] = []
 
         arcs = {}
         circles = {}
@@ -214,6 +245,12 @@ class ProfileDecorator:
             all_vertices.append(co)
             if vertex.hide:
                 continue
+
+            if handle_groups and deform_layer:
+                if handle_groups.intersection(tool.Blender.bmesh_get_vertex_groups(vertex, deform_layer)):
+                    handles.append(vertex)
+                    (selected_vertices if vertex.select else special_vertices).append(co)
+                    continue
 
             is_arc, is_circle = False, False
             # deform_layer is None if there are no verts assigned to vertex groups
@@ -259,18 +296,6 @@ class ProfileDecorator:
                 else:
                     unselected_edges.append(edge_indices)
 
-        ### Actually drawing
-        # POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
-        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
-        self.line_shader.bind()
-        # POLYLINE_UNIFORM_COLOR specific uniforms
-        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
-        self.line_shader.uniform_float("lineWidth", 2.0)
-
-        # general shader
-        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-        self.shader.bind()
-
         # Draw faces
         if draw_faces:
             self.draw_faces(bm, all_vertices)
@@ -280,6 +305,9 @@ class ProfileDecorator:
         self.draw_batch("LINES", all_vertices, special_elements_color, roof_angle_edges)
         self.draw_batch("LINES", all_vertices, unselected_elements_color, unselected_edges)
         self.draw_batch("LINES", all_vertices, selected_elements_color, selected_edges)
+
+        if handles:
+            self.draw_extrusion(obj, bm, set(handles), special_elements_color, background_elements_color)
 
         self.draw_batch("POINTS", unselected_vertices, tool.Blender.transparent_color(unselected_elements_color, 0.5))
         self.draw_batch("POINTS", error_vertices, error_elements_color)
@@ -333,6 +361,36 @@ class ProfileDecorator:
         self.draw_batch("POINTS", circle_centroids, background_elements_color)
         for verts, edges in circle_segments:
             self.draw_batch("LINES", verts, special_elements_color, edges)
+
+    def draw_extrusion(
+        self,
+        obj: bpy.types.Object,
+        bm: bmesh.types.BMesh,
+        handles: set[bmesh.types.BMVert],
+        line_color,
+        ghost_color,
+    ) -> None:
+        """Draw a line from the profile's centre to its extrusion handle, and the extrusion's far end as it will
+        be saved."""
+        mesh = obj.data
+        if "bbim_extrusion_vector" not in mesh:
+            return
+        handle = next(iter(handles))
+        all_co = np.array([v.co for v in bm.verts], dtype=float)
+        is_profile = np.array([v not in handles for v in bm.verts])
+        profile_co = all_co[is_profile]
+        if not len(profile_co):
+            return
+        is_locked = tool.Geometry.get_geometry_props().is_extrusion_direction_locked
+        _, _, extrusion = tool.Model.plan_profile_edit(mesh, profile_co, handle.co, is_locked)
+        end = extrusion if extrusion is not None else np.array(mesh["bbim_extrusion_vector"], dtype=float)
+
+        matrix = obj.matrix_world
+        centre = profile_co.mean(axis=0)
+        self.draw_batch("LINES", [tuple(matrix @ Vector(centre)), tuple(matrix @ handle.co)], line_color, [(0, 1)])
+        ghost = [tuple(matrix @ Vector(co + end)) for co in all_co]
+        edges = [(e.verts[0].index, e.verts[1].index) for e in bm.edges if not e.hide]
+        self.draw_batch("LINES", ghost, ghost_color, edges)
 
     def create_matrix(self, p, x, y, z):
         return Matrix([x, y, z, p]).to_4x4().transposed()
