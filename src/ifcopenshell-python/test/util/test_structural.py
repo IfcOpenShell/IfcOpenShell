@@ -388,6 +388,109 @@ class TestGetGlobalAxes(test.bootstrap.IFC4, StructuralModel):
         assert numpy.allclose(subject.get_global_axes(activity)[:, 0], [0, 1, 0])
 
 
+class TestIsProjected(test.bootstrap.IFC4):
+    def add_activity(self, projected_or_true, axes="GLOBAL_COORDS"):
+        member = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralCurveMember")
+        load = ifcopenshell.api.structural.add_structural_load(self.file, ifc_class="IfcStructuralLoadLinearForce")
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            self.file, applied_load=load, structural_member=member, ifc_class="IfcStructuralLinearAction"
+        )
+        activity.GlobalOrLocal, activity.ProjectedOrTrue = axes, projected_or_true
+        return activity
+
+    def test_run(self):
+        assert subject.is_projected(self.add_activity("PROJECTED_LENGTH"))
+        assert not subject.is_projected(self.add_activity("TRUE_LENGTH"))
+        assert not subject.is_projected(self.add_activity(None))
+
+    def test_never_in_local_axes(self):
+        # Invalid IFC: read as per true length.
+        assert not subject.is_projected(self.add_activity("PROJECTED_LENGTH", axes="LOCAL_COORDS"))
+
+    def test_a_point_load(self):
+        point = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStructuralPointConnection")
+        load = ifcopenshell.api.structural.add_structural_load(self.file, ifc_class="IfcStructuralLoadSingleForce")
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            self.file, applied_load=load, structural_member=point, ifc_class="IfcStructuralPointAction"
+        )
+        assert not subject.is_projected(activity)
+
+
+class TestGetTrueLengthFactor(test.bootstrap.IFC4):
+    # A rafter or a roof pitched at 60 degrees: its horizontal projection is half its length or area.
+    RAFTER = (0.5, 0.0, 0.75**0.5)
+    ROOF_NORMAL = (-(0.75**0.5), 0.0, 0.5)
+
+    def add_activity(self, ifc_class, member_class, projected_or_true="PROJECTED_LENGTH", axes="GLOBAL_COORDS"):
+        member = ifcopenshell.api.root.create_entity(self.file, ifc_class=member_class)
+        load = ifcopenshell.api.structural.add_structural_load(self.file, ifc_class="IfcStructuralLoadLinearForce")
+        activity = ifcopenshell.api.structural.add_structural_activity(
+            self.file, applied_load=load, structural_member=member, ifc_class=ifc_class, global_or_local=axes
+        )
+        activity.ProjectedOrTrue = projected_or_true
+        return activity
+
+    def test_a_line_load_per_projected_length(self):
+        activity = self.add_activity("IfcStructuralLinearAction", "IfcStructuralCurveMember")
+        assert subject.get_true_length_factor(activity, (0, 0, -2), self.RAFTER) == pytest.approx(0.5)
+
+    def test_an_area_load_per_projected_area(self):
+        activity = self.add_activity("IfcStructuralPlanarAction", "IfcStructuralSurfaceMember")
+        assert subject.get_true_length_factor(activity, (0, 0, -2), self.ROOF_NORMAL) == pytest.approx(0.5)
+
+    def test_wind_across_a_roof_is_per_its_projection_across_the_wind(self):
+        activity = self.add_activity("IfcStructuralPlanarAction", "IfcStructuralSurfaceMember")
+        assert subject.get_true_length_factor(activity, (3, 0, 0), self.ROOF_NORMAL) == pytest.approx(0.75**0.5)
+
+    def test_a_force_along_a_member_has_no_projected_length(self):
+        activity = self.add_activity("IfcStructuralLinearAction", "IfcStructuralCurveMember")
+        assert subject.get_true_length_factor(activity, (1, 0, 0), (2, 0, 0)) == pytest.approx(0.0)
+
+    def test_loads_per_true_length_or_without_one(self):
+        for projected_or_true in ("TRUE_LENGTH", None):
+            activity = self.add_activity("IfcStructuralLinearAction", "IfcStructuralCurveMember", projected_or_true)
+            assert subject.get_true_length_factor(activity, (0, 0, -2), self.RAFTER) == 1.0
+
+    def test_a_load_in_local_axes_is_never_projected(self):
+        activity = self.add_activity("IfcStructuralLinearAction", "IfcStructuralCurveMember", axes="LOCAL_COORDS")
+        assert subject.get_true_length_factor(activity, (0, 0, -2), self.RAFTER) == 1.0
+
+    def test_no_force(self):
+        activity = self.add_activity("IfcStructuralLinearAction", "IfcStructuralCurveMember")
+        assert subject.get_true_length_factor(activity, (0, 0, 0), self.RAFTER) == 1.0
+
+    def test_in_the_axes_of_the_analysis_model(self):
+        activity = self.add_activity("IfcStructuralLinearAction", "IfcStructuralCurveMember")
+        model = ifcopenshell.api.structural.add_structural_analysis_model(self.file)
+        ifcopenshell.api.structural.assign_structural_analysis_model(
+            self.file, products=[subject.get_activity_item(activity)], structural_analysis_model=model
+        )
+        # Z down: the force given as +Z is downwards in the project.
+        z = self.file.createIfcDirection((0.0, 0.0, -1.0))
+        x = self.file.createIfcDirection((1.0, 0.0, 0.0))
+        origin = self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
+        model.SharedPlacement = self.file.createIfcLocalPlacement(
+            RelativePlacement=self.file.createIfcAxis2Placement3D(origin, z, x)
+        )
+        # Along the member in the project, the force is along the model's -Z, which is the member's direction.
+        assert subject.get_true_length_factor(activity, (0, 0, 2), (0, 0, -1)) == pytest.approx(0.0)
+        assert subject.get_true_length_factor(activity, (0, 0, 2), self.RAFTER) == pytest.approx(0.5)
+
+
+class TestGetTrueLengthFactorIFC2X3(test.bootstrap.IFC2X3):
+    def test_an_area_load_per_projected_area(self):
+        activity = self.file.createIfcStructuralPlanarAction(
+            ifcopenshell.guid.new(), GlobalOrLocal="GLOBAL_COORDS", ProjectedOrTrue="PROJECTED_LENGTH"
+        )
+        assert subject.get_true_length_factor(activity, (0, 0, -2), (-(0.75**0.5), 0, 0.5)) == pytest.approx(0.5)
+
+    def test_a_line_load_per_projected_length(self):
+        activity = self.file.createIfcStructuralLinearAction(
+            ifcopenshell.guid.new(), GlobalOrLocal="GLOBAL_COORDS", ProjectedOrTrue="PROJECTED_LENGTH"
+        )
+        assert subject.get_true_length_factor(activity, (0, 0, -2), (0.5, 0, 0.75**0.5)) == pytest.approx(0.5)
+
+
 class TestGetBoundaryConditionClass(test.bootstrap.IFC4):
     def test_each_connection_takes_its_own_class(self):
         for connection_class, condition_class in (

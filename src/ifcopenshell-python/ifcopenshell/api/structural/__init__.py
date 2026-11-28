@@ -36,6 +36,7 @@ from .assign_structural_analysis_model import assign_structural_analysis_model
 from .assign_structural_load_combination import assign_structural_load_combination
 from .assign_structural_load_group import assign_structural_load_group
 from .assign_to_building import assign_to_building
+from .edit_structural_activity import edit_structural_activity
 from .edit_structural_analysis_model import edit_structural_analysis_model
 from .edit_structural_boundary_condition import edit_structural_boundary_condition
 from .edit_structural_connection_cs import edit_structural_connection_cs
@@ -72,6 +73,7 @@ __all__ = [
     "assign_structural_load_combination",
     "assign_structural_load_group",
     "assign_to_building",
+    "edit_structural_activity",
     "edit_structural_analysis_model",
     "edit_structural_boundary_condition",
     "edit_structural_connection_cs",

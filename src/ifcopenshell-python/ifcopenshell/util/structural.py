@@ -22,7 +22,8 @@ These functions follow the relationships of the structural analysis domain:
 the items and load groups of an analysis model, how members and connections
 are joined, the activities (loads and reactions) on an item or in a load
 group, the factors of a load combination, the axes that loads in global
-coordinates are given in, and the building elements that a structural member
+coordinates are given in, the true length or area of loads given per
+projected length or area, and the building elements that a structural member
 stands for.
 """
 
@@ -279,6 +280,56 @@ def get_global_axes(activity: ifcopenshell.entity_instance) -> np.ndarray:
         if placement:
             return np.array(ifcopenshell.util.placement.get_placement(placement))[:3, :3]
     return np.eye(3)
+
+
+def is_projected(activity: ifcopenshell.entity_instance) -> bool:
+    """Whether an activity's load is given per projected length or area
+
+    That is a ``ProjectedOrTrue`` of PROJECTED_LENGTH, which IFC allows only
+    in global coordinates: a load in local coordinates is per true length or
+    area, whatever it says.
+
+    :param activity: An IfcStructuralActivity
+    :return: True if per projected length or area
+    """
+    return getattr(activity, "ProjectedOrTrue", None) == "PROJECTED_LENGTH" and activity.GlobalOrLocal != "LOCAL_COORDS"
+
+
+def get_true_length_factor(
+    activity: ifcopenshell.entity_instance,
+    force: Union[np.ndarray, list[float]],
+    member_axis: Union[np.ndarray, list[float]],
+) -> float:
+    """What a distributed force of an activity is multiplied by to be per true length or area of its member
+
+    A load per projected length or area (``ProjectedOrTrue`` of
+    PROJECTED_LENGTH), as snow on a rafter or a pitched roof is given per
+    horizontal length or plan area, is per length or area of the member as
+    seen along the force. IFC allows one only in global coordinates. On a
+    curve member at an angle to the force that is the sine of the angle per
+    true length; on a surface member, the cosine of the angle between the
+    force and the surface's normal per true area. Any other load is per
+    true length or area already, and its factor is 1.
+
+    :param activity: An IfcStructuralCurveAction or IfcStructuralSurfaceAction,
+        or in IFC2X3 an IfcStructuralLinearAction or IfcStructuralPlanarAction
+    :param force: The force of its applied load, in the axes it is given in
+        (see get_global_axes)
+    :param member_axis: For a curve member, its direction along its length;
+        for a surface member, its normal. In the project's coordinates.
+    :return: The factor, from 0 to 1
+    """
+    if not is_projected(activity):
+        return 1.0
+    force = get_global_axes(activity) @ np.asarray(force, dtype=float)
+    axis = np.asarray(member_axis, dtype=float)
+    size, axis_size = float(np.linalg.norm(force)), float(np.linalg.norm(axis))
+    if size < 1e-12 or axis_size < 1e-12:
+        return 1.0
+    cosine = float(np.dot(force / size, axis / axis_size))
+    if activity.is_a("IfcStructuralPlanarAction") or activity.is_a("IfcStructuralSurfaceAction"):
+        return min(abs(cosine), 1.0)
+    return float(np.sqrt(max(0.0, 1.0 - cosine * cosine)))
 
 
 def get_member_connections(member: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
