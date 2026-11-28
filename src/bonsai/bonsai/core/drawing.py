@@ -624,6 +624,10 @@ def select_assigned_product(drawing: type[tool.Drawing], context: bpy.types.Cont
     drawing.select_assigned_product(context)
 
 
+def select_assigned_annotations(drawing: type[tool.Drawing], context: bpy.types.Context) -> tuple[int, int]:
+    return drawing.select_assigned_annotations(context)
+
+
 def activate_drawing_view(
     ifc: type[tool.Ifc],
     blender: type[tool.Blender],
