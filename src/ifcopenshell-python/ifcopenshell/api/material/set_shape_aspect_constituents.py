@@ -72,6 +72,21 @@ def set_shape_aspect_constituents(
 
     .. code:: python
 
+        # Create a window with a body representation of three named items
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        model_context = ifcopenshell.api.context.add_context(model, context_type="Model")
+        body = ifcopenshell.api.context.add_context(model, context_type="Model",
+            context_identifier="Body", target_view="MODEL_VIEW", parent=model_context)
+        window = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWindow")
+        items = [model.create_entity("IfcBlock",
+            Position=model.createIfcAxis2Placement3D(model.createIfcCartesianPoint((0.0, 0.0, 0.0))),
+            XLength=1.0, YLength=0.1, ZLength=1.0) for _ in range(3)]
+        representation = model.createIfcShapeRepresentation(body, "Body", "CSG", items)
+        ifcopenshell.api.geometry.assign_representation(model, product=window, representation=representation)
+        for name, item in zip(["Framing", "Lining", "Glazing"], items):
+            ifcopenshell.api.geometry.add_shape_aspect(model,
+                name=name, items=[item], representation=representation, part_of_product=window.Representation)
+
         # Create two materials
         aluminium = ifcopenshell.api.material.add_material(model, name="AL01", category="aluminium")
         glass = ifcopenshell.api.material.add_material(model, name="GLZ01", category="glass")
@@ -79,9 +94,9 @@ def set_shape_aspect_constituents(
         # Auto assign material constituents and styles to items based on shape aspects
         ifcopenshell.api.material.set_shape_aspect_constituents(
             model, element=window, context=body, materials={
-                "Framing": aluminium
-                "Lining": aluminium
-                "Glazing": glass
+                "Framing": aluminium,
+                "Lining": aluminium,
+                "Glazing": glass,
             })
     """
     should_create_new_material_set = False

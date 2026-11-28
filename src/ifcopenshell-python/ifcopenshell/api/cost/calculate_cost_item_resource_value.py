@@ -65,7 +65,7 @@ def calculate_cost_item_resource_value(file: ifcopenshell.file, cost_item: ifcop
         quantity = ifcopenshell.api.resource.add_resource_quantity(model,
             resource=concrete, ifc_class="IfcQuantityVolume")
         ifcopenshell.api.resource.edit_resource_quantity(model,
-            physical_quantity=quantity, "attributes": {"VolumeValue": 200.0})
+            physical_quantity=quantity, attributes={"VolumeValue": 200.0})
 
         # Let's say they also need some equipment
         equipment = ifcopenshell.api.resource.add_resource(model,
@@ -73,9 +73,9 @@ def calculate_cost_item_resource_value(file: ifcopenshell.file, cost_item: ifcop
         ifcopenshell.api.control.assign_control(model,
             relating_control=item, related_objects=[equipment])
         # ... with a fixed price of 50,000
-        value = ifcopenshell.api.cost.add_cost_value(model, parent=concrete)
+        value = ifcopenshell.api.cost.add_cost_value(model, parent=equipment)
         ifcopenshell.api.cost.edit_cost_value(model, cost_value=value,
-            attributes={"AppliedValue": 42.0})
+            attributes={"AppliedValue": 50000.0})
 
         # (42 * 200) + 50000 = 58400 is our calculated cost
         ifcopenshell.api.cost.calculate_cost_item_resource_value(model, cost_item=item)

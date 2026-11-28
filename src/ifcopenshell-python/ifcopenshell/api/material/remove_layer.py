@@ -35,7 +35,7 @@ def remove_layer(
 
         # Create a material set for steel stud partition walls.
         material_set = ifcopenshell.api.material.add_material_set(model,
-            name="Window", set_type="IfcMaterialConstituentSet")
+            name="Window", set_type="IfcMaterialLayerSet")
 
         gypsum = ifcopenshell.api.material.add_material(model, name="PB01", category="gypsum")
         steel = ifcopenshell.api.material.add_material(model, name="ST01", category="steel")

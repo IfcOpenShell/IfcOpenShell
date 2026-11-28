@@ -97,7 +97,7 @@ def append_asset(
 
         # Let's create a single asset of a 200mm thick concrete wall
         wall_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType", name="WAL01")
-        concrete = ifcopenshell.api.material.add_material(usecase.file, name="CON", category="concrete")
+        concrete = ifcopenshell.api.material.add_material(library, name="CON", category="concrete")
         rel = ifcopenshell.api.material.assign_material(library,
             products=[wall_type], type="IfcMaterialLayerSet")
         layer = ifcopenshell.api.material.add_layer(library,
@@ -120,16 +120,25 @@ def append_asset(
 
     .. code:: python
 
-        # since occurrences of IfcWindow of the same type
-        # might have shared inverses (e.g. IfcStyledItem)
+        library = ifcopenshell.api.project.create_file()
+        root = ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        context = ifcopenshell.api.root.create_entity(library, ifc_class="IfcProjectLibrary")
+        ifcopenshell.api.project.assign_declaration(library, definitions=[context], relating_context=root)
+        window_types = [ifcopenshell.api.root.create_entity(library, ifc_class="IfcWindowType") for _ in range(2)]
+        ifcopenshell.api.project.assign_declaration(library, definitions=window_types, relating_context=context)
+
+        model = ifcopenshell.api.project.create_file()
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject", name="Test")
+
+        # since window types might have shared inverses (e.g. IfcStyledItem)
         # we provide a dictionary that will be populated with newly created items
         # and reused to avoid duplicated elements
         reuse_identities = dict()
 
-        for element in ifcopenshell.util.selector.filter_elements(model, "IfcWindow"):
+        for element in ifcopenshell.util.selector.filter_elements(library, "IfcWindowType"):
             ifcopenshell.api.project.append_asset(
                 model, library=library,
-                element=wall_type
+                element=element,
                 reuse_identities=reuse_identities
             )
 
