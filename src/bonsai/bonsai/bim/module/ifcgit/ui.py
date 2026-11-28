@@ -13,6 +13,9 @@ from bonsai.bim.module.ifcgit.data import IfcGitData
 if TYPE_CHECKING:
     from bonsai.bim.module.ifcgit.prop import IfcGitListItem, IfcGitProperties
 
+# Conflict reports can contain thousands of entries; only this many rows are drawn
+MAX_REPORT_ROWS = 50
+
 
 class IFCGIT_PT_panel(bpy.types.Panel):
     """Scene Properties panel to interact with IFC repository data"""
@@ -143,7 +146,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
                 text=f"Merge failed \u2014 {len(conflicts)} conflict(s)",
                 icon="ERROR",
             )
-            for conflict in conflicts:
+            for conflict in conflicts[:MAX_REPORT_ROWS]:
                 col = box.column(align=True)
                 conflict_type = conflict.get("type", "")
                 entity_id = conflict.get("entity_id", "?")
@@ -184,6 +187,40 @@ class IFCGIT_PT_panel(bpy.types.Panel):
                     sub.label(text=f"  Base:   {conflict.get('base_value', '')}")
                     sub.label(text=f"  Local:  {conflict.get('local_value', '')}")
                     sub.label(text=f"  Remote: {conflict.get('remote_value', '')}")
+            if len(conflicts) > MAX_REPORT_ROWS:
+                row = box.row()
+                row.label(text=f"... and {len(conflicts) - MAX_REPORT_ROWS} more conflicts")
+
+        resolutions = tool.IfcGit.get_merge_resolutions()
+        if resolutions:
+            box = layout.box()
+            row = box.row()
+            row.label(
+                text=f"{len(resolutions)} conflict(s) auto-resolved by keeping one branch",
+                icon="INFO",
+            )
+            for resolution in resolutions[:MAX_REPORT_ROWS]:
+                entity_id = resolution.get("entity_id")
+                entity_class = resolution.get("entity_class", "Entity")
+                kept = resolution.get("kept", "")
+                kept_label = {"local": "working branch", "remote": "incoming branch"}.get(kept, "one branch")
+                if resolution.get("type") == "placement_auto_resolved":
+                    desc = f"#{entity_id} {entity_class}: moved in both branches, kept {kept_label} position"
+                else:
+                    desc = f"#{entity_id} {entity_class}: " + resolution.get("message", "auto-resolved")
+                row = box.row(align=True)
+                row.label(text=desc)
+                select_id = resolution.get("original_local_id") or entity_id
+                if isinstance(select_id, int):
+                    op = row.operator(
+                        "ifcgit.select_conflict_entity",
+                        text="",
+                        icon="RESTRICT_SELECT_OFF",
+                    )
+                    op.step_id = select_id
+            if len(resolutions) > MAX_REPORT_ROWS:
+                row = box.row()
+                row.label(text=f"... and {len(resolutions) - MAX_REPORT_ROWS} more")
 
         if not props.ifcgit_commits:
             return
