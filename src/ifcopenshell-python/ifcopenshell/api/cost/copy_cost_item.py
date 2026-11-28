@@ -41,10 +41,11 @@ def copy_cost_item(
     .. code:: python
 
         # We have a cost item
-        cost_item = CostItem(name="Design new feature", deadline="2023-03-01")
+        schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        cost_item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
 
         # And now we have two
-        duplicated_cost_item = project.duplicate_cost_item(cost_item)
+        duplicated_cost_item = ifcopenshell.api.cost.copy_cost_item(model, cost_item=cost_item)
 
 
     """

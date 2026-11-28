@@ -35,7 +35,7 @@ def remove_person(file: ifcopenshell.file, person: ifcopenshell.entity_instance)
 
     .. code:: python
 
-        ifcopenshell.api.owner.add_person(model,
+        person = ifcopenshell.api.owner.add_person(model,
             identification="bobthebuilder", family_name="Thebuilder", given_name="Bob")
         ifcopenshell.api.owner.remove_person(model, person=person)
     """

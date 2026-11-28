@@ -43,7 +43,7 @@ def copy_cost_item_values(
         item2 = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
 
         # One of the items has a value
-        value = ifcopenshell.api.cost.add_cost_value(model, parent=item)
+        value = ifcopenshell.api.cost.add_cost_value(model, parent=item1)
         ifcopenshell.api.cost.edit_cost_value(model, cost_value=value,
             attributes={"AppliedValue": 5000.0})
 

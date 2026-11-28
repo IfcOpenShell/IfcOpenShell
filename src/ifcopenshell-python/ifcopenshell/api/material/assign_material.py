@@ -113,7 +113,7 @@ def assign_material(
         # construction. Let's say it's a 200mm thick concrete layer.
         material_set = ifcopenshell.api.material.add_material_set(model,
             name="CON200", set_type="IfcMaterialLayerSet")
-        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=steel)
+        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=concrete)
         ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": 200})
 
         # Our wall type now has the layer set assigned to it
@@ -131,6 +131,13 @@ def assign_material(
         # type. You'd write similar code for a profile set.
         ifcopenshell.api.material.assign_material(model,
             products=[wall], type="IfcMaterialLayerSetUsage")
+
+        # Let's create the contexts used by the wall's representations.
+        model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
+        axis_context = ifcopenshell.api.context.add_context(model,
+            context_type="Model", context_identifier="Axis", target_view="GRAPH_VIEW", parent=model3d)
+        body_context = ifcopenshell.api.context.add_context(model,
+            context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d)
 
         # To be complete, let's create the wall's axis and body
         # representation. Notice how the axis guides the walls "reference

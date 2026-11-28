@@ -45,12 +45,13 @@ def unassign_actor(
         ifcopenshell.api.owner.add_role(model, assigned_object=manufacturer, role="MANUFACTURER")
 
         # Make the manufacturer responsible for that pump type.
+        actor = ifcopenshell.api.owner.add_actor(model, actor=manufacturer)
         ifcopenshell.api.owner.assign_actor(model,
-            relating_actor=manufacturer, related_object=pump_type)
+            relating_actor=actor, related_object=pump_type)
 
         # Undo the assignment
         ifcopenshell.api.owner.unassign_actor(model,
-            relating_actor=manufacturer, related_object=pump_type)
+            relating_actor=actor, related_object=pump_type)
     """
     for rel in related_object.HasAssignments or []:
         if not rel.is_a("IfcRelAssignsToActor") or rel.RelatingActor != relating_actor:

@@ -46,7 +46,7 @@ def edit_cost_item_quantity(
         quantity = ifcopenshell.api.cost.add_cost_item_quantity(model,
             cost_item=item, ifc_class="IfcQuantityVolume")
         ifcopenshell.api.cost.edit_cost_item_quantity(model,
-            physical_quantity=quantity, "attributes": {"VolumeValue": 3.0})
+            physical_quantity=quantity, attributes={"VolumeValue": 3.0})
     """
     for name, value in attributes.items():
         setattr(physical_quantity, name, value)
