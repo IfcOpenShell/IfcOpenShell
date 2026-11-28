@@ -377,13 +377,24 @@ def get_quantities(
 
 
 @overload
-def get_property(properties: list[ifcopenshell.entity_instance], name: str, verbose: Literal[False] = False) -> Any: ...
+def get_property(
+    properties: list[ifcopenshell.entity_instance],
+    name: str,
+    verbose: Literal[False] = False,
+    default: Any = None,
+) -> Any: ...
 @overload
 def get_property(
-    properties: list[ifcopenshell.entity_instance], name: str, verbose: Literal[True]
+    properties: list[ifcopenshell.entity_instance],
+    name: str,
+    verbose: Literal[True],
+    default: Any = None,
 ) -> dict[str, Any]: ...
 def get_property(
-    properties: list[ifcopenshell.entity_instance], name: str, verbose=False
+    properties: list[ifcopenshell.entity_instance],
+    name: str,
+    verbose=False,
+    default: Any = None,
 ) -> Union[Any, dict[str, Any]]:
     for prop in properties or []:
         if prop.Name != name:
@@ -419,6 +430,7 @@ def get_property(
             if is_single_value:
                 result["value_type"] = result_type
         return result
+    return default
 
 
 @overload
