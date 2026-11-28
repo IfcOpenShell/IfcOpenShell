@@ -36,8 +36,30 @@ def calculate_faces_areas(objs: list[bpy.types.Object], context: bpy.types.Conte
     return calculate_mesh_quantity(objs, context, lambda bm: sum(f.calc_area() for f in bm.faces if f.select))
 
 
-def calculate_volumes(objs: list[bpy.types.Object], context: bpy.types.Context) -> float:
-    return calculate_mesh_quantity(objs, context, lambda bm: bm.calc_volume())
+def is_manifold(bm: bmesh.types.BMesh) -> bool:
+    """True if every edge is shared by exactly two faces with matching winding (see #6125)."""
+    return all(edge.is_contiguous for edge in bm.edges)
+
+
+def calculate_volumes(objs: list[bpy.types.Object], context: bpy.types.Context) -> tuple[float, list[str]]:
+    """Sum the volume of the manifold mesh objects; return it with the names of the non-manifold ones skipped (#6125)."""
+    result = 0.0
+    non_manifold_names = []
+    edit_mode = context.active_object.mode == "EDIT"
+    for obj in objs:
+        assert isinstance(obj.data, bpy.types.Mesh)
+        if edit_mode:
+            bm = bmesh.from_edit_mesh(obj.data)
+        else:
+            bm = bmesh.new()
+            bm.from_mesh(obj.data)
+        if is_manifold(bm):
+            result += bm.calc_volume()
+        else:
+            non_manifold_names.append(obj.name)
+        if not edit_mode:
+            bm.free()
+    return result, non_manifold_names
 
 
 def calculate_mesh_quantity(
