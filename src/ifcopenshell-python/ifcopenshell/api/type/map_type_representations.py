@@ -94,6 +94,13 @@ def map_type_representations(
         ifcopenshell.api.geometry.remove_representation(file, representation=representation)
     for representation_map in relating_type.RepresentationMaps:
         representation = representation_map.MappedRepresentation
+        # 'Reference' representations are, per IfcShapeRepresentation, "not part of
+        # the Body representation" (used e.g. for opening geometries excluded from an
+        # implicit Boolean operation). They may be carried on a type purely as a
+        # template (e.g. a shared opening body) and must not be mapped onto
+        # occurrences as their own geometry.
+        if representation.RepresentationIdentifier == "Reference":
+            continue
         mapped_representation = ifcopenshell.api.geometry.map_representation(file, representation=representation)
         ifcopenshell.api.geometry.assign_representation(
             file,
