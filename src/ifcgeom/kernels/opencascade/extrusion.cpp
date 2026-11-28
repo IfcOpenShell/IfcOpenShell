@@ -1,6 +1,14 @@
 #include "opencascade_kernel.h"
 
+#include "boolean_utils.h"
+
+#include <BRepAlgoAPI_Fuse.hxx>
+#include <BRepCheck_Analyzer.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
+#include <BRep_Tool.hxx>
+#include <Geom_Plane.hxx>
+#include <ShapeUpgrade_UnifySameDomain.hxx>
+#include <TopTools_ListOfShape.hxx>
 
 using namespace ifcopenshell::geom;
 using namespace ifcopenshell::geom::kernels;
@@ -96,6 +104,123 @@ bool open_cascade_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion,
 		new open_cascade_shape(shape),
 		extrusion->surface_style
 	));
+	return true;
+
+	});
+}
+
+bool open_cascade_kernel::convert_impl(const taxonomy::collection::ptr collection, std::vector<ifcopenshell::geom::conversion_result>& results) {
+	// An IfcCompositeProfileDef is mapped to one extrusion per profile. Extruded
+	// separately, touching profiles become solids with coincident faces, which
+	// later boolean operations handle poorly. When the collection consists of
+	// extrusions of the same swept area solid, fuse their profiles first so that
+	// touching or overlapping profiles extrude into a single solid. Profiles that
+	// remain disjoint still extrude into a compound of solids.
+	std::vector<taxonomy::extrusion::ptr> extrusions;
+	for (auto& c : collection->children) {
+		auto e = taxonomy::dcast<taxonomy::extrusion>(c);
+		if (!e || !e->matrix) {
+			extrusions.clear();
+			break;
+		}
+		if (!extrusions.empty()) {
+			const auto& f = extrusions.front();
+			if (e->instance != f->instance || e->depth != f->depth ||
+				e->direction->ccomponents() != f->direction->ccomponents() ||
+				e->matrix->ccomponents() != f->matrix->ccomponents())
+			{
+				extrusions.clear();
+				break;
+			}
+		}
+		extrusions.push_back(e);
+	}
+
+	if (extrusions.size() < 2) {
+		return abstract_kernel::convert_impl(collection, results);
+	}
+
+	return handle_occt_exception([&]() -> bool {
+
+	TopTools_ListOfShape arguments, tools;
+	double min_edge_length = std::numeric_limits<double>::infinity();
+	for (auto& e : extrusions) {
+		TopoDS_Shape face;
+		if (!convert(taxonomy::cast<taxonomy::face>(e->basis), face)) {
+			return abstract_kernel::convert_impl(collection, results);
+		}
+		for (TopExp_Explorer exp(face, TopAbs_FACE); exp.More(); exp.Next()) {
+			(arguments.IsEmpty() ? arguments : tools).Append(exp.Current());
+		}
+		min_edge_length = (std::min)(min_edge_length, util::min_edge_length(face));
+	}
+
+	// Profiles are authored to touch, but their seams can be off by more than
+	// the model precision. The same bound the wire builder uses for closing
+	// gaps between segments is applied, so that a seam does not leave behind
+	// a sliver face that later limits the fuzziness of boolean operations. As
+	// for the boolean operations, the value stays below a third of the
+	// shortest edge so that small features of a profile are not merged away.
+	BRepAlgoAPI_Fuse fuse;
+	fuse.SetArguments(arguments);
+	fuse.SetTools(tools);
+	fuse.SetFuzzyValue((std::min)(settings_.get<settings::Precision>().get() * 1000., min_edge_length / 3.));
+	fuse.SetRunParallel(false);
+	fuse.Build();
+	if (!fuse.IsDone() || fuse.HasErrors()) {
+		return abstract_kernel::convert_impl(collection, results);
+	}
+
+	ShapeUpgrade_UnifySameDomain unify(fuse.Shape(), true, true, false);
+	unify.Build();
+
+	// A derived profile with a scale is converted onto a B-spline surface. The
+	// fuse connects such a face to the planar profiles it touches, but it is
+	// not always unified with them, which would leave two solids sharing a
+	// face. When that happens, or when the unified face is invalid, the
+	// profiles are extruded one by one as before.
+	for (TopExp_Explorer exp(unify.Shape(), TopAbs_FACE); exp.More(); exp.Next()) {
+		if (!BRep_Tool::Surface(TopoDS::Face(exp.Current()))->IsKind(STANDARD_TYPE(Geom_Plane))) {
+			return abstract_kernel::convert_impl(collection, results);
+		}
+	}
+	if (!BRepCheck_Analyzer(unify.Shape()).IsValid()) {
+		return abstract_kernel::convert_impl(collection, results);
+	}
+
+	const auto& first = extrusions.front();
+	const auto& fs = first->direction->ccomponents();
+	const gp_Vec vec = gp_Vec(fs(0), fs(1), fs(2)) * first->depth;
+
+	TopoDS_Compound compound;
+	BRep_Builder builder;
+	builder.MakeCompound(compound);
+
+	TopoDS_Shape shape;
+	int num_faces_extruded = 0;
+	for (TopExp_Explorer exp(unify.Shape(), TopAbs_FACE); exp.More(); exp.Next(), ++num_faces_extruded) {
+		shape = BRepPrimAPI_MakePrism(exp.Current(), vec);
+		builder.Add(compound, shape);
+	}
+
+	if (num_faces_extruded == 0) {
+		return abstract_kernel::convert_impl(collection, results);
+	} else if (num_faces_extruded > 1) {
+		shape = compound;
+	}
+
+	results.emplace_back(conversion_result(
+		first->instance.id(),
+		first->matrix,
+		new open_cascade_shape(shape),
+		first->surface_style
+	));
+	if (collection->matrix) {
+		results.back().prepend(collection->matrix);
+	}
+	if (!results.back().hasStyle() && collection->surface_style) {
+		results.back().setStyle(collection->surface_style);
+	}
 	return true;
 
 	});
