@@ -22,9 +22,20 @@ from typing import Union
 import ifcopenshell
 import ifcopenshell.api.project
 import ifcopenshell.guid
+import ifcopenshell.util.element
 import ifcopenshell.util.selector
 
 import ifcpatch
+
+# IFC2X3 has no IfcMapConversion; georeferencing lives in these psets, see
+# https://github.com/buildingSMART/validate/issues/310#issuecomment-5076630963
+IFC2X3_GEOREFERENCING_PSETS = (
+    "ePSet_GeographicCRS",
+    "ePSet_MapConversion",
+    "ePSet_MapConversionScaled",
+    "ePSet_ProjectedCRS",
+    "ePSet_RigidOperation",
+)
 
 
 class Patcher(ifcpatch.BasePatcher):
@@ -113,14 +124,36 @@ class Patcher(ifcpatch.BasePatcher):
             for ctx in element.RepresentationContexts or ():
                 for coop in getattr(ctx, "HasCoordinateOperation", ()):
                     self.new.add(coop)
+            if self.file.schema == "IFC2X3":
+                self.copy_ifc2x3_georeferencing_psets(element, proj)
             return proj
-        return ifcopenshell.api.project.append_asset(
+        new_element = ifcopenshell.api.project.append_asset(
             self.new,
             library=self.file,
             element=element,
             reuse_identities=self.reuse_identities,
             assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
         )
+        if self.file.schema == "IFC2X3" and element.is_a("IfcSite") and new_element:
+            self.copy_ifc2x3_georeferencing_psets(element, new_element)
+        return new_element
+
+    def copy_ifc2x3_georeferencing_psets(
+        self, element: ifcopenshell.entity_instance, new_element: ifcopenshell.entity_instance
+    ) -> None:
+        """Relink IFC2X3 georeferencing psets, which the forward-only copy of IfcProject misses."""
+        for rel in element.IsDefinedBy:
+            pset = rel.RelatingPropertyDefinition
+            if (
+                pset is not None
+                and pset.is_a("IfcPropertySet")
+                and pset.Name in IFC2X3_GEOREFERENCING_PSETS
+                and not ifcopenshell.util.element.get_pset(new_element, pset.Name)
+            ):
+                new_pset = self.new.add(pset)
+                self.new.createIfcRelDefinesByProperties(
+                    ifcopenshell.guid.new(), self.owner_history, None, None, [new_element], new_pset
+                )
 
     def add_spatial_structures(
         self, element: ifcopenshell.entity_instance, new_element: ifcopenshell.entity_instance
