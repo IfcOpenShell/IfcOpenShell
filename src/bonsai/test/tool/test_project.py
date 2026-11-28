@@ -27,6 +27,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.document
+import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcpatch
@@ -111,6 +112,29 @@ class TestSetContext(NewFile):
         subject.set_context(context)
         rprops = tool.Root.get_root_props()
         assert rprops.contexts == str(context.id())
+
+
+class TestGetHeaderData(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.api.project.create_file()
+        tool.Ifc.set(ifc)
+        assert subject.get_header_data().mvd == "DesignTransferView"
+
+    def test_null_file_description(self):
+        # Seen in buildingSMART's own IFC4 ADD2 TC1 annex E examples.
+        ifc = ifcopenshell.file.from_string(
+            "ISO-10303-21;\n"
+            "HEADER;\n"
+            "FILE_DESCRIPTION($,'2;1');\n"
+            "FILE_NAME('test.ifc','2011-11-07T14:57:06',(''),(''),'','','');\n"
+            "FILE_SCHEMA(('IFC4'));\n"
+            "ENDSEC;\n"
+            "DATA;\n"
+            "ENDSEC;\n"
+            "END-ISO-10303-21;\n"
+        )
+        tool.Ifc.set(ifc)
+        assert subject.get_header_data().mvd == ""
 
 
 class TestSetDefaultContext(NewFile):
