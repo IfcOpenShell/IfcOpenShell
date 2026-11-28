@@ -216,6 +216,64 @@ class RemoveMaterial(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
 
+class EnableMaterialMerge(bpy.types.Operator):
+    bl_idname = "bim.enable_material_merge"
+    bl_label = "Merge Materials"
+    bl_description = "Pick two or more redundant materials to merge into the active material"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = tool.Material.get_material_props()
+        props.is_merging_materials = True
+        for material in props.materials:
+            material.is_selected = False
+        return {"FINISHED"}
+
+
+class DisableMaterialMerge(bpy.types.Operator):
+    bl_idname = "bim.disable_material_merge"
+    bl_label = "Cancel Merging Materials"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = tool.Material.get_material_props()
+        props.is_merging_materials = False
+        for material in props.materials:
+            material.is_selected = False
+        return {"FINISHED"}
+
+
+class MergeMaterials(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.merge_materials"
+    bl_label = "Merge Selected Into Active"
+    bl_description = (
+        "Merge the checked materials into the active material.\n"
+        "Every product, type, layer, profile, constituent, and material list that used "
+        "one of the checked materials is reassigned to the active material.\n"
+        "The now-redundant materials, along with their own properties and styles, are removed."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        props = tool.Material.get_material_props()
+        active_material = props.active_material
+        if not active_material or active_material.is_category:
+            self.report({"ERROR"}, "Select the material to merge into first.")
+            return {"CANCELLED"}
+        target = ifc_file.by_id(active_material.ifc_definition_id)
+        sources = [
+            ifc_file.by_id(m.ifc_definition_id)
+            for m in props.materials
+            if m.is_selected and not m.is_category and m.ifc_definition_id != target.id()
+        ]
+        if not sources:
+            self.report({"ERROR"}, "No materials were checked to merge.")
+            return {"CANCELLED"}
+        core.merge_materials(tool.Ifc, tool.Material, materials=sources, merge_into=target)
+        props.is_merging_materials = False
+
+
 class RemoveMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_material_set"
     bl_label = "Remove Material Set"
