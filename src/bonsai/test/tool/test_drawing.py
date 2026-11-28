@@ -127,6 +127,20 @@ class TestImportCameraProps(NewFile):
         assert props.render_sharp is True
         assert props.ridge_angle_min_degrees == pytest.approx(45.0)
         assert props.render_flush is False
+        assert props.freestyle_ifc_only is False
+
+    def test_imports_freestyle_ifc_only_from_drawing_pset(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"FreestyleIfcOnly": True})
+        camera = bpy.data.cameras.new("Camera")
+
+        subject.import_camera_props(drawing, camera)
+
+        props = subject.get_camera_props(camera)
+        assert props.freestyle_ifc_only is True
 
     def test_imports_edge_classification_props_from_drawing_pset(self):
         ifc = ifcopenshell.file()
