@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bmesh
 import bpy
 import ifcopenshell
 import ifcopenshell.api.context
@@ -25,6 +26,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.unit
 
 import bonsai.bim.import_ifc as import_ifc
+import bonsai.bim.module.qto.calculator as calculator
 import bonsai.core.root
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -177,6 +179,107 @@ class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
         assert quantities["NetSideArea"] == 43.056
         assert quantities["GrossVolume"] == 282.517
         assert quantities["NetVolume"] == 282.517
+
+
+class TestNetSideAreaByWallAxis(test.bim.bootstrap.NewFile):
+    def setup_file(self):
+        import logging
+
+        self.ifc = ifcopenshell.file()
+        tool.Ifc.set(self.ifc)
+        ifcopenshell.api.root.create_entity(self.ifc, ifc_class="IfcProject", name="My Project")
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(
+            bpy.context, tool.Ifc.get_path(), logging.getLogger("ImportIFC")
+        )
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.ifc
+        ifc_importer.create_project()
+        ifcopenshell.api.unit.assign_unit(
+            self.ifc,
+            length={"is_metric": True, "raw": "METERS"},
+            area={"is_metric": True, "raw": "SQUARE_METERS"},
+            volume={"is_metric": True, "raw": "CUBIC_METERS"},
+        )
+
+    def make_wall(self, mesh: bpy.types.Mesh) -> bpy.types.Object:
+        context = ifcopenshell.api.context.add_context(self.ifc, context_type="Model")
+        obj = bpy.data.objects.new("Wall", mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        bonsai.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class="IfcWall",
+            predefined_type="NOTDEFINED",
+            context=context,
+        )
+        return obj
+
+    def build_wall_with_hole(
+        self,
+        length: float,
+        height: float,
+        thickness: float,
+        hole_size: float,
+        main_axis: str = "x",
+    ) -> bpy.types.Mesh:
+        cx, cz = length / 2, height / 2
+        outer = [(0, 0), (length, 0), (length, height), (0, height)]
+        h = hole_size / 2
+        inner = [(cx - h, cz - h), (cx + h, cz - h), (cx + h, cz + h), (cx - h, cz + h)]
+
+        def point(along_main: float, along_thickness: float, z: float) -> tuple[float, float, float]:
+            return (along_main, along_thickness, z) if main_axis == "x" else (along_thickness, along_main, z)
+
+        mesh = bpy.data.meshes.new("WallWithHole")
+        bm = bmesh.new()
+
+        def make_ring(thickness_pos: float):
+            outer_v = [bm.verts.new(point(x, thickness_pos, z)) for x, z in outer]
+            inner_v = [bm.verts.new(point(x, thickness_pos, z)) for x, z in inner]
+            return outer_v, inner_v
+
+        outer_front, inner_front = make_ring(0.0)
+        outer_back, inner_back = make_ring(thickness)
+        bm.verts.ensure_lookup_table()
+
+        n = 4
+        for i in range(n):
+            j = (i + 1) % n
+            bm.faces.new([outer_front[i], outer_front[j], inner_front[j], inner_front[i]])
+        for i in range(n):
+            j = (i + 1) % n
+            bm.faces.new([outer_back[j], outer_back[i], inner_back[i], inner_back[j]])
+        for i in range(n):
+            j = (i + 1) % n
+            bm.faces.new([outer_front[i], outer_front[j], outer_back[j], outer_back[i]])
+        for i in range(n):
+            j = (i + 1) % n
+            bm.faces.new([inner_front[j], inner_front[i], inner_back[i], inner_back[j]])
+
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+        bm.to_mesh(mesh)
+        bm.free()
+        return mesh
+
+    def test_y_oriented_wall_reports_its_elevation_area(self):
+        self.setup_file()
+        length, height, thickness, hole = 4.0, 3.0, 0.2, 1.0
+        obj = self.make_wall(self.build_wall_with_hole(length, height, thickness, hole, main_axis="y"))
+
+        assert calculator.get_x(obj) < calculator.get_y(obj)
+        assert round(calculator.get_net_side_area(obj), 3) == round(length * height - hole * hole, 3)
+
+    def test_x_and_y_oriented_walls_agree(self):
+        self.setup_file()
+        length, height, thickness, hole = 4.0, 3.0, 0.2, 1.0
+        obj_x = self.make_wall(self.build_wall_with_hole(length, height, thickness, hole, main_axis="x"))
+        obj_y = self.make_wall(self.build_wall_with_hole(length, height, thickness, hole, main_axis="y"))
+
+        assert round(calculator.get_net_side_area(obj_x), 3) == round(calculator.get_net_side_area(obj_y), 3)
 
 
 class TestGetTargetUnits(test.bim.bootstrap.NewFile):
