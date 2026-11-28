@@ -143,6 +143,18 @@ class TestImportTrueNorth(NewFile):
         assert props.true_north_ordinate == "2.0"
         assert props.true_north_angle == "-26.5650512"
 
+    def test_run_ifc2x3(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        context = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        context.TrueNorth = ifc.createIfcDirection((1.0, 2.0, 0.0))
+        subject.import_true_north()
+        props = tool.Georeference.get_georeference_props()
+        assert props.true_north_abscissa == "1.0"
+        assert props.true_north_ordinate == "2.0"
+        assert props.true_north_angle == "-26.5650512"
+
 
 class TestExportProjectedCRS(NewFile):
     def test_run(self):
