@@ -56,7 +56,7 @@ import ifcopenshell.api.sequence
 import ifcopenshell.guid
 import ifcopenshell.util.date
 
-from .common import ScheduleIfcGenerator
+from .common import ScheduleIfcGenerator, validate_input_path
 
 # MS Project counts weekdays from Sunday. IFC counts from Monday, but the
 # generator takes the day by name, so the names are all that is needed here.
@@ -218,6 +218,7 @@ class MSP2Ifc:
         self.RESOURCE_TYPES_MAPPING = {"1": "LABOR", "0": "MATERIAL", "2": None}
 
     def execute(self):
+        validate_input_path(self.xml, "MS Project .xml file")
         self.parse_xml()
         settings = {
             "work_plan": self.work_plan,
