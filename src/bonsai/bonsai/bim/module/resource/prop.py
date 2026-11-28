@@ -146,6 +146,7 @@ class BIMResourceProperties(PropertyGroup):
         name="Cost Types",
     )
     cost_category: StringProperty(name="Cost Category")
+    fixed_cost_value: FloatProperty(name="Fixed Cost Value")
     active_cost_value_id: IntProperty(name="Active Resource Cost Value Id")
     cost_value_editing_type: StringProperty(name="Cost Value Editing Type")
     cost_value_attributes: CollectionProperty(name="Cost Value Attributes", type=Attribute)
@@ -169,6 +170,7 @@ class BIMResourceProperties(PropertyGroup):
         editing_resource_type: EditingResourceType
         cost_types: CostType
         cost_category: str
+        fixed_cost_value: float
         active_cost_value_id: int
         cost_value_editing_type: str
         cost_value_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]

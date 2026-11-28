@@ -216,6 +216,24 @@ class EnableEditingResourceCosts(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class AddResourceCostValue(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_resource_cost_value"
+    bl_label = "Add Resource Cost Value"
+    bl_options = {"REGISTER", "UNDO"}
+    parent: bpy.props.IntProperty()
+    cost_type: bpy.props.StringProperty()
+    cost_category: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        core.add_resource_cost_value(
+            tool.Ifc,
+            tool.Resource,
+            parent=tool.Ifc.get().by_id(self.parent),
+            cost_type=self.cost_type,
+            cost_category=self.cost_category,
+        )
+
+
 class DisableEditingResourceCostValue(bpy.types.Operator):
     bl_idname = "bim.disable_editing_resource_cost_value"
     bl_label = "Disable Editing Resource Cost Value"
