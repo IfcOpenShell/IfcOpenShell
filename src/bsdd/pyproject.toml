@@ -41,3 +41,9 @@ py-modules = ["bsdd","bsdd_json","type_hints"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
+
+[tool.pytest.ini_options]
+markers = [
+  "network: hits the live bSDD API; deselected by default, run with -m network",
+]
+addopts = "-m 'not network'"
