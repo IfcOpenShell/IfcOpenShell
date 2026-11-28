@@ -229,3 +229,47 @@ class TestEditQtosIntegration:
         assert length.is_a("IfcQuantityLength")
         assert length.Unit == millimetre
         assert length.LengthValue == pytest.approx(5000.0)
+
+
+class TestEmptyGeometryQuantification:
+    """Elements whose geometry evaluates to zero vertices should not crash QTO (#10251)."""
+
+    def test_empty_geometry_is_skipped_without_value_error(self):
+        from unittest.mock import MagicMock, patch
+
+        file = ifcopenshell.file(schema="IFC4X3")
+        ifcopenshell.api.root.create_entity(file, ifc_class="IfcProject", name="Test")
+        metre = file.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")
+        sqm = file.createIfcSIUnit(None, "AREAUNIT", None, "SQUARE_METRE")
+        cum = file.createIfcSIUnit(None, "VOLUMEUNIT", None, "CUBIC_METRE")
+        ifcopenshell.api.unit.assign_unit(file, units=[metre, sqm, cum])
+        model = ifcopenshell.api.context.add_context(file, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+
+        wall = ifcopenshell.api.root.create_entity(file, ifc_class="IfcWall")
+        wall.ObjectPlacement = file.createIfcLocalPlacement(
+            None, file.createIfcAxis2Placement3D(file.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+        )
+        profile = file.createIfcRectangleProfileDef("AREA", None, None, 5.0, 0.2)
+        position = file.createIfcAxis2Placement3D(file.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+        solid = file.createIfcExtrudedAreaSolid(profile, position, file.createIfcDirection((0.0, 0.0, 1.0)), 3.0)
+        rep = file.createIfcShapeRepresentation(body, "Body", "SweptSolid", [solid])
+        wall.Representation = file.createIfcProductDefinitionShape(None, None, [rep])
+
+        empty_geom = MagicMock()
+        empty_geom.verts_buffer = b""
+        shape = MagicMock(id=wall.id(), geometry=empty_geom)
+
+        iterator = MagicMock(spec=ifcopenshell.geom.iterator)
+        iterator.settings = ifc5d.qto.IfcOpenShell.gross_settings
+        iterator.initialize.return_value = True
+        iterator.get.return_value = shape
+        iterator.next.return_value = False
+
+        rules = ifc5d.qto.rules["IFC4X3QtoBaseQuantities"]
+        with patch.object(ifc5d.qto.IfcOpenShell, "create_iterators", return_value=[iterator]):
+            results = ifc5d.qto.quantify(file, {wall}, rules)
+
+        assert results[wall]["Qto_WallBaseQuantities"] == {}
