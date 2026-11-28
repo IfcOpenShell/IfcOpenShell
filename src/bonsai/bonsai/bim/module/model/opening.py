@@ -734,6 +734,8 @@ class AddBoolean(Operator, tool.Ifc.Operator):
     bl_label = "Add Boolean"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Applies a boolean to the selected IFC object using the other selected blender object as a void"
+    # See ifcopenshell.api.geometry.add_boolean's climb_through_unions param.
+    climb_through_unions: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
 
     @classmethod
     def poll(cls, context):
@@ -761,7 +763,13 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         second_items = [
             representation for o in second_objs if (representation := tool.Geometry.get_active_representation(o))
         ]
-        booleans = ifcopenshell.api.geometry.add_boolean(tool.Ifc.get(), first_item, second_items, props.operator)
+        booleans = ifcopenshell.api.geometry.add_boolean(
+            tool.Ifc.get(),
+            first_item,
+            second_items,
+            props.operator,
+            climb_through_unions=self.climb_through_unions,
+        )
 
         rep_obj = tool.Geometry.get_geometry_props().representation_obj
         if booleans:
