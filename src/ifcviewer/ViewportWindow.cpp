@@ -1157,6 +1157,7 @@ void ViewportWindow::invertElementVisibility() {
     }
     visibility_.clear();
     for (uint32_t id : to_hide) visibility_.hide(id);
+    core_.markCullInputsChanged();   // visibility changed: invalidate the cached cull
     if (isExposed()) requestUpdate();
 }
 
