@@ -30,6 +30,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Literal,
+    NamedTuple,
     Optional,
     TypeGuard,
     Union,
@@ -80,6 +81,27 @@ if TYPE_CHECKING:
         BIMObjectGeometryProperties,
     )
     from bonsai.bim.prop import BIMMeshProperties
+
+
+class ShiftTargets(NamedTuple):
+    """What :func:`Geometry.shift_representations` moves to shift an element's representations."""
+
+    frames: list[tuple[ifcopenshell.entity_instance, str, tuple[float, float, float]]]
+    """Items whose placement attribute is replaced, with a mask of the offset axes that apply."""
+    coordinates: list[ifcopenshell.entity_instance]
+    """Cartesian points and point lists that are moved in place."""
+    lock_z: bool
+    """Whether only an in-plane offset is allowed (LAYER3 elements)."""
+
+
+class TypeShiftPlan(NamedTuple):
+    """What :func:`Geometry.get_type_shift_plan` found to change a type's origin with its occurrences."""
+
+    element_type: ifcopenshell.entity_instance
+    targets: ShiftTargets
+    """The type's representation maps."""
+    occurrences: list[tuple[ifcopenshell.entity_instance, npt.NDArray[np.float64], Union[ShiftTargets, None]]]
+    """Each occurrence, how type geometry is mapped into its frame (linear part), and its own representations."""
 
 
 class Geometry(bonsai.core.tool.Geometry):
@@ -1015,6 +1037,286 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def get_representation_name(cls, representation: ifcopenshell.entity_instance) -> str:
         return tool.Loader.get_mesh_name(representation)
+
+    @classmethod
+    def get_representation_shift_targets(cls, element: ifcopenshell.entity_instance) -> Union[ShiftTargets, str]:
+        """Find what has to move to shift all of an element's representations within its local frame.
+
+        Items with their own placement (CSG primitives, surfaces, text and most swept solids) are
+        moved by replacing that placement. Curves, breps, tessellations and bounding boxes are moved
+        point by point. An extrusion whose placement isn't rotated has its profile moved instead, so
+        the profile stays drawn in the element's XY plane, which slab and ramp editing rely on.
+
+        Slab-like layered elements (LAYER3) can only move within their own plane: their height comes
+        from the layer set's ``OffsetFromReferenceLine``, so ``lock_z`` is set. For a sloped slab that
+        plane is its local XY, which is sloped too, so the same holds.
+
+        :return: What to move, or a reason why the shift can't be done exactly.
+        """
+        usage = tool.Model.get_usage_type(element)
+        if usage in ("LAYER1", "LAYER2", "PROFILE"):
+            return "its geometry is generated from a material layer or profile set"
+        if not getattr(element, "Representation", None):
+            return "it has no representation of its own"
+        is_slab_like = usage == "LAYER3" or element.is_a("IfcSlab") or element.is_a("IfcRamp")
+        if usage == "LAYER3":
+            body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if not body or not tool.Model.get_extrusion(body):
+                return "its layered geometry isn't an extrusion"
+        return cls._get_shift_targets(element.Representation.Representations, is_slab_like, usage == "LAYER3")
+
+    @classmethod
+    def get_type_shift_plan(cls, element: ifcopenshell.entity_instance) -> Union[TypeShiftPlan, str]:
+        """Plan an origin change shared by a type and all of its occurrences.
+
+        The type's representation maps are shifted in the type's frame. Each occurrence moves its
+        origin by the same amount, mapped into its own frame (so rotated or mirrored occurrences
+        follow), and its own non-mapped representations are shifted to stay in place.
+
+        :param element: The type, or one of its occurrences.
+        :return: The plan, or a reason why the change can't be done exactly.
+        """
+        element_type = element if element.is_a("IfcTypeObject") else ifcopenshell.util.element.get_type(element)
+        if not element_type or not getattr(element_type, "RepresentationMaps", None):
+            return "it has no type geometry"
+        if tool.Model.get_usage_type(element_type) in ("LAYER1", "LAYER2", "PROFILE"):
+            return "its type's geometry is generated from a material layer or profile set"
+        maps = element_type.RepresentationMaps
+        for representation_map in maps:
+            origin = ifcopenshell.util.placement.get_placement(representation_map.MappingOrigin)
+            if not np.allclose(origin, np.eye(4)):
+                return "its type's geometry has a mapping origin that isn't the identity"
+        targets = cls._get_shift_targets([m.MappedRepresentation for m in maps])
+        if isinstance(targets, str):
+            return f"its type can't be shifted: {targets}"
+
+        occurrences: list[tuple[ifcopenshell.entity_instance, npt.NDArray[np.float64], Union[ShiftTargets, None]]] = []
+        for occurrence in ifcopenshell.util.element.get_types(element_type):
+            name = occurrence.Name or f"#{occurrence.id()}"
+            if not occurrence.ObjectPlacement:
+                return f"'{name}' has no placement"
+            linear: Union[npt.NDArray[np.float64], None] = None
+            own = []
+            representations = occurrence.Representation.Representations if occurrence.Representation else ()
+            for representation in representations:
+                mapped = [item for item in representation.Items if item.is_a("IfcMappedItem")]
+                if not mapped:
+                    own.append(representation)
+                    continue
+                if len(mapped) != len(representation.Items):
+                    return f"'{name}' mixes type and own geometry in one representation"
+                for item in mapped:
+                    if item.MappingSource not in maps:
+                        return f"'{name}' maps geometry from another type"
+                    item_linear = ifcopenshell.util.placement.get_mappeditem_transformation(item)[:3, :3]
+                    if linear is not None and not np.allclose(item_linear, linear):
+                        return f"'{name}' maps its type's geometry in more than one way"
+                    linear = item_linear
+            own_targets = cls._get_shift_targets(own) if own else None
+            if isinstance(own_targets, str):
+                return f"'{name}' can't be shifted: {own_targets}"
+            occurrences.append((occurrence, np.eye(3) if linear is None else linear, own_targets))
+        return TypeShiftPlan(element_type, targets, occurrences)
+
+    @classmethod
+    def has_type_geometry(cls, element: ifcopenshell.entity_instance) -> bool:
+        """Whether the element is a type, or an occurrence showing geometry mapped from its type."""
+        if element.is_a("IfcTypeObject"):
+            return True
+        representation = getattr(element, "Representation", None)
+        return bool(representation) and any(
+            item.is_a("IfcMappedItem") for r in representation.Representations for item in r.Items
+        )
+
+    @classmethod
+    def _get_shift_targets(
+        cls,
+        representations: Iterable[ifcopenshell.entity_instance],
+        is_slab_like: bool = False,
+        lock_z: bool = False,
+    ) -> Union[ShiftTargets, str]:
+        """Plan the shift of a set of representations within their local frame."""
+        ifc_file = tool.Ifc.get()
+        representations = list(representations)
+        subgraph: set[ifcopenshell.entity_instance] = set()
+        for representation in representations:
+            if len(representation.OfProductRepresentation) > 1:
+                return "its representation is shared with another element"
+            if len(getattr(representation, "RepresentationMap", None) or ()) > 1:
+                return "its type's representation is used by more than one map"
+            if representation.ContextOfItems.ContextIdentifier == "Profile":
+                return "it has a Profile representation, which isn't drawn in its local XY plane"
+            subgraph.add(representation)
+            for item in representation.Items:
+                subgraph.update(ifc_file.traverse(item))
+
+        # Styles, layers, aspects and the product shape point at items or representations without
+        # placing them, so only geometry from outside this element counts as sharing.
+        harmless = ("IfcStyledItem", "IfcPresentationLayerAssignment", "IfcShapeAspect", "IfcProductDefinitionShape")
+
+        def is_shared(entity: ifcopenshell.entity_instance) -> bool:
+            return any(
+                inverse not in subgraph and not any(inverse.is_a(c) for c in harmless)
+                for inverse in ifc_file.get_inverse(entity)
+            )
+
+        frames: dict[int, tuple[ifcopenshell.entity_instance, str, tuple[float, float, float]]] = {}
+        coordinates: dict[int, ifcopenshell.entity_instance] = {}
+        ALL, XY, Z = (1.0, 1.0, 1.0), (1.0, 1.0, 0.0), (0.0, 0.0, 1.0)
+
+        def collect_points(item: ifcopenshell.entity_instance, into: dict) -> Union[str, None]:
+            for entity in ifc_file.traverse(item):
+                if entity.is_a("IfcProfileDef") or entity.is_a("IfcMappedItem"):
+                    return f"its {item.is_a()} contains a {entity.is_a()}"
+                if entity.is_a("IfcCartesianPoint") or entity.is_a("IfcCartesianPointList"):
+                    into[entity.id()] = entity
+            return None
+
+        def collect_profile(solid: ifcopenshell.entity_instance) -> bool:
+            """Plan the extrusion's profile move, if its profile is drawn in the element's XY plane."""
+            position = solid.Position
+            if position and not (
+                (not position.Axis or cls._is_parallel(position.Axis.DirectionRatios, (0.0, 0.0, 1.0), True))
+                and (
+                    not position.RefDirection
+                    or cls._is_parallel(position.RefDirection.DirectionRatios, (1.0, 0.0, 0.0), True)
+                )
+            ):
+                return False
+            profile_frames: dict = {}
+            profile_points: dict = {}
+            profiles = [solid.SweptArea]
+            if solid.is_a("IfcExtrudedAreaSolidTapered"):
+                profiles.append(solid.EndSweptArea)
+            for profile in profiles:
+                if is_shared(profile):
+                    return False
+                if profile.is_a("IfcArbitraryClosedProfileDef"):
+                    curves = [profile.OuterCurve] + list(getattr(profile, "InnerCurves", None) or [])
+                    if any(collect_points(curve, profile_points) for curve in curves):
+                        return False
+                elif profile.is_a("IfcParameterizedProfileDef"):
+                    profile_frames[profile.id()] = (profile, "Position", XY)
+                else:
+                    return False
+            if any(is_shared(point) for point in profile_points.values()):
+                return False
+            frames.update(profile_frames)
+            coordinates.update(profile_points)
+            frames[solid.id()] = (solid, "Position", Z)  # Only a height change moves the placement.
+            return True
+
+        def collect(item: ifcopenshell.entity_instance) -> Union[str, None]:
+            if item.is_a("IfcMappedItem"):
+                return "its geometry comes from its type"
+            if item.is_a("IfcBooleanResult"):
+                return collect(item.FirstOperand) or collect(item.SecondOperand)
+            if item.is_a("IfcCsgSolid"):
+                return collect(item.TreeRootExpression)
+            if item.is_a("IfcGeometricSet"):
+                return next((reason for member in item.Elements if (reason := collect(member))), None)
+            if item.is_a("IfcHalfSpaceSolid"):
+                if item.is_a("IfcPolygonalBoundedHalfSpace"):
+                    frames[item.id()] = (item, "Position", ALL)
+                elif item.is_a("IfcBoxedHalfSpace"):
+                    coordinates[item.Enclosure.Corner.id()] = item.Enclosure.Corner
+                return collect(item.BaseSurface)
+            if item.is_a("IfcExtrudedAreaSolid"):
+                if collect_profile(item):
+                    return None
+                if is_slab_like:
+                    return "its profile is shared or isn't drawn in its own XY plane"
+                frames[item.id()] = (item, "Position", ALL)
+                return None
+            if item.is_a("IfcSweptAreaSolid") or item.is_a("IfcCsgPrimitive3D") or item.is_a("IfcElementarySurface"):
+                frames[item.id()] = (item, "Position", ALL)
+                return None
+            if item.is_a("IfcTextLiteral"):
+                frames[item.id()] = (item, "Placement", ALL)
+                return None
+            if any(
+                item.is_a(ifc_class)
+                for ifc_class in (
+                    "IfcCurve",
+                    "IfcPoint",
+                    "IfcBoundingBox",
+                    "IfcTessellatedItem",
+                    "IfcManifoldSolidBrep",
+                    "IfcFaceBasedSurfaceModel",
+                    "IfcShellBasedSurfaceModel",
+                    "IfcSweptDiskSolid",
+                    "IfcAnnotationFillArea",
+                    "IfcTopologicalRepresentationItem",
+                )
+            ):
+                return collect_points(item, coordinates)
+            return f"moving {item.is_a()} geometry is not supported"
+
+        for representation in representations:
+            for item in representation.Items:
+                if reason := collect(item):
+                    return reason
+
+        for item, _, mask in frames.values():
+            if mask is not Z and is_shared(item):
+                return "its geometry shares entities with other elements"
+        if any(is_shared(entity) for entity in coordinates.values()):
+            return "its geometry shares entities with other elements"
+        return ShiftTargets(list(frames.values()), list(coordinates.values()), lock_z=lock_z)
+
+    @classmethod
+    def shift_representations(cls, element: ifcopenshell.entity_instance, offset: Iterable[float]) -> None:
+        """Move all of an element's representations by ``offset`` (project units) within its local frame.
+
+        Check :func:`get_representation_shift_targets` first; this assumes the shift is possible.
+        """
+        targets = cls.get_representation_shift_targets(element)
+        assert not isinstance(targets, str), targets
+        cls.shift_targets(targets, offset)
+
+    @classmethod
+    def shift_targets(cls, targets: ShiftTargets, offset: Iterable[float]) -> None:
+        """Move planned representations by ``offset`` (project units) within their local frame."""
+        ifc_file = tool.Ifc.get()
+        offset = np.array(list(offset), dtype=float)
+        assert not (targets.lock_z and offset[2]), "A LAYER3 element can only move in its own plane"
+
+        # Frames first, so a new location is read before any shared point is moved.
+        for item, attribute, mask in targets.frames:
+            shift = offset * np.array(mask)
+            if not shift.any():
+                continue
+            old = getattr(item, attribute)
+            is_2d = item.is_a("IfcProfileDef") or (old is not None and old.is_a("IfcAxis2Placement2D"))
+            location = np.array(old.Location.Coordinates, dtype=float) if old else np.zeros(2 if is_2d else 3)
+            point = ifc_file.createIfcCartesianPoint((location + shift[: len(location)]).tolist())
+            # A new placement rather than an edited one, as placements are often shared.
+            if is_2d:
+                new = ifc_file.createIfcAxis2Placement2D(point, old.RefDirection if old else None)
+            else:
+                new = ifc_file.createIfcAxis2Placement3D(
+                    point, old.Axis if old else None, old.RefDirection if old else None
+                )
+            setattr(item, attribute, new)
+            if old is not None and not ifc_file.get_total_inverses(old):
+                old_location = old.Location
+                ifc_file.remove(old)
+                if not ifc_file.get_total_inverses(old_location):
+                    ifc_file.remove(old_location)
+
+        for entity in targets.coordinates:
+            if entity.is_a("IfcCartesianPoint"):
+                values = np.array(entity.Coordinates, dtype=float)
+                entity.Coordinates = (values + offset[: len(values)]).tolist()
+            else:
+                values = np.array(entity.CoordList, dtype=float)
+                entity.CoordList = (values + offset[: values.shape[1]]).tolist()
+
+    @staticmethod
+    def _is_parallel(direction: Iterable[float], axis: Iterable[float], same_sense: bool = False) -> bool:
+        vector = np.array(list(direction), dtype=float)
+        cosine = float(np.dot(vector / np.linalg.norm(vector), np.array(list(axis), dtype=float)))
+        return cosine > 1 - 1e-6 if same_sense else abs(cosine) > 1 - 1e-6
 
     @classmethod
     def get_styles(

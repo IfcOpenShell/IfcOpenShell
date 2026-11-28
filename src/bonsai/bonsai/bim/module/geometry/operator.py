@@ -263,20 +263,149 @@ class OverrideOriginSet(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        changed_types: set[ifcopenshell.entity_instance] = set()
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
+            if tool.Geometry.has_type_geometry(element):
+                self.set_type_origin(context, obj, element, changed_types, unit_scale)
+                continue
             if tool.Ifc.is_moved(obj):
                 core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-            representation = tool.Geometry.get_active_representation(obj)
-            if not representation:
+            if not tool.Geometry.get_active_representation(obj):
                 continue
-            representation = ifcopenshell.util.representation.resolve_representation(representation)
-            if not tool.Geometry.is_meshlike(representation):
+            if (before := self.get_first_coordinate(obj.data)) is None:
                 continue
-            bpy.ops.object.origin_set(type=self.origin_type)
-            bpy.ops.bim.update_representation(obj=obj.name)
+            # Moving an origin only changes the local frame: the placement moves and every
+            # representation is shifted back by the same amount, so nothing moves in the world.
+            targets = tool.Geometry.get_representation_shift_targets(element)
+            if isinstance(targets, str):
+                self.report({"WARNING"}, f"IFC Set Origin skipped '{obj.name}': {targets}.")
+                continue
+            matrix = obj.matrix_world.copy()
+            with context.temp_override(
+                active_object=obj, object=obj, selected_objects=[obj], selected_editable_objects=[obj]
+            ):
+                bpy.ops.object.origin_set(type=self.origin_type)
+            after = self.get_first_coordinate(obj.data)
+            assert after is not None
+            # Both in the old local frame: how far the origin moved, and how far the geometry moved
+            # relative to it (the opposite, unless the geometry itself was moved to the origin).
+            origin_move = matrix.inverted() @ obj.matrix_world.translation
+            shift = after - before
+            if targets.lock_z:
+                # A LAYER3 element's height comes from its layer set, so it only moves in its plane.
+                origin_move.z = shift.z = 0.0
+            if origin_move.length < 1e-9 and shift.length < 1e-9:
+                obj.matrix_world = matrix
+                tool.Geometry.reload_representation(obj)
+                continue
+            obj.matrix_world = matrix @ Matrix.Translation(origin_move)
+            core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            tool.Geometry.shift_representations(element, shift / unit_scale)
+            tool.Geometry.reload_representation(obj)
+
+    def set_type_origin(
+        self,
+        context: bpy.types.Context,
+        obj: bpy.types.Object,
+        element: ifcopenshell.entity_instance,
+        changed_types: set[ifcopenshell.entity_instance],
+        unit_scale: float,
+    ) -> None:
+        """Change the origin of a type and every occurrence of it, keeping all of them in place."""
+        plan = tool.Geometry.get_type_shift_plan(element)
+        if isinstance(plan, str):
+            self.report({"WARNING"}, f"IFC Set Origin skipped '{obj.name}': {plan}.")
+            return
+        if plan.element_type in changed_types:
+            return  # Another selected occurrence already changed this type's origin.
+        changed_types.add(plan.element_type)
+        for occurrence, _, _ in plan.occurrences:
+            if (occurrence_obj := tool.Ifc.get_object(occurrence)) and tool.Ifc.is_moved(occurrence_obj):
+                core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=occurrence_obj)
+
+        if (measured := self.measure_origin_change(context, obj)) is None:
+            return
+        origin_move, shift = measured
+        # Into the type's frame, then out into each occurrence's own frame.
+        source = np.eye(3)
+        if not element.is_a("IfcTypeObject"):
+            source = next(linear for occurrence, linear, _ in plan.occurrences if occurrence == element)
+        to_type = np.linalg.inv(source)
+        type_origin_move = to_type @ np.array(origin_move)
+        type_shift = to_type @ np.array(shift)
+        if np.linalg.norm(type_origin_move) < 1e-9 and np.linalg.norm(type_shift) < 1e-9:
+            return
+
+        ifc_file = tool.Ifc.get()
+        objs_to_reload: list[bpy.types.Object] = []
+        for occurrence, linear, own_targets in plan.occurrences:
+            move = linear @ type_origin_move
+            if occurrence_obj := tool.Ifc.get_object(occurrence):
+                occurrence_obj.matrix_world = occurrence_obj.matrix_world @ Matrix.Translation(Vector(move))
+                core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=occurrence_obj)
+                objs_to_reload.append(occurrence_obj)
+            else:
+                matrix = ifcopenshell.util.placement.get_placement(occurrence.ObjectPlacement)
+                translation = np.eye(4)
+                translation[:3, 3] = move / unit_scale
+                ifcopenshell.api.geometry.edit_object_placement(
+                    ifc_file, product=occurrence, matrix=matrix @ translation, is_si=False
+                )
+            if own_targets:
+                tool.Geometry.shift_targets(own_targets, (linear @ type_shift) / unit_scale)
+        tool.Geometry.shift_targets(plan.targets, type_shift / unit_scale)
+        if type_obj := tool.Ifc.get_object(plan.element_type):
+            objs_to_reload.append(type_obj)
+        tool.Geometry.reload_representation(objs_to_reload)
+
+    def measure_origin_change(
+        self, context: bpy.types.Context, obj: bpy.types.Object
+    ) -> Union[tuple[Vector, Vector], None]:
+        """Run origin_set on a single-user copy of ``obj``, as Blender refuses shared mesh data.
+
+        :return: How far the origin moved and how far the geometry moved relative to it, both in
+            ``obj``'s local frame.
+        """
+        if not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve)):
+            return None
+        if (before := self.get_first_coordinate(obj.data)) is None:
+            return None
+        data = obj.data.copy()
+        probe = bpy.data.objects.new("OriginProbe", data)
+        context.scene.collection.objects.link(probe)
+        try:
+            probe.matrix_world = obj.matrix_world.copy()
+            context.view_layer.update()
+            with context.temp_override(
+                active_object=probe, object=probe, selected_objects=[probe], selected_editable_objects=[probe]
+            ):
+                bpy.ops.object.origin_set(type=self.origin_type)
+            after = self.get_first_coordinate(probe.data)
+            assert after is not None
+            return obj.matrix_world.inverted() @ probe.matrix_world.translation, after - before
+        finally:
+            bpy.data.objects.remove(probe)
+            if isinstance(data, bpy.types.Mesh):
+                bpy.data.meshes.remove(data)
+            else:
+                bpy.data.curves.remove(data)
+
+    @staticmethod
+    def get_first_coordinate(data: Union[bpy.types.ID, None]) -> Union[Vector, None]:
+        """A local coordinate of the geometry, to measure how far origin_set shifted it."""
+        if isinstance(data, bpy.types.Mesh):
+            return data.vertices[0].co.copy() if data.vertices else None
+        if isinstance(data, bpy.types.Curve) and data.splines:
+            spline = data.splines[0]
+            if spline.bezier_points:
+                return spline.bezier_points[0].co.copy()
+            if spline.points:
+                return spline.points[0].co.xyz.copy()
+        return None
 
 
 class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
