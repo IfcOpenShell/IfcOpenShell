@@ -10,9 +10,9 @@ import ifcopenshell.api.group
 import ifcopenshell.api.root
 import ifcopenshell.api.structural
 import ifcopenshell.api.unit
+import ifcopenshell.guid
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import ifcopenshell.guid
 import ifcopenshell.util.structural
 import ifcopenshell.util.unit
 import pytest
