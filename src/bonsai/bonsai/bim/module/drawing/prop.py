@@ -263,6 +263,13 @@ def update_titleblocks(self, context):
     SheetsData.data["titleblocks"] = SheetsData.titleblocks()
 
 
+def update_should_draw_svg_overlay(self, context: bpy.types.Context) -> None:
+    if self.should_draw_svg_overlay:
+        decoration.SvgOverlay.install()
+    else:
+        decoration.SvgOverlay.uninstall()
+
+
 def update_should_draw_decorations(self, context: bpy.types.Context) -> None:
     if self.should_draw_decorations:
         # TODO: design a proper text variable templating renderer
@@ -438,6 +445,14 @@ class DocProperties(PropertyGroup):
     active_sheet_index: IntProperty(name="Active Sheet Index")
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
     should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=update_should_draw_decorations)
+    should_draw_svg_overlay: BoolProperty(
+        name="Generated SVG Overlay",
+        description="Preview strokes from the last generated SVG in the drawing camera. "
+        "Create Drawing to refresh. Fills, text, curves and symbols are not shown",
+        default=False,
+        options={"SKIP_SAVE"},
+        update=update_should_draw_svg_overlay,
+    )
 
     if TYPE_CHECKING:
         should_use_underlay_cache: bool
@@ -464,6 +479,7 @@ class DocProperties(PropertyGroup):
         active_sheet_index: int
         drawing_styles: bpy.types.bpy_prop_collection_idprop[DrawingStyle]
         should_draw_decorations: bool
+        should_draw_svg_overlay: bool
 
     def get_active_drawing(self) -> Union[ifcopenshell.entity_instance, None]:
         drawing_id = self.active_drawing_id
