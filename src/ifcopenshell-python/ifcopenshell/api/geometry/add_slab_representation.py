@@ -50,10 +50,15 @@ def add_slab_representation(
 
     .. code:: python
 
-        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
+        ifcopenshell.api.context.add_context(model,
+            context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d)
+        element = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSlab")
+
+        context = ifcopenshell.util.representation.get_context(model, "Model", "Body", "MODEL_VIEW")
         clippings = [ifcopenshell.util.data.Clipping(location=(0.0, 0.0, 0.1), normal=(0.0, 0.0, 1.0),)]
-        representation = ifcopenshell.api.geometry.add_slab_representation(ifc_file, context, depth=0.2, clippings=clippings)
-        ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=representation)
+        representation = ifcopenshell.api.geometry.add_slab_representation(model, context, depth=0.2, clippings=clippings)
+        ifcopenshell.api.geometry.assign_representation(model, product=element, representation=representation)
     """
     usecase = Usecase()
     usecase.file = file

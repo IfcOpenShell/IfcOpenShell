@@ -70,7 +70,7 @@ def assign_declaration(
 
         # Let's create a single asset of a 200mm thick concrete wall
         wall_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType", name="WAL01")
-        concrete = ifcopenshell.api.material.add_material(file, name="CON", category="concrete")
+        concrete = ifcopenshell.api.material.add_material(library, name="CON", category="concrete")
         rel = ifcopenshell.api.material.assign_material(library,
             products=[wall_type], type="IfcMaterialLayerSet")
         layer = ifcopenshell.api.material.add_layer(library,
