@@ -65,7 +65,7 @@ class Patcher:
         storeys = self.file.by_type("IfcBuildingStorey")
         for i, storey in enumerate(storeys):
             filename = f"{i}-{storey.Name}.ifc"
-            dest = filename if output_dir == None else output_dir / filename
+            dest = output_dir / filename
             copyfile(temp_file.name, dest)
             old_ifc: ifcopenshell.file = ifcopenshell.open(dest)
             new_ifc = ifcopenshell.file(schema=self.file.schema)
