@@ -26,6 +26,8 @@
 
 #include <boost/lexical_cast.hpp>
 #include <iomanip>
+#include <map>
+#include <tuple>
 
 wavefront_obj_serializer::wavefront_obj_serializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger)
 	: ifcopenshell::geom::write_only_geometry_serializer(settings, logger)
@@ -33,6 +35,7 @@ wavefront_obj_serializer::wavefront_obj_serializer(const stream_or_filename& obj
 	, mtl_stream(mtl_filename)
 	, vcount_total(1)
 	, ncount_total(1)
+	, uvcount_total(1)
 {
 	obj_stream.stream << std::setprecision(settings.get<ifcopenshell::geom::settings::FloatingPointDigits>().get());
 	mtl_stream.stream << std::setprecision(settings.get<ifcopenshell::geom::settings::FloatingPointDigits>().get());
@@ -94,10 +97,61 @@ void wavefront_obj_serializer::write(const ifcopenshell::geom::triangulation_ele
 
     const ifcopenshell::geom::triangulation& mesh = o->geometry();
 
-	size_t vcount = mesh.verts().size() / 3;
-    size_t ncount = mesh.normals().size() / 3;
+    const bool has_uvs = !mesh.uvs().empty();
+	const bool has_normals = !mesh.normals().empty();
 
-	for (auto it = mesh.verts().begin(); it != mesh.verts().end();) {
+	// Unwelded meshes repeat positions and normals per corner: index each stream on its own.
+	std::vector<double> dedup_verts;
+	std::vector<double> dedup_normals;
+	std::vector<int> pos_index;
+	std::vector<int> norm_index;
+
+	const bool split_streams = has_normals && mesh.normals().size() == mesh.verts().size();
+	if (split_streams) {
+		typedef std::tuple<double, double, double> Triplet;
+		std::map<Triplet, int> pos_map;
+		std::map<Triplet, int> norm_map;
+		const std::vector<double>& verts = mesh.verts();
+		const std::vector<double>& normals = mesh.normals();
+		const size_t n = verts.size() / 3;
+		pos_index.reserve(n);
+		norm_index.reserve(n);
+		for (size_t i = 0; i < n; ++i) {
+			const Triplet pk(verts[i * 3], verts[i * 3 + 1], verts[i * 3 + 2]);
+			auto pit = pos_map.find(pk);
+			if (pit == pos_map.end()) {
+				const int pidx = (int)(dedup_verts.size() / 3);
+				pos_map.emplace(pk, pidx);
+				dedup_verts.push_back(std::get<0>(pk));
+				dedup_verts.push_back(std::get<1>(pk));
+				dedup_verts.push_back(std::get<2>(pk));
+				pos_index.push_back(pidx);
+			} else {
+				pos_index.push_back(pit->second);
+			}
+
+			const Triplet nk(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]);
+			auto nit = norm_map.find(nk);
+			if (nit == norm_map.end()) {
+				const int nidx = (int)(dedup_normals.size() / 3);
+				norm_map.emplace(nk, nidx);
+				dedup_normals.push_back(std::get<0>(nk));
+				dedup_normals.push_back(std::get<1>(nk));
+				dedup_normals.push_back(std::get<2>(nk));
+				norm_index.push_back(nidx);
+			} else {
+				norm_index.push_back(nit->second);
+			}
+		}
+	}
+
+	const std::vector<double>& verts_to_write = split_streams ? dedup_verts : mesh.verts();
+	const std::vector<double>& normals_to_write = split_streams ? dedup_normals : mesh.normals();
+	size_t vcount = verts_to_write.size() / 3;
+    size_t ncount = normals_to_write.size() / 3;
+    size_t uvcount = mesh.uvs().size() / 2;
+
+	for (auto it = verts_to_write.begin(); it != verts_to_write.end();) {
         const double x = *(it++);
         const double y = *(it++);
         const double z = *(it++);
@@ -109,7 +163,7 @@ void wavefront_obj_serializer::write(const ifcopenshell::geom::triangulation_ele
 		}
 	}
 
-	for (auto it = mesh.normals().begin(); it != mesh.normals().end();) {
+	for (auto it = normals_to_write.begin(); it != normals_to_write.end();) {
         const double x = *(it++);
         const double y = *(it++);
         const double z = *(it++);
@@ -124,9 +178,6 @@ void wavefront_obj_serializer::write(const ifcopenshell::geom::triangulation_ele
 
 	int previous_material_id = -2;
 	std::vector<int>::const_iterator material_it = mesh.material_ids().begin();
-
-    const bool has_uvs = !mesh.uvs().empty();
-	const bool has_normals = !mesh.normals().empty();
 	for ( std::vector<int>::const_iterator it = mesh.faces().begin(); it != mesh.faces().end(); ) {
 
 		const int material_id = *(material_it++);
@@ -142,18 +193,27 @@ void wavefront_obj_serializer::write(const ifcopenshell::geom::triangulation_ele
 			previous_material_id = material_id;
 		}
 
-		const int v1 = *(it++) + vcount_total;
-		const int v2 = *(it++) + vcount_total;
-		const int v3 = *(it++) + vcount_total;
+		const int idx1 = *(it++);
+		const int idx2 = *(it++);
+		const int idx3 = *(it++);
 
-		const int n1 = v1 - vcount_total + ncount_total;
-        const int n2 = v2 - vcount_total + ncount_total;
-        const int n3 = v3 - vcount_total + ncount_total;
+		const int v1 = (split_streams ? pos_index[idx1] : idx1) + (int)vcount_total;
+		const int v2 = (split_streams ? pos_index[idx2] : idx2) + (int)vcount_total;
+		const int v3 = (split_streams ? pos_index[idx3] : idx3) + (int)vcount_total;
+
+		const int n1 = (split_streams ? norm_index[idx1] : idx1) + (int)ncount_total;
+        const int n2 = (split_streams ? norm_index[idx2] : idx2) + (int)ncount_total;
+        const int n3 = (split_streams ? norm_index[idx3] : idx3) + (int)ncount_total;
+
+		// UVs depend on both position and normal, so keep the per-corner index.
+		const int t1 = idx1 + (int)uvcount_total;
+		const int t2 = idx2 + (int)uvcount_total;
+		const int t3 = idx3 + (int)uvcount_total;
 
         if (has_normals && has_uvs) {
-			obj_stream.stream << "f " << v1 << "/" << n1 << "/" << n1 << " "
-				<< v2 << "/" << n2 << "/" << n2 << " "
-				<< v3 << "/" << n3 << "/" << n3 << "\n";
+			obj_stream.stream << "f " << v1 << "/" << t1 << "/" << n1 << " "
+				<< v2 << "/" << t2 << "/" << n2 << " "
+				<< v3 << "/" << t3 << "/" << n3 << "\n";
 		} else if (has_normals) {
             obj_stream.stream << "f " << v1 << "//" << n1 << " "
 				<< v2 << "//" << n2 << " "
@@ -188,12 +248,13 @@ void wavefront_obj_serializer::write(const ifcopenshell::geom::triangulation_ele
 			previous_material_id = material_id;
 		}
 
-		const int v1 = i1 + vcount_total;
-		const int v2 = i2 + vcount_total;
+		const int v1 = (split_streams ? pos_index[i1] : i1) + (int)vcount_total;
+		const int v2 = (split_streams ? pos_index[i2] : i2) + (int)vcount_total;
 
 		obj_stream.stream << "l " << v1 << " " << v2 << "\n";
 	}
 
 	vcount_total += vcount;
     ncount_total += ncount;
+    uvcount_total += uvcount;
 }
