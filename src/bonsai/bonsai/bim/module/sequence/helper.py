@@ -29,13 +29,21 @@ from bonsai.bim.prop import ISODuration
 
 
 def parse_datetime(value):
+    """A date and time typed by the user. A value without a time is a date.
+
+    edit_task_time gives a date the first or last work instant of the day,
+    and keeps a given time. Thus a date must not become a time of 00:00.
+    """
     try:
-        return parser.isoparse(value)
+        result = parser.isoparse(value)
     except:
         try:
-            return parser.parse(value, dayfirst=True, fuzzy=True)
+            result = parser.parse(value, dayfirst=True, fuzzy=True)
         except:
             return None
+    if ":" not in value:
+        return result.date()
+    return result
 
 
 def parse_duration(value):
@@ -47,6 +55,13 @@ def canonicalise_time(time: Union[datetime, None]) -> str:
     if not time:
         return "-"
     return time.strftime("%d/%m/%y")
+
+
+def canonicalise_datetime(time: Union[datetime, None]) -> str:
+    """A task date with its time of day, which a task can have since sub-day durations."""
+    if not time:
+        return "-"
+    return time.strftime("%d/%m/%y %H:%M")
 
 
 def parse_duration_as_blender_props(dt: Union[Any, str]) -> dict[str, int]:

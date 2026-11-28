@@ -61,7 +61,7 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.DurationType == "ELAPSEDTIME"
         assert task_time.ScheduleDuration == "P1D"
         assert task_time.ScheduleStart == "2000-01-01T09:00:00"
-        assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
+        assert task_time.ScheduleFinish == "2000-01-02T09:00:00"
         assert task_time.EarlyStart == "2000-01-01T00:00:00"
         assert task_time.EarlyFinish == "2000-01-01T00:00:00"
         assert task_time.LateStart == "2000-01-01T00:00:00"
@@ -102,7 +102,7 @@ class TestEditTaskTime(test.bootstrap.IFC4):
             task_time=task_time,
             attributes={
                 "ScheduleDuration": None,
-                "ScheduleStart": datetime.datetime(2000, 1, 1),
+                "ScheduleStart": datetime.date(2000, 1, 1),
                 "ScheduleFinish": None,
             },
         )
@@ -124,7 +124,7 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.DurationType == "ELAPSEDTIME"
         assert task_time.ScheduleDuration == "P1D"
         assert task_time.ScheduleStart == "2000-01-01T09:00:00"
-        assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
+        assert task_time.ScheduleFinish == "2000-01-02T09:00:00"
 
     def test_schedule_durations_are_auto_calculated_if_possible(self):
         task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
@@ -138,9 +138,49 @@ class TestEditTaskTime(test.bootstrap.IFC4):
             },
         )
         assert task_time.DurationType == "ELAPSEDTIME"
-        assert task_time.ScheduleDuration == "P1D"
+        assert task_time.ScheduleDuration == "PT8H"
         assert task_time.ScheduleStart == "2000-01-01T09:00:00"
         assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
+
+    def test_schedule_durations_are_work_time_between_the_dates(self):
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
+        attributes = {"DurationType": "WORKTIME", "ScheduleStart": "2000-01-01T09:00:00"}
+        attributes["ScheduleFinish"] = "2000-01-01T13:00:00"
+        ifcopenshell.api.sequence.edit_task_time(self.file, task_time=task_time, attributes=attributes)
+        assert task_time.ScheduleDuration == "PT4H"
+        attributes = {"ScheduleFinish": "2000-01-02T13:00:00"}
+        ifcopenshell.api.sequence.edit_task_time(self.file, task_time=task_time, attributes=attributes)
+        assert task_time.ScheduleDuration == "P1DT4H"
+
+    def test_schedule_durations_count_each_working_day_as_one_work_day(self):
+        from test.util.test_sequence import add_short_friday_calendar
+
+        calendar = add_short_friday_calendar(self.file)  # Friday has 6 work hours, the other days 8
+        task = self.file.createIfcTask()
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_objects=[task])
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+        attributes = {"DurationType": "WORKTIME", "ScheduleStart": "2026-01-22T09:00:00"}  # Thursday
+        attributes["ScheduleFinish"] = "2026-01-23T15:00:00"
+        ifcopenshell.api.sequence.edit_task_time(self.file, task_time=task_time, attributes=attributes)
+        assert task_time.ScheduleDuration == "P2D"
+        attributes = {"ScheduleStart": "2026-01-23T09:00:00", "ScheduleDuration": "P1D"}
+        ifcopenshell.api.sequence.edit_task_time(self.file, task_time=task_time, attributes=attributes)
+        assert task_time.ScheduleFinish == "2026-01-23T15:00:00"
+
+    def test_a_task_of_work_days_starts_at_the_start_of_a_working_day(self):
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
+        attributes = {"DurationType": "WORKTIME", "ScheduleStart": "2000-01-01T13:00:00", "ScheduleDuration": "P1D"}
+        ifcopenshell.api.sequence.edit_task_time(self.file, task_time=task_time, attributes=attributes)
+        # A part of a day counts as a full day.
+        assert task_time.ScheduleStart == "2000-01-02T09:00:00"
+        assert task_time.ScheduleFinish == "2000-01-02T17:00:00"
+        attributes = {"ScheduleDuration": "PT8H"}
+        ifcopenshell.api.sequence.edit_task_time(self.file, task_time=task_time, attributes=attributes)
+        assert task_time.ScheduleStart == "2000-01-02T09:00:00"
+        assert task_time.ScheduleFinish == "2000-01-02T17:00:00"
+        attributes = {"ScheduleStart": "2000-01-02T13:00:00"}
+        ifcopenshell.api.sequence.edit_task_time(self.file, task_time=task_time, attributes=attributes)
+        assert task_time.ScheduleFinish == "2000-01-03T13:00:00"  # Work hours are exact
 
     def test_a_duration_takes_priority_over_start_and_finish_dates(self):
         task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
@@ -157,7 +197,7 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.DurationType == "ELAPSEDTIME"
         assert task_time.ScheduleDuration == "P1D"
         assert task_time.ScheduleStart == "2000-01-01T09:00:00"
-        assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
+        assert task_time.ScheduleFinish == "2000-01-02T09:00:00"
 
     def test_durations_can_be_specified_in_datetime_objects(self):
         task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
@@ -173,7 +213,77 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.DurationType == "ELAPSEDTIME"
         assert task_time.ScheduleDuration == "P1D"
         assert task_time.ScheduleStart == "2000-01-01T09:00:00"
-        assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
+        assert task_time.ScheduleFinish == "2000-01-02T09:00:00"
+
+    def test_work_hours_of_one_work_day_or_more_are_work_days(self):
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file,
+            task_time=task_time,
+            attributes={"ScheduleDuration": "PT24H", "ScheduleStart": "2000-01-03T09:00:00"},
+        )
+        assert task_time.ScheduleFinish == "2000-01-05T17:00:00"
+
+    def test_keeping_the_time_of_a_start_or_finish(self):
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file, task_time=task_time, attributes={"ScheduleStart": "2026-01-22T13:44:00"}
+        )
+        assert task_time.ScheduleStart == "2026-01-22T13:44:00"
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file, task_time=task_time, attributes={"ScheduleStart": "2026-01-22T00:00:00"}
+        )
+        assert task_time.ScheduleStart == "2026-01-22T00:00:00"
+
+    def test_using_the_calendar_time_periods_for_a_date_without_time(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
+        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar)
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(self.file, parent=work_time)
+        ifcopenshell.api.sequence.edit_recurrence_pattern(
+            self.file, recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]}
+        )
+        ifcopenshell.api.sequence.add_time_period(
+            self.file, recurrence_pattern=pattern, start_time="08:00:00", end_time="16:00:00"
+        )
+        task = self.file.createIfcTask()
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_objects=[task])
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file, task_time=task_time, attributes={"ScheduleStart": "2026-01-22"}
+        )
+        assert task_time.ScheduleStart == "2026-01-22T08:00:00"
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file, task_time=task_time, attributes={"ScheduleFinish": "2026-01-23"}
+        )
+        assert task_time.ScheduleFinish == "2026-01-23T16:00:00"
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file, task_time=task_time, attributes={"ScheduleStart": "2026-01-24"}
+        )
+        assert task_time.ScheduleStart == "2026-01-26T08:00:00"
+
+    def test_elapsed_days_are_24_hours_with_any_work_day(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
+        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar)
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(self.file, parent=work_time)
+        for start, end in (("07:00:00", "12:00:00"), ("13:00:00", "17:00:00")):
+            ifcopenshell.api.sequence.add_time_period(
+                self.file, recurrence_pattern=pattern, start_time=start, end_time=end
+            )
+        task = self.file.createIfcTask()
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_objects=[task])
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file,
+            task_time=task_time,
+            attributes={
+                "DurationType": "ELAPSEDTIME",
+                "ScheduleDuration": "P1D",
+                "ScheduleStart": "2026-01-19T09:00:00",
+            },
+        )
+        assert task_time.ScheduleFinish == "2026-01-20T09:00:00"
 
     def test_zero_durations_are_allowed(self):
         task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
@@ -203,7 +313,7 @@ class TestEditTaskTime(test.bootstrap.IFC4):
             attributes={
                 "DurationType": "WORKTIME",
                 "ScheduleDuration": "P7D",
-                "ScheduleStart": datetime.datetime(2020, 1, 1),
+                "ScheduleStart": datetime.date(2020, 1, 1),
             },
         )
         assert task_time.ScheduleStart == "2020-01-01T09:00:00"
@@ -228,7 +338,7 @@ class TestEditTaskTime(test.bootstrap.IFC4):
             attributes={
                 "DurationType": "WORKTIME",
                 "ScheduleDuration": "P7D",
-                "ScheduleStart": datetime.datetime(2020, 1, 1),
+                "ScheduleStart": datetime.date(2020, 1, 1),
             },
         )
         assert task_time.ScheduleStart == "2020-01-01T09:00:00"

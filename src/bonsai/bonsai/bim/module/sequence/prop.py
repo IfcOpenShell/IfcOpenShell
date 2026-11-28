@@ -142,11 +142,6 @@ def updateTaskTimeDateTime(self: "Task", context: bpy.types.Context, startfinish
     if not props.is_task_update_enabled:
         return
 
-    def canonicalise_time(time):
-        if not time:
-            return "-"
-        return time.strftime("%d/%m/%y")
-
     startfinish_value = getattr(self, startfinish)
 
     if startfinish_value == "-":
@@ -154,14 +149,12 @@ def updateTaskTimeDateTime(self: "Task", context: bpy.types.Context, startfinish
 
     ifc_file = tool.Ifc.get()
 
-    try:
-        startfinish_datetime = parser.isoparse(startfinish_value)
-    except:
-        try:
-            startfinish_datetime = parser.parse(startfinish_value, dayfirst=True, fuzzy=True)
-        except:
-            setattr(self, startfinish, "-")
-            return
+    import bonsai.bim.module.sequence.helper as helper
+
+    startfinish_datetime = helper.parse_datetime(startfinish_value)
+    if startfinish_datetime is None:
+        setattr(self, startfinish, "-")
+        return
 
     task = ifc_file.by_id(self.ifc_definition_id)
     if task.TaskTime:
@@ -172,7 +165,7 @@ def updateTaskTimeDateTime(self: "Task", context: bpy.types.Context, startfinish
 
     startfinish_key = "Schedule" + startfinish.capitalize()
     if SequenceData.data["task_times"][task_time.id()][startfinish_key] == startfinish_datetime:
-        canonical_startfinish_value = canonicalise_time(startfinish_datetime)
+        canonical_startfinish_value = helper.canonicalise_datetime(startfinish_datetime)
         if startfinish_value != canonical_startfinish_value:
             setattr(self, startfinish, canonical_startfinish_value)
         return

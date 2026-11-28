@@ -29,3 +29,8 @@ class TestReadableIFCDuration:
         # Float values.
         assert subject.readable_ifc_duration("P2.5D") == "2.5D"
         assert subject.readable_ifc_duration("PT1.5H") == "1.5h"
+
+
+class TestIfc2datetime:
+    def test_keeping_the_decimal_seconds_of_a_duration(self):
+        assert subject.ifc2datetime("PT5H8M46.3344S").total_seconds() == 18526.3344

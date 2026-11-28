@@ -284,6 +284,8 @@ class Sequence(bonsai.core.tool.Sequence):
     # TODO: task argument is never used?
     @classmethod
     def load_task_properties(cls, task: Optional[ifcopenshell.entity_instance] = None) -> None:
+        import bonsai.bim.module.sequence.helper as helper
+
         props = cls.get_work_schedule_props()
         task_props = cls.get_task_tree_props()
         tasks_with_visual_bar = cls.get_task_bar_list()
@@ -313,16 +315,12 @@ class Sequence(bonsai.core.tool.Sequence):
             ):
                 task_time = task.TaskTime
                 item.start = (
-                    ifcopenshell.util.date.canonicalise_time(
-                        ifcopenshell.util.date.ifc2datetime(task_time.ScheduleStart)
-                    )
+                    helper.canonicalise_datetime(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleStart))
                     if task_time.ScheduleStart
                     else "-"
                 )
                 item.finish = (
-                    ifcopenshell.util.date.canonicalise_time(
-                        ifcopenshell.util.date.ifc2datetime(task_time.ScheduleFinish)
-                    )
+                    helper.canonicalise_datetime(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleFinish))
                     if task_time.ScheduleFinish
                     else "-"
                 )
@@ -334,13 +332,15 @@ class Sequence(bonsai.core.tool.Sequence):
             else:
                 derived_start = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
                 derived_finish = ifcopenshell.util.sequence.derive_date(task, "ScheduleFinish", is_latest=True)
-                item.derived_start = ifcopenshell.util.date.canonicalise_time(derived_start) if derived_start else ""
-                item.derived_finish = ifcopenshell.util.date.canonicalise_time(derived_finish) if derived_finish else ""
+                item.derived_start = helper.canonicalise_datetime(derived_start) if derived_start else ""
+                item.derived_finish = helper.canonicalise_datetime(derived_finish) if derived_finish else ""
                 if derived_start and derived_finish:
-                    derived_duration = ifcopenshell.util.sequence.count_working_days(
-                        derived_start, derived_finish, calendar
+                    # Work days and work hours from the earliest start to the latest finish of the subtasks
+                    work_day = ifcopenshell.util.sequence.get_work_day_duration(task, calendar)
+                    derived_duration = ifcopenshell.util.sequence.get_work_duration_between(
+                        derived_start, derived_finish, calendar, work_day
                     )
-                    item.derived_duration = str(ifcopenshell.util.date.readable_ifc_duration(f"P{derived_duration}D"))
+                    item.derived_duration = str(ifcopenshell.util.date.readable_ifc_duration(derived_duration))
                 item.start = "-"
                 item.finish = "-"
                 item.duration = "-"
