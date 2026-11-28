@@ -793,28 +793,6 @@ class Loader(bonsai.core.tool.Loader):
             props.has_blender_offset = True
 
     @classmethod
-    def guess_false_origin_and_project_north(
-        cls, ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance
-    ) -> None:
-        if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
-            return
-        placement = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
-        offset_point = [placement[0][3], placement[1][3], placement[2][3]]
-        cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(
-            ifc_file, *offset_point, should_return_in_map_units=False
-        )
-
-        # Prioritise coordinate operation angles
-        angle = ifcopenshell.util.geolocation.get_grid_north(ifc_file)
-        if np.isclose(angle, 0.0):
-            # Fallback to the placement angle as a good guess
-            xaa, xao = placement[:, 0][0:2]
-            angle = ifcopenshell.util.geolocation.xaxis2angle(xaa, xao)
-
-        cls.settings.project_north = 0 if np.isclose(angle, 0) else angle
-        cls.set_manual_blender_offset(ifc_file)
-
-    @classmethod
     def find_decomposed_ifc_class(
         cls, element: ifcopenshell.entity_instance, ifc_class: str
     ) -> Union[ifcopenshell.entity_instance, None]:
@@ -955,7 +933,8 @@ class Loader(bonsai.core.tool.Loader):
         return camera
 
     @classmethod
-    def get_offset_point(cls, ifc_file: ifcopenshell.file) -> Union[npt.NDArray[np.float64], None]:
+    def get_geometry_point(cls, ifc_file: ifcopenshell.file) -> Union[npt.NDArray[np.float64], None]:
+        """The first vertex of the first element with geometry, in metres."""
         # Check walls first, as they're usually cheap
         elements = ifc_file.by_type("IfcWall")
         elements += ifc_file.by_type("IfcElement")
@@ -978,42 +957,46 @@ class Loader(bonsai.core.tool.Loader):
                 continue
             mat = ifcopenshell.util.shape.get_shape_matrix(shape)
             verts = ifcopenshell.util.shape.get_vertices(shape.geometry)
-            point = (mat @ np_to_4d(verts[0]))[:3]
-            if cls.is_point_far_away(point, is_meters=True):
-                # Arbitrary origins should be to the nearest millimeter.
-                # Anything more precise is just ridiculous from a practical surveying perspective.
-                return np.array([round(float(p), 3) / cls.unit_scale for p in point])
-            break
+            if verts.size == 0:
+                continue
+            return (mat @ np_to_4d(verts[0]))[:3]
 
     @classmethod
-    def guess_false_origin_from_elements(cls, ifc_file: ifcopenshell.file) -> None:
-        # Civil BIM applications like to work in absolute coordinates, where the
-        # ObjectPlacement is usually 0,0,0 (but not always, so we'll need to
-        # check for the actual transformation) but each individual coordinate of
-        # the shape representation is in absolute values.
-        offset_point = cls.get_offset_point(ifc_file)
-        if offset_point is None:
+    def guess_false_origin(cls, ifc_file: ifcopenshell.file) -> None:
+        project = ifc_file.by_type("IfcProject")[0]
+        far_elements = []
+        for ifc_class in ("IfcSite", "IfcBuilding"):
+            element = cls.find_decomposed_ifc_class(project, ifc_class)
+            if element and cls.is_element_far_away(element):
+                far_elements.append(element)
+
+        # Geometry decides where the false origin goes. Near geometry needs none,
+        # wherever the site is. Without geometry, a far site, then a far building.
+        point = cls.get_geometry_point(ifc_file)
+        if point is not None:
+            if not cls.is_point_far_away(point, is_meters=True):
+                return
+            # Arbitrary origins should be to the nearest millimeter.
+            # Anything more precise is just ridiculous from a practical surveying perspective.
+            offset_point = [round(float(p), 3) / cls.unit_scale for p in point]
+        elif far_elements:
+            offset_point = ifcopenshell.util.placement.get_placement(far_elements[0].ObjectPlacement)[:3, 3]
+        else:
             return
         cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(
             ifc_file, *offset_point, should_return_in_map_units=False
         )
-        if (angle := ifcopenshell.util.geolocation.get_grid_north(ifc_file)) and not tool.Cad.is_x(angle, 0):
-            cls.settings.project_north = angle
-        cls.set_manual_blender_offset(ifc_file)
 
-    @classmethod
-    def guess_false_origin(cls, ifc_file: ifcopenshell.file) -> None:
-        if ifc_file.schema == "IFC2X3":
-            project = ifc_file.by_type("IfcProject")[0]
-        else:
-            project = ifc_file.by_type("IfcContext")[0]
-        site = cls.find_decomposed_ifc_class(project, "IfcSite")
-        if site and cls.is_element_far_away(site):
-            return cls.guess_false_origin_and_project_north(ifc_file, site)
-        building = cls.find_decomposed_ifc_class(project, "IfcBuilding")
-        if building and cls.is_element_far_away(building):
-            return cls.guess_false_origin_and_project_north(ifc_file, building)
-        return cls.guess_false_origin_from_elements(ifc_file)
+        # Project north comes from the coordinate operation, else from the rotation
+        # of a far site, else of a far building. Near elements have no say.
+        angle = ifcopenshell.util.geolocation.get_grid_north(ifc_file)
+        for element in far_elements:
+            if not np.isclose(angle, 0):
+                break
+            placement = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
+            angle = ifcopenshell.util.geolocation.xaxis2angle(*placement[:2, 0])
+        cls.settings.project_north = 0 if np.isclose(angle, 0) else angle
+        cls.set_manual_blender_offset(ifc_file)
 
     @classmethod
     def apply_cartesian_point_offset(cls, data: Optional[bpy.types.ID], matrix: np.ndarray) -> np.ndarray:

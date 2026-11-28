@@ -21,13 +21,21 @@ from pathlib import Path
 
 import bmesh
 import bpy
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import ifcopenshell.api.library
+import ifcopenshell.api.project
+import ifcopenshell.api.root
 import ifcopenshell.api.style
+import ifcopenshell.api.unit
 import ifcopenshell.util.schema
 import numpy as np
+import pytest
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Vector
 
+import bonsai.bim.import_ifc
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.loader import Loader as subject
@@ -600,3 +608,77 @@ class TestCreatePointCloudMesh(NewFile):
         assert len(mesh.vertices) == 1
         verts = np.array([v.co for v in mesh.vertices])
         assert np.allclose(verts, np.array([np.array(c) for c in coords3d]))
+
+
+class TestGuessFalseOrigin(NewFile):
+    def create_file(self):
+        ifc = ifcopenshell.api.project.create_file(version="IFC4")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc, length={"is_metric": True, "raw": "METERS"})
+        model = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        self.body = ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        subject.set_settings(bonsai.bim.import_ifc.IfcImportSettings())
+        subject.settings.contexts = [self.body]
+        subject.settings.gross_context_settings = subject.create_settings(is_gross=True)
+        subject.set_unit_scale(1)
+        return ifc
+
+    def add_spatial(self, ifc, ifc_class, parent, x, angle=0):
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class=ifc_class)
+        ifcopenshell.api.aggregate.assign_object(ifc, products=[element], relating_object=parent)
+        matrix = np.eye(4)
+        matrix[:2, :2] = [
+            [np.cos(np.radians(angle)), -np.sin(np.radians(angle))],
+            [np.sin(np.radians(angle)), np.cos(np.radians(angle))],
+        ]
+        matrix[0, 3] = x
+        ifcopenshell.api.geometry.edit_object_placement(ifc, product=element, matrix=matrix)
+        return element
+
+    def add_wall(self, ifc, x):
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        representation = ifcopenshell.api.geometry.add_wall_representation(ifc, context=self.body)
+        ifcopenshell.api.geometry.assign_representation(ifc, product=wall, representation=representation)
+        matrix = np.eye(4)
+        matrix[0, 3] = x
+        ifcopenshell.api.geometry.edit_object_placement(ifc, product=wall, matrix=matrix)
+        return wall
+
+    def test_far_geometry_decides_the_false_origin_before_a_far_site(self):
+        ifc = self.create_file()
+        self.add_spatial(ifc, "IfcSite", ifc.by_type("IfcProject")[0], 5000)
+        self.add_wall(ifc, 8000)
+        subject.guess_false_origin(ifc)
+        assert subject.settings.false_origin == pytest.approx([8000, 0, 0], abs=1)
+
+    def test_near_geometry_keeps_the_origin_under_a_far_site(self):
+        ifc = self.create_file()
+        self.add_spatial(ifc, "IfcSite", ifc.by_type("IfcProject")[0], 5000, angle=30)
+        self.add_wall(ifc, 10)
+        subject.guess_false_origin(ifc)
+        assert subject.settings.false_origin is None
+        assert subject.settings.project_north is None
+
+    def test_a_far_site_then_a_far_building_decide_without_geometry(self):
+        ifc = self.create_file()
+        site = self.add_spatial(ifc, "IfcSite", ifc.by_type("IfcProject")[0], 10)
+        self.add_spatial(ifc, "IfcBuilding", site, 5000)
+        subject.guess_false_origin(ifc)
+        assert subject.settings.false_origin == pytest.approx([5000, 0, 0])
+
+    def test_project_north_comes_from_a_far_site_before_a_far_building(self):
+        ifc = self.create_file()
+        site = self.add_spatial(ifc, "IfcSite", ifc.by_type("IfcProject")[0], 5000, angle=30)
+        self.add_spatial(ifc, "IfcBuilding", site, 5000, angle=15)
+        subject.guess_false_origin(ifc)
+        # A placement rotated 30 degrees anticlockwise puts project north 30 degrees clockwise
+        assert subject.settings.project_north == pytest.approx(-30)
+
+    def test_a_near_site_rotation_has_no_effect_on_project_north(self):
+        ifc = self.create_file()
+        site = self.add_spatial(ifc, "IfcSite", ifc.by_type("IfcProject")[0], 10, angle=30)
+        self.add_spatial(ifc, "IfcBuilding", site, 5000, angle=15)
+        subject.guess_false_origin(ifc)
+        assert subject.settings.project_north == pytest.approx(-15)
