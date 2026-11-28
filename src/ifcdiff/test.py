@@ -122,6 +122,33 @@ class TestIfcDiff:
                 results = json.load(f)
             assert "Pset_WallCommon" in str(results["changed"][wall.GlobalId]["properties_changed"])
 
+    def test_property_diff_ignores_step_ids(self):
+        # get_psets() gives each property set's STEP id as "id". A copy of the
+        # model with every entity renumbered, as another export of it would be,
+        # must not read as a property change, and a real change must be the
+        # only one reported.
+        ifc_file = setup_project()
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
+        pset = ifcopenshell.api.pset.add_pset(ifc_file, product=wall, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"FireRating": "2HR"})
+
+        new_file = ifcopenshell.file(schema=ifc_file.schema)
+        new_file.createIfcCartesianPoint((0.0, 0.0, 0.0))  # Takes id 1, so the copies are numbered differently.
+        for element in ifc_file:
+            new_file.add(element)
+        new_pset = new_file.by_guid(pset.GlobalId)
+        assert new_pset.id() != pset.id()
+
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["property"])
+        ifc_diff.diff()
+        assert ifc_diff.change_register == {}
+
+        ifcopenshell.api.pset.edit_pset(new_file, pset=new_pset, properties={"FireRating": "1HR"})
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["property"])
+        ifc_diff.diff()
+        changes = ifc_diff.change_register[wall.GlobalId]["properties_changed"]
+        assert list(changes["values_changed"]) == ["root['Pset_WallCommon']['FireRating']"]
+
     def test_changed_geometry(self):
         ifc_file = setup_project()
         wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
